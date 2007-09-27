@@ -21,8 +21,7 @@
 */
 
 #include "includes.h"
-#include "winbindd.h"
-#include "debug.h"
+#include "winbind_client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -468,8 +467,6 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 
 	d_printf("Primary           : %s\n",
 		 response.data.domain_info.primary ? "Yes" : "No");
-
-	d_printf("Sequence          : %d\n", response.data.domain_info.sequence_number);
 
 	return True;
 }

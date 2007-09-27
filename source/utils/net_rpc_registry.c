@@ -48,6 +48,9 @@ static BOOL reg_hive_key(const char *fullname, uint32 *reg_type,
 	else if (strnequal(fullname, "HKU", len) ||
 		 strnequal(fullname, "HKEY_USERS", len))
 		(*reg_type) = HKEY_USERS;
+	else if (strnequal(fullname, "HKCU", len) ||
+		 strnequal(fullname, "HKEY_CURRENT_USER", len))
+		(*reg_type) = HKEY_CURRENT_USER;
 	else if (strnequal(fullname, "HKPD", len) ||
 		 strnequal(fullname, "HKEY_PERFORMANCE_DATA", len))
 		(*reg_type) = HKEY_PERFORMANCE_DATA;

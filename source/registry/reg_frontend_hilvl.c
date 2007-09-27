@@ -34,7 +34,7 @@ static struct generic_mapping reg_generic_map =
 
 static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 {
-	SEC_ACE ace[2];	
+	SEC_ACE ace[3];
 	SEC_ACCESS mask;
 	size_t i = 0;
 	SEC_DESC *sd;
@@ -50,7 +50,12 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 	
 	init_sec_access(&mask, REG_KEY_ALL );
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
+
+	/* Full Access 'NT Authority\System' */
+
+	init_sec_access(&mask, REG_KEY_ALL );
+	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
 	
 	/* create the security descriptor */
 	

@@ -37,20 +37,8 @@ static BOOL init_group_mapping(void)
 		return True;
 	}
 	
-	/* default to using the ldb backend. This parameter should
-	   disappear in future versions of Samba3, but for now it
-	   provides a safety net in case any major problems are
-	   discovered with ldb after the release */	   
-	backend_string = lp_parm_const_string(-1, "groupdb", "backend", "ldb");
+       	backend = groupdb_ldb_init();
 
-	if (strcmp(backend_string, "ldb") == 0) {
-		backend = groupdb_ldb_init();
-	} else if (strcmp(backend_string, "tdb") == 0) {
-		backend = groupdb_tdb_init();
-	} else {
-		DEBUG(0,("Unknown groupdb backend '%s'\n", backend_string));
-		smb_panic("Unknown groupdb backend");
-	}
 	return backend != NULL;
 }
 

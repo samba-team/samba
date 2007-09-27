@@ -557,6 +557,20 @@ BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 		data.has_error = 1;
 	}
 
+	/* Binding against Win2K DC returns a duplicate of the responseToken in
+	 * the optional mechListMIC field. This is a bug in Win2K. We ignore
+	 * this field if it exists. Win2K8 may return a proper mechListMIC at
+	 * which point we need to implement the integrity checking. */
+	if (asn1_tag_remaining(&data)) {
+		DATA_BLOB mechList = data_blob_null;
+		asn1_start_tag(&data, ASN1_CONTEXT(3));
+		asn1_read_OctetString(&data, &mechList);
+		asn1_end_tag(&data);
+		data_blob_free(&mechList);
+		DEBUG(5,("spnego_parse_auth_response received mechListMIC, "
+		    "ignoring.\n"));
+	}
+
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 

@@ -457,6 +457,17 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.67 NAME 'sambaRefuseMachinePwdChange'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
+#
+attributetype ( 1.3.6.1.4.1.7165.2.1.68 NAME 'sambaClearTextPassword'
+	DESC 'Clear text password (used for trusted domain passwords)'
+	EQUALITY octetStringMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
+
+#
+attributetype ( 1.3.6.1.4.1.7165.2.1.69 NAME 'sambaPreviousClearTextPassword'
+	DESC 'Previous clear text password (used for trusted domain passwords)'
+	EQUALITY octetStringMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )
 
 
 
@@ -499,6 +510,16 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.14 NAME 'sambaTrustPassword' SUP top STRUCTUR
 	DESC 'Samba Trust Password'
 	MUST ( sambaDomainName $ sambaNTPassword $ sambaTrustFlags )
 	MAY ( sambaSID $ sambaPwdLastSet ))
+
+##
+## Trust password for trusted domains
+## (to be stored beneath the trusting sambaDomain object in the DIT)
+##
+objectclass ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaTrustedDomainPassword' SUP top STRUCTURAL
+	DESC 'Samba Trusted Domain Password'
+	MUST ( sambaDomainName $ sambaSID $
+	       sambaClearTextPassword $ sambaPwdLastSet )
+	MAY  ( sambaPreviousClearTextPassword ))
 
 ##
 ## Whole-of-domain info

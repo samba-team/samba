@@ -284,7 +284,7 @@ static struct group *wb_aix_getgrgid(gid_t gid)
 
 	grp = fill_grent(&response.data.gr, response.extra_data.data);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	return grp;
 }
@@ -314,7 +314,7 @@ static struct group *wb_aix_getgrnam(const char *name)
 
 	grp = fill_grent(&response.data.gr, response.extra_data.data);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	return grp;
 }
@@ -385,7 +385,7 @@ static char *wb_aix_getgrset(char *user)
 	}
 	idx += sprintf(tmpbuf+idx, "%u", gid_list[i]);	
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	return tmpbuf;
 }
@@ -412,7 +412,7 @@ static struct passwd *wb_aix_getpwuid(uid_t uid)
 
 	pwd = fill_pwent(&response.data.pw);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	logit("getpwuid gave ptr %p\n", pwd);
 
@@ -445,7 +445,7 @@ static struct passwd *wb_aix_getpwnam(const char *name)
 	
 	pwd = fill_pwent(&response.data.pw);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	logit("getpwnam gave ptr %p\n", pwd);
 
@@ -482,7 +482,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 
 	s = malloc(len+2);
 	if (!s) {
-		free_response(&response);
+		winbindd_free_response(&response);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -494,7 +494,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 	results[0].attr_un.au_char = s;
 	results[0].attr_flag = 0;
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	
 	return 0;
 }
@@ -530,7 +530,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 
 	s = malloc(len+2);
 	if (!s) {
-		free_response(&response);
+		winbindd_free_response(&response);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -542,7 +542,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 	results[0].attr_un.au_char = s;
 	results[0].attr_flag = 0;
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	
 	return 0;
 }
@@ -887,7 +887,7 @@ static int wb_aix_authenticate(char *user, char *pass,
 
 	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	logit("auth result %d for '%s'\n", result, user);
 
@@ -936,7 +936,7 @@ static int wb_aix_chpass(char *user, char *oldpass, char *newpass, char **messag
 
 	result = winbindd_request_response(WINBINDD_PAM_CHAUTHTOK, &request, &response);
 
-	free_response(&response);
+	winbindd_free_response(&response);
 
 	if (result == NSS_STATUS_SUCCESS) {
 		errno = 0;

@@ -45,7 +45,7 @@ static struct gp_table gpo_cse_extensions[] = {
 	/* "Registry Settings"
 	(http://support.microsoft.com/kb/216357/EN-US/) */
 	{ "Registry Settings",
-		GP_EXT_REGISTRY },
+		GP_EXT_GUID_REGISTRY },
 	{ "Microsoft Disc Quota",
 		"3610EDA5-77EF-11D2-8DC5-00C04FA31A66" },
 	{ "EFS recovery",
@@ -59,9 +59,9 @@ static struct gp_table gpo_cse_extensions[] = {
 	{ "QoS Packet Scheduler",
 		"426031c0-0b47-4852-b0ca-ac3d37bfcb39" },
 	{ "Scripts",
-		GP_EXT_SCRIPTS },
+		GP_EXT_GUID_SCRIPTS },
 	{ "Security",
-		GP_EXT_SECURITY },
+		GP_EXT_GUID_SECURITY },
 	{ "Software Installation",
 		"C6DC5466-785A-11D2-84D0-00C04FB169F7" },
 	{ "Wireless Group Policy",

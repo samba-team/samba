@@ -568,8 +568,10 @@ string. This is equivalent to:
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 char *talloc_asprintf_append(char *s, const char *fmt, ...);
 
-The talloc_asprintf_append() function appends the given formatted 
-string to the given string. 
+The talloc_asprintf_append() function appends the given formatted
+string to the given string.
+Use this varient when the string in the current talloc buffer may
+have been truncated in length.
 
 This functions sets the name of the new pointer to the new
 string. This is equivalent to:
@@ -577,7 +579,20 @@ string. This is equivalent to:
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-(type *)talloc_array(const void *ctx, type, uint_t count);
+char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...);
+
+The talloc_asprintf_append() function appends the given formatted 
+string to the end of the currently allocated talloc buffer.
+Use this varient when the string in the current talloc buffer has
+not been changed.
+
+This functions sets the name of the new pointer to the new
+string. This is equivalent to:
+   talloc_set_name_const(ptr, ptr)
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+((type *)talloc_array(const void *ctx, type, uint_t count);
 
 The talloc_array() macro is equivalent to:
 

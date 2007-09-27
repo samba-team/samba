@@ -40,7 +40,8 @@
  * @return A shell status integer (0 for success)
  *
  **/
-int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
+NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
+			 struct in_addr *ip)
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
@@ -64,8 +65,9 @@ int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 	}
 
 	/* Connect to remote machine */
-	if (!(cli = net_make_ipc_connection_ex(domain, server, ip, conn_flags))) {
-		return -1;
+	ntret = net_make_ipc_connection_ex(domain, server, ip, conn_flags, &cli);
+	if (!NT_STATUS_IS_OK(ntret)) {
+		return ntret;
 	}
 
 	/* Setup the creds as though we're going to do schannel... */
@@ -77,13 +79,13 @@ int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
         if (!netlogon_pipe) {
 		if (NT_STATUS_EQUAL(ntret, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
 			cli_shutdown(cli);
-			return 0;
+			return NT_STATUS_OK;
 		} else {
 			DEBUG(0,("net_rpc_join_ok: failed to get schannel session "
 					"key from server %s for domain %s. Error was %s\n",
 				cli->desthost, domain, nt_errstr(ntret) ));
 			cli_shutdown(cli);
-			return -1;
+			return ntret;
 		}
 	}
 
@@ -91,7 +93,7 @@ int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 	if (!lp_client_schannel()) {
 		cli_shutdown(cli);
 		/* We're good... */
-		return 0;
+		return ntret;
 	}
 
 	pipe_hnd = cli_rpc_pipe_open_schannel_with_key(cli, PI_NETLOGON,
@@ -102,12 +104,14 @@ int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 		DEBUG(0,("net_rpc_join_ok: failed to open schannel session "
 				"on netlogon pipe to server %s for domain %s. Error was %s\n",
 			cli->desthost, domain, nt_errstr(ntret) ));
-		cli_shutdown(cli);
-		return -1;
+		/*
+		 * Note: here, we have:
+		 * (pipe_hnd != NULL) if and only if NT_STATUS_IS_OK(ntret)
+		 */
 	}
 
 	cli_shutdown(cli);
-	return 0;
+	return ntret;
 }
 
 /**
@@ -180,8 +184,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Make authenticated connection to remote machine */
 
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
+	result = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(result)) {
 		return 1;
+	}
 
 	if (!(mem_ctx = talloc_init("net_rpc_join_newstyle"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));
@@ -419,8 +425,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* double-check, connection from scratch */
-	retval = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ip);
-	
+	result = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ip);
+	retval = NT_STATUS_IS_OK(result) ? 0 : -1;
+
 done:
 
 	/* Display success or failure */
@@ -449,10 +456,13 @@ done:
 int net_rpc_testjoin(int argc, const char **argv) 
 {
 	char *domain = smb_xstrdup(opt_target_workgroup);
+	NTSTATUS nt_status;
 
 	/* Display success or failure */
-	if (net_rpc_join_ok(domain, NULL, NULL) != 0) {
-		fprintf(stderr,"Join to domain '%s' is not valid\n",domain);
+	nt_status = net_rpc_join_ok(domain, NULL, NULL);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
+			nt_errstr(nt_status), domain);
 		free(domain);
 		return -1;
 	}

@@ -701,7 +701,7 @@ NTSTATUS rpccli_samr_enum_dom_users(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 			fstring conv_buf;
 			
 			(*rids)[i] = r.sam[i].rid;
-			unistr2_to_ascii(conv_buf, &(r.uni_acct_name[i]), sizeof(conv_buf) - 1);
+			unistr2_to_ascii(conv_buf, &(r.uni_acct_name[i]), sizeof(conv_buf));
 			(*dom_users)[i] = talloc_strdup(mem_ctx, conv_buf);
 		}
 	}
@@ -769,7 +769,7 @@ NTSTATUS rpccli_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 		if (r.sam[i].hdr_name.buffer) {
 			unistr2_to_ascii((*dom_groups)[i].acct_name,
 					 &r.uni_grp_name[name_idx],
-					 sizeof(fstring) - 1);
+					 sizeof((*dom_groups)[i].acct_name));
 			name_idx++;
 		}
 
@@ -840,7 +840,7 @@ NTSTATUS rpccli_samr_enum_als_groups(struct rpc_pipe_client *cli,
 		if (r.sam[i].hdr_name.buffer) {
 			unistr2_to_ascii((*dom_aliases)[i].acct_name,
 					 &r.uni_grp_name[name_idx],
-					 sizeof(fstring) - 1);
+					 sizeof((*dom_aliases)[i].acct_name));
 			name_idx++;
 		}
 
@@ -1566,7 +1566,7 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 	for (i = 0; i < r.num_names1; i++) {
 		fstring tmp;
 
-		unistr2_to_ascii(tmp, &r.uni_name[i], sizeof(tmp) - 1);
+		unistr2_to_ascii(tmp, &r.uni_name[i], sizeof(tmp));
 		(*names)[i] = talloc_strdup(mem_ctx, tmp);
 		(*name_types)[i] = r.type[i];
 	}

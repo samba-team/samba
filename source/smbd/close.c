@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    file closing
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1992-2007.
    Copyright (C) Volker Lendecke 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,60 +29,73 @@ extern struct current_user current_user;
 
 static void check_magic(files_struct *fsp,connection_struct *conn)
 {
-	if (!*lp_magicscript(SNUM(conn)))
+	int ret;
+	const char *magic_output = NULL;
+	SMB_STRUCT_STAT st;
+	int tmp_fd, outfd;
+	TALLOC_CTX *ctx = NULL;
+	const char *p;
+
+	if (!*lp_magicscript(SNUM(conn))) {
 		return;
+	}
 
 	DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
 
-	{
-		char *p;
-		if (!(p = strrchr_m(fsp->fsp_name,'/')))
-			p = fsp->fsp_name;
-		else
-			p++;
-
-		if (!strequal(lp_magicscript(SNUM(conn)),p))
-			return;
+	if (!(p = strrchr_m(fsp->fsp_name,'/'))) {
+		p = fsp->fsp_name;
+	} else {
+		p++;
 	}
 
-	{
-		int ret;
-		pstring magic_output;
-		pstring fname;
-		SMB_STRUCT_STAT st;
-		int tmp_fd, outfd;
+	if (!strequal(lp_magicscript(SNUM(conn)),p)) {
+		return;
+	}
 
-		pstrcpy(fname,fsp->fsp_name);
-		if (*lp_magicoutput(SNUM(conn)))
-			pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
-		else
-			slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
+	ctx = talloc_stackframe();
 
-		chmod(fname,0755);
-		ret = smbrun(fname,&tmp_fd);
-		DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
-		unlink(fname);
-		if (ret != 0 || tmp_fd == -1) {
-			if (tmp_fd != -1)
-				close(tmp_fd);
-			return;
-		}
-		outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
-		if (outfd == -1) {
+	if (*lp_magicoutput(SNUM(conn))) {
+		magic_output = lp_magicoutput(SNUM(conn));
+	} else {
+		magic_output = talloc_asprintf(ctx,
+				"%s.out",
+				fsp->fsp_name);
+	}
+	if (!magic_output) {
+		TALLOC_FREE(ctx);
+		return;
+	}
+
+	chmod(fsp->fsp_name,0755);
+	ret = smbrun(fsp->fsp_name,&tmp_fd);
+	DEBUG(3,("Invoking magic command %s gave %d\n",
+		fsp->fsp_name,ret));
+
+	unlink(fsp->fsp_name);
+	if (ret != 0 || tmp_fd == -1) {
+		if (tmp_fd != -1) {
 			close(tmp_fd);
-			return;
 		}
+		TALLOC_FREE(ctx);
+		return;
+	}
+	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
+	if (outfd == -1) {
+		close(tmp_fd);
+		TALLOC_FREE(ctx);
+		return;
+	}
 
-		if (sys_fstat(tmp_fd,&st) == -1) {
-			close(tmp_fd);
-			close(outfd);
-			return;
-		}
-
-		transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	if (sys_fstat(tmp_fd,&st) == -1) {
 		close(tmp_fd);
 		close(outfd);
+		return;
 	}
+
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	close(tmp_fd);
+	close(outfd);
+	TALLOC_FREE(ctx);
 }
 
 /****************************************************************************
@@ -90,7 +103,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 ****************************************************************************/
 
 static NTSTATUS close_filestruct(files_struct *fsp)
-{   
+{
 	NTSTATUS status = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
     
@@ -492,7 +505,8 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 
 		TALLOC_FREE(lck);
 
-		status = rmdir_internals(fsp->conn, fsp->fsp_name);
+		status = rmdir_internals(talloc_tos(),
+				fsp->conn, fsp->fsp_name);
 
 		DEBUG(5,("close_directory: %s. Delete on close was set - "
 			 "deleting directory returned %s.\n",

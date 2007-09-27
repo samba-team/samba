@@ -409,10 +409,11 @@ void dump_event_list(struct event_context *event_ctx)
 
 		evt = timeval_until(&now, &te->when);
 
-		DEBUGADD(10,("Timed Event \"%s\" %lx handled in %d seconds\n",
+		DEBUGADD(10,("Timed Event \"%s\" %lx handled in %d seconds (at %s)\n",
 			   te->event_name,
 			   (unsigned long)te,
-			   (int)evt.tv_sec));
+			   (int)evt.tv_sec,
+			   http_timestring(te->when.tv_sec)));
 	}
 
 	for (fe = event_ctx->fd_events; fe; fe = fe->next) {

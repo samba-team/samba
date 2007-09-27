@@ -76,7 +76,7 @@ NTSTATUS smb_load_module(const char *module_name)
 	return do_smb_load_module(module_name, False);
 }
 
-/* Load all modules in list and return number of 
+/* Load all modules in list and return number of
  * modules that has been successfully loaded */
 int smb_load_modules(const char **modules)
 {
@@ -96,28 +96,41 @@ int smb_load_modules(const char **modules)
 
 NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
-	pstring full_path;
-	
+	char *full_path = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	NTSTATUS status;
+
 	/* Check for absolute path */
 
-	/* if we make any 'samba multibyte string' 
-	   calls here, we break 
+	/* if we make any 'samba multibyte string'
+	   calls here, we break
 	   for loading string modules */
 
 	DEBUG(5, ("Probing module '%s'\n", module));
 
-	if (module[0] == '/')
-		return do_smb_load_module(module, True);
-	
-	pstrcpy(full_path, lib_path(subsystem));
-	pstrcat(full_path, "/");
-	pstrcat(full_path, module);
-	pstrcat(full_path, ".");
-	pstrcat(full_path, shlib_ext());
+	if (module[0] == '/') {
+		status = do_smb_load_module(module, True);
+		TALLOC_FREE(ctx);
+		return status;
+	}
 
-	DEBUG(5, ("Probing module '%s': Trying to load from %s\n", module, full_path));
-	
-	return do_smb_load_module(full_path, True);
+	full_path = talloc_asprintf(ctx,
+			"%s/%s.%s",
+			lib_path(subsystem),
+			module,
+			shlib_ext());
+	if (!full_path) {
+		TALLOC_FREE(ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(5, ("Probing module '%s': Trying to load from %s\n",
+		module, full_path));
+
+	status = do_smb_load_module(full_path, True);
+
+	TALLOC_FREE(ctx);
+	return status;
 }
 
 #else /* HAVE_DLOPEN */

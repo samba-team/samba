@@ -4,7 +4,7 @@
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 
 #include "librpc/gen_ndr/ndr_security.h"
-NTSTATUS ndr_push_unixinfo_GetPWUidInfo(struct ndr_push *ndr, int ndr_flags, const struct unixinfo_GetPWUidInfo *r)
+static NTSTATUS ndr_push_unixinfo_GetPWUidInfo(struct ndr_push *ndr, int ndr_flags, const struct unixinfo_GetPWUidInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -27,7 +27,7 @@ NTSTATUS ndr_push_unixinfo_GetPWUidInfo(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_GetPWUidInfo(struct ndr_pull *ndr, int ndr_flags, struct unixinfo_GetPWUidInfo *r)
+static NTSTATUS ndr_pull_unixinfo_GetPWUidInfo(struct ndr_pull *ndr, int ndr_flags, struct unixinfo_GetPWUidInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -60,7 +60,7 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUidInfo(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_unixinfo_SidToUid(struct ndr_push *ndr, int flags, const struct unixinfo_SidToUid *r)
+static NTSTATUS ndr_push_unixinfo_SidToUid(struct ndr_push *ndr, int flags, const struct unixinfo_SidToUid *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sid));
@@ -73,7 +73,7 @@ NTSTATUS ndr_push_unixinfo_SidToUid(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_SidToUid(struct ndr_pull *ndr, int flags, struct unixinfo_SidToUid *r)
+static NTSTATUS ndr_pull_unixinfo_SidToUid(struct ndr_pull *ndr, int flags, struct unixinfo_SidToUid *r)
 {
 	TALLOC_CTX *_mem_save_uid_0;
 	if (flags & NDR_IN) {
@@ -122,7 +122,7 @@ _PUBLIC_ void ndr_print_unixinfo_SidToUid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struct unixinfo_UidToSid *r)
+static NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struct unixinfo_UidToSid *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.uid));
@@ -135,7 +135,7 @@ NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_UidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_UidToSid *r)
+static NTSTATUS ndr_pull_unixinfo_UidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_UidToSid *r)
 {
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
@@ -184,7 +184,7 @@ _PUBLIC_ void ndr_print_unixinfo_UidToSid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_unixinfo_SidToGid(struct ndr_push *ndr, int flags, const struct unixinfo_SidToGid *r)
+static NTSTATUS ndr_push_unixinfo_SidToGid(struct ndr_push *ndr, int flags, const struct unixinfo_SidToGid *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sid));
@@ -197,7 +197,7 @@ NTSTATUS ndr_push_unixinfo_SidToGid(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_SidToGid(struct ndr_pull *ndr, int flags, struct unixinfo_SidToGid *r)
+static NTSTATUS ndr_pull_unixinfo_SidToGid(struct ndr_pull *ndr, int flags, struct unixinfo_SidToGid *r)
 {
 	TALLOC_CTX *_mem_save_gid_0;
 	if (flags & NDR_IN) {
@@ -246,7 +246,7 @@ _PUBLIC_ void ndr_print_unixinfo_SidToGid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struct unixinfo_GidToSid *r)
+static NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struct unixinfo_GidToSid *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.gid));
@@ -259,7 +259,7 @@ NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_GidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_GidToSid *r)
+static NTSTATUS ndr_pull_unixinfo_GidToSid(struct ndr_pull *ndr, int flags, struct unixinfo_GidToSid *r)
 {
 	TALLOC_CTX *_mem_save_sid_0;
 	if (flags & NDR_IN) {
@@ -308,7 +308,7 @@ _PUBLIC_ void ndr_print_unixinfo_GidToSid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struct unixinfo_GetPWUid *r)
+static NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struct unixinfo_GetPWUid *r)
 {
 	uint32_t cntr_uids_0;
 	uint32_t cntr_infos_0;
@@ -332,7 +332,7 @@ NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unixinfo_GetPWUid *r)
+static NTSTATUS ndr_pull_unixinfo_GetPWUid(struct ndr_pull *ndr, int flags, struct unixinfo_GetPWUid *r)
 {
 	uint32_t cntr_uids_0;
 	uint32_t cntr_infos_0;
@@ -446,14 +446,14 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-const struct ndr_interface_call unixinfo_calls[] = {
+static const struct ndr_interface_call unixinfo_calls[] = {
 	{
 		"unixinfo_SidToUid",
 		sizeof(struct unixinfo_SidToUid),
 		(ndr_push_flags_fn_t) ndr_push_unixinfo_SidToUid,
 		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_SidToUid,
 		(ndr_print_function_t) ndr_print_unixinfo_SidToUid,
-		False,
+		false,
 	},
 	{
 		"unixinfo_UidToSid",
@@ -461,7 +461,7 @@ const struct ndr_interface_call unixinfo_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_unixinfo_UidToSid,
 		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_UidToSid,
 		(ndr_print_function_t) ndr_print_unixinfo_UidToSid,
-		False,
+		false,
 	},
 	{
 		"unixinfo_SidToGid",
@@ -469,7 +469,7 @@ const struct ndr_interface_call unixinfo_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_unixinfo_SidToGid,
 		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_SidToGid,
 		(ndr_print_function_t) ndr_print_unixinfo_SidToGid,
-		False,
+		false,
 	},
 	{
 		"unixinfo_GidToSid",
@@ -477,7 +477,7 @@ const struct ndr_interface_call unixinfo_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_unixinfo_GidToSid,
 		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_GidToSid,
 		(ndr_print_function_t) ndr_print_unixinfo_GidToSid,
-		False,
+		false,
 	},
 	{
 		"unixinfo_GetPWUid",
@@ -485,27 +485,27 @@ const struct ndr_interface_call unixinfo_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_unixinfo_GetPWUid,
 		(ndr_pull_flags_fn_t) ndr_pull_unixinfo_GetPWUid,
 		(ndr_print_function_t) ndr_print_unixinfo_GetPWUid,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const unixinfo_endpoint_strings[] = {
+static const char * const unixinfo_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\unixinfo]", 
 	"ncacn_ip_tcp:", 
 	"ncalrpc:", 
 };
 
-const struct ndr_interface_string_array unixinfo_endpoints = {
+static const struct ndr_interface_string_array unixinfo_endpoints = {
 	.count	= 3,
 	.names	= unixinfo_endpoint_strings
 };
 
-const char * const unixinfo_authservice_strings[] = {
+static const char * const unixinfo_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array unixinfo_authservices = {
+static const struct ndr_interface_string_array unixinfo_authservices = {
 	.count	= 3,
 	.names	= unixinfo_authservice_strings
 };

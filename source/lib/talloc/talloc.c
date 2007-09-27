@@ -1109,64 +1109,132 @@ void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name
 	return newp;
 }
 
+static inline char *__talloc_strlendup(const void *t, const char *p, size_t len)
+{
+	char *ret;
+
+	ret = (char *)__talloc(t, len + 1);
+	if (unlikely(!ret)) return NULL;
+
+	memcpy(ret, p, len);
+	ret[len] = 0;
+
+	_talloc_set_name_const(ret, ret);
+	return ret;
+}
+
 /*
-  strdup with a talloc 
+  strdup with a talloc
 */
 char *talloc_strdup(const void *t, const char *p)
 {
-	char *ret;
-	if (!p) {
-		return NULL;
-	}
-	ret = (char *)talloc_memdup(t, p, strlen(p) + 1);
-	if (likely(ret)) {
-		_talloc_set_name_const(ret, ret);
-	}
-	return ret;
+	if (unlikely(!p)) return NULL;
+	return __talloc_strlendup(t, p, strlen(p));
 }
 
 /*
- append to a talloced string 
-*/
-char *talloc_append_string(const void *t, char *orig, const char *append)
-{
-	char *ret;
-	size_t olen = strlen(orig);
-	size_t alenz;
-
-	if (!append)
-		return orig;
-
-	alenz = strlen(append) + 1;
-
-	ret = talloc_realloc(t, orig, char, olen + alenz);
-	if (!ret)
-		return NULL;
-
-	/* append the string with the trailing \0 */
-	memcpy(&ret[olen], append, alenz);
-
-	_talloc_set_name_const(ret, ret);
-
-	return ret;
-}
-
-/*
-  strndup with a talloc 
+  strndup with a talloc
 */
 char *talloc_strndup(const void *t, const char *p, size_t n)
 {
-	size_t len;
+	if (unlikely(!p)) return NULL;
+	return __talloc_strlendup(t, p, strnlen(p, n));
+}
+
+static inline char *__talloc_strlendup_append(char *s, size_t slen,
+					      const char *a, size_t alen)
+{
 	char *ret;
 
-	for (len=0; len<n && p[len]; len++) ;
+	ret = talloc_realloc(NULL, s, char, slen + alen + 1);
+	if (unlikely(!ret)) return NULL;
 
-	ret = (char *)__talloc(t, len + 1);
-	if (!ret) { return NULL; }
-	memcpy(ret, p, len);
-	ret[len] = 0;
+	/* append the string and the trailing \0 */
+	memcpy(&ret[slen], a, alen);
+	ret[slen+alen] = 0;
+
 	_talloc_set_name_const(ret, ret);
 	return ret;
+}
+
+/*
+ * Appends at the end of the string.
+ */
+char *talloc_strdup_append(char *s, const char *a)
+{
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	return __talloc_strlendup_append(s, strlen(s), a, strlen(a));
+}
+
+/*
+ * Appends at the end of the talloc'ed buffer,
+ * not the end of the string.
+ */
+char *talloc_strdup_append_buffer(char *s, const char *a)
+{
+	size_t slen;
+
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
+	}
+
+	return __talloc_strlendup_append(s, slen, a, strlen(a));
+}
+
+/*
+ * Appends at the end of the string.
+ */
+char *talloc_strndup_append(char *s, const char *a, size_t n)
+{
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	return __talloc_strlendup_append(s, strlen(s), a, strnlen(a, n));
+}
+
+/*
+ * Appends at the end of the talloc'ed buffer,
+ * not the end of the string.
+ */
+char *talloc_strndup_append_buffer(char *s, const char *a, size_t n)
+{
+	size_t slen;
+
+	if (unlikely(!s)) {
+		return talloc_strdup(NULL, a);
+	}
+
+	if (unlikely(!a)) {
+		return s;
+	}
+
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
+	}
+
+	return __talloc_strlendup_append(s, slen, a, strnlen(a, n));
 }
 
 #ifndef HAVE_VA_COPY
@@ -1188,18 +1256,18 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	va_copy(ap2, ap);
 	len = vsnprintf(&c, 1, fmt, ap2);
 	va_end(ap2);
-	if (len < 0) {
+	if (unlikely(len < 0)) {
 		return NULL;
 	}
 
 	ret = (char *)__talloc(t, len+1);
-	if (ret) {
-		va_copy(ap2, ap);
-		vsnprintf(ret, len+1, fmt, ap2);
-		va_end(ap2);
-		_talloc_set_name_const(ret, ret);
-	}
+	if (unlikely(!ret)) return NULL;
 
+	va_copy(ap2, ap);
+	vsnprintf(ret, len+1, fmt, ap2);
+	va_end(ap2);
+
+	_talloc_set_name_const(ret, ret);
 	return ret;
 }
 
@@ -1219,50 +1287,76 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
 	return ret;
 }
 
+static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
+						 const char *fmt, va_list ap)
+						 PRINTF_ATTRIBUTE(3,0);
 
-/**
- * Realloc @p s to append the formatted result of @p fmt and @p ap,
- * and return @p s, which may have moved.  Good for gradually
- * accumulating output into a string buffer.
- **/
-char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
-{	
-	struct talloc_chunk *tc;
-	int len, s_len;
+static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
+						 const char *fmt, va_list ap)
+{
+	ssize_t alen;
 	va_list ap2;
 	char c;
 
-	if (s == NULL) {
-		return talloc_vasprintf(NULL, fmt, ap);
-	}
-
-	tc = talloc_chunk_from_ptr(s);
-
-	s_len = tc->size - 1;
-
 	va_copy(ap2, ap);
-	len = vsnprintf(&c, 1, fmt, ap2);
+	alen = vsnprintf(&c, 1, fmt, ap2);
 	va_end(ap2);
 
-	if (len <= 0) {
+	if (alen <= 0) {
 		/* Either the vsnprintf failed or the format resulted in
 		 * no characters being formatted. In the former case, we
 		 * ought to return NULL, in the latter we ought to return
-		 * the original string. Most current callers of this 
+		 * the original string. Most current callers of this
 		 * function expect it to never return NULL.
 		 */
 		return s;
 	}
 
-	s = talloc_realloc(NULL, s, char, s_len + len+1);
+	s = talloc_realloc(NULL, s, char, slen + alen + 1);
 	if (!s) return NULL;
 
 	va_copy(ap2, ap);
-	vsnprintf(s+s_len, len+1, fmt, ap2);
+	vsnprintf(s + slen, alen + 1, fmt, ap2);
 	va_end(ap2);
-	_talloc_set_name_const(s, s);
 
+	_talloc_set_name_const(s, s);
 	return s;
+}
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and @p ap,
+ * and return @p s, which may have moved.  Good for gradually
+ * accumulating output into a string buffer. Appends at the end
+ * of the string.
+ **/
+char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
+{
+	if (unlikely(!s)) {
+		return talloc_vasprintf(NULL, fmt, ap);
+	}
+
+	return __talloc_vaslenprintf_append(s, strlen(s), fmt, ap);
+}
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and @p ap,
+ * and return @p s, which may have moved. Always appends at the
+ * end of the talloc'ed buffer, not the end of the string.
+ **/
+char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap)
+{
+	size_t slen;
+
+	if (unlikely(!s)) {
+		return talloc_vasprintf(NULL, fmt, ap);
+	}
+
+	slen = talloc_get_size(s);
+	if (likely(slen > 0)) {
+		slen--;
+	}
+
+	return __talloc_vaslenprintf_append(s, slen, fmt, ap);
 }
 
 /*
@@ -1276,6 +1370,21 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	s = talloc_vasprintf_append(s, fmt, ap);
+	va_end(ap);
+	return s;
+}
+
+/*
+  Realloc @p s to append the formatted result of @p fmt and return @p
+  s, which may have moved.  Good for gradually accumulating output
+  into a buffer.
+ */
+char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	s = talloc_vasprintf_append_buffer(s, fmt, ap);
 	va_end(ap);
 	return s;
 }

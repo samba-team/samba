@@ -40,6 +40,126 @@ static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
 	return regdb_ops.fetch_values(key, val);
 }
 
+static WERROR regval_hilvl_to_lolvl(TALLOC_CTX *mem_ctx, const char *valname,
+				    struct registry_value *src,
+				    REGISTRY_VALUE **dst)
+{
+	WERROR err;
+	DATA_BLOB value_data;
+	REGISTRY_VALUE *newval = NULL;
+
+	if (dst == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	err = registry_push_value(mem_ctx, src, &value_data);
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(10, ("error calling registry_push_value.\n"));
+		return err;
+	}
+
+	newval = regval_compose(mem_ctx, valname, src->type,
+				(char *)value_data.data, value_data.length);
+	if (newval == NULL) {
+		DEBUG(10, ("error composing registry value. (no memory?)\n"));
+		return WERR_NOMEM;
+	}
+
+	*dst = newval;
+	return WERR_OK;
+}
+
+static WERROR regval_lolvl_to_hilvl(TALLOC_CTX *mem_ctx, REGISTRY_VALUE *src,
+				    struct registry_value **dst)
+{
+	if (dst == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	return registry_pull_value(mem_ctx, dst, regval_type(src),
+				   regval_data_p(src), regval_size(src),
+				   regval_size(src));
+}
+
+/*
+ * Utility function used by smbconf_store_values to canonicalize
+ * a registry value.
+ * registry_pull_value / registry_push_value are used for (un)marshalling.
+ */
+static REGISTRY_VALUE *smbconf_canonicalize_regval(TALLOC_CTX *mem_ctx,
+						   REGISTRY_VALUE *theval)
+{
+	char *valstr;
+	size_t len;
+	const char *canon_valname;
+	const char *canon_valstr;
+	BOOL inverse;
+	struct registry_value *value;
+	WERROR err;
+	TALLOC_CTX *tmp_ctx;
+	REGISTRY_VALUE *newval = NULL;
+
+	if (!lp_parameter_is_valid(regval_name(theval)) ||
+	    lp_parameter_is_canonical(regval_name(theval)))
+	{
+		return theval;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		DEBUG(1, ("out of memory...\n"));
+		goto done;
+	}
+
+	err = regval_lolvl_to_hilvl(tmp_ctx, theval, &value);
+	if (!W_ERROR_IS_OK(err)) {
+		goto done;
+	}
+
+	/* we need the value-string zero-terminated */
+	valstr = value->v.sz.str;
+	len = value->v.sz.len;
+	if (valstr[len - 1] != '\0') {
+		DEBUG(10, ("string is not '\\0'-terminated. adding '\\0'.\n"));
+		valstr = TALLOC_REALLOC_ARRAY(tmp_ctx, valstr, char, len + 1);
+		if (valstr == NULL) {
+			DEBUG(1, ("out of memory\n"));
+			goto done;
+		}
+		valstr[len] = '\0';
+	}
+
+	if (!lp_canonicalize_parameter(regval_name(theval), &canon_valname,
+				       &inverse))
+	{
+		DEBUG(5, ("Error: lp_canonicalize_parameter failed after "
+			  "lp_parameter_is_valid. This should not happen!\n"));
+		goto done;
+	}
+	DEBUG(10, ("old value name: '%s', canonical value name: '%s'\n",
+		   regval_name(theval), canon_valname));
+	if (inverse && lp_string_is_valid_boolean(valstr)) {
+		lp_invert_boolean(valstr, &canon_valstr);
+	} else {
+		canon_valstr = valstr;
+	}
+
+	ZERO_STRUCTP(value);
+	value->type = REG_SZ;
+	value->v.sz.str = CONST_DISCARD(char *, canon_valstr);
+	value->v.sz.len = strlen(canon_valstr) + 1;
+
+	err = regval_hilvl_to_lolvl(mem_ctx, canon_valname, value, &newval);
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(10, ("error calling regval_hilvl_to_lolvl.\n"));
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return newval;
+}
+
 static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 {
 	int i;
@@ -79,7 +199,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 			return False;
 		}
 
-		if (registry_smbconf_valname_forbidden(regval_name(theval))) {
+		if (registry_smbconf_valname_forbidden(valname)) {
 			DEBUG(1, ("smbconf_store_values: value '%s' forbidden "
 			      "in registry.\n", valname));
 			return False;
@@ -88,98 +208,15 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 		if (lp_parameter_is_valid(valname) &&
 		    !lp_parameter_is_canonical(valname))
 		{
-			char *valstr;
-			size_t len;
-			const char *canon_valname;
-			const char *canon_valstr;
-			BOOL inverse;
-			struct registry_value *value;
-			WERROR err;
-			DATA_BLOB value_data;
-			TALLOC_CTX *mem_ctx;
-
 			DEBUG(5, ("valid parameter '%s' given but it is a "
 				  "synonym. going to canonicalize it.\n",
 				  valname));
-
-			mem_ctx = talloc_new(val);
-			if (mem_ctx == NULL) {
-				DEBUG(1, ("out of memory...\n"));
-				return False;
-			}
-
-			err = registry_pull_value(mem_ctx, &value,
-						  theval->type,
-						  theval->data_p,
-						  theval->size,
-						  theval->size);
-			if (!W_ERROR_IS_OK(err)) {
-				TALLOC_FREE(mem_ctx);
-				return False;
-			}
-
-			valstr = (value->v.sz.str);
-			len = value->v.sz.len;
-			if (valstr[len - 1] != '\0') {
-				DEBUG(10, ("string is not '\\0'-terminated. "
-				      "adding '\\0'.\n"));
-				valstr = TALLOC_REALLOC_ARRAY(mem_ctx, valstr,
-							      char, len + 1);
-				if (valstr == NULL) {
-					DEBUG(1, ("out of memory\n"));
-					TALLOC_FREE(mem_ctx);
-					return False;
-				}
-				valstr[len] = '\0';
-				len++;
-			}
-
-			if (!lp_canonicalize_parameter(valname, &canon_valname,
-						       &inverse))
-			{
-				DEBUG(5, ("Error: lp_canonicalize_parameter "
-				      "failed after lp_parameter_is_valid. "
-				      "This should not happen!\n"));
-				TALLOC_FREE(mem_ctx);
-				return False;
-			}
-			DEBUG(10, ("old value name: '%s', canonical value "
-				   "name: '%s'\n", valname, canon_valname));
-			if (inverse && lp_string_is_valid_boolean(valstr)) {
-				lp_invert_boolean(valstr, &canon_valstr);
-			} else {
-				canon_valstr = valstr;
-			}
-
-			ZERO_STRUCTP(value);
-
-			value->type = REG_SZ;
-			value->v.sz.str = CONST_DISCARD(char *, canon_valstr);
-			value->v.sz.len = strlen(canon_valstr) + 1;
-
-			err = registry_push_value(mem_ctx, value, &value_data);
-			if (!W_ERROR_IS_OK(err)) {
-				DEBUG(10, ("error calling registry_push_value."
-				      "\n"));
-				TALLOC_FREE(mem_ctx);
-				return False;
-			}
-
-			DEBUG(10, ("adding canonicalized parameter to "
-				   "container.\n"));
-
-			theval = regval_compose(val, canon_valname,
-						value->type,
-						(char *)value_data.data,
-						value_data.length);
+			theval = smbconf_canonicalize_regval(val, theval);
 			if (theval == NULL) {
-				DEBUG(10, ("error composing registry value. "
-					   "(no memory?)\n"));
-				TALLOC_FREE(mem_ctx);
+				DEBUG(10, ("error canonicalizing registry "
+					   "value\n"));
 				return False;
 			}
-
-			TALLOC_FREE(mem_ctx);
 		} else {
 			DEBUG(10, ("%s parameter found, "
 				   "copying it to new container...\n",
@@ -188,12 +225,12 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 		}
 		res = regval_ctr_copyvalue(new_val_ctr, theval);
 		if (res == 0) {
-			DEBUG(10, ("error calling regval_ctr_copyvalue."
-				   " (no memory?)\n"));
+			DEBUG(10, ("error calling regval_ctr_copyvalue. "
+				   "(no memory?)\n"));
 			return False;
 		}
-		DEBUG(10, ("parameter copied. container now has %d "
-			   "values.\n", res));
+		DEBUG(10, ("parameter copied. container now has %d values.\n",
+			   res));
 	}
 	return regdb_ops.store_values(key, new_val_ctr);
 }

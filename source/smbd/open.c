@@ -117,22 +117,26 @@ static void change_file_owner_to_parent(connection_struct *conn,
 		  (unsigned int)parent_st.st_uid ));
 }
 
-static void change_dir_owner_to_parent(connection_struct *conn,
+static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				       const char *inherit_from_dir,
 				       const char *fname,
 				       SMB_STRUCT_STAT *psbuf)
 {
-	pstring saved_dir;
+	char *saved_dir = NULL;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT parent_st;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
 	ret = SMB_VFS_STAT(conn, inherit_from_dir, &parent_st);
 	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
 			 inherit_from_dir, strerror(errno) ));
-		return;
+		TALLOC_FREE(ctx);
+		return status;
 	}
 
 	/* We've already done an lstat into psbuf, and we know it's a
@@ -142,14 +146,19 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 	   should work on any UNIX (thanks tridge :-). JRA.
 	*/
 
-	if (!vfs_GetWd(conn,saved_dir)) {
+	saved_dir = vfs_GetWd(ctx,conn);
+	if (!saved_dir) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
-			 "current working directory\n"));
-		return;
+			 "current working directory. Error was %s\n",
+			 strerror(errno)));
+		TALLOC_FREE(ctx);
+		return status;
 	}
 
 	/* Chdir into the new path. */
 	if (vfs_ChDir(conn, fname) == -1) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to change "
 			 "current working directory to %s. Error "
 			 "was %s\n", fname, strerror(errno) ));
@@ -157,6 +166,7 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 	}
 
 	if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat "
 			 "directory '.' (%s) Error was %s\n",
 			 fname, strerror(errno)));
@@ -170,6 +180,7 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: "
 			 "device/inode/mode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
+		status = NT_STATUS_ACCESS_DENIED;
 		goto out;
 	}
 
@@ -177,6 +188,7 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
 		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
 			  "directory %s to parent directory uid %u. "
 			  "Error was %s\n", fname,
@@ -190,7 +202,9 @@ static void change_dir_owner_to_parent(connection_struct *conn,
 
  out:
 
+	TALLOC_FREE(ctx);
 	vfs_ChDir(conn,saved_dir);
+	return status;
 }
 
 /****************************************************************************
@@ -504,9 +518,10 @@ static void validate_my_share_entries(int num,
 
 	if (is_deferred_open_entry(share_entry) &&
 	    !open_was_deferred(share_entry->op_mid)) {
-		pstring str;
-		pstr_sprintf(str, "Got a deferred entry without a request: "
-			     "PANIC: %s\n", share_mode_str(num, share_entry));
+		char *str = talloc_asprintf(talloc_tos(),
+			"Got a deferred entry without a request: "
+			"PANIC: %s\n",
+			share_mode_str(num, share_entry));
 		smb_panic(str);
 	}
 
@@ -543,11 +558,12 @@ static void validate_my_share_entries(int num,
 
  panic:
 	{
-		pstring str;
+		char *str;
 		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
 			 share_mode_str(num, share_entry) ));
-		slprintf(str, sizeof(str)-1, "validate_my_share_entries: "
-			 "file %s, oplock_type = 0x%x, op_type = 0x%x\n",
+		str = talloc_asprintf(talloc_tos(),
+			"validate_my_share_entries: "
+			"file %s, oplock_type = 0x%x, op_type = 0x%x\n",
 			 fsp->fsp_name, (unsigned int)fsp->oplock_type,
 			 (unsigned int)share_entry->op_type );
 		smb_panic(str);

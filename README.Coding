@@ -79,6 +79,11 @@ displaying trailing whitespace:
   " Show tabs, trailing whitespace, and continued lines visually
   set list listchars=tab:»·,trail:·,extends:…
 
+  " highlight overly long lines same as TODOs.
+  set textwidth=80
+  autocmd BufNewFile,BufRead *.c,*.h exec 'match Todo /\%>' . &textwidth . 'v.\+/'
+
+
 =========================
 FAQ & Statement Reference
 =========================
@@ -214,3 +219,18 @@ or
 	if (!x) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
+
+
+Primitive Data Types
+--------------------
+
+Samba has large amounts of historical code which makes use of data types 
+commonly supported by the C99 standard. However, at the time such types 
+as boolean and exact width integers did not exist and Samba developers 
+were forced to provide their own.  Now that these types are guaranteed to 
+be available either as part of the compiler C99 support or from lib/replace/, 
+new code should adhere to the following conventions:
+
+  * Booleans are of type "bool" (not BOOL)
+  * Boolean values are "true" and "false" (not True or False)
+  * Exact width integers are of type [u]int[8|16|32|64]_t

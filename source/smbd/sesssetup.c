@@ -400,7 +400,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 	if (logon_info && logon_info->info3.hdr_logon_dom.uni_str_len) {
 		unistr2_to_ascii(netbios_domain_name,
 				&logon_info->info3.uni_logon_dom,
-				-1);
+				sizeof(netbios_domain_name));
 		domain = netbios_domain_name;
 		DEBUG(10, ("Mapped to [%s] (using PAC)\n", domain));
 

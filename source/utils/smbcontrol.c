@@ -271,10 +271,6 @@ static BOOL do_daemon_stack_trace(struct messaging_context *msg_ctx,
 				  const struct server_id pid,
 		       const int argc, const char **argv)
 {
-	fprintf(stderr,
-		"Daemon stack tracing is not supported on this platform\n");
-	return False;
-
 	pid_t	dest;
 	int	count = 0;
 

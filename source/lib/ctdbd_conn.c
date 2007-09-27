@@ -95,7 +95,7 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32 *vnn)
 	int32_t cstatus=-1;
 	NTSTATUS status;
 	status = ctdbd_control(conn,
-			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_VNN, 0,
+			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0,
 			       tdb_null, NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		cluster_fatal("ctdbd_control failed\n");

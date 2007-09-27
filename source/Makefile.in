@@ -500,7 +500,7 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
-MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
+MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_hash2.o
 
 SMBD_OBJ_MAIN = smbd/server.o
 
@@ -835,32 +835,30 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 		$(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LDB_OBJ) $(ERRORMAP_OBJ)
 
-IDMAP_OBJ     = nsswitch/idmap.o nsswitch/idmap_cache.o nsswitch/idmap_util.o @IDMAP_STATIC@
+IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_cache.o winbindd/idmap_util.o @IDMAP_STATIC@
 
-NSS_INFO_OBJ = nsswitch/nss_info.o @NSS_INFO_STATIC@
-
-IDMAP_NSS_OBJ = sam/idmap_nss.o @IDMAP_NSS_STATIC@
+NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 
 WINBINDD_OBJ1 = \
-		nsswitch/winbindd.o       \
-		nsswitch/winbindd_user.o  \
-		nsswitch/winbindd_group.o \
-		nsswitch/winbindd_util.o  \
-		nsswitch/winbindd_cache.o \
-		nsswitch/winbindd_pam.o   \
-		nsswitch/winbindd_sid.o   \
-		nsswitch/winbindd_misc.o  \
-		nsswitch/winbindd_cm.o \
-		nsswitch/winbindd_wins.o \
-		nsswitch/winbindd_rpc.o \
-		nsswitch/winbindd_reconnect.o \
-		nsswitch/winbindd_ads.o \
-		nsswitch/winbindd_passdb.o \
-		nsswitch/winbindd_dual.o \
-		nsswitch/winbindd_async.o \
-		nsswitch/winbindd_creds.o \
-		nsswitch/winbindd_cred_cache.o \
-		nsswitch/winbindd_ccache_access.o \
+		winbindd/winbindd.o       \
+		winbindd/winbindd_user.o  \
+		winbindd/winbindd_group.o \
+		winbindd/winbindd_util.o  \
+		winbindd/winbindd_cache.o \
+		winbindd/winbindd_pam.o   \
+		winbindd/winbindd_sid.o   \
+		winbindd/winbindd_misc.o  \
+		winbindd/winbindd_cm.o    \
+		winbindd/winbindd_wins.o  \
+		winbindd/winbindd_rpc.o   \
+		winbindd/winbindd_reconnect.o \
+		winbindd/winbindd_ads.o   \
+		winbindd/winbindd_passdb.o \
+		winbindd/winbindd_dual.o  \
+		winbindd/winbindd_async.o \
+		winbindd/winbindd_creds.o \
+		winbindd/winbindd_cred_cache.o \
+		winbindd/winbindd_ccache_access.o \
 		auth/token_util.o
 
 WINBINDD_OBJ = \
@@ -1504,19 +1502,19 @@ bin/smbpasswd.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_smbpasswd.o
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/rid.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_rid.o
+bin/rid.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_rid.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_rid.o \
+	@$(SHLD) $(LDSHFLAGS) -o $@ winbindd/idmap_rid.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_ad.o
+bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ad.o \
+	@$(SHLD) $(LDSHFLAGS) -o $@ winbindd/idmap_ad.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_ldap.o
+bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ldap.o \
+	@$(SHLD) $(LDSHFLAGS) -o $@ winbindd/idmap_ldap.o \
 		@SONAMEFLAG@`basename $@`
 
 bin/weird.@SHLIBEXT@: $(BINARY_PREREQS) $(DEVEL_HELP_WEIRD_OBJ)
@@ -1919,14 +1917,14 @@ clean: delheaders
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
 proto_exists: include/proto.h include/build_env.h \
-	nsswitch/winbindd_proto.h web/swat_proto.h \
+	winbindd/winbindd_proto.h web/swat_proto.h \
 	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
 	@touch proto_exists
 
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/proto.h include/build_env.h \
-		nsswitch/winbindd_proto.h web/swat_proto.h \
+		winbindd/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
 		smbd/build_options.c utils/ntlm_auth_proto.h \
 		utils/passwd_proto.h
@@ -1944,9 +1942,9 @@ include/build_env.h: script/build_env.sh
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
 
-nsswitch/winbindd_proto.h:
+winbindd/winbindd_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _WINBINDD_PROTO_H_ $(builddir)/nsswitch/winbindd_proto.h \
+	  -h _WINBINDD_PROTO_H_ $(builddir)/winbindd/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
 web/swat_proto.h:
@@ -1982,7 +1980,7 @@ headers:
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/proto.h; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) nsswitch/winbindd_proto.h; \
+	$(MAKE) winbindd/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
 	$(MAKE) utils/ntlm_auth_proto.h; \

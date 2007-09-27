@@ -193,6 +193,10 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
+		if ((total_len > 0) && (strlen(msg) == 0)) {
+			break;
+		}
+
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;

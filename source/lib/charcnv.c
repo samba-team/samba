@@ -745,7 +745,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 	size = push_ucs2_allocate(&buffer, src);
 	if (size == (size_t)-1) {
-		smb_panic("failed to create UCS2 buffer");
+		return (size_t)-1;
 	}
 	if (!strupper_w(buffer) && (dest == src)) {
 		free(buffer);
@@ -759,49 +759,131 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 /**
  strdup() a unix string to upper case.
- Max size is pstring.
 **/
 
 char *strdup_upper(const char *s)
 {
-	pstring out_buffer;
+	char *out_buffer = SMB_STRDUP(s);
 	const unsigned char *p = (const unsigned char *)s;
 	unsigned char *q = (unsigned char *)out_buffer;
+
+	if (!q) {
+		return NULL;
+	}
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (1) {
+	while (*p) {
 		if (*p & 0x80)
 			break;
 		*q++ = toupper_ascii(*p);
-		if (!*p)
-			break;
 		p++;
-		if (p - ( const unsigned char *)s >= sizeof(pstring))
-			break;
 	}
 
 	if (*p) {
 		/* MB case. */
 		size_t size;
-		wpstring buffer;
-		size = convert_string(CH_UNIX, CH_UTF16LE, s, -1, buffer, sizeof(buffer), True);
+		smb_ucs2_t *buffer = NULL;
+
+		SAFE_FREE(out_buffer);
+		size = convert_string_allocate(NULL,
+					CH_UNIX,
+					CH_UTF16LE,
+					s,
+					strlen(s) + 1,
+					(void **)(void *)&buffer,
+					True);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
 
 		strupper_w(buffer);
 
-		size = convert_string(CH_UTF16LE, CH_UNIX, buffer, -1, out_buffer, sizeof(out_buffer), True);
+		size = convert_string_allocate(NULL,
+					CH_UTF16LE,
+					CH_UNIX,
+					buffer,
+					size,
+					(void **)(void *)&out_buffer,
+					True);
+
+		/* Don't need the intermediate buffer
+ 		 * anymore.
+ 		 */
+
+		TALLOC_FREE(buffer);
 		if (size == (size_t)-1) {
 			return NULL;
 		}
 	}
 
-	return SMB_STRDUP(out_buffer);
+	return out_buffer;
+}
+
+/**
+ talloc_strdup() a unix string to upper case.
+**/
+
+char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
+{
+	char *out_buffer = talloc_strdup(ctx,s);
+	const unsigned char *p = (const unsigned char *)s;
+	unsigned char *q = (unsigned char *)out_buffer;
+
+	if (!q) {
+		return NULL;
+	}
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (*p) {
+		if (*p & 0x80)
+			break;
+		*q++ = toupper_ascii(*p);
+		p++;
+	}
+
+	if (*p) {
+		/* MB case. */
+		size_t size;
+		smb_ucs2_t *ubuf = NULL;
+
+		/* We're not using the ascii buffer above. */
+		TALLOC_FREE(out_buffer);
+
+		size = convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE,
+				s, strlen(s)+1,
+				(void *)&ubuf,
+				True);
+		if (size == (size_t)-1) {
+			return NULL;
+		}
+
+		strupper_w(ubuf);
+
+		size = convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX,
+				ubuf, size,
+				(void *)&out_buffer,
+				True);
+
+		/* Don't need the intermediate buffer
+ 		 * anymore.
+ 		 */
+
+		TALLOC_FREE(ubuf);
+
+		if (size == (size_t)-1) {
+			return NULL;
+		}
+	}
+
+	return out_buffer;
 }
 
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -870,27 +952,40 @@ static size_t ucs2_align(const void *base_ptr, const void *p, int flags)
  * </dl>
  *
  * @param dest_len the maximum length in bytes allowed in the
- * destination.  If @p dest_len is -1 then no maximum is used.
+ * destination.
  **/
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
-	pstring tmpbuf;
+	char *tmpbuf = NULL;
+	size_t ret;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	/* No longer allow a length of -1. */
+	if (dest_len == (size_t)-1) {
+		smb_panic("push_ascii - dest_len == -1");
+	}
 
 	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
+		tmpbuf = SMB_STRDUP(src);
+		if (!tmpbuf) {
+			smb_panic("malloc fail");
+		}
 		strupper_m(tmpbuf);
 		src = tmpbuf;
 	}
 
-	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		src_len++;
+	}
 
-	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	if (ret == (size_t)-1 &&
+			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+			&& dest_len > 0) {
+		((char *)dest)[0] = '\0';
+	}
+	SAFE_FREE(tmpbuf);
+	return ret;
 }
 
 size_t push_ascii_fstring(void *dest, const char *src)
@@ -942,6 +1037,18 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	return dest_len;
 }
 
+/********************************************************************
+ Push and malloc an ascii string. src and dest null terminated.
+********************************************************************/
+
+size_t push_ascii_allocate(char **dest, const char *src)
+{
+	size_t src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_allocate(NULL, CH_UNIX, CH_DOS, src, src_len, (void **)dest, True);
+}
+
 /**
  * Copy a string from a dos codepage source to a unix char* destination.
  *
@@ -961,8 +1068,10 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 {
 	size_t ret;
 
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("pull_ascii - invalid dest_len of -1");
+	}
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
@@ -1041,7 +1150,11 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 		}
 		/* Ensure we don't use an insane length from the client. */
 		if (src_len >= 1024*1024) {
-			smb_panic("Bad src length in pull_ascii_base_talloc\n");
+			char *msg = talloc_asprintf(ctx,
+					"Bad src length (%u) in "
+					"pull_ascii_base_talloc",
+					(unsigned int)src_len);
+			smb_panic(msg);
 		}
 	}
 
@@ -1054,7 +1167,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 				True);
 
 	if (dest_len == (size_t)-1) {
-		return 0;
+		dest_len = 0;
 	}
 
 	if (dest_len && dest) {
@@ -1102,7 +1215,7 @@ size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
  * </dl>
  *
  * @param dest_len is the maximum length allowed in the
- * destination. If dest_len is -1 then no maxiumum is used.
+ * destination.
  **/
 
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
@@ -1111,9 +1224,10 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	size_t src_len;
 	size_t ret;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("push_ucs2 - invalid dest_len of -1");
+	}
 
 	if (flags & STR_TERMINATE)
 		src_len = (size_t)-1;
@@ -1133,7 +1247,12 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 
 	ret =  convert_string(CH_UNIX, CH_UTF16LE, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
-		return 0;
+		if ((flags & STR_TERMINATE) &&
+				dest &&
+				dest_len) {
+			*(char *)dest = 0;
+		}
+		return len;
 	}
 
 	len += ret;
@@ -1204,23 +1323,32 @@ size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 
 static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
-	size_t src_len = strlen(src);
-	pstring tmpbuf;
+	size_t src_len = 0;
+	size_t ret;
+	char *tmpbuf = NULL;
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
-
-	if (flags & STR_UPPER) {
-		pstrcpy(tmpbuf, src);
-		strupper_m(tmpbuf);
-		src = tmpbuf;
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("push_utf8 - invalid dest_len of -1");
 	}
 
-	if (flags & STR_TERMINATE)
-		src_len++;
+	if (flags & STR_UPPER) {
+		tmpbuf = strdup_upper(src);
+		if (!tmpbuf) {
+			return (size_t)-1;
+		}
+		src = tmpbuf;
+		src_len = strlen(src);
+	}
 
-	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len, True);
+	src_len = strlen(src);
+	if (flags & STR_TERMINATE) {
+		src_len++;
+	}
+
+	ret = convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len, True);
+	SAFE_FREE(tmpbuf);
+	return ret;
 }
 
 size_t push_utf8_fstring(void *dest, const char *src)
@@ -1275,8 +1403,17 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 {
 	size_t ret;
 
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
+	if (dest_len == (size_t)-1) {
+		/* No longer allow dest_len of -1. */
+		smb_panic("pull_ucs2 - invalid dest_len of -1");
+	}
+
+	if (!src_len) {
+		if (dest && dest_len > 0) {
+			dest[0] = '\0';
+		}
+		return 0;
+	}
 
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
@@ -1301,7 +1438,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 
 	ret = convert_string(CH_UTF16LE, CH_UNIX, src, src_len, dest, dest_len, True);
 	if (ret == (size_t)-1) {
-		return 0;
+		ret = 0;
+		dest_len = 0;
 	}
 
 	if (src_len == (size_t)-1)
@@ -1352,6 +1490,10 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	}
 #endif
 
+	if (!src_len) {
+		return 0;
+	}
+
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
 		if (src_len != (size_t)-1)
@@ -1386,7 +1528,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 					(void *)&dest,
 					True);
 	if (dest_len == (size_t)-1) {
-		return 0;
+		dest_len = 0;
 	}
 
 	if (src_len == (size_t)-1)
@@ -1395,7 +1537,21 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	if (dest_len) {
 		/* Did we already process the terminating zero ? */
 		if (dest[dest_len-1] != 0) {
-			dest[dest_len-1] = 0;
+			size_t size = talloc_get_size(dest);
+			/* Have we got space to append the '\0' ? */
+			if (size <= dest_len) {
+				/* No, realloc. */
+				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
+						dest_len+1);
+				if (!dest) {
+					/* talloc fail. */
+					dest_len = (size_t)-1;
+					return 0;
+				}
+			}
+			/* Yay - space ! */
+			dest[dest_len] = '\0';
+			dest_len++;
 		}
 	} else if (dest) {
 		dest[0] = 0;
@@ -1517,11 +1673,9 @@ size_t push_string_fn(const char *function, unsigned int line,
 	 * JRA.
 	 */
 #if 0
-	if (dest_len != (size_t)-1)
-		clobber_region(function, line, dest, dest_len);
+	clobber_region(function, line, dest, dest_len);
 #else
-	if (dest_len != (size_t)-1)
-		memset(dest, '\0', dest_len);
+	memset(dest, '\0', dest_len);
 #endif
 #endif
 
@@ -1554,8 +1708,7 @@ size_t pull_string_fn(const char *function, unsigned int line,
 		      int flags)
 {
 #ifdef DEVELOPER
-	if (dest_len != (size_t)-1)
-		clobber_region(function, line, dest, dest_len);
+	clobber_region(function, line, dest, dest_len);
 #endif
 
 	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {

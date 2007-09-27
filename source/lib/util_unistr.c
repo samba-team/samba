@@ -361,7 +361,7 @@ int rpcstr_push(void* dest, const char *src, size_t dest_len, int flags)
 
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
-	if (str == NULL) {
+	if ((str == NULL) || (str->uni_str_len == 0)) {
 		*dest='\0';
 		return;
 	}
@@ -374,7 +374,7 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 
 void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
 {
-	if (str == NULL) {
+	if ((str == NULL) || (str->uni_str_len == 0)) {
 		*dest='\0';
 		return;
 	}

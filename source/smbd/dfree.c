@@ -81,10 +81,18 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, BOOL small
 	dfree_command = lp_dfree_command(SNUM(conn));
 	if (dfree_command && *dfree_command) {
 		const char *p;
-		char **lines;
-		pstring syscmd;
+		char **lines = NULL;
+		char *syscmd = NULL;
 
-		slprintf(syscmd, sizeof(syscmd)-1, "%s %s", dfree_command, path);
+		syscmd = talloc_asprintf(talloc_tos(),
+				"%s %s",
+				dfree_command,
+				path);
+
+		if (!syscmd) {
+			return (SMB_BIG_UINT)-1;
+		}
+
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
 		lines = file_lines_pload(syscmd, NULL);

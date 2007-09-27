@@ -271,9 +271,6 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
-/* limiting size of ipc replies */
-#define SMB_REALLOC_LIMIT(ptr,size) (char *)SMB_REALLOC(ptr,MAX((size),4*1024))
-
 /* The new talloc is paranoid malloc checker safe. */
 
 #if 0

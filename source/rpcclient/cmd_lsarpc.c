@@ -86,7 +86,7 @@ static void display_query_info_3(DOM_QUERY_3 d)
 {
 	fstring name;
 
-	unistr2_to_ascii(name, &d.uni_domain_name, d.uni_dom_max_len);
+	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
 
 	d_printf("Domain Name: %s\n", name);
 	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
@@ -96,7 +96,7 @@ static void display_query_info_5(DOM_QUERY_5 d)
 {
 	fstring name;
 
-	unistr2_to_ascii(name, &d.uni_domain_name, d.uni_dom_max_len);
+	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
 
 	d_printf("Domain Name: %s\n", name);
 	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
@@ -118,9 +118,9 @@ static void display_query_info_12(DOM_QUERY_12 d)
 {
 	fstring dom_name, dns_dom_name, forest_name;
 
-	unistr2_to_ascii(dom_name, &d.uni_nb_dom_name, d.hdr_nb_dom_name.uni_max_len);
-	unistr2_to_ascii(dns_dom_name, &d.uni_dns_dom_name, d.hdr_dns_dom_name.uni_max_len);
-	unistr2_to_ascii(forest_name, &d.uni_forest_name, d.hdr_forest_name.uni_max_len);
+	unistr2_to_ascii(dom_name, &d.uni_nb_dom_name, sizeof(dom_name));
+	unistr2_to_ascii(dns_dom_name, &d.uni_dns_dom_name, sizeof(dns_dom_name));
+	unistr2_to_ascii(forest_name, &d.uni_forest_name, sizeof(forest_name));
 
 	d_printf("Domain NetBios Name: %s\n", dom_name);
 	d_printf("Domain DNS Name: %s\n", dns_dom_name);

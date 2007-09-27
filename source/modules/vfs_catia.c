@@ -39,7 +39,7 @@ static void catia_string_replace(char *s, unsigned char oldc, unsigned
         for (;*ptr;ptr++)
                 if (*ptr==old) *ptr=newc;
 
-        pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
+        pull_ucs2(NULL, s, tmpbuf, sizeof(pstring), sizeof(tmpbuf), STR_TERMINATE);
 }
 
 static void from_unix(char *s)

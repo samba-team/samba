@@ -48,13 +48,13 @@ ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_OIDs; i++) {
 
-		if ((expr = talloc_asprintf_append(expr, "(attributeId=%s)", 
+		if ((expr = talloc_asprintf_append_buffer(expr, "(attributeId=%s)", 
 						   OIDs[i])) == NULL) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 	}
 
-	if ((expr = talloc_asprintf_append(expr, ")")) == NULL) {
+	if ((expr = talloc_asprintf_append_buffer(expr, ")")) == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 

@@ -603,13 +603,11 @@ failed:
 	return status;
 }
 
-#endif
+#endif /* HAVE_GSSAPI */
 
 #ifdef HAVE_KRB5
 struct ads_service_principal {
-	 krb5_context ctx;
 	 char *string;
-	 krb5_principal principal;
 #ifdef HAVE_GSSAPI
 	 gss_name_t name;
 #endif
@@ -625,14 +623,6 @@ static void ads_free_service_principal(struct ads_service_principal *p)
 		gss_release_name(&minor_status, &p->name);
 	}
 #endif
-	if (p->principal) {
-		krb5_free_principal(p->ctx, p->principal);
-	}
-
-	if (p->ctx) {
-		krb5_free_context(p->ctx);
-	}
-
 	ZERO_STRUCTP(p);
 }
 
@@ -641,15 +631,10 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 						 struct ads_service_principal *p)
 {
 	ADS_STATUS status;
-	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
-			ENCTYPE_ARCFOUR_HMAC,
-#endif
-			ENCTYPE_DES_CBC_MD5,
-			ENCTYPE_NULL};
 #ifdef HAVE_GSSAPI
 	gss_buffer_desc input_name;
-	gss_OID_desc nt_principal = 
+	/* GSS_KRB5_NT_PRINCIPAL_NAME */
+	gss_OID_desc nt_principal =
 	{10, CONST_DISCARD(char *, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
 	uint32 minor_status;
 	int gss_rc;
@@ -667,8 +652,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	if (!given_principal ||
 	    strequal(given_principal, ADS_IGNORE_PRINCIPAL)) {
 
-		status = ads_guess_service_principal(ads, given_principal,
-						     &p->string);
+		status = ads_guess_service_principal(ads, &p->string);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
@@ -679,35 +663,9 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 		}
 	}
 
-	initialize_krb5_error_table();
-	status = ADS_ERROR_KRB5(krb5_init_context(&p->ctx));
-	if (!ADS_ERR_OK(status)) {
-		ads_free_service_principal(p);
-		return status;
-	}
-	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(p->ctx, enc_types));
-	if (!ADS_ERR_OK(status)) {
-		ads_free_service_principal(p);
-		return status;
-	}
-	status = ADS_ERROR_KRB5(smb_krb5_parse_name(p->ctx, p->string, &p->principal));
-	if (!ADS_ERR_OK(status)) {
-		ads_free_service_principal(p);
-		return status;
-	}
-
 #ifdef HAVE_GSSAPI
-	/*
-	 * The MIT libraries have a *HORRIBLE* bug - input_value.value needs
-	 * to point to the *address* of the krb5_principal, and the gss libraries
-	 * to a shallow copy of the krb5_principal pointer - so we need to keep
-	 * the krb5_principal around until we do the gss_release_name. MIT *SUCKS* !
-	 * Just one more way in which MIT engineers screwed me over.... JRA.
-	 *
-	 * That's the reason for principal not beeing a local var in this function
-	 */
-	input_name.value = &p->principal;
-	input_name.length = sizeof(p->principal);
+	input_name.value = p->string;
+	input_name.length = strlen(p->string);
 
 	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &p->name);
 	if (gss_rc) {
@@ -716,7 +674,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	}
 #endif
 
-	return status;
+	return ADS_SUCCESS;
 }
 
 /* 
@@ -774,7 +732,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
 #endif
 	return ads_sasl_spnego_rawkrb5_bind(ads, p->string);
 }
-#endif
+#endif /* HAVE_KRB5 */
 
 /* 
    this performs a SASL/SPNEGO bind
@@ -853,6 +811,11 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_krb5_bind(ads, &p);
+			if (!ADS_ERR_OK(status)) {
+				DEBUG(0,("kinit succeeded but "
+					"ads_sasl_spnego_krb5_bind failed: %s\n",
+					ads_errstr(status)));
+			}
 		}
 
 		ads_free_service_principal(&p);
@@ -1103,7 +1066,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	return status;
 }
 
-#endif /* HAVE_GGSAPI */
+#endif /* HAVE_GSSAPI */
 
 /* mapping between SASL mechanisms and functions */
 static struct {

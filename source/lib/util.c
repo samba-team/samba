@@ -1557,19 +1557,21 @@ BOOL process_exists_by_pid(pid_t pid)
 
 const char *uidtoname(uid_t uid)
 {
-	fstring name;
-	struct passwd *pass;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name = NULL;
+	struct passwd *pass = NULL;
 
-	pass = getpwuid_alloc(talloc_tos(), uid);
+	pass = getpwuid_alloc(ctx,uid);
 	if (pass) {
-		fstrcpy(name, pass->pw_name);
+		name = talloc_strdup(ctx,pass->pw_name);
 		TALLOC_FREE(pass);
 	} else {
-		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
+		name = talloc_asprintf(ctx,
+				"%ld",
+				(long int)uid);
 	}
-	return talloc_strdup(talloc_tos(), name);
+	return name;
 }
-
 
 /*******************************************************************
  Convert a gid into a group name.

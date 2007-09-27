@@ -1948,14 +1948,16 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	DATA_BLOB null_pw;
-	pstring filename;
+	pstring filename_in;
+	char *filename = NULL;
 	pstring qualname;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
-	BOOL became_user = False; 
+	BOOL became_user = False;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);
 
@@ -1985,8 +1987,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	}
 	became_user = True;
 
-	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	nt_status = unix_convert(conn, filename, False, NULL, &st);
+	unistr2_to_ascii(filename_in, &q_u->uni_file_name, sizeof(filename_in));
+	nt_status = unix_convert(ctx, conn, filename_in, False, &filename, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;
@@ -2062,7 +2064,8 @@ error_exit:
 WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
 									SRV_R_NET_FILE_SET_SECDESC *r_u)
 {
-	pstring filename;
+	pstring filename_in;
+	char *filename = NULL;
 	pstring qualname;
 	DATA_BLOB null_pw;
 	files_struct *fsp = NULL;
@@ -2071,6 +2074,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);
 
@@ -2100,8 +2104,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 	became_user = True;
 
-	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
-	nt_status = unix_convert(conn, filename, False, NULL, &st);
+	unistr2_to_ascii(filename_in, &q_u->uni_file_name, sizeof(filename_in));
+	nt_status = unix_convert(ctx, conn, filename, False, &filename, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", filename));
 		r_u->status = WERR_ACCESS_DENIED;

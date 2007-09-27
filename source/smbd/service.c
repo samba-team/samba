@@ -52,7 +52,7 @@ static BOOL canonicalize_path(connection_struct *conn, pstring path)
  Observent people will notice a similarity between this and check_path_syntax :-).
 ****************************************************************************/
 
-void set_conn_connectpath(connection_struct *conn, const pstring connectpath)
+void set_conn_connectpath(connection_struct *conn, const char *connectpath)
 {
 	pstring destname;
 	char *d = destname;
@@ -1111,27 +1111,31 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 strerror(errno) ));
 		}
 		change_to_root_user();
-		/* Call VFS disconnect hook */    
+		/* Call VFS disconnect hook */
 		SMB_VFS_DISCONNECT(conn);
 		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
-	
+
 	string_set(&conn->origpath,conn->connectpath);
-	
+
 #if SOFTLINK_OPTIMISATION
 	/* resolve any soft links early if possible */
 	if (vfs_ChDir(conn,conn->connectpath) == 0) {
-		pstring s;
-		pstrcpy(s,conn->connectpath);
-		vfs_GetWd(conn,s);
+		TALLOC_CTX *ctx = talloc_stackframe();
+		char *s = vfs_GetWd(ctx,s);
+		if (!s) {
+			*status = map_nt_error_from_unix(errno);
+			return NULL;
+		}
 		set_conn_connectpath(conn,s);
 		vfs_ChDir(conn,conn->connectpath);
+		TALLOC_FREE(ctx);
 	}
 #endif
-	
+
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using
@@ -1147,7 +1151,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
-	
+
 	/* we've finished with the user stuff - go back to root */
 	change_to_root_user();
 	return(conn);

@@ -1,18 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Directory handling routines
    Copyright (C) Andrew Tridgell 1992-1998
-   
+   Copyright (C) Jeremy Allison 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -72,15 +73,25 @@ static int dirhandles_open = 0;
  Make a dir struct.
 ****************************************************************************/
 
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,uint32 mode,time_t date, BOOL uc)
-{  
+BOOL make_dir_struct(TALLOC_CTX *ctx,
+			char *buf,
+			const char *mask,
+			const char *fname,
+			SMB_OFF_T size,
+			uint32 mode,
+			time_t date,
+			BOOL uc)
+{
 	char *p;
-	pstring mask2;
+	char *mask2 = talloc_strdup(ctx, mask);
 
-	pstrcpy(mask2,mask);
+	if (!mask2) {
+		return False;
+	}
 
-	if ((mode & aDIR) != 0)
+	if ((mode & aDIR) != 0) {
 		size = 0;
+	}
 
 	memset(buf+1,' ',11);
 	if ((p = strchr_m(mask2,'.')) != NULL) {
@@ -88,8 +99,9 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 		push_ascii(buf+1,mask2,8, 0);
 		push_ascii(buf+9,p+1,3, 0);
 		*p = '.';
-	} else
+	} else {
 		push_ascii(buf+1,mask2,11, 0);
+	}
 
 	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
 	SCVAL(buf,21,mode);
@@ -100,6 +112,7 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
 	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
+	return True;
 }
 
 /****************************************************************************
@@ -238,7 +251,7 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 
 	DLIST_REMOVE(dirptrs, dptr);
 
-	/* 
+	/*
 	 * Free the dnum in the bitmap. Remember the dnum value is always 
 	 * biased by one with respect to the bitmap.
 	 */
@@ -380,12 +393,11 @@ static void dptr_close_oldest(BOOL old)
  wcard must not be zero.
 ****************************************************************************/
 
-NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
+NTSTATUS dptr_create(connection_struct *conn, const char *path, BOOL old_handle, BOOL expect_close,uint16 spid,
 		const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
-        const char *dir2;
 	NTSTATUS status;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
@@ -399,17 +411,12 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 		return status;
 	}
 
-	/* use a const pointer from here on */
-	dir2 = path;
-	if (!*dir2)
-		dir2 = ".";
-
-	dir_hnd = OpenDir(conn, dir2, wcard, attr);
+	dir_hnd = OpenDir(conn, path, wcard, attr);
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	string_set(&conn->dirpath,dir2);
+	string_set(&conn->dirpath,path);
 
 	if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest();
@@ -488,7 +495,7 @@ NTSTATUS dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOO
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
-	string_set(&dptr->path,dir2);
+	string_set(&dptr->path,path);
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
@@ -569,7 +576,10 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr, long *poffs
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
+const char *dptr_ReadDirName(TALLOC_CTX *ctx,
+			struct dptr_struct *dptr,
+			long *poffset,
+			SMB_STRUCT_STAT *pst)
 {
 	SET_STAT_INVALID(*pst);
 
@@ -584,7 +594,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	}
 
 	if (!dptr->did_stat) {
-		pstring pathreal;
+		char *pathreal = NULL;
 
 		/* We know the stored wcard contains no wildcard characters. See if we can match
 		   with a stat call. If we can't, then set did_stat to true to
@@ -608,14 +618,19 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 			return dptr->wcard;
 		}
 
-		pstrcpy(pathreal,dptr->path);
-		pstrcat(pathreal,"/");
-		pstrcat(pathreal,dptr->wcard);
+		pathreal = talloc_asprintf(ctx,
+					"%s/%s",
+					dptr->path,
+					dptr->wcard);
+		if (!pathreal) {
+			return NULL;
+		}
 
 		if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
 			/* We need to set the underlying dir_hnd offset to -1 also as
 			   this function is usually called with the output from TellDir. */
 			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+			TALLOC_FREE(pathreal);
 			return dptr->wcard;
 		} else {
 			/* If we get any other error than ENOENT or ENOTDIR
@@ -624,9 +639,12 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 				/* We need to set the underlying dir_hdn offset to -1 also as
 				   this function is usually called with the output from TellDir. */
 				dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+				TALLOC_FREE(pathreal);
 				return dptr->wcard;
 			}
 		}
+
+		TALLOC_FREE(pathreal);
 
 		/* In case sensitive mode we don't search - we know if it doesn't exist 
 		   with a stat we will fail. */
@@ -758,45 +776,59 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	return True;
 }
 
-static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
+static BOOL mangle_mask_match(connection_struct *conn,
+		const char *filename,
+		const char *mask)
 {
-	mangle_map(filename,True,False,conn->params);
-	return mask_match_search(filename,mask,False);
+	char mname[13];
+
+	if (!name_to_8_3(filename,mname,False,conn->params)) {
+		return False;
+	}
+	return mask_match_search(mname,mask,False);
 }
 
 /****************************************************************************
  Get an 8.3 directory entry.
 ****************************************************************************/
 
-BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fname,
-                   SMB_OFF_T *size,uint32 *mode,time_t *date,BOOL check_descend)
+BOOL get_dir_entry(TALLOC_CTX *ctx,
+		connection_struct *conn,
+		const char *mask,
+		uint32 dirtype,
+		char **pp_fname_out,
+		SMB_OFF_T *size,
+		uint32 *mode,
+		time_t *date,
+		BOOL check_descend)
 {
-	const char *dname;
+	const char *dname = NULL;
 	BOOL found = False;
 	SMB_STRUCT_STAT sbuf;
-	pstring path;
-	pstring pathreal;
-	pstring filename;
+	char *pathreal = NULL;
+	const char *filename = NULL;
 	BOOL needslash;
 
-	*path = *pathreal = *filename = 0;
+	*pp_fname_out = NULL;
 
 	needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
-	if (!conn->dirptr)
+	if (!conn->dirptr) {
 		return(False);
+	}
 
 	while (!found) {
 		long curoff = dptr_TellDir(conn->dirptr);
-		dname = dptr_ReadDirName(conn->dirptr, &curoff, &sbuf);
+		dname = dptr_ReadDirName(ctx, conn->dirptr, &curoff, &sbuf);
 
 		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,TellDir(conn->dirptr->dir_hnd)));
-      
-		if (dname == NULL) 
+
+		if (dname == NULL) {
 			return(False);
-      
-		pstrcpy(filename,dname);      
+		}
+
+		filename = dname;
 
 		/* notice the special *.* handling. This appears to be the only difference
 			between the wildcard handling in this routine and in the trans2 routines.
@@ -805,39 +837,65 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 		if ((strcmp(mask,"*.*") == 0) ||
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
+			char mname[13];
 
-			if (!mangle_is_8_3(filename, False, conn->params))
-				mangle_map(filename,True,False,
-					   conn->params);
+			if (!mangle_is_8_3(filename, False, conn->params)) {
+				if (!name_to_8_3(filename,mname,False,
+					   conn->params)) {
+					continue;
+				}
+				filename = mname;
+			}
 
-			pstrcpy(fname,filename);
-			*path = 0;
-			pstrcpy(path,conn->dirpath);
-			if(needslash)
-				pstrcat(path,"/");
-			pstrcpy(pathreal,path);
-			pstrcat(path,fname);
-			pstrcat(pathreal,dname);
+			if (needslash) {
+				pathreal = talloc_asprintf(ctx,
+						"%s/%s",
+						conn->dirpath,
+						dname);
+			} else {
+				pathreal = talloc_asprintf(ctx,
+						"%s%s",
+						conn->dirpath,
+						dname);
+			}
+			if (!pathreal) {
+				return False;
+			}
+
 			if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn, pathreal, &sbuf)) != 0) {
-				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
+				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",
+					pathreal, strerror(errno) ));
+				TALLOC_FREE(pathreal);
 				continue;
 			}
-	  
+
 			*mode = dos_mode(conn,pathreal,&sbuf);
 
 			if (!dir_check_ftype(conn,*mode,dirtype)) {
 				DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",filename,(unsigned int)*mode,(unsigned int)dirtype));
+				TALLOC_FREE(pathreal);
 				continue;
 			}
 
 			*size = sbuf.st_size;
 			*date = sbuf.st_mtime;
 
-			DEBUG(3,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
+			DEBUG(3,("get_dir_entry mask=[%s] found %s "
+				"fname=%s (%s)\n",
+				mask,
+				pathreal,
+				dname,
+				filename));
 
 			found = True;
 
+			*pp_fname_out = talloc_strdup(ctx, filename);
+			if (!*pp_fname_out) {
+				return False;
+			}
+
 			DirCacheAdd(conn->dirptr->dir_hnd, dname, curoff);
+			TALLOC_FREE(pathreal);
 		}
 	}
 
@@ -1015,7 +1073,6 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	}
 
 	if (hide_unreadable || hide_unwriteable || hide_special) {
-		pstring link_target;
 		char *entry = NULL;
 
 		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
@@ -1025,7 +1082,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		/* If it's a dfs symlink, ignore _hide xxxx_ options */
 		if (lp_host_msdfs() &&
 				lp_msdfs_root(SNUM(conn)) &&
-				is_msdfs_link(conn, entry, link_target, NULL)) {
+				is_msdfs_link(conn, entry, NULL)) {
 			SAFE_FREE(entry);
 			return True;
 		}
@@ -1194,7 +1251,7 @@ void SeekDir(struct smb_Dir *dirp, long offset)
 	if (offset != dirp->offset) {
 		if (offset == START_OF_DIRECTORY_OFFSET) {
 			RewindDir(dirp, &offset);
-			/* 
+			/*
 			 * Ok we should really set the file number here
 			 * to 1 to enable ".." to be returned next. Trouble
 			 * is I'm worried about callers using SeekDir(dirp,0)

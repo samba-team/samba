@@ -51,56 +51,6 @@ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 #endif
 
-#ifndef _UPPER_BOOL
-#define _UPPER_BOOL
-#define False (0)
-#define True (1)
-#define Auto (2)
-typedef int BOOL;
-#endif
-
-#if !defined(uint32)
-#if (SIZEOF_INT == 4)
-#define uint32 unsigned int
-#elif (SIZEOF_LONG == 4)
-#define uint32 unsigned long
-#elif (SIZEOF_SHORT == 4)
-#define uint32 unsigned short
-#endif
-#endif
-
-#if !defined(uint16)
-#if (SIZEOF_SHORT == 4)
-#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define uint16 unsigned short
-#endif /* SIZEOF_SHORT != 4 */
-#endif
-
-#ifndef uint8
-#define uint8 unsigned char
-#endif
-
-/*
- * check for 8 byte long long
- */
-
-#if !defined(uint64)
-#if (SIZEOF_LONG == 8)
-#define uint64 unsigned long
-#elif (SIZEOF_LONG_LONG == 8)
-#define uint64 unsigned long long
-#endif  /* don't lie.  If we don't have it, then don't use it */
-#endif
-
-#if !defined(int64)
-#if (SIZEOF_LONG == 8)
-#define int64 long
-#elif (SIZEOF_LONG_LONG == 8)
-#define int64 long long
-#endif  /* don't lie.  If we don't have it, then don't use it */
-#endif
-
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK
@@ -109,11 +59,6 @@ typedef int BOOL;
 
 #ifndef S_ISSOCK
 #define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
-#endif
-
-#ifndef HAVE_SOCKLEN_T_TYPE
-#define HAVE_SOCKLEN_T_TYPE
-typedef int socklen_t;
 #endif
 
 #endif

@@ -1,20 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Name mangling
    Copyright (C) Andrew Tridgell 1992-2002
    Copyright (C) Simo Sorce 2001
    Copyright (C) Andrew Bartlett 2002
-   
+   Copyright (C) Jeremy Allison 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -244,14 +245,14 @@ static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
 
 	if (strlen_w(fname) > 12)
 		return NT_STATUS_UNSUCCESSFUL;
-	
+
 	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
 		return NT_STATUS_OK;
 
 	/* Name cannot start with '.' */
 	if (*fname == UCS2_CHAR('.'))
 		return NT_STATUS_UNSUCCESSFUL;
-	
+
 	if (!NT_STATUS_IS_OK(is_valid_name(fname, allow_wildcards, True)))
 		goto done;
 
@@ -293,7 +294,7 @@ static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards,
 
 	if (strlen(f) > 12)
 		return False;
-	
+
 	size = push_ucs2_allocate(&ucs2name, f);
 	if (size == (size_t)-1) {
 		DEBUG(0,("is_8_3: internal error push_ucs2_allocate() failed!\n"));
@@ -305,14 +306,12 @@ static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards,
 done:
 	SAFE_FREE(ucs2name);
 
-	if (!NT_STATUS_IS_OK(ret)) { 
+	if (!NT_STATUS_IS_OK(ret)) {
 		return False;
 	}
-	
+
 	return True;
 }
-
-
 
 /* -------------------------------------------------------------------------- **
  * Functions...
@@ -330,10 +329,11 @@ done:
  *
  * ************************************************************************** **
  */
+
 static void init_chartest( void )
 {
 	const unsigned char *s;
-  
+
 	memset( (char *)chartest, '\0', 256 );
 
 	for( s = (const unsigned char *)basechars; *s; s++ ) {
@@ -360,6 +360,7 @@ static void init_chartest( void )
  *
  * ************************************************************************** **
  */
+
 static BOOL is_mangled(const char *s, const struct share_params *p)
 {
 	char *magic;
@@ -406,7 +407,8 @@ static void mangle_reset( void )
   crh 07-Apr-1998
 **************************************************************************/
 
-static void cache_mangled_name( const char mangled_name[13], char *raw_name )
+static void cache_mangled_name( const char mangled_name[13],
+				const char *raw_name )
 {
 	TDB_DATA data_val;
 	char mangled_name_key[13];
@@ -459,30 +461,37 @@ static void cache_mangled_name( const char mangled_name[13], char *raw_name )
  * ************************************************************************** **
  */
 
-static BOOL check_cache( char *s, size_t maxlen, const struct share_params *p )
+static BOOL lookup_name_from_8_3(TALLOC_CTX *ctx,
+				const char *in,
+				char **out, /* talloced on the given context. */
+				const struct share_params *p)
 {
 	TDB_DATA data_val;
-	char *ext_start = NULL;
 	char *saved_ext = NULL;
+	char *s = talloc_strdup(ctx, in);
 
 	magic_char = lp_magicchar(p);
 
 	/* If the cache isn't initialized, give up. */
-	if( !tdb_mangled_cache )
-		return( False );
+	if(!s || !tdb_mangled_cache ) {
+		TALLOC_FREE(s);
+		return False;
+	}
 
 	data_val = tdb_fetch_bystring(tdb_mangled_cache, s);
 
 	/* If we didn't find the name *with* the extension, try without. */
 	if(data_val.dptr == NULL || data_val.dsize == 0) {
-		ext_start = strrchr( s, '.' );
+		char *ext_start = strrchr( s, '.' );
 		if( ext_start ) {
-			if((saved_ext = SMB_STRDUP(ext_start)) == NULL)
+			if((saved_ext = talloc_strdup(ctx,ext_start)) == NULL) {
+				TALLOC_FREE(s);
 				return False;
+			}
 
 			*ext_start = '\0';
 			data_val = tdb_fetch_bystring(tdb_mangled_cache, s);
-			/* 
+			/*
 			 * At this point s is the name without the
 			 * extension. We re-add the extension if saved_ext
 			 * is not null, before freeing saved_ext.
@@ -492,31 +501,32 @@ static BOOL check_cache( char *s, size_t maxlen, const struct share_params *p )
 
 	/* Okay, if we haven't found it we're done. */
 	if(data_val.dptr == NULL || data_val.dsize == 0) {
-		if(saved_ext) {
-			/* Replace the saved_ext as it was truncated. */
-			(void)safe_strcat( s, saved_ext, maxlen );
-			SAFE_FREE(saved_ext);
-		}
-		return( False );
+		TALLOC_FREE(saved_ext);
+		TALLOC_FREE(s);
+		return False;
 	}
 
-	/* If we *did* find it, we need to copy it into the string buffer. */
-	(void)safe_strcpy( s, (const char *)data_val.dptr, maxlen );
-	if( saved_ext ) {
-		/* Replace the saved_ext as it was truncated. */
-		(void)safe_strcat( s, saved_ext, maxlen );
-		SAFE_FREE(saved_ext);
+	/* If we *did* find it, we need to talloc it on the given ctx. */
+	if (saved_ext) {
+		*out = talloc_asprintf(ctx, "%s%s",
+					(char *)data_val.dptr,
+					saved_ext);
+	} else {
+		*out = talloc_strdup(ctx, (char *)data_val.dptr);
 	}
+
+	TALLOC_FREE(s);
+	TALLOC_FREE(saved_ext);
 	SAFE_FREE(data_val.dptr);
-	return( True );
+
+	return *out ? True : False;
 }
 
 /*****************************************************************************
- * do the actual mangling to 8.3 format
- * the buffer must be able to hold 13 characters (including the null)
- *****************************************************************************
- */
-static void to_8_3(char *s, int default_case)
+ Do the actual mangling to 8.3 format.
+*****************************************************************************/
+
+static BOOL to_8_3(const char *in, char out[13], int default_case)
 {
 	int csum;
 	char *p;
@@ -524,11 +534,16 @@ static void to_8_3(char *s, int default_case)
 	char base[9];
 	int baselen = 0;
 	int extlen = 0;
+	char *s = SMB_STRDUP(in);
 
 	extension[0] = 0;
 	base[0] = 0;
 
-	p = strrchr(s,'.');  
+	if (!s) {
+		return False;
+	}
+
+	p = strrchr(s,'.');
 	if( p && (strlen(p+1) < (size_t)4) ) {
 		BOOL all_normal = ( strisnormal(p+1, default_case) ); /* XXXXXXXXX */
 
@@ -557,7 +572,7 @@ static void to_8_3(char *s, int default_case)
 			extension[extlen] = 0;
 		}
 	}
-  
+
 	p = s;
 
 	while( *p && baselen < 5 ) {
@@ -567,79 +582,88 @@ static void to_8_3(char *s, int default_case)
 		p++;
 	}
 	base[baselen] = 0;
-  
+
 	csum = csum % (MANGLE_BASE*MANGLE_BASE);
-  
-	(void)slprintf(s, 12, "%s%c%c%c",
-		base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
-  
+
+	memcpy(out, base, baselen);
+	out[baselen] = magic_char;
+	out[baselen+1] = mangle( csum/MANGLE_BASE );
+	out[baselen+2] = mangle( csum );
+
 	if( *extension ) {
-		(void)pstrcat( s, "." );
-		(void)pstrcat( s, extension );
+		out[baselen+3] = '.';
+		safe_strcpy(&out[baselen+4], extension, 3);
 	}
+
+	SAFE_FREE(s);
+	return True;
+}
+
+static BOOL must_mangle(const char *name,
+			const struct share_params *p)
+{
+	smb_ucs2_t *name_ucs2 = NULL;
+	NTSTATUS status;
+	magic_char = lp_magicchar(p);
+
+	if (push_ucs2_allocate(&name_ucs2, name) == (size_t)-1) {
+		DEBUG(0, ("push_ucs2_allocate failed!\n"));
+		return False;
+	}
+	status = is_valid_name(name_ucs2, False, False);
+	SAFE_FREE(name_ucs2);
+	return NT_STATUS_IS_OK(status);
 }
 
 /*****************************************************************************
  * Convert a filename to DOS format.  Return True if successful.
+ *  Input:  in        Incoming name.
  *
- *  Input:  OutName - Source *and* destination buffer. 
+ *          out       8.3 DOS name.
  *
- *                    NOTE that OutName must point to a memory space that
- *                    is at least 13 bytes in size!
- *
- *          need83  - If False, name mangling will be skipped unless the
- *                    name contains illegal characters.  Mapping will still
- *                    be done, if appropriate.  This is probably used to
- *                    signal that a client does not require name mangling,
- *                    thus skipping the name mangling even on shares which
- *                    have name-mangling turned on.
  *          cache83 - If False, the mangled name cache will not be updated.
  *                    This is usually used to prevent that we overwrite
  *                    a conflicting cache entry prematurely, i.e. before
  *                    we know whether the client is really interested in the
  *                    current name.  (See PR#13758).  UKD.
  *
- *  Output: Returns False only if the name wanted mangling but the share does
- *          not have name mangling turned on.
- *
  * ****************************************************************************
  */
 
-static void name_map(char *OutName, BOOL need83, BOOL cache83,
-		     int default_case, const struct share_params *p)
+static BOOL hash_name_to_8_3(const char *in,
+			char out[13],
+			BOOL cache83,
+			int default_case,
+			const struct share_params *p)
 {
-	smb_ucs2_t *OutName_ucs2;
+	smb_ucs2_t *in_ucs2 = NULL;
 	magic_char = lp_magicchar(p);
 
-	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
-		 need83 ? "True" : "False", cache83 ? "True" : "False"));
-	
-	if (push_ucs2_allocate(&OutName_ucs2, OutName) == (size_t)-1) {
+	DEBUG(5,("hash_name_to_8_3( %s, cache83 = %s)\n", in,
+		 cache83 ? "True" : "False"));
+
+	if (push_ucs2_allocate(&in_ucs2, in) == (size_t)-1) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
-		return;
+		return False;
 	}
 
-	if( !need83 && !NT_STATUS_IS_OK(is_valid_name(OutName_ucs2, False, False)))
-		need83 = True;
-
-	/* check if it's already in 8.3 format */
-	if (need83 && !NT_STATUS_IS_OK(is_8_3_w(OutName_ucs2, False))) {
-		char *tmp = NULL; 
-
-		/* mangle it into 8.3 */
-		if (cache83)
-			tmp = SMB_STRDUP(OutName);
-
-		to_8_3(OutName, default_case);
-
-		if(tmp != NULL) {
-			cache_mangled_name(OutName, tmp);
-			SAFE_FREE(tmp);
-		}
+	/* If it's already 8.3, just copy. */
+	if (NT_STATUS_IS_OK(is_valid_name(in_ucs2, False, False)) &&
+				NT_STATUS_IS_OK(is_8_3_w(in_ucs2, False))) {
+		SAFE_FREE(in_ucs2);
+		safe_strcpy(out, in, 12);
+		return True;
 	}
 
-	DEBUG(5,("name_map() ==> [%s]\n", OutName));
-	SAFE_FREE(OutName_ucs2);
+	SAFE_FREE(in_ucs2);
+	if (!to_8_3(in, out, default_case)) {
+		return False;
+	}
+
+	cache_mangled_name(out, in);
+
+	DEBUG(5,("hash_name_to_8_3(%s) ==> [%s]\n", in, out));
+	return True;
 }
 
 /*
@@ -649,9 +673,10 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83,
 static struct mangle_fns mangle_fns = {
 	mangle_reset,
 	is_mangled,
+	must_mangle,
 	is_8_3,
-	check_cache,
-	name_map
+	lookup_name_from_8_3,
+	hash_name_to_8_3
 };
 
 /* return the methods for this mangling implementation */

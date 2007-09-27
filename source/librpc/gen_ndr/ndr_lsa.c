@@ -310,7 +310,7 @@ _PUBLIC_ void ndr_print_lsa_AsciiString(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, const struct lsa_LUID *r)
+static NTSTATUS ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, const struct lsa_LUID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -322,7 +322,7 @@ NTSTATUS ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, const struct lsa
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LUID(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUID *r)
+static NTSTATUS ndr_pull_lsa_LUID(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -343,7 +343,7 @@ _PUBLIC_ void ndr_print_lsa_LUID(struct ndr_print *ndr, const char *name, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_PrivEntry(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivEntry *r)
+static NTSTATUS ndr_push_lsa_PrivEntry(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivEntry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -356,7 +356,7 @@ NTSTATUS ndr_push_lsa_PrivEntry(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PrivEntry(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivEntry *r)
+static NTSTATUS ndr_pull_lsa_PrivEntry(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivEntry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -378,7 +378,7 @@ _PUBLIC_ void ndr_print_lsa_PrivEntry(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_PrivArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivArray *r)
+static NTSTATUS ndr_push_lsa_PrivArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivArray *r)
 {
 	uint32_t cntr_privs_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -400,7 +400,7 @@ NTSTATUS ndr_push_lsa_PrivArray(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PrivArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivArray *r)
+static NTSTATUS ndr_pull_lsa_PrivArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivArray *r)
 {
 	uint32_t _ptr_privs;
 	uint32_t cntr_privs_1;
@@ -465,7 +465,7 @@ _PUBLIC_ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_QosInfo *r)
+static NTSTATUS ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_QosInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -479,7 +479,7 @@ NTSTATUS ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QosInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_QosInfo *r)
+static NTSTATUS ndr_pull_lsa_QosInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_QosInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -504,7 +504,7 @@ _PUBLIC_ void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int ndr_flags, const struct lsa_ObjectAttribute *r)
+static NTSTATUS ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int ndr_flags, const struct lsa_ObjectAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -535,7 +535,7 @@ NTSTATUS ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ObjectAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_ObjectAttribute *r)
+static NTSTATUS ndr_pull_lsa_ObjectAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_ObjectAttribute *r)
 {
 	uint32_t _ptr_root_dir;
 	TALLOC_CTX *_mem_save_root_dir_0;
@@ -642,7 +642,7 @@ _PUBLIC_ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditLogInfo *r)
+static NTSTATUS ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditLogInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -659,7 +659,7 @@ NTSTATUS ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AuditLogInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditLogInfo *r)
+static NTSTATUS ndr_pull_lsa_AuditLogInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditLogInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -690,7 +690,7 @@ _PUBLIC_ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AuditEventsInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditEventsInfo *r)
+static NTSTATUS ndr_push_lsa_AuditEventsInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditEventsInfo *r)
 {
 	uint32_t cntr_settings_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -710,7 +710,7 @@ NTSTATUS ndr_push_lsa_AuditEventsInfo(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
+static NTSTATUS ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditEventsInfo *r)
 {
 	uint32_t _ptr_settings;
 	uint32_t cntr_settings_1;
@@ -774,7 +774,7 @@ _PUBLIC_ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfo *r)
+static NTSTATUS ndr_push_lsa_DomainInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -790,7 +790,7 @@ NTSTATUS ndr_push_lsa_DomainInfo(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfo *r)
+static NTSTATUS ndr_pull_lsa_DomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfo *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -830,7 +830,7 @@ _PUBLIC_ void ndr_print_lsa_DomainInfo(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_PDAccountInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_PDAccountInfo *r)
+static NTSTATUS ndr_push_lsa_PDAccountInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_PDAccountInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -842,7 +842,7 @@ NTSTATUS ndr_push_lsa_PDAccountInfo(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PDAccountInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_PDAccountInfo *r)
+static NTSTATUS ndr_pull_lsa_PDAccountInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_PDAccountInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -862,7 +862,7 @@ _PUBLIC_ void ndr_print_lsa_PDAccountInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ServerRole(struct ndr_push *ndr, int ndr_flags, const struct lsa_ServerRole *r)
+static NTSTATUS ndr_push_lsa_ServerRole(struct ndr_push *ndr, int ndr_flags, const struct lsa_ServerRole *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -874,7 +874,7 @@ NTSTATUS ndr_push_lsa_ServerRole(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct lsa_ServerRole *r)
+static NTSTATUS ndr_pull_lsa_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct lsa_ServerRole *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -895,7 +895,7 @@ _PUBLIC_ void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ReplicaSourceInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ReplicaSourceInfo *r)
+static NTSTATUS ndr_push_lsa_ReplicaSourceInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ReplicaSourceInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -909,7 +909,7 @@ NTSTATUS ndr_push_lsa_ReplicaSourceInfo(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ReplicaSourceInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ReplicaSourceInfo *r)
+static NTSTATUS ndr_pull_lsa_ReplicaSourceInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ReplicaSourceInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -932,7 +932,7 @@ _PUBLIC_ void ndr_print_lsa_ReplicaSourceInfo(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DefaultQuotaInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DefaultQuotaInfo *r)
+static NTSTATUS ndr_push_lsa_DefaultQuotaInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DefaultQuotaInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -948,7 +948,7 @@ NTSTATUS ndr_push_lsa_DefaultQuotaInfo(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DefaultQuotaInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DefaultQuotaInfo *r)
+static NTSTATUS ndr_pull_lsa_DefaultQuotaInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DefaultQuotaInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -977,7 +977,7 @@ _PUBLIC_ void ndr_print_lsa_DefaultQuotaInfo(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ModificationInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ModificationInfo *r)
+static NTSTATUS ndr_push_lsa_ModificationInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ModificationInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -989,7 +989,7 @@ NTSTATUS ndr_push_lsa_ModificationInfo(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ModificationInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ModificationInfo *r)
+static NTSTATUS ndr_pull_lsa_ModificationInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ModificationInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -1010,7 +1010,7 @@ _PUBLIC_ void ndr_print_lsa_ModificationInfo(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AuditFullSetInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditFullSetInfo *r)
+static NTSTATUS ndr_push_lsa_AuditFullSetInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditFullSetInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
@@ -1021,7 +1021,7 @@ NTSTATUS ndr_push_lsa_AuditFullSetInfo(struct ndr_push *ndr, int ndr_flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AuditFullSetInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullSetInfo *r)
+static NTSTATUS ndr_pull_lsa_AuditFullSetInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullSetInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
@@ -1040,7 +1040,7 @@ _PUBLIC_ void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AuditFullQueryInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditFullQueryInfo *r)
+static NTSTATUS ndr_push_lsa_AuditFullQueryInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditFullQueryInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -1053,7 +1053,7 @@ NTSTATUS ndr_push_lsa_AuditFullQueryInfo(struct ndr_push *ndr, int ndr_flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AuditFullQueryInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullQueryInfo *r)
+static NTSTATUS ndr_pull_lsa_AuditFullQueryInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_AuditFullQueryInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -1076,7 +1076,7 @@ _PUBLIC_ void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DnsDomainInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DnsDomainInfo *r)
+static NTSTATUS ndr_push_lsa_DnsDomainInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_DnsDomainInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1098,7 +1098,7 @@ NTSTATUS ndr_push_lsa_DnsDomainInfo(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DnsDomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DnsDomainInfo *r)
+static NTSTATUS ndr_pull_lsa_DnsDomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_DnsDomainInfo *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -1147,7 +1147,7 @@ _PUBLIC_ void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, const union lsa_PolicyInformation *r)
+static NTSTATUS ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, const union lsa_PolicyInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -1257,7 +1257,7 @@ NTSTATUS ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, union lsa_PolicyInformation *r)
+static NTSTATUS ndr_pull_lsa_PolicyInformation(struct ndr_pull *ndr, int ndr_flags, union lsa_PolicyInformation *r)
 {
 	int level;
 	uint16_t _level;
@@ -1430,7 +1430,7 @@ _PUBLIC_ void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char 
 	}
 }
 
-NTSTATUS ndr_push_lsa_SidPtr(struct ndr_push *ndr, int ndr_flags, const struct lsa_SidPtr *r)
+static NTSTATUS ndr_push_lsa_SidPtr(struct ndr_push *ndr, int ndr_flags, const struct lsa_SidPtr *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1444,7 +1444,7 @@ NTSTATUS ndr_push_lsa_SidPtr(struct ndr_push *ndr, int ndr_flags, const struct l
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SidPtr(struct ndr_pull *ndr, int ndr_flags, struct lsa_SidPtr *r)
+static NTSTATUS ndr_pull_lsa_SidPtr(struct ndr_pull *ndr, int ndr_flags, struct lsa_SidPtr *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -1571,7 +1571,7 @@ _PUBLIC_ void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainList(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainList *r)
+static NTSTATUS ndr_push_lsa_DomainList(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainList *r)
 {
 	uint32_t cntr_domains_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1593,7 +1593,7 @@ NTSTATUS ndr_push_lsa_DomainList(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainList *r)
+static NTSTATUS ndr_pull_lsa_DomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainList *r)
 {
 	uint32_t _ptr_domains;
 	uint32_t cntr_domains_1;
@@ -1658,13 +1658,13 @@ _PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r)
+static NTSTATUS ndr_push_lsa_SidType(struct ndr_push *ndr, int ndr_flags, enum lsa_SidType r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r)
+static NTSTATUS ndr_pull_lsa_SidType(struct ndr_pull *ndr, int ndr_flags, enum lsa_SidType *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -1691,7 +1691,7 @@ _PUBLIC_ void ndr_print_lsa_SidType(struct ndr_print *ndr, const char *name, enu
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_lsa_TranslatedSid(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid *r)
+static NTSTATUS ndr_push_lsa_TranslatedSid(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1704,7 +1704,7 @@ NTSTATUS ndr_push_lsa_TranslatedSid(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TranslatedSid(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid *r)
+static NTSTATUS ndr_pull_lsa_TranslatedSid(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1727,7 +1727,7 @@ _PUBLIC_ void ndr_print_lsa_TranslatedSid(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray *r)
+static NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray *r)
 {
 	uint32_t cntr_sids_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1746,7 +1746,7 @@ NTSTATUS ndr_push_lsa_TransSidArray(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray *r)
+static NTSTATUS ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray *r)
 {
 	uint32_t _ptr_sids;
 	uint32_t cntr_sids_1;
@@ -1811,7 +1811,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_RefDomainList(struct ndr_push *ndr, int ndr_flags, const struct lsa_RefDomainList *r)
+static NTSTATUS ndr_push_lsa_RefDomainList(struct ndr_push *ndr, int ndr_flags, const struct lsa_RefDomainList *r)
 {
 	uint32_t cntr_domains_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1834,7 +1834,7 @@ NTSTATUS ndr_push_lsa_RefDomainList(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_RefDomainList *r)
+static NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_RefDomainList *r)
 {
 	uint32_t _ptr_domains;
 	uint32_t cntr_domains_1;
@@ -1904,7 +1904,7 @@ _PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedName *r)
+static NTSTATUS ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedName *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1918,7 +1918,7 @@ NTSTATUS ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TranslatedName(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedName *r)
+static NTSTATUS ndr_pull_lsa_TranslatedName(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedName *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1942,7 +1942,7 @@ _PUBLIC_ void ndr_print_lsa_TranslatedName(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransNameArray *r)
+static NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransNameArray *r)
 {
 	uint32_t cntr_names_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1964,7 +1964,7 @@ NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransNameArray *r)
+static NTSTATUS ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransNameArray *r)
 {
 	uint32_t _ptr_names;
 	uint32_t cntr_names_1;
@@ -2032,7 +2032,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LUIDAttribute(struct ndr_push *ndr, int ndr_flags, const struct lsa_LUIDAttribute *r)
+static NTSTATUS ndr_push_lsa_LUIDAttribute(struct ndr_push *ndr, int ndr_flags, const struct lsa_LUIDAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2044,7 +2044,7 @@ NTSTATUS ndr_push_lsa_LUIDAttribute(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LUIDAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUIDAttribute *r)
+static NTSTATUS ndr_pull_lsa_LUIDAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUIDAttribute *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2065,7 +2065,7 @@ _PUBLIC_ void ndr_print_lsa_LUIDAttribute(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_PrivilegeSet(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivilegeSet *r)
+static NTSTATUS ndr_push_lsa_PrivilegeSet(struct ndr_push *ndr, int ndr_flags, const struct lsa_PrivilegeSet *r)
 {
 	uint32_t cntr_set_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2082,7 +2082,7 @@ NTSTATUS ndr_push_lsa_PrivilegeSet(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
+static NTSTATUS ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
 {
 	uint32_t cntr_set_0;
 	TALLOC_CTX *_mem_save_set_0;
@@ -2131,7 +2131,7 @@ _PUBLIC_ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DATA_BUF(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF *r)
+static NTSTATUS ndr_push_lsa_DATA_BUF(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -2155,7 +2155,7 @@ NTSTATUS ndr_push_lsa_DATA_BUF(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DATA_BUF(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF *r)
+static NTSTATUS ndr_pull_lsa_DATA_BUF(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -2218,7 +2218,7 @@ _PUBLIC_ void ndr_print_lsa_DATA_BUF(struct ndr_print *ndr, const char *name, co
 	}
 }
 
-NTSTATUS ndr_push_lsa_DATA_BUF2(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF2 *r)
+static NTSTATUS ndr_push_lsa_DATA_BUF2(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF2 *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -2239,7 +2239,7 @@ NTSTATUS ndr_push_lsa_DATA_BUF2(struct ndr_push *ndr, int ndr_flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DATA_BUF2(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF2 *r)
+static NTSTATUS ndr_pull_lsa_DATA_BUF2(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF2 *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -2296,13 +2296,13 @@ _PUBLIC_ void ndr_print_lsa_DATA_BUF2(struct ndr_print *ndr, const char *name, c
 	}
 }
 
-NTSTATUS ndr_push_lsa_TrustDomInfoEnum(struct ndr_push *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum r)
+static NTSTATUS ndr_push_lsa_TrustDomInfoEnum(struct ndr_push *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomInfoEnum(struct ndr_pull *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum *r)
+static NTSTATUS ndr_pull_lsa_TrustDomInfoEnum(struct ndr_pull *ndr, int ndr_flags, enum lsa_TrustDomInfoEnum *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -2329,7 +2329,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomInfoEnum(struct ndr_print *ndr, const char *
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoName(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoName *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoName(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoName *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2341,7 +2341,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoName(struct ndr_push *ndr, int ndr_flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoName(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoName *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoName(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoName *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2361,7 +2361,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoName(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoPosixOffset(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoPosixOffset *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoPosixOffset(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoPosixOffset *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2372,7 +2372,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoPosixOffset(struct ndr_push *ndr, int ndr_f
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoPosixOffset(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoPosixOffset *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoPosixOffset(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoPosixOffset *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2391,7 +2391,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoPosixOffset(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoPassword(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoPassword *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoPassword(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoPassword *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2409,7 +2409,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoPassword(struct ndr_push *ndr, int ndr_flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoPassword(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoPassword *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoPassword(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoPassword *r)
 {
 	uint32_t _ptr_password;
 	TALLOC_CTX *_mem_save_password_0;
@@ -2466,7 +2466,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoPassword(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoBasic(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoBasic *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoBasic(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoBasic *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2482,7 +2482,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoBasic(struct ndr_push *ndr, int ndr_flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoBasic(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoBasic *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoBasic(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoBasic *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -2522,7 +2522,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoBasic(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoInfoEx(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoInfoEx *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoInfoEx(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoInfoEx *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2543,7 +2543,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoInfoEx(struct ndr_push *ndr, int ndr_flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoInfoEx(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoInfoEx *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoInfoEx(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoInfoEx *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -2592,7 +2592,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoInfoEx(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoBuffer(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoBuffer *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoBuffer(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -2606,7 +2606,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoBuffer(struct ndr_push *ndr, int ndr_flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoBuffer(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoBuffer *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoBuffer(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -2630,7 +2630,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoBuffer(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoAuthInfo *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoAuthInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2658,7 +2658,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoAuthInfo(struct ndr_push *ndr, int ndr_flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoAuthInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoAuthInfo *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoAuthInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoAuthInfo *r)
 {
 	uint32_t _ptr_incoming_current_auth_info;
 	TALLOC_CTX *_mem_save_incoming_current_auth_info_0;
@@ -2759,7 +2759,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoAuthInfo(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoFullInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoFullInfo *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoFullInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoFullInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2774,7 +2774,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoFullInfo(struct ndr_push *ndr, int ndr_flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoFullInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoFullInfo *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoFullInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoFullInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2799,7 +2799,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoFullInfo(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfo11(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfo11 *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfo11(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfo11 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2813,7 +2813,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfo11(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfo11(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfo11 *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfo11(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfo11 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2836,7 +2836,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfo11(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustDomainInfoInfoAll(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoInfoAll *r)
+static NTSTATUS ndr_push_lsa_TrustDomainInfoInfoAll(struct ndr_push *ndr, int ndr_flags, const struct lsa_TrustDomainInfoInfoAll *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2853,7 +2853,7 @@ NTSTATUS ndr_push_lsa_TrustDomainInfoInfoAll(struct ndr_push *ndr, int ndr_flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustDomainInfoInfoAll(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoInfoAll *r)
+static NTSTATUS ndr_pull_lsa_TrustDomainInfoInfoAll(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustDomainInfoInfoAll *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2881,7 +2881,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomainInfoInfoAll(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, int ndr_flags, const union lsa_TrustedDomainInfo *r)
+static NTSTATUS ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, int ndr_flags, const union lsa_TrustedDomainInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -2972,7 +2972,7 @@ NTSTATUS ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, int ndr_flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, int ndr_flags, union lsa_TrustedDomainInfo *r)
+static NTSTATUS ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, int ndr_flags, union lsa_TrustedDomainInfo *r)
 {
 	int level;
 	uint16_t _level;
@@ -3114,7 +3114,7 @@ _PUBLIC_ void ndr_print_lsa_TrustedDomainInfo(struct ndr_print *ndr, const char 
 	}
 }
 
-NTSTATUS ndr_push_lsa_DATA_BUF_PTR(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF_PTR *r)
+static NTSTATUS ndr_push_lsa_DATA_BUF_PTR(struct ndr_push *ndr, int ndr_flags, const struct lsa_DATA_BUF_PTR *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3128,7 +3128,7 @@ NTSTATUS ndr_push_lsa_DATA_BUF_PTR(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DATA_BUF_PTR(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF_PTR *r)
+static NTSTATUS ndr_pull_lsa_DATA_BUF_PTR(struct ndr_pull *ndr, int ndr_flags, struct lsa_DATA_BUF_PTR *r)
 {
 	uint32_t _ptr_buf;
 	TALLOC_CTX *_mem_save_buf_0;
@@ -3165,7 +3165,7 @@ _PUBLIC_ void ndr_print_lsa_DATA_BUF_PTR(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_RightSet(struct ndr_push *ndr, int ndr_flags, const struct lsa_RightSet *r)
+static NTSTATUS ndr_push_lsa_RightSet(struct ndr_push *ndr, int ndr_flags, const struct lsa_RightSet *r)
 {
 	uint32_t cntr_names_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3187,7 +3187,7 @@ NTSTATUS ndr_push_lsa_RightSet(struct ndr_push *ndr, int ndr_flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_RightSet *r)
+static NTSTATUS ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_RightSet *r)
 {
 	uint32_t _ptr_names;
 	uint32_t cntr_names_1;
@@ -3252,7 +3252,7 @@ _PUBLIC_ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_StringPointer(struct ndr_push *ndr, int ndr_flags, const struct lsa_StringPointer *r)
+static NTSTATUS ndr_push_lsa_StringPointer(struct ndr_push *ndr, int ndr_flags, const struct lsa_StringPointer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3266,7 +3266,7 @@ NTSTATUS ndr_push_lsa_StringPointer(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_StringPointer(struct ndr_pull *ndr, int ndr_flags, struct lsa_StringPointer *r)
+static NTSTATUS ndr_pull_lsa_StringPointer(struct ndr_pull *ndr, int ndr_flags, struct lsa_StringPointer *r)
 {
 	uint32_t _ptr_string;
 	TALLOC_CTX *_mem_save_string_0;
@@ -3303,7 +3303,7 @@ _PUBLIC_ void ndr_print_lsa_StringPointer(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainListEx(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainListEx *r)
+static NTSTATUS ndr_push_lsa_DomainListEx(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainListEx *r)
 {
 	uint32_t cntr_domains_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3325,7 +3325,7 @@ NTSTATUS ndr_push_lsa_DomainListEx(struct ndr_push *ndr, int ndr_flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainListEx(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainListEx *r)
+static NTSTATUS ndr_pull_lsa_DomainListEx(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainListEx *r)
 {
 	uint32_t _ptr_domains;
 	uint32_t cntr_domains_1;
@@ -3390,7 +3390,7 @@ _PUBLIC_ void ndr_print_lsa_DomainListEx(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainInfoKerberos(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfoKerberos *r)
+static NTSTATUS ndr_push_lsa_DomainInfoKerberos(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfoKerberos *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -3406,7 +3406,7 @@ NTSTATUS ndr_push_lsa_DomainInfoKerberos(struct ndr_push *ndr, int ndr_flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainInfoKerberos(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfoKerberos *r)
+static NTSTATUS ndr_pull_lsa_DomainInfoKerberos(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfoKerberos *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -3435,7 +3435,7 @@ _PUBLIC_ void ndr_print_lsa_DomainInfoKerberos(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainInfoEfs(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfoEfs *r)
+static NTSTATUS ndr_push_lsa_DomainInfoEfs(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainInfoEfs *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3451,7 +3451,7 @@ NTSTATUS ndr_push_lsa_DomainInfoEfs(struct ndr_push *ndr, int ndr_flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainInfoEfs(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfoEfs *r)
+static NTSTATUS ndr_pull_lsa_DomainInfoEfs(struct ndr_pull *ndr, int ndr_flags, struct lsa_DomainInfoEfs *r)
 {
 	uint32_t _ptr_efs_blob;
 	TALLOC_CTX *_mem_save_efs_blob_0;
@@ -3495,7 +3495,7 @@ _PUBLIC_ void ndr_print_lsa_DomainInfoEfs(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DomainInformationPolicy(struct ndr_push *ndr, int ndr_flags, const union lsa_DomainInformationPolicy *r)
+static NTSTATUS ndr_push_lsa_DomainInformationPolicy(struct ndr_push *ndr, int ndr_flags, const union lsa_DomainInformationPolicy *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -3530,7 +3530,7 @@ NTSTATUS ndr_push_lsa_DomainInformationPolicy(struct ndr_push *ndr, int ndr_flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DomainInformationPolicy(struct ndr_pull *ndr, int ndr_flags, union lsa_DomainInformationPolicy *r)
+static NTSTATUS ndr_pull_lsa_DomainInformationPolicy(struct ndr_pull *ndr, int ndr_flags, union lsa_DomainInformationPolicy *r)
 {
 	int level;
 	uint16_t _level;
@@ -3588,7 +3588,7 @@ _PUBLIC_ void ndr_print_lsa_DomainInformationPolicy(struct ndr_print *ndr, const
 	}
 }
 
-NTSTATUS ndr_push_lsa_TranslatedName2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedName2 *r)
+static NTSTATUS ndr_push_lsa_TranslatedName2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedName2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3603,7 +3603,7 @@ NTSTATUS ndr_push_lsa_TranslatedName2(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TranslatedName2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedName2 *r)
+static NTSTATUS ndr_pull_lsa_TranslatedName2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedName2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3629,7 +3629,7 @@ _PUBLIC_ void ndr_print_lsa_TranslatedName2(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TransNameArray2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransNameArray2 *r)
+static NTSTATUS ndr_push_lsa_TransNameArray2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransNameArray2 *r)
 {
 	uint32_t cntr_names_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3651,7 +3651,7 @@ NTSTATUS ndr_push_lsa_TransNameArray2(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TransNameArray2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransNameArray2 *r)
+static NTSTATUS ndr_pull_lsa_TransNameArray2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransNameArray2 *r)
 {
 	uint32_t _ptr_names;
 	uint32_t cntr_names_1;
@@ -3719,7 +3719,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TranslatedSid2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid2 *r)
+static NTSTATUS ndr_push_lsa_TranslatedSid2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3733,7 +3733,7 @@ NTSTATUS ndr_push_lsa_TranslatedSid2(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TranslatedSid2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid2 *r)
+static NTSTATUS ndr_pull_lsa_TranslatedSid2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3758,7 +3758,7 @@ _PUBLIC_ void ndr_print_lsa_TranslatedSid2(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TransSidArray2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray2 *r)
+static NTSTATUS ndr_push_lsa_TransSidArray2(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray2 *r)
 {
 	uint32_t cntr_sids_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3777,7 +3777,7 @@ NTSTATUS ndr_push_lsa_TransSidArray2(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TransSidArray2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray2 *r)
+static NTSTATUS ndr_pull_lsa_TransSidArray2(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray2 *r)
 {
 	uint32_t _ptr_sids;
 	uint32_t cntr_sids_1;
@@ -3842,7 +3842,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray2(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TranslatedSid3(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid3 *r)
+static NTSTATUS ndr_push_lsa_TranslatedSid3(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedSid3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3859,7 +3859,7 @@ NTSTATUS ndr_push_lsa_TranslatedSid3(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TranslatedSid3(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid3 *r)
+static NTSTATUS ndr_pull_lsa_TranslatedSid3(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedSid3 *r)
 {
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -3902,7 +3902,7 @@ _PUBLIC_ void ndr_print_lsa_TranslatedSid3(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TransSidArray3(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray3 *r)
+static NTSTATUS ndr_push_lsa_TransSidArray3(struct ndr_push *ndr, int ndr_flags, const struct lsa_TransSidArray3 *r)
 {
 	uint32_t cntr_sids_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -3924,7 +3924,7 @@ NTSTATUS ndr_push_lsa_TransSidArray3(struct ndr_push *ndr, int ndr_flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TransSidArray3(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray3 *r)
+static NTSTATUS ndr_pull_lsa_TransSidArray3(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransSidArray3 *r)
 {
 	uint32_t _ptr_sids;
 	uint32_t cntr_sids_1;
@@ -3992,7 +3992,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Close *r)
+static NTSTATUS ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Close *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4006,7 +4006,7 @@ NTSTATUS ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Cl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_Close(struct ndr_pull *ndr, int flags, struct lsa_Close *r)
+static NTSTATUS ndr_pull_lsa_Close(struct ndr_pull *ndr, int flags, struct lsa_Close *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -4064,7 +4064,7 @@ _PUBLIC_ void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int f
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r)
+static NTSTATUS ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4076,7 +4076,7 @@ NTSTATUS ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_D
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r)
+static NTSTATUS ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -4119,7 +4119,7 @@ _PUBLIC_ void ndr_print_lsa_Delete(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r)
+static NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4138,7 +4138,7 @@ NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct ls
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivs *r)
+static NTSTATUS ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivs *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -4224,7 +4224,7 @@ _PUBLIC_ void ndr_print_lsa_EnumPrivs(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QuerySecurity(struct ndr_push *ndr, int flags, const struct lsa_QuerySecurity *r)
+static NTSTATUS ndr_push_lsa_QuerySecurity(struct ndr_push *ndr, int flags, const struct lsa_QuerySecurity *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4241,7 +4241,7 @@ NTSTATUS ndr_push_lsa_QuerySecurity(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QuerySecurity(struct ndr_pull *ndr, int flags, struct lsa_QuerySecurity *r)
+static NTSTATUS ndr_pull_lsa_QuerySecurity(struct ndr_pull *ndr, int flags, struct lsa_QuerySecurity *r)
 {
 	uint32_t _ptr_sdbuf;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -4308,7 +4308,7 @@ _PUBLIC_ void ndr_print_lsa_QuerySecurity(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetSecObj(struct ndr_push *ndr, int flags, const struct lsa_SetSecObj *r)
+static NTSTATUS ndr_push_lsa_SetSecObj(struct ndr_push *ndr, int flags, const struct lsa_SetSecObj *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4318,7 +4318,7 @@ NTSTATUS ndr_push_lsa_SetSecObj(struct ndr_push *ndr, int flags, const struct ls
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetSecObj(struct ndr_pull *ndr, int flags, struct lsa_SetSecObj *r)
+static NTSTATUS ndr_pull_lsa_SetSecObj(struct ndr_pull *ndr, int flags, struct lsa_SetSecObj *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4349,7 +4349,7 @@ _PUBLIC_ void ndr_print_lsa_SetSecObj(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ChangePassword(struct ndr_push *ndr, int flags, const struct lsa_ChangePassword *r)
+static NTSTATUS ndr_push_lsa_ChangePassword(struct ndr_push *ndr, int flags, const struct lsa_ChangePassword *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4359,7 +4359,7 @@ NTSTATUS ndr_push_lsa_ChangePassword(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ChangePassword(struct ndr_pull *ndr, int flags, struct lsa_ChangePassword *r)
+static NTSTATUS ndr_pull_lsa_ChangePassword(struct ndr_pull *ndr, int flags, struct lsa_ChangePassword *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4390,7 +4390,7 @@ _PUBLIC_ void ndr_print_lsa_ChangePassword(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy *r)
+static NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -4409,7 +4409,7 @@ NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct l
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy *r)
+static NTSTATUS ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -4490,7 +4490,7 @@ _PUBLIC_ void ndr_print_lsa_OpenPolicy(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy *r)
+static NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4508,7 +4508,7 @@ NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, int flags, struct lsa_QueryInfoPolicy *r)
+static NTSTATUS ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, int flags, struct lsa_QueryInfoPolicy *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -4577,7 +4577,7 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy *r)
+static NTSTATUS ndr_push_lsa_SetInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4587,7 +4587,7 @@ NTSTATUS ndr_push_lsa_SetInfoPolicy(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetInfoPolicy(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy *r)
+static NTSTATUS ndr_pull_lsa_SetInfoPolicy(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4618,7 +4618,7 @@ _PUBLIC_ void ndr_print_lsa_SetInfoPolicy(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_ClearAuditLog(struct ndr_push *ndr, int flags, const struct lsa_ClearAuditLog *r)
+static NTSTATUS ndr_push_lsa_ClearAuditLog(struct ndr_push *ndr, int flags, const struct lsa_ClearAuditLog *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4628,7 +4628,7 @@ NTSTATUS ndr_push_lsa_ClearAuditLog(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_ClearAuditLog(struct ndr_pull *ndr, int flags, struct lsa_ClearAuditLog *r)
+static NTSTATUS ndr_pull_lsa_ClearAuditLog(struct ndr_pull *ndr, int flags, struct lsa_ClearAuditLog *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4659,7 +4659,7 @@ _PUBLIC_ void ndr_print_lsa_ClearAuditLog(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r)
+static NTSTATUS ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4676,7 +4676,7 @@ NTSTATUS ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r)
+static NTSTATUS ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -4749,7 +4749,7 @@ _PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r)
+static NTSTATUS ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4768,7 +4768,7 @@ NTSTATUS ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int flags, struct lsa_EnumAccounts *r)
+static NTSTATUS ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int flags, struct lsa_EnumAccounts *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -4857,7 +4857,7 @@ _PUBLIC_ void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
+static NTSTATUS ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4874,7 +4874,7 @@ NTSTATUS ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r)
+static NTSTATUS ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_info_0;
@@ -4947,7 +4947,7 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomain(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumTrustDom(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustDom *r)
+static NTSTATUS ndr_push_lsa_EnumTrustDom(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustDom *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4966,7 +4966,7 @@ NTSTATUS ndr_push_lsa_EnumTrustDom(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumTrustDom(struct ndr_pull *ndr, int flags, struct lsa_EnumTrustDom *r)
+static NTSTATUS ndr_pull_lsa_EnumTrustDom(struct ndr_pull *ndr, int flags, struct lsa_EnumTrustDom *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -5055,7 +5055,7 @@ _PUBLIC_ void ndr_print_lsa_EnumTrustDom(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct lsa_LookupNames *r)
+static NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct lsa_LookupNames *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -5089,7 +5089,7 @@ NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flags, struct lsa_LookupNames *r)
+static NTSTATUS ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flags, struct lsa_LookupNames *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -5239,7 +5239,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r)
+static NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5266,7 +5266,7 @@ NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct l
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int flags, struct lsa_LookupSids *r)
+static NTSTATUS ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int flags, struct lsa_LookupSids *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -5395,7 +5395,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r)
+static NTSTATUS ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5411,7 +5411,7 @@ NTSTATUS ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int flags, struct lsa_CreateSecret *r)
+static NTSTATUS ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int flags, struct lsa_CreateSecret *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sec_handle_0;
@@ -5474,7 +5474,7 @@ _PUBLIC_ void ndr_print_lsa_CreateSecret(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenAccount(struct ndr_push *ndr, int flags, const struct lsa_OpenAccount *r)
+static NTSTATUS ndr_push_lsa_OpenAccount(struct ndr_push *ndr, int flags, const struct lsa_OpenAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5491,7 +5491,7 @@ NTSTATUS ndr_push_lsa_OpenAccount(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenAccount(struct ndr_pull *ndr, int flags, struct lsa_OpenAccount *r)
+static NTSTATUS ndr_pull_lsa_OpenAccount(struct ndr_pull *ndr, int flags, struct lsa_OpenAccount *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -5564,7 +5564,7 @@ _PUBLIC_ void ndr_print_lsa_OpenAccount(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivsAccount *r)
+static NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivsAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5580,7 +5580,7 @@ NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumPrivsAccount(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivsAccount *r)
+static NTSTATUS ndr_pull_lsa_EnumPrivsAccount(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivsAccount *r)
 {
 	uint32_t _ptr_privs;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -5645,7 +5645,7 @@ _PUBLIC_ void ndr_print_lsa_EnumPrivsAccount(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AddPrivilegesToAccount(struct ndr_push *ndr, int flags, const struct lsa_AddPrivilegesToAccount *r)
+static NTSTATUS ndr_push_lsa_AddPrivilegesToAccount(struct ndr_push *ndr, int flags, const struct lsa_AddPrivilegesToAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5659,7 +5659,7 @@ NTSTATUS ndr_push_lsa_AddPrivilegesToAccount(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AddPrivilegesToAccount(struct ndr_pull *ndr, int flags, struct lsa_AddPrivilegesToAccount *r)
+static NTSTATUS ndr_pull_lsa_AddPrivilegesToAccount(struct ndr_pull *ndr, int flags, struct lsa_AddPrivilegesToAccount *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_privs_0;
@@ -5714,7 +5714,7 @@ _PUBLIC_ void ndr_print_lsa_AddPrivilegesToAccount(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_RemovePrivilegesFromAccount(struct ndr_push *ndr, int flags, const struct lsa_RemovePrivilegesFromAccount *r)
+static NTSTATUS ndr_push_lsa_RemovePrivilegesFromAccount(struct ndr_push *ndr, int flags, const struct lsa_RemovePrivilegesFromAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5731,7 +5731,7 @@ NTSTATUS ndr_push_lsa_RemovePrivilegesFromAccount(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_RemovePrivilegesFromAccount(struct ndr_pull *ndr, int flags, struct lsa_RemovePrivilegesFromAccount *r)
+static NTSTATUS ndr_pull_lsa_RemovePrivilegesFromAccount(struct ndr_pull *ndr, int flags, struct lsa_RemovePrivilegesFromAccount *r)
 {
 	uint32_t _ptr_privs;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -5796,7 +5796,7 @@ _PUBLIC_ void ndr_print_lsa_RemovePrivilegesFromAccount(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_GetQuotasForAccount(struct ndr_push *ndr, int flags, const struct lsa_GetQuotasForAccount *r)
+static NTSTATUS ndr_push_lsa_GetQuotasForAccount(struct ndr_push *ndr, int flags, const struct lsa_GetQuotasForAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5806,7 +5806,7 @@ NTSTATUS ndr_push_lsa_GetQuotasForAccount(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_GetQuotasForAccount(struct ndr_pull *ndr, int flags, struct lsa_GetQuotasForAccount *r)
+static NTSTATUS ndr_pull_lsa_GetQuotasForAccount(struct ndr_pull *ndr, int flags, struct lsa_GetQuotasForAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5837,7 +5837,7 @@ _PUBLIC_ void ndr_print_lsa_GetQuotasForAccount(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetQuotasForAccount(struct ndr_push *ndr, int flags, const struct lsa_SetQuotasForAccount *r)
+static NTSTATUS ndr_push_lsa_SetQuotasForAccount(struct ndr_push *ndr, int flags, const struct lsa_SetQuotasForAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5847,7 +5847,7 @@ NTSTATUS ndr_push_lsa_SetQuotasForAccount(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetQuotasForAccount(struct ndr_pull *ndr, int flags, struct lsa_SetQuotasForAccount *r)
+static NTSTATUS ndr_pull_lsa_SetQuotasForAccount(struct ndr_pull *ndr, int flags, struct lsa_SetQuotasForAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5878,7 +5878,7 @@ _PUBLIC_ void ndr_print_lsa_SetQuotasForAccount(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_GetSystemAccessAccount(struct ndr_push *ndr, int flags, const struct lsa_GetSystemAccessAccount *r)
+static NTSTATUS ndr_push_lsa_GetSystemAccessAccount(struct ndr_push *ndr, int flags, const struct lsa_GetSystemAccessAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5888,7 +5888,7 @@ NTSTATUS ndr_push_lsa_GetSystemAccessAccount(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_GetSystemAccessAccount(struct ndr_pull *ndr, int flags, struct lsa_GetSystemAccessAccount *r)
+static NTSTATUS ndr_pull_lsa_GetSystemAccessAccount(struct ndr_pull *ndr, int flags, struct lsa_GetSystemAccessAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5919,7 +5919,7 @@ _PUBLIC_ void ndr_print_lsa_GetSystemAccessAccount(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetSystemAccessAccount(struct ndr_push *ndr, int flags, const struct lsa_SetSystemAccessAccount *r)
+static NTSTATUS ndr_push_lsa_SetSystemAccessAccount(struct ndr_push *ndr, int flags, const struct lsa_SetSystemAccessAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5929,7 +5929,7 @@ NTSTATUS ndr_push_lsa_SetSystemAccessAccount(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetSystemAccessAccount(struct ndr_pull *ndr, int flags, struct lsa_SetSystemAccessAccount *r)
+static NTSTATUS ndr_pull_lsa_SetSystemAccessAccount(struct ndr_pull *ndr, int flags, struct lsa_SetSystemAccessAccount *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5960,7 +5960,7 @@ _PUBLIC_ void ndr_print_lsa_SetSystemAccessAccount(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomain *r)
+static NTSTATUS ndr_push_lsa_OpenTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5977,7 +5977,7 @@ NTSTATUS ndr_push_lsa_OpenTrustedDomain(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_OpenTrustedDomain *r)
+static NTSTATUS ndr_pull_lsa_OpenTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_OpenTrustedDomain *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -6050,7 +6050,7 @@ _PUBLIC_ void ndr_print_lsa_OpenTrustedDomain(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryTrustedDomainInfo(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfo *r)
+static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfo(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfo *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.trustdom_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6068,7 +6068,7 @@ NTSTATUS ndr_push_lsa_QueryTrustedDomainInfo(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfo(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfo *r)
+static NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfo(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfo *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_trustdom_handle_0;
@@ -6137,7 +6137,7 @@ _PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfo(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetInformationTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_SetInformationTrustedDomain *r)
+static NTSTATUS ndr_push_lsa_SetInformationTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_SetInformationTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -6147,7 +6147,7 @@ NTSTATUS ndr_push_lsa_SetInformationTrustedDomain(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetInformationTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_SetInformationTrustedDomain *r)
+static NTSTATUS ndr_pull_lsa_SetInformationTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_SetInformationTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -6178,7 +6178,7 @@ _PUBLIC_ void ndr_print_lsa_SetInformationTrustedDomain(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r)
+static NTSTATUS ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6194,7 +6194,7 @@ NTSTATUS ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct l
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int flags, struct lsa_OpenSecret *r)
+static NTSTATUS ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int flags, struct lsa_OpenSecret *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sec_handle_0;
@@ -6257,7 +6257,7 @@ _PUBLIC_ void ndr_print_lsa_OpenSecret(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r)
+static NTSTATUS ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6277,7 +6277,7 @@ NTSTATUS ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct ls
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetSecret(struct ndr_pull *ndr, int flags, struct lsa_SetSecret *r)
+static NTSTATUS ndr_pull_lsa_SetSecret(struct ndr_pull *ndr, int flags, struct lsa_SetSecret *r)
 {
 	uint32_t _ptr_new_val;
 	uint32_t _ptr_old_val;
@@ -6360,7 +6360,7 @@ _PUBLIC_ void ndr_print_lsa_SetSecret(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r)
+static NTSTATUS ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6404,7 +6404,7 @@ NTSTATUS ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QuerySecret(struct ndr_pull *ndr, int flags, struct lsa_QuerySecret *r)
+static NTSTATUS ndr_pull_lsa_QuerySecret(struct ndr_pull *ndr, int flags, struct lsa_QuerySecret *r)
 {
 	uint32_t _ptr_new_val;
 	uint32_t _ptr_new_mtime;
@@ -6601,7 +6601,7 @@ _PUBLIC_ void ndr_print_lsa_QuerySecret(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupPrivValue(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivValue *r)
+static NTSTATUS ndr_push_lsa_LookupPrivValue(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivValue *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6617,7 +6617,7 @@ NTSTATUS ndr_push_lsa_LookupPrivValue(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupPrivValue(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivValue *r)
+static NTSTATUS ndr_pull_lsa_LookupPrivValue(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivValue *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_name_0;
@@ -6688,7 +6688,7 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivValue(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivName *r)
+static NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6706,7 +6706,7 @@ NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupPrivName(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivName *r)
+static NTSTATUS ndr_pull_lsa_LookupPrivName(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivName *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -6783,7 +6783,7 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivName(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivDisplayName *r)
+static NTSTATUS ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivDisplayName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6806,7 +6806,7 @@ NTSTATUS ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupPrivDisplayName(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivDisplayName *r)
+static NTSTATUS ndr_pull_lsa_LookupPrivDisplayName(struct ndr_pull *ndr, int flags, struct lsa_LookupPrivDisplayName *r)
 {
 	uint32_t _ptr_disp_name;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -6910,7 +6910,7 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivDisplayName(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DeleteObject(struct ndr_push *ndr, int flags, const struct lsa_DeleteObject *r)
+static NTSTATUS ndr_push_lsa_DeleteObject(struct ndr_push *ndr, int flags, const struct lsa_DeleteObject *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -6920,7 +6920,7 @@ NTSTATUS ndr_push_lsa_DeleteObject(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DeleteObject(struct ndr_pull *ndr, int flags, struct lsa_DeleteObject *r)
+static NTSTATUS ndr_pull_lsa_DeleteObject(struct ndr_pull *ndr, int flags, struct lsa_DeleteObject *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -6951,7 +6951,7 @@ _PUBLIC_ void ndr_print_lsa_DeleteObject(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumAccountsWithUserRight(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountsWithUserRight *r)
+static NTSTATUS ndr_push_lsa_EnumAccountsWithUserRight(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountsWithUserRight *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6969,7 +6969,7 @@ NTSTATUS ndr_push_lsa_EnumAccountsWithUserRight(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumAccountsWithUserRight(struct ndr_pull *ndr, int flags, struct lsa_EnumAccountsWithUserRight *r)
+static NTSTATUS ndr_pull_lsa_EnumAccountsWithUserRight(struct ndr_pull *ndr, int flags, struct lsa_EnumAccountsWithUserRight *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -7048,7 +7048,7 @@ _PUBLIC_ void ndr_print_lsa_EnumAccountsWithUserRight(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountRights *r)
+static NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountRights *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7064,7 +7064,7 @@ NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumAccountRights(struct ndr_pull *ndr, int flags, struct lsa_EnumAccountRights *r)
+static NTSTATUS ndr_pull_lsa_EnumAccountRights(struct ndr_pull *ndr, int flags, struct lsa_EnumAccountRights *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -7135,7 +7135,7 @@ _PUBLIC_ void ndr_print_lsa_EnumAccountRights(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_AddAccountRights(struct ndr_push *ndr, int flags, const struct lsa_AddAccountRights *r)
+static NTSTATUS ndr_push_lsa_AddAccountRights(struct ndr_push *ndr, int flags, const struct lsa_AddAccountRights *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7151,7 +7151,7 @@ NTSTATUS ndr_push_lsa_AddAccountRights(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_AddAccountRights(struct ndr_pull *ndr, int flags, struct lsa_AddAccountRights *r)
+static NTSTATUS ndr_pull_lsa_AddAccountRights(struct ndr_pull *ndr, int flags, struct lsa_AddAccountRights *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -7218,7 +7218,7 @@ _PUBLIC_ void ndr_print_lsa_AddAccountRights(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_RemoveAccountRights(struct ndr_push *ndr, int flags, const struct lsa_RemoveAccountRights *r)
+static NTSTATUS ndr_push_lsa_RemoveAccountRights(struct ndr_push *ndr, int flags, const struct lsa_RemoveAccountRights *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7235,7 +7235,7 @@ NTSTATUS ndr_push_lsa_RemoveAccountRights(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_RemoveAccountRights(struct ndr_pull *ndr, int flags, struct lsa_RemoveAccountRights *r)
+static NTSTATUS ndr_pull_lsa_RemoveAccountRights(struct ndr_pull *ndr, int flags, struct lsa_RemoveAccountRights *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -7304,7 +7304,7 @@ _PUBLIC_ void ndr_print_lsa_RemoveAccountRights(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoBySid(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoBySid *r)
+static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoBySid(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7324,7 +7324,7 @@ NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoBySid(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfoBySid(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfoBySid *r)
+static NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfoBySid(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -7405,7 +7405,7 @@ _PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoBySid(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetTrustedDomainInfo(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfo *r)
+static NTSTATUS ndr_push_lsa_SetTrustedDomainInfo(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7415,7 +7415,7 @@ NTSTATUS ndr_push_lsa_SetTrustedDomainInfo(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetTrustedDomainInfo(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfo *r)
+static NTSTATUS ndr_pull_lsa_SetTrustedDomainInfo(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7446,7 +7446,7 @@ _PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfo(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_DeleteTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_DeleteTrustedDomain *r)
+static NTSTATUS ndr_push_lsa_DeleteTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_DeleteTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7460,7 +7460,7 @@ NTSTATUS ndr_push_lsa_DeleteTrustedDomain(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_DeleteTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_DeleteTrustedDomain *r)
+static NTSTATUS ndr_pull_lsa_DeleteTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_DeleteTrustedDomain *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_dom_sid_0;
@@ -7515,7 +7515,7 @@ _PUBLIC_ void ndr_print_lsa_DeleteTrustedDomain(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_StorePrivateData(struct ndr_push *ndr, int flags, const struct lsa_StorePrivateData *r)
+static NTSTATUS ndr_push_lsa_StorePrivateData(struct ndr_push *ndr, int flags, const struct lsa_StorePrivateData *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7525,7 +7525,7 @@ NTSTATUS ndr_push_lsa_StorePrivateData(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_StorePrivateData(struct ndr_pull *ndr, int flags, struct lsa_StorePrivateData *r)
+static NTSTATUS ndr_pull_lsa_StorePrivateData(struct ndr_pull *ndr, int flags, struct lsa_StorePrivateData *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7556,7 +7556,7 @@ _PUBLIC_ void ndr_print_lsa_StorePrivateData(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_RetrievePrivateData(struct ndr_push *ndr, int flags, const struct lsa_RetrievePrivateData *r)
+static NTSTATUS ndr_push_lsa_RetrievePrivateData(struct ndr_push *ndr, int flags, const struct lsa_RetrievePrivateData *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7566,7 +7566,7 @@ NTSTATUS ndr_push_lsa_RetrievePrivateData(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_RetrievePrivateData(struct ndr_pull *ndr, int flags, struct lsa_RetrievePrivateData *r)
+static NTSTATUS ndr_pull_lsa_RetrievePrivateData(struct ndr_pull *ndr, int flags, struct lsa_RetrievePrivateData *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7597,7 +7597,7 @@ _PUBLIC_ void ndr_print_lsa_RetrievePrivateData(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy2 *r)
+static NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -7619,7 +7619,7 @@ NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy2 *r)
+static NTSTATUS ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy2 *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -7706,7 +7706,7 @@ _PUBLIC_ void ndr_print_lsa_OpenPolicy2(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_GetUserName(struct ndr_push *ndr, int flags, const struct lsa_GetUserName *r)
+static NTSTATUS ndr_push_lsa_GetUserName(struct ndr_push *ndr, int flags, const struct lsa_GetUserName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -7739,7 +7739,7 @@ NTSTATUS ndr_push_lsa_GetUserName(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flags, struct lsa_GetUserName *r)
+static NTSTATUS ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flags, struct lsa_GetUserName *r)
 {
 	uint32_t _ptr_system_name;
 	uint32_t _ptr_account_name;
@@ -7874,7 +7874,7 @@ _PUBLIC_ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy2 *r)
+static NTSTATUS ndr_push_lsa_QueryInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy2 *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -7892,7 +7892,7 @@ NTSTATUS ndr_push_lsa_QueryInfoPolicy2(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryInfoPolicy2(struct ndr_pull *ndr, int flags, struct lsa_QueryInfoPolicy2 *r)
+static NTSTATUS ndr_pull_lsa_QueryInfoPolicy2(struct ndr_pull *ndr, int flags, struct lsa_QueryInfoPolicy2 *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -7961,7 +7961,7 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy2(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy2 *r)
+static NTSTATUS ndr_push_lsa_SetInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -7971,7 +7971,7 @@ NTSTATUS ndr_push_lsa_SetInfoPolicy2(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetInfoPolicy2(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy2 *r)
+static NTSTATUS ndr_pull_lsa_SetInfoPolicy2(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -8002,7 +8002,7 @@ _PUBLIC_ void ndr_print_lsa_SetInfoPolicy2(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoByName *r)
+static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoByName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8021,7 +8021,7 @@ NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoByName(struct ndr_push *ndr, int fla
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfoByName *r)
+static NTSTATUS ndr_pull_lsa_QueryTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_QueryTrustedDomainInfoByName *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -8092,7 +8092,7 @@ _PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoByName(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r)
+static NTSTATUS ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8111,7 +8111,7 @@ NTSTATUS ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfoByName *r)
+static NTSTATUS ndr_pull_lsa_SetTrustedDomainInfoByName(struct ndr_pull *ndr, int flags, struct lsa_SetTrustedDomainInfoByName *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -8180,7 +8180,7 @@ _PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfoByName(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_EnumTrustedDomainsEx(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustedDomainsEx *r)
+static NTSTATUS ndr_push_lsa_EnumTrustedDomainsEx(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustedDomainsEx *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8199,7 +8199,7 @@ NTSTATUS ndr_push_lsa_EnumTrustedDomainsEx(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_EnumTrustedDomainsEx(struct ndr_pull *ndr, int flags, struct lsa_EnumTrustedDomainsEx *r)
+static NTSTATUS ndr_pull_lsa_EnumTrustedDomainsEx(struct ndr_pull *ndr, int flags, struct lsa_EnumTrustedDomainsEx *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -8285,7 +8285,7 @@ _PUBLIC_ void ndr_print_lsa_EnumTrustedDomainsEx(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CreateTrustedDomainEx(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomainEx *r)
+static NTSTATUS ndr_push_lsa_CreateTrustedDomainEx(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomainEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -8295,7 +8295,7 @@ NTSTATUS ndr_push_lsa_CreateTrustedDomainEx(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CreateTrustedDomainEx(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomainEx *r)
+static NTSTATUS ndr_pull_lsa_CreateTrustedDomainEx(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomainEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -8326,7 +8326,7 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomainEx(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CloseTrustedDomainEx(struct ndr_push *ndr, int flags, const struct lsa_CloseTrustedDomainEx *r)
+static NTSTATUS ndr_push_lsa_CloseTrustedDomainEx(struct ndr_push *ndr, int flags, const struct lsa_CloseTrustedDomainEx *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8340,7 +8340,7 @@ NTSTATUS ndr_push_lsa_CloseTrustedDomainEx(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CloseTrustedDomainEx(struct ndr_pull *ndr, int flags, struct lsa_CloseTrustedDomainEx *r)
+static NTSTATUS ndr_pull_lsa_CloseTrustedDomainEx(struct ndr_pull *ndr, int flags, struct lsa_CloseTrustedDomainEx *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -8398,7 +8398,7 @@ _PUBLIC_ void ndr_print_lsa_CloseTrustedDomainEx(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_QueryDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryDomainInformationPolicy *r)
+static NTSTATUS ndr_push_lsa_QueryDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryDomainInformationPolicy *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8416,7 +8416,7 @@ NTSTATUS ndr_push_lsa_QueryDomainInformationPolicy(struct ndr_push *ndr, int fla
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_QueryDomainInformationPolicy(struct ndr_pull *ndr, int flags, struct lsa_QueryDomainInformationPolicy *r)
+static NTSTATUS ndr_pull_lsa_QueryDomainInformationPolicy(struct ndr_pull *ndr, int flags, struct lsa_QueryDomainInformationPolicy *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -8485,7 +8485,7 @@ _PUBLIC_ void ndr_print_lsa_QueryDomainInformationPolicy(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_SetDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetDomainInformationPolicy *r)
+static NTSTATUS ndr_push_lsa_SetDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetDomainInformationPolicy *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8503,7 +8503,7 @@ NTSTATUS ndr_push_lsa_SetDomainInformationPolicy(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_SetDomainInformationPolicy(struct ndr_pull *ndr, int flags, struct lsa_SetDomainInformationPolicy *r)
+static NTSTATUS ndr_pull_lsa_SetDomainInformationPolicy(struct ndr_pull *ndr, int flags, struct lsa_SetDomainInformationPolicy *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -8570,7 +8570,7 @@ _PUBLIC_ void ndr_print_lsa_SetDomainInformationPolicy(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_OpenTrustedDomainByName(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomainByName *r)
+static NTSTATUS ndr_push_lsa_OpenTrustedDomainByName(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomainByName *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8586,7 +8586,7 @@ NTSTATUS ndr_push_lsa_OpenTrustedDomainByName(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_OpenTrustedDomainByName(struct ndr_pull *ndr, int flags, struct lsa_OpenTrustedDomainByName *r)
+static NTSTATUS ndr_pull_lsa_OpenTrustedDomainByName(struct ndr_pull *ndr, int flags, struct lsa_OpenTrustedDomainByName *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_trustdom_handle_0;
@@ -8649,7 +8649,7 @@ _PUBLIC_ void ndr_print_lsa_OpenTrustedDomainByName(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_TestCall(struct ndr_push *ndr, int flags, const struct lsa_TestCall *r)
+static NTSTATUS ndr_push_lsa_TestCall(struct ndr_push *ndr, int flags, const struct lsa_TestCall *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -8659,7 +8659,7 @@ NTSTATUS ndr_push_lsa_TestCall(struct ndr_push *ndr, int flags, const struct lsa
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_TestCall(struct ndr_pull *ndr, int flags, struct lsa_TestCall *r)
+static NTSTATUS ndr_pull_lsa_TestCall(struct ndr_pull *ndr, int flags, struct lsa_TestCall *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -8690,7 +8690,7 @@ _PUBLIC_ void ndr_print_lsa_TestCall(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r)
+static NTSTATUS ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -8719,7 +8719,7 @@ NTSTATUS ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int flags, struct lsa_LookupSids2 *r)
+static NTSTATUS ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int flags, struct lsa_LookupSids2 *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -8852,7 +8852,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct lsa_LookupNames2 *r)
+static NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct lsa_LookupNames2 *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -8888,7 +8888,7 @@ NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int flags, struct lsa_LookupNames2 *r)
+static NTSTATUS ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int flags, struct lsa_LookupNames2 *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -9042,7 +9042,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CreateTrustedDomainEx2(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomainEx2 *r)
+static NTSTATUS ndr_push_lsa_CreateTrustedDomainEx2(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomainEx2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9052,7 +9052,7 @@ NTSTATUS ndr_push_lsa_CreateTrustedDomainEx2(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CreateTrustedDomainEx2(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomainEx2 *r)
+static NTSTATUS ndr_pull_lsa_CreateTrustedDomainEx2(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomainEx2 *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9083,7 +9083,7 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomainEx2(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRWRITE(struct ndr_push *ndr, int flags, const struct lsa_CREDRWRITE *r)
+static NTSTATUS ndr_push_lsa_CREDRWRITE(struct ndr_push *ndr, int flags, const struct lsa_CREDRWRITE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9093,7 +9093,7 @@ NTSTATUS ndr_push_lsa_CREDRWRITE(struct ndr_push *ndr, int flags, const struct l
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRWRITE(struct ndr_pull *ndr, int flags, struct lsa_CREDRWRITE *r)
+static NTSTATUS ndr_pull_lsa_CREDRWRITE(struct ndr_pull *ndr, int flags, struct lsa_CREDRWRITE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9124,7 +9124,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRWRITE(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRREAD(struct ndr_push *ndr, int flags, const struct lsa_CREDRREAD *r)
+static NTSTATUS ndr_push_lsa_CREDRREAD(struct ndr_push *ndr, int flags, const struct lsa_CREDRREAD *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9134,7 +9134,7 @@ NTSTATUS ndr_push_lsa_CREDRREAD(struct ndr_push *ndr, int flags, const struct ls
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRREAD(struct ndr_pull *ndr, int flags, struct lsa_CREDRREAD *r)
+static NTSTATUS ndr_pull_lsa_CREDRREAD(struct ndr_pull *ndr, int flags, struct lsa_CREDRREAD *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9165,7 +9165,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRREAD(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRENUMERATE(struct ndr_push *ndr, int flags, const struct lsa_CREDRENUMERATE *r)
+static NTSTATUS ndr_push_lsa_CREDRENUMERATE(struct ndr_push *ndr, int flags, const struct lsa_CREDRENUMERATE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9175,7 +9175,7 @@ NTSTATUS ndr_push_lsa_CREDRENUMERATE(struct ndr_push *ndr, int flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRENUMERATE(struct ndr_pull *ndr, int flags, struct lsa_CREDRENUMERATE *r)
+static NTSTATUS ndr_pull_lsa_CREDRENUMERATE(struct ndr_pull *ndr, int flags, struct lsa_CREDRENUMERATE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9206,7 +9206,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRENUMERATE(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_push *ndr, int flags, const struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
+static NTSTATUS ndr_push_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_push *ndr, int flags, const struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9216,7 +9216,7 @@ NTSTATUS ndr_push_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_pull *ndr, int flags, struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
+static NTSTATUS ndr_pull_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_pull *ndr, int flags, struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9247,7 +9247,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRWRITEDOMAINCREDENTIALS(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_push *ndr, int flags, const struct lsa_CREDRREADDOMAINCREDENTIALS *r)
+static NTSTATUS ndr_push_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_push *ndr, int flags, const struct lsa_CREDRREADDOMAINCREDENTIALS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9257,7 +9257,7 @@ NTSTATUS ndr_push_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_pull *ndr, int flags, struct lsa_CREDRREADDOMAINCREDENTIALS *r)
+static NTSTATUS ndr_pull_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_pull *ndr, int flags, struct lsa_CREDRREADDOMAINCREDENTIALS *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9288,7 +9288,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRREADDOMAINCREDENTIALS(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRDELETE(struct ndr_push *ndr, int flags, const struct lsa_CREDRDELETE *r)
+static NTSTATUS ndr_push_lsa_CREDRDELETE(struct ndr_push *ndr, int flags, const struct lsa_CREDRDELETE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9298,7 +9298,7 @@ NTSTATUS ndr_push_lsa_CREDRDELETE(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRDELETE(struct ndr_pull *ndr, int flags, struct lsa_CREDRDELETE *r)
+static NTSTATUS ndr_pull_lsa_CREDRDELETE(struct ndr_pull *ndr, int flags, struct lsa_CREDRDELETE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9329,7 +9329,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRDELETE(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRGETTARGETINFO(struct ndr_push *ndr, int flags, const struct lsa_CREDRGETTARGETINFO *r)
+static NTSTATUS ndr_push_lsa_CREDRGETTARGETINFO(struct ndr_push *ndr, int flags, const struct lsa_CREDRGETTARGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9339,7 +9339,7 @@ NTSTATUS ndr_push_lsa_CREDRGETTARGETINFO(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRGETTARGETINFO(struct ndr_pull *ndr, int flags, struct lsa_CREDRGETTARGETINFO *r)
+static NTSTATUS ndr_pull_lsa_CREDRGETTARGETINFO(struct ndr_pull *ndr, int flags, struct lsa_CREDRGETTARGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9370,7 +9370,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRGETTARGETINFO(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRPROFILELOADED(struct ndr_push *ndr, int flags, const struct lsa_CREDRPROFILELOADED *r)
+static NTSTATUS ndr_push_lsa_CREDRPROFILELOADED(struct ndr_push *ndr, int flags, const struct lsa_CREDRPROFILELOADED *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9380,7 +9380,7 @@ NTSTATUS ndr_push_lsa_CREDRPROFILELOADED(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRPROFILELOADED(struct ndr_pull *ndr, int flags, struct lsa_CREDRPROFILELOADED *r)
+static NTSTATUS ndr_pull_lsa_CREDRPROFILELOADED(struct ndr_pull *ndr, int flags, struct lsa_CREDRPROFILELOADED *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9411,7 +9411,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRPROFILELOADED(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct lsa_LookupNames3 *r)
+static NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct lsa_LookupNames3 *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -9447,7 +9447,7 @@ NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r)
+static NTSTATUS ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -9601,7 +9601,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRGETSESSIONTYPES(struct ndr_push *ndr, int flags, const struct lsa_CREDRGETSESSIONTYPES *r)
+static NTSTATUS ndr_push_lsa_CREDRGETSESSIONTYPES(struct ndr_push *ndr, int flags, const struct lsa_CREDRGETSESSIONTYPES *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9611,7 +9611,7 @@ NTSTATUS ndr_push_lsa_CREDRGETSESSIONTYPES(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRGETSESSIONTYPES(struct ndr_pull *ndr, int flags, struct lsa_CREDRGETSESSIONTYPES *r)
+static NTSTATUS ndr_pull_lsa_CREDRGETSESSIONTYPES(struct ndr_pull *ndr, int flags, struct lsa_CREDRGETSESSIONTYPES *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9642,7 +9642,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRGETSESSIONTYPES(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARREGISTERAUDITEVENT *r)
+static NTSTATUS ndr_push_lsa_LSARREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARREGISTERAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9652,7 +9652,7 @@ NTSTATUS ndr_push_lsa_LSARREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARREGISTERAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARREGISTERAUDITEVENT *r)
+static NTSTATUS ndr_pull_lsa_LSARREGISTERAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARREGISTERAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9683,7 +9683,7 @@ _PUBLIC_ void ndr_print_lsa_LSARREGISTERAUDITEVENT(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARGENAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARGENAUDITEVENT *r)
+static NTSTATUS ndr_push_lsa_LSARGENAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARGENAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9693,7 +9693,7 @@ NTSTATUS ndr_push_lsa_LSARGENAUDITEVENT(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARGENAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARGENAUDITEVENT *r)
+static NTSTATUS ndr_pull_lsa_LSARGENAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARGENAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9724,7 +9724,7 @@ _PUBLIC_ void ndr_print_lsa_LSARGENAUDITEVENT(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARUNREGISTERAUDITEVENT *r)
+static NTSTATUS ndr_push_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARUNREGISTERAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9734,7 +9734,7 @@ NTSTATUS ndr_push_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARUNREGISTERAUDITEVENT *r)
+static NTSTATUS ndr_pull_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARUNREGISTERAUDITEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9765,7 +9765,7 @@ _PUBLIC_ void ndr_print_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9775,7 +9775,7 @@ NTSTATUS ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_push *ndr, int 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9806,7 +9806,7 @@ _PUBLIC_ void ndr_print_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_print *nd
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9816,7 +9816,7 @@ NTSTATUS ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_push *ndr, int fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+static NTSTATUS ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9847,7 +9847,7 @@ _PUBLIC_ void ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_CREDRRENAME(struct ndr_push *ndr, int flags, const struct lsa_CREDRRENAME *r)
+static NTSTATUS ndr_push_lsa_CREDRRENAME(struct ndr_push *ndr, int flags, const struct lsa_CREDRRENAME *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9857,7 +9857,7 @@ NTSTATUS ndr_push_lsa_CREDRRENAME(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_CREDRRENAME(struct ndr_pull *ndr, int flags, struct lsa_CREDRRENAME *r)
+static NTSTATUS ndr_pull_lsa_CREDRRENAME(struct ndr_pull *ndr, int flags, struct lsa_CREDRRENAME *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -9888,7 +9888,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRRENAME(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r)
+static NTSTATUS ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -9915,7 +9915,7 @@ NTSTATUS ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r)
+static NTSTATUS ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_sids_0;
@@ -10036,7 +10036,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids3(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int flags, const struct lsa_LookupNames4 *r)
+static NTSTATUS ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int flags, const struct lsa_LookupNames4 *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -10070,7 +10070,7 @@ NTSTATUS ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int flags, const struct
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int flags, struct lsa_LookupNames4 *r)
+static NTSTATUS ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int flags, struct lsa_LookupNames4 *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -10212,7 +10212,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSAROPENPOLICYSCE(struct ndr_push *ndr, int flags, const struct lsa_LSAROPENPOLICYSCE *r)
+static NTSTATUS ndr_push_lsa_LSAROPENPOLICYSCE(struct ndr_push *ndr, int flags, const struct lsa_LSAROPENPOLICYSCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10222,7 +10222,7 @@ NTSTATUS ndr_push_lsa_LSAROPENPOLICYSCE(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSAROPENPOLICYSCE(struct ndr_pull *ndr, int flags, struct lsa_LSAROPENPOLICYSCE *r)
+static NTSTATUS ndr_pull_lsa_LSAROPENPOLICYSCE(struct ndr_pull *ndr, int flags, struct lsa_LSAROPENPOLICYSCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10253,7 +10253,7 @@ _PUBLIC_ void ndr_print_lsa_LSAROPENPOLICYSCE(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr, int flags, const struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
+static NTSTATUS ndr_push_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr, int flags, const struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10263,7 +10263,7 @@ NTSTATUS ndr_push_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr, i
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_pull *ndr, int flags, struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
+static NTSTATUS ndr_pull_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_pull *ndr, int flags, struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10294,7 +10294,7 @@ _PUBLIC_ void ndr_print_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct ndr_print 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr, int flags, const struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
+static NTSTATUS ndr_push_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr, int flags, const struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10304,7 +10304,7 @@ NTSTATUS ndr_push_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_push *ndr,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_pull *ndr, int flags, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
+static NTSTATUS ndr_pull_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_pull *ndr, int flags, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10335,7 +10335,7 @@ _PUBLIC_ void ndr_print_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct ndr_prin
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARADTREPORTSECURITYEVENT *r)
+static NTSTATUS ndr_push_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_push *ndr, int flags, const struct lsa_LSARADTREPORTSECURITYEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10345,7 +10345,7 @@ NTSTATUS ndr_push_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARADTREPORTSECURITYEVENT *r)
+static NTSTATUS ndr_pull_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_pull *ndr, int flags, struct lsa_LSARADTREPORTSECURITYEVENT *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -10376,14 +10376,14 @@ _PUBLIC_ void ndr_print_lsa_LSARADTREPORTSECURITYEVENT(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-const struct ndr_interface_call lsarpc_calls[] = {
+static const struct ndr_interface_call lsarpc_calls[] = {
 	{
 		"lsa_Close",
 		sizeof(struct lsa_Close),
 		(ndr_push_flags_fn_t) ndr_push_lsa_Close,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_Close,
 		(ndr_print_function_t) ndr_print_lsa_Close,
-		False,
+		false,
 	},
 	{
 		"lsa_Delete",
@@ -10391,7 +10391,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_Delete,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_Delete,
 		(ndr_print_function_t) ndr_print_lsa_Delete,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumPrivs",
@@ -10399,7 +10399,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumPrivs,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumPrivs,
 		(ndr_print_function_t) ndr_print_lsa_EnumPrivs,
-		False,
+		false,
 	},
 	{
 		"lsa_QuerySecurity",
@@ -10407,7 +10407,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QuerySecurity,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QuerySecurity,
 		(ndr_print_function_t) ndr_print_lsa_QuerySecurity,
-		False,
+		false,
 	},
 	{
 		"lsa_SetSecObj",
@@ -10415,7 +10415,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetSecObj,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetSecObj,
 		(ndr_print_function_t) ndr_print_lsa_SetSecObj,
-		False,
+		false,
 	},
 	{
 		"lsa_ChangePassword",
@@ -10423,7 +10423,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_ChangePassword,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_ChangePassword,
 		(ndr_print_function_t) ndr_print_lsa_ChangePassword,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenPolicy",
@@ -10431,7 +10431,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenPolicy,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenPolicy,
 		(ndr_print_function_t) ndr_print_lsa_OpenPolicy,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryInfoPolicy",
@@ -10439,7 +10439,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryInfoPolicy,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryInfoPolicy,
 		(ndr_print_function_t) ndr_print_lsa_QueryInfoPolicy,
-		False,
+		false,
 	},
 	{
 		"lsa_SetInfoPolicy",
@@ -10447,7 +10447,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetInfoPolicy,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetInfoPolicy,
 		(ndr_print_function_t) ndr_print_lsa_SetInfoPolicy,
-		False,
+		false,
 	},
 	{
 		"lsa_ClearAuditLog",
@@ -10455,7 +10455,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_ClearAuditLog,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_ClearAuditLog,
 		(ndr_print_function_t) ndr_print_lsa_ClearAuditLog,
-		False,
+		false,
 	},
 	{
 		"lsa_CreateAccount",
@@ -10463,7 +10463,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CreateAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CreateAccount,
 		(ndr_print_function_t) ndr_print_lsa_CreateAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumAccounts",
@@ -10471,7 +10471,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumAccounts,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumAccounts,
 		(ndr_print_function_t) ndr_print_lsa_EnumAccounts,
-		False,
+		false,
 	},
 	{
 		"lsa_CreateTrustedDomain",
@@ -10479,7 +10479,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CreateTrustedDomain,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CreateTrustedDomain,
 		(ndr_print_function_t) ndr_print_lsa_CreateTrustedDomain,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumTrustDom",
@@ -10487,7 +10487,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumTrustDom,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumTrustDom,
 		(ndr_print_function_t) ndr_print_lsa_EnumTrustDom,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupNames",
@@ -10495,7 +10495,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupNames,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupNames,
 		(ndr_print_function_t) ndr_print_lsa_LookupNames,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupSids",
@@ -10503,7 +10503,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupSids,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupSids,
 		(ndr_print_function_t) ndr_print_lsa_LookupSids,
-		False,
+		false,
 	},
 	{
 		"lsa_CreateSecret",
@@ -10511,7 +10511,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CreateSecret,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CreateSecret,
 		(ndr_print_function_t) ndr_print_lsa_CreateSecret,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenAccount",
@@ -10519,7 +10519,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenAccount,
 		(ndr_print_function_t) ndr_print_lsa_OpenAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumPrivsAccount",
@@ -10527,7 +10527,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumPrivsAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumPrivsAccount,
 		(ndr_print_function_t) ndr_print_lsa_EnumPrivsAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_AddPrivilegesToAccount",
@@ -10535,7 +10535,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_AddPrivilegesToAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_AddPrivilegesToAccount,
 		(ndr_print_function_t) ndr_print_lsa_AddPrivilegesToAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_RemovePrivilegesFromAccount",
@@ -10543,7 +10543,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_RemovePrivilegesFromAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_RemovePrivilegesFromAccount,
 		(ndr_print_function_t) ndr_print_lsa_RemovePrivilegesFromAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_GetQuotasForAccount",
@@ -10551,7 +10551,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_GetQuotasForAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_GetQuotasForAccount,
 		(ndr_print_function_t) ndr_print_lsa_GetQuotasForAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_SetQuotasForAccount",
@@ -10559,7 +10559,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetQuotasForAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetQuotasForAccount,
 		(ndr_print_function_t) ndr_print_lsa_SetQuotasForAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_GetSystemAccessAccount",
@@ -10567,7 +10567,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_GetSystemAccessAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_GetSystemAccessAccount,
 		(ndr_print_function_t) ndr_print_lsa_GetSystemAccessAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_SetSystemAccessAccount",
@@ -10575,7 +10575,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetSystemAccessAccount,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetSystemAccessAccount,
 		(ndr_print_function_t) ndr_print_lsa_SetSystemAccessAccount,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenTrustedDomain",
@@ -10583,7 +10583,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenTrustedDomain,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenTrustedDomain,
 		(ndr_print_function_t) ndr_print_lsa_OpenTrustedDomain,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryTrustedDomainInfo",
@@ -10591,7 +10591,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryTrustedDomainInfo,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryTrustedDomainInfo,
 		(ndr_print_function_t) ndr_print_lsa_QueryTrustedDomainInfo,
-		False,
+		false,
 	},
 	{
 		"lsa_SetInformationTrustedDomain",
@@ -10599,7 +10599,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetInformationTrustedDomain,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetInformationTrustedDomain,
 		(ndr_print_function_t) ndr_print_lsa_SetInformationTrustedDomain,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenSecret",
@@ -10607,7 +10607,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenSecret,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenSecret,
 		(ndr_print_function_t) ndr_print_lsa_OpenSecret,
-		False,
+		false,
 	},
 	{
 		"lsa_SetSecret",
@@ -10615,7 +10615,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetSecret,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetSecret,
 		(ndr_print_function_t) ndr_print_lsa_SetSecret,
-		False,
+		false,
 	},
 	{
 		"lsa_QuerySecret",
@@ -10623,7 +10623,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QuerySecret,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QuerySecret,
 		(ndr_print_function_t) ndr_print_lsa_QuerySecret,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupPrivValue",
@@ -10631,7 +10631,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupPrivValue,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupPrivValue,
 		(ndr_print_function_t) ndr_print_lsa_LookupPrivValue,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupPrivName",
@@ -10639,7 +10639,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupPrivName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupPrivName,
 		(ndr_print_function_t) ndr_print_lsa_LookupPrivName,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupPrivDisplayName",
@@ -10647,7 +10647,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupPrivDisplayName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupPrivDisplayName,
 		(ndr_print_function_t) ndr_print_lsa_LookupPrivDisplayName,
-		False,
+		false,
 	},
 	{
 		"lsa_DeleteObject",
@@ -10655,7 +10655,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_DeleteObject,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_DeleteObject,
 		(ndr_print_function_t) ndr_print_lsa_DeleteObject,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumAccountsWithUserRight",
@@ -10663,7 +10663,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumAccountsWithUserRight,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumAccountsWithUserRight,
 		(ndr_print_function_t) ndr_print_lsa_EnumAccountsWithUserRight,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumAccountRights",
@@ -10671,7 +10671,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumAccountRights,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumAccountRights,
 		(ndr_print_function_t) ndr_print_lsa_EnumAccountRights,
-		False,
+		false,
 	},
 	{
 		"lsa_AddAccountRights",
@@ -10679,7 +10679,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_AddAccountRights,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_AddAccountRights,
 		(ndr_print_function_t) ndr_print_lsa_AddAccountRights,
-		False,
+		false,
 	},
 	{
 		"lsa_RemoveAccountRights",
@@ -10687,7 +10687,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_RemoveAccountRights,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_RemoveAccountRights,
 		(ndr_print_function_t) ndr_print_lsa_RemoveAccountRights,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryTrustedDomainInfoBySid",
@@ -10695,7 +10695,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryTrustedDomainInfoBySid,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryTrustedDomainInfoBySid,
 		(ndr_print_function_t) ndr_print_lsa_QueryTrustedDomainInfoBySid,
-		False,
+		false,
 	},
 	{
 		"lsa_SetTrustedDomainInfo",
@@ -10703,7 +10703,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetTrustedDomainInfo,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetTrustedDomainInfo,
 		(ndr_print_function_t) ndr_print_lsa_SetTrustedDomainInfo,
-		False,
+		false,
 	},
 	{
 		"lsa_DeleteTrustedDomain",
@@ -10711,7 +10711,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_DeleteTrustedDomain,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_DeleteTrustedDomain,
 		(ndr_print_function_t) ndr_print_lsa_DeleteTrustedDomain,
-		False,
+		false,
 	},
 	{
 		"lsa_StorePrivateData",
@@ -10719,7 +10719,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_StorePrivateData,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_StorePrivateData,
 		(ndr_print_function_t) ndr_print_lsa_StorePrivateData,
-		False,
+		false,
 	},
 	{
 		"lsa_RetrievePrivateData",
@@ -10727,7 +10727,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_RetrievePrivateData,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_RetrievePrivateData,
 		(ndr_print_function_t) ndr_print_lsa_RetrievePrivateData,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenPolicy2",
@@ -10735,7 +10735,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenPolicy2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenPolicy2,
 		(ndr_print_function_t) ndr_print_lsa_OpenPolicy2,
-		False,
+		false,
 	},
 	{
 		"lsa_GetUserName",
@@ -10743,7 +10743,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_GetUserName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_GetUserName,
 		(ndr_print_function_t) ndr_print_lsa_GetUserName,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryInfoPolicy2",
@@ -10751,7 +10751,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryInfoPolicy2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryInfoPolicy2,
 		(ndr_print_function_t) ndr_print_lsa_QueryInfoPolicy2,
-		False,
+		false,
 	},
 	{
 		"lsa_SetInfoPolicy2",
@@ -10759,7 +10759,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetInfoPolicy2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetInfoPolicy2,
 		(ndr_print_function_t) ndr_print_lsa_SetInfoPolicy2,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryTrustedDomainInfoByName",
@@ -10767,7 +10767,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryTrustedDomainInfoByName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryTrustedDomainInfoByName,
 		(ndr_print_function_t) ndr_print_lsa_QueryTrustedDomainInfoByName,
-		False,
+		false,
 	},
 	{
 		"lsa_SetTrustedDomainInfoByName",
@@ -10775,7 +10775,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetTrustedDomainInfoByName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetTrustedDomainInfoByName,
 		(ndr_print_function_t) ndr_print_lsa_SetTrustedDomainInfoByName,
-		False,
+		false,
 	},
 	{
 		"lsa_EnumTrustedDomainsEx",
@@ -10783,7 +10783,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_EnumTrustedDomainsEx,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_EnumTrustedDomainsEx,
 		(ndr_print_function_t) ndr_print_lsa_EnumTrustedDomainsEx,
-		False,
+		false,
 	},
 	{
 		"lsa_CreateTrustedDomainEx",
@@ -10791,7 +10791,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CreateTrustedDomainEx,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CreateTrustedDomainEx,
 		(ndr_print_function_t) ndr_print_lsa_CreateTrustedDomainEx,
-		False,
+		false,
 	},
 	{
 		"lsa_CloseTrustedDomainEx",
@@ -10799,7 +10799,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CloseTrustedDomainEx,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CloseTrustedDomainEx,
 		(ndr_print_function_t) ndr_print_lsa_CloseTrustedDomainEx,
-		False,
+		false,
 	},
 	{
 		"lsa_QueryDomainInformationPolicy",
@@ -10807,7 +10807,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_QueryDomainInformationPolicy,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_QueryDomainInformationPolicy,
 		(ndr_print_function_t) ndr_print_lsa_QueryDomainInformationPolicy,
-		False,
+		false,
 	},
 	{
 		"lsa_SetDomainInformationPolicy",
@@ -10815,7 +10815,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_SetDomainInformationPolicy,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_SetDomainInformationPolicy,
 		(ndr_print_function_t) ndr_print_lsa_SetDomainInformationPolicy,
-		False,
+		false,
 	},
 	{
 		"lsa_OpenTrustedDomainByName",
@@ -10823,7 +10823,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_OpenTrustedDomainByName,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_OpenTrustedDomainByName,
 		(ndr_print_function_t) ndr_print_lsa_OpenTrustedDomainByName,
-		False,
+		false,
 	},
 	{
 		"lsa_TestCall",
@@ -10831,7 +10831,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_TestCall,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_TestCall,
 		(ndr_print_function_t) ndr_print_lsa_TestCall,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupSids2",
@@ -10839,7 +10839,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupSids2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupSids2,
 		(ndr_print_function_t) ndr_print_lsa_LookupSids2,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupNames2",
@@ -10847,7 +10847,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupNames2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupNames2,
 		(ndr_print_function_t) ndr_print_lsa_LookupNames2,
-		False,
+		false,
 	},
 	{
 		"lsa_CreateTrustedDomainEx2",
@@ -10855,7 +10855,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CreateTrustedDomainEx2,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CreateTrustedDomainEx2,
 		(ndr_print_function_t) ndr_print_lsa_CreateTrustedDomainEx2,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRWRITE",
@@ -10863,7 +10863,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRWRITE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRWRITE,
 		(ndr_print_function_t) ndr_print_lsa_CREDRWRITE,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRREAD",
@@ -10871,7 +10871,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRREAD,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRREAD,
 		(ndr_print_function_t) ndr_print_lsa_CREDRREAD,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRENUMERATE",
@@ -10879,7 +10879,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRENUMERATE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRENUMERATE,
 		(ndr_print_function_t) ndr_print_lsa_CREDRENUMERATE,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRWRITEDOMAINCREDENTIALS",
@@ -10887,7 +10887,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRWRITEDOMAINCREDENTIALS,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRWRITEDOMAINCREDENTIALS,
 		(ndr_print_function_t) ndr_print_lsa_CREDRWRITEDOMAINCREDENTIALS,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRREADDOMAINCREDENTIALS",
@@ -10895,7 +10895,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRREADDOMAINCREDENTIALS,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRREADDOMAINCREDENTIALS,
 		(ndr_print_function_t) ndr_print_lsa_CREDRREADDOMAINCREDENTIALS,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRDELETE",
@@ -10903,7 +10903,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRDELETE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRDELETE,
 		(ndr_print_function_t) ndr_print_lsa_CREDRDELETE,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRGETTARGETINFO",
@@ -10911,7 +10911,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRGETTARGETINFO,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRGETTARGETINFO,
 		(ndr_print_function_t) ndr_print_lsa_CREDRGETTARGETINFO,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRPROFILELOADED",
@@ -10919,7 +10919,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRPROFILELOADED,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRPROFILELOADED,
 		(ndr_print_function_t) ndr_print_lsa_CREDRPROFILELOADED,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupNames3",
@@ -10927,7 +10927,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupNames3,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupNames3,
 		(ndr_print_function_t) ndr_print_lsa_LookupNames3,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRGETSESSIONTYPES",
@@ -10935,7 +10935,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRGETSESSIONTYPES,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRGETSESSIONTYPES,
 		(ndr_print_function_t) ndr_print_lsa_CREDRGETSESSIONTYPES,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARREGISTERAUDITEVENT",
@@ -10943,7 +10943,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARREGISTERAUDITEVENT,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARREGISTERAUDITEVENT,
 		(ndr_print_function_t) ndr_print_lsa_LSARREGISTERAUDITEVENT,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARGENAUDITEVENT",
@@ -10951,7 +10951,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARGENAUDITEVENT,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARGENAUDITEVENT,
 		(ndr_print_function_t) ndr_print_lsa_LSARGENAUDITEVENT,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARUNREGISTERAUDITEVENT",
@@ -10959,7 +10959,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARUNREGISTERAUDITEVENT,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARUNREGISTERAUDITEVENT,
 		(ndr_print_function_t) ndr_print_lsa_LSARUNREGISTERAUDITEVENT,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARQUERYFORESTTRUSTINFORMATION",
@@ -10967,7 +10967,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION,
 		(ndr_print_function_t) ndr_print_lsa_LSARQUERYFORESTTRUSTINFORMATION,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARSETFORESTTRUSTINFORMATION",
@@ -10975,7 +10975,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARSETFORESTTRUSTINFORMATION,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARSETFORESTTRUSTINFORMATION,
 		(ndr_print_function_t) ndr_print_lsa_LSARSETFORESTTRUSTINFORMATION,
-		False,
+		false,
 	},
 	{
 		"lsa_CREDRRENAME",
@@ -10983,7 +10983,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_CREDRRENAME,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_CREDRRENAME,
 		(ndr_print_function_t) ndr_print_lsa_CREDRRENAME,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupSids3",
@@ -10991,7 +10991,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupSids3,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupSids3,
 		(ndr_print_function_t) ndr_print_lsa_LookupSids3,
-		False,
+		false,
 	},
 	{
 		"lsa_LookupNames4",
@@ -10999,7 +10999,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LookupNames4,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LookupNames4,
 		(ndr_print_function_t) ndr_print_lsa_LookupNames4,
-		False,
+		false,
 	},
 	{
 		"lsa_LSAROPENPOLICYSCE",
@@ -11007,7 +11007,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSAROPENPOLICYSCE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSAROPENPOLICYSCE,
 		(ndr_print_function_t) ndr_print_lsa_LSAROPENPOLICYSCE,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARADTREGISTERSECURITYEVENTSOURCE",
@@ -11015,7 +11015,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARADTREGISTERSECURITYEVENTSOURCE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARADTREGISTERSECURITYEVENTSOURCE,
 		(ndr_print_function_t) ndr_print_lsa_LSARADTREGISTERSECURITYEVENTSOURCE,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE",
@@ -11023,7 +11023,7 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE,
 		(ndr_print_function_t) ndr_print_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE,
-		False,
+		false,
 	},
 	{
 		"lsa_LSARADTREPORTSECURITYEVENT",
@@ -11031,12 +11031,12 @@ const struct ndr_interface_call lsarpc_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_lsa_LSARADTREPORTSECURITYEVENT,
 		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARADTREPORTSECURITYEVENT,
 		(ndr_print_function_t) ndr_print_lsa_LSARADTREPORTSECURITYEVENT,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const lsarpc_endpoint_strings[] = {
+static const char * const lsarpc_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\lsarpc]", 
 	"ncacn_np:[\\pipe\\netlogon]", 
 	"ncacn_np:[\\pipe\\lsass]", 
@@ -11044,16 +11044,16 @@ const char * const lsarpc_endpoint_strings[] = {
 	"ncalrpc:", 
 };
 
-const struct ndr_interface_string_array lsarpc_endpoints = {
+static const struct ndr_interface_string_array lsarpc_endpoints = {
 	.count	= 5,
 	.names	= lsarpc_endpoint_strings
 };
 
-const char * const lsarpc_authservice_strings[] = {
+static const char * const lsarpc_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array lsarpc_authservices = {
+static const struct ndr_interface_string_array lsarpc_authservices = {
 	.count	= 5,
 	.names	= lsarpc_authservice_strings
 };

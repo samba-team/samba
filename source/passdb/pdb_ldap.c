@@ -2437,7 +2437,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				goto done;
 			}
 			
-			filter = talloc_asprintf_append(filter, "(uid=%s)", escape_memberuid);
+			filter = talloc_asprintf_append_buffer(filter, "(uid=%s)", escape_memberuid);
 			if (filter == NULL) {
 				SAFE_FREE(escape_memberuid);
 				ret = NT_STATUS_NO_MEMORY;
@@ -2447,7 +2447,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			SAFE_FREE(escape_memberuid);
 		}
 
-		filter = talloc_asprintf_append(filter, "))");
+		filter = talloc_asprintf_append_buffer(filter, "))");
 		if (filter == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -3726,7 +3726,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
 		sid_compose(&sid, domain_sid, rids[i]);
-		allsids = talloc_asprintf_append(allsids, "(sambaSid=%s)",
+		allsids = talloc_asprintf_append_buffer(allsids, "(sambaSid=%s)",
 						 sid_string_static(&sid));
 		if (allsids == NULL) {
 			goto done;
@@ -5470,6 +5470,317 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
+
+/**********************************************************************
+ trusted domains functions
+ *********************************************************************/
+
+static char *trusteddom_dn(struct ldapsam_privates *ldap_state,
+			   const char *domain)
+{
+	return talloc_asprintf(talloc_tos(), "sambaDomainName=%s,%s", domain,
+			       ldap_state->domain_dn);
+}
+
+static BOOL get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
+				  const char *domain, LDAPMessage **entry)
+{
+	int rc;
+	char *filter;
+	int scope = LDAP_SCOPE_SUBTREE;
+	const char **attrs = NULL; /* NULL: get all attrs */
+	int attrsonly = 0; /* 0: return values too */
+	LDAPMessage *result = NULL;
+	char *trusted_dn;
+	uint32 num_result;
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(objectClass=%s)(sambaDomainName=%s))",
+				 LDAP_OBJ_TRUSTDOM_PASSWORD, domain);
+
+	trusted_dn = trusteddom_dn(ldap_state, domain);
+	if (trusted_dn == NULL) {
+		return False;
+	}
+	rc = smbldap_search(ldap_state->smbldap_state, trusted_dn, scope,
+			    filter, attrs, attrsonly, &result);
+
+	if (rc == LDAP_NO_SUCH_OBJECT) {
+		*entry = NULL;
+		return True;
+	}
+
+	if (rc != LDAP_SUCCESS) {
+		return False;
+	}
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result > 1) {
+		DEBUG(1, ("ldapsam_get_trusteddom_pw: more than one "
+			  "sambaTrustedDomainPassword object for domain '%s'"
+			  "?!\n", domain));
+		return False;
+	}
+
+	if (num_result == 0) {
+		DEBUG(1, ("ldapsam_get_trusteddom_pw: no "
+			  "sambaTrustedDomainPassword object for domain %s.\n",
+			  domain));
+		*entry = NULL;
+	} else {
+		*entry = ldap_first_entry(priv2ld(ldap_state), result);
+	}
+
+	return True;
+}
+
+static BOOL ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
+				      const char *domain,
+				      char** pwd,
+				      DOM_SID *sid,
+	        	 	      time_t *pass_last_set_time)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *entry = NULL;
+
+	DEBUG(10, ("ldapsam_get_trusteddom_pw called for domain %s\n", domain));
+
+	if (!get_trusteddom_pw_int(ldap_state, domain, &entry) ||
+	    (entry == NULL))
+	{
+		return False;
+	}
+
+	/* password */
+	if (pwd != NULL) {
+		char *pwd_str;
+		pwd_str = smbldap_talloc_single_attribute(priv2ld(ldap_state),
+				entry, "sambaClearTextPassword", talloc_tos());
+		if (pwd_str == NULL) {
+			return False;
+		}
+		/* trusteddom_pw routines do not use talloc yet... */
+		*pwd = SMB_STRDUP(pwd_str);
+		if (*pwd == NULL) {
+			return False;
+		}
+	}
+
+	/* last change time */
+	if (pass_last_set_time != NULL) {
+		char *time_str;
+		time_str = smbldap_talloc_single_attribute(priv2ld(ldap_state),
+				entry, "sambaPwdLastSet", talloc_tos());
+		if (time_str == NULL) {
+			return False;
+		}
+		*pass_last_set_time = (time_t)atol(time_str);
+	}
+
+	/* domain sid */
+	if (sid != NULL) {
+		char *sid_str;
+		DOM_SID *dom_sid;
+		sid_str = smbldap_talloc_single_attribute(priv2ld(ldap_state),
+							  entry, "sambaSID",
+							  talloc_tos());
+		if (sid_str == NULL) {
+			return False;
+		}
+		dom_sid = string_sid_talloc(talloc_tos(), sid_str);
+		if (dom_sid == NULL) {
+			return False;
+		}
+		sid_copy(sid, dom_sid);
+	}
+
+	return True;
+}
+
+static BOOL ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
+				      const char* domain,
+				      const char* pwd,
+	        	  	      const DOM_SID *sid)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *entry = NULL;
+	LDAPMod **mods = NULL;
+	char *prev_pwd = NULL;
+	char *trusted_dn = NULL;
+	int rc;
+
+	DEBUG(10, ("ldapsam_set_trusteddom_pw called for domain %s\n", domain));
+
+	/*
+	 * get the current entry (if there is one) in order to put the
+	 * current password into the previous password attribute
+	 */
+	if (!get_trusteddom_pw_int(ldap_state, domain, &entry)) {
+		return False;
+	}
+
+	mods = NULL;
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "objectClass",
+			 "sambaTrustedDomainPassword");
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaDomainName",
+			 domain);
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaSID",
+			 sid_string_tos(sid));
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaPwdLastSet",
+			 talloc_asprintf(talloc_tos(), "%li", time(NULL)));
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods,
+			 "sambaClearTextPassword", pwd);
+	if (entry != NULL) {
+		prev_pwd = smbldap_talloc_single_attribute(priv2ld(ldap_state),
+				entry, "sambaClearTextPassword", talloc_tos());
+		if (prev_pwd != NULL) {
+			smbldap_make_mod(priv2ld(ldap_state), entry, &mods,
+					 "sambaPreviousClearTextPassword",
+					 prev_pwd);
+		}
+	}
+
+	trusted_dn = trusteddom_dn(ldap_state, domain);
+	if (trusted_dn == NULL) {
+		return False;
+	}
+	if (entry == NULL) {
+		rc = smbldap_add(ldap_state->smbldap_state, trusted_dn, mods);
+	} else {
+		rc = smbldap_modify(ldap_state->smbldap_state, trusted_dn, mods);
+	}
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1, ("error writing trusted domain password!\n"));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL ldapsam_del_trusteddom_pw(struct pdb_methods *methods,
+				      const char *domain)
+{
+	int rc;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *entry = NULL;
+	const char *trusted_dn;
+
+	if (!get_trusteddom_pw_int(ldap_state, domain, &entry)) {
+		return False;
+	}
+
+	if (entry == NULL) {
+		DEBUG(5, ("ldapsam_del_trusteddom_pw: no such trusted domain: "
+			  "%s\n", domain));
+		return True;
+	}
+
+	trusted_dn = smbldap_talloc_dn(talloc_tos(), priv2ld(ldap_state),
+				       entry);
+	if (trusted_dn == NULL) {
+		DEBUG(0,("ldapsam_del_trusteddom_pw: Out of memory!\n"));
+		return False;
+	}
+
+	rc = smbldap_delete(ldap_state->smbldap_state, trusted_dn);
+	if (rc != LDAP_SUCCESS) {
+		return False;
+	}
+
+	return True;
+}
+
+static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
+					 TALLOC_CTX *mem_ctx,
+					 uint32 *num_domains,
+					 struct trustdom_info ***domains)
+{
+	int rc;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	char *filter;
+	int scope = LDAP_SCOPE_SUBTREE;
+	const char *attrs[] = { "sambaDomainName", "sambaSID", NULL };
+	int attrsonly = 0; /* 0: return values too */
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+
+	filter = talloc_asprintf(talloc_tos(), "(objectClass=%s)",
+				 LDAP_OBJ_TRUSTDOM_PASSWORD);
+
+	rc = smbldap_search(ldap_state->smbldap_state,
+			    ldap_state->domain_dn,
+			    scope,
+			    filter,
+			    attrs,
+			    attrsonly,
+			    &result);
+
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*num_domains = 0;
+	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *, 1))) {
+		DEBUG(1, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (entry = ldap_first_entry(priv2ld(ldap_state), result);
+	     entry != NULL;
+	     entry = ldap_next_entry(priv2ld(ldap_state), entry))
+	{
+		char *dom_name, *dom_sid_str;
+		struct trustdom_info *dom_info;
+
+		dom_info = TALLOC_P(*domains, struct trustdom_info);
+		if (dom_info == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		dom_name = smbldap_talloc_single_attribute(priv2ld(ldap_state),
+							   entry,
+							   "sambaDomainName",
+							   talloc_tos());
+		if (dom_name == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		dom_info->name = dom_name;
+
+		dom_sid_str = smbldap_talloc_single_attribute(
+					priv2ld(ldap_state), entry, "sambaSID",
+					talloc_tos());
+		if (dom_sid_str == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		if (!string_to_sid(&dom_info->sid, dom_sid_str)) {
+			DEBUG(1, ("Error calling string_to_sid on SID %s\n",
+				  dom_sid_str));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		ADD_TO_ARRAY(*domains, struct trustdom_info *, dom_info,
+			     domains, num_domains);
+
+		if (*domains == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	DEBUG(5, ("ldapsam_enum_trusteddoms: got %d domains\n", *num_domains));
+	return NT_STATUS_OK;
+}
+
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -5534,6 +5845,11 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
 	(*pdb_method)->new_rid = ldapsam_new_rid;
+
+	(*pdb_method)->get_trusteddom_pw = ldapsam_get_trusteddom_pw;
+	(*pdb_method)->set_trusteddom_pw = ldapsam_set_trusteddom_pw;
+	(*pdb_method)->del_trusteddom_pw = ldapsam_del_trusteddom_pw;
+	(*pdb_method)->enum_trusteddoms = ldapsam_enum_trusteddoms;
 
 	/* TODO: Setup private data and free */
 

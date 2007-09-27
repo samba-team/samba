@@ -427,8 +427,15 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	/* Try secrets.tdb first and fallback to the krb5.keytab if
 	   necessary */
 
-        auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
+	auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
 					    ticket, &tkt, &keyblock, &ret);
+
+	if (!auth_ok &&
+	    (ret == KRB5KRB_AP_ERR_TKT_NYV ||
+	     ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
+	     ret == KRB5KRB_AP_ERR_SKEW)) {
+		goto auth_failed;
+	}
 
 	if (!auth_ok && lp_use_kerberos_keytab()) {
 		auth_ok = ads_keytab_verify_ticket(context, auth_context, 
@@ -446,6 +453,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 #endif
 	}	
 
+ auth_failed:
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));

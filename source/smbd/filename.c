@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    filename handling routines
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 1999-2004
+   Copyright (C) Jeremy Allison 1999-2007
    Copyright (C) Ying Chen 2000
    Copyright (C) Volker Lendecke 2007
 
@@ -37,11 +37,12 @@ static BOOL mangled_equal(const char *name1,
 			const char *name2,
 			const struct share_params *p)
 {
-	pstring tmpname;
+	char mname[13];
 
-	pstrcpy(tmpname, name2);
-	mangle_map(tmpname, True, False, p);
-	return strequal(name1, tmpname);
+	if (!name_to_8_3(name2, mname, False, p)) {
+		return False;
+	}
+	return strequal(name1, mname);
 }
 
 /****************************************************************************
@@ -106,10 +107,12 @@ stat struct will be filled with zeros (and this can be detected by checking
 for nlinks = 0, which can never be true for any file).
 ****************************************************************************/
 
-NTSTATUS unix_convert(connection_struct *conn,
-		        pstring orig_path,
+NTSTATUS unix_convert(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *orig_path,
 			BOOL allow_wcard_last_component,
-			char *saved_last_component,
+			char **pp_conv_path,
+			char **pp_saved_last_component,
 			SMB_STRUCT_STAT *pst)
 {
 	SMB_STRUCT_STAT st;
@@ -121,14 +124,17 @@ NTSTATUS unix_convert(connection_struct *conn,
 	NTSTATUS result;
 
 	SET_STAT_INVALID(*pst);
-
-	if(saved_last_component) {
-		*saved_last_component = 0;
+	*pp_conv_path = NULL;
+	if(pp_saved_last_component) {
+		*pp_saved_last_component = NULL;
 	}
 
 	if (conn->printer) {
 		/* we don't ever use the filenames on a printer share as a
 			filename - so don't convert them */
+		if (!(*pp_conv_path = talloc_strdup(ctx,orig_path))) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		return NT_STATUS_OK;
 	}
 
@@ -157,11 +163,13 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 */
 
 	if (!*orig_path) {
-		if (!(name = SMB_STRDUP("."))) {
+		if (!(name = talloc_strdup(ctx,"."))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		if (SMB_VFS_STAT(conn,name,&st) == 0) {
 			*pst = st;
+		} else {
+			return map_nt_error_from_unix(errno);
 		}
 		DEBUG(5,("conversion finished \"\" -> %s\n",name));
 		goto done;
@@ -183,17 +191,18 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 * Ensure saved_last_component is valid even if file exists.
 	 */
 
-	if(saved_last_component) {
+	if(pp_saved_last_component) {
 		end = strrchr_m(orig_path, '/');
 		if (end) {
-			pstrcpy(saved_last_component, end + 1);
+			*pp_saved_last_component = talloc_strdup(ctx, end + 1);
 		} else {
-			pstrcpy(saved_last_component, orig_path);
+			*pp_saved_last_component = talloc_strdup(ctx,
+							orig_path);
 		}
 	}
 
-	if (!(name = SMB_STRDUP(orig_path))) {
-		DEBUG(0, ("strdup failed\n"));
+	if (!(name = talloc_strdup(ctx, orig_path))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -224,9 +233,9 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 * building the directories with asprintf and free it.
 	 */
 
-	if ((dirpath == NULL) && (!(dirpath = SMB_STRDUP("")))) {
-		DEBUG(0, ("strdup failed\n"));
-		SAFE_FREE(name);
+	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,"")))) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		TALLOC_FREE(name);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -264,8 +273,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 	 */
 
 	if (conn->case_sensitive &&
-			!mangle_is_mangled(name, conn->params) &&
-			!*lp_mangled_map(conn->params)) {
+			!mangle_is_mangled(name, conn->params)) {
 		goto done;
 	}
 
@@ -302,8 +310,14 @@ NTSTATUS unix_convert(connection_struct *conn,
 			*end = 0;
 		}
 
-		if (saved_last_component != 0) {
-			pstrcpy(saved_last_component, end ? end + 1 : start);
+		if (pp_saved_last_component) {
+			TALLOC_FREE(*pp_saved_last_component);
+			*pp_saved_last_component = talloc_strdup(ctx,
+							end ? end + 1 : start);
+			if (!*pp_saved_last_component) {
+				DEBUG(0, ("talloc failed\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		/* The name cannot have a component of "." */
@@ -473,25 +487,27 @@ NTSTATUS unix_convert(connection_struct *conn,
 				 */
 
 				if (mangle_is_mangled(start, conn->params)
-				    && mangle_check_cache_alloc(start,
-								&unmangled,
-								conn->params)) {
+				    && mangle_lookup_name_from_8_3(ctx,
+					    		start,
+							&unmangled,
+							conn->params)) {
 					char *tmp;
 					size_t start_ofs = start - name;
 
 					if (*dirpath != '\0') {
-						asprintf(&tmp, "%s/%s", dirpath,
-							 unmangled);
-						SAFE_FREE(unmangled);
+						tmp = talloc_asprintf(ctx,
+							"%s/%s", dirpath,
+							unmangled);
+						TALLOC_FREE(unmangled);
 					}
 					else {
 						tmp = unmangled;
 					}
 					if (tmp == NULL) {
-						DEBUG(0, ("malloc failed\n"));
-						result = NT_STATUS_NO_MEMORY;
+						DEBUG(0, ("talloc failed\n"));
+						return NT_STATUS_NO_MEMORY;
 					}
-					SAFE_FREE(name);
+					TALLOC_FREE(name);
 					name = tmp;
 					start = name + start_ofs;
 					end = start + strlen(start);
@@ -511,18 +527,20 @@ NTSTATUS unix_convert(connection_struct *conn,
 				size_t start_ofs = start - name;
 
 				if (*dirpath != '\0') {
-					asprintf(&tmp, "%s/%s/%s", dirpath,
-						 found_name, end+1);
+					tmp = talloc_asprintf(ctx,
+						"%s/%s/%s", dirpath,
+						found_name, end+1);
 				}
 				else {
-					asprintf(&tmp, "%s/%s", found_name,
-						 end+1);
+					tmp = talloc_asprintf(ctx,
+						"%s/%s", found_name,
+						end+1);
 				}
 				if (tmp == NULL) {
-					DEBUG(0, ("asprintf failed\n"));
-					result = NT_STATUS_NO_MEMORY;
+					DEBUG(0, ("talloc_asprintf failed\n"));
+					return NT_STATUS_NO_MEMORY;
 				}
-				SAFE_FREE(name);
+				TALLOC_FREE(name);
 				name = tmp;
 				start = name + start_ofs;
 				end = start + strlen(found_name);
@@ -532,18 +550,18 @@ NTSTATUS unix_convert(connection_struct *conn,
 				size_t start_ofs = start - name;
 
 				if (*dirpath != '\0') {
-					asprintf(&tmp, "%s/%s", dirpath,
-						 found_name);
-				}
-				else {
-					tmp = SMB_STRDUP(found_name);
+					tmp = talloc_asprintf(ctx,
+						"%s/%s", dirpath,
+						found_name);
+				} else {
+					tmp = talloc_strdup(ctx,
+						found_name);
 				}
 				if (tmp == NULL) {
-					DEBUG(0, ("malloc failed\n"));
-					result = NT_STATUS_NO_MEMORY;
-					goto fail;
+					DEBUG(0, ("talloc failed\n"));
+					return NT_STATUS_NO_MEMORY;
 				}
-				SAFE_FREE(name);
+				TALLOC_FREE(name);
 				name = tmp;
 				start = name + start_ofs;
 
@@ -560,7 +578,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 				}
 			}
 
-			SAFE_FREE(found_name);
+			TALLOC_FREE(found_name);
 		} /* end else */
 
 #ifdef DEVELOPER
@@ -577,19 +595,19 @@ NTSTATUS unix_convert(connection_struct *conn,
 		 */
 
 		if (*dirpath != '\0') {
-			char *tmp;
-
-			if (asprintf(&tmp, "%s/%s", dirpath, start) == -1) {
-				DEBUG(0, ("asprintf failed\n"));
+			char *tmp = talloc_asprintf(ctx,
+					"%s/%s", dirpath, start);
+			if (!tmp) {
+				DEBUG(0, ("talloc_asprintf failed\n"));
 				return NT_STATUS_NO_MEMORY;
 			}
-			SAFE_FREE(dirpath);
+			TALLOC_FREE(dirpath);
 			dirpath = tmp;
 		}
 		else {
-			SAFE_FREE(dirpath);
-			if (!(dirpath = SMB_STRDUP(start))) {
-				DEBUG(0, ("strdup failed\n"));
+			TALLOC_FREE(dirpath);
+			if (!(dirpath = talloc_strdup(ctx,start))) {
+				DEBUG(0, ("talloc_strdup failed\n"));
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
@@ -628,17 +646,23 @@ NTSTATUS unix_convert(connection_struct *conn,
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 
  done:
-	pstrcpy(orig_path, name);
-	SAFE_FREE(name);
-	SAFE_FREE(dirpath);
+	*pp_conv_path = name;
+	TALLOC_FREE(dirpath);
 	return NT_STATUS_OK;
  fail:
 	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
-	pstrcpy(orig_path, dirpath);
-	pstrcat(orig_path, "/");
-	pstrcat(orig_path, start);
-	SAFE_FREE(name);
-	SAFE_FREE(dirpath);
+	if (*dirpath != '\0') {
+		*pp_conv_path = talloc_asprintf(ctx,
+				"%s/%s", dirpath, start);
+	} else {
+		*pp_conv_path = talloc_strdup(ctx, start);
+	}
+	if (!*pp_conv_path) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	TALLOC_FREE(name);
+	TALLOC_FREE(dirpath);
 	return result;
 }
 
@@ -649,7 +673,7 @@ NTSTATUS unix_convert(connection_struct *conn,
  a valid one for the user to access.
 ****************************************************************************/
 
-NTSTATUS check_name(connection_struct *conn, const pstring name)
+NTSTATUS check_name(connection_struct *conn, const char *name)
 {
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
@@ -682,8 +706,9 @@ static BOOL fname_equal(const char *name1, const char *name2,
 		BOOL case_sensitive)
 {
 	/* Normal filename handling */
-	if (case_sensitive)
+	if (case_sensitive) {
 		return(strcmp(name1,name2) == 0);
+	}
 
 	return(strequal(name1,name2));
 }
@@ -701,17 +726,19 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 	BOOL mangled;
 	char *unmangled_name = NULL;
 	long curpos;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	mangled = mangle_is_mangled(name, conn->params);
 
 	/* handle null paths */
-	if ((path == NULL) || (*path == 0))
+	if ((path == NULL) || (*path == 0)) {
 		path = ".";
+	}
 
 	/*
 	 * The incoming name can be mangled, and if we de-mangle it
 	 * here it will not compare correctly against the filename (name2)
-	 * read from the directory and then mangled by the mangle_map()
+	 * read from the directory and then mangled by the name_to_8_3()
 	 * call. We need to mangle both names or neither.
 	 * (JRA).
 	 *
@@ -724,15 +751,20 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 	 */
 
 	if (mangled && !conn->case_sensitive) {
-		mangled = !mangle_check_cache_alloc(name, &unmangled_name,
-						    conn->params);
-		name = unmangled_name;
+		mangled = !mangle_lookup_name_from_8_3(ctx,
+						name,
+						&unmangled_name,
+						conn->params);
+		if (!mangled) {
+			/* Name is now unmangled. */
+			name = unmangled_name;
+		}
 	}
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
-		SAFE_FREE(unmangled_name);
+		TALLOC_FREE(unmangled_name);
 		return(False);
 	}
 
@@ -741,8 +773,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 	while ((dname = ReadDirName(cur_dir, &curpos))) {
 
 		/* Is it dot or dot dot. */
-		if ((dname[0] == '.') && (!dname[1] ||
-					(dname[1] == '.' && !dname[2]))) {
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
 		}
 
@@ -760,15 +791,19 @@ static BOOL scan_directory(connection_struct *conn, const char *path,
 		if ((mangled && mangled_equal(name,dname,conn->params)) ||
 			fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
-			*found_name = SMB_STRDUP(dname);
-			SAFE_FREE(unmangled_name);
+			*found_name = talloc_strdup(ctx,dname);
+			TALLOC_FREE(unmangled_name);
 			CloseDir(cur_dir);
+			if (!*found_name) {
+				errno = ENOMEM;
+				return False;
+			}
 			return(True);
 		}
 	}
 
-	SAFE_FREE(unmangled_name);
+	TALLOC_FREE(unmangled_name);
 	CloseDir(cur_dir);
 	errno = ENOENT;
-	return(False);
+	return False;
 }

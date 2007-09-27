@@ -33,17 +33,25 @@ static BOOL irix_oplocks_available(void)
 {
 	int fd;
 	int pfd[2];
-	pstring tmpname;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	char *tmpname = NULL;
 
 	set_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
-	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(),
-		 (int)sys_getpid());
+	tmpname = talloc_asprintf(ctx,
+				"%s/koplock.%d",
+				lp_lockdir(),
+				(int)sys_getpid());
+	if (!tmpname) {
+		TALLOC_FREE(ctx);
+		return False;
+	}
 
 	if(pipe(pfd) != 0) {
 		DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error "
 			 "was %s\n",
 			 strerror(errno) ));
+		TALLOC_FREE(ctx);
 		return False;
 	}
 
@@ -54,10 +62,13 @@ static BOOL irix_oplocks_available(void)
 		unlink( tmpname );
 		close(pfd[0]);
 		close(pfd[1]);
+		TALLOC_FREE(ctx);
 		return False;
 	}
 
 	unlink(tmpname);
+
+	TALLOC_FREE(ctx);
 
 	if(sys_fcntl_long(fd, F_OPLKREG, pfd[1]) == -1) {
 		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not "

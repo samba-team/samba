@@ -634,6 +634,10 @@ UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
 AC_MSG_CHECKING(uname -p)
 AC_MSG_RESULT(${UNAME_P})
 
+UNAME_I=`(uname -i) 2>/dev/null` || UNAME_I="unknown"
+AC_MSG_CHECKING(uname -i)
+AC_MSG_RESULT(${UNAME_I})
+
 dnl Add #include for broken IRIX header files
   case "$host_os" in
 	*irix6*)
@@ -683,24 +687,9 @@ case "$host_os" in
 # password hashing - hence the USE_BOTH_CRYPT_CALLS define.
 #
       case `uname -r` in
-			*9*|*10*)
-				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4 -DMAX_POSITIVE_LOCK_OFFSET=0x1ffffffffffLL"
-		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
-				AC_DEFINE(_HPUX_SOURCE, 1, [Whether to use HPUX extensions])
-				AC_DEFINE(_POSIX_SOURCE, 1, [Whether to use POSIX compatible functions])
-				AC_DEFINE(_ALIGNMENT_REQUIRED,1,[Required alignment])
-				AC_DEFINE(_MAX_ALIGNMENT,4,[Maximum alignment])
-				;;
-			*11*)
-				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4 -DMAX_POSITIVE_LOCK_OFFSET=0x1ffffffffffLL"
-		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
-				AC_DEFINE(_HPUX_SOURCE, 1, [Whether to use HPUX extensions])
-				AC_DEFINE(_POSIX_SOURCE, 1, [Whether to use POSIX compatible functions])
-				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to use large file support])
-				AC_DEFINE(_ALIGNMENT_REQUIRED, 1, [Required alignment])
-				AC_DEFINE(_MAX_ALIGNMENT, 4, [Maximum alignment])
-				AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, [Unix 98 sources -- needed for socklen_t in getsockopt on HP/UX 11])
-				;;
+		*9*|*10*|*11)
+			AC_DEFINE(USE_BOTH_CRYPT_CALLS, 1, [Whether to use both of HPUX' crypt calls])
+		;;
       esac
       ;;
 
@@ -1086,19 +1075,6 @@ if test x"$samba_cv_unixsocket" = x"yes"; then
 fi
 
 
-AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>],[socklen_t i = 0],
-	samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
-if test x"$samba_cv_socklen_t" = x"yes"; then
-   AC_DEFINE(HAVE_SOCKLEN_T_TYPE,1,[Whether we have the variable type socklen_t])
-fi
-
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
@@ -1337,14 +1313,32 @@ LIBS="$save_LIBS"
 # any of them.
 AC_MSG_CHECKING([for libunwind])
 save_LIBS=$LIBS
-if test x"$UNAME_P" = xunknown ; then
-    # This probably won't link without the platform-specific libunwind.
-    LIBS="$LIBS -lunwind"
-else
-    # Add the platform-specific libunwind module. uname -p seems the most
-    # plausible option and works for ia64, where libunwind is most useful.
-    LIBS="$LIBS -lunwind -lunwind-$UNAME_P"
+
+UNWIND_ARCH="unknown"
+if test x"$UNAME_I" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_I"
+elif test x"$UNAME_M" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_M"
+elif test x"$UNAME_P" != x"unknown"; then
+	UNWIND_ARCH="$UNAME_P"
 fi
+
+case "$UNWIND_ARCH" in
+	unknown)
+		# This probably won't link without
+		# the platform-specific libunwind.
+		LIBS="$LIBS -lunwind"
+		;;
+	i386|i586|i686)
+		# Add the platform-specific libunwind module.
+		LIBS="$LIBS -lunwind -lunwind-x86"
+		;;
+	*)
+		# Add the platform-specific libunwind module.
+		# based on uname -i, uname -m or uname -p
+		LIBS="$LIBS -lunwind -lunwind-$UNWIND_ARCH"
+		;;
+esac
 
 AC_TRY_LINK(
     [
@@ -6148,16 +6142,16 @@ SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_rpcecho, \$(RPC_ECHO_OBJ), "bin/librpc_rpcecho.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
-SMB_MODULE(idmap_ldap, nsswitch/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_tdb, nsswitch/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_passdb, nsswitch/idmap_passdb.o, "bin/passdb.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_nss, nsswitch/idmap_nss.o, "bin/nss.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_rid, nsswitch/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_ad, nsswitch/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
-SMB_SUBSYSTEM(IDMAP, nsswitch/idmap.o)
+SMB_MODULE(idmap_ldap, winbindd/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_tdb, winbindd/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_passdb, winbindd/idmap_passdb.o, "bin/passdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_nss, winbindd/idmap_nss.o, "bin/nss.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_rid, winbindd/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_ad, winbindd/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
+SMB_SUBSYSTEM(IDMAP, winbindd/idmap.o)
 
-SMB_MODULE(nss_info_template, nsswitch/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)
-SMB_SUBSYSTEM(NSS_INFO, nsswitch/nss_info.o)
+SMB_MODULE(nss_info_template, winbindd/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)
+SMB_SUBSYSTEM(NSS_INFO, winbindd/nss_info.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)

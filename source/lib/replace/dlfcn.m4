@@ -12,7 +12,7 @@ AC_VERIFY_C_PROTOTYPE([void *dlopen(const char* filename, unsigned int flags)],
 	[
 	return 0;
 	],[
-	AC_DEFINE(DLOPEN_TAKES_UNSIGNED_FLAGS, 1, [Whether dlopen takes unsinged int flags])
+	AC_DEFINE(DLOPEN_TAKES_UNSIGNED_FLAGS, 1, [Whether dlopen takes unsigned int flags])
 	],[],[
 	#include <dlfcn.h>
 	])

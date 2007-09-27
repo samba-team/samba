@@ -44,13 +44,6 @@
 #include "win32_replace.h"
 #endif
 
-#ifdef __COMPAR_FN_T
-#define QSORT_CAST (__compar_fn_t)
-#endif
-
-#ifndef QSORT_CAST
-#define QSORT_CAST (int (*)(const void *, const void *))
-#endif
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -78,28 +71,6 @@
 #include <stddef.h>
 #endif
 
-/**
-  this is a warning hack. The idea is to use this everywhere that we
-  get the "discarding const" warning from gcc. That doesn't actually
-  fix the problem of course, but it means that when we do get to
-  cleaning them up we can do it by searching the code for
-  discard_const.
-
-  It also means that other error types aren't as swamped by the noise
-  of hundreds of const warnings, so we are more likely to notice when
-  we get new errors.
-
-  Please only add more uses of this macro when you find it
-  _really_ hard to fix const warnings. Our aim is to eventually use
-  this function in only a very few places.
-
-  Also, please call this via the discard_const_p() macro interface, as that
-  makes the return type safe.
-*/
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-
-/** Type-safe version of discard_const */
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
@@ -363,6 +334,10 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 #include <limits.h>
 #endif
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
 /* The extra casts work around common compiler bugs.  */
 #define _TYPE_SIGNED(t) (! ((t) 0 < (t) -1))
 /* The outer cast is needed to work around a bug in Cray C 5.0.3.0.
@@ -373,6 +348,14 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 64
+#endif
+
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN HOST_NAME_MAX
 #endif
 
 #ifndef UINT16_MAX
@@ -450,9 +433,6 @@ typedef int bool;
 #endif
 #endif
 
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -462,11 +442,34 @@ typedef int bool;
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+/**
+  this is a warning hack. The idea is to use this everywhere that we
+  get the "discarding const" warning from gcc. That doesn't actually
+  fix the problem of course, but it means that when we do get to
+  cleaning them up we can do it by searching the code for
+  discard_const.
+
+  It also means that other error types aren't as swamped by the noise
+  of hundreds of const warnings, so we are more likely to notice when
+  we get new errors.
+
+  Please only add more uses of this macro when you find it
+  _really_ hard to fix const warnings. Our aim is to eventually use
+  this function in only a very few places.
+
+  Also, please call this via the discard_const_p() macro interface, as that
+  makes the return type safe.
+*/
+#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+
+/** Type-safe version of discard_const */
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+
 #ifndef __STRING
 #define __STRING(x)    #x
 #endif
 
-#ifndef _STRINGSTRING
+#ifndef __STRINGSTRING
 #define __STRINGSTRING(x) __STRING(x)
 #endif
 
@@ -509,6 +512,14 @@ typedef int bool;
 
 #if MMAP_BLACKLIST
 #undef HAVE_MMAP
+#endif
+
+#ifdef __COMPAR_FN_T
+#define QSORT_CAST (__compar_fn_t)
+#endif
+
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
 #endif /* _LIBREPLACE_REPLACE_H */

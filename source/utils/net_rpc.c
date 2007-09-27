@@ -115,7 +115,12 @@ int run_rpc_command(struct cli_state *cli_arg,
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
-		cli = net_make_ipc_connection(conn_flags);
+		nt_status = net_make_ipc_connection(conn_flags, &cli);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("failed to make ipc connection: %s\n",
+				  nt_errstr(nt_status)));
+			return -1;
+		}
 	} else {
 		cli = cli_arg;
 	}
@@ -1252,9 +1257,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 		loop_count++;
 
 		for (i = 0; i < num_entries; i++) {
-			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user)-1);
+			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user));
 			if (opt_long_list_entries) 
-				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc)-1);
+				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc));
 			
 			if (opt_long_list_entries)
 				printf("%-21.21s %s\n", user, desc);
@@ -1803,7 +1808,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	
 			if (user_ctr->info.id21->group_rid == group_rid) {
 				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
-						sizeof(temp)-1);
+						sizeof(temp));
 				if (opt_verbose) 
 					d_printf("Group is primary group of %s\n",temp);
 				group_is_primary = True;
@@ -2510,8 +2515,8 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 
 			fstring group, desc;
 
-			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group)-1);
-			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc)-1);
+			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group));
+			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc));
 			
 			if (opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n",
@@ -5917,8 +5922,10 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
-		DEBUG(0, ("Couldn't connect to domain controller\n"));
+	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
+			  nt_errstr(nt_status)));
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6060,8 +6067,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
-		DEBUG(0, ("Couldn't connect to domain controller\n"));
+	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
+			  nt_errstr(nt_status)));
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
@@ -6228,8 +6237,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			d_printf("%s%s", trusting_dom_names[i], padding);
 			
 			/* connect to remote domain controller */
-			remote_cli = net_make_ipc_connection(NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS);
-			if (remote_cli) {			
+			nt_status = net_make_ipc_connection(
+					NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS,
+					&remote_cli);
+			if (NT_STATUS_IS_OK(nt_status)) {
 				/* query for domain's sid */
 				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
 					d_fprintf(stderr, "couldn't get domain's sid\n");
@@ -6237,7 +6248,9 @@ static int rpc_trustdom_list(int argc, const char **argv)
 				cli_shutdown(remote_cli);
 			
 			} else {
-				d_fprintf(stderr, "domain controller is not responding\n");
+				d_fprintf(stderr, "domain controller is not "
+					  "responding: %s\n",
+					  nt_errstr(nt_status));
 			};
 		};
 		

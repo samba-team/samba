@@ -653,7 +653,11 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 int vfs_ChDir(connection_struct *conn, const char *path)
 {
 	int res;
-	static pstring LastDir="";
+	static char *LastDir = NULL;
+
+	if (!LastDir) {
+		LastDir = SMB_STRDUP("");
+	}
 
 	if (strcsequal(path,"."))
 		return(0);
@@ -664,8 +668,10 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 	DEBUG(4,("vfs_ChDir to %s\n",path));
 
 	res = SMB_VFS_CHDIR(conn,path);
-	if (!res)
-		pstrcpy(LastDir,path);
+	if (!res) {
+		SAFE_FREE(LastDir);
+		LastDir = SMB_STRDUP(path);
+	}
 	return(res);
 }
 
@@ -675,7 +681,7 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 static struct {
 	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
 	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-	char *dos_path; /* The pathname in DOS format. */
+	char *path; /* The pathname. */
 	BOOL valid;
 } ino_list[MAX_GETWDCACHE];
 
@@ -710,23 +716,36 @@ static void array_promote(char *array,int elsize,int element)
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
-char *vfs_GetWd(connection_struct *conn, char *path)
+char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
+#ifdef PATH_MAX
+        char s[PATH_MAX+1];
+#else
 	pstring s;
+#endif
 	static BOOL getwd_cache_init = False;
 	SMB_STRUCT_STAT st, st2;
 	int i;
+	char *ret = NULL;
 
 	*s = 0;
 
-	if (!use_getwd_cache)
-		return(SMB_VFS_GETWD(conn,path));
+	if (!use_getwd_cache) {
+ nocache:
+		ret = SMB_VFS_GETWD(conn,s);
+		if (!ret) {
+			DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, "
+				"errno %s\n",strerror(errno)));
+			return NULL;
+		}
+		return talloc_strdup(ctx, ret);
+	}
 
 	/* init the cache */
 	if (!getwd_cache_init) {
 		getwd_cache_init = True;
 		for (i=0;i<MAX_GETWDCACHE;i++) {
-			string_set(&ino_list[i].dos_path,"");
+			string_set(&ino_list[i].path,"");
 			ino_list[i].valid = False;
 		}
 	}
@@ -737,8 +756,10 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
 		/* Known to fail for root: the directory may be
 		 * NFS-mounted and exported with root_squash (so has no root access). */
-		DEBUG(1,("vfs_GetWd: couldn't stat \".\" path=%s error %s (NFS problem ?)\n", path, strerror(errno) ));
-		return(SMB_VFS_GETWD(conn,path));
+		DEBUG(1,("vfs_GetWd: couldn't stat \".\" error %s "
+			"(NFS problem ?)\n",
+			strerror(errno) ));
+		goto nocache;
 	}
 
 
@@ -752,14 +773,19 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 				the same...) */
 
 			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
-				if (SMB_VFS_STAT(conn,ino_list[i].dos_path,&st2) == 0) {
+				if (SMB_VFS_STAT(conn,ino_list[i].path,&st2) == 0) {
 					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
 							(st2.st_mode & S_IFMT) == S_IFDIR) {
-						pstrcpy (path, ino_list[i].dos_path);
+
+						ret = talloc_strdup(ctx,
+							ino_list[i].path);
 
 						/* promote it for future use */
 						array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-						return (path);
+						if (ret == NULL) {
+							errno = ENOMEM;
+						}
+						return ret;
 					} else {
 						/*  If the inode is different then something's changed,
 							scrub the entry and start from scratch. */
@@ -770,22 +796,24 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 		}
 	}
 
-	/*  We don't have the information to hand so rely on traditional methods.
-		The very slow getcwd, which spawns a process on some systems, or the
-		not quite so bad getwd. */
+	/*  We don't have the information to hand so rely on traditional
+	 *  methods. The very slow getcwd, which spawns a process on some
+	 *  systems, or the not quite so bad getwd. */
 
 	if (!SMB_VFS_GETWD(conn,s)) {
-		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",strerror(errno)));
+		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",
+				strerror(errno)));
 		return (NULL);
 	}
 
-	pstrcpy(path,s);
+	ret = talloc_strdup(ctx,s);
 
-	DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",s,(double)st.st_ino,(double)st.st_dev));
+	DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",
+				s,(double)st.st_ino,(double)st.st_dev));
 
 	/* add it to the cache */
 	i = MAX_GETWDCACHE - 1;
-	string_set(&ino_list[i].dos_path,s);
+	string_set(&ino_list[i].path,s);
 	ino_list[i].dev = st.st_dev;
 	ino_list[i].inode = st.st_ino;
 	ino_list[i].valid = True;
@@ -793,7 +821,10 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	/* put it at the top of the list */
 	array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
 
-	return (path);
+	if (ret == NULL) {
+		errno = ENOMEM;
+	}
+	return ret;
 }
 
 /*******************************************************************
@@ -832,18 +863,28 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
-				pstring tmp_fname;
-				fstring last_component;
+				TALLOC_CTX *tmp_ctx = talloc_stackframe();
+				char *tmp_fname = NULL;
+				char *last_component = NULL;
 				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
 
-				pstrcpy(tmp_fname, fname);
+				tmp_fname = talloc_strdup(tmp_ctx, fname);
+				if (!tmp_fname) {
+					TALLOC_FREE(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
 				p = strrchr_m(tmp_fname, '/');
 				if (p) {
 					*p++ = '\0';
-					fstrcpy(last_component, p);
+					last_component = p;
 				} else {
-					fstrcpy(last_component, tmp_fname);
-					pstrcpy(tmp_fname, ".");
+					last_component = tmp_fname;
+					tmp_fname = talloc_strdup(tmp_ctx,
+							".");
+					if (!tmp_fname) {
+						TALLOC_FREE(tmp_ctx);
+						return NT_STATUS_NO_MEMORY;
+					}
 				}
 
 #ifdef REALPATH_TAKES_NULL
@@ -853,11 +894,17 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
+					TALLOC_FREE(tmp_ctx);
 					return map_nt_error_from_unix(errno);
 				}
-				pstrcpy(tmp_fname, resolved_name);
-				pstrcat(tmp_fname, "/");
-				pstrcat(tmp_fname, last_component);
+				tmp_fname = talloc_asprintf(tmp_ctx,
+						"%s/%s",
+						resolved_name,
+						last_component);
+				if (!tmp_fname) {
+					TALLOC_FREE(tmp_ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
 #ifdef REALPATH_TAKES_NULL
 				SAFE_FREE(resolved_name);
 				resolved_name = SMB_STRDUP(tmp_fname);
@@ -873,6 +920,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #endif
 				resolved_name = resolved_name_buf;
 #endif
+				TALLOC_FREE(tmp_ctx);
 				break;
 			}
 			default:
@@ -903,7 +951,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
         /* Check if we are allowing users to follow symlinks */
         /* Patch from David Clerc <David.Clerc@cui.unige.ch>
                 University of Geneva */
-                                                                                                                                                    
+
 #ifdef S_ISLNK
         if (!lp_symlinks(SNUM(conn))) {
                 SMB_STRUCT_STAT statbuf;

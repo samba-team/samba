@@ -50,6 +50,20 @@ extern userdom_struct current_user_info;
 
 #define SHPWLEN 8		/* share password length */
 
+/* Limit size of ipc replies */
+
+static char *smb_realloc_limit(void *ptr, size_t size)
+{
+	char *val;
+
+	size = MAX((size),4*1024);
+	val = (char *)SMB_REALLOC(ptr,size);
+	if (val) {
+		memset(val,'\0',size);
+	}
+	return val;
+}
+
 static BOOL api_Unsupported(connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
@@ -401,7 +415,7 @@ static void PackDriverData(struct pack_desc* desc)
 	SIVAL(drivdata,0,sizeof drivdata); /* cb */
 	SIVAL(drivdata,4,1000);	/* lVersion */
 	memset(drivdata+8,0,32);	/* szDeviceName */
-	push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
+	push_ascii(drivdata+8,"NULL",32, STR_TERMINATE);
 	PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
@@ -824,7 +838,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		 */
 		*rdata_len = 0;
 		*rparam_len = 6;
-		*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+		*rparam = smb_realloc_limit(*rparam,*rparam_len);
 		if (!*rparam) {
 			return False;
 		}
@@ -846,7 +860,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			SAFE_FREE(queue);
 			return False;
@@ -879,7 +893,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
  
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		SAFE_FREE(queue);
 		SAFE_FREE(tmpdata);
@@ -940,7 +954,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		 */
 		*rdata_len = 0;
 		*rparam_len = 6;
-		*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+		*rparam = smb_realloc_limit(*rparam,*rparam_len);
 		if (!*rparam) {
 			return False;
 		}
@@ -982,7 +996,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			goto err;
 		}
@@ -1008,7 +1022,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
  
 	*rdata_len = desc.usedlen;
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		goto err;
 	}
@@ -1381,11 +1395,10 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	*rdata_len = fixed_len + string_len;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
-	memset(*rdata,'\0',*rdata_len);
   
 	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
 	p = *rdata;
@@ -1411,7 +1424,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	}
   
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1460,7 +1473,7 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid,
 	*rdata_len = 0;
   
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1652,7 +1665,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 		return False;
 	}
  
-	*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+	*rdata = smb_realloc_limit(*rdata,mdrcnt);
 	if (!*rdata) {
 		return False;
 	}
@@ -1663,7 +1676,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	}
  
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1746,12 +1759,11 @@ static BOOL api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	}
 
 	*rdata_len = fixed_len + string_len;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
-	memset(*rdata,0,*rdata_len);
-  
+ 
 	p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
@@ -1772,7 +1784,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	}
   
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1902,7 +1914,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	}
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1916,7 +1928,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
   error_exit:
 
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -1990,7 +2002,7 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	unbecome_root();
 
 	*rdata_len = cli_buf_size;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -2020,7 +2032,7 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2066,16 +2078,16 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	}
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
-  
+
 	/* check it's a supported varient */
-	
+
 	if ( strcmp(str1,"zWrLeh") != 0 )
 		return False;
-		
+
 	switch( uLevel ) {
 		case 0:
 			level_string = "B21";
@@ -2088,10 +2100,11 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 		return False;
 
 	*rdata_len = mdrcnt + 1024;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
+
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 
@@ -2213,7 +2226,7 @@ static BOOL api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 			resume_context, cli_buf_size));
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2223,7 +2236,7 @@ static BOOL api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 		return False;
 
 	*rdata_len = cli_buf_size;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -2291,13 +2304,13 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid,
 	char *p;
 
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
 
 	*rdata_len = 21;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -2381,7 +2394,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	memcpy(pass2,p+16,16);
 
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2458,7 +2471,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 	fstring user;
 	char *p = get_safe_str_ptr(param,tpscnt,param,2);
 	*rparam_len = 2;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2561,7 +2574,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 		return(False);
 
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);	
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2633,7 +2646,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 		return(False);
 
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2731,7 +2744,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2856,7 +2869,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	}
 
 	*rdata_len = mdrcnt;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -2915,7 +2928,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	*rdata_len = PTR_DIFF(p2,*rdata);
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2950,7 +2963,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	DEBUG(4,("NetWkstaGetInfo level %d\n",level));
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -2961,7 +2974,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	}
 
 	*rdata_len = mdrcnt + 1024;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -3227,7 +3240,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3252,7 +3265,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	*rdata_len = mdrcnt + 1024;
-	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	*rdata = smb_realloc_limit(*rdata,*rdata_len);
 	if (!*rdata) {
 		return False;
 	}
@@ -3462,7 +3475,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -3504,7 +3517,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3551,7 +3564,7 @@ static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid,
 	}
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3623,7 +3636,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -3649,7 +3662,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3719,7 +3732,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 
 	count = print_queue_status(snum,&queue,&status);
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -3740,7 +3753,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3867,7 +3880,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 		desc.neededlen = 0;
 	} else {
 		if (mdrcnt > 0) {
-			*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+			*rdata = smb_realloc_limit(*rdata,mdrcnt);
 			if (!*rdata) {
 				return False;
 			}
@@ -3888,7 +3901,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	*rparam_len = 6;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -3944,7 +3957,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -3969,7 +3982,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4016,7 +4029,7 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -4032,7 +4045,7 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4078,7 +4091,7 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -4095,7 +4108,7 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4142,7 +4155,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -4160,7 +4173,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4217,7 +4230,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	num_sessions = list_sessions(talloc_tos(), &session_list);
 
 	if (mdrcnt > 0) {
-		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
@@ -4245,7 +4258,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4269,7 +4282,7 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param, char 
 			 int *rdata_len, int *rparam_len)
 {
 	*rparam_len = MIN(*rparam_len,mprcnt);
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}
@@ -4295,7 +4308,7 @@ static BOOL api_Unsupported(connection_struct *conn, uint16 vuid,
 				int *rdata_len, int *rparam_len)
 {
 	*rparam_len = 4;
-	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
 	}

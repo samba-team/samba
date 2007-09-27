@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    MSDFS services for Samba
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -36,22 +36,37 @@ extern uint32 global_client_caps;
  SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES bit and then
  send a local path, we have to cope with that too....
 
+ This version does everything using pointers within one copy of the
+ pathname string, talloced on the struct dfs_path pointer (which
+ must be talloced). This may be too clever to live....
  JRA.
 **********************************************************************/
 
 static NTSTATUS parse_dfs_path(const char *pathname,
 				BOOL allow_wcards,
-				struct dfs_path *pdp,
+				struct dfs_path *pdp, /* MUST BE TALLOCED */
 				BOOL *ppath_contains_wcard)
 {
-	pstring pathname_local;
+	char *pathname_local;
 	char *p,*temp;
+	char *eos_ptr;
 	NTSTATUS status = NT_STATUS_OK;
 	char sepchar;
 
 	ZERO_STRUCTP(pdp);
 
-	pstrcpy(pathname_local,pathname);
+	/*
+	 * This is the only talloc we should need to do
+	 * on the struct dfs_path. All the pointers inside
+	 * it should point to offsets within this string.
+	 */
+
+	pathname_local = talloc_strdup(pdp, pathname);
+	if (!pathname_local) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	/* Get a pointer to the terminating '\0' */
+	eos_ptr = &pathname_local[strlen(pathname_local)];
 	p = temp = pathname_local;
 
 	pdp->posix_path = (lp_posix_pathnames() && *pathname == '/');
@@ -66,17 +81,22 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 		 * Try and convert to a local path.
 		 */
 
-		pdp->hostname[0] = '\0';
-		pdp->servicename[0] = '\0';
+		pdp->hostname = eos_ptr; /* "" */
+		pdp->servicename = eos_ptr; /* "" */
 
 		/* We've got no info about separators. */
 		pdp->posix_path = lp_posix_pathnames();
 		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s to a local path\n",
+		DEBUG(10,("parse_dfs_path: trying to convert %s to a "
+			"local path\n",
 			temp));
 		goto local_path;
 	}
 
+	/*
+	 * Safe to use on talloc'ed string as it only shrinks.
+	 * It also doesn't affect the eos_ptr.
+	 */
 	trim_char(temp,sepchar,sepchar);
 
 	DEBUG(10,("parse_dfs_path: temp = |%s| after trimming %c's\n",
@@ -93,34 +113,38 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 		 * Try and convert to a local path.
 		 */
 
-		pdp->hostname[0] = '\0';
-		pdp->servicename[0] = '\0';
+		pdp->hostname = eos_ptr; /* "" */
+		pdp->servicename = eos_ptr; /* "" */
 
 		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s to a local path\n",
+		DEBUG(10,("parse_dfs_path: trying to convert %s "
+			"to a local path\n",
 			temp));
 		goto local_path;
 	}
 	*p = '\0';
-	fstrcpy(pdp->hostname,temp);
+	pdp->hostname = temp;
+
 	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
 	/* If we got a hostname, is it ours (or an IP address) ? */
 	if (!is_myname_or_ipaddr(pdp->hostname)) {
 		/* Repair path. */
 		*p = sepchar;
-		DEBUG(10,("parse_dfs_path: hostname %s isn't ours. Try local path from path %s\n",
+		DEBUG(10,("parse_dfs_path: hostname %s isn't ours. "
+			"Try local path from path %s\n",
 			pdp->hostname, temp));
 		/*
 		 * Possibly client sent a local path by mistake.
 		 * Try and convert to a local path.
 		 */
 
-		pdp->hostname[0] = '\0';
-		pdp->servicename[0] = '\0';
+		pdp->hostname = eos_ptr; /* "" */
+		pdp->servicename = eos_ptr; /* "" */
 
 		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s to a local path\n",
+		DEBUG(10,("parse_dfs_path: trying to convert %s "
+			"to a local path\n",
 			temp));
 		goto local_path;
 	}
@@ -129,12 +153,12 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	temp = p+1;
 	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
-		fstrcpy(pdp->servicename,temp);
-		pdp->reqpath[0] = '\0';
+		pdp->servicename = temp;
+		pdp->reqpath = eos_ptr; /* "" */
 		return NT_STATUS_OK;
 	}
 	*p = '\0';
-	fstrcpy(pdp->servicename,temp);
+	pdp->servicename = temp;
 	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	p++;
@@ -143,14 +167,15 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 
 	*ppath_contains_wcard = False;
 
-	pstrcpy(pdp->reqpath, p);
+	pdp->reqpath = p;
 
 	/* Rest is reqpath. */
 	if (pdp->posix_path) {
 		status = check_path_syntax_posix(pdp->reqpath);
 	} else {
 		if (allow_wcards) {
-			status = check_path_syntax_wcard(pdp->reqpath, ppath_contains_wcard);
+			status = check_path_syntax_wcard(pdp->reqpath,
+					ppath_contains_wcard);
 		} else {
 			status = check_path_syntax(pdp->reqpath);
 		}
@@ -171,7 +196,9 @@ static NTSTATUS parse_dfs_path(const char *pathname,
  Note this CHANGES CWD !!!! JRA.
 *********************************************************/
 
-static NTSTATUS create_conn_struct(connection_struct *conn, int snum, const char *path)
+static NTSTATUS create_conn_struct(connection_struct *conn,
+				int snum,
+				const char *path)
 {
 	pstring connpath;
 
@@ -187,7 +214,8 @@ static NTSTATUS create_conn_struct(connection_struct *conn, int snum, const char
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(conn->params = TALLOC_ZERO_P(conn->mem_ctx, struct share_params))) {
+	if (!(conn->params = TALLOC_ZERO_P(conn->mem_ctx,
+					struct share_params))) {
 		DEBUG(0, ("TALLOC failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -204,15 +232,16 @@ static NTSTATUS create_conn_struct(connection_struct *conn, int snum, const char
 	}
 
 	/*
-	 * Windows seems to insist on doing trans2getdfsreferral() calls on the IPC$
-	 * share as the anonymous user. If we try to chdir as that user we will
-	 * fail.... WTF ? JRA.
+	 * Windows seems to insist on doing trans2getdfsreferral() calls on
+	 * the IPC$ share as the anonymous user. If we try to chdir as that
+	 * user we will fail.... WTF ? JRA.
 	 */
 
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
-		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
-					conn->connectpath, strerror(errno) ));
+		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
+			"Error was %s\n",
+			conn->connectpath, strerror(errno) ));
 		conn_free_internal(conn);
 		return status;
 	}
@@ -240,20 +269,28 @@ static NTSTATUS create_conn_struct(connection_struct *conn, int snum, const char
  **********************************************************************/
 
 static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
-				char *target,
+				const char *target,
 				struct referral **preflist,
 				int *refcount)
 {
-	pstring temp;
+	char *temp = NULL;
 	char *prot;
-	char *alt_path[MAX_REFERRAL_COUNT];
+	char **alt_path = NULL;
 	int count = 0, i;
 	struct referral *reflist;
 
-	pstrcpy(temp,target);
+	temp = talloc_strdup(ctx, target);
+	if (!temp) {
+		return False;
+	}
 	prot = strtok(temp,":");
 	if (!prot) {
 		DEBUG(0,("parse_msdfs_symlink: invalid path !\n"));
+		return False;
+	}
+
+	alt_path = TALLOC_ARRAY(ctx, char *, MAX_REFERRAL_COUNT);
+	if (!alt_path) {
 		return False;
 	}
 
@@ -266,19 +303,21 @@ static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
 	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
 
 	if (count) {
-		reflist = *preflist = TALLOC_ZERO_ARRAY(ctx, struct referral, count);
+		reflist = *preflist = TALLOC_ZERO_ARRAY(ctx,
+				struct referral, count);
 		if(reflist == NULL) {
-			DEBUG(0,("parse_msdfs_symlink: talloc failed!\n"));
+			TALLOC_FREE(alt_path);
 			return False;
 		}
 	} else {
 		reflist = *preflist = NULL;
 	}
-	
+
 	for(i=0;i<count;i++) {
 		char *p;
 
-		/* Canonicalize link target. Replace all /'s in the path by a \ */
+		/* Canonicalize link target.
+		 * Replace all /'s in the path by a \ */
 		string_replace(alt_path[i], '/', '\\');
 
 		/* Remove leading '\\'s */
@@ -287,66 +326,113 @@ static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
 			p++;
 		}
 
-		pstrcpy(reflist[i].alternate_path, "\\");
-		pstrcat(reflist[i].alternate_path, p);
+		reflist[i].alternate_path = talloc_asprintf(ctx,
+				"\\%s",
+				p);
+		if (!reflist[i].alternate_path) {
+			return False;
+		}
 
 		reflist[i].proximity = 0;
 		reflist[i].ttl = REFERRAL_TTL;
-		DEBUG(10, ("parse_msdfs_symlink: Created alt path: %s\n", reflist[i].alternate_path));
+		DEBUG(10, ("parse_msdfs_symlink: Created alt path: %s\n",
+					reflist[i].alternate_path));
 		*refcount += 1;
 	}
 
+	TALLOC_FREE(alt_path);
 	return True;
 }
- 
+
 /**********************************************************************
  Returns true if the unix path is a valid msdfs symlink and also
  returns the target string from inside the link.
 **********************************************************************/
 
-BOOL is_msdfs_link(connection_struct *conn,
+static BOOL is_msdfs_link_internal(TALLOC_CTX *ctx,
+			connection_struct *conn,
 			const char *path,
-			pstring link_target,
+			char **pp_link_target,
 			SMB_STRUCT_STAT *sbufp)
 {
 	SMB_STRUCT_STAT st;
 	int referral_len = 0;
+	char link_target_buf[7];
+	size_t bufsize = 0;
+	char *link_target = NULL;
+
+	if (pp_link_target) {
+		bufsize = 1024;
+		link_target = TALLOC_ARRAY(ctx, char, bufsize);
+		if (!link_target) {
+			return False;
+		}
+		*pp_link_target = link_target;
+	} else {
+		bufsize = sizeof(link_target_buf);
+		link_target = link_target_buf;
+	}
 
 	if (sbufp == NULL) {
 		sbufp = &st;
 	}
 
 	if (SMB_VFS_LSTAT(conn, path, sbufp) != 0) {
-		DEBUG(5,("is_msdfs_link: %s does not exist.\n",path));
-		return False;
-	}
-  
-	if (!S_ISLNK(sbufp->st_mode)) {
-		DEBUG(5,("is_msdfs_link: %s is not a link.\n",path));
-		return False;
+		DEBUG(5,("is_msdfs_link_read_target: %s does not exist.\n",
+			path));
+		goto err;
 	}
 
-	/* open the link and read it */
-	referral_len = SMB_VFS_READLINK(conn, path, link_target, sizeof(pstring)-1);
+	if (!S_ISLNK(sbufp->st_mode)) {
+		DEBUG(5,("is_msdfs_link_read_target: %s is not a link.\n",
+					path));
+		goto err;
+	}
+
+	referral_len = SMB_VFS_READLINK(conn, path, link_target, bufsize - 1);
 	if (referral_len == -1) {
-		DEBUG(0,("is_msdfs_link: Error reading msdfs link %s: %s\n",
+		DEBUG(0,("is_msdfs_link_read_target: Error reading "
+			"msdfs link %s: %s\n",
 			path, strerror(errno)));
-		return False;
+		goto err;
 	}
 	link_target[referral_len] = '\0';
 
-	DEBUG(5,("is_msdfs_link: %s -> %s\n",path, link_target));
+	DEBUG(5,("is_msdfs_link_internal: %s -> %s\n",path,
+				link_target));
 
 	if (!strnequal(link_target, "msdfs:", 6)) {
-		return False;
+		goto err;
 	}
 	return True;
+
+  err:
+
+	if (link_target != link_target_buf) {
+		TALLOC_FREE(link_target);
+	}
+	return False;
+}
+
+/**********************************************************************
+ Returns true if the unix path is a valid msdfs symlink.
+**********************************************************************/
+
+BOOL is_msdfs_link(connection_struct *conn,
+		const char *path,
+		SMB_STRUCT_STAT *sbufp)
+{
+	return is_msdfs_link_internal(talloc_tos(),
+					conn,
+					path,
+					NULL,
+					sbufp);
 }
 
 /*****************************************************************
  Used by other functions to decide if a dfs path is remote,
  and to get the list of referred locations for that remote path.
- 
+
  search_flag: For findfirsts, dfs links themselves are not
  redirected, but paths beyond the links are. For normal smb calls,
  even dfs links need to be redirected.
@@ -358,24 +444,27 @@ BOOL is_msdfs_link(connection_struct *conn,
  link redirect are in targetpath.
 *****************************************************************/
 
-static NTSTATUS dfs_path_lookup(connection_struct *conn,
-			const char *dfspath, /* Incoming complete dfs path */
-			const struct dfs_path *pdp, /* Parsed out server+share+extrapath. */
-			BOOL search_flag, /* Called from a findfirst ? */
-			int *consumedcntp,
-			pstring targetpath)
+static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
+		connection_struct *conn,
+		const char *dfspath, /* Incoming complete dfs path */
+		const struct dfs_path *pdp, /* Parsed out
+					       server+share+extrapath. */
+		BOOL search_flag, /* Called from a findfirst ? */
+		int *consumedcntp,
+		char **pp_targetpath)
 {
 	char *p = NULL;
 	char *q = NULL;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
-	pstring localpath;
-	pstring canon_dfspath; /* Canonicalized dfs path. (only '/' components). */
+	char *localpath = NULL;
+	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
+				  components). */
 
 	DEBUG(10,("dfs_path_lookup: Conn path = %s reqpath = %s\n",
 		conn->connectpath, pdp->reqpath));
 
-	/* 
+	/*
  	 * Note the unix path conversion here we're doing we can
 	 * throw away. We're looking for a symlink for a dfs
 	 * resolution, if we don't find it we'll do another
@@ -387,8 +476,8 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 	 * think this is needed. JRA.
 	 */
 
-	pstrcpy(localpath, pdp->reqpath);
-	status = unix_convert(conn, localpath, search_flag, NULL, &sbuf);
+	status = unix_convert(ctx, conn, pdp->reqpath, search_flag, &localpath,
+			NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
 					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		return status;
@@ -396,7 +485,7 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 
 	/* Optimization - check if we can redirect the whole path. */
 
-	if (is_msdfs_link(conn, localpath, targetpath, NULL)) {
+	if (is_msdfs_link_internal(ctx, conn, localpath, pp_targetpath, NULL)) {
 		if (search_flag) {
 			DEBUG(6,("dfs_path_lookup (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
@@ -404,7 +493,8 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 		}
 
 		DEBUG(6,("dfs_path_lookup: %s resolves to a "
-			"valid dfs link %s.\n", dfspath, targetpath));
+			"valid dfs link %s.\n", dfspath,
+			pp_targetpath ? *pp_targetpath : ""));
 
 		if (consumedcntp) {
 			*consumedcntp = strlen(dfspath);
@@ -416,7 +506,10 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 	 * so if a Windows path replace all '\\' characters with '/'.
 	 * For a POSIX DFS path we know all separators are already '/'. */
 
-	pstrcpy(canon_dfspath, dfspath);
+	canon_dfspath = talloc_strdup(ctx, dfspath);
+	if (!canon_dfspath) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	if (!pdp->posix_path) {
 		string_replace(canon_dfspath, '\\', '/');
 	}
@@ -431,7 +524,7 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 
 	/*
 	 * Redirect if any component in the path is a link.
-	 * We do this by walking backwards through the 
+	 * We do this by walking backwards through the
 	 * local path, chopping off the last component
 	 * in both the local path and the canonicalized
 	 * DFS path. If we hit a DFS link then we're done.
@@ -448,14 +541,17 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 			*q = '\0';
 		}
 
-		if (is_msdfs_link(conn, localpath, targetpath, NULL)) {
+		if (is_msdfs_link_internal(ctx, conn,
+					localpath, pp_targetpath, NULL)) {
 			DEBUG(4, ("dfs_path_lookup: Redirecting %s because "
 				"parent %s is dfs link\n", dfspath, localpath));
 
 			if (consumedcntp) {
 				*consumedcntp = strlen(canon_dfspath);
 				DEBUG(10, ("dfs_path_lookup: Path consumed: %s "
-					"(%d)\n", canon_dfspath, *consumedcntp));
+					"(%d)\n",
+					canon_dfspath,
+					*consumedcntp));
 			}
 
 			return NT_STATUS_PATH_NOT_COVERED;
@@ -477,7 +573,7 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
  Decides if a dfs pathname should be redirected or not.
  If not, the pathname is converted to a tcon-relative local unix path
 
- search_wcard_flag: this flag performs 2 functions bother related
+ search_wcard_flag: this flag performs 2 functions both related
  to searches.  See resolve_dfs_path() and parse_dfs_path_XX()
  for details.
 
@@ -485,25 +581,36 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
  (mapped into a local path).
  or NT_STATUS_NOT_COVERED meaning return a DFS redirect, or
  any other NT_STATUS error which is a genuine error to be
- returned to the client. 
+ returned to the client.
 *****************************************************************/
 
-static NTSTATUS dfs_redirect( connection_struct *conn,
-			pstring dfs_path,
+static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *path_in,
 			BOOL search_wcard_flag,
+			char **pp_path_out,
 			BOOL *ppath_contains_wcard)
 {
 	NTSTATUS status;
-	struct dfs_path dp;
-	pstring targetpath;
-	
-	status = parse_dfs_path(dfs_path, search_wcard_flag, &dp, ppath_contains_wcard);
+	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+
+	if (!pdp) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = parse_dfs_path(path_in, search_wcard_flag, pdp,
+			ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(pdp);
 		return status;
 	}
 
-	if (dp.reqpath[0] == '\0') {
-		pstrcpy(dfs_path, dp.reqpath);
+	if (pdp->reqpath[0] == '\0') {
+		TALLOC_FREE(pdp);
+		*pp_path_out = talloc_strdup(ctx, "");
+		if (!*pp_path_out) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		DEBUG(5,("dfs_redirect: self-referral.\n"));
 		return NT_STATUS_OK;
 	}
@@ -512,45 +619,63 @@ static NTSTATUS dfs_redirect( connection_struct *conn,
 	   path and return OK */
 
 	if (!lp_msdfs_root(SNUM(conn))) {
-		pstrcpy(dfs_path, dp.reqpath);
+		*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
+		TALLOC_FREE(pdp);
+		if (!*pp_path_out) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		return NT_STATUS_OK;
 	}
 
 	/* If it looked like a local path (zero hostname/servicename)
-	 * just treat as a tcon-relative path. */ 
+	 * just treat as a tcon-relative path. */
 
-	if (dp.hostname[0] == '\0' && dp.servicename[0] == '\0') { 
-		pstrcpy(dfs_path, dp.reqpath);
+	if (pdp->hostname[0] == '\0' && pdp->servicename[0] == '\0') {
+		*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
+		TALLOC_FREE(pdp);
+		if (!*pp_path_out) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		return NT_STATUS_OK;
 	}
 
-	if (!( strequal(dp.servicename, lp_servicename(SNUM(conn))) 
-			|| (strequal(dp.servicename, HOMES_NAME) 
-			&& strequal(lp_servicename(SNUM(conn)), get_current_username()) )) ) {
+	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
+			|| (strequal(pdp->servicename, HOMES_NAME)
+			&& strequal(lp_servicename(SNUM(conn)),
+				get_current_username()) )) ) {
 
 		/* The given sharename doesn't match this connection. */
+		TALLOC_FREE(pdp);
 
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	status = dfs_path_lookup(conn, dfs_path, &dp,
-			search_wcard_flag, NULL, targetpath);
+	status = dfs_path_lookup(ctx, conn, path_in, pdp,
+			search_wcard_flag, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
-			DEBUG(3,("dfs_redirect: Redirecting %s\n", dfs_path));
+			DEBUG(3,("dfs_redirect: Redirecting %s\n", path_in));
 		} else {
-			DEBUG(10,("dfs_redirect: dfs_path_lookup failed for %s with %s\n",
-				dfs_path, nt_errstr(status) ));
+			DEBUG(10,("dfs_redirect: dfs_path_lookup "
+				"failed for %s with %s\n",
+				path_in, nt_errstr(status) ));
 		}
 		return status;
 	}
 
-	DEBUG(3,("dfs_redirect: Not redirecting %s.\n", dfs_path));
+	DEBUG(3,("dfs_redirect: Not redirecting %s.\n", path_in));
 
 	/* Form non-dfs tcon-relative path */
-	pstrcpy(dfs_path, dp.reqpath);
+	*pp_path_out = talloc_strdup(ctx, pdp->reqpath);
+	TALLOC_FREE(pdp);
+	if (!*pp_path_out) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	DEBUG(3,("dfs_redirect: Path converted to non-dfs path %s\n", dfs_path));
+	DEBUG(3,("dfs_redirect: Path %s converted to non-dfs path %s\n",
+				path_in,
+				*pp_path_out));
+
 	return NT_STATUS_OK;
 }
 
@@ -570,11 +695,13 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 
 	jucn->referral_count = 1;
 	if((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
-		DEBUG(0,("self_ref: talloc failed for referral\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pstrcpy(ref->alternate_path,dfs_path);
+	ref->alternate_path = talloc_strdup(ctx, dfs_path);
+	if (!ref->alternate_path) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	ref->proximity = 0;
 	ref->ttl = REFERRAL_TTL;
 	jucn->referral_list = ref;
@@ -595,57 +722,77 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 {
 	struct connection_struct conns;
 	struct connection_struct *conn = &conns;
-	struct dfs_path dp;
-	pstring conn_path;
-	pstring targetpath;
+	char *targetpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	BOOL dummy;
+	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+
+	if (!pdp) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ZERO_STRUCT(conns);
-
 	*self_referralp = False;
 
-	status = parse_dfs_path(dfs_path, False, &dp, &dummy);
+	status = parse_dfs_path(dfs_path, False, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* Verify hostname in path */
-	if (!is_myname_or_ipaddr(dp.hostname)) {
+	if (!is_myname_or_ipaddr(pdp->hostname)) {
 		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
-			dp.hostname, dfs_path));
+			pdp->hostname, dfs_path));
+		TALLOC_FREE(pdp);
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	fstrcpy(jucn->service_name, dp.servicename);
-	pstrcpy(jucn->volume_name, dp.reqpath);
+	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
+	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
+	if (!jucn->service_name || !jucn->volume_name) {
+		TALLOC_FREE(pdp);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Verify the share is a dfs root */
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
-		if ((snum = find_service(jucn->service_name)) < 0) {
+		fstring service_name;
+		fstrcpy(service_name, jucn->service_name);
+		if ((snum = find_service(service_name)) < 0) {
 			return NT_STATUS_NOT_FOUND;
+		}
+		TALLOC_FREE(jucn->service_name);
+		jucn->service_name = talloc_strdup(ctx, service_name);
+		if (!jucn->service_name) {
+			TALLOC_FREE(pdp);
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	if (!lp_msdfs_root(snum)) {
-		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not a dfs root.\n",
-			 dp.servicename, dfs_path));
+	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(snum) == '\0')) {
+		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
+			"a dfs root.\n",
+			pdp->servicename, dfs_path));
+		TALLOC_FREE(pdp);
 		return NT_STATUS_NOT_FOUND;
 	}
 
 	/*
 	 * Self referrals are tested with a anonymous IPC connection and
-	 * a GET_DFS_REFERRAL call to \\server\share. (which means dp.reqpath[0] points
-	 * to an empty string). create_conn_struct cd's into the directory and will
-	 * fail if it cannot (as the anonymous user). Cope with this.
+	 * a GET_DFS_REFERRAL call to \\server\share. (which means
+	 * dp.reqpath[0] points to an empty string). create_conn_struct cd's
+	 * into the directory and will fail if it cannot (as the anonymous
+	 * user). Cope with this.
 	 */
 
-	if (dp.reqpath[0] == '\0') {
+	if (pdp->reqpath[0] == '\0') {
+		char *tmp;
 		struct referral *ref;
 
 		if (*lp_msdfs_proxy(snum) == '\0') {
+			TALLOC_FREE(pdp);
 			return self_ref(ctx,
 					dfs_path,
 					jucn,
@@ -653,44 +800,67 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 					self_referralp);
 		}
 
-		/* 
+		/*
 		 * It's an msdfs proxy share. Redirect to
  		 * the configured target share.
  		 */
 
 		jucn->referral_count = 1;
 		if ((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
-			DEBUG(0, ("malloc failed for referral\n"));
+			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
-		if (dp.reqpath[0] != '\0') {
-			pstrcat(ref->alternate_path, dp.reqpath);
+		if (!(tmp = talloc_strdup(ctx, lp_msdfs_proxy(snum)))) {
+			TALLOC_FREE(pdp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		trim_string(tmp, "\\", 0);
+
+		ref->alternate_path = talloc_asprintf(ctx, "\\%s", tmp);
+		TALLOC_FREE(tmp);
+
+		if (!ref->alternate_path) {
+			TALLOC_FREE(pdp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (pdp->reqpath[0] != '\0') {
+			ref->alternate_path = talloc_asprintf_append(
+					ref->alternate_path,
+					"%s",
+					pdp->reqpath);
+			if (!ref->alternate_path) {
+				TALLOC_FREE(pdp);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 		ref->proximity = 0;
 		ref->ttl = REFERRAL_TTL;
 		jucn->referral_list = ref;
 		*consumedcntp = strlen(dfs_path);
+		TALLOC_FREE(pdp);
 		return NT_STATUS_OK;
 	}
 
-	pstrcpy(conn_path, lp_pathname(snum));
-	status = create_conn_struct(conn, snum, conn_path);
+	status = create_conn_struct(conn, snum, lp_pathname(snum));
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(pdp);
 		return status;
 	}
 
 	/* If this is a DFS path dfs_lookup should return
 	 * NT_STATUS_PATH_NOT_COVERED. */
 
-	status = dfs_path_lookup(conn, dfs_path, &dp,
-			False, consumedcntp, targetpath);
+	status = dfs_path_lookup(ctx, conn, dfs_path, pdp,
+			False, consumedcntp, &targetpath);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
 			dfs_path));
 		conn_free_internal(conn);
+		TALLOC_FREE(pdp);
 		return status;
 	}
 
@@ -701,22 +871,24 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		DEBUG(3,("get_referred_path: failed to parse symlink "
 			"target %s\n", targetpath ));
 		conn_free_internal(conn);
+		TALLOC_FREE(pdp);
 		return NT_STATUS_NOT_FOUND;
 	}
 
 	conn_free_internal(conn);
+	TALLOC_FREE(pdp);
 	return NT_STATUS_OK;
 }
 
 static int setup_ver2_dfs_referral(const char *pathname,
-				char **ppdata, 
+				char **ppdata,
 				struct junction_map *junction,
 				int consumedcnt,
 				BOOL self_referral)
 {
 	char* pdata = *ppdata;
 
-	unsigned char uni_requestedpath[1024];
+	unsigned char uni_requestedpath[sizeof(pstring)];
 	int uni_reqpathoffset1,uni_reqpathoffset2;
 	int uni_curroffset;
 	int requestedpathlen=0;
@@ -726,30 +898,35 @@ static int setup_ver2_dfs_referral(const char *pathname,
 
 	DEBUG(10,("Setting up version2 referral\nRequested path:\n"));
 
-	requestedpathlen = rpcstr_push(uni_requestedpath, pathname, sizeof(pstring),
-				       STR_TERMINATE);
+	requestedpathlen = rpcstr_push(uni_requestedpath,
+					pathname, sizeof(pstring),
+					STR_TERMINATE);
 
 	if (DEBUGLVL(10)) {
-	    dump_data(0, uni_requestedpath,requestedpathlen);
+		dump_data(0, uni_requestedpath,requestedpathlen);
 	}
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
 
-	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + 
+	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE +
 			VERSION2_REFERRAL_SIZE * junction->referral_count;
 
 	uni_reqpathoffset2 = uni_reqpathoffset1 + requestedpathlen;
 
 	uni_curroffset = uni_reqpathoffset2 + requestedpathlen;
 
-	reply_size = REFERRAL_HEADER_SIZE + VERSION2_REFERRAL_SIZE*junction->referral_count +
-					2 * requestedpathlen;
+	reply_size = REFERRAL_HEADER_SIZE +
+			VERSION2_REFERRAL_SIZE*junction->referral_count +
+			2 * requestedpathlen;
 	DEBUG(10,("reply_size: %u\n",reply_size));
 
 	/* add up the unicode lengths of all the referral paths */
 	for(i=0;i<junction->referral_count;i++) {
-		DEBUG(10,("referral %u : %s\n",i,junction->referral_list[i].alternate_path));
-		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
+		DEBUG(10,("referral %u : %s\n",
+			i,
+			junction->referral_list[i].alternate_path));
+		reply_size +=
+			(strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
 	DEBUG(10,("reply_size = %u\n",reply_size));
@@ -769,9 +946,10 @@ static int setup_ver2_dfs_referral(const char *pathname,
 
 	/* create the header */
 	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
-	SSVAL(pdata,2,junction->referral_count); /* number of referral in this pkt */
+	/* number of referral in this pkt */
+	SSVAL(pdata,2,junction->referral_count);
 	if(self_referral) {
-		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER); 
+		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER);
 	} else {
 		SIVAL(pdata,4,DFSREF_STORAGE_SERVER);
 	}
@@ -789,7 +967,9 @@ static int setup_ver2_dfs_referral(const char *pathname,
 		} else {
 			SSVAL(pdata,offset+4,0);
 		}
-		SSVAL(pdata,offset+6,0); /* ref_flags :use path_consumed bytes? */
+
+		/* ref_flags :use path_consumed bytes? */
+		SSVAL(pdata,offset+6,0);
 		SIVAL(pdata,offset+8,ref->proximity);
 		SIVAL(pdata,offset+12,ref->ttl);
 
@@ -810,41 +990,47 @@ static int setup_ver2_dfs_referral(const char *pathname,
 }
 
 static int setup_ver3_dfs_referral(const char *pathname,
-				char **ppdata, 
+				char **ppdata,
 				struct junction_map *junction,
 				int consumedcnt,
 				BOOL self_referral)
 {
-	char* pdata = *ppdata;
+	char *pdata = *ppdata;
 
-	unsigned char uni_reqpath[1024];
+	unsigned char uni_reqpath[sizeof(pstring)];
 	int uni_reqpathoffset1, uni_reqpathoffset2;
 	int uni_curroffset;
 	int reply_size = 0;
 
 	int reqpathlen = 0;
 	int offset,i=0;
-	
+
 	DEBUG(10,("setting up version3 referral\n"));
 
-	reqpathlen = rpcstr_push(uni_reqpath, pathname, sizeof(pstring), STR_TERMINATE);
-	
+	reqpathlen = rpcstr_push(uni_reqpath, pathname,
+			sizeof(pstring), STR_TERMINATE);
+
 	if (DEBUGLVL(10)) {
-	    dump_data(0, uni_reqpath,reqpathlen);
+		dump_data(0, uni_reqpath,reqpathlen);
 	}
 
-	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
+	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE +
+			VERSION3_REFERRAL_SIZE * junction->referral_count;
 	uni_reqpathoffset2 = uni_reqpathoffset1 + reqpathlen;
 	reply_size = uni_curroffset = uni_reqpathoffset2 + reqpathlen;
 
 	for(i=0;i<junction->referral_count;i++) {
-		DEBUG(10,("referral %u : %s\n",i,junction->referral_list[i].alternate_path));
-		reply_size += (strlen(junction->referral_list[i].alternate_path)+1)*2;
+		DEBUG(10,("referral %u : %s\n",
+			i,
+			junction->referral_list[i].alternate_path));
+		reply_size +=
+			(strlen(junction->referral_list[i].alternate_path)+1)*2;
 	}
 
 	pdata = (char *)SMB_REALLOC(pdata,reply_size);
 	if(pdata == NULL) {
-		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
+		DEBUG(0,("version3 referral setup:"
+			"malloc failed for Realloc!\n"));
 		return -1;
 	}
 	*ppdata = pdata;
@@ -853,15 +1039,15 @@ static int setup_ver3_dfs_referral(const char *pathname,
 	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
 	SSVAL(pdata,2,junction->referral_count); /* number of referral */
 	if(self_referral) {
-		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER); 
+		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER);
 	} else {
 		SIVAL(pdata,4,DFSREF_STORAGE_SERVER);
 	}
-	
+
 	/* copy in the reqpaths */
 	memcpy(pdata+uni_reqpathoffset1,uni_reqpath,reqpathlen);
 	memcpy(pdata+uni_reqpathoffset2,uni_reqpath,reqpathlen);
-	
+
 	offset = 8;
 	for(i=0;i<junction->referral_count;i++) {
 		struct referral* ref = &(junction->referral_list[i]);
@@ -875,14 +1061,16 @@ static int setup_ver3_dfs_referral(const char *pathname,
 			SSVAL(pdata,offset+4,0);
 		}
 
-		SSVAL(pdata,offset+6,0); /* ref_flags :use path_consumed bytes? */
+		/* ref_flags :use path_consumed bytes? */
+		SSVAL(pdata,offset+6,0);
 		SIVAL(pdata,offset+8,ref->ttl);
-	    
+
 		SSVAL(pdata,offset+12,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+14,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
 		unilen = rpcstr_push(pdata+uni_curroffset,ref->alternate_path,
-				     sizeof(pstring), STR_UNICODE | STR_TERMINATE);
+				     sizeof(pstring),
+				     STR_UNICODE | STR_TERMINATE);
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);
@@ -905,20 +1093,18 @@ int setup_dfs_referral(connection_struct *orig_conn,
 			int max_referral_level,
 			char **ppdata, NTSTATUS *pstatus)
 {
-	struct junction_map junction;
+	struct junction_map *junction = NULL;
 	int consumedcnt = 0;
 	BOOL self_referral = False;
 	int reply_size = 0;
 	char *pathnamep = NULL;
-	pstring local_dfs_path;
+	char *local_dfs_path = NULL;
 	TALLOC_CTX *ctx;
 
 	if (!(ctx=talloc_init("setup_dfs_referral"))) {
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return -1;
 	}
-
-	ZERO_STRUCT(junction);
 
 	/* get the junction entry */
 	if (!dfs_path) {
@@ -927,34 +1113,51 @@ int setup_dfs_referral(connection_struct *orig_conn,
 		return -1;
 	}
 
-	/* 
+	/*
 	 * Trim pathname sent by client so it begins with only one backslash.
 	 * Two backslashes confuse some dfs clients
 	 */
 
-	pstrcpy(local_dfs_path, dfs_path);
+	local_dfs_path = talloc_strdup(ctx,dfs_path);
+	if (!local_dfs_path) {
+		*pstatus = NT_STATUS_NO_MEMORY;
+		talloc_destroy(ctx);
+		return -1;
+	}
 	pathnamep = local_dfs_path;
-	while (IS_DIRECTORY_SEP(pathnamep[0]) && IS_DIRECTORY_SEP(pathnamep[1])) {
+	while (IS_DIRECTORY_SEP(pathnamep[0]) &&
+			IS_DIRECTORY_SEP(pathnamep[1])) {
 		pathnamep++;
 	}
 
+	junction = TALLOC_ZERO_P(ctx, struct junction_map);
+	if (!junction) {
+		*pstatus = NT_STATUS_NO_MEMORY;
+		talloc_destroy(ctx);
+		return -1;
+	}
+
 	/* The following call can change cwd. */
-	*pstatus = get_referred_path(ctx, pathnamep, &junction, &consumedcnt, &self_referral);
+	*pstatus = get_referred_path(ctx, pathnamep, junction,
+			&consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		vfs_ChDir(orig_conn,orig_conn->connectpath);
 		talloc_destroy(ctx);
 		return -1;
 	}
 	vfs_ChDir(orig_conn,orig_conn->connectpath);
-	
+
 	if (!self_referral) {
 		pathnamep[consumedcnt] = '\0';
 
 		if( DEBUGLVL( 3 ) ) {
 			int i=0;
-			dbgtext("setup_dfs_referral: Path %s to alternate path(s):",pathnamep);
-			for(i=0;i<junction.referral_count;i++)
-				dbgtext(" %s",junction.referral_list[i].alternate_path);
+			dbgtext("setup_dfs_referral: Path %s to "
+				"alternate path(s):",
+				pathnamep);
+			for(i=0;i<junction->referral_count;i++)
+				dbgtext(" %s",
+				junction->referral_list[i].alternate_path);
 			dbgtext(".\n");
 		}
 	}
@@ -971,20 +1174,23 @@ int setup_dfs_referral(connection_struct *orig_conn,
 
 	switch(max_referral_level) {
 	case 2:
-		reply_size = setup_ver2_dfs_referral(pathnamep, ppdata, &junction, 
-						     consumedcnt, self_referral);
+		reply_size = setup_ver2_dfs_referral(pathnamep,
+					ppdata, junction,
+					consumedcnt, self_referral);
 		break;
 	case 3:
-		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata, &junction, 
-						     consumedcnt, self_referral);
+		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata,
+					junction, consumedcnt, self_referral);
 		break;
 	default:
-		DEBUG(0,("setup_dfs_referral: Invalid dfs referral version: %d\n", max_referral_level));
+		DEBUG(0,("setup_dfs_referral: Invalid dfs referral "
+			"version: %d\n",
+			max_referral_level));
 		talloc_destroy(ctx);
 		*pstatus = NT_STATUS_INVALID_LEVEL;
 		return -1;
 	}
-      
+
 	if (DEBUGLVL(10)) {
 		DEBUGADD(0,("DFS Referral pdata:\n"));
 		dump_data(0,(uint8 *)*ppdata,reply_size);
@@ -1003,73 +1209,87 @@ int setup_dfs_referral(connection_struct *orig_conn,
  Creates a junction structure from a DFS pathname
 **********************************************************************/
 
-BOOL create_junction(const char *dfs_path, struct junction_map *jucn)
+BOOL create_junction(TALLOC_CTX *ctx,
+		const char *dfs_path,
+		struct junction_map *jucn)
 {
 	int snum;
 	BOOL dummy;
-	struct dfs_path dp;
- 
-	NTSTATUS status = parse_dfs_path(dfs_path, False, &dp, &dummy);
+	struct dfs_path *pdp = TALLOC_P(ctx,struct dfs_path);
+	NTSTATUS status;
 
+	if (!pdp) {
+		return False;
+	}
+	status = parse_dfs_path(dfs_path, False, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	/* check if path is dfs : validate first token */
-	if (!is_myname_or_ipaddr(dp.hostname)) {
-		DEBUG(4,("create_junction: Invalid hostname %s in dfs path %s\n",
-			dp.hostname, dfs_path));
+	if (!is_myname_or_ipaddr(pdp->hostname)) {
+		DEBUG(4,("create_junction: Invalid hostname %s "
+			"in dfs path %s\n",
+			pdp->hostname, dfs_path));
+		TALLOC_FREE(pdp);
 		return False;
 	}
 
 	/* Check for a non-DFS share */
-	snum = lp_servicenumber(dp.servicename);
+	snum = lp_servicenumber(pdp->servicename);
 
 	if(snum < 0 || !lp_msdfs_root(snum)) {
 		DEBUG(4,("create_junction: %s is not an msdfs root.\n",
-			dp.servicename));
+			pdp->servicename));
+		TALLOC_FREE(pdp);
 		return False;
 	}
 
-	fstrcpy(jucn->service_name,dp.servicename);
-	pstrcpy(jucn->volume_name,dp.reqpath);
-	pstrcpy(jucn->comment, lp_comment(snum));
+	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
+	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
+	jucn->comment = talloc_strdup(ctx, lp_comment(snum));
+
+	TALLOC_FREE(pdp);
+	if (!jucn->service_name || !jucn->volume_name || ! jucn->comment) {
+		return False;
+	}
 	return True;
 }
 
 /**********************************************************************
- Forms a valid Unix pathname from the junction 
+ Forms a valid Unix pathname from the junction
  **********************************************************************/
 
-static BOOL junction_to_local_path(struct junction_map *jucn,
-				char *path,
-				int max_pathlen,
+static BOOL junction_to_local_path(const struct junction_map *jucn,
+				char **pp_path_out,
 				connection_struct *conn_out)
 {
 	int snum;
-	pstring conn_path;
 
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
 		return False;
 	}
-
-	safe_strcpy(path, lp_pathname(snum), max_pathlen-1);
-	safe_strcat(path, "/", max_pathlen-1);
-	safe_strcat(path, jucn->volume_name, max_pathlen-1);
-
-	pstrcpy(conn_path, lp_pathname(snum));
-	if (!NT_STATUS_IS_OK(create_conn_struct(conn_out, snum, conn_path))) {
+	if (!NT_STATUS_IS_OK(create_conn_struct(conn_out, snum,
+					lp_pathname(snum)))) {
 		return False;
 	}
 
+	*pp_path_out = talloc_asprintf(conn_out->mem_ctx,
+			"%s/%s",
+			lp_pathname(snum),
+			jucn->volume_name);
+	if (!*pp_path_out) {
+		return False;
+	}
 	return True;
 }
 
-BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
+BOOL create_msdfs_link(const struct junction_map *jucn,
+		BOOL exists)
 {
-	pstring path;
-	pstring msdfs_link;
+	char *path = NULL;
+	char *msdfs_link = NULL;
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	int i=0;
@@ -1078,15 +1298,18 @@ BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 
 	ZERO_STRUCT(conns);
 
-	if(!junction_to_local_path(jucn, path, sizeof(path), conn)) {
+	if(!junction_to_local_path(jucn, &path, conn)) {
 		return False;
 	}
-  
+
 	/* Form the msdfs_link contents */
-	pstrcpy(msdfs_link, "msdfs:");
+	msdfs_link = talloc_strdup(conn->mem_ctx, "msdfs:");
+	if (!msdfs_link) {
+		goto out;
+	}
 	for(i=0; i<jucn->referral_count; i++) {
-		char* refpath = jucn->referral_list[i].alternate_path;
-      
+		char *refpath = jucn->referral_list[i].alternate_path;
+
 		/* Alternate paths always use Windows separators. */
 		trim_char(refpath, '\\', '\\');
 		if(*refpath == '\0') {
@@ -1096,10 +1319,18 @@ BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 			continue;
 		}
 		if (i > 0 && insert_comma) {
-			pstrcat(msdfs_link, ",");
+			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
+					",%s",
+					refpath);
+		} else {
+			msdfs_link = talloc_asprintf_append_buffer(msdfs_link,
+					"%s",
+					refpath);
 		}
 
-		pstrcat(msdfs_link, refpath);
+		if (!msdfs_link) {
+			goto out;
+		}
 		if (!insert_comma) {
 			insert_comma = True;
 		}
@@ -1115,12 +1346,12 @@ BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 	}
 
 	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
-		DEBUG(1,("create_msdfs_link: symlink failed %s -> %s\nError: %s\n", 
-				path, msdfs_link, strerror(errno)));
+		DEBUG(1,("create_msdfs_link: symlink failed "
+			"%s -> %s\nError: %s\n", 
+			path, msdfs_link, strerror(errno)));
 		goto out;
 	}
-	
-	
+
 	ret = True;
 
 out:
@@ -1129,46 +1360,39 @@ out:
 	return ret;
 }
 
-BOOL remove_msdfs_link(struct junction_map *jucn)
+BOOL remove_msdfs_link(const struct junction_map *jucn)
 {
-	pstring path;
+	char *path = NULL;
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	BOOL ret = False;
 
 	ZERO_STRUCT(conns);
 
-	if( junction_to_local_path(jucn, path, sizeof(path), conn) ) {
+	if( junction_to_local_path(jucn, &path, conn) ) {
 		if( SMB_VFS_UNLINK(conn, path) == 0 ) {
 			ret = True;
 		}
-		talloc_destroy( conn->mem_ctx );
 	}
 
 	conn_free_internal(conn);
 	return ret;
 }
 
-static int form_junctions(TALLOC_CTX *ctx,
-				int snum,
-				struct junction_map *jucn,
-				int jn_remain)
+/*********************************************************************
+ Return the number of DFS links at the root of this share.
+*********************************************************************/
+
+static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
-	int cnt = 0;
-	SMB_STRUCT_DIR *dirp;
-	char *dname;
-	pstring connect_path;
-	char *service_name = lp_servicename(snum);
+	size_t cnt = 0;
+	SMB_STRUCT_DIR *dirp = NULL;
+	char *dname = NULL;
+	const char *connect_path = lp_pathname(snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(snum);
 	connection_struct conn;
-	struct referral *ref = NULL;
- 
+
 	ZERO_STRUCT(conn);
-
-	if (jn_remain <= 0) {
-		return 0;
-	}
-
-	pstrcpy(connect_path,lp_pathname(snum));
 
 	if(*connect_path == '\0') {
 		return 0;
@@ -1182,32 +1406,13 @@ static int form_junctions(TALLOC_CTX *ctx,
 		return 0;
 	}
 
-	/* form a junction for the msdfs root - convention 
-	   DO NOT REMOVE THIS: NT clients will not work with us
-	   if this is not present
-	*/ 
-	fstrcpy(jucn[cnt].service_name, service_name);
-	jucn[cnt].volume_name[0] = '\0';
-	jucn[cnt].referral_count = 1;
+	/* Count a link for the msdfs root - convention */
+	cnt = 1;
 
-	ref = jucn[cnt].referral_list = TALLOC_ZERO_P(ctx, struct referral);
-	if (jucn[cnt].referral_list == NULL) {
-		DEBUG(0, ("talloc failed!\n"));
+	/* No more links if this is an msdfs proxy. */
+	if (*msdfs_proxy != '\0') {
 		goto out;
 	}
-
-	ref->proximity = 0;
-	ref->ttl = REFERRAL_TTL;
-	if (*lp_msdfs_proxy(snum) != '\0') {
-		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
-		cnt++;
-		goto out;
-	}
-
-	pstr_sprintf(ref->alternate_path, "\\\\%s\\%s",
-			get_local_machine_name(),
-			service_name);
-	cnt++;
 
 	/* Now enumerate all dfs links */
 	dirp = SMB_VFS_OPENDIR(&conn, ".", NULL, 0);
@@ -1216,25 +1421,13 @@ static int form_junctions(TALLOC_CTX *ctx,
 	}
 
 	while ((dname = vfs_readdirname(&conn, dirp)) != NULL) {
-		pstring link_target;
-		if (cnt >= jn_remain) {
-			SMB_VFS_CLOSEDIR(&conn,dirp);
-			DEBUG(2, ("ran out of MSDFS junction slots"));
-			goto out;
-		}
-		if (is_msdfs_link(&conn, dname, link_target, NULL)) {
-			if (parse_msdfs_symlink(ctx,
-					link_target,
-					&jucn[cnt].referral_list,
-					&jucn[cnt].referral_count)) {
-
-				fstrcpy(jucn[cnt].service_name, service_name);
-				pstrcpy(jucn[cnt].volume_name, dname);
-				cnt++;
-			}
+		if (is_msdfs_link(&conn,
+				dname,
+				NULL)) {
+			cnt++;
 		}
 	}
-	
+
 	SMB_VFS_CLOSEDIR(&conn,dirp);
 
 out:
@@ -1243,14 +1436,135 @@ out:
 	return cnt;
 }
 
-int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
-{
-	int i=0;
-	int sharecount = 0;
-	int jn_count = 0;
+/*********************************************************************
+*********************************************************************/
 
-	if(!lp_host_msdfs()) {
+static int form_junctions(TALLOC_CTX *ctx,
+				int snum,
+				struct junction_map *jucn,
+				size_t jn_remain)
+{
+	size_t cnt = 0;
+	SMB_STRUCT_DIR *dirp = NULL;
+	char *dname = NULL;
+	const char *connect_path = lp_pathname(snum);
+	char *service_name = lp_servicename(snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(snum);
+	connection_struct conn;
+	struct referral *ref = NULL;
+
+	ZERO_STRUCT(conn);
+
+	if (jn_remain == 0) {
 		return 0;
+	}
+
+	if(*connect_path == '\0') {
+		return 0;
+	}
+
+	/*
+	 * Fake up a connection struct for the VFS layer.
+	 */
+
+	if (!NT_STATUS_IS_OK(create_conn_struct(&conn, snum, connect_path))) {
+		return 0;
+	}
+
+	/* form a junction for the msdfs root - convention
+	   DO NOT REMOVE THIS: NT clients will not work with us
+	   if this is not present
+	*/
+	jucn[cnt].service_name = talloc_strdup(ctx,service_name);
+	jucn[cnt].volume_name = talloc_strdup(ctx, "");
+	if (!jucn[cnt].service_name || jucn[cnt].volume_name) {
+		goto out;
+	}
+	jucn[cnt].referral_count = 1;
+
+	ref = jucn[cnt].referral_list = TALLOC_ZERO_P(ctx, struct referral);
+	if (jucn[cnt].referral_list == NULL) {
+		goto out;
+	}
+
+	ref->proximity = 0;
+	ref->ttl = REFERRAL_TTL;
+	if (*msdfs_proxy != '\0') {
+		ref->alternate_path = talloc_strdup(ctx,
+						msdfs_proxy);
+	} else {
+		ref->alternate_path = talloc_asprintf(ctx,
+			"\\\\%s\\%s",
+			get_local_machine_name(),
+			service_name);
+	}
+
+	if (!ref->alternate_path) {
+		goto out;
+	}
+	cnt++;
+
+	/* Don't enumerate if we're an msdfs proxy. */
+	if (*msdfs_proxy != '\0') {
+		goto out;
+	}
+
+	/* Now enumerate all dfs links */
+	dirp = SMB_VFS_OPENDIR(&conn, ".", NULL, 0);
+	if(!dirp) {
+		goto out;
+	}
+
+	while ((dname = vfs_readdirname(&conn, dirp)) != NULL) {
+		char *link_target = NULL;
+		if (cnt >= jn_remain) {
+			SMB_VFS_CLOSEDIR(&conn,dirp);
+			DEBUG(2, ("form_junctions: ran out of MSDFS "
+				"junction slots"));
+			goto out;
+		}
+		if (is_msdfs_link_internal(ctx,
+					&conn,
+					dname, &link_target,
+					NULL)) {
+			if (parse_msdfs_symlink(ctx,
+					link_target,
+					&jucn[cnt].referral_list,
+					&jucn[cnt].referral_count)) {
+
+				jucn[cnt].service_name = talloc_strdup(ctx,
+								service_name);
+				jucn[cnt].volume_name = talloc_strdup(ctx,
+								dname);
+				if (!jucn[cnt].service_name ||
+						!jucn[cnt].volume_name) {
+					goto out;
+				}
+				cnt++;
+			}
+		}
+	}
+
+out:
+
+	if (dirp) {
+		SMB_VFS_CLOSEDIR(&conn,dirp);
+	}
+
+	conn_free_internal(&conn);
+	return cnt;
+}
+
+struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
+{
+	struct junction_map *jn = NULL;
+	int i=0;
+	size_t jn_count = 0;
+	int sharecount = 0;
+
+	*p_num_jn = 0;
+	if(!lp_host_msdfs()) {
+		return NULL;
 	}
 
 	/* Ensure all the usershares are loaded. */
@@ -1259,24 +1573,57 @@ int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
 	sharecount = load_usershare_shares();
 	unbecome_root();
 
-	for(i=0;i < sharecount && (jn_max - jn_count) > 0;i++) {
+	for(i=0;i < sharecount;i++) {
 		if(lp_msdfs_root(i)) {
-			jn_count += form_junctions(ctx, i,jucn,jn_max - jn_count);
+			jn_count += count_dfs_links(ctx, i);
 		}
 	}
-	return jn_count;
+	if (jn_count == 0) {
+		return NULL;
+	}
+	jn = TALLOC_ARRAY(ctx,  struct junction_map, jn_count);
+	if (!jn) {
+		return NULL;
+	}
+	for(i=0; i < sharecount; i++) {
+		if (*p_num_jn >= jn_count) {
+			break;
+		}
+		if(lp_msdfs_root(i)) {
+			*p_num_jn += form_junctions(ctx, i,
+					&jn[*p_num_jn],
+					jn_count - *p_num_jn);
+		}
+	}
+	return jn;
 }
 
 /******************************************************************************
  Core function to resolve a dfs pathname.
 ******************************************************************************/
 
-NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring name)
+NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			BOOL dfs_pathnames,
+			const char *name_in,
+			char **pp_name_out)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL dummy;
 	if (dfs_pathnames) {
-		status = dfs_redirect(conn, name, False, &dummy);
+		status = dfs_redirect(ctx,
+					conn,
+					name_in,
+					False,
+					pp_name_out,
+					&dummy);
+	} else {
+		/*
+		 * Cheat and just return a copy of the in ptr.
+		 * Once srvstr_get_path() uses talloc it'll
+		 * be a talloced ptr anyway.
+		 */
+		*pp_name_out = CONST_DISCARD(char *,name_in);
 	}
 	return status;
 }
@@ -1288,11 +1635,28 @@ NTSTATUS resolve_dfspath(connection_struct *conn, BOOL dfs_pathnames, pstring na
  we're allowing wildcards and when we're not. JRA.
 ******************************************************************************/
 
-NTSTATUS resolve_dfspath_wcard(connection_struct *conn, BOOL dfs_pathnames, pstring name, BOOL *ppath_contains_wcard)
+NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				BOOL dfs_pathnames,
+				const char *name_in,
+				char **pp_name_out,
+				BOOL *ppath_contains_wcard)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	if (dfs_pathnames) {
-		status = dfs_redirect(conn, name, True, ppath_contains_wcard);
+		status = dfs_redirect(ctx,
+					conn,
+					name_in,
+					True,
+					pp_name_out,
+					ppath_contains_wcard);
+	} else {
+		/*
+		 * Cheat and just return a copy of the in ptr.
+		 * Once srvstr_get_path() uses talloc it'll
+		 * be a talloced ptr anyway.
+		 */
+		*pp_name_out = CONST_DISCARD(char *,name_in);
 	}
 	return status;
 }

@@ -95,13 +95,13 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
+static bool next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
 	char *s;
-	BOOL quoted;
+	bool quoted;
 	size_t len=1;
 
-	if (!ptr) return(False);
+	if (!ptr) return false;
 
 	s = *ptr;
 
@@ -112,10 +112,10 @@ static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 	while (*s && strchr(sep,*s)) s++;
 	
 	/* nothing left? */
-	if (! *s) return(False);
+	if (! *s) return false;
 	
 	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+	for (quoted = false; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
@@ -127,7 +127,7 @@ static BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 	*ptr = (*s) ? s+1 : s;  
 	*buff = 0;
 	
-	return(True);
+	return true;
 }
 
 
@@ -334,7 +334,7 @@ _nss_winbind_setpwent(void)
 
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_SETPWENT, NULL, NULL);
@@ -357,7 +357,7 @@ _nss_winbind_endpwent(void)
 
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_ENDPWENT, NULL, NULL);
@@ -392,7 +392,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 	/* Else call winbindd to get a bunch of entries */
 	
 	if (num_pw_cache > 0) {
-		free_response(&getpwent_response);
+		winbindd_free_response(&getpwent_response);
 	}
 
 	ZERO_STRUCT(request);
@@ -431,20 +431,20 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			called_again = True;
+			called_again = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
 		*errnop = errno = 0;
-		called_again = False;
+		called_again = false;
 		ndx_pw_cache++;
 
 		/* If we've finished with this lot of results free cache */
 
 		if (ndx_pw_cache == num_pw_cache) {
 			ndx_pw_cache = num_pw_cache = 0;
-			free_response(&getpwent_response);
+			winbindd_free_response(&getpwent_response);
 		}
 	}
 	done:
@@ -487,7 +487,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -500,16 +500,16 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = errno = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 
 #ifdef DEBUG_NSS
@@ -554,7 +554,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 					 &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -567,16 +567,16 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = errno = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwnam %s returns %s (%d)\n", getpid(),
@@ -606,7 +606,7 @@ _nss_winbind_setgrent(void)
 
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_SETGRENT, NULL, NULL);
@@ -629,7 +629,7 @@ _nss_winbind_endgrent(void)
 
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ret = winbindd_request_response(WINBINDD_ENDGRENT, NULL, NULL);
@@ -666,7 +666,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 	/* Else call winbindd to get a bunch of entries */
 	
 	if (num_gr_cache > 0) {
-		free_response(&getgrent_response);
+		winbindd_free_response(&getgrent_response);
 	}
 
 	ZERO_STRUCT(request);
@@ -714,20 +714,20 @@ winbind_getgrent(enum winbindd_cmd cmd,
 		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			called_again = True;
+			called_again = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
 		*errnop = 0;
-		called_again = False;
+		called_again = false;
 		ndx_gr_cache++;
 
 		/* If we've finished with this lot of results free cache */
 
 		if (ndx_gr_cache == num_gr_cache) {
 			ndx_gr_cache = num_gr_cache = 0;
-			free_response(&getgrent_response);
+			winbindd_free_response(&getgrent_response);
 		}
 	}
 	done:
@@ -791,7 +791,7 @@ _nss_winbind_getgrnam_r(const char *name,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -806,16 +806,16 @@ _nss_winbind_getgrnam_r(const char *name,
 				 &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrnam %s returns %s (%d)\n", getpid(),
@@ -860,7 +860,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
+				keep_response = true;
 				*errnop = errno = ERANGE;
 				goto done;
 			}
@@ -875,16 +875,16 @@ _nss_winbind_getgrgid_r(gid_t gid,
 				 &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
 
-		keep_response = False;
+		keep_response = false;
 		*errnop = 0;
 	}
 
-	free_response(&response);
+	winbindd_free_response(&response);
 	done:
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrgid %d returns %s (%d)\n", getpid(),
@@ -1032,7 +1032,7 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 	errno = *errnop = 0;
 	
  done:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1074,7 +1074,7 @@ _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1105,7 +1105,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 		}
 
 		sep_char = response.data.info.winbind_separator;
-		free_response(&response);
+		winbindd_free_response(&response);
 	}
 
 
@@ -1138,7 +1138,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 	*errnop = errno = 0;
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1237,7 +1237,7 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }
 
@@ -1276,6 +1276,6 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 	strcpy(*sid, response.data.sid.sid);
 
 failed:
-	free_response(&response);
+	winbindd_free_response(&response);
 	return ret;
 }

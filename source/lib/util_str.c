@@ -6,6 +6,7 @@
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
    Copyright (C) James Peach	 2006
+   Copyright (C) Jeremy Allison  1992-2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -264,12 +265,63 @@ int StrCaseCmp(const char *s, const char *t)
 /**
  Case insensitive string compararison, length limited.
 **/
-int StrnCaseCmp(const char *s, const char *t, size_t n)
+int StrnCaseCmp(const char *s, const char *t, size_t len)
 {
-	pstring buf1, buf2;
-	unix_strupper(s, strlen(s)+1, buf1, sizeof(buf1));
-	unix_strupper(t, strlen(t)+1, buf2, sizeof(buf2));
-	return strncmp(buf1,buf2,n);
+	size_t n = 0;
+	const char *ps, *pt;
+	size_t size;
+	smb_ucs2_t *buffer_s, *buffer_t;
+	int ret;
+
+	for (ps = s, pt = t; n < len ; ps++, pt++, n++) {
+		char us, ut;
+
+		if (!*ps && !*pt)
+			return 0; /* both ended */
+ 		else if (!*ps)
+			return -1; /* s is a prefix */
+		else if (!*pt)
+			return +1; /* t is a prefix */
+		else if ((*ps & 0x80) || (*pt & 0x80))
+			/* not ascii anymore, do it the
+			 * hard way from here on in */
+			break;
+
+		us = toupper_ascii(*ps);
+		ut = toupper_ascii(*pt);
+		if (us == ut)
+			continue;
+		else if (us < ut)
+			return -1;
+		else if (us > ut)
+			return +1;
+	}
+
+	if (n == len) {
+		return 0;
+	}
+
+	size = push_ucs2_allocate(&buffer_s, ps);
+	if (size == (size_t)-1) {
+		return strncmp(ps, pt, len-n);
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive,
+		   and it's pretty close */
+	}
+
+	size = push_ucs2_allocate(&buffer_t, pt);
+	if (size == (size_t)-1) {
+		SAFE_FREE(buffer_s);
+		return strncmp(ps, pt, len-n);
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive,
+		   and it's pretty close */
+	}
+
+	ret = strncasecmp_w(buffer_s, buffer_t, len-n);
+	SAFE_FREE(buffer_s);
+	SAFE_FREE(buffer_t);
+	return ret;
 }
 
 /**
@@ -283,7 +335,7 @@ BOOL strequal(const char *s1, const char *s2)
 		return(True);
 	if (!s1 || !s2)
 		return(False);
-  
+
 	return(StrCaseCmp(s1,s2)==0);
 }
 
@@ -298,7 +350,7 @@ BOOL strnequal(const char *s1,const char *s2,size_t n)
 		return(True);
 	if (!s1 || !s2 || !n)
 		return(False);
-  
+
 	return(StrnCaseCmp(s1,s2,n)==0);
 }
 
@@ -353,11 +405,16 @@ int strwicmp(const char *psz1, const char *psz2)
 
 char *strupper_static(const char *s)
 {
-	static pstring str;
+	static char *str = NULL;
 
-	pstrcpy(str, s);
+	if (str) {
+		SAFE_FREE(str);
+	}
+	str = SMB_STRDUP(s);
+	if (!str) {
+		return CONST_DISCARD(char *,s);
+	}
 	strupper_m(str);
-
 	return str;
 }
 
@@ -381,7 +438,7 @@ BOOL strisnormal(const char *s, int case_default)
 {
 	if (case_default == CASE_UPPER)
 		return(!strhaslower(s));
-	
+
 	return(!strhasupper(s));
 }
 
@@ -390,12 +447,9 @@ BOOL strisnormal(const char *s, int case_default)
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
-
-void string_replace( pstring s, char oldc, char newc )
+void string_replace( char *s, char oldc, char newc )
 {
 	char *p;
-	smb_ucs2_t *tmp;
-	size_t len;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -405,8 +459,9 @@ void string_replace( pstring s, char oldc, char newc )
 	for (p = s; *p; p++) {
 		if (*p & 0x80) /* mb string - slow path. */
 			break;
-		if (*p == oldc)
+		if (*p == oldc) {
 			*p = newc;
+		}
 	}
 
 	if (!*p)
@@ -417,13 +472,18 @@ void string_replace( pstring s, char oldc, char newc )
 	/* With compose characters we must restart from the beginning. JRA. */
 	p = s;
 #endif
-	len = push_ucs2_allocate(&tmp, p);
-	if (len == -1) {
-		return;
+
+	while (*p) {
+		size_t c_size;
+		next_codepoint(p, &c_size);
+
+		if (c_size == 1) {
+			if (*p == oldc) {
+				*p = newc;
+			}
+		}
+		p += c_size;
 	}
-	string_replace_w(tmp, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, p, tmp, len/2, -1, STR_TERMINATE);
-	SAFE_FREE(tmp);
 }
 
 /**
@@ -470,9 +530,14 @@ char *skip_string(const char *base, size_t len, char *buf)
 
 size_t str_charnum(const char *s)
 {
-	uint16 tmpbuf2[sizeof(pstring)];
-	push_ucs2(NULL, tmpbuf2,s, sizeof(tmpbuf2), STR_TERMINATE);
-	return strlen_w(tmpbuf2);
+	size_t ret;
+	smb_ucs2_t *tmpbuf2 = NULL;
+	if (push_ucs2_allocate(&tmpbuf2, s) == (size_t)-1) {
+		return 0;
+	}
+	ret = strlen_w(tmpbuf2);
+	SAFE_FREE(tmpbuf2);
+	return ret;
 }
 
 /**
@@ -483,9 +548,14 @@ size_t str_charnum(const char *s)
 
 size_t str_ascii_charnum(const char *s)
 {
-	pstring tmpbuf2;
-	push_ascii(tmpbuf2, s, sizeof(tmpbuf2), STR_TERMINATE);
-	return strlen(tmpbuf2);
+	size_t ret;
+	char *tmpbuf2 = NULL;
+	if (push_ascii_allocate(&tmpbuf2, s) == (size_t)-1) {
+		return 0;
+	}
+	ret = strlen(tmpbuf2);
+	SAFE_FREE(tmpbuf2);
+	return ret;
 }
 
 BOOL trim_char(char *s,char cfront,char cback)
@@ -913,22 +983,38 @@ char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 
 BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
-	pstring tok;
+	char *tok;
 	const char *p=list;
+	size_t bufsize = strlen(list);
+	BOOL ret = False;
 
 	if (!list)
 		return(False);
 
-	while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
+	/* We know a token can't be larger
+	 * than the entire list. */
+
+	tok = SMB_MALLOC_ARRAY(char, bufsize+1);
+	if (!tok) {
+		return False;
+	}
+
+	while (next_token(&p,tok,LIST_SEP,bufsize+1)) {
 		if (casesensitive) {
-			if (strcmp(tok,s) == 0)
-				return(True);
+			if (strcmp(tok,s) == 0) {
+				ret = True;
+				break;
+			}
 		} else {
-			if (StrCaseCmp(tok,s) == 0)
-				return(True);
+			if (StrCaseCmp(tok,s) == 0) {
+				ret = True;
+				break;
+			}
 		}
 	}
-	return(False);
+
+	SAFE_FREE(tok);
+	return ret;
 }
 
 /* this is used to prevent lots of mallocs of size 1 */
@@ -1376,10 +1462,11 @@ char *string_truncate(char *s, unsigned int length)
 
 char *strchr_m(const char *src, char c)
 {
-	wpstring ws;
-	pstring s2;
+	smb_ucs2_t *ws = NULL;
+	char *s2 = NULL;
 	smb_ucs2_t *p;
 	const char *s;
+	char *ret;
 
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
@@ -1405,13 +1492,25 @@ char *strchr_m(const char *src, char c)
 	s = src;
 #endif
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+	if (push_ucs2_allocate(&ws, s)==(size_t)-1) {
+		/* Wrong answer, but what can we do... */
+		return strchr(src, c);
+	}
 	p = strchr_w(ws, UCS2_CHAR(c));
-	if (!p)
+	if (!p) {
+		SAFE_FREE(ws);
 		return NULL;
+	}
 	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	if (pull_ucs2_allocate(&s2, ws)==(size_t)-1) {
+		SAFE_FREE(ws);
+		/* Wrong answer, but what can we do... */
+		return strchr(src, c);
+	}
+	ret = (char *)(s+strlen(s2));
+	SAFE_FREE(ws);
+	SAFE_FREE(s2);
+	return ret;
 }
 
 char *strrchr_m(const char *s, char c)
@@ -1457,17 +1556,30 @@ char *strrchr_m(const char *s, char c)
 
 	/* String contained a non-ascii char. Slow path. */
 	{
-		wpstring ws;
-		pstring s2;
+		smb_ucs2_t *ws = NULL;
+		char *s2 = NULL;
 		smb_ucs2_t *p;
+		char *ret;
 
-		push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+		if (push_ucs2_allocate(&ws,s)==(size_t)-1) {
+			/* Wrong answer, but what can we do. */
+			return strrchr(s, c);
+		}
 		p = strrchr_w(ws, UCS2_CHAR(c));
-		if (!p)
+		if (!p) {
+			SAFE_FREE(ws);
 			return NULL;
+		}
 		*p = 0;
-		pull_ucs2_pstring(s2, ws);
-		return (char *)(s+strlen(s2));
+		if (pull_ucs2_allocate(&s2,ws)==(size_t)-1) {
+			SAFE_FREE(ws);
+			/* Wrong answer, but what can we do. */
+			return strrchr(s, c);
+		}
+		ret = (char *)(s+strlen(s2));
+		SAFE_FREE(ws);
+		SAFE_FREE(s2);
+		return ret;
 	}
 }
 
@@ -1478,17 +1590,30 @@ char *strrchr_m(const char *s, char c)
 
 char *strnrchr_m(const char *s, char c, unsigned int n)
 {
-	wpstring ws;
-	pstring s2;
+	smb_ucs2_t *ws = NULL;
+	char *s2 = NULL;
 	smb_ucs2_t *p;
+	char *ret;
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strnrchr_w(ws, UCS2_CHAR(c), n);
-	if (!p)
+	if (push_ucs2_allocate(&ws,s)==(size_t)-1) {
+		/* Too hard to try and get right. */
 		return NULL;
+	}
+	p = strnrchr_w(ws, UCS2_CHAR(c), n);
+	if (!p) {
+		SAFE_FREE(ws);
+		return NULL;
+	}
 	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	if (pull_ucs2_allocate(&s2,ws)==(size_t)-1) {
+		SAFE_FREE(ws);
+		/* Too hard to try and get right. */
+		return NULL;
+	}
+	ret = (char *)(s+strlen(s2));
+	SAFE_FREE(ws);
+	SAFE_FREE(s2);
+	return ret;
 }
 
 /***********************************************************************
@@ -1794,7 +1919,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 	char *s;
 	int num, lsize;
 	pstring tok;
-	
+
 	if (!string || !*string)
 		return NULL;
 	if (mem_ctx) {
@@ -1807,12 +1932,12 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 		return NULL;
 	}
 	if (!sep) sep = LIST_SEP;
-	
+
 	num = lsize = 0;
 	list = NULL;
-	
+
 	str = s;
-	while (next_token(&str, tok, sep, sizeof(tok))) {		
+	while (next_token(&str, tok, sep, sizeof(tok))) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
 			if (mem_ctx) {
@@ -1842,7 +1967,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 		} else {
 			list[num] = SMB_STRDUP(tok);
 		}
-		
+
 		if (!list[num]) {
 			DEBUG(0,("str_list_make: Unable to allocate memory"));
 			str_list_free(&list);

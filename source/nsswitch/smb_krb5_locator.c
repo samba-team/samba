@@ -24,7 +24,6 @@
 #endif
 
 #if defined(HAVE_KRB5) && defined(HAVE_KRB5_LOCATE_PLUGIN_H)
-BOOL winbind_env_set(void);
 
 #include <krb5/locate_plugin.h>
 
@@ -240,7 +239,7 @@ void smb_krb5_locator_close(void *private_data)
 }
 
 
-static int ask_winbind(const char *realm, char **dcname)
+static bool ask_winbind(const char *realm, char **dcname)
 {
 	NSS_STATUS status;
 	struct winbindd_request request;
@@ -265,15 +264,15 @@ static int ask_winbind(const char *realm, char **dcname)
 		fprintf(stderr,"[%5u]: smb_krb5_locator_lookup: failed with: %s\n",
 			(unsigned int)getpid(), nss_err_str(status));
 #endif
-		return False;
+		return false;
 	}
 
 	*dcname = strdup(response.data.dc_name);
 	if (!*dcname) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /**

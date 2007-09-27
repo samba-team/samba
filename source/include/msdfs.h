@@ -44,23 +44,23 @@ typedef struct _client_referral {
 } CLIENT_DFS_REFERRAL;
 
 struct referral {
-	pstring alternate_path; /* contains the path referred */
+	char *alternate_path; /* contains the path referred */
 	uint32 proximity;
 	uint32 ttl; /* how long should client cache referral */
 };
 
 struct junction_map {
-	fstring service_name;
-	pstring volume_name;
-	pstring comment;
+	char *service_name;
+	char *volume_name;
+	char *comment;
 	int referral_count;
 	struct referral* referral_list;
 };
 
 struct dfs_path {
-	fstring hostname;
-	fstring servicename;
-	pstring reqpath;
+	char *hostname;
+	char *servicename;
+	char *reqpath;
 	BOOL posix_path;
 };
 

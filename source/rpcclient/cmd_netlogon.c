@@ -338,25 +338,25 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
                 case SAM_DELTA_DOMAIN_INFO:
                         unistr2_to_ascii(name,
                                          &deltas[i].domain_info.uni_dom_name,
-                                         sizeof(name) - 1);
+                                         sizeof(name));
                         printf("Domain: %s\n", name);
                         break;
                 case SAM_DELTA_GROUP_INFO:
                         unistr2_to_ascii(name,
                                          &deltas[i].group_info.uni_grp_name,
-                                         sizeof(name) - 1);
+                                         sizeof(name));
                         printf("Group: %s\n", name);
                         break;
                 case SAM_DELTA_ACCOUNT_INFO:
                         unistr2_to_ascii(name, 
                                          &deltas[i].account_info.uni_acct_name,
-                                         sizeof(name) - 1);
+                                         sizeof(name));
                         printf("Account: %s\n", name);
                         break;
                 case SAM_DELTA_ALIAS_INFO:
                         unistr2_to_ascii(name, 
                                          &deltas[i].alias_info.uni_als_name,
-                                         sizeof(name) - 1);
+                                         sizeof(name));
                         printf("Alias: %s\n", name);
                         break;
                 case SAM_DELTA_ALIAS_MEM: {

@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
 
-NTSTATUS ndr_push_SERVICE_LOCK_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_LOCK_STATUS *r)
+static NTSTATUS ndr_push_SERVICE_LOCK_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_LOCK_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -22,7 +22,7 @@ NTSTATUS ndr_push_SERVICE_LOCK_STATUS(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_SERVICE_LOCK_STATUS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_LOCK_STATUS *r)
+static NTSTATUS ndr_pull_SERVICE_LOCK_STATUS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_LOCK_STATUS *r)
 {
 	uint32_t _ptr_lock_owner;
 	TALLOC_CTX *_mem_save_lock_owner_0;
@@ -69,7 +69,7 @@ _PUBLIC_ void ndr_print_SERVICE_LOCK_STATUS(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_STATUS *r)
+static NTSTATUS ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -86,7 +86,7 @@ NTSTATUS ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_STATUS *r)
+static NTSTATUS ndr_pull_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -117,7 +117,7 @@ _PUBLIC_ void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_ENUM_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const struct ENUM_SERVICE_STATUS *r)
+static NTSTATUS ndr_push_ENUM_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const struct ENUM_SERVICE_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -158,7 +158,7 @@ NTSTATUS ndr_push_ENUM_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_ENUM_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_flags, struct ENUM_SERVICE_STATUS *r)
+static NTSTATUS ndr_pull_ENUM_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_flags, struct ENUM_SERVICE_STATUS *r)
 {
 	uint32_t _ptr_service_name;
 	TALLOC_CTX *_mem_save_service_name_0;
@@ -295,7 +295,7 @@ _PUBLIC_ void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, const struct svcctl_CloseServiceHandle *r)
+static NTSTATUS ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, const struct svcctl_CloseServiceHandle *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -309,7 +309,7 @@ NTSTATUS ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_CloseServiceHandle(struct ndr_pull *ndr, int flags, struct svcctl_CloseServiceHandle *r)
+static NTSTATUS ndr_pull_svcctl_CloseServiceHandle(struct ndr_pull *ndr, int flags, struct svcctl_CloseServiceHandle *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -367,7 +367,7 @@ _PUBLIC_ void ndr_print_svcctl_CloseServiceHandle(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const struct svcctl_ControlService *r)
+static NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const struct svcctl_ControlService *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -382,7 +382,7 @@ NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, int flags, struct svcctl_ControlService *r)
+static NTSTATUS ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, int flags, struct svcctl_ControlService *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_service_status_0;
@@ -443,7 +443,7 @@ _PUBLIC_ void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_DeleteService(struct ndr_push *ndr, int flags, const struct svcctl_DeleteService *r)
+static NTSTATUS ndr_push_svcctl_DeleteService(struct ndr_push *ndr, int flags, const struct svcctl_DeleteService *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -455,7 +455,7 @@ NTSTATUS ndr_push_svcctl_DeleteService(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_DeleteService(struct ndr_pull *ndr, int flags, struct svcctl_DeleteService *r)
+static NTSTATUS ndr_pull_svcctl_DeleteService(struct ndr_pull *ndr, int flags, struct svcctl_DeleteService *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -498,7 +498,7 @@ _PUBLIC_ void ndr_print_svcctl_DeleteService(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_LockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_LockServiceDatabase *r)
+static NTSTATUS ndr_push_svcctl_LockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_LockServiceDatabase *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -512,7 +512,7 @@ NTSTATUS ndr_push_svcctl_LockServiceDatabase(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_LockServiceDatabase(struct ndr_pull *ndr, int flags, struct svcctl_LockServiceDatabase *r)
+static NTSTATUS ndr_pull_svcctl_LockServiceDatabase(struct ndr_pull *ndr, int flags, struct svcctl_LockServiceDatabase *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_lock_0;
@@ -571,7 +571,7 @@ _PUBLIC_ void ndr_print_svcctl_LockServiceDatabase(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceObjectSecurity(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceObjectSecurity *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceObjectSecurity(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceObjectSecurity *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -581,7 +581,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceObjectSecurity(struct ndr_push *ndr, int fl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceObjectSecurity *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceObjectSecurity *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -612,7 +612,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceObjectSecurity(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_push *ndr, int flags, const struct svcctl_SetServiceObjectSecurity *r)
+static NTSTATUS ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_push *ndr, int flags, const struct svcctl_SetServiceObjectSecurity *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -622,7 +622,7 @@ NTSTATUS ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_push *ndr, int flag
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_SetServiceObjectSecurity(struct ndr_pull *ndr, int flags, struct svcctl_SetServiceObjectSecurity *r)
+static NTSTATUS ndr_pull_svcctl_SetServiceObjectSecurity(struct ndr_pull *ndr, int flags, struct svcctl_SetServiceObjectSecurity *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -653,7 +653,7 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceObjectSecurity(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatus *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatus *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -667,7 +667,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceStatus(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceStatus *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceStatus(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceStatus *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_service_status_0;
@@ -726,7 +726,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceStatus(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_SetServiceStatus(struct ndr_push *ndr, int flags, const struct svcctl_SetServiceStatus *r)
+static NTSTATUS ndr_push_svcctl_SetServiceStatus(struct ndr_push *ndr, int flags, const struct svcctl_SetServiceStatus *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -736,7 +736,7 @@ NTSTATUS ndr_push_svcctl_SetServiceStatus(struct ndr_push *ndr, int flags, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_SetServiceStatus(struct ndr_pull *ndr, int flags, struct svcctl_SetServiceStatus *r)
+static NTSTATUS ndr_pull_svcctl_SetServiceStatus(struct ndr_pull *ndr, int flags, struct svcctl_SetServiceStatus *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -767,7 +767,7 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceStatus(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_UnlockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_UnlockServiceDatabase *r)
+static NTSTATUS ndr_push_svcctl_UnlockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_UnlockServiceDatabase *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.lock == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -781,7 +781,7 @@ NTSTATUS ndr_push_svcctl_UnlockServiceDatabase(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_UnlockServiceDatabase(struct ndr_pull *ndr, int flags, struct svcctl_UnlockServiceDatabase *r)
+static NTSTATUS ndr_pull_svcctl_UnlockServiceDatabase(struct ndr_pull *ndr, int flags, struct svcctl_UnlockServiceDatabase *r)
 {
 	TALLOC_CTX *_mem_save_lock_0;
 	if (flags & NDR_IN) {
@@ -839,7 +839,7 @@ _PUBLIC_ void ndr_print_svcctl_UnlockServiceDatabase(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_NotifyBootConfigStatus(struct ndr_push *ndr, int flags, const struct svcctl_NotifyBootConfigStatus *r)
+static NTSTATUS ndr_push_svcctl_NotifyBootConfigStatus(struct ndr_push *ndr, int flags, const struct svcctl_NotifyBootConfigStatus *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -849,7 +849,7 @@ NTSTATUS ndr_push_svcctl_NotifyBootConfigStatus(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_NotifyBootConfigStatus(struct ndr_pull *ndr, int flags, struct svcctl_NotifyBootConfigStatus *r)
+static NTSTATUS ndr_pull_svcctl_NotifyBootConfigStatus(struct ndr_pull *ndr, int flags, struct svcctl_NotifyBootConfigStatus *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -880,7 +880,7 @@ _PUBLIC_ void ndr_print_svcctl_NotifyBootConfigStatus(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_SCSetServiceBitsW(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsW *r)
+static NTSTATUS ndr_push_svcctl_SCSetServiceBitsW(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -895,7 +895,7 @@ NTSTATUS ndr_push_svcctl_SCSetServiceBitsW(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_SCSetServiceBitsW(struct ndr_pull *ndr, int flags, struct svcctl_SCSetServiceBitsW *r)
+static NTSTATUS ndr_pull_svcctl_SCSetServiceBitsW(struct ndr_pull *ndr, int flags, struct svcctl_SCSetServiceBitsW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -944,7 +944,7 @@ _PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsW(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigW *r)
+static NTSTATUS ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1003,7 +1003,7 @@ NTSTATUS ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_ChangeServiceConfigW(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfigW *r)
+static NTSTATUS ndr_pull_svcctl_ChangeServiceConfigW(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfigW *r)
 {
 	uint32_t _ptr_binary_path;
 	uint32_t _ptr_load_order_group;
@@ -1224,7 +1224,7 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigW(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceW *r)
+static NTSTATUS ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1291,7 +1291,7 @@ NTSTATUS ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_CreateServiceW(struct ndr_pull *ndr, int flags, struct svcctl_CreateServiceW *r)
+static NTSTATUS ndr_pull_svcctl_CreateServiceW(struct ndr_pull *ndr, int flags, struct svcctl_CreateServiceW *r)
 {
 	uint32_t _ptr_DisplayName;
 	uint32_t _ptr_LoadOrderGroupKey;
@@ -1544,7 +1544,7 @@ _PUBLIC_ void ndr_print_svcctl_CreateServiceW(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesW *r)
+static NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.service == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1566,7 +1566,7 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesW *r)
+static NTSTATUS ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesW *r)
 {
 	uint32_t _ptr_service_status;
 	TALLOC_CTX *_mem_save_service_0;
@@ -1663,7 +1663,7 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusW *r)
+static NTSTATUS ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1692,7 +1692,7 @@ NTSTATUS ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *ndr, int flags, struct svcctl_EnumServicesStatusW *r)
+static NTSTATUS ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *ndr, int flags, struct svcctl_EnumServicesStatusW *r)
 {
 	uint32_t _ptr_resume_handle;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -1816,7 +1816,7 @@ _PUBLIC_ void ndr_print_svcctl_EnumServicesStatusW(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, int flags, const struct svcctl_OpenSCManagerW *r)
+static NTSTATUS ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, int flags, const struct svcctl_OpenSCManagerW *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.MachineName));
@@ -1843,7 +1843,7 @@ NTSTATUS ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_OpenSCManagerW(struct ndr_pull *ndr, int flags, struct svcctl_OpenSCManagerW *r)
+static NTSTATUS ndr_pull_svcctl_OpenSCManagerW(struct ndr_pull *ndr, int flags, struct svcctl_OpenSCManagerW *r)
 {
 	uint32_t _ptr_MachineName;
 	uint32_t _ptr_DatabaseName;
@@ -1944,7 +1944,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenSCManagerW(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceW *r)
+static NTSTATUS ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -1963,7 +1963,7 @@ NTSTATUS ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_OpenServiceW(struct ndr_pull *ndr, int flags, struct svcctl_OpenServiceW *r)
+static NTSTATUS ndr_pull_svcctl_OpenServiceW(struct ndr_pull *ndr, int flags, struct svcctl_OpenServiceW *r)
 {
 	TALLOC_CTX *_mem_save_scmanager_handle_0;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -2032,7 +2032,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenServiceW(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigW *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2048,7 +2048,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceConfigW(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceConfigW(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfigW *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceConfigW(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfigW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
@@ -2112,7 +2112,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfigW(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusW *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2129,7 +2129,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusW(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusW *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusW(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_lock_status_0;
@@ -2204,7 +2204,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusW(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceW *r)
+static NTSTATUS ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2224,7 +2224,7 @@ NTSTATUS ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int flags, struct svcctl_StartServiceW *r)
+static NTSTATUS ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int flags, struct svcctl_StartServiceW *r)
 {
 	uint32_t _ptr_Arguments;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -2295,7 +2295,7 @@ _PUBLIC_ void ndr_print_svcctl_StartServiceW(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameW *r)
+static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2329,7 +2329,7 @@ NTSTATUS ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_GetServiceDisplayNameW(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceDisplayNameW *r)
+static NTSTATUS ndr_pull_svcctl_GetServiceDisplayNameW(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceDisplayNameW *r)
 {
 	uint32_t _ptr_service_name;
 	uint32_t _ptr_display_name;
@@ -2463,7 +2463,7 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameW *r)
+static NTSTATUS ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2497,7 +2497,7 @@ NTSTATUS ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_GetServiceKeyNameW(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceKeyNameW *r)
+static NTSTATUS ndr_pull_svcctl_GetServiceKeyNameW(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceKeyNameW *r)
 {
 	uint32_t _ptr_service_name;
 	uint32_t _ptr_key_name;
@@ -2631,7 +2631,7 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceKeyNameW(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_SCSetServiceBitsA(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsA *r)
+static NTSTATUS ndr_push_svcctl_SCSetServiceBitsA(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2646,7 +2646,7 @@ NTSTATUS ndr_push_svcctl_SCSetServiceBitsA(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_SCSetServiceBitsA(struct ndr_pull *ndr, int flags, struct svcctl_SCSetServiceBitsA *r)
+static NTSTATUS ndr_pull_svcctl_SCSetServiceBitsA(struct ndr_pull *ndr, int flags, struct svcctl_SCSetServiceBitsA *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -2695,7 +2695,7 @@ _PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsA(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigA *r)
+static NTSTATUS ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -2754,7 +2754,7 @@ NTSTATUS ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_ChangeServiceConfigA(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfigA *r)
+static NTSTATUS ndr_pull_svcctl_ChangeServiceConfigA(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfigA *r)
 {
 	uint32_t _ptr_binary_path;
 	uint32_t _ptr_load_order_group;
@@ -2975,7 +2975,7 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigA(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_CreateServiceA(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceA *r)
+static NTSTATUS ndr_push_svcctl_CreateServiceA(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3044,7 +3044,7 @@ NTSTATUS ndr_push_svcctl_CreateServiceA(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_CreateServiceA(struct ndr_pull *ndr, int flags, struct svcctl_CreateServiceA *r)
+static NTSTATUS ndr_pull_svcctl_CreateServiceA(struct ndr_pull *ndr, int flags, struct svcctl_CreateServiceA *r)
 {
 	uint32_t _ptr_ServiceName;
 	uint32_t _ptr_DisplayName;
@@ -3299,7 +3299,7 @@ _PUBLIC_ void ndr_print_svcctl_CreateServiceA(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesA *r)
+static NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.service == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3321,7 +3321,7 @@ NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_EnumDependentServicesA(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesA *r)
+static NTSTATUS ndr_pull_svcctl_EnumDependentServicesA(struct ndr_pull *ndr, int flags, struct svcctl_EnumDependentServicesA *r)
 {
 	uint32_t _ptr_service_status;
 	TALLOC_CTX *_mem_save_service_0;
@@ -3418,7 +3418,7 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesA(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusA *r)
+static NTSTATUS ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3447,7 +3447,7 @@ NTSTATUS ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_EnumServicesStatusA(struct ndr_pull *ndr, int flags, struct svcctl_EnumServicesStatusA *r)
+static NTSTATUS ndr_pull_svcctl_EnumServicesStatusA(struct ndr_pull *ndr, int flags, struct svcctl_EnumServicesStatusA *r)
 {
 	uint32_t _ptr_resume_handle;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -3571,7 +3571,7 @@ _PUBLIC_ void ndr_print_svcctl_EnumServicesStatusA(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_OpenSCManagerA(struct ndr_push *ndr, int flags, const struct svcctl_OpenSCManagerA *r)
+static NTSTATUS ndr_push_svcctl_OpenSCManagerA(struct ndr_push *ndr, int flags, const struct svcctl_OpenSCManagerA *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.MachineName));
@@ -3598,7 +3598,7 @@ NTSTATUS ndr_push_svcctl_OpenSCManagerA(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_OpenSCManagerA(struct ndr_pull *ndr, int flags, struct svcctl_OpenSCManagerA *r)
+static NTSTATUS ndr_pull_svcctl_OpenSCManagerA(struct ndr_pull *ndr, int flags, struct svcctl_OpenSCManagerA *r)
 {
 	uint32_t _ptr_MachineName;
 	uint32_t _ptr_DatabaseName;
@@ -3699,7 +3699,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenSCManagerA(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_OpenServiceA(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceA *r)
+static NTSTATUS ndr_push_svcctl_OpenServiceA(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3719,7 +3719,7 @@ NTSTATUS ndr_push_svcctl_OpenServiceA(struct ndr_push *ndr, int flags, const str
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_OpenServiceA(struct ndr_pull *ndr, int flags, struct svcctl_OpenServiceA *r)
+static NTSTATUS ndr_pull_svcctl_OpenServiceA(struct ndr_pull *ndr, int flags, struct svcctl_OpenServiceA *r)
 {
 	uint32_t _ptr_ServiceName;
 	TALLOC_CTX *_mem_save_scmanager_handle_0;
@@ -3790,7 +3790,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenServiceA(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigA *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3806,7 +3806,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceConfigA(struct ndr_push *ndr, int flags, co
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceConfigA(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfigA *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceConfigA(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfigA *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
@@ -3870,7 +3870,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfigA(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusA *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3887,7 +3887,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusA(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusA *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceLockStatusA(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceLockStatusA *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_lock_status_0;
@@ -3962,7 +3962,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusA(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_StartServiceA(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceA *r)
+static NTSTATUS ndr_push_svcctl_StartServiceA(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -3982,7 +3982,7 @@ NTSTATUS ndr_push_svcctl_StartServiceA(struct ndr_push *ndr, int flags, const st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_StartServiceA(struct ndr_pull *ndr, int flags, struct svcctl_StartServiceA *r)
+static NTSTATUS ndr_pull_svcctl_StartServiceA(struct ndr_pull *ndr, int flags, struct svcctl_StartServiceA *r)
 {
 	uint32_t _ptr_Arguments;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -4053,7 +4053,7 @@ _PUBLIC_ void ndr_print_svcctl_StartServiceA(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameA *r)
+static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4087,7 +4087,7 @@ NTSTATUS ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_GetServiceDisplayNameA(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceDisplayNameA *r)
+static NTSTATUS ndr_pull_svcctl_GetServiceDisplayNameA(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceDisplayNameA *r)
 {
 	uint32_t _ptr_service_name;
 	uint32_t _ptr_display_name;
@@ -4221,7 +4221,7 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameA(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameA *r)
+static NTSTATUS ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4255,7 +4255,7 @@ NTSTATUS ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr, int flags, con
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_GetServiceKeyNameA(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceKeyNameA *r)
+static NTSTATUS ndr_pull_svcctl_GetServiceKeyNameA(struct ndr_pull *ndr, int flags, struct svcctl_GetServiceKeyNameA *r)
 {
 	uint32_t _ptr_service_name;
 	uint32_t _ptr_key_name;
@@ -4389,7 +4389,7 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceKeyNameA(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_GetCurrentGroupeStateW(struct ndr_push *ndr, int flags, const struct svcctl_GetCurrentGroupeStateW *r)
+static NTSTATUS ndr_push_svcctl_GetCurrentGroupeStateW(struct ndr_push *ndr, int flags, const struct svcctl_GetCurrentGroupeStateW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4399,7 +4399,7 @@ NTSTATUS ndr_push_svcctl_GetCurrentGroupeStateW(struct ndr_push *ndr, int flags,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_GetCurrentGroupeStateW(struct ndr_pull *ndr, int flags, struct svcctl_GetCurrentGroupeStateW *r)
+static NTSTATUS ndr_pull_svcctl_GetCurrentGroupeStateW(struct ndr_pull *ndr, int flags, struct svcctl_GetCurrentGroupeStateW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4430,7 +4430,7 @@ _PUBLIC_ void ndr_print_svcctl_GetCurrentGroupeStateW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_EnumServiceGroupW(struct ndr_push *ndr, int flags, const struct svcctl_EnumServiceGroupW *r)
+static NTSTATUS ndr_push_svcctl_EnumServiceGroupW(struct ndr_push *ndr, int flags, const struct svcctl_EnumServiceGroupW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4440,7 +4440,7 @@ NTSTATUS ndr_push_svcctl_EnumServiceGroupW(struct ndr_push *ndr, int flags, cons
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_EnumServiceGroupW(struct ndr_pull *ndr, int flags, struct svcctl_EnumServiceGroupW *r)
+static NTSTATUS ndr_pull_svcctl_EnumServiceGroupW(struct ndr_pull *ndr, int flags, struct svcctl_EnumServiceGroupW *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -4471,7 +4471,7 @@ _PUBLIC_ void ndr_print_svcctl_EnumServiceGroupW(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_ChangeServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2A *r)
+static NTSTATUS ndr_push_svcctl_ChangeServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2A *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4488,7 +4488,7 @@ NTSTATUS ndr_push_svcctl_ChangeServiceConfig2A(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_ChangeServiceConfig2A(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfig2A *r)
+static NTSTATUS ndr_pull_svcctl_ChangeServiceConfig2A(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfig2A *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -4553,7 +4553,7 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2A(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_ChangeServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2W *r)
+static NTSTATUS ndr_push_svcctl_ChangeServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2W *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4570,7 +4570,7 @@ NTSTATUS ndr_push_svcctl_ChangeServiceConfig2W(struct ndr_push *ndr, int flags, 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_ChangeServiceConfig2W(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfig2W *r)
+static NTSTATUS ndr_pull_svcctl_ChangeServiceConfig2W(struct ndr_pull *ndr, int flags, struct svcctl_ChangeServiceConfig2W *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -4635,7 +4635,7 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2W(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2A *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2A *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4652,7 +4652,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceConfig2A(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfig2A *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceConfig2A(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfig2A *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
@@ -4718,7 +4718,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2A(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2W *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2W *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4735,7 +4735,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfig2W *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceConfig2W *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
@@ -4801,7 +4801,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2W(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_QueryServiceStatusEx(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatusEx *r)
+static NTSTATUS ndr_push_svcctl_QueryServiceStatusEx(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatusEx *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4818,7 +4818,7 @@ NTSTATUS ndr_push_svcctl_QueryServiceStatusEx(struct ndr_push *ndr, int flags, c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceStatusEx *r)
+static NTSTATUS ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *ndr, int flags, struct svcctl_QueryServiceStatusEx *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_bytes_needed_0;
@@ -4884,7 +4884,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceStatusEx(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExA *r)
+static NTSTATUS ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExA *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.scmanager == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -4920,7 +4920,7 @@ NTSTATUS ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_EnumServicesStatusExA(struct ndr_pull *ndr, int flags, struct EnumServicesStatusExA *r)
+static NTSTATUS ndr_pull_EnumServicesStatusExA(struct ndr_pull *ndr, int flags, struct EnumServicesStatusExA *r)
 {
 	uint32_t _ptr_resume_handle;
 	uint32_t _ptr_group_name;
@@ -5067,7 +5067,7 @@ _PUBLIC_ void ndr_print_EnumServicesStatusExA(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExW *r)
+static NTSTATUS ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.scmanager == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5103,7 +5103,7 @@ NTSTATUS ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, int flags, const s
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, int flags, struct EnumServicesStatusExW *r)
+static NTSTATUS ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, int flags, struct EnumServicesStatusExW *r)
 {
 	uint32_t _ptr_resume_handle;
 	uint32_t _ptr_group_name;
@@ -5250,7 +5250,7 @@ _PUBLIC_ void ndr_print_EnumServicesStatusExW(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_svcctl_SCSendTSMessage(struct ndr_push *ndr, int flags, const struct svcctl_SCSendTSMessage *r)
+static NTSTATUS ndr_push_svcctl_SCSendTSMessage(struct ndr_push *ndr, int flags, const struct svcctl_SCSendTSMessage *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5260,7 +5260,7 @@ NTSTATUS ndr_push_svcctl_SCSendTSMessage(struct ndr_push *ndr, int flags, const 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_svcctl_SCSendTSMessage(struct ndr_pull *ndr, int flags, struct svcctl_SCSendTSMessage *r)
+static NTSTATUS ndr_pull_svcctl_SCSendTSMessage(struct ndr_pull *ndr, int flags, struct svcctl_SCSendTSMessage *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -5291,14 +5291,14 @@ _PUBLIC_ void ndr_print_svcctl_SCSendTSMessage(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-const struct ndr_interface_call svcctl_calls[] = {
+static const struct ndr_interface_call svcctl_calls[] = {
 	{
 		"svcctl_CloseServiceHandle",
 		sizeof(struct svcctl_CloseServiceHandle),
 		(ndr_push_flags_fn_t) ndr_push_svcctl_CloseServiceHandle,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_CloseServiceHandle,
 		(ndr_print_function_t) ndr_print_svcctl_CloseServiceHandle,
-		False,
+		false,
 	},
 	{
 		"svcctl_ControlService",
@@ -5306,7 +5306,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_ControlService,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_ControlService,
 		(ndr_print_function_t) ndr_print_svcctl_ControlService,
-		False,
+		false,
 	},
 	{
 		"svcctl_DeleteService",
@@ -5314,7 +5314,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_DeleteService,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_DeleteService,
 		(ndr_print_function_t) ndr_print_svcctl_DeleteService,
-		False,
+		false,
 	},
 	{
 		"svcctl_LockServiceDatabase",
@@ -5322,7 +5322,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_LockServiceDatabase,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_LockServiceDatabase,
 		(ndr_print_function_t) ndr_print_svcctl_LockServiceDatabase,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceObjectSecurity",
@@ -5330,7 +5330,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceObjectSecurity,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceObjectSecurity,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceObjectSecurity,
-		False,
+		false,
 	},
 	{
 		"svcctl_SetServiceObjectSecurity",
@@ -5338,7 +5338,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_SetServiceObjectSecurity,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_SetServiceObjectSecurity,
 		(ndr_print_function_t) ndr_print_svcctl_SetServiceObjectSecurity,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceStatus",
@@ -5346,7 +5346,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceStatus,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceStatus,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceStatus,
-		False,
+		false,
 	},
 	{
 		"svcctl_SetServiceStatus",
@@ -5354,7 +5354,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_SetServiceStatus,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_SetServiceStatus,
 		(ndr_print_function_t) ndr_print_svcctl_SetServiceStatus,
-		False,
+		false,
 	},
 	{
 		"svcctl_UnlockServiceDatabase",
@@ -5362,7 +5362,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_UnlockServiceDatabase,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_UnlockServiceDatabase,
 		(ndr_print_function_t) ndr_print_svcctl_UnlockServiceDatabase,
-		False,
+		false,
 	},
 	{
 		"svcctl_NotifyBootConfigStatus",
@@ -5370,7 +5370,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_NotifyBootConfigStatus,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_NotifyBootConfigStatus,
 		(ndr_print_function_t) ndr_print_svcctl_NotifyBootConfigStatus,
-		False,
+		false,
 	},
 	{
 		"svcctl_SCSetServiceBitsW",
@@ -5378,7 +5378,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_SCSetServiceBitsW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_SCSetServiceBitsW,
 		(ndr_print_function_t) ndr_print_svcctl_SCSetServiceBitsW,
-		False,
+		false,
 	},
 	{
 		"svcctl_ChangeServiceConfigW",
@@ -5386,7 +5386,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_ChangeServiceConfigW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_ChangeServiceConfigW,
 		(ndr_print_function_t) ndr_print_svcctl_ChangeServiceConfigW,
-		False,
+		false,
 	},
 	{
 		"svcctl_CreateServiceW",
@@ -5394,7 +5394,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_CreateServiceW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_CreateServiceW,
 		(ndr_print_function_t) ndr_print_svcctl_CreateServiceW,
-		False,
+		false,
 	},
 	{
 		"svcctl_EnumDependentServicesW",
@@ -5402,7 +5402,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_EnumDependentServicesW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_EnumDependentServicesW,
 		(ndr_print_function_t) ndr_print_svcctl_EnumDependentServicesW,
-		False,
+		false,
 	},
 	{
 		"svcctl_EnumServicesStatusW",
@@ -5410,7 +5410,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_EnumServicesStatusW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_EnumServicesStatusW,
 		(ndr_print_function_t) ndr_print_svcctl_EnumServicesStatusW,
-		False,
+		false,
 	},
 	{
 		"svcctl_OpenSCManagerW",
@@ -5418,7 +5418,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_OpenSCManagerW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_OpenSCManagerW,
 		(ndr_print_function_t) ndr_print_svcctl_OpenSCManagerW,
-		False,
+		false,
 	},
 	{
 		"svcctl_OpenServiceW",
@@ -5426,7 +5426,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_OpenServiceW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_OpenServiceW,
 		(ndr_print_function_t) ndr_print_svcctl_OpenServiceW,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceConfigW",
@@ -5434,7 +5434,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceConfigW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceConfigW,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceConfigW,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceLockStatusW",
@@ -5442,7 +5442,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceLockStatusW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceLockStatusW,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceLockStatusW,
-		False,
+		false,
 	},
 	{
 		"svcctl_StartServiceW",
@@ -5450,7 +5450,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_StartServiceW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_StartServiceW,
 		(ndr_print_function_t) ndr_print_svcctl_StartServiceW,
-		False,
+		false,
 	},
 	{
 		"svcctl_GetServiceDisplayNameW",
@@ -5458,7 +5458,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_GetServiceDisplayNameW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_GetServiceDisplayNameW,
 		(ndr_print_function_t) ndr_print_svcctl_GetServiceDisplayNameW,
-		False,
+		false,
 	},
 	{
 		"svcctl_GetServiceKeyNameW",
@@ -5466,7 +5466,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_GetServiceKeyNameW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_GetServiceKeyNameW,
 		(ndr_print_function_t) ndr_print_svcctl_GetServiceKeyNameW,
-		False,
+		false,
 	},
 	{
 		"svcctl_SCSetServiceBitsA",
@@ -5474,7 +5474,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_SCSetServiceBitsA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_SCSetServiceBitsA,
 		(ndr_print_function_t) ndr_print_svcctl_SCSetServiceBitsA,
-		False,
+		false,
 	},
 	{
 		"svcctl_ChangeServiceConfigA",
@@ -5482,7 +5482,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_ChangeServiceConfigA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_ChangeServiceConfigA,
 		(ndr_print_function_t) ndr_print_svcctl_ChangeServiceConfigA,
-		False,
+		false,
 	},
 	{
 		"svcctl_CreateServiceA",
@@ -5490,7 +5490,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_CreateServiceA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_CreateServiceA,
 		(ndr_print_function_t) ndr_print_svcctl_CreateServiceA,
-		False,
+		false,
 	},
 	{
 		"svcctl_EnumDependentServicesA",
@@ -5498,7 +5498,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_EnumDependentServicesA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_EnumDependentServicesA,
 		(ndr_print_function_t) ndr_print_svcctl_EnumDependentServicesA,
-		False,
+		false,
 	},
 	{
 		"svcctl_EnumServicesStatusA",
@@ -5506,7 +5506,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_EnumServicesStatusA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_EnumServicesStatusA,
 		(ndr_print_function_t) ndr_print_svcctl_EnumServicesStatusA,
-		False,
+		false,
 	},
 	{
 		"svcctl_OpenSCManagerA",
@@ -5514,7 +5514,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_OpenSCManagerA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_OpenSCManagerA,
 		(ndr_print_function_t) ndr_print_svcctl_OpenSCManagerA,
-		False,
+		false,
 	},
 	{
 		"svcctl_OpenServiceA",
@@ -5522,7 +5522,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_OpenServiceA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_OpenServiceA,
 		(ndr_print_function_t) ndr_print_svcctl_OpenServiceA,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceConfigA",
@@ -5530,7 +5530,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceConfigA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceConfigA,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceConfigA,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceLockStatusA",
@@ -5538,7 +5538,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceLockStatusA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceLockStatusA,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceLockStatusA,
-		False,
+		false,
 	},
 	{
 		"svcctl_StartServiceA",
@@ -5546,7 +5546,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_StartServiceA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_StartServiceA,
 		(ndr_print_function_t) ndr_print_svcctl_StartServiceA,
-		False,
+		false,
 	},
 	{
 		"svcctl_GetServiceDisplayNameA",
@@ -5554,7 +5554,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_GetServiceDisplayNameA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_GetServiceDisplayNameA,
 		(ndr_print_function_t) ndr_print_svcctl_GetServiceDisplayNameA,
-		False,
+		false,
 	},
 	{
 		"svcctl_GetServiceKeyNameA",
@@ -5562,7 +5562,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_GetServiceKeyNameA,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_GetServiceKeyNameA,
 		(ndr_print_function_t) ndr_print_svcctl_GetServiceKeyNameA,
-		False,
+		false,
 	},
 	{
 		"svcctl_GetCurrentGroupeStateW",
@@ -5570,7 +5570,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_GetCurrentGroupeStateW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_GetCurrentGroupeStateW,
 		(ndr_print_function_t) ndr_print_svcctl_GetCurrentGroupeStateW,
-		False,
+		false,
 	},
 	{
 		"svcctl_EnumServiceGroupW",
@@ -5578,7 +5578,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_EnumServiceGroupW,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_EnumServiceGroupW,
 		(ndr_print_function_t) ndr_print_svcctl_EnumServiceGroupW,
-		False,
+		false,
 	},
 	{
 		"svcctl_ChangeServiceConfig2A",
@@ -5586,7 +5586,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_ChangeServiceConfig2A,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_ChangeServiceConfig2A,
 		(ndr_print_function_t) ndr_print_svcctl_ChangeServiceConfig2A,
-		False,
+		false,
 	},
 	{
 		"svcctl_ChangeServiceConfig2W",
@@ -5594,7 +5594,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_ChangeServiceConfig2W,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_ChangeServiceConfig2W,
 		(ndr_print_function_t) ndr_print_svcctl_ChangeServiceConfig2W,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceConfig2A",
@@ -5602,7 +5602,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceConfig2A,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceConfig2A,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceConfig2A,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceConfig2W",
@@ -5610,7 +5610,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceConfig2W,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceConfig2W,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceConfig2W,
-		False,
+		false,
 	},
 	{
 		"svcctl_QueryServiceStatusEx",
@@ -5618,7 +5618,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_QueryServiceStatusEx,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_QueryServiceStatusEx,
 		(ndr_print_function_t) ndr_print_svcctl_QueryServiceStatusEx,
-		False,
+		false,
 	},
 	{
 		"EnumServicesStatusExA",
@@ -5626,7 +5626,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_EnumServicesStatusExA,
 		(ndr_pull_flags_fn_t) ndr_pull_EnumServicesStatusExA,
 		(ndr_print_function_t) ndr_print_EnumServicesStatusExA,
-		False,
+		false,
 	},
 	{
 		"EnumServicesStatusExW",
@@ -5634,7 +5634,7 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_EnumServicesStatusExW,
 		(ndr_pull_flags_fn_t) ndr_pull_EnumServicesStatusExW,
 		(ndr_print_function_t) ndr_print_EnumServicesStatusExW,
-		False,
+		false,
 	},
 	{
 		"svcctl_SCSendTSMessage",
@@ -5642,26 +5642,26 @@ const struct ndr_interface_call svcctl_calls[] = {
 		(ndr_push_flags_fn_t) ndr_push_svcctl_SCSendTSMessage,
 		(ndr_pull_flags_fn_t) ndr_pull_svcctl_SCSendTSMessage,
 		(ndr_print_function_t) ndr_print_svcctl_SCSendTSMessage,
-		False,
+		false,
 	},
-	{ NULL, 0, NULL, NULL, NULL, False }
+	{ NULL, 0, NULL, NULL, NULL, false }
 };
 
-const char * const svcctl_endpoint_strings[] = {
+static const char * const svcctl_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\svcctl]", 
 	"ncalrpc:", 
 };
 
-const struct ndr_interface_string_array svcctl_endpoints = {
+static const struct ndr_interface_string_array svcctl_endpoints = {
 	.count	= 2,
 	.names	= svcctl_endpoint_strings
 };
 
-const char * const svcctl_authservice_strings[] = {
+static const char * const svcctl_authservice_strings[] = {
 	"host", 
 };
 
-const struct ndr_interface_string_array svcctl_authservices = {
+static const struct ndr_interface_string_array svcctl_authservices = {
 	.count	= 2,
 	.names	= svcctl_authservice_strings
 };

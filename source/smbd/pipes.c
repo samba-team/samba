@@ -55,15 +55,21 @@ extern struct pipe_id_info pipe_names[];
 
 void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 {
-	pstring fname;
-	pstring pipe_name;
+	const char *fname = NULL;
+	char *pipe_name = NULL;
 	smb_np_struct *p;
 	int size=0,fmode=0,mtime=0,rmode=0;
 	int i;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull_buf(req->inbuf, req->flags2, pipe_name,
-			smb_buf(req->inbuf), sizeof(pipe_name), STR_TERMINATE);
+	srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &pipe_name,
+			smb_buf(req->inbuf), STR_TERMINATE);
+	if (!pipe_name) {
+		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				ERRDOS, ERRbadpipe);
+		return;
+	}
 
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */
@@ -89,7 +95,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	/* Strip \PIPE\ off the name. */
-	pstrcpy(fname, pipe_name + PIPELEN);
+	fname = pipe_name + PIPELEN;
 
 #if 0
 	/*
