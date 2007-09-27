@@ -43,6 +43,12 @@ manpages: $(MANPAGES)
 all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules
 everything: all libraries headers
 
+# 'make testsuite' creates all binaries which are
+# needed by samba3's 'make test' and the build-farm
+# scripts use that it as fallback in case
+# 'make everything' fails
+testsuite: bin/smbclient bin/cifsdd bin/smbtorture
+
 showlayout: 
 	@echo 'Samba will be installed into:'
 	@echo '  basedir:     $(BASEDIR)'
