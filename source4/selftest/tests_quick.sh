@@ -4,6 +4,7 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
+$incdir/../bin/smbtorture -V
 
 TORTURE_QUICK="yes"
 export TORTURE_QUICK
