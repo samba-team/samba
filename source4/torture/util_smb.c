@@ -643,7 +643,7 @@ double torture_create_procs(struct torture_context *tctx,
 			srandom(((int)mypid) ^ ((int)time(NULL)));
 
 			asprintf(&myname, "CLIENT%d", i);
-			lp_set_cmdline("netbios name", myname);
+			lp_set_cmdline(global_loadparm, "netbios name", myname);
 			free(myname);
 
 

@@ -285,7 +285,7 @@ static void usage(void)
 
 	setup_logging("masktest", DEBUG_STDOUT);
 
-	lp_set_cmdline("log level", "0");
+	lp_set_cmdline(global_loadparm, "log level", "0");
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
@@ -325,7 +325,7 @@ static void usage(void)
 			verbose++;
 			break;
 		case 'M':
-			lp_set_cmdline("max protocol", optarg);
+			lp_set_cmdline(global_loadparm, "max protocol", optarg);
 			break;
 		case 'U':
 			cli_credentials_parse_string(credentials, optarg, CRED_SPECIFIED);

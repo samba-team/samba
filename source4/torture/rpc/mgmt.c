@@ -228,7 +228,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 			continue;
 		}
 
-		lp_set_cmdline("torture:binding", dcerpc_binding_string(loop_ctx, b));
+		lp_set_cmdline(global_loadparm, "torture:binding", dcerpc_binding_string(loop_ctx, b));
 
 		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {

@@ -78,14 +78,14 @@ static void popt_common_callback(poptContext con,
 		setup_logging(pname, DEBUG_STDOUT);
 
 		if (getenv("SMB_CONF_PATH")) {
-			lp_set_cmdline("config file", getenv("SMB_CONF_PATH"));
+			lp_set_cmdline(global_loadparm, "config file", getenv("SMB_CONF_PATH"));
 		}
 		return;
 	}
 
 	switch(opt->val) {
 	case 'd':
-		lp_set_cmdline("log level", arg);
+		lp_set_cmdline(global_loadparm, "log level", arg);
 		break;
 
 	case OPT_DEBUG_STDERR:
@@ -98,50 +98,50 @@ static void popt_common_callback(poptContext con,
 
 	case 'O':
 		if (arg) {
-			lp_set_cmdline("socket options", arg);
+			lp_set_cmdline(global_loadparm, "socket options", arg);
 		}
 		break;
 
 	case 's':
 		if (arg) {
-			lp_set_cmdline("config file", arg);
+			lp_set_cmdline(global_loadparm, "config file", arg);
 		}
 		break;
 
 	case 'l':
 		if (arg) {
 			char *new_logfile = talloc_asprintf(NULL, "%s/log.%s", arg, pname);
-			lp_set_cmdline("log file", new_logfile);
+			lp_set_cmdline(global_loadparm, "log file", new_logfile);
 			talloc_free(new_logfile);
 		}
 		break;
 		
 	case 'W':
-		lp_set_cmdline("workgroup", arg);
+		lp_set_cmdline(global_loadparm, "workgroup", arg);
 		break;
 
 	case 'r':
-		lp_set_cmdline("realm", arg);
+		lp_set_cmdline(global_loadparm, "realm", arg);
 		break;
 		
 	case 'n':
-		lp_set_cmdline("netbios name", arg);
+		lp_set_cmdline(global_loadparm, "netbios name", arg);
 		break;
 		
 	case 'i':
-		lp_set_cmdline("netbios scope", arg);
+		lp_set_cmdline(global_loadparm, "netbios scope", arg);
 		break;
 
 	case 'm':
-		lp_set_cmdline("client max protocol", arg);
+		lp_set_cmdline(global_loadparm, "client max protocol", arg);
 		break;
 
 	case 'R':
-		lp_set_cmdline("name resolve order", arg);
+		lp_set_cmdline(global_loadparm, "name resolve order", arg);
 		break;
 
 	case OPT_OPTION:
-		if (!lp_set_option(arg)) {
+		if (!lp_set_option(global_loadparm, arg)) {
 			fprintf(stderr, "Error setting option '%s'\n", arg);
 			exit(1);
 		}

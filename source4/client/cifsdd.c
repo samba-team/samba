@@ -395,7 +395,7 @@ static void set_max_xmit(uint64_t iomax)
 	char buf[64];
 
 	snprintf(buf, sizeof(buf), "%llu", (unsigned long long)iomax);
-	lp_set_cmdline("max xmit", buf);
+	lp_set_cmdline(global_loadparm, "max xmit", buf);
 }
 
 static int copy_files(void)

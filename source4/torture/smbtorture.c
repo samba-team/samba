@@ -131,33 +131,33 @@ static void parse_dns(const char *dns)
 	/* retrievieng the userdn */
 	p = strchr_m(dns, '#');
 	if (!p) {
-		lp_set_cmdline("torture:ldap_userdn", "");
-		lp_set_cmdline("torture:ldap_basedn", "");
-		lp_set_cmdline("torture:ldap_secret", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_userdn", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_basedn", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
 		return;
 	}
 	userdn = strndup(dns, p - dns);
-	lp_set_cmdline("torture:ldap_userdn", userdn);
+	lp_set_cmdline(global_loadparm, "torture:ldap_userdn", userdn);
 
 	/* retrieve the basedn */
 	d = p + 1;
 	p = strchr_m(d, '#');
 	if (!p) {
-		lp_set_cmdline("torture:ldap_basedn", "");
-		lp_set_cmdline("torture:ldap_secret", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_basedn", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
 		return;
 	}
 	basedn = strndup(d, p - d);
-	lp_set_cmdline("torture:ldap_basedn", basedn);
+	lp_set_cmdline(global_loadparm, "torture:ldap_basedn", basedn);
 
 	/* retrieve the secret */
 	p = p + 1;
 	if (!p) {
-		lp_set_cmdline("torture:ldap_secret", "");
+		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
 		return;
 	}
 	secret = strdup(p);
-	lp_set_cmdline("torture:ldap_secret", secret);
+	lp_set_cmdline(global_loadparm, "torture:ldap_secret", secret);
 
 	printf ("%s - %s - %s\n", userdn, basedn, secret);
 
@@ -448,7 +448,7 @@ void run_shell(struct torture_context *tctx)
 				fprintf(stderr, "Usage: set <variable> <value>\n");
 			} else {
 				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
-				lp_set_cmdline(name, argv[2]);
+				lp_set_cmdline(global_loadparm, name, argv[2]);
 				talloc_free(name);
 			}
 		} else if (!strcmp(argv[0], "help")) {
@@ -538,36 +538,36 @@ int main(int argc,char *argv[])
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_LOADFILE:
-			lp_set_cmdline("torture:loadfile", poptGetOptArg(pc));
+			lp_set_cmdline(global_loadparm, "torture:loadfile", poptGetOptArg(pc));
 			break;
 		case OPT_UNCLIST:
-			lp_set_cmdline("torture:unclist", poptGetOptArg(pc));
+			lp_set_cmdline(global_loadparm, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case OPT_TIMELIMIT:
-			lp_set_cmdline("torture:timelimit", poptGetOptArg(pc));
+			lp_set_cmdline(global_loadparm, "torture:timelimit", poptGetOptArg(pc));
 			break;
 		case OPT_NUMPROGS:
-			lp_set_cmdline("torture:nprocs", poptGetOptArg(pc));
+			lp_set_cmdline(global_loadparm, "torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
 			parse_dns(poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
-			lp_set_cmdline("torture:dangerous", "Yes");
+			lp_set_cmdline(global_loadparm, "torture:dangerous", "Yes");
 			break;
 		case OPT_ASYNC:
-			lp_set_cmdline("torture:async", "Yes");
+			lp_set_cmdline(global_loadparm, "torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
-			lp_set_cmdline("smb ports", poptGetOptArg(pc));
+			lp_set_cmdline(global_loadparm, "smb ports", poptGetOptArg(pc));
 			break;
 		}
 	}
 
 	if (strcmp(target, "samba3") == 0) {
-		lp_set_cmdline("torture:samba3", "true");
+		lp_set_cmdline(global_loadparm, "torture:samba3", "true");
 	} else if (strcmp(target, "samba4") == 0) {
-		lp_set_cmdline("torture:samba4", "true");
+		lp_set_cmdline(global_loadparm, "torture:samba4", "true");
 	}
 
 	if (max_runtime) {
@@ -632,14 +632,14 @@ int main(int argc,char *argv[])
 			usage(pc);
 			return false;
 		}
-		lp_set_cmdline("torture:host", binding_struct->host);
+		lp_set_cmdline(global_loadparm, "torture:host", binding_struct->host);
 		if (lp_parm_string(NULL, "torture", "share") == NULL)
-			lp_set_cmdline("torture:share", "IPC$");
-		lp_set_cmdline("torture:binding", argv_new[1]);
+			lp_set_cmdline(global_loadparm, "torture:share", "IPC$");
+		lp_set_cmdline(global_loadparm, "torture:binding", argv_new[1]);
 	} else {
-		lp_set_cmdline("torture:host", host);
-		lp_set_cmdline("torture:share", share);
-		lp_set_cmdline("torture:binding", host);
+		lp_set_cmdline(global_loadparm, "torture:host", host);
+		lp_set_cmdline(global_loadparm, "torture:share", share);
+		lp_set_cmdline(global_loadparm, "torture:binding", host);
 	}
 
 	if (!strcmp(ui_ops_name, "simple")) {

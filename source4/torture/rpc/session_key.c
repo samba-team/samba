@@ -148,9 +148,9 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	const struct secret_settings *settings = 
 		(const struct secret_settings *)_data;
 
-	lp_set_cmdline("ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
-	lp_set_cmdline("ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
-	lp_set_cmdline("ntlmssp_client:lm_key", settings->lm_key?"True":"False");
+	lp_set_cmdline(global_loadparm, "ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
+	lp_set_cmdline(global_loadparm, "ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
+	lp_set_cmdline(global_loadparm, "ntlmssp_client:lm_key", settings->lm_key?"True":"False");
 
 	torture_assert_ntstatus_ok(torture, torture_rpc_binding(torture, &binding), 
 				   "Getting bindoptions");

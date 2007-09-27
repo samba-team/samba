@@ -131,7 +131,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 			b->endpoint = talloc_strdup(b, l->table->name);
 		}
 
-		lp_set_cmdline("torture:binding", dcerpc_binding_string(torture, b));
+		lp_set_cmdline(global_loadparm, "torture:binding", dcerpc_binding_string(torture, b));
 
 		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {

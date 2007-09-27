@@ -224,7 +224,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_register_ep_server(&ep_server),
 				  "unable to register spoolss server");
 
-	lp_set_cmdline("dcerpc endpoint servers", "spoolss");
+	lp_set_cmdline(global_loadparm, "dcerpc endpoint servers", "spoolss");
 
 	address = iface_n_ip(0);
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);

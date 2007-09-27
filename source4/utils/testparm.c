@@ -137,7 +137,7 @@ static int do_global_checks(void)
 */
 	
 	/* We need this to force the output */
-	lp_set_cmdline("log level", "2");
+	lp_set_cmdline(global_loadparm, "log level", "2");
 
 	fprintf(stderr,"Load smb config files from %s\n",lp_configfile());
 
@@ -212,7 +212,7 @@ static int do_global_checks(void)
 			if (!parameter_name) {
 				lp_dump_one(stdout, show_defaults, service);
 			} else {
-				ret = !lp_dump_a_parameter(s, parameter_name, stdout, (service == NULL));
+				ret = !lp_dump_a_parameter(global_loadparm, s, parameter_name, stdout, (service == NULL));
 			}
 		} else {
 			lp_dump(global_loadparm, stdout, show_defaults, lp_numservices(global_loadparm));
