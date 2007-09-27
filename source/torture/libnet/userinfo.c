@@ -24,159 +24,10 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
+#include "torture/libnet/utils.h"
+
 
 #define TEST_USERNAME  "libnetuserinfotest"
-
-static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, struct lsa_String *domname,
-			    struct dom_sid2 *sid)
-{
-	NTSTATUS status;
-	struct policy_handle h, domain_handle;
-	struct samr_Connect r1;
-	struct samr_LookupDomain r2;
-	struct samr_OpenDomain r3;
-	
-	printf("connecting\n");
-	
-	r1.in.system_name = 0;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.connect_handle = &h;
-	
-	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	
-	r2.in.connect_handle = &h;
-	r2.in.domain_name = domname;
-
-	printf("domain lookup on %s\n", domname->string);
-
-	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	r3.in.connect_handle = &h;
-	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r3.in.sid = r2.out.sid;
-	r3.out.domain_handle = &domain_handle;
-
-	printf("opening domain\n");
-
-	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
-	} else {
-		*handle = domain_handle;
-	}
-
-	*sid = *r2.out.sid;
-	return True;
-}
-
-
-static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *domain_handle, const char *username)
-{
-	NTSTATUS status;
-	struct samr_LookupNames r1;
-	struct samr_OpenUser r2;
-	struct samr_DeleteUser r3;
-	struct lsa_String names[2];
-	uint32_t rid;
-	struct policy_handle user_handle;
-
-	names[0].string = username;
-
-	r1.in.domain_handle  = domain_handle;
-	r1.in.num_names      = 1;
-	r1.in.names          = names;
-	
-	printf("user account lookup '%s'\n", username);
-
-	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	rid = r1.out.rids.ids[0];
-	
-	r2.in.domain_handle  = domain_handle;
-	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r2.in.rid            = rid;
-	r2.out.user_handle   = &user_handle;
-
-	printf("opening user account\n");
-
-	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	r3.in.user_handle  = &user_handle;
-	r3.out.user_handle = &user_handle;
-
-	printf("deleting user account\n");
-	
-	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	
-	return True;
-}
-
-
-static BOOL test_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			struct policy_handle *handle, const char *name, uint32_t *rid)
-{
-	NTSTATUS status;
-	struct lsa_String username;
-	struct samr_CreateUser r;
-	struct policy_handle user_handle;
-	
-	username.string = name;
-	
-	r.in.domain_handle = handle;
-	r.in.account_name  = &username;
-	r.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.user_handle  = &user_handle;
-	r.out.rid          = rid;
-
-	printf("creating user account %s\n", name);
-
-	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser failed - %s\n", nt_errstr(status));
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			printf("User (%s) already exists - attempting to delete and recreate account again\n", name);
-			if (!test_cleanup(p, mem_ctx, handle, TEST_USERNAME)) {
-				return False;
-			}
-
-			printf("creating user account\n");
-			
-			status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("CreateUser failed - %s\n", nt_errstr(status));
-				return False;
-			}
-			return True;
-		}
-		return False;
-	}
-
-	return True;
-}
 
 
 static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
@@ -217,30 +68,6 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	return True;
-}
-
-
-static void msg_handler(struct monitor_msg *m)
-{
-	struct msg_rpc_open_user *msg_open;
-	struct msg_rpc_query_user *msg_query;
-	struct msg_rpc_close_user *msg_close;
-
-	switch (m->type) {
-	case mon_SamrOpenUser:
-		msg_open = (struct msg_rpc_open_user*)m->data;
-		printf("monitor_msg: user opened (rid=%d, access_mask=0x%08x)\n",
-		       msg_open->rid, msg_open->access_mask);
-		break;
-	case mon_SamrQueryUser:
-		msg_query = (struct msg_rpc_query_user*)m->data;
-		printf("monitor_msg: user queried (level=%d)\n", msg_query->level);
-		break;
-	case mon_SamrCloseUser:
-		msg_close = (struct msg_rpc_close_user*)m->data;
-		printf("monitor_msg: user closed (rid=%d)\n", msg_close->rid);
-		break;
-	}
 }
 
 
@@ -331,7 +158,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = False;
 		goto done;
 	}
@@ -341,7 +168,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
 		ret = False;
 		goto done;
 	}
@@ -354,7 +181,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = False;
 		goto done;
 	}
@@ -364,7 +191,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
 		ret = False;
 		goto done;
 	}
