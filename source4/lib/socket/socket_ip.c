@@ -531,6 +531,7 @@ static const struct socket_ops ipv4_ops = {
 	.fn_get_peer_name	= ipv4_get_peer_name,
 	.fn_get_peer_addr	= ipv4_get_peer_addr,
 	.fn_get_my_addr		= ipv4_get_my_addr,
+
 	.fn_get_fd		= ip_get_fd
 };
 
@@ -558,9 +559,22 @@ static struct in6_addr interpret_addr6(const char *name)
 	return *((struct in6_addr *)he->h_addr);
 }
 
-static NTSTATUS ipv6_tcp_init(struct socket_context *sock)
+static NTSTATUS ipv6_init(struct socket_context *sock)
 {
-	sock->fd = socket(PF_INET6, SOCK_STREAM, 0);
+	int type;
+
+	switch (sock->type) {
+	case SOCKET_TYPE_STREAM:
+		type = SOCK_STREAM;
+		break;
+	case SOCKET_TYPE_DGRAM:
+		type = SOCK_DGRAM;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sock->fd = socket(PF_INET6, type, 0);
 	if (sock->fd == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -624,7 +638,7 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 	return ip_connect_complete(sock, flags);
 }
 
-static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
+static NTSTATUS ipv6_listen(struct socket_context *sock,
 				const struct socket_address *my_address,
 				int queue_size, uint32_t flags)
 {
@@ -679,7 +693,6 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
@@ -812,7 +825,7 @@ static NTSTATUS ipv6_sendto(struct socket_context *sock,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ipv6_tcp_set_option(struct socket_context *sock, const char *option, const char *val)
+static NTSTATUS ipv6_set_option(struct socket_context *sock, const char *option, const char *val)
 {
 	set_socket_options(sock->fd, option);
 	return NT_STATUS_OK;
@@ -935,19 +948,19 @@ static struct socket_address *ipv6_tcp_get_my_addr(struct socket_context *sock, 
 
 static const struct socket_ops ipv6_tcp_ops = {
 	.name			= "ipv6",
-	.fn_init		= ipv6_tcp_init,
+	.fn_init		= ipv6_init,
 	.fn_connect		= ipv6_tcp_connect,
 	.fn_connect_complete	= ip_connect_complete,
-	.fn_listen		= ipv6_tcp_listen,
+	.fn_listen		= ipv6_listen,
 	.fn_accept		= ipv6_tcp_accept,
 	.fn_recv		= ip_recv,
 	.fn_recvfrom 		= ipv6_recvfrom,
-	.fn_sendto		= ipv6_sendto,
 	.fn_send		= ip_send,
-	.fn_close		= ip_close,
+	.fn_sendto		= ipv6_sendto,
 	.fn_pending		= ip_pending,
+	.fn_close		= ip_close,
 
-	.fn_set_option		= ipv6_tcp_set_option,
+	.fn_set_option		= ipv6_set_option,
 
 	.fn_get_peer_name	= ipv6_tcp_get_peer_name,
 	.fn_get_peer_addr	= ipv6_tcp_get_peer_addr,
