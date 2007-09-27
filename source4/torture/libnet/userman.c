@@ -24,57 +24,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
-
-
-static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, struct lsa_String *domname)
-{
-	NTSTATUS status;
-	struct policy_handle h, domain_handle;
-	struct samr_Connect r1;
-	struct samr_LookupDomain r2;
-	struct samr_OpenDomain r3;
-	
-	printf("connecting\n");
-	
-	r1.in.system_name = 0;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.connect_handle = &h;
-	
-	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	
-	r2.in.connect_handle = &h;
-	r2.in.domain_name = domname;
-
-	printf("domain lookup on %s\n", domname->string);
-
-	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	r3.in.connect_handle = &h;
-	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r3.in.sid = r2.out.sid;
-	r3.out.domain_handle = &domain_handle;
-
-	printf("opening domain\n");
-
-	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
-	} else {
-		*handle = domain_handle;
-	}
-
-	return True;
-}
+#include "torture/libnet/utils.h"
 
 
 static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
@@ -92,24 +42,11 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = libnet_rpc_useradd(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync rpc_composite_userinfo - %s\n", nt_errstr(status));
+		printf("Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
 		return False;
 	}
 	
 	return ret;
-}
-
-
-static void msg_handler(struct monitor_msg *m)
-{
-	struct msg_rpc_create_user *msg_create;
-
-	switch (m->type) {
-	case mon_SamrCreateUser:
-		msg_create = (struct msg_rpc_create_user*)m->data;
-		printf("monitor_msg: user created (rid=%d)\n", msg_create->rid);
-		break;
-	}
 }
 
 
@@ -139,118 +76,6 @@ static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 
-}
-
-
-static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *domain_handle, const char *username)
-{
-	NTSTATUS status;
-	struct samr_LookupNames r1;
-	struct samr_OpenUser r2;
-	struct samr_DeleteUser r3;
-	struct lsa_String names[2];
-	uint32_t rid;
-	struct policy_handle user_handle;
-
-	names[0].string = username;
-
-	r1.in.domain_handle  = domain_handle;
-	r1.in.num_names      = 1;
-	r1.in.names          = names;
-	
-	printf("user account lookup '%s'\n", username);
-
-	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	rid = r1.out.rids.ids[0];
-	
-	r2.in.domain_handle  = domain_handle;
-	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r2.in.rid            = rid;
-	r2.out.user_handle   = &user_handle;
-
-	printf("opening user account\n");
-
-	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	r3.in.user_handle  = &user_handle;
-	r3.out.user_handle = &user_handle;
-
-	printf("deleting user account\n");
-	
-	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return False;
-	}
-	
-	return True;
-}
-
-
-static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
- 			    struct policy_handle *handle, const char* user)
-{
-	NTSTATUS status;
-	struct policy_handle user_handle;
-	struct lsa_String username;
-	struct samr_CreateUser r1;
-	struct samr_Close r2;
-	uint32_t user_rid;
-
-	username.string = user;
-	
-	r1.in.domain_handle = handle;
-	r1.in.account_name = &username;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.user_handle = &user_handle;
-	r1.out.rid = &user_rid;
-
-	printf("creating user '%s'\n", username.string);
-	
-	status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser failed - %s\n", nt_errstr(status));
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			printf("User (%s) already exists - attempting to delete and recreate account again\n", user);
-			if (!test_cleanup(p, mem_ctx, handle, TEST_USERNAME)) {
-				return False;
-			}
-
-			printf("creating user account\n");
-			
-			status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("CreateUser failed - %s\n", nt_errstr(status));
-				return False;
-			}
-			return True;
-		}		
-		return False;
-	}
-
-	r2.in.handle = &user_handle;
-	r2.out.handle = &user_handle;
-	
-	printf("closing user '%s'\n", username.string);
-
-	status = dcerpc_samr_Close(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return True;
 }
 
 
@@ -422,8 +247,11 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		nttime_to_timeval(&t, i->fld); \
 		if (timeval_compare(&t, mod->in.change.fld)) { \
 			printf("'%s' field does not match\n", #fld); \
-			printf("received: '%s (+%ld us)'\n", timestring(mem_ctx, t.tv_sec), t.tv_usec); \
-			printf("expected: '%s (+%ld us)'\n", timestring(mem_ctx, mod->in.change.fld->tv_sec), mod->in.change.fld->tv_usec); \
+			printf("received: '%s (+%ld us)'\n", \
+			       timestring(mem_ctx, t.tv_sec), t.tv_usec); \
+			printf("expected: '%s (+%ld us)'\n", \
+			       timestring(mem_ctx, mod->in.change.fld->tv_sec), \
+			       mod->in.change.fld->tv_usec); \
 			return False; \
 		} \
 	}
@@ -482,6 +310,7 @@ BOOL torture_useradd(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
+	struct dom_sid2 sid;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -497,7 +326,7 @@ BOOL torture_useradd(struct torture_context *torture)
 	}
 
 	domain_name.string = lp_workgroup();
-	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
 	}
@@ -507,12 +336,12 @@ BOOL torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
 
-	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
 	}
@@ -522,7 +351,7 @@ BOOL torture_useradd(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
@@ -539,6 +368,8 @@ bool torture_userdel(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
+	struct dom_sid2 sid;
+	uint32_t rid;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -554,12 +385,12 @@ bool torture_userdel(struct torture_context *torture)
 	}
 
 	domain_name.string = lp_workgroup();
-	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
 	}
 
-	if (!test_createuser(p, mem_ctx, &h, name)) {
+	if (!test_user_create(p, mem_ctx, &h, name, &rid)) {
 		ret = False;
 		goto done;
 	}
@@ -581,6 +412,8 @@ BOOL torture_usermod(struct torture_context *torture)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
+	struct dom_sid2 sid;
+	uint32_t rid;
 	int i;
 	char *name;
 	TALLOC_CTX *mem_ctx;
@@ -600,12 +433,12 @@ BOOL torture_usermod(struct torture_context *torture)
 	domain_name.string = lp_workgroup();
 	name = talloc_strdup(mem_ctx, TEST_USERNAME);
 
-	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
 	}
 
-	if (!test_createuser(p, mem_ctx, &h, name)) {
+	if (!test_user_create(p, mem_ctx, &h, name, &rid)) {
 		ret = False;
 		goto done;
 	}
@@ -625,7 +458,7 @@ BOOL torture_usermod(struct torture_context *torture)
 	}
 	
 cleanup:	
-	if (!test_cleanup(p, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
