@@ -30,8 +30,6 @@ static const struct mapping_backend *backend;
  */
 static BOOL init_group_mapping(void)
 {
-	const char *backend_string;
-
 	if (backend != NULL) {
 		/* already initialised */
 		return True;
