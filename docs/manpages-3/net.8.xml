@@ -298,7 +298,7 @@ share simultaneously.</para>
 </refsect3>
 
 <refsect3>
-<title>SHARE DELETE <replaceable>sharenam</replaceable></title>
+<title>SHARE DELETE <replaceable>sharename</replaceable></title>
 
 <para>Delete specified share.</para>
 </refsect3>
