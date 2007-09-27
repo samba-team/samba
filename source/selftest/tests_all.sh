@@ -1,4 +1,6 @@
 #!/bin/sh
+includedir=`dirname $0`
+$includedir/../bin/smbtorture -V
 $SRCDIR/selftest/test_ejs.sh $CONFIGURATION
 $SRCDIR/selftest/test_ldap.sh 
 $SRCDIR/selftest/test_nbt.sh "dc"
