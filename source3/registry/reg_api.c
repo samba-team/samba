@@ -701,15 +701,15 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 	return WERR_OK;
 }
 
-
 /*
  * Utility function to delete a registry key with all its subkeys. 
  * Note that reg_deletekey returns ACCESS_DENIED when called on a 
  * key that has subkeys.
  */
-WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
-			       struct registry_key *parent, 
-			       const char *path)
+WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
+					struct registry_key *parent,
+					const char *path,
+					BOOL del_key)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;
@@ -731,21 +731,42 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 	while (W_ERROR_IS_OK(werr = reg_enumkey(mem_ctx, key, 0,
 						&subkey_name, NULL))) 
 	{
-		werr = reg_deletekey_recursive(mem_ctx, key, subkey_name);
+		werr = reg_deletekey_recursive_internal(mem_ctx, key,
+							subkey_name,
+							True);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		DEBUG(1, ("reg_deletekey_recursive: Error enumerating "
-			  "subkeys: %s\n", dos_errstr(werr)));
+		DEBUG(1, ("reg_deletekey_recursive_internal: "
+			  "Error enumerating subkeys: %s\n",
+			  dos_errstr(werr)));
 		goto done;
 	}
 
-	/* now delete the actual key */
-	werr = reg_deletekey(parent, path);
-	
+	werr = WERR_OK;
+
+	if (del_key) {
+		/* now delete the actual key */
+		werr = reg_deletekey(parent, path);
+	}
+
 done:
 	TALLOC_FREE(mem_ctx);
 	return werr;
+}
+
+WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
+			       struct registry_key *parent,
+			       const char *path)
+{
+	return reg_deletekey_recursive_internal(ctx, parent, path, True);
+}
+
+WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
+				   struct registry_key *parent,
+				   const char *path)
+{
+	return reg_deletekey_recursive_internal(ctx, parent, path, False);
 }
