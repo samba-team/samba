@@ -79,6 +79,11 @@ displaying trailing whitespace:
   " Show tabs, trailing whitespace, and continued lines visually
   set list listchars=tab:»·,trail:·,extends:…
 
+  " highlight overly long lines same as TODOs.
+  set textwidth=80
+  autocmd BufNewFile,BufRead *.c,*.h exec 'match Todo /\%>' . &textwidth . 'v.\+/'
+
+
 =========================
 FAQ & Statement Reference
 =========================
