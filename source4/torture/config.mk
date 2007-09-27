@@ -277,6 +277,7 @@ PRIVATE_PROTO_HEADER = \
 		libnet/proto.h
 OBJ_FILES = \
 		libnet/libnet.o \
+		libnet/utils.o \
 		libnet/userinfo.o \
 		libnet/userman.o \
 		libnet/groupinfo.o \
