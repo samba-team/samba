@@ -355,6 +355,11 @@ function setup_file(template, message, fname, subobj)
 	var f = fname;
 	var src = lp.get("setup directory") + "/" + template;
 
+	if (! sys.stat(src)) {
+		message("Template file not found: %s\n",src);
+		assert(0);
+	}
+
 	sys.unlink(f);
 
 	var data = sys.file_load(src);
