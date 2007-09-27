@@ -288,7 +288,7 @@ Paths:
  --builddir=DIR             output directory [.]
 
 Target Specific:
- --socket-wrapper-pcap=DIR	save traffic to pcap directories
+ --socket-wrapper-pcap		save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
                             failed
  --socket-wrapper           enable socket wrapper
