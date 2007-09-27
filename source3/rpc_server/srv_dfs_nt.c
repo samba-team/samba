@@ -379,10 +379,34 @@ WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 	vfs_ChDir(p->conn,p->conn->connectpath);
 
 	switch (r->in.level) {
-		case 1: ret = init_reply_dfs_info_1(ctx, jn, r->out.info->info1); break;
-		case 2: ret = init_reply_dfs_info_2(ctx, jn, r->out.info->info2); break;
-		case 3: ret = init_reply_dfs_info_3(ctx, jn, r->out.info->info3); break;
-		case 100: ret = init_reply_dfs_info_100(ctx, jn, r->out.info->info100); break;
+		case 1:
+			r->out.info->info1 = TALLOC_ZERO_P(ctx,struct dfs_Info1);
+			if (!r->out.info->info1) {
+				return WERR_NOMEM;
+			}
+			ret = init_reply_dfs_info_1(ctx, jn, r->out.info->info1);
+			break;
+		case 2:
+			r->out.info->info2 = TALLOC_ZERO_P(ctx,struct dfs_Info2);
+			if (!r->out.info->info2) {
+				return WERR_NOMEM;
+			}
+			ret = init_reply_dfs_info_2(ctx, jn, r->out.info->info2);
+			break;
+		case 3:
+			r->out.info->info3 = TALLOC_ZERO_P(ctx,struct dfs_Info3);
+			if (!r->out.info->info3) {
+				return WERR_NOMEM;
+			}
+			ret = init_reply_dfs_info_3(ctx, jn, r->out.info->info3);
+			break;
+		case 100:
+			r->out.info->info100 = TALLOC_ZERO_P(ctx,struct dfs_Info100);
+			if (!r->out.info->info100) {
+				return WERR_NOMEM;
+			}
+			ret = init_reply_dfs_info_100(ctx, jn, r->out.info->info100);
+			break;
 		default:
 			r->out.info->info1 = NULL;
 			return WERR_INVALID_PARAM;
