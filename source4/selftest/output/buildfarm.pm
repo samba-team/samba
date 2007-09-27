@@ -103,11 +103,7 @@ sub skip_testsuite($$$$)
 {
 	my ($self, $envname, $name, $reason) = @_;
 
-	if ($reason) {
-		print "SKIPPED: $name [$reason]\n";
-	} else {
-		print "SKIPPED: $name\n";
-	}
+	# Ignore skipped tests
 }
 
 1;
