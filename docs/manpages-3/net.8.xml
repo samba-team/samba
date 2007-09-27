@@ -237,7 +237,7 @@ account in server manager first.</para>
 <refsect3>
 <title>[RPC|ADS] USER INFO <replaceable>target</replaceable></title>
 
-<para>List the domain groups of a the specified user.</para>
+<para>List the domain groups of the specified user.</para>
 
 </refsect3>
 
