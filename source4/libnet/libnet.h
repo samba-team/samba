@@ -58,6 +58,7 @@ struct libnet_context {
 #include "libnet/userman.h"
 #include "libnet/userinfo.h"
 #include "libnet/groupinfo.h"
+#include "libnet/groupman.h"
 #include "libnet/libnet_passwd.h"
 #include "libnet/libnet_time.h"
 #include "libnet/libnet_rpc.h"
