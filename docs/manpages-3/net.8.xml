@@ -41,7 +41,7 @@
 	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The samba net utility is meant to work just like the net utility 
+	<para>The Samba net utility is meant to work just like the net utility 
 	available for windows and DOS. The first argument should be used 
 	to specify the protocol to use when executing a certain command. 
 	ADS is used for ActiveDirectory, RAP is using for old (Win9x/NT3) 
@@ -501,7 +501,7 @@ The type defaults to 0x20 (workstation).
 </refsect3>
 
 <refsect3>
-<title>LOOKUP LDAP [<replaceable>DOMAIN</replaceable></title>
+<title>LOOKUP LDAP [<replaceable>DOMAIN</replaceable>]</title>
 
 <para>Give IP address of LDAP server of specified <replaceable>DOMAIN</replaceable>. Defaults to local domain.</para>
 
@@ -636,7 +636,7 @@ Parameters take the for "parameter=value".  Common options include:</para>
 Add a new group mapping entry:
 <programlisting>
 net groupmap add {rid=int|sid=string} unixgroup=string \
-      [type={domain|local}] [ntgroup=string] [comment=string]
+	[type={domain|local}] [ntgroup=string] [comment=string]
 </programlisting>
 </para>
 
@@ -645,7 +645,7 @@ net groupmap add {rid=int|sid=string} unixgroup=string \
 <refsect3>
 <title>GROUPMAP DELETE</title>
 
-<para>Delete a group mapping entry. If more then one group name matches, the first entry found is deleted.</para>
+<para>Delete a group mapping entry. If more than one group name matches, the first entry found is deleted.</para>
 
 <para>net groupmap delete {ntgroup=string|sid=SID}</para>
 
@@ -721,7 +721,7 @@ such as domain name, domain sid and number of users and groups.
 </refsect3>
 
 <refsect3>
-<title>RPC TRUSTDOM DEL <replaceable>DOMAIM</replaceable></title>
+<title>RPC TRUSTDOM DEL <replaceable>DOMAIN</replaceable></title>
 
 <para>Remove interdomain trust account for 
 <replaceable>DOMAIN</replaceable> from the remote server. 
@@ -758,7 +758,7 @@ Interdomain account must already be created on the remote PDC.
 <title>RPC RIGHTS</title>
 
 <para>This subcommand is used to view and manage Samba's rights assignments (also 
-referred to as privileges).  There are three options current available: 
+referred to as privileges).  There are three options currently available: 
 <parameter>list</parameter>, <parameter>grant</parameter>, and 
 <parameter>revoke</parameter>.  More details on Samba's privilege model and its use
 can be found in the Samba-HOWTO-Collection.</para>
@@ -920,7 +920,7 @@ Only a wellknown set of BUILTIN groups can be created with this command.
 This is the list of currently recognized group names: Administrators,
 Users, Guests, Power Users, Account Operators, Server Operators, Print
 Operators, Backup Operators, Replicator, RAS Servers, Pre-Windows 2000
-ompatible Access.
+compatible Access.
 
 This command requires a running Winbindd with idmap allocation properly
 configured. The group gid will be allocated out of the winbindd range.
@@ -1012,7 +1012,7 @@ the rid and description is also provided for each account.
 <title>SAM SHOW &lt;NAME&gt;</title>
 
 <para>
-Show the full DOMAIN\\NAME the SID and the type for the corrisponding
+Show the full DOMAIN\\NAME the SID and the type for the corresponding
 account.
 </para>
 
@@ -1121,7 +1121,7 @@ Set the "password do not expire" flag for a user account.
 <title>SAM SET PWMUSTCHANGENOW &lt;NAME&gt; [yes|no]</title>
 
 <para>
-Set or unset the "password must change" flag fro a user account.
+Set or unset the "password must change" flag for a user account.
 </para>
 
 </refsect2>
