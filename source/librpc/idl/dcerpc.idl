@@ -118,17 +118,19 @@ interface dcerpc
 	} dcerpc_fault;
 
 	/* the auth types we know about */
-	const uint8 DCERPC_AUTH_TYPE_NONE     = 0;
-	/* this seems to be not krb5! */
-	const uint8 DCERPC_AUTH_TYPE_KRB5_1   = 1;
-	const uint8 DCERPC_AUTH_TYPE_SPNEGO   = 9;
-	const uint8 DCERPC_AUTH_TYPE_NTLMSSP  = 10;
-	const uint8 DCERPC_AUTH_TYPE_KRB5     = 16;
-	const uint8 DCERPC_AUTH_TYPE_DPA      = 17;
-	const uint8 DCERPC_AUTH_TYPE_MSN      = 18;
-	const uint8 DCERPC_AUTH_TYPE_DIGEST   = 21;
-	const uint8 DCERPC_AUTH_TYPE_SCHANNEL = 68;
-	const uint8 DCERPC_AUTH_TYPE_MSMQ     = 100;
+	typedef [v1_enum] enum {
+		DCERPC_AUTH_TYPE_NONE     = 0,
+		/* this seems to be not krb5! */
+		DCERPC_AUTH_TYPE_KRB5_1   = 1,
+		DCERPC_AUTH_TYPE_SPNEGO   = 9,
+		DCERPC_AUTH_TYPE_NTLMSSP  = 10,
+		DCERPC_AUTH_TYPE_KRB5     = 16,
+		DCERPC_AUTH_TYPE_DPA      = 17,
+		DCERPC_AUTH_TYPE_MSN      = 18,
+		DCERPC_AUTH_TYPE_DIGEST   = 21,
+		DCERPC_AUTH_TYPE_SCHANNEL = 68,
+		DCERPC_AUTH_TYPE_MSMQ     = 100
+	} dcerpc_AuthType;
 
 	const uint8 DCERPC_AUTH_LEVEL_DEFAULT	= DCERPC_AUTH_LEVEL_CONNECT;
 	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
