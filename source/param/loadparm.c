@@ -1182,7 +1182,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	string_set(service, &service->szPath, tmpdir());
 
 	service->comment = talloc_asprintf(service, "%s Service (%s)", 
-				fstype, loadparm.Globals.szServerString);
+				fstype, lp_ctx->Globals.szServerString);
 	string_set(service, &service->fstype, fstype);
 	service->iMaxConnections = -1;
 	service->bAvailable = true;
@@ -1861,7 +1861,8 @@ bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
   parsing code. It sets the parameter then marks the parameter as unable to be modified
   by smb.conf processing
 */
-bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
+bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName, 
+		    const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
 	int i;
@@ -1882,7 +1883,7 @@ bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	/* reset the CMDLINE flag in case this has been called before */
 	parm_table[parmnum].flags &= ~FLAG_CMDLINE;
 
-	if (!lp_do_global_parameter(&loadparm, pszParmName, pszParmValue)) {
+	if (!lp_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
 		return false;
 	}
 
@@ -1902,7 +1903,7 @@ bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 /*
   set a option from the commandline in 'a=b' format. Use to support --option
 */
-bool lp_set_option(const char *option)
+bool lp_set_option(struct loadparm_context *lp_ctx, const char *option)
 {
 	char *p, *s;
 	bool ret;
@@ -1920,7 +1921,7 @@ bool lp_set_option(const char *option)
 
 	*p = 0;
 
-	ret = lp_set_cmdline(s, p+1);
+	ret = lp_set_cmdline(lp_ctx, s, p+1);
 	free(s);
 	return ret;
 }
@@ -2052,7 +2053,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((loadparm.currentService = add_a_service(lp_ctx, &sDefault, 
+		if ((lp_ctx->currentService = add_a_service(lp_ctx, &sDefault, 
 							     pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
@@ -2099,7 +2100,7 @@ static bool is_default(int i)
 Display the contents of the global structure.
 ***************************************************************************/
 
-static void dump_globals(FILE *f, bool show_defaults)
+static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults)
 {
 	int i;
 	struct param_opt *data;
@@ -2116,8 +2117,8 @@ static void dump_globals(FILE *f, bool show_defaults)
 			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 	}
-	if (loadparm.Globals.param_opt != NULL) {
-		for (data = loadparm.Globals.param_opt; data; 
+	if (lp_ctx->Globals.param_opt != NULL) {
+		for (data = lp_ctx->Globals.param_opt; data; 
 		     data = data->next) {
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 		}
@@ -2168,9 +2169,10 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
         }
 }
 
-bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
+bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, char *parm_name, FILE * f, 
+			 bool isGlobal)
 {
-	struct loadparm_service * pService = loadparm.ServicePtrs[snum];
+	struct loadparm_service * pService = lp_ctx->ServicePtrs[snum];
 	struct parm_struct *parm;
 	void *ptr;
 	
@@ -2196,7 +2198,8 @@ bool lp_dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
  Return NULL when out of parameters.
 ***************************************************************************/
 
-struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
+struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i, 
+				      int allparameters)
 {
 	if (snum == -1) {
 		/* do the globals */
@@ -2216,7 +2219,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			return &parm_table[(*i)++];
 		}
 	} else {
-		struct loadparm_service *pService = loadparm.ServicePtrs[snum];
+		struct loadparm_service *pService = lp_ctx->ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_SEPARATOR)
@@ -2273,16 +2276,18 @@ bool lp_loaded(void)
  Unload unused services.
 ***************************************************************************/
 
-void lp_killunused(struct smbsrv_connection *smb, bool (*snumused) (struct smbsrv_connection *, int))
+void lp_killunused(struct loadparm_context *lp_ctx, 
+		   struct smbsrv_connection *smb, 
+		   bool (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
-	for (i = 0; i < loadparm.iNumServices; i++) {
-		if (loadparm.ServicePtrs[i] == NULL)
+	for (i = 0; i < lp_ctx->iNumServices; i++) {
+		if (lp_ctx->ServicePtrs[i] == NULL)
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
-			talloc_free(loadparm.ServicePtrs[i]);
-			loadparm.ServicePtrs[i] = NULL;
+			talloc_free(lp_ctx->ServicePtrs[i]);
+			lp_ctx->ServicePtrs[i] = NULL;
 		}
 	}
 }
@@ -2532,7 +2537,7 @@ void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 	if (show_defaults)
 		defaults_saved = false;
 
-	dump_globals(f, show_defaults);
+	dump_globals(lp_ctx, f, show_defaults);
 
 	dump_a_service(&sDefault, f);
 

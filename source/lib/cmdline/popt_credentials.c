@@ -95,7 +95,7 @@ static void popt_common_credentials_callback(poptContext con,
 		break;
 
 	case 'S':
-		lp_set_cmdline("client signing", arg);
+		lp_set_cmdline(global_loadparm, "client signing", arg);
 		break;
 
 	case 'P':

@@ -614,10 +614,10 @@ static void usage(void)
 			exact_error_codes = True;
 			break;
 		case 'l':
-			lp_set_cmdline("torture:unclist", optarg);
+			lp_set_cmdline(global_loadparm, "torture:unclist", optarg);
 			break;
 		case 'W':
-			lp_set_cmdline("workgroup", optarg);
+			lp_set_cmdline(global_loadparm, "workgroup", optarg);
 			break;
 		case 'h':
 			usage();

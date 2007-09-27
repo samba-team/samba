@@ -200,7 +200,7 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	mpr_Return(eid, mprCreateBoolVar(lp_set_cmdline(argv[0], argv[1])));
+	mpr_Return(eid, mprCreateBoolVar(lp_set_cmdline(global_loadparm, argv[0], argv[1])));
 	return 0;
 }
 

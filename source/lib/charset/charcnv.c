@@ -119,7 +119,7 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
 		    strcasecmp(charset_name(CH_DOS), "ASCII") != 0) {
 			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
 				 charset_name(CH_DOS)));
-			lp_set_cmdline("dos charset", "ASCII");
+			lp_set_cmdline(global_loadparm, "dos charset", "ASCII");
 
 			n1 = charset_name(from);
 			n2 = charset_name(to);

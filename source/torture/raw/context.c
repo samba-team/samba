@@ -892,7 +892,7 @@ bool torture_raw_context(struct torture_context *torture,
 	bool ret = true;
 	if (lp_use_spnego()) {
 		ret &= torture_raw_context_int(torture, cli);
-		lp_set_cmdline("use spnego", "False");
+		lp_set_cmdline(global_loadparm, "use spnego", "False");
 	}
 
 	ret &= torture_raw_context_int(torture, cli);

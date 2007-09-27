@@ -52,7 +52,7 @@ int main(int argc, const char **argv)
 	fault_setup(argv[0]);
 
 	if (getenv("SMB_CONF_PATH")) {
-		lp_set_cmdline("config file", getenv("SMB_CONF_PATH"));
+		lp_set_cmdline(global_loadparm, "config file", getenv("SMB_CONF_PATH"));
 	}
 
 	ldb_global_init();
