@@ -1,5 +1,266 @@
-                   ==============================
-                   Release Notes for Samba 3.2.x
-                             XX ##, 200Y
-                   ==============================
+                   =================================
+                   Release Notes for Samba 3.2.0pre1
+                               Sep 28, 2007
+                   =================================
+
+This is the first preview release of Samba 3.2.0.  This is *not*
+intended for production environments and is designed for testing
+purposes only.  Please report any defects via the Samba bug reporting
+system and https://bugzilla.samba.org/.
+
+Please be aware that Samba is now distributed under the version 3
+of the new GNU General Public License.  You may refer to the COPYING
+file that accompanies these release notes for further licensing details.
+
+Major enhancements in Samba 3.2.0 include:
+
+  File Serving:
+  o Use of IDL generated parsing layer for several DCE/RPC
+    interfaces.
+  o Removal of the 1024 byte limit on pathnames and 256 byte limit 
+    on filename components to honor the MAX_PATH setting from the host
+    OS.
+  o Introduction of a registry based configuration system for file
+    shares.
+  o Improved CIFS Unix Extensions support.
+  o Experimental support for file serving clusters.
+
+
+  Winbind and Active Directory Integration:
+  o Full support for Windows 2003 cross-forest, transitive trusts
+    and one-way domain trusts
+  o Support for userPrincipalName logons via pam_winbind and NSS
+    lookups.
+  o Support in pam_winbind for logging on using the userPrincipalName.
+  o Expansion of nested domain groups via NSS calls.
+  o Support for joining Windows Longhorn Active Directory domains.
+  o Support for Active Directory LDAP Signing policy.
+
+
+  Users & Groups:
+  o New ldb backend for local group mapping tables
+  o Raised level of security defaults for authentication operations.
+
+
+Now Licensed under the GNU GPLv3
+================================
+
+The Samba Team has adopted the Version 3 of the GNU General Public
+License for the 3.2 and later releases.   The GPLv3 is the updated
+version of the GPLv2 license under which Samba is currently
+distributed. It has been updated to improvecompatibility with other 
+licenses and to make it easier to adopt internationally, and is an 
+improved version of the license to better suit the needs of Free
+Software in the 21st Century.
+
+The original announcement is available on-line at 
+
+    http://news.samba.org/announcements/samba_gplv3/
+
+
+New Security Defaults for Authentication
+========================================
+
+Support for LanMan passwords is now disabled in both client and server 
+applications.  Additionally, clear text authentication requests are 
+disabled by default in client utilities such as smbclient and all
+libsmbclient based applications.  This will affect connection both 
+to and from hosts running DOS, Windows 9x/ME, and OS/2.  Please refer 
+to the "Changes" section for details on the exact parameters that were 
+updated.
+
+
+
+Registry Configuration Backend
+==============================
+
+Samba is now able to use a registry based configuration backed to
+supplement smb.conf setting.  This feature may be enabled by setting
+"include = registry" and "registry shares = yes" in the [global] 
+section of smb.conf and may be managed using the "net conf" command.  
+
+More information may be obtained from the smb.conf(5) and net(8) man 
+pages.
+
+
+Removed Features
+================
+
+Both the Python bindings and the libmsrpc shared library have been
+removed from the tree due to lack of an official maintainer.
+
+
+
+######################################################################
+Changes
+#######
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Description     Default
+    --------------                      -----------     -------
+    client lanman auth			Changed Default	No
+    client ldap sasl wrapping		New		plain
+    client plaintext auth		Changed Default	No
+    clustering				New		No
+    cluster addresses			New		""
+    ctdb socket				New		""
+    lanman auth				Changed Default	No
+    mangle map                          Removed
+    open files database hashsize	Removed
+    read bmpx                           Removed
+    registry shares			New		No
+    winbind expand groups               New             1
+    winbind rpc only                    New             No
+
+
+Commit Highlights:
+------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Unified POSIX ACL detection including support for FreeBSD and
+      HP-UX.
+    * Performance improvements for Winbind's lookup functions (names,
+      SIDs, and group membership) when joined to an AD domain.
+    * Winbind cache validation support.
+    * Store domain trust passwords for Samba domain controller's in
+      the domain's passdb backend.
+    * Merged \winreg server code from the SAMBA_3_2 development branch.
+    * Fixes for libreplace.
+    * Implement new registry configuration backend.
+  
+
+o   Jeremy Allison <jra@samba.org>
+    * Add support for file system objectIDs.
+    * Winbind cache validation support.
+    * Add in the UNIX capability for 24-bit readX.
+    * Improve Delete-on-Close semantics.
+    * Removal of static file and path name buffers in SMB file serving 
+      code.
+    
+
+o   Danilo Almeida <dalmeida@centeris.com>
+    * Move the machine account to the OU specified when running "net
+      ads join".
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Tighten authentication protocol defaults in client tools and 
+      servers.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Implement support for one-way trusts and two-way cross-forest
+      transitive trust in winbindd.
+    * Fixes for Winbind's offline/disconnected logon support when
+      using remote idmap backends.
+    * Fix LookupNames and LookupSids to use the same resolution
+      heuristics as Windows XP.
+    * Fix lockups in Winbind when running nscd.
+    * UPN logon support in pam_winbind.
+    * Add support for GNU linker scripts when build shared libraries
+      (based on work by Julien Cristau <jcristau@debian.org> and James 
+      Peach).
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Additional support for decoding and downloading group policy
+      objects from Active Directory.
+    * Improvements to "net ads keytab" command.
+    * Fixes for linking against Heimdal Kerberos client libs.
+    * Support LDAP range retrieval searches.
+    * Fixes for failure to refresh user ticket caches in Winbind.
+    * UPN logon support in pam_winbind.
+    * Add KDC locator plugin for MIT kerberos 1.6 or later.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * Allow SIGTERM to cause nmbd to exit while awaiting a interface
+      to come up. 
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Merge experimental cluster support patches from the ctdb branch.
+    * Add tdb storage abstraction for ctdb.
+    * Use IDL for internal message passing system.
+    * Add client support for the SamLogonEx() authentication request.
+    * Implement RPC proxy stubs in the Samba server code to allow
+      replacing implementation functions one by one.
+    * Remove static incoming and outgoing buffers from core server SMB 
+      packet processing code.
+    * Add "net sam rights" command.
+
+
+o   Steve French <sfrench@samba.org>
+    * Fixes for mount.cfs Linux utility.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Fixes for libreplace.
+    * Add support for LDAP digital signing policy.
+    * Experimental clustered file system support.
+
+
+o   Lars Mueller <lars@samba.org>
+    * Makefile and build fixes.
+    * Add pam_pwd_expire for pam_winbind (original patch from Andreas
+      Schneider).
+
+
+o   James Peach <jpeach@apple.com>
+    * Fixes for setgroups() and *BSD and Darwin.
+    * Support membership of >16 groups on Darwin.
+
+
+o   Jiri Sasek <Jiri.Sasek@Sun.COM>
+    * Added vfs_vfsacl module.
+
+
+o   Karolin Seeger <ks@sernet.de>
+    * Add deletelocalgroup and unmapunixgroup subcommand to "net sam".
+    * Cleanup internal passdb functions.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fixes for IDmap and Passdb backends.
+
+
+o   Todd Stecher <tstecher@isilon.com>
+    * Windows 2008 interop fixes for domain member servers and client
+      tools.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Port ldb from the Samba 4 tree and add ldb group mapping plugin.
+    * Move several file serving related tdb files to use the dbwrap
+      API internally.
+    * Cleanup the GPFS VFS plugin.
+    * Experimental clustered file system support.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Implement NDR basic to support utilizing IDL files from Samba 4
+      tree for general DCE/RPC parsing stubs.
+
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
 
