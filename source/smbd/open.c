@@ -1983,6 +1983,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	char *parent_dir;
 	const char *dirname;
 	NTSTATUS status;
+	bool posix_open = false;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -2001,6 +2002,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		posix_open = true;
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 	} else {
 		mode = unix_mode(conn, aDIR, name, parent_dir);
@@ -2023,6 +2025,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		DEBUG(0, ("Directory just '%s' created is not a directory\n",
 			  name));
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (lp_store_dos_attributes(SNUM(conn))) {
+		if (!posix_open) {
+			file_set_dosmode(conn, name,
+				 file_attributes | aDIR, NULL,
+				 parent_dir);
+		}
 	}
 
 	if (lp_inherit_perms(SNUM(conn))) {
