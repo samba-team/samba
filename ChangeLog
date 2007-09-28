@@ -1,3 +1,8 @@
+2007-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/context.c (krb5_free_context): free
+	default_cc_name_env, from Gunther Deschner.
+
 2007-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/{krb5.h,pac.c,test_pac.c,send_to_kdc.c,rd_req.c}: Make
