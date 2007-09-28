@@ -599,7 +599,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	char *crypted;
 	struct passwd *pws;
 	NTSTATUS nt_status;
-	int level = lp_passwordlevel();
+	int level = lp_passwordlevel(global_loadparm);
 
 	*ret_passwd = NULL;
 
@@ -702,7 +702,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 #endif
 
 	if (crypted[0] == '\0') {
-		if (!lp_null_passwords()) {
+		if (!lp_null_passwords(global_loadparm)) {
 			DEBUG(2, ("Disallowing %s with null password\n", username));
 			return NT_STATUS_LOGON_FAILURE;
 		}
