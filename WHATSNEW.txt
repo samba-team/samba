@@ -6,7 +6,7 @@
 This is the first preview release of Samba 3.2.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
-system and https://bugzilla.samba.org/.
+system at https://bugzilla.samba.org/.
 
 Please be aware that Samba is now distributed under the version 3
 of the new GNU General Public License.  You may refer to the COPYING
@@ -17,11 +17,9 @@ Major enhancements in Samba 3.2.0 include:
   File Serving:
   o Use of IDL generated parsing layer for several DCE/RPC
     interfaces.
-  o Removal of the 1024 byte limit on pathnames and 256 byte limit 
-    on filename components to honor the MAX_PATH setting from the host
-    OS.
-  o Introduction of a registry based configuration system for file
-    shares.
+  o Removal of the 1024 byte limit on pathnames and 256 byte limit on
+    filename components to honor the MAX_PATH setting from the host OS.
+  o Introduction of a registry based configuration system.
   o Improved CIFS Unix Extensions support.
   o Experimental support for file serving clusters.
 
@@ -39,6 +37,7 @@ Major enhancements in Samba 3.2.0 include:
   Users & Groups:
   o New ldb backend for local group mapping tables
   o Raised level of security defaults for authentication operations.
+
 
   Documentation:
   o Inclusion of an HTLM version of the 3rd edition of "Using Samba"
