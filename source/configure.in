@@ -373,7 +373,7 @@ AC_SUBST(SWAT_INSTALL_TARGETS)
 
 #################################################
 # set prefix for 'make test'
-selftest_prefix="./"
+selftest_prefix="./st"
 AC_SUBST(selftest_prefix)
 AC_ARG_WITH(selftest-prefix,
 [  --with-selftest-prefix=DIR    The prefix where make test will be runned ($selftest_prefix)],
@@ -418,18 +418,18 @@ fi
 
 #################################################
 # set path of samba4's smbtorture
-smbtorture4_path=""
-AC_SUBST(smbtorture4_path)
-AC_ARG_WITH(smbtorture4_path,
-[  --with-smbtorture4-path=PATH    The path to a samba4 smbtorture for make test (none)],
+samba4srcdir=""
+AC_SUBST(samba4srcdir)
+AC_ARG_WITH(samba4srcdir,
+[  --with-samba4srcdir=PATH    The path to a samba4 source directorhy for make test (none)],
 [ case "$withval" in
   yes|no)
-    AC_MSG_ERROR([--with-smbtorture4-path should take a path])
+    AC_MSG_ERROR([--with-samba4srcdir should take a path])
   ;;
   * )
-    smbtorture4_path="$withval"
-    if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
-    	AC_MSG_ERROR(['$smbtorture_path' does not  exist!])
+    samba4srcdir="$withval"
+    if test -z "$samba4srcdir" -a ! -f $samba4srcdir; then
+    	AC_MSG_ERROR(['$samba4srcdir' does not  exist!])
     fi
   ;;
  esac
@@ -6420,7 +6420,9 @@ if test x"$RUN_FROM_BUILD_FARM" = x"yes"; then
 	AC_DEFINE(ENABLE_BUILD_FARM_HACKS, 1, [Defined if running in the build farm])
 else
 	AC_MSG_RESULT(no)
+	SELFTEST_ARGS="$SELFTEST_ARGS --skip=samba3-skip-nobuildfarm"
 fi
+AC_SUBST(SELFTEST_ARGS)
 
 #################################################
 # check for bad librt/libpthread interactions
