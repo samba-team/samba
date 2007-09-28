@@ -251,6 +251,8 @@ krb5_free_context(krb5_context context)
 {
     if (context->default_cc_name)
 	free(context->default_cc_name);
+    if (context->default_cc_name_env)
+	free(context->default_cc_name_env);
     free(context->etypes);
     free(context->etypes_des);
     krb5_free_host_realm (context, context->default_realms);
