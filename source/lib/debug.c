@@ -166,6 +166,7 @@ static const char *default_classname_table[] = {
 	"locking",	     /* DBGC_LOCKING	  */
 	"msdfs",	     /* DBGC_MSDFS	  */
 	"dmapi",	     /* DBGC_DMAPI	  */
+	"registry",          /* DBGC_REGISTRY     */
 	NULL
 };
 
