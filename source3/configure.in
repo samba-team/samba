@@ -991,7 +991,7 @@ LIBS="${LIBS} ${LIBDL}"
 
 AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h memory.h alloca.h)
-AC_CHECK_HEADERS(limits.h float.h)
+AC_CHECK_HEADERS(limits.h float.h pthread.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
@@ -5984,6 +5984,7 @@ WINBIND_NSS="nsswitch/libnss_winbind.$SHLIBEXT"
 WINBIND_WINS_NSS="nsswitch/libnss_wins.$SHLIBEXT"
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 NSSSONAMEVERSIONSUFFIX=""
+WINBIND_NSS_PTHREAD=""
 
 case "$host_os" in
 	linux*-gnu* | gnu* | k*bsd*-gnu)
@@ -6047,6 +6048,9 @@ case "$host_os" in
 		;;
 esac
 
+AC_CHECK_LIB(pthread, pthread_mutex_lock, [WINBIND_NSS_PTHREAD="-lpthread"
+			AC_DEFINE(HAVE_PTHREAD, 1, [whether pthread exists])])
+AC_SUBST(WINBIND_NSS_PTHREAD)
 AC_SUBST(WINBIND_NSS)
 AC_SUBST(WINBIND_WINS_NSS)
 AC_SUBST(WINBIND_NSS_LDSHFLAGS)

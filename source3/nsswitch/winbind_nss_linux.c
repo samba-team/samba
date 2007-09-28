@@ -21,6 +21,14 @@
 
 #include "winbind_client.h"
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+#if HAVE_PTHREAD
+static pthread_mutex_t winbind_nss_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 /* Maximum number of users to pass back over the unix domain socket
    per call. This is not a static limit on the total number of users 
    or groups returned in total. */
@@ -332,6 +340,10 @@ _nss_winbind_setpwent(void)
 	fprintf(stderr, "[%5d]: setpwent\n", getpid());
 #endif
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
 		winbindd_free_response(&getpwent_response);
@@ -341,6 +353,10 @@ _nss_winbind_setpwent(void)
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: setpwent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
 #endif
 	return ret;
 }
@@ -355,6 +371,10 @@ _nss_winbind_endpwent(void)
 	fprintf(stderr, "[%5d]: endpwent\n", getpid());
 #endif
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	if (num_pw_cache > 0) {
 		ndx_pw_cache = num_pw_cache = 0;
 		winbindd_free_response(&getpwent_response);
@@ -365,6 +385,11 @@ _nss_winbind_endpwent(void)
 	fprintf(stderr, "[%5d]: endpwent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -380,6 +405,10 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwent\n", getpid());
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	/* Return an entry from the cache if we have one, or if we are
@@ -452,6 +481,10 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 	fprintf(stderr, "[%5d]: getpwent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
 	return ret;
 }
 
@@ -464,14 +497,18 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 	NSS_STATUS ret;
 	static struct winbindd_response response;
 	struct winbindd_request request;
-	static int keep_response=0;
+	static int keep_response;
 
 #ifdef DEBUG_NSS
-	fprintf(stderr, "[%5d]: getpwuid %d\n", getpid(), (unsigned int)uid);
+	fprintf(stderr, "[%5d]: getpwuid_r %d\n", getpid(), (unsigned int)uid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	/* If our static buffer needs to be expanded we are called again */
-	if (!keep_response) {
+	if (!keep_response || uid != response.data.pw.pw_uid) {
 
 		/* Call for the first time */
 
@@ -500,7 +537,6 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 		ret = fill_pwent(result, &response.data.pw, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = true;
 			*errnop = errno = ERANGE;
 			goto done;
 		}
@@ -510,12 +546,18 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 	}
 
 	winbindd_free_response(&response);
+
 	done:
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getpwuid %d returns %s (%d)\n", getpid(),
 		(unsigned int)uid, nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -530,12 +572,16 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	static int keep_response;
 
 #ifdef DEBUG_NSS
-	fprintf(stderr, "[%5d]: getpwnam %s\n", getpid(), name);
+	fprintf(stderr, "[%5d]: getpwnam_r %s\n", getpid(), name);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	/* If our static buffer needs to be expanded we are called again */
 
-	if (!keep_response) {
+	if (!keep_response || strcmp(name,response.data.pw.pw_name) != 0) {
 
 		/* Call for the first time */
 
@@ -582,6 +628,11 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 	fprintf(stderr, "[%5d]: getpwnam %s returns %s (%d)\n", getpid(),
 		name, nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -604,6 +655,10 @@ _nss_winbind_setgrent(void)
 	fprintf(stderr, "[%5d]: setgrent\n", getpid());
 #endif
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
 		winbindd_free_response(&getgrent_response);
@@ -614,6 +669,11 @@ _nss_winbind_setgrent(void)
 	fprintf(stderr, "[%5d]: setgrent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -627,6 +687,10 @@ _nss_winbind_endgrent(void)
 	fprintf(stderr, "[%5d]: endgrent\n", getpid());
 #endif
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	if (num_gr_cache > 0) {
 		ndx_gr_cache = num_gr_cache = 0;
 		winbindd_free_response(&getgrent_response);
@@ -637,6 +701,11 @@ _nss_winbind_endgrent(void)
 	fprintf(stderr, "[%5d]: endgrent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -654,6 +723,10 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrent\n", getpid());
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	/* Return an entry from the cache if we have one, or if we are
@@ -735,6 +808,11 @@ winbind_getgrent(enum winbindd_cmd cmd,
 	fprintf(stderr, "[%5d]: getgrent returns %s (%d)\n", getpid(),
 		nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -769,9 +847,14 @@ _nss_winbind_getgrnam_r(const char *name,
 	fprintf(stderr, "[%5d]: getgrnam %s\n", getpid(), name);
 #endif
 
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	/* If our static buffer needs to be expanded we are called again */
-	
-	if (!keep_response) {
+	/* Or if the stored response group name differs from the request. */
+
+	if (!keep_response || strcmp(name,response.data.gr.gr_name) != 0) {
 
 		/* Call for the first time */
 
@@ -798,13 +881,13 @@ _nss_winbind_getgrnam_r(const char *name,
 		}
 
 	} else {
-		
+
 		/* We've been called again */
-		
+
 		ret = fill_grent(result, &response.data.gr, 
 				 (char *)response.extra_data.data, &buffer,
 				 &buflen);
-		
+
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = true;
 			*errnop = errno = ERANGE;
@@ -821,6 +904,11 @@ _nss_winbind_getgrnam_r(const char *name,
 	fprintf(stderr, "[%5d]: getgrnam %s returns %s (%d)\n", getpid(),
 		name, nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -840,9 +928,14 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	fprintf(stderr, "[%5d]: getgrgid %d\n", getpid(), gid);
 #endif
 
-	/* If our static buffer needs to be expanded we are called again */
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
 
-	if (!keep_response) {
+	/* If our static buffer needs to be expanded we are called again */
+	/* Or if the stored response group name differs from the request. */
+
+	if (!keep_response || gid != response.data.gr.gr_gid) {
 
 		/* Call for the first time */
 
@@ -890,6 +983,10 @@ _nss_winbind_getgrgid_r(gid_t gid,
 	fprintf(stderr, "[%5d]: getgrgid %d returns %s (%d)\n", getpid(),
 		(unsigned int)gid, nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
 	return ret;
 }
 
@@ -908,6 +1005,10 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: initgroups %s (%d)\n", getpid(),
 		user, group);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(request);
@@ -990,6 +1091,11 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 	fprintf(stderr, "[%5d]: initgroups %s returns %s (%d)\n", getpid(),
 		user, nss_err_str(ret), ret);
 #endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1006,6 +1112,10 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getusersids %s\n", getpid(), user_sid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(request);
@@ -1033,6 +1143,11 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 	
  done:
 	winbindd_free_response(&response);
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1048,6 +1163,10 @@ _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: nametosid %s\n", getpid(), name);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(response);
@@ -1075,6 +1194,11 @@ _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
 
 failed:
 	winbindd_free_response(&response);
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1091,6 +1215,10 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: sidtoname %s\n", getpid(), sid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(response);
@@ -1139,6 +1267,11 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 
 failed:
 	winbindd_free_response(&response);
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1152,6 +1285,10 @@ _nss_winbind_sidtouid(const char *sid, uid_t *uid, int *errnop)
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: sidtouid %s\n", getpid(), sid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(request);
@@ -1169,6 +1306,11 @@ _nss_winbind_sidtouid(const char *sid, uid_t *uid, int *errnop)
 	*uid = response.data.uid;
 
 failed:
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1182,6 +1324,10 @@ _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop)
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: sidtogid %s\n", getpid(), sid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(request);
@@ -1199,6 +1345,11 @@ _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop)
 	*gid = response.data.gid;
 
 failed:
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1213,6 +1364,10 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5u]: uidtosid %u\n", (unsigned int)getpid(), (unsigned int)uid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(response);
@@ -1238,6 +1393,11 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 
 failed:
 	winbindd_free_response(&response);
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
 
@@ -1252,6 +1412,10 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5u]: gidtosid %u\n", (unsigned int)getpid(), (unsigned int)gid);
+#endif
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&winbind_nss_mutex);
 #endif
 
 	ZERO_STRUCT(response);
@@ -1277,5 +1441,10 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 failed:
 	winbindd_free_response(&response);
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&winbind_nss_mutex);
+#endif
+
 	return ret;
 }
