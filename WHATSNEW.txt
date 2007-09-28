@@ -40,6 +40,10 @@ Major enhancements in Samba 3.2.0 include:
   o New ldb backend for local group mapping tables
   o Raised level of security defaults for authentication operations.
 
+  Documentation:
+  o Inclusion of an HTLM version of the 3rd edition of "Using Samba"
+    from O'Reilly Publishing.
+
 
 Now Licensed under the GNU GPLv3
 ================================
