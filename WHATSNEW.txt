@@ -33,7 +33,6 @@ Major enhancements in Samba 3.2.0 include:
     lookups.
   o Support in pam_winbind for logging on using the userPrincipalName.
   o Expansion of nested domain groups via NSS calls.
-  o Support for joining Windows Longhorn Active Directory domains.
   o Support for Active Directory LDAP Signing policy.
 
 
@@ -224,11 +223,6 @@ o   Karolin Seeger <ks@sernet.de>
 
 o   Simo Sorce <idra@samba.org>
     * Fixes for IDmap and Passdb backends.
-
-
-o   Todd Stecher <tstecher@isilon.com>
-    * Windows 2008 interop fixes for domain member servers and client
-      tools.
 
 
 o   Andrew Tridgell <tridge@samba.org>
