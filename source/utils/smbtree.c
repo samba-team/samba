@@ -157,7 +157,6 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 	}
 
 	ZERO_STRUCT(ctr1);
-	level = 1;
 	ctr.ctr1 = &ctr1;
 
 	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
