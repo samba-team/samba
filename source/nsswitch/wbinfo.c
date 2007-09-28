@@ -52,7 +52,7 @@ static char winbind_separator_int(BOOL strict)
 			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
-		return *lp_winbind_separator();
+		return *lp_winbind_separator(global_loadparm);
 	}
 
 	sep = response.data.info.winbind_separator;
@@ -64,7 +64,7 @@ static char winbind_separator_int(BOOL strict)
 			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
-		sep = *lp_winbind_separator();
+		sep = *lp_winbind_separator(global_loadparm);
 	}
 	
 	return sep;
@@ -89,7 +89,7 @@ static const char *get_winbind_domain(void)
 		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
-		return lp_workgroup();
+		return lp_workgroup(global_loadparm);
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);
@@ -819,7 +819,7 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8);
         
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		DATA_BLOB server_chal;
 		DATA_BLOB names_blob;	
 
@@ -836,7 +836,7 @@ static BOOL wbinfo_auth_crap(char *username)
 		server_chal = data_blob(request.data.auth_crap.chal, 8); 
 		
 		/* Pretend this is a login to 'us', for blob purposes */
-		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(), lp_workgroup());
+		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
 		
 		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain, pass, &server_chal, 
 				      &names_blob,
@@ -862,7 +862,7 @@ static BOOL wbinfo_auth_crap(char *username)
 		data_blob_free(&lm_response);
 
 	} else {
-		if (lp_client_lanman_auth() 
+		if (lp_client_lanman_auth(global_loadparm) 
 		    && SMBencrypt(pass, request.data.auth_crap.chal, 
 			       (unsigned char *)request.data.auth_crap.lm_resp)) {
 			request.data.auth_crap.lm_resp_len = 24;

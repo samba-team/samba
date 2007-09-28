@@ -81,7 +81,7 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 	if (!(packet->operation & NBT_FLAG_BROADCAST) &&
 	   (packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
 	   (iname->nb_flags & NBT_NM_GROUP) &&
-	   lp_wins_support()) {
+	   lp_wins_support(global_loadparm)) {
 		nbtd_winsserver_request(nbtsock, packet, src);
 		return;
 	}

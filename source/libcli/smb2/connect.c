@@ -187,7 +187,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(name);
 	name.name = host;
 
-	creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
+	creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order(global_loadparm));
 	composite_continue(c, creq, continue_resolve, c);
 	return c;
 }

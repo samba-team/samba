@@ -73,7 +73,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 		d++;
 		domain = d;
 	} else {
-		domain = lp_workgroup();
+		domain = lp_workgroup(global_loadparm);
 	}
 
 	*user_info_mapped = talloc(mem_ctx, struct auth_usersupplied_info);
@@ -138,8 +138,8 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 			}
 			
 			chall_blob = data_blob_talloc(mem_ctx, challenge, 8);
-			if (lp_client_ntlmv2_auth()) {
-				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(), lp_workgroup());
+			if (lp_client_ntlmv2_auth(global_loadparm)) {
+				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
 				DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key, ntlmv2_session_key;
 				
 				if (!SMBNTLMv2encrypt_hash(user_info_temp,
@@ -163,7 +163,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 				SMBOWFencrypt(user_info_in->password.hash.nt->hash, challenge, blob.data);
 
 				user_info_temp->password.response.nt = blob;
-				if (lp_client_lanman_auth() && user_info_in->password.hash.lanman) {
+				if (lp_client_lanman_auth(global_loadparm) && user_info_in->password.hash.lanman) {
 					DATA_BLOB lm_blob = data_blob_talloc(mem_ctx, NULL, 24);
 					SMBOWFencrypt(user_info_in->password.hash.lanman->hash, challenge, blob.data);
 					user_info_temp->password.response.lanman = lm_blob;
@@ -413,7 +413,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversuppl
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = 0;
@@ -483,7 +483,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = 0;
@@ -562,7 +562,7 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials);
+	cli_credentials_set_conf(session_info->credentials, global_loadparm);
 	cli_credentials_set_anonymous(session_info->credentials);
 	
 	*_session_info = session_info;
@@ -608,7 +608,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials);
+	cli_credentials_set_conf(session_info->credentials, global_loadparm);
 
 	if (anonymous_credentials) {
 		cli_credentials_set_anonymous(session_info->credentials);

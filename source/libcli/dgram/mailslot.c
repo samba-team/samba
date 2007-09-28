@@ -165,7 +165,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 
 	if (_dest->port == 0) {
 		dest = socket_address_from_strings(tmp_ctx, _dest->family, 
-						   _dest->addr, lp_dgram_port());
+						   _dest->addr, lp_dgram_port(global_loadparm));
 	} else {
 		dest = _dest;
 	}

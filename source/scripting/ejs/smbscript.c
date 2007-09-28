@@ -26,6 +26,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "auth/gensec/gensec.h"
 #include "ldb/include/ldb.h"
+#include "dynconfig.h"
 
 static EjsId eid;
 
@@ -52,7 +53,9 @@ int main(int argc, const char **argv)
 	fault_setup(argv[0]);
 
 	if (getenv("SMB_CONF_PATH")) {
-		lp_set_cmdline(global_loadparm, "config file", getenv("SMB_CONF_PATH"));
+		lp_load(getenv("SMB_CONF_PATH"));
+	} else {
+		lp_load(dyn_CONFIGFILE);
 	}
 
 	ldb_global_init();
@@ -60,7 +63,6 @@ int main(int argc, const char **argv)
 	gensec_init();
 	mprSetCtx(mem_ctx);
 
-	lp_load();
 
 	if (argc < 2) {
 		fprintf(stderr, "You must supply a script name\n");

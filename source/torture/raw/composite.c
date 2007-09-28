@@ -159,7 +159,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.in.service_type = "A:";
 
 	io2.in.credentials = cmdline_credentials;
-	io2.in.workgroup  = lp_workgroup();
+	io2.in.workgroup  = lp_workgroup(global_loadparm);
 	io2.in.filename = fname;
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);
@@ -346,7 +346,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io1.in.service = lp_parm_string(NULL, "torture", "share");
 	io1.in.service_type = "A:";
 	io1.in.credentials = cmdline_credentials;
-	io1.in.workgroup = lp_workgroup();
+	io1.in.workgroup = lp_workgroup(global_loadparm);
 	io1.in.level = RAW_QFS_OBJECTID_INFORMATION;
 
 	printf("testing parallel queryfsinfo [Object ID] with %d ops\n", torture_numops);

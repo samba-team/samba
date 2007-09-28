@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "dynconfig.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -2195,7 +2196,7 @@ static BOOL split_unc_name(const char *unc, char **server, char **share)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load();
+	lp_load(dyn_CONFIGFILE);
 
 	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
 	servers[1].credentials = cli_credentials_init(talloc_autofree_context());

@@ -98,7 +98,7 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 			return gensec_ntlmssp_state->server_name;
 		} else {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-			return gensec_ntlmssp_state->get_domain();
+			return gensec_ntlmssp_state->domain;
 		};
 	} else {
 		return "";
@@ -744,13 +744,13 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
 	gensec_ntlmssp_state->workstation = NULL;
-	gensec_ntlmssp_state->server_name = lp_netbios_name();
+	gensec_ntlmssp_state->server_name = lp_netbios_name(global_loadparm);
 
-	gensec_ntlmssp_state->get_domain = lp_workgroup;
+	gensec_ntlmssp_state->domain = lp_workgroup(global_loadparm);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth() 
+	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(global_loadparm) 
 					  && lp_parm_bool(NULL, "ntlmssp_server", "allow_lm_key", false));
 
 	gensec_ntlmssp_state->server_multiple_authentications = False;
@@ -799,7 +799,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	gensec_ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	gensec_ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	gensec_ntlmssp_state->server_role = lp_server_role();
+	gensec_ntlmssp_state->server_role = lp_server_role(global_loadparm);
 
 	return NT_STATUS_OK;
 }

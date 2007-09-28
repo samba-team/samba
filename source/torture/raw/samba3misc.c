@@ -344,7 +344,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 		return False;
 	}
 
-	nt_status_support = lp_nt_status_support();
+	nt_status_support = lp_nt_status_support(global_loadparm);
 
 	if (!lp_set_cmdline(global_loadparm, "nt status support", "yes")) {
 		printf("Could not set 'nt status support = yes'\n");

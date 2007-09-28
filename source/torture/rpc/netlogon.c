@@ -452,11 +452,11 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
 	int flags = CLI_CRED_NTLM_AUTH;
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -740,7 +740,7 @@ static bool test_GetDcName(struct torture_context *tctx,
 	struct netr_GetDcName r;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domainname = lp_workgroup();
+	r.in.domainname = lp_workgroup(global_loadparm);
 
 	status = dcerpc_netr_GetDcName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetDcName");
@@ -787,7 +787,7 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 	struct netr_GetAnyDCName r;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domainname = lp_workgroup();
+	r.in.domainname = lp_workgroup(global_loadparm);
 
 	status = dcerpc_netr_GetAnyDCName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
@@ -813,7 +813,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -826,7 +826,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -839,7 +839,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -932,7 +932,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -945,7 +945,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -958,7 +958,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	}
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
-	r.in.data.domain = lp_workgroup();
+	r.in.data.domain = lp_workgroup(global_loadparm);
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -1090,7 +1090,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	struct netr_DsRGetDCName r;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(global_loadparm));
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -1113,7 +1113,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	struct netr_DsRGetDCNameEx r;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(global_loadparm));
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -1138,7 +1138,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
-	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm());
+	r.in.domain_name	= talloc_asprintf(tctx, "%s", lp_realm(global_loadparm));
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;

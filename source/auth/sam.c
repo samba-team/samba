@@ -344,7 +344,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->home_drive = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);

@@ -258,7 +258,8 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 	status = socket_set_option(stream_socket->sock, "SO_KEEPALIVE", NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = socket_set_option(stream_socket->sock, lp_socket_options(), NULL);
+	status = socket_set_option(stream_socket->sock, lp_socket_options(global_loadparm), 
+				   NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* TODO: set socket ACL's here when they're implemented */

@@ -56,22 +56,22 @@ void secrets_shutdown(void)
 }
 
 /* open up the secrets database */
-BOOL secrets_init(void)
+bool secrets_init(void)
 {
 	char *fname;
 	uint8_t dummy;
 
 	if (tdb)
-		return True;
+		return true;
 
-	asprintf(&fname, "%s/secrets.tdb", lp_private_dir());
+	asprintf(&fname, "%s/secrets.tdb", lp_private_dir(global_loadparm));
 
 	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
 		SAFE_FREE(fname);
-		return False;
+		return false;
 	}
 	SAFE_FREE(fname);
 
@@ -103,7 +103,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	url = lp_secrets_url();
+	url = lp_secrets_url(global_loadparm);
 	if (!url || !url[0]) {
 		return NULL;
 	}

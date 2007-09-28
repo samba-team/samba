@@ -1168,7 +1168,7 @@ BOOL ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2)
 	   the mapping of dos codes, as we want to catch the cases where
 	   a forced dos code is needed
 	*/
-	if (lp_nt_status_support()) {
+	if (lp_nt_status_support(global_loadparm)) {
 		return NT_STATUS_V(status1) == NT_STATUS_V(status2);
 	}
 

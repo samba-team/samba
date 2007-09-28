@@ -38,6 +38,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/samr/proto.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {
@@ -472,7 +473,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	/* We want the credentials subsystem to use the krb5 context
 	 * we already have, rather than a new context */	
 	cli_credentials_set_krb5_context(server_credentials, kdc->smb_krb5_context);
-	cli_credentials_set_conf(server_credentials);
+	cli_credentials_set_conf(server_credentials, global_loadparm);
 	nt_status = cli_credentials_set_stored_principal(server_credentials, "kadmin/changepw");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx, 

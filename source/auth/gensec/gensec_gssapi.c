@@ -213,10 +213,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (lp_realm() && *lp_realm()) {
-		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm());
+	if (lp_realm(global_loadparm) && *lp_realm(global_loadparm)) {
+		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(global_loadparm));
 		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(global_loadparm)));
 			talloc_free(gensec_gssapi_state);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -332,7 +332,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 
 	principal = gensec_get_target_principal(gensec_security);
-	if (principal && lp_client_use_spnego_principal()) {
+	if (principal && lp_client_use_spnego_principal(global_loadparm)) {
 		name_type = GSS_C_NULL_OID;
 	} else {
 		principal = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
@@ -1359,7 +1359,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 
 		cli_credentials_set_event_context(session_info->credentials, gensec_security->event_ctx);
-		cli_credentials_set_conf(session_info->credentials);
+		cli_credentials_set_conf(session_info->credentials, global_loadparm);
 		/* Just so we don't segfault trying to get at a username */
 		cli_credentials_set_anonymous(session_info->credentials);
 		

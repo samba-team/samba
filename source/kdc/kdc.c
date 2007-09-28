@@ -526,8 +526,8 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 	
 	for (i=0; i<num_interfaces; i++) {
 		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
-		status = kdc_add_socket(kdc, address, lp_krb5_port(), 
-					lp_kpasswd_port());
+		status = kdc_add_socket(kdc, address, lp_krb5_port(global_loadparm), 
+					lp_kpasswd_port(global_loadparm));
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -555,7 +555,7 @@ static void kdc_task_init(struct task_server *task)
 	NTSTATUS status;
 	krb5_error_code ret;
 
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "kdc: no KDC required in standalone configuration");
 		return;

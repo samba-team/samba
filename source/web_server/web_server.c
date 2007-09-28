@@ -241,7 +241,7 @@ static const struct stream_server_ops web_stream_ops = {
 static void websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
-	uint16_t port = lp_web_port();
+	uint16_t port = lp_web_port(global_loadparm);
 	const struct model_ops *model_ops;
 
 	task_server_set_title(task, "task[websrv]");
@@ -250,7 +250,7 @@ static void websrv_task_init(struct task_server *task)
 	model_ops = process_model_byname("single");
 	if (!model_ops) goto failed;
 
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
 		int num_interfaces = iface_count();
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
@@ -264,7 +264,7 @@ static void websrv_task_init(struct task_server *task)
 	} else {
 		status = stream_setup_socket(task->event_ctx, model_ops, 
 					     &web_stream_ops, 
-					     "ipv4", lp_socket_address(), 
+					     "ipv4", lp_socket_address(global_loadparm), 
 					     &port, task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}

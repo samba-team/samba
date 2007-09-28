@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 /*
   parse any auth information from a dcerpc bind request
@@ -70,7 +71,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 	
-	cli_credentials_set_conf(server_credentials);
+	cli_credentials_set_conf(server_credentials, global_loadparm);
 	status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));

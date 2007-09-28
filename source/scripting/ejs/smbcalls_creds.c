@@ -248,7 +248,7 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 		return -1;
 	}
 
-	cli_credentials_set_conf(creds);
+	cli_credentials_set_conf(creds, global_loadparm);
 
 	return ejs_credentials_obj(obj, creds);
 }

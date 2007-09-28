@@ -40,7 +40,7 @@ pid_t pidfile_pid(const char *name)
 	pid_t ret;
 	char *pidFile;
 
-	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
+	asprintf(&pidFile, "%s/%s.pid", lp_piddir(global_loadparm), name);
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 
@@ -87,7 +87,7 @@ void pidfile_create(const char *name)
 	char *pidFile;
 	pid_t pid;
 
-	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
+	asprintf(&pidFile, "%s/%s.pid", lp_piddir(global_loadparm), name);
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {

@@ -47,11 +47,11 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
 	int flags = CLI_CRED_NTLM_AUTH;
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -122,7 +122,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	struct policy_handle handle;
 	struct policy_handle domain_handle;
 
-	name.string = lp_workgroup();
+	name.string = lp_workgroup(global_loadparm);
 	r.in.domain_name = &name;
 
 	connect.in.system_name = 0;

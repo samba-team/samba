@@ -43,7 +43,7 @@
  */
 static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, lp_spoolss_url(), system_session(mem_ctx), 
+	return ldb_wrap_connect(mem_ctx, lp_spoolss_url(global_loadparm), system_session(mem_ctx), 
 				NULL, 0, NULL);
 }
 
@@ -203,12 +203,12 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		r->out.data.binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
-		if (!lp_realm()) return WERR_INVALID_PARAM;
+		if (!lp_realm(global_loadparm)) return WERR_INVALID_PARAM;
 
 		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
 		r->out.data.string	= talloc_asprintf(mem_ctx, "%s.%s",
-								   lp_netbios_name(),
-								   lp_realm());
+								   lp_netbios_name(global_loadparm),
+								   lp_realm(global_loadparm));
 		W_ERROR_HAVE_NO_MEMORY(r->out.data.string);
 		return WERR_OK;
 	}

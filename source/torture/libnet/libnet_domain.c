@@ -134,7 +134,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
 	   of specific server name. */
-	domain_name = lp_workgroup();
+	domain_name = lp_workgroup(global_loadparm);
 
 	ctx = libnet_context_init(NULL);
 	if (ctx == NULL) {
@@ -208,7 +208,7 @@ BOOL torture_domain_close_lsa(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	
 	if (!test_opendomain_lsa(p, torture, &h, &domain_name, &access_mask)) {
 		d_printf("failed to open domain on lsa service\n");
@@ -261,7 +261,7 @@ BOOL torture_domain_open_samr(struct torture_context *torture)
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
 	   of specific server name. */
-	domain_name = lp_workgroup();
+	domain_name = lp_workgroup(global_loadparm);
 
 	/*
 	 * Testing synchronous version
@@ -338,7 +338,7 @@ BOOL torture_domain_close_samr(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup());
+	domain_name.string = talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
 	
 	if (!test_opendomain_samr(p, torture, &h, &domain_name, &access_mask, &sid)) {
 		d_printf("failed to open domain on samr service\n");

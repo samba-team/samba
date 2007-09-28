@@ -93,7 +93,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 		return False;
 	}
 
-	name.string = lp_workgroup();
+	name.string = lp_workgroup(global_loadparm);
 
 	/*
 	 * Testing synchronous version

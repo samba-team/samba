@@ -652,12 +652,12 @@ NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn)
 
 	/* this is the size that w2k uses, and it appears to be important for
 	   good performance */
-	smb_conn->negotiate.max_recv = lp_max_xmit();
+	smb_conn->negotiate.max_recv = lp_max_xmit(global_loadparm);
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_conn->config.security = lp_security();
-	smb_conn->config.nt_status_support = lp_nt_status_support();
+	smb_conn->config.security = lp_security(global_loadparm);
+	smb_conn->config.nt_status_support = lp_nt_status_support(global_loadparm);
 
 	status = smbsrv_init_sessions(smb_conn, UINT16_MAX);
 	NT_STATUS_NOT_OK_RETURN(status);

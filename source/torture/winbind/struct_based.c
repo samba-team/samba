@@ -112,7 +112,7 @@ static bool torture_winbind_struct_info(struct torture_context *torture)
 
 	separator = torture_setting_string(torture,
 					   "winbindd separator",
-					   lp_winbind_separator());
+					   lp_winbind_separator(global_loadparm));
 	torture_assert_int_equal(torture,
 				 rep.data.info.winbind_separator,
 				 *separator,
@@ -166,7 +166,7 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios name",
-					  lp_netbios_name());
+					  lp_netbios_name(global_loadparm));
 
 	torture_assert_str_equal(torture,
 				 rep.data.netbios_name, expected,
@@ -188,7 +188,7 @@ static bool torture_winbind_struct_domain_name(struct torture_context *torture)
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios domain",
-					  lp_workgroup());
+					  lp_workgroup(global_loadparm));
 
 	torture_assert_str_equal(torture,
 				 rep.data.domain_name, expected,

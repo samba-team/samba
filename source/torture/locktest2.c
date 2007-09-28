@@ -483,7 +483,7 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	lp_load();
+	lp_load(dyn_CONFIGFILE);
 
 	if (getenv("USER")) {
 		fstrcpy(username,getenv("USER"));

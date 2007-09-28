@@ -45,7 +45,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct auth_session_info *session_info)
 {
 	struct ldb_context *ldb;
-	ldb = ldb_wrap_connect(mem_ctx, lp_sam_url(), session_info,
+	ldb = ldb_wrap_connect(mem_ctx, lp_sam_url(global_loadparm), session_info,
 			       NULL, 0, NULL);
 	if (!ldb) {
 		return NULL;

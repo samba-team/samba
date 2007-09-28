@@ -223,14 +223,14 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
 	DATA_BLOB session_key;
 	int flags = CLI_CRED_NTLM_AUTH;
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -263,7 +263,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 		set_user_session_key(session, &session_key);
 		
 		data_blob_free(&session_key);
-	} else if (lp_client_plaintext_auth()) {
+	} else if (lp_client_plaintext_auth(global_loadparm)) {
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else {
@@ -290,14 +290,14 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
 	DATA_BLOB session_key;
 	int flags = 0;
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -324,7 +324,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 		set_user_session_key(session, &session_key);
 		
 		data_blob_free(&session_key);
-	} else if (lp_client_plaintext_auth()) {
+	} else if (lp_client_plaintext_auth(global_loadparm)) {
 		state->setup.old.in.password = data_blob_talloc(state, password, strlen(password));
 	} else {
 		/* could match windows client and return 'cannot logon from this workstation', but it just confuses everybody */

@@ -442,7 +442,7 @@ static int init_benchrw_params(struct torture_context *tctx,
 	lpar->writeratio = torture_setting_int(tctx, "writeratio",5);
 	lpar->num_parallel_requests = torture_setting_int(
 		tctx, "parallel_requests", 5);
-	lpar->workgroup = lp_workgroup();
+	lpar->workgroup = lp_workgroup(global_loadparm);
 	
 	p = torture_setting_string(tctx, "unclist", NULL);
 	if (p) {

@@ -35,7 +35,8 @@
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, private_path(mem_ctx, lp_wins_config_url()),
+	return ldb_wrap_connect(mem_ctx, private_path(mem_ctx, 
+						      lp_wins_config_url(global_loadparm)),
 				system_session(mem_ctx), NULL, 0, NULL);
 }
 
@@ -494,7 +495,7 @@ static void wreplsrv_task_init(struct task_server *task)
  */
 static NTSTATUS wreplsrv_init(struct event_context *event_ctx, const struct model_ops *model_ops)
 {
-	if (!lp_wins_support()) {
+	if (!lp_wins_support(global_loadparm)) {
 		return NT_STATUS_OK;
 	}
 

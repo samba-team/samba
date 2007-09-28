@@ -166,7 +166,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 		cli_credentials_set_event_context(credentials, ntvfs->ctx->event_ctx);
-		cli_credentials_set_conf(credentials);
+		cli_credentials_set_conf(credentials, global_loadparm);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
@@ -176,7 +176,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		DEBUG(5, ("CIFS backend: Using machine account\n"));
 		credentials = cli_credentials_init(private);
 		cli_credentials_set_event_context(credentials, ntvfs->ctx->event_ctx);
-		cli_credentials_set_conf(credentials);
+		cli_credentials_set_conf(credentials, global_loadparm);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 		}
@@ -198,7 +198,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.called_name = host;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = False;
-	io.in.workgroup = lp_workgroup();
+	io.in.workgroup = lp_workgroup(global_loadparm);
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	

@@ -262,7 +262,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 
 		ZERO_STRUCT(domain_guid);
 
-		switch (lp_server_role()) {
+		switch (lp_server_role(global_loadparm)) {
 		case ROLE_STANDALONE:
 			role		= DS_ROLE_STANDALONE_SERVER;
 			break;
@@ -278,13 +278,13 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 			break;
 		}
 
-		switch (lp_server_role()) {
+		switch (lp_server_role(global_loadparm)) {
 		case ROLE_STANDALONE:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			domain		= talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			break;
 		case ROLE_DOMAIN_MEMBER:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup());
+			domain		= talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			/* TODO: what is with dns_domain and forest and guid? */
 			break;

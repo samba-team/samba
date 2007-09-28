@@ -93,7 +93,7 @@ struct gensec_ntlmssp_state
 						  style 'challenge caching' */
 
 	char *user;
-	char *domain;
+	const char *domain;
 	const char *workstation;
 	char *server_domain;
 
@@ -156,7 +156,6 @@ struct gensec_ntlmssp_state
 				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	const char *server_name;
-	const char *(*get_domain)(void);
 
 	bool doing_ntlm2; 
 

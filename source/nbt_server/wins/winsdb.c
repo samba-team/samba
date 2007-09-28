@@ -992,7 +992,7 @@ static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
+	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url(global_loadparm)),
 				  NULL, NULL, flags, NULL);
 	if (!h->ldb) goto failed;
 
@@ -1025,7 +1025,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
+	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url(global_loadparm)),
 				  NULL, NULL, flags, NULL);
 	if (!h->ldb) goto failed;	
 

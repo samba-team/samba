@@ -67,7 +67,7 @@ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 		talloc_strdup(packet->additional, io->in.address);
 
 	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name, 
-					   io->in.dest_addr, lp_nbt_port());
+					   io->in.dest_addr, lp_nbt_port(global_loadparm));
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
 				    io->in.timeout, io->in.retries, False);

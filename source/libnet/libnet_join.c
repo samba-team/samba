@@ -535,8 +535,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
 		} else {
 			/* Bugger, we just lost our way to automaticly find the domain name */
-			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup());
-			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm());
+			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup(global_loadparm));
+			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm(global_loadparm));
 		}
 	}
 
@@ -888,7 +888,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_reference(tmp_mem, lp_netbios_name());
+		netbios_name = talloc_reference(tmp_mem, lp_netbios_name(global_loadparm));
 		if (!netbios_name) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);

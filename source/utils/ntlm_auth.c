@@ -125,7 +125,7 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 					fstring user)
 {
 
-	char *p = strchr(domuser,*lp_winbind_separator());
+	char *p = strchr(domuser,*lp_winbind_separator(global_loadparm));
 
 	if (!p) {
 		return False;
@@ -220,7 +220,7 @@ static NTSTATUS local_pw_check_specified(const char *username,
 			if (unix_name) {
 				asprintf(unix_name, 
 					 "%s%c%s", domain,
-					 *lp_winbind_separator(), 
+					 *lp_winbind_separator(global_loadparm), 
 					 username);
 			}
 		} else {
@@ -474,7 +474,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		creds = cli_credentials_init(state->gensec_state);
-		cli_credentials_set_conf(creds);
+		cli_credentials_set_conf(creds, global_loadparm);
 		if (opt_username) {
 			cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
 		}
@@ -659,7 +659,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			reply_code = "AF";
 			reply_arg = talloc_asprintf(state->gensec_state, 
 						    "%s%s%s", session_info->server_info->domain_name, 
-						    lp_winbind_separator(), session_info->server_info->account_name);
+						    lp_winbind_separator(global_loadparm), session_info->server_info->account_name);
 			talloc_free(session_info);
 		}
 	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
@@ -710,7 +710,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
 			if (!full_username) {
-				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(), username) == -1) {
+				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(global_loadparm), username) == -1) {
 					mux_printf(mux_id, "Error: Out of memory in asprintf!\n.\n");
 					return;
 				}
@@ -745,7 +745,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			}
 
 			if (!domain) {
-				domain = smb_xstrdup(lp_workgroup());
+				domain = smb_xstrdup(lp_workgroup(global_loadparm));
 			}
 
 			if (ntlm_server_1_lm_session_key) 
@@ -757,7 +757,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			if (!NT_STATUS_IS_OK(
 				    local_pw_check_specified(username, 
 							      domain, 
-							      lp_netbios_name(),
+							      lp_netbios_name(global_loadparm),
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
@@ -1084,7 +1084,7 @@ int main(int argc, const char **argv)
 	gensec_init();
 
 	if (opt_domain == NULL) {
-		opt_domain = lp_workgroup();
+		opt_domain = lp_workgroup(global_loadparm);
 	}
 
 	if (helper_protocol) {
@@ -1111,7 +1111,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (opt_workstation == NULL) {
-		opt_workstation = lp_netbios_name();
+		opt_workstation = lp_netbios_name(global_loadparm);
 	}
 
 	if (!opt_password) {
@@ -1121,7 +1121,7 @@ int main(int argc, const char **argv)
 	{
 		char *user;
 
-		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(), opt_username);
+		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(global_loadparm), opt_username);
 		if (!check_plaintext_auth(user, opt_password, True)) {
 			return 1;
 		}

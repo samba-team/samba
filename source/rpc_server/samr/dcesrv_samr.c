@@ -498,7 +498,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, TALLO
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo2 *info)
 {
-	enum server_role role = lp_server_role();
+	enum server_role role = lp_server_role(global_loadparm);
 
 	/* This pulls the NetBIOS name from the 
 	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
@@ -611,7 +611,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 				   struct samr_DomInfo7 *info)
 {
 
-	enum server_role role = lp_server_role();
+	enum server_role role = lp_server_role(global_loadparm);
 
 	switch (role) {
 	case ROLE_DOMAIN_CONTROLLER:

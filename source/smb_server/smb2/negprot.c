@@ -27,6 +27,7 @@
 #include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
+#include "param/param.h"
 
 static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *_blob)
 {
@@ -52,7 +53,7 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(server_credentials);
+	cli_credentials_set_conf(server_credentials, global_loadparm);
 	nt_status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));

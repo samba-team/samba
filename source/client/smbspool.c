@@ -176,7 +176,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
 
   setup_logging(argv[0], DEBUG_STDOUT);
 
-  if (!lp_load()) {
+  if (!lp_load(dyn_CONFIGFILE)) {
 	  fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", lp_config_file());
 	  return (1);
   }

@@ -138,7 +138,7 @@ BOOL torture_lookup_pdc(struct torture_context *torture)
 		goto done;
 	}
 
-	lookup->in.domain_name = lp_workgroup();
+	lookup->in.domain_name = lp_workgroup(global_loadparm);
 	lookup->in.name_type   = NBT_NAME_PDC;
 
 	status = libnet_LookupDCs(ctx, mem_ctx, lookup);
@@ -178,7 +178,7 @@ BOOL torture_lookup_sam_name(struct torture_context *torture)
 	if (mem_ctx == NULL) return False;
 
 	r.in.name = "Administrator";
-	r.in.domain_name = lp_workgroup();
+	r.in.domain_name = lp_workgroup(global_loadparm);
 
 	status = libnet_LookupName(ctx, mem_ctx, &r);
 

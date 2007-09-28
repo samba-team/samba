@@ -118,7 +118,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	struct dreplsrv_service *service;
 	uint32_t periodic_startup_interval;
 
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration");
 		return;

@@ -44,11 +44,11 @@ _PUBLIC_ bool is_myname(const char *name)
 	const char **aliases;
 	int i;
 
-	if (strcasecmp(name, lp_netbios_name()) == 0) {
+	if (strcasecmp(name, lp_netbios_name(global_loadparm)) == 0) {
 		return True;
 	}
 
-	aliases = lp_netbios_aliases();
+	aliases = lp_netbios_aliases(global_loadparm);
 	for (i=0; aliases && aliases[i]; i++) {
 		if (strcasecmp(name, aliases[i]) == 0) {
 			return True;
@@ -72,7 +72,7 @@ _PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 		return talloc_strdup(mem_ctx, name);
 	}
 
-	dname = talloc_strdup(mem_ctx, lp_lockdir());
+	dname = talloc_strdup(mem_ctx, lp_lockdir(global_loadparm));
 	trim_string(dname,"","/");
 	
 	if (!directory_exist(dname)) {
@@ -94,7 +94,7 @@ static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
 
-	dname = talloc_strdup(mem_ctx, lp_piddir());
+	dname = talloc_strdup(mem_ctx, lp_piddir(global_loadparm));
 	trim_string(dname,"","/");
 	
 	if (!directory_exist(dname)) {
@@ -135,7 +135,7 @@ _PUBLIC_ char *data_path(TALLOC_CTX* mem_ctx, const char *name)
 _PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *config_dir, *p;
-	config_dir = talloc_strdup(mem_ctx, lp_configfile());
+	config_dir = talloc_strdup(mem_ctx, lp_configfile(global_loadparm));
 	p = strrchr(config_dir, '/');
 	if (!p) {
 		return NULL;
@@ -163,7 +163,7 @@ _PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
 	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
 		return talloc_strdup(mem_ctx, name);
 	}
-	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(), name);
+	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(global_loadparm), name);
 	return fname;
 }
 
@@ -280,7 +280,7 @@ static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	const char *env_moduledir = getenv("LD_SAMBA_MODULE_PATH");
 	return talloc_asprintf(mem_ctx, "%s/%s", 
-						   env_moduledir?env_moduledir:lp_modulesdir(), 
+						   env_moduledir?env_moduledir:lp_modulesdir(global_loadparm), 
 						   name);
 }
 

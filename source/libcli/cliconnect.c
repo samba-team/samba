@@ -57,7 +57,7 @@ BOOL smbcli_transport_establish(struct smbcli_state *cli,
 /* wrapper around smb_raw_negotiate() */
 NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 {
-	return smb_raw_negotiate(cli->transport, lp_cli_maxprotocol());
+	return smb_raw_negotiate(cli->transport, lp_cli_maxprotocol(global_loadparm));
 }
 
 /* wrapper around smb_raw_sesssetup() */
@@ -73,7 +73,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.credentials = credentials;
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 
 	status = smb_composite_sesssetup(cli->session, &setup);
 

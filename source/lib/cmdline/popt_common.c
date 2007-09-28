@@ -23,6 +23,7 @@
 #include "version.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
+#include "dynconfig.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 
@@ -40,8 +41,6 @@ enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
-static bool PrintSambaVersionString;
-
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
 			   const struct poptOption *opt,
@@ -50,12 +49,12 @@ static void popt_common_callback(poptContext con,
 	const char *pname;
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
-		if (PrintSambaVersionString) {
-			printf( "Version %s\n", SAMBA_VERSION_STRING );
-			exit(0);
+		if (!lp_loaded()) {
+			if (getenv("SMB_CONF_PATH"))
+				lp_load(getenv("SMB_CONF_PATH"));
+			else
+				lp_load(dyn_CONFIGFILE);
 		}
-
-		lp_load();
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
 		return;
@@ -77,9 +76,6 @@ static void popt_common_callback(poptContext con,
 		/* and logging */
 		setup_logging(pname, DEBUG_STDOUT);
 
-		if (getenv("SMB_CONF_PATH")) {
-			lp_set_cmdline(global_loadparm, "config file", getenv("SMB_CONF_PATH"));
-		}
 		return;
 	}
 
@@ -93,8 +89,8 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'V':
-		PrintSambaVersionString = true;
-		break;
+		printf("Version %s\n", SAMBA_VERSION_STRING );
+		exit(0);
 
 	case 'O':
 		if (arg) {
@@ -104,7 +100,7 @@ static void popt_common_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			lp_set_cmdline(global_loadparm, "config file", arg);
+			lp_load(arg);
 		}
 		break;
 

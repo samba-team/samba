@@ -121,7 +121,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	}
 
 	ldb_set_modules_dir(ldb, 
-			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir()));
+			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(global_loadparm)));
 
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
@@ -143,7 +143,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	
-	if (strcmp(lp_sam_url(), url) == 0) {
+	if (strcmp(lp_sam_url(global_loadparm), url) == 0) {
 		dsdb_set_global_schema(ldb);
 	}
 

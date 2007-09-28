@@ -58,7 +58,7 @@ struct smbcli_request *smb_raw_negotiate_send(struct smbcli_transport *transport
 	}
 
 	flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	if (lp_unicode()) {
+	if (lp_unicode(global_loadparm)) {
 		flags2 |= FLAGS2_UNICODE_STRINGS;
 	}
 	flags2 |= FLAGS2_EXTENDED_ATTRIBUTES;
@@ -174,11 +174,11 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 	}
 
 	/* a way to force ascii SMB */
-	if (!lp_unicode()) {
+	if (!lp_unicode(global_loadparm)) {
 		transport->negotiate.capabilities &= ~CAP_UNICODE;
 	}
 
-	if (!lp_nt_status_support()) {
+	if (!lp_nt_status_support(global_loadparm)) {
 		transport->negotiate.capabilities &= ~CAP_STATUS32;
 	}
 

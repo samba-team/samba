@@ -390,7 +390,7 @@ static void dcesrv_init_hdr(struct ncacn_packet *pkt)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
-	if (lp_rpc_big_endian()) {
+	if (lp_rpc_big_endian(global_loadparm)) {
 		pkt->drep[0] = 0;
 	} else {
 		pkt->drep[0] = DCERPC_DREP_LE;
@@ -892,7 +892,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   pointers */
 	push->ptr_count = call->ndr_pull->ptr_count;
 
-	if (lp_rpc_big_endian()) {
+	if (lp_rpc_big_endian(global_loadparm)) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -1372,7 +1372,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_con
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 
-	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(), &dce_ctx);
+	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(global_loadparm), &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*_dce_ctx = dce_ctx;

@@ -66,7 +66,7 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  gensec_ntlmssp_state->neg_flags,
-		  gensec_ntlmssp_state->get_domain(), 
+		  gensec_ntlmssp_state->domain, 
 		  cli_credentials_get_workstation(gensec_security->credentials));
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
@@ -181,7 +181,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (gensec_ntlmssp_state->use_nt_response) {
 		flags |= CLI_CRED_NTLM_AUTH;
 	}
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
@@ -206,7 +206,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	
 	if ((gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
-	    && lp_client_lanman_auth() && lm_session_key.length == 16) {
+	    && lp_client_lanman_auth(global_loadparm) && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
@@ -297,17 +297,17 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->role = NTLMSSP_CLIENT;
 
-	gensec_ntlmssp_state->get_domain = lp_workgroup;
+	gensec_ntlmssp_state->domain = lp_workgroup(global_loadparm);
 
 	gensec_ntlmssp_state->unicode = lp_parm_bool(NULL, "ntlmssp_client", "unicode", true);
 
 	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(NULL, "ntlmssp_client", "send_nt_reponse", true);
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth() 
+	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth(global_loadparm) 
 					      && (lp_parm_bool(NULL, "ntlmssp_client", "allow_lm_key", false)
 						  || lp_parm_bool(NULL, "ntlmssp_client", "lm_key", false)));
 
-	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
+	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth(global_loadparm);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_INITIAL;
 

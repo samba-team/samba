@@ -102,7 +102,7 @@ BOOL smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		return False;
 	}
 	
-	switch (lp_server_signing()) {
+	switch (lp_server_signing(global_loadparm)) {
 	case SMB_SIGNING_OFF:
 		smb_conn->signing.allow_smb_signing = False;
 		break;
@@ -114,7 +114,7 @@ BOOL smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		smb_conn->signing.mandatory_signing = True;
 		break;
 	case SMB_SIGNING_AUTO:
-		if (lp_domain_logons()) {
+		if (lp_domain_logons(global_loadparm)) {
 			smb_conn->signing.allow_smb_signing = True;
 		} else {
 			smb_conn->signing.allow_smb_signing = False;

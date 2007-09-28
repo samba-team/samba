@@ -25,6 +25,7 @@
 #include "system/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "param/param.h"
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 					    const char *keytab_name,
@@ -44,7 +45,7 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 	if (!credentials) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	cli_credentials_set_conf(credentials);
+	cli_credentials_set_conf(credentials, global_loadparm);
 	cli_credentials_set_username(credentials, username, CRED_SPECIFIED);
 
 	/* We really should consult ldap in the main SamSync code, and
