@@ -102,7 +102,7 @@
 		<listitem><para>
                 Client-side helper for use with arbitary external
 		programs that may wish to use Samba's NTLMSSP 
-		authentication knowlege. </para>
+		authentication knowledge. </para>
 		  <para>This helper is a client, and as such may be run by any
 		user.  The protocol used is
 		effectivly the reverse of the previous protocol.  A
