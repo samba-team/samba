@@ -1769,6 +1769,78 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Delete domain group */
+
+static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli, 
+                                         TALLOC_CTX *mem_ctx,
+                                         int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s groupname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
+
+	/* Get sam policy and domain handles */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get handle on group */
+
+	{
+		uint32 *group_rids, num_rids, *name_types;
+		uint32 flags = 0x000003e8; /* Unknown */
+
+		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+					       flags, 1, (const char **)&argv[1],
+					       &num_rids, &group_rids,
+					       &name_types);
+
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+
+		result = rpccli_samr_open_group(cli, mem_ctx, &domain_pol,
+						access_mask,
+						group_rids[0], &group_pol);
+
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+	}
+
+	/* Delete user */
+
+	result = rpccli_samr_delete_dom_group(cli, mem_ctx, &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Display results */
+
+	rpccli_samr_close(cli, mem_ctx, &group_pol);
+	rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+
+ done:
+	return result;
+}
+
 /* Delete domain user */
 
 static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli, 
@@ -2210,6 +2282,7 @@ struct cmd_set samr_commands[] = {
 	{ "createdomalias",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_alias,      NULL, PI_SAMR, NULL,	"Create domain alias",     "" },
 	{ "samlookupnames",     RPC_RTYPE_NTSTATUS, cmd_samr_lookup_names,          NULL, PI_SAMR, NULL,	"Look up names",           "" },
 	{ "samlookuprids",      RPC_RTYPE_NTSTATUS, cmd_samr_lookup_rids,           NULL, PI_SAMR, NULL,	"Look up names",           "" },
+	{ "deletedomgroup",     RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_group,      NULL, PI_SAMR, NULL,	"Delete domain group",     "" },
 	{ "deletedomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_user,       NULL, PI_SAMR, NULL,	"Delete domain user",      "" },
 	{ "samquerysecobj",     RPC_RTYPE_NTSTATUS, cmd_samr_query_sec_obj,         NULL, PI_SAMR, NULL, "Query SAMR security object",   "" },
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, NULL, "Retrieve domain password info", "" },

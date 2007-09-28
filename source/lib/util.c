@@ -1256,6 +1256,7 @@ BOOL get_mydnsdomname(fstring my_domname)
 	if (p) {
 		p++;
 		fstrcpy(my_domname, p);
+		return True;
 	}
 
 	return False;

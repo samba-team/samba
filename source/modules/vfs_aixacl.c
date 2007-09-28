@@ -137,7 +137,7 @@ int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
 			      SMB_ACL_T theacl)
 {
 	struct acl *file_acl = NULL;
-	uint rc;
+	unsigned int rc;
 	
 	file_acl = aixacl_smb_to_aixacl(type, theacl);
 	if (!file_acl)
@@ -157,7 +157,7 @@ int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    int fd, SMB_ACL_T theacl)
 {
 	struct acl *file_acl = NULL;
-	uint rc;
+	unsigned int rc;
 
 	file_acl = aixacl_smb_to_aixacl(SMB_ACL_TYPE_ACCESS, theacl);
 	if (!file_acl)

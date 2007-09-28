@@ -209,9 +209,9 @@ struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 	struct acl *file_acl_temp = NULL;
 	struct acl_entry *acl_entry = NULL;
 	struct ace_id *ace_id = NULL;
-	uint id_type;
-	uint user_id;
-	uint acl_length;
+	unsigned int id_type;
+	unsigned int user_id;
+	unsigned int acl_length;
 	int	i;
  
 	DEBUG(10,("Entering aixacl_smb_to_aixacl\n"));

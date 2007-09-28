@@ -1714,3 +1714,32 @@ NTSTATUS get_kdc_list( const char *realm, const char *sitename, struct ip_servic
 
 	return NT_STATUS_OK;
 }
+
+
+BOOL translate_name(const char *realm, fstring dns_domain_name,
+    fstring nb_domain_name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS wb_result;
+
+	/* Call winbindd */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, realm);
+	wb_result = winbindd_request_response(WINBINDD_DOMAIN_INFO,
+	    &request, &response);
+
+	if (wb_result != NSS_STATUS_SUCCESS) {
+		DEBUG(0, ("Failed to translate %s\n", realm));
+		return False;
+	}
+
+	fstrcpy(dns_domain_name, response.data.domain_info.alt_name);
+	fstrcpy(nb_domain_name, response.data.domain_info.name);
+
+	return True;
+
+}

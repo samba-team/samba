@@ -183,7 +183,7 @@ static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 					struct notify_event *ev),
 			void *private_data, void *handle_p);
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
-			    const char *path, uint flags);
+			    const char *path, unsigned int flags);
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
 						    SMB_DEV_T dev, SMB_INO_T inode);
 static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1460,7 +1460,7 @@ static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
-			    const char *path, uint flags)
+			    const char *path, unsigned int flags)
 {
 	int result;
 

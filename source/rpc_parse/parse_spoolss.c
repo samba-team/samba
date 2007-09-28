@@ -2405,8 +2405,8 @@ BOOL smb_io_printer_info_3(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_3 
 	
 	if (MARSHALLING(ps)) {
 		/* Ensure the SD is 8 byte aligned in the buffer. */
-		uint start = prs_offset(ps); /* Remember the start position. */
-		uint off_val = 0;
+		uint32 start = prs_offset(ps); /* Remember the start position. */
+		uint32 off_val = 0;
 
 		/* Write a dummy value. */
 		if (!prs_uint32("offset", ps, depth, &off_val))
