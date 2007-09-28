@@ -55,45 +55,57 @@ failed:
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 				       char **returned_principal)
 {
-	ADS_STATUS status;	
 	char *princ = NULL;
-	char *server = NULL;
-	char *server_realm = NULL;
 
 	if (ads->server.realm && ads->server.ldap_server) {
+		char *server, *server_realm;
+
 		server = SMB_STRDUP(ads->server.ldap_server);
 		server_realm = SMB_STRDUP(ads->server.realm);
 
-		if (!server || !server_realm) {			
-			status = ADS_ERROR(LDAP_NO_MEMORY);
-			goto fail;
+		if (!server || !server_realm) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		strlower_m(server);
+		strupper_m(server_realm);
+		asprintf(&princ, "ldap/%s@%s", server, server_realm);
+
+		SAFE_FREE(server);
+		SAFE_FREE(server_realm);
+
+		if (!princ) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 	} else if (ads->config.realm && ads->config.ldap_server_name) {
+		char *server, *server_realm;
+
 		server = SMB_STRDUP(ads->config.ldap_server_name);
 		server_realm = SMB_STRDUP(ads->config.realm);
 
-		if (!server || !server_realm) {			
-			status = ADS_ERROR(LDAP_NO_MEMORY);
-			goto fail;
-		}		
+		if (!server || !server_realm) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		strlower_m(server);
+		strupper_m(server_realm);
+		asprintf(&princ, "ldap/%s@%s", server, server_realm);
+
+		SAFE_FREE(server);
+		SAFE_FREE(server_realm);
+
+		if (!princ) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
 	}
 
-	strlower_m(server);
-	strupper_m(server_realm);
-	asprintf(&princ, "ldap/%s@%s", server, server_realm);
-
 	if (!princ) {
-		status = ADS_ERROR(LDAP_PARAM_ERROR);
+		return ADS_ERROR(LDAP_PARAM_ERROR);
 	}
 
 	*returned_principal = princ;
-	status = ADS_SUCCESS;
-	
-fail:
-	SAFE_FREE(server);
-       	SAFE_FREE(server_realm);
 
-	return status;
+	return ADS_SUCCESS;
 }
 
 #endif

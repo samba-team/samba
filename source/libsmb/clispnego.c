@@ -52,18 +52,7 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_push_tag(&data, ASN1_SEQUENCE(0));
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
-
-	/* 
-	 * @todo
-	 * Windows 2008 sends a bogus principal, since this
-	 * is not truly supported in the SPNEGO protocol.
-	 *
-	 * We should do the same, but I'm worried this will break things,
-	 * such as DFS.
-	 * todd.stecher@isilon.com
-	 */  
 	asn1_write_GeneralString(&data,principal);
-
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
 	asn1_pop_tag(&data);
@@ -165,14 +154,6 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 		asn1_start_tag(&data, ASN1_SEQUENCE(0));
 		asn1_start_tag(&data, ASN1_CONTEXT(0));
 		asn1_read_GeneralString(&data,principal);
-		/* 
-		 * Windows 2008 sends a bogus principal, since this
-		 * is not truly supported in the SPNEGO protocol.
-		 * todd.stecher@isilon.com
-		 */  
-		if (strcmp(ADS_IGNORE_PRINCIPAL, *principal) == 0) 
-			SAFE_FREE(*principal);
-
 		asn1_end_tag(&data);
 		asn1_end_tag(&data);
 		asn1_end_tag(&data);
