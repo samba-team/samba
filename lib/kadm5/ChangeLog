@@ -1,3 +1,7 @@
+2007-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* iprop.8: fix spelling, From Antoine Jacoutt.
+
 2007-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* version-script.map: export _kadm5_unmarshal_params,
