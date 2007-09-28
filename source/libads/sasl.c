@@ -747,7 +747,6 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	char *OIDs[ASN1_MAX_OIDS];
 #ifdef HAVE_KRB5
 	BOOL got_kerberos_mechanism = False;
-	BOOL try_kerberos = True;
 #endif
 
 	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
@@ -785,8 +784,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #endif
 		free(OIDs[i]);
 	}
-	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", 
-		 (given_principal ? given_principal : NULL)));
+	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", given_principal));
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&

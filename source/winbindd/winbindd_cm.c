@@ -2141,7 +2141,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	uint8  mach_pwd[16];
 	uint32  sec_chan_type;
 	const char *account_name;
