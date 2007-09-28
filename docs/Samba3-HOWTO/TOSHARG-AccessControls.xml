@@ -517,7 +517,7 @@ CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
 	<step><para>
 	Login as the <constant>root</constant> user, then set the immutibile flag on a test file as follows:
 <screen>
-&rootprompt; chatter +i `filename'
+&rootprompt; chattr +i `filename'
 </screen>
 	</para></step>
 
