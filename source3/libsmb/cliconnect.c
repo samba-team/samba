@@ -822,19 +822,35 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		free(OIDs[i]);
 	}
 
-	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
 
 	if (got_kerberos_mechanism && (principal == NULL)) {
+		fstring dns_name;
+		fstring nb_name;
+
 		/*
-		 * It is WRONG to depend on the principal sent in the negprot
-		 * reply, but right now we do it. So for safety (don't
-		 * segfault later) disable Kerberos when no principal was
-		 * sent. -- VL
-		 */
-		DEBUG(1, ("Kerberos mech was offered, but no principal was "
-			  "sent, disabling Kerberos\n"));
-		cli->use_kerberos = False;
+		 * We didn't get a valid principal in the negTokenInit.  Fake
+		 * it, or fall back on NTLM. We prefer to fake it, and hit the
+		 * translate_name cache to get a REAL realm name.
+		 */ 
+		if (!(cli->desthost && translate_name(domain, dns_name,
+			    nb_name) && 
+		    asprintf(&principal, "host/%s@%s", cli->desthost, 
+			dns_name))) {
+
+			/*
+			 * It is WRONG to depend on the principal sent in the
+			 * negprot reply, but right now we do it. So for safety
+			 * (don't segfault later) disable Kerberos when no 
+			 * principal was sent. -- VL
+			 */
+			DEBUG(1, ("Kerberos mech was offered, but no principal was "
+				"sent, disabling Kerberos\n"));
+			cli->use_kerberos = False;
+		}
+
 	}
+
+	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
 
 	fstrcpy(cli->user_name, user);
 
@@ -872,7 +888,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 ntlmssp:
 
-	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, user, pass, domain));
+	/* NTLM is sensitive to adding a domain with a UPN */
+	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, user, pass,
+	       	(strchr(user, '@') ? NULL : domain)));
 }
 
 /****************************************************************************
