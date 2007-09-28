@@ -1168,7 +1168,7 @@ static NTSTATUS pdb_default_rename_sam_account (struct pdb_methods *methods, str
 
 static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, struct samu *newpwd, BOOL success)
 {
-	return NT_STATUS_OK;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update, uint32 acb_mask)
