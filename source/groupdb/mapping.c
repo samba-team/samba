@@ -35,7 +35,7 @@ static BOOL init_group_mapping(void)
 		return True;
 	}
 	
-       	backend = groupdb_ldb_init();
+	backend = groupdb_ldb_init();
 
 	return backend != NULL;
 }
