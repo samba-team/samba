@@ -741,7 +741,7 @@ static NTSTATUS ipv6_recvfrom(struct socket_context *sock, void *buf,
 	struct sockaddr_in6 *from_addr;
 	socklen_t from_len = sizeof(*from_addr);
 	struct socket_address *src;
-	struct hostent *he;
+	char addrstring[INET6_ADDRSTRLEN];
 	
 	src = talloc(addr_ctx, struct socket_address);
 	if (!src) {
@@ -772,12 +772,13 @@ static NTSTATUS ipv6_recvfrom(struct socket_context *sock, void *buf,
 
 	src->sockaddrlen = from_len;
 
-	he = gethostbyaddr((void *)&from_addr->sin6_addr, sizeof(from_addr->sin6_addr), AF_INET6);
-	if (he == NULL) {
+	if (inet_ntop(AF_INET6, &from_addr->sin6_addr, addrstring, sizeof(addrstring)) == NULL) {
+		DEBUG(0, ("Unable to convert address to string: %s\n", strerror(errno)));
 		talloc_free(src);
-		return NT_STATUS_INTERNAL_ERROR;
+	    	return NT_STATUS_INTERNAL_ERROR;
 	}
-	src->addr = talloc_strdup(src, he->h_name);
+
+	src->addr = talloc_strdup(src, addrstring);
 	if (src->addr == NULL) {
 		talloc_free(src);
 		return NT_STATUS_NO_MEMORY;
@@ -905,7 +906,7 @@ static struct socket_address *ipv6_tcp_get_my_addr(struct socket_context *sock, 
 	socklen_t len = sizeof(*local_addr);
 	struct socket_address *local;
 	int ret;
-	struct hostent *he;
+	char addrstring[INET6_ADDRSTRLEN];
 	
 	local = talloc(mem_ctx, struct socket_address);
 	if (!local) {
@@ -929,14 +930,15 @@ static struct socket_address *ipv6_tcp_get_my_addr(struct socket_context *sock, 
 
 	local->sockaddrlen = len;
 
-	he = gethostbyaddr((char *)&local_addr->sin6_addr, len, AF_INET6);
-
-	if (!he || !he->h_name) {
+	if (inet_ntop(AF_INET6, &local_addr->sin6_addr, addrstring, 
+		       sizeof(addrstring)) == NULL) {
+		DEBUG(0, ("Unable to convert address to string: %s\n", 
+			  strerror(errno)));
 		talloc_free(local);
 		return NULL;
 	}
 	
-	local->addr = talloc_strdup(mem_ctx, he->h_name);
+	local->addr = talloc_strdup(mem_ctx, addrstring);
 	if (!local->addr) {
 		talloc_free(local);
 		return NULL;
