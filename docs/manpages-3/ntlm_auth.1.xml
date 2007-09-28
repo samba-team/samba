@@ -100,12 +100,12 @@
 	      <varlistentry>
 		<term>ntlmssp-client-1</term>
 		<listitem><para>
-                Client-side helper for use with arbitary external
+                Client-side helper for use with arbitrary external
 		programs that may wish to use Samba's NTLMSSP 
 		authentication knowledge. </para>
 		  <para>This helper is a client, and as such may be run by any
 		user.  The protocol used is
-		effectivly the reverse of the previous protocol.  A
+		effectively the reverse of the previous protocol.  A
 		<command>YR</command> command (without any arguments)
 		starts the authentication exchange.
                 </para>
@@ -145,8 +145,8 @@
 		RADIUS server or the 'winbind' plugin for pppd, for
 		the provision of MSCHAP and MSCHAPv2 authentication.  
                 </para>
-		<para>This protocol consists of lines in for form:
-                <command>Parameter: value</command> and <command>Paramter::
+		<para>This protocol consists of lines in the form:
+                <command>Parameter: value</command> and <command>Parameter::
                 Base64-encode value</command>.  The presence of a single
                 period <command>.</command> indicates that one side has
                 finished supplying data to the other.  (Which in turn
@@ -309,7 +309,7 @@
 	not specified on the command line, this is prompted for when
 	required.  </para>
 
-	  <para>For the NTLMSSP based server roles, this paramter
+	  <para>For the NTLMSSP based server roles, this parameter
 	  specifies the expected password, allowing testing without
 	  winbindd operational.</para>
 	</listitem>

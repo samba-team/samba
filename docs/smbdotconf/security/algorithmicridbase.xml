@@ -18,7 +18,7 @@
     the correct operation of ACLs on the server.  As such the algorithmic
     mapping can't be 'turned off', but pushing it 'out of the way' should
     resolve the issues.  Users and groups can then be assigned 'low' RIDs
-    in arbitary-rid supporting backends.
+    in arbitrary-rid supporting backends.
     </para>
 </description>
 
