@@ -285,7 +285,7 @@ remote api.
 </para></listitem>
 <listitem><para>
 	rparam:  a pointer to a pointer which will be set to point to the returned
-	paramters.  The caller of call_api() must deallocate this memory.
+	parameters.  The caller of call_api() must deallocate this memory.
 </para></listitem>
 <listitem><para>
 	rdata:   a pointer to a pointer which will be set to point to the returned 

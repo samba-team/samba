@@ -16,7 +16,7 @@
     when calling the <parameter moreinfo="none">passwd program</parameter> and should 
     be turned off after this has been done. This option has no effect if the 
     <smbconfoption name="pam password change"/>
-	paramter is set. This parameter is off by default.</para>
+	parameter is set. This parameter is off by default.</para>
 </description>
 
 <related>passwd chat</related>
