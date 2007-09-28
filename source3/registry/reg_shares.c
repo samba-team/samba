@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 /**********************************************************************
  It is safe to assume that every registry path passed into on of 

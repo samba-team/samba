@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 struct reg_dyn_values {
 	const char *path;

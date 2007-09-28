@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 static struct tdb_wrap *tdb_reg = NULL;
 static int tdb_refcount;

@@ -23,7 +23,7 @@
 #include "adt_tree.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 static SORTED_TREE *cache_tree;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */

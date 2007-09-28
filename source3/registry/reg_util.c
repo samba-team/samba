@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 /***********************************************************************
  Utility function for splitting the base path of a registry path off
