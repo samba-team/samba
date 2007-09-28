@@ -957,7 +957,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	print_queue_struct *queue = pts->queue;
 	size_t len;
 	size_t i;
-	uint qcount;
+	unsigned int qcount;
 
 	if (max_reported_jobs && (max_reported_jobs < pts->qcount))
 		pts->qcount = max_reported_jobs;
