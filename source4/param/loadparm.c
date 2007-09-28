@@ -227,39 +227,36 @@ struct loadparm_service
 
 /* This is a default service used to prime a services structure */
 static struct loadparm_service sDefault = {
-	NULL,			/* szService */
-	NULL,			/* szPath */
-	NULL,			/* szCopy */
-	NULL,			/* szInclude */
-	NULL,			/* szPrintername */
-	NULL,			/* szHostsallow */
-	NULL,			/* szHostsdeny */
-	NULL,			/* comment */
-	NULL,			/* volume */
-	NULL,			/* fstype */
-	NULL,                   /* ntvfs_handler */
-	1000,			/* iMaxPrintJobs */
-	0,			/* iMaxConnections */
-	0,			/* iCSCPolicy */
-	true,			/* bAvailable */
-	true,			/* bBrowseable */
-	true,			/* bRead_only */
-	false,			/* bPrint_ok */
-	false,			/* bMap_system */
-	false,			/* bMap_hidden */
-	true,			/* bMap_archive */
-	true,			/* bStrictLocking */
-	0744,			/* iCreate_mask */
-	0000,			/* iCreate_force_mode */
-	0755,			/* iDir_mask */
-	0000,			/* iDir_force_mode */	
-	NULL,			/* copymap */
-	false,			/* bMSDfsRoot */
-	false,			/* bStrictSync */
-	false,			/* bCIFileSystem */
-	NULL,			/* Parametric options */
-
-	""			/* dummy */
+	.szService = NULL,
+	.szPath = NULL,
+	.szCopy = NULL,
+	.szInclude = NULL,
+	.szPrintername = NULL,			
+	.szHostsallow = NULL,			
+	.szHostsdeny = NULL,			
+	.comment = NULL,			
+	.volume = NULL,			
+	.fstype = NULL,			
+	.ntvfs_handler = NULL,                   
+	.iMaxPrintJobs = 1000,			
+	.iMaxConnections = 0,			
+	.iCSCPolicy = 0,			
+	.bAvailable = true,			
+	.bBrowseable = true,			
+	.bRead_only = true,			
+	.bPrint_ok = false,			
+	.bMap_system = false,			
+	.bMap_hidden = false,			
+	.bMap_archive = true,			
+	.bStrictLocking = true,			
+	.iCreate_mask = 0744,			
+	.iCreate_force_mode = 0000,
+	.iDir_mask = 0755,			
+	.iDir_force_mode = 0000,			
+	.copymap = NULL,
+	.bMSDfsRoot = false,
+	.bStrictSync = false,
+	.bCIFileSystem = false,
 };
 
 /* local variables */
