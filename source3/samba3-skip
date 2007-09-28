@@ -1,0 +1,80 @@
+.*ncalrpc.* 			# transport not supported by samba 3
+.*ncacn_ip_tcp.* 		# transport not supported by samba 3
+.*LDAP.* 				# Samba 3 doesn't have it's own LDAP server (yet)
+.*ldap.*				# Samba 3 doesn't have it's own LDAP server (yet)
+^samr.js$ 				# Uses ncalrpc, which isn't available for Samba 3
+^winreg$ 				# Uses ncalrpc, which isn't available for Samba 3
+^echo.js$				# Uses ncalrpc, which isn't available for Samba 3
+NBT-WINSREPLICATION.* 	# No WINS replication yet
+NBT-DGRAM.*
+NBT-WINS.*
+.*smb2.* 				# No SMB2 server yet
+SMB2.*					# No SMB2 server yet
+.*RPC-EVENTLOG.* 		# No eventlog available for eventlog
+.*bigendian.* 			# Samba 3 doesn't support bigendian stuff
+parse samba3 			# Relies on relative paths to the samba4 source tree
+RPC-MGMT 				# No MGMT interface in Samba 3
+RPC-SCANNER 			# No MGMT interface in Samba 3 (required for scanner)
+RPC-SAMR 				# Doesn't work against Samba 3 yet and isn't split up into subtests
+RPC-SECRETS				# Doesn't work against Samba 3 yet
+RPC-SAMSYNC				# Doesn't work against Samba 3 yet
+RPC-EPMAPPER			# No epmapper interface in Samba 3
+RPC-LSA					# Doesn't work against Samba 3 yet
+RPC-WKSSVC				# Doesn't work against Samba 3 yet
+RPC-WINREG				# Doesn't work against Samba 3 yet
+RPC-HANDLES				# Doesn't work against Samba 3 yet
+RPC-ATSVC				# No atsvc interface on Samba 3 yet
+RPC-OXIDRESOLVE			# No oxidresolve on Samba 3 yet
+RPC-REMACT				# No remact on Samba 3 yet
+RPC-DFS					# Doesn't work against Samba 3 yet
+RPC-ECHO				# Sinkone fails against samba3 for some reason and causes a disconnect
+^LOCAL-.*				# No point running the LOCAL Samba 4 tests
+.*BASE-BENCH-HOLDCON.*	# Very slow
+RPC-COUNTCALLS			# Slow, fails
+RPC-DSSETUP				# No DSSETUP interface in Samba 3
+BASE-ALIASES
+BASE-UTABLE				# Takes a lot of time
+RPC-SVCCTL
+RAW-PING-PONG
+RAW-HOLD-OPLOCK
+RAW-SAMBA3CLOSEER
+ntvfs/cifs.*
+ntvfs/simple.*
+RPC-AUTOIDL				# We already have the IDL..
+RPC-SAMLOGON			# Doesn't work against Samba 3 yet
+RPC-SCHANNEL			# Doesn't work against Samba 3 yet
+RPC-SCHANNEL2			# Doesn't work against Samba 3 yet
+RPC-JOIN				# Doesn't work against Samba 3 yet
+RPC-SPOOLSS				# Doesn't work against Samba 3 yet
+RPC-ALTERCONTEXT		# Doesn't work against Samba 3 yet
+BASE-IOMETER			# Doesn't work against Samba 3 yet
+BASE-CASETABLE			# Doesn't work against Samba 3 yet
+BASE-NTTRANS			# Doesn't work against Samba 3 yet
+BASE-SCAN-MAXFID		# Doesn't work against Samba 3 yet
+BASE-TCONDEV			# Doesn't work against Samba 3 yet
+RAW-SCAN-EAMAX			# Doesn't work against Samba 3 yet
+RAW-BENCH-LOCK			# Doesn't work against Samba 3 yet
+BASE-SMB				# Doesn't work against Samba 3 yet
+RAW-QFSINFO				# Doesn't work against Samba 3 yet
+RAW-QFILEINFO			# Doesn't work against Samba 3 yet
+RAW-IOCTL				# Doesn't work against Samba 3 yet
+RAW-SFILEINFO			# Doesn't work against Samba 3 yet
+RAW-STREAMS				# Doesn't work against Samba 3 yet
+RAW-EAS					# Doesn't work against Samba 3 yet
+RAW-CONTEXT				# Doesn't work against Samba 3 yet
+RAW-STREAMS				# Doesn't work against Samba 3 yet
+RAW-ACLS				# Doesn't work against Samba 3 yet
+RAW-IOCTL 				# Doesn't work against Samba 3 yet
+^NET-.*					# Convenience wrapper, not protocol-level
+RPC-NETLOGON			# Can't create users
+BASE-CHARSET
+BASE-DELAYWRITE		
+RAW-SAMBA3POSIXTIMEDLOC
+RAW-BENCH-OPLOCK
+pidl.*
+tdb stress
+RAW-COMPOSITE.*
+BASE-DEFER_OPEN
+BASE-SCAN-IOCTL
+^ldb$
+^samba3sam.js$

@@ -15,7 +15,7 @@ localstatedir=@localstatedir@
 datarootdir=@datarootdir@
 
 selftest_prefix=@selftest_prefix@
-smbtorture4_path=@smbtorture4_path@
+samba4srcdir=@samba4srcdir@
 
 LIBS=@LIBS@
 CC=@CC@
@@ -51,6 +51,8 @@ PYTHON=@PYTHON@
 PERL=@PERL@
 
 PIDL_ARGS=@PIDL_ARGS@
+
+SELFTEST_ARGS = @SELFTEST_ARGS@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -2094,16 +2096,32 @@ test_pam_modules: pam_modules
 			|| exit 1; \
 	done
 
+
+SELFTEST = $(PERL) $(samba4srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
+		   --srcdir="${samba4srcdir}" --bindir=${builddir}/bin --testlist="${srcdir}/script/tests/tests_all.sh|" \
+		   --expected-failures=samba3-knownfail --target=samba3 --skip=samba3-skip $(SELFTEST_ARGS)
 ##
 ## Targets for 'make test'
 ##
 test: all torture timelimit
 	@echo Running Test suite
-	@sh $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
+	@$(SELFTEST) --socket-wrapper $(TESTS)
+
+htmltest: all torture timelimit
+	@echo Running Test suite
+	@$(SELFTEST) --socket-wrapper --format=html $(TESTS)
 
 valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	 $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
+	 $(SELFTEST) --socket-wrapper
+
+gdbtest: all torture timelimit
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
+		$(SELFTEST) --immediate --socket-wrapper $(TESTS)
+
+testenv: everything
+	$(SELFTEST) --socket-wrapper --testenv
+

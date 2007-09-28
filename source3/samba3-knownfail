@@ -2,3 +2,24 @@ BASE-DELETE-deltest16
 BASE-DELETE-deltest18
 BASE-DELETE-deltest19
 BASE-DELETE-deltest20
+NBT-REGISTER.*/refresh_own # Bug in Samba3's WINS server
+RPC-SRVSVC.*/NetShareGetInfo
+RPC-SRVSVC.*/NetTransportEnum
+RPC-SRVSVC.*/NetShareEnumAll
+RPC-SRVSVC.*/NetShareEnum
+RPC-SRVSVC.*/NetCharDevQEnum
+RPC-SRVSVC.*/NetCharDevEnum
+RPC-SRVSVC.*/NetShareGetInfo
+RPC-SAMSYNC
+blackbox.kinit/Test login with kerberos ccache
+blackbox.kinit/kinit with pkinit
+blackbox.kinit/kinit with password
+blackbox.kinit/check time with kerberos ccache
+blackbox.smbclient/domain join
+blackbox.smbclient/Test login with --machine-pass without kerberos
+blackbox.smbclient/Test login with --machine-pass and kerberos
+RAW-SEARCH.*/one file search
+RAW-SEARCH.*/ea list
+RAW-SEARCH.*/many files
+BASE-DELAYWRITE.*/finfo update on close
+blackbox.smbclient/List directory with LANMAN. # Samba 3 disables LANMAN authentication by default now
