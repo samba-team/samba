@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_REGISTRY
+
 static WERROR fill_value_cache(struct registry_key *key)
 {
 	if (key->values != NULL) {

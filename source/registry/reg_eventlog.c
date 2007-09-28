@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_REGISTRY
 
 /**********************************************************************
  for an eventlog, add in the default values

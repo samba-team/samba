@@ -21,7 +21,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_REGISTRY
 
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 

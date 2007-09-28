@@ -25,6 +25,8 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_REGISTRY
 
 static struct generic_mapping reg_generic_map = 
 	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };

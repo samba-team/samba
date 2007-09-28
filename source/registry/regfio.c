@@ -20,6 +20,9 @@
 #include "includes.h"
 #include "regfio.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_REGISTRY
+
 /*******************************************************************
  *
  * TODO : Right now this code basically ignores classnames.

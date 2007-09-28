@@ -19,6 +19,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_REGISTRY
+
 WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 			   struct registry_value **pvalue,
 			   enum winreg_Type type, uint8 *data,
