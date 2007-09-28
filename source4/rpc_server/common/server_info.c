@@ -47,7 +47,7 @@ _PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct d
 
 	/* if there's no string return our NETBIOS name */
 	if (!p) {
-		return talloc_strdup(mem_ctx, lp_netbios_name());
+		return talloc_strdup(mem_ctx, lp_netbios_name(global_loadparm));
 	}
 
 	/* if there're '\\\\' in front remove them otherwise just pass the string */
@@ -60,7 +60,7 @@ _PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct d
 
 const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return talloc_strdup(mem_ctx, lp_workgroup());
+	return talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
 }
 
 /* This hardcoded value should go into a ldb database! */
@@ -89,7 +89,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
 
-	switch (lp_announce_as()) {
+	switch (lp_announce_as(global_loadparm)) {
 		case ANNOUNCE_AS_NT_SERVER:
 			default_server_announce |= SV_TYPE_SERVER_NT;
 			/* fall through... */
@@ -106,7 +106,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 			break;
 	}
 
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 		case ROLE_DOMAIN_MEMBER:
 			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
 			break;
@@ -138,10 +138,10 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 		default:
 			break;
 	}
-	if (lp_time_server())
+	if (lp_time_server(global_loadparm))
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
 
-	if (lp_host_msdfs())
+	if (lp_host_msdfs(global_loadparm))
 		default_server_announce |= SV_TYPE_DFS_SERVER;
 
 

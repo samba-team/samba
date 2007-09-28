@@ -706,7 +706,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!lp_wins_dns_proxy()) {
+		if (!lp_wins_dns_proxy(global_loadparm)) {
 			goto notfound;
 		}
 
@@ -957,7 +957,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
 	uint32_t tmp;
 
-	if (!lp_wins_support()) {
+	if (!lp_wins_support(global_loadparm)) {
 		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
 	}
@@ -965,8 +965,8 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	nbtsrv->winssrv = talloc_zero(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
-	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl();
-	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl();
+	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl(global_loadparm);
+	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl(global_loadparm);
 	tmp = lp_parm_int(NULL, "wreplsrv", "tombstone_interval", 6*24*60*60);
 	nbtsrv->winssrv->config.tombstone_interval = tmp;
 	tmp = lp_parm_int(NULL, "wreplsrv"," tombstone_timeout", 1*24*60*60);

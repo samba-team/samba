@@ -431,7 +431,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	/* Set up credentials */
 
 	creds = cli_credentials_init(NULL);
-	cli_credentials_set_conf(creds);
+	cli_credentials_set_conf(creds, global_loadparm);
 	cli_credentials_parse_string(creds, argv[1], CRED_SPECIFIED);
 
 	/* Do connect */
@@ -443,7 +443,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.service_type           = "?????";
 	io.in.credentials            = creds;
 	io.in.fallback_to_anonymous  = False;
-	io.in.workgroup              = lp_workgroup();
+	io.in.workgroup              = lp_workgroup(global_loadparm);
 
 	result = smb_composite_connect(&io, mem_ctx, NULL);
 	tree = io.out.tree;

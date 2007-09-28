@@ -117,7 +117,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		conn->in.called_name            = s->io.binding->target_hostname;
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
-	conn->in.workgroup		= lp_workgroup();
+	conn->in.workgroup		= lp_workgroup(global_loadparm);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a

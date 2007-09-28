@@ -418,10 +418,10 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ret;
 	}
 						
-	if (lp_realm() && *lp_realm()) {
-		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm());
+	if (lp_realm(global_loadparm) && *lp_realm(global_loadparm)) {
+		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm(global_loadparm));
 		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(global_loadparm)));
 			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}

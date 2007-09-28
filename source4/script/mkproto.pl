@@ -142,7 +142,7 @@ sub handle_loadparm($$)
 			    );
 
 		my %smap = (
-			    "GLOBAL" => "void",
+			    "GLOBAL" => "struct loadparm_context *",
 			    "LOCAL" => "struct loadparm_service *"
 			    );
 

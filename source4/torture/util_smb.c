@@ -292,7 +292,7 @@ bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_transp
 	if (flags & STR_TERMINATE) len++;
 
 	server_unicode = (transport->negotiate.capabilities&CAP_UNICODE)?True:False;
-	if (getenv("CLI_FORCE_ASCII") || !lp_unicode()) {
+	if (getenv("CLI_FORCE_ASCII") || !lp_unicode(global_loadparm)) {
 		server_unicode = False;
 	}
 

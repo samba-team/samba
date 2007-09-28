@@ -429,7 +429,7 @@ static int copy_files(void)
 	set_max_xmit(MAX(ibs, obs));
 
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
-			(unsigned long long)iomax, lp_max_xmit()));
+			(unsigned long long)iomax, lp_max_xmit(global_loadparm)));
 
 	if (!(ifile = open_file("if"))) {
 		return(FILESYS_EXIT_CODE);
@@ -443,7 +443,7 @@ static int copy_files(void)
 	ifile->io_seek(ifile, check_arg_numeric("skip") * ibs);
 	ofile->io_seek(ofile, check_arg_numeric("seek") * obs);
 
-	DEBUG(4, ("max xmit was negotiated to be %d\n", lp_max_xmit()));
+	DEBUG(4, ("max xmit was negotiated to be %d\n", lp_max_xmit(global_loadparm)));
 
 	for (data_size = 0;;) {
 

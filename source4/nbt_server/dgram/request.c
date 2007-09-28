@@ -80,7 +80,8 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 		}
 	
 		bcast_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
-							 iface->bcast_address, lp_dgram_port());
+							 iface->bcast_address, 
+							 lp_dgram_port(global_loadparm));
 		if (!bcast_addr) {
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -90,7 +91,8 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-				 iface->bcast_address, lp_dgram_port(), nt_errstr(status)));
+				 iface->bcast_address, lp_dgram_port(global_loadparm), 
+				 nt_errstr(status)));
 			return status;
 		}
 	
@@ -105,7 +107,7 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	}
 
 	bind_addr = socket_address_from_strings(tmp_ctx, iface->dgmsock->sock->backend_name, 
-						bind_address, lp_dgram_port());
+						bind_address, lp_dgram_port(global_loadparm));
 	if (!bind_addr) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -115,7 +117,7 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 bind_address, lp_dgram_port(), nt_errstr(status)));
+			 bind_address, lp_dgram_port(global_loadparm), nt_errstr(status)));
 		return status;
 	}
 

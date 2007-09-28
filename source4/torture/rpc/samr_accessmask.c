@@ -412,7 +412,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
-			dn.string            = lp_workgroup();
+			dn.string            = lp_workgroup(global_loadparm);
 
 			status = dcerpc_samr_LookupDomain(p, tctx, &ld);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -436,7 +436,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
-			dn.string            = lp_workgroup();
+			dn.string            = lp_workgroup(global_loadparm);
 
 			status = dcerpc_samr_LookupDomain(p, tctx, &ld);
 			if(!NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
@@ -488,7 +488,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 	ld.in.connect_handle = &ch;
 	ld.in.domain_name    = &dn;
-	dn.string            = lp_workgroup();
+	dn.string            = lp_workgroup(global_loadparm);
 	status = dcerpc_samr_LookupDomain(p, tctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
@@ -569,14 +569,16 @@ static bool test_samr_connect(struct torture_context *tctx,
 	const struct dom_sid *test_sid;
 
 	/* create a test user */
-	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(), ACB_NORMAL, &testuser_passwd);
+	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(global_loadparm), 
+					   ACB_NORMAL, &testuser_passwd);
 	if (!testuser) {
 		printf("Failed to create test user\n");
 		return False;
 	}
 	test_credentials = cli_credentials_init(tctx);
 	cli_credentials_set_workstation(test_credentials, "localhost", CRED_SPECIFIED);
-	cli_credentials_set_domain(test_credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_domain(test_credentials, lp_workgroup(global_loadparm), 
+				   CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials, TEST_USER_NAME, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
 	test_sid = torture_join_user_sid(testuser);

@@ -127,6 +127,7 @@ struct cli_credentials {
 };
 
 struct ldb_context;
+struct loadparm_context;
 #include "auth/credentials/credentials_proto.h"
 
 #endif /* __CREDENTIALS_H__ */

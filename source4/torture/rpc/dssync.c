@@ -265,7 +265,7 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;		
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup());
+	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup(global_loadparm));
 
 	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.pipe, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

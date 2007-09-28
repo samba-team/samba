@@ -226,7 +226,7 @@ BOOL torture_groupinfo_api(struct torture_context *torture)
 		return False;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
 		ret = False;
 		goto done;

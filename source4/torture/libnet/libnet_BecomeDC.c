@@ -163,7 +163,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
 		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
-		lp_private_dir(),
+		lp_private_dir(global_loadparm),
 		s->path.samdb_ldb,
 		s->path.secrets_ldb,
 		s->path.secrets_keytab));

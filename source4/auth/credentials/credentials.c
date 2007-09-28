@@ -82,7 +82,7 @@ struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx)
 	struct cli_credentials *anon_credentials;
 
 	anon_credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(anon_credentials);
+	cli_credentials_set_conf(anon_credentials, global_loadparm);
 	cli_credentials_set_anonymous(anon_credentials);
 
 	return anon_credentials;
@@ -621,12 +621,13 @@ const char *cli_credentials_get_unparsed_name(struct cli_credentials *credential
  *
  * @param cred Credentials structure to fill in
  */
-void cli_credentials_set_conf(struct cli_credentials *cred)
+void cli_credentials_set_conf(struct cli_credentials *cred, 
+			      struct loadparm_context *lp_ctx)
 {
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
-	cli_credentials_set_domain(cred, lp_workgroup(), CRED_UNINITIALISED);
-	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_UNINITIALISED);
-	cli_credentials_set_realm(cred, lp_realm(), CRED_UNINITIALISED);
+	cli_credentials_set_domain(cred, lp_workgroup(lp_ctx), CRED_UNINITIALISED);
+	cli_credentials_set_workstation(cred, lp_netbios_name(lp_ctx), CRED_UNINITIALISED);
+	cli_credentials_set_realm(cred, lp_realm(lp_ctx), CRED_UNINITIALISED);
 }
 
 /**
@@ -639,7 +640,7 @@ void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
 
-	cli_credentials_set_conf(cred);
+	cli_credentials_set_conf(cred, global_loadparm);
 	
 	if (getenv("LOGNAME")) {
 		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESS_ENV);
@@ -657,7 +658,8 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	}
 
 	if (getenv("PASSWD_FD")) {
-		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), CRED_GUESS_FILE);
+		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), 
+						  CRED_GUESS_FILE);
 	}
 	
 	p = getenv("PASSWD_FILE");

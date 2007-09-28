@@ -92,7 +92,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -107,7 +107,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -134,7 +134,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup();
+		setup.in.workgroup = lp_workgroup(global_loadparm);
 	
 		setup.in.credentials = cmdline_credentials;
 	
@@ -148,10 +148,10 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup();
+		setup.in.workgroup = lp_workgroup(global_loadparm);
 		
 		anon_creds = cli_credentials_init(mem_ctx);
-		cli_credentials_set_conf(anon_creds);
+		cli_credentials_set_conf(anon_creds, global_loadparm);
 		cli_credentials_set_anonymous(anon_creds);
 
 		setup.in.credentials = anon_creds;
@@ -225,7 +225,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0; i <ARRAY_SIZE(sessions); i++) {
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-		setups[i].in.workgroup = lp_workgroup();
+		setups[i].in.workgroup = lp_workgroup(global_loadparm);
 		
 		setups[i].in.credentials = cmdline_credentials;
 
@@ -392,7 +392,7 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session1 = smbcli_session_init(cli->transport, mem_ctx, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -448,7 +448,7 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session2 = smbcli_session_init(cli->transport, mem_ctx, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -645,7 +645,7 @@ static BOOL test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -890,7 +890,7 @@ bool torture_raw_context(struct torture_context *torture,
 			 struct smbcli_state *cli)
 {
 	bool ret = true;
-	if (lp_use_spnego()) {
+	if (lp_use_spnego(global_loadparm)) {
 		ret &= torture_raw_context_int(torture, cli);
 		lp_set_cmdline(global_loadparm, "use spnego", "False");
 	}

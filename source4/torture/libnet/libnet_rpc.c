@@ -163,7 +163,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
 	   of specific server name. */
-	domain_name = lp_workgroup();
+	domain_name = lp_workgroup(global_loadparm);
 	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 
@@ -183,7 +183,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
 	   of specific server name. */
-	domain_name = lp_workgroup();
+	domain_name = lp_workgroup(global_loadparm);
 	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 
@@ -203,7 +203,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
 	   of specific server name. */
-	domain_name = lp_workgroup();
+	domain_name = lp_workgroup(global_loadparm);
 	return torture_rpc_connect(torture, level, NULL, domain_name);
 }
 

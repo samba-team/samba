@@ -40,7 +40,7 @@ static void sesssetup_common_strings(struct smbsrv_request *req,
 {
 	(*os) = talloc_asprintf(req, "Unix");
 	(*lanman) = talloc_asprintf(req, "Samba %s", SAMBA_VERSION_STRING);
-	(*domain) = talloc_asprintf(req, "%s", lp_workgroup());
+	(*domain) = talloc_asprintf(req, "%s", lp_workgroup(global_loadparm));
 }
 
 static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,

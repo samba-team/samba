@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "dynconfig.h"
 
 static struct cli_credentials *credentials;
 static BOOL showall = False;
@@ -301,7 +302,7 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	lp_load();
+	lp_load(dyn_CONFIGFILE);
 
 	credentials = cli_credentials_init(talloc_autofree_context());
 	cli_credentials_guess(credentials);

@@ -592,7 +592,7 @@ static bool test_async(struct torture_context *tctx,
 	session = smbcli_session_init(cli->transport, tctx, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup();
+	setup.in.workgroup = lp_workgroup(global_loadparm);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);

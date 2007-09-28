@@ -129,7 +129,7 @@ static void winbind_task_init(struct task_server *task)
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
-	if (!directory_create_or_exist(lp_winbindd_socket_directory(), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lp_winbindd_socket_directory(global_loadparm), geteuid(), 0755)) {
 		task_server_terminate(task,
 				      "Cannot create winbindd pipe directory");
 		return;
@@ -140,7 +140,7 @@ static void winbind_task_init(struct task_server *task)
 	service->task	= task;
 
 	service->primary_sid = secrets_get_domain_sid(service,
-						      lp_workgroup());
+						      lp_workgroup(global_loadparm));
 	if (service->primary_sid == NULL) {
 		task_server_terminate(
 			task, nt_errstr(NT_STATUS_CANT_ACCESS_DOMAIN_INFO));
@@ -151,7 +151,7 @@ static void winbind_task_init(struct task_server *task)
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
 	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
-							  lp_winbindd_socket_directory(), 
+							  lp_winbindd_socket_directory(global_loadparm), 
 							  WINBINDD_SAMBA3_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;

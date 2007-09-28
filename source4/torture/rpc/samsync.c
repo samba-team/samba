@@ -1431,7 +1431,8 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 	
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
-	join_ctx = torture_create_testuser(torture, test_machine_account, lp_workgroup(), ACB_SVRTRUST, 
+	join_ctx = torture_create_testuser(torture, test_machine_account, 
+					   lp_workgroup(global_loadparm), ACB_SVRTRUST, 
 					   &machine_password);
 	if (!join_ctx) {
 		talloc_free(mem_ctx);
@@ -1440,8 +1441,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	}
 	
 	test_wksta_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_WKSTA_MACHINE_NAME);
-	join_ctx2 = torture_create_testuser(torture, test_wksta_machine_account, lp_workgroup(), ACB_WSTRUST, 
-					    &wksta_machine_password);
+	join_ctx2 = torture_create_testuser(torture, test_wksta_machine_account, lp_workgroup(global_loadparm), ACB_WSTRUST, &wksta_machine_password);
 	if (!join_ctx2) {
 		talloc_free(mem_ctx);
 		printf("Failed to join as member\n");
@@ -1449,7 +1449,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	}
 	
 	user_ctx = torture_create_testuser(torture, TEST_USER_NAME,
-					   lp_workgroup(),
+					   lp_workgroup(global_loadparm),
 					   ACB_NORMAL, NULL);
 	if (!user_ctx) {
 		talloc_free(mem_ctx);
@@ -1473,7 +1473,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 		goto failed;
 	}
 
-	domain_policy = samsync_open_domain(mem_ctx, samsync_state, lp_workgroup(), NULL);
+	domain_policy = samsync_open_domain(mem_ctx, samsync_state, lp_workgroup(global_loadparm), NULL);
 	if (!domain_policy) {
 		printf("samrsync_open_domain failed\n");
 		ret = False;
@@ -1548,7 +1548,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	credentials = cli_credentials_init(mem_ctx);
 
 	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_domain(credentials, lp_workgroup(global_loadparm), CRED_SPECIFIED);
 	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials,
@@ -1585,7 +1585,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	credentials_wksta = cli_credentials_init(mem_ctx);
 
 	cli_credentials_set_workstation(credentials_wksta, TEST_WKSTA_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials_wksta, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_domain(credentials_wksta, lp_workgroup(global_loadparm), CRED_SPECIFIED);
 	cli_credentials_set_username(credentials_wksta, test_wksta_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials_wksta, wksta_machine_password, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials_wksta,

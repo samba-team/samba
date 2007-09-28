@@ -325,7 +325,7 @@ BOOL torture_useradd(struct torture_context *torture)
 		return False;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
@@ -384,7 +384,7 @@ bool torture_userdel(struct torture_context *torture)
 		return False;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = False;
 		goto done;
@@ -430,7 +430,7 @@ BOOL torture_usermod(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	name = talloc_strdup(mem_ctx, TEST_USERNAME);
 
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {

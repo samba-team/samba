@@ -200,7 +200,7 @@ static void load_interfaces(void)
 		return;
 	}
 
-	ptr = lp_interfaces();
+	ptr = lp_interfaces(global_loadparm);
 	loopback_ip = interpret_addr2("127.0.0.1");
 
 	/* probe the kernel for interfaces */

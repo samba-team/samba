@@ -148,12 +148,12 @@ static void cmd_getpwuid_recv_user_info(struct composite_context *ctx)
 	WBSRV_SAMBA3_SET_STRING(pw->pw_name, user_info->out.account_name);
 	WBSRV_SAMBA3_SET_STRING(pw->pw_passwd, "*");
 	WBSRV_SAMBA3_SET_STRING(pw->pw_gecos, user_info->out.full_name);
-	WBSRV_SAMBA3_SET_STRING(pw->pw_dir, lp_template_homedir());
+	WBSRV_SAMBA3_SET_STRING(pw->pw_dir, lp_template_homedir(global_loadparm));
 	all_string_sub(pw->pw_dir, "%WORKGROUP%", state->workgroup,
 			sizeof(fstring) - 1);
 	all_string_sub(pw->pw_dir, "%ACCOUNTNAME%", user_info->out.account_name,
 			sizeof(fstring) - 1);
-	WBSRV_SAMBA3_SET_STRING(pw->pw_shell, lp_template_shell());
+	WBSRV_SAMBA3_SET_STRING(pw->pw_shell, lp_template_shell(global_loadparm));
 
 	pw->pw_uid = state->uid;
 

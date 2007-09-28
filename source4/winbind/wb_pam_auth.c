@@ -172,7 +172,7 @@ static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 
 	state->unix_username = talloc_asprintf(state, "%s%s%s", 
 					       state->domain_name,
-					       lp_winbind_separator(),
+					       lp_winbind_separator(global_loadparm),
 					       state->user_name);
 	if (composite_nomem(state->unix_username, state->ctx)) return;
 
@@ -217,11 +217,11 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 
 	DATA_BLOB chal, nt_resp, lm_resp, names_blob;
 	int flags = CLI_CRED_NTLM_AUTH;
-	if (lp_client_lanman_auth()) {
+	if (lp_client_lanman_auth(global_loadparm)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth()) {
+	if (lp_client_ntlmv2_auth(global_loadparm)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -231,7 +231,7 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	if (!credentials) {
 		return NULL;
 	}
-	cli_credentials_set_conf(credentials);
+	cli_credentials_set_conf(credentials, global_loadparm);
 	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 

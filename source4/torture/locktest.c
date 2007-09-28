@@ -25,6 +25,7 @@
 #include "auth/gensec/gensec.h"
 #include "libcli/libcli.h"
 #include "param/param.h"
+#include "dynconfig.h"
 
 static int numops = 1000;
 static BOOL showall;
@@ -560,7 +561,7 @@ static void usage(void)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load();
+	lp_load(dyn_CONFIGFILE);
 
 	servers[0] = cli_credentials_init(talloc_autofree_context());
 	servers[1] = cli_credentials_init(talloc_autofree_context());

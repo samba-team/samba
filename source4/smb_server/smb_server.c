@@ -63,7 +63,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	case SMB2_MAGIC:
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2) break;
+		if (lp_srv_maxprotocol(global_loadparm) < PROTOCOL_SMB2) break;
 		status = smbsrv_init_smb2_connection(smb_conn);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
@@ -178,7 +178,7 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
 			       const struct model_ops *model_ops,
 			       const char *address)
 {
-	const char **ports = lp_smb_ports();
+	const char **ports = lp_smb_ports(global_loadparm);
 	int i;
 	NTSTATUS status;
 
@@ -215,7 +215,7 @@ static void smbsrv_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[smbsrv]");
 
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -230,7 +230,8 @@ static void smbsrv_task_init(struct task_server *task)
 		}
 	} else {
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		status = smbsrv_add_socket(task->event_ctx, task->model_ops, lp_socket_address());
+		status = smbsrv_add_socket(task->event_ctx, task->model_ops, 
+					   lp_socket_address(global_loadparm));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

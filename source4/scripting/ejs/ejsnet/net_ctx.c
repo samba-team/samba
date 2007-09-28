@@ -68,7 +68,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 			talloc_free(ctx);
 			return -1;
 		}
-		cli_credentials_set_conf(creds);
+		cli_credentials_set_conf(creds, global_loadparm);
 		cli_credentials_set_anonymous(creds);
 
 		mprCreds = mprCredentials(creds);

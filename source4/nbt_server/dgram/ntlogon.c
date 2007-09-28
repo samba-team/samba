@@ -49,9 +49,10 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 	reply.command = NTLOGON_SAM_LOGON_REPLY;
 	logon = &reply.req.reply;
 
-	logon->server           = talloc_asprintf(packet, "\\\\%s", lp_netbios_name());
+	logon->server           = talloc_asprintf(packet, "\\\\%s", 
+						  lp_netbios_name(global_loadparm));
 	logon->user_name        = ntlogon->req.logon.user_name;
-	logon->domain           = lp_workgroup();
+	logon->domain           = lp_workgroup(global_loadparm);
 	logon->nt_version       = 1;
 	logon->lmnt_token       = 0xFFFF;
 	logon->lm20_token       = 0xFFFF;

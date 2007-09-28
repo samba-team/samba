@@ -165,7 +165,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	creds->account_name = talloc_steal(creds, r->in.account_name);
 	
 	creds->computer_name = talloc_steal(creds, r->in.computer_name);
-	creds->domain = talloc_strdup(creds, lp_workgroup());
+	creds->domain = talloc_strdup(creds, lp_workgroup(global_loadparm));
 
 	creds->secure_channel_type = r->in.secure_channel_type;
 
@@ -259,7 +259,8 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(const char *computer_name,
 	 * disconnects) we must update the database every time we
 	 * update the structure */ 
 	
-	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name, lp_workgroup(),
+	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name, 
+						   lp_workgroup(global_loadparm),
 						   &creds);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = creds_server_step_check(creds, 
@@ -528,7 +529,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		sam6->base = *sam;
-		sam6->forest.string = lp_realm();
+		sam6->forest.string = lp_realm(global_loadparm);
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
 							 sam->account_name.string, sam6->forest.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
@@ -552,7 +553,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 {
 	NTSTATUS nt_status;
 	struct creds_CredentialState *creds;
-	nt_status = schannel_fetch_session_key(mem_ctx, r->in.computer_name, lp_workgroup(), &creds);
+	nt_status = schannel_fetch_session_key(mem_ctx, r->in.computer_name, lp_workgroup(global_loadparm), &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1004,7 +1005,9 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	/* TODO: - return real IP address
 	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
 	 */
-	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", lp_netbios_name(),lp_realm());
+	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", 
+							  lp_netbios_name(global_loadparm), 
+							  lp_realm(global_loadparm));
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_unc);
 	r->out.info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_address);

@@ -151,7 +151,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	cli_credentials_set_event_context(state->domain->libnet_ctx->cred, service->task->event_ctx);
 
-	cli_credentials_set_conf(state->domain->libnet_ctx->cred);
+	cli_credentials_set_conf(state->domain->libnet_ctx->cred, global_loadparm);
 
 	/* Connect the machine account to the credentials */
 	state->ctx->status =
@@ -163,14 +163,14 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->netlogon_pipe = NULL;
 
 	if ((!cli_credentials_is_anonymous(state->domain->libnet_ctx->cred)) &&
-	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) ||
-	     (lp_server_role() == ROLE_DOMAIN_CONTROLLER)) &&
+	    ((lp_server_role(global_loadparm) == ROLE_DOMAIN_MEMBER) ||
+	     (lp_server_role(global_loadparm) == ROLE_DOMAIN_CONTROLLER)) &&
 	    (dom_sid_equal(state->domain->info->sid,
 			   state->service->primary_sid))) {
 		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL;
 
 		/* For debugging, it can be a real pain if all the traffic is encrypted */
-		if (lp_winbind_sealed_pipes()) {
+		if (lp_winbind_sealed_pipes(global_loadparm)) {
 			state->domain->netlogon_binding->flags |= (DCERPC_SIGN | DCERPC_SEAL );
 		} else {
 			state->domain->netlogon_binding->flags |= (DCERPC_SIGN);
@@ -216,7 +216,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	state->domain->lsa_binding = init_domain_binding(state, &ndr_table_lsarpc);
 
 	/* For debugging, it can be a real pain if all the traffic is encrypted */
-	if (lp_winbind_sealed_pipes()) {
+	if (lp_winbind_sealed_pipes(global_loadparm)) {
 		state->domain->lsa_binding->flags |= (DCERPC_SIGN | DCERPC_SEAL );
 	} else {
 		state->domain->lsa_binding->flags |= (DCERPC_SIGN);

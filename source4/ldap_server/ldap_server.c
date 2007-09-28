@@ -396,7 +396,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		return;
 	}
 	
-	cli_credentials_set_conf(server_credentials);
+	cli_credentials_set_conf(server_credentials, global_loadparm);
 	status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
@@ -513,7 +513,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	const struct model_ops *model_ops;
 
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration");
 		return;
@@ -537,7 +537,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	ldap_service->tls_params = tls_initialise(ldap_service);
 	if (ldap_service->tls_params == NULL) goto failed;
 
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -552,7 +552,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		}
 	} else {
 		status = add_socket(task->event_ctx, model_ops, 
-				    lp_socket_address(), ldap_service);
+				    lp_socket_address(global_loadparm), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

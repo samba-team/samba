@@ -201,7 +201,7 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->ntvfs->dev_type);
 	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->ntvfs->fs_type);
 	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (share_int_option(req->tcon->ntvfs->config, SHARE_CSC_POLICY, SHARE_CSC_POLICY_DEFAULT) << 2);
-	if (share_bool_option(req->tcon->ntvfs->config, SHARE_MSDFS_ROOT, SHARE_MSDFS_ROOT_DEFAULT) && lp_host_msdfs()) {
+	if (share_bool_option(req->tcon->ntvfs->config, SHARE_MSDFS_ROOT, SHARE_MSDFS_ROOT_DEFAULT) && lp_host_msdfs(global_loadparm)) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;
 	}
 

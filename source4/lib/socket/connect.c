@@ -127,7 +127,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address->addr);
 		creq = resolve_name_send(&name, result->event_ctx,
-					 lp_name_resolve_order());
+					 lp_name_resolve_order(global_loadparm));
 		if (composite_nomem(creq, result)) return result;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;

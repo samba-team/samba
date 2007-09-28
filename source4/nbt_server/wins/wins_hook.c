@@ -40,7 +40,7 @@ static const char *wins_hook_action_string(enum wins_hook_action action)
 void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec, 
 	       enum wins_hook_action action)
 {
-	const char *script = lp_wins_hook();
+	const char *script = lp_wins_hook(global_loadparm);
 	uint32_t i, length;
 	int child;
 	char *cmd = NULL;

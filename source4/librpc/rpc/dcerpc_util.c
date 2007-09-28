@@ -930,7 +930,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	/* anonymous credentials for rpc connection used to get endpoint mapping */
 	anon_creds = cli_credentials_init(mem_ctx);
 	cli_credentials_set_event_context(anon_creds, ev);
-	cli_credentials_set_conf(anon_creds);
+	cli_credentials_set_conf(anon_creds, global_loadparm);
 	cli_credentials_set_anonymous(anon_creds);
 
 	/*
@@ -1363,7 +1363,7 @@ void dcerpc_log_packet(const struct ndr_interface_table *ndr,
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
 		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
-			 lp_lockdir(), ndr->name, opnum, i,
+			 lp_lockdir(global_loadparm), ndr->name, opnum, i,
 			 (flags&NDR_IN)?"in":"out");
 		if (name == NULL) {
 			return;

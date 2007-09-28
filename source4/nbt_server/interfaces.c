@@ -136,7 +136,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		}
 
 		bcast_address = socket_address_from_strings(bcast_nbtsock, bcast_nbtsock->sock->backend_name, 
-							    bcast, lp_nbt_port());
+							    bcast, lp_nbt_port(global_loadparm));
 		if (!bcast_address) {
 			talloc_free(iface);
 			return NT_STATUS_NO_MEMORY;
@@ -145,7 +145,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		status = socket_listen(bcast_nbtsock->sock, bcast_address, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-				 bcast, lp_nbt_port(), nt_errstr(status)));
+				 bcast, lp_nbt_port(global_loadparm), nt_errstr(status)));
 			talloc_free(iface);
 			return status;
 		}
@@ -161,13 +161,14 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	unicast_address = socket_address_from_strings(iface->nbtsock, iface->nbtsock->sock->backend_name, 
-						      bind_address, lp_nbt_port());
+	unicast_address = socket_address_from_strings(iface->nbtsock, 
+						      iface->nbtsock->sock->backend_name, 
+						      bind_address, lp_nbt_port(global_loadparm));
 
 	status = socket_listen(iface->nbtsock->sock, unicast_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 bind_address, lp_nbt_port(), nt_errstr(status)));
+			 bind_address, lp_nbt_port(global_loadparm), nt_errstr(status)));
 		talloc_free(iface);
 		return status;
 	}
@@ -223,7 +224,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 
 	/* if we are allowing incoming packets from any address, then
 	   we also need to bind to the wildcard address */
-	if (!lp_bind_interfaces_only()) {
+	if (!lp_bind_interfaces_only(global_loadparm)) {
 		const char *primary_address;
 
 		/* the primary address is the address we will return
@@ -233,7 +234,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 			primary_address = iface_n_ip(0);
 		} else {
 			primary_address = sys_inet_ntoa(interpret_addr2(
-								lp_netbios_name()));
+							lp_netbios_name(global_loadparm)));
 		}
 		primary_address = talloc_strdup(tmp_ctx, primary_address);
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
@@ -261,7 +262,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	if (lp_wins_server_list()) {
+	if (lp_wins_server_list(global_loadparm)) {
 		status = nbtd_add_wins_socket(nbtsrv);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

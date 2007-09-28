@@ -190,7 +190,7 @@ NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **r
 		      struct event_context *ev)
 {
 	struct composite_context *c = resolve_name_send(name, ev, 
-						lp_name_resolve_order());
+						lp_name_resolve_order(global_loadparm));
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 

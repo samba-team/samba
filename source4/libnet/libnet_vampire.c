@@ -28,6 +28,7 @@
 #include "auth/gensec/schannel_proto.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "param/param.h"
 
 
 /**
@@ -184,7 +185,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			talloc_free(samsync_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		cli_credentials_set_conf(machine_account);
+		cli_credentials_set_conf(machine_account, global_loadparm);
 		nt_status = cli_credentials_set_machine_account(machine_account);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");

@@ -270,7 +270,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -289,7 +289,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 			}
 		}
 	} else {
-		address = lp_socket_address();
+		address = lp_socket_address(global_loadparm);
 		status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, service);
 		if (!NT_STATUS_IS_OK(status)) {

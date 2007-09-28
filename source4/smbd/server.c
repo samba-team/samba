@@ -269,8 +269,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	cleanup_tmp_files();
 
-	if (!directory_exist(lp_lockdir())) {
-		mkdir(lp_lockdir(), 0755);
+	if (!directory_exist(lp_lockdir(global_loadparm))) {
+		mkdir(lp_lockdir(global_loadparm), 0755);
 	}
 
 	pidfile_create(binary_name);
@@ -329,7 +329,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
-	status = server_service_startup(event_ctx, model, lp_server_services());
+	status = server_service_startup(event_ctx, model, lp_server_services(global_loadparm));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;

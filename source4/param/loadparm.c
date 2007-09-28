@@ -66,8 +66,6 @@
 
 static bool bLoaded = false;
 
-struct loadparm_context *global_loadparm = NULL;
-
 #define standard_sub_basic talloc_strdup
 
 static bool do_parameter(const char *, const char *, void *);
@@ -87,7 +85,7 @@ struct loadparm_global
 {
 	enum server_role server_role;
 
-	char **smb_ports;
+	const char **smb_ports;
 	char *ncalrpc_dir;
 	char *szLockDir;
 	char *szModulesDir;
@@ -96,7 +94,7 @@ struct loadparm_global
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdChat;
-	char *szConfigFile;
+	const char *szConfigFile;
 	char *szShareBackend;
 	char *szSAM_URL;
 	char *szSECRETS_URL;
@@ -104,23 +102,23 @@ struct loadparm_global
 	char *szWINS_CONFIG_URL;
 	char *szWINS_URL;
 	char *szPrivateDir;
-	char **jsInclude;
+	const char **jsInclude;
 	char *jsonrpcServicesDir;
-	char **szPasswordServers;
+	const char **szPasswordServers;
 	char *szSocketOptions;
 	char *szRealm;
-	char **szWINSservers;
-	char **szInterfaces;
+	const char **szWINSservers;
+	const char **szInterfaces;
 	char *szSocketAddress;
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
 	char *szWorkgroup;
 	char *szNetbiosName;
-	char **szNetbiosAliases;
+	const char **szNetbiosAliases;
 	char *szNetbiosScope;
 	char *szDomainOtherSIDs;
-	char **szNameResolveOrder;
-	char **dcerpc_ep_servers;
-	char **server_services;
+	const char **szNameResolveOrder;
+	const char **dcerpc_ep_servers;
+	const char **server_services;
 	char *ntptr_providor;
 	char *szWinbindSeparator;
 	char *szWinbinddSocketDirectory;
@@ -277,13 +275,9 @@ static struct loadparm_context {
 		char *subfname;
 		time_t modtime;
 	} *file_lists;
-} loadparm = {
-	.iNumServices = 0,
-	.currentService = NULL,
-	.bInGlobalSection = true,
-	.ServicePtrs = NULL,
-	.file_lists = NULL,
-};
+} loadparm;
+
+struct loadparm_context *global_loadparm = &loadparm;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -385,6 +379,8 @@ static const struct enum_list enum_server_role[] = {
  */
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
+
+	{"config file", P_STRING, P_GLOBAL, &loadparm.Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
 
 	{"server role", P_ENUM, P_GLOBAL, &loadparm.Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
 
@@ -541,7 +537,6 @@ static struct parm_struct parm_table[] = {
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	
-	{"config file", P_STRING, P_GLOBAL, &loadparm.Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
 	{"share backend", P_STRING, P_GLOBAL, &loadparm.Globals.szShareBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"preload", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"auto services", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -648,20 +643,20 @@ static const char *lp_string(const char *s)
    parameters from the rest of the program are defined 
 */
 
-#define FN_GLOBAL_STRING(fn_name,ptr) \
- const char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
-#define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
- const char *fn_name(void) {return(*(const char **)(ptr) ? *(const char **)(ptr) : "");}
-#define FN_GLOBAL_LIST(fn_name,ptr) \
- const char **fn_name(void) {return(*(const char ***)(ptr));}
-#define FN_GLOBAL_BOOL(fn_name,ptr) \
- bool fn_name(void) {return((bool)*(int *)(ptr));}
+#define FN_GLOBAL_STRING(fn_name,var_name) \
+ const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name ? lp_string(lp_ctx->Globals.var_name) : "";}
+#define FN_GLOBAL_CONST_STRING(fn_name,var_name) \
+ const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name ? lp_ctx->Globals.var_name : "";}
+#define FN_GLOBAL_LIST(fn_name,var_name) \
+ const char **fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name;}
+#define FN_GLOBAL_BOOL(fn_name,var_name) \
+ bool fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->Globals.var_name;}
 #if 0 /* unused */
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
 #endif
-#define FN_GLOBAL_INTEGER(fn_name,ptr) \
- int fn_name(void) {return(*(int *)(ptr));}
+#define FN_GLOBAL_INTEGER(fn_name,var_name) \
+ int fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return 0; return lp_ctx->Globals.var_name;}
 
 #define FN_LOCAL_STRING(fn_name,val) \
  const char *fn_name(struct loadparm_service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
@@ -674,98 +669,95 @@ static const char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(struct loadparm_service *service) {return((service != NULL)? service->val : sDefault.val);}
 
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, &loadparm.Globals.server_role)
-_PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, &loadparm.Globals.smb_ports)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_nbt_port, &loadparm.Globals.nbt_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_dgram_port, &loadparm.Globals.dgram_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, &loadparm.Globals.cldap_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, &loadparm.Globals.krb5_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, &loadparm.Globals.kpasswd_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, &loadparm.Globals.web_port)
-_PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, &dos_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, &loadparm.Globals.swat_directory)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, &loadparm.Globals.tls_enabled)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, &loadparm.Globals.tls_keyfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, &loadparm.Globals.tls_certfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &loadparm.Globals.tls_cafile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &loadparm.Globals.tls_crlfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, &loadparm.Globals.tls_dhpfile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &unix_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &display_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &loadparm.Globals.szConfigFile)
-_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, &loadparm.Globals.szShareBackend)
-_PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &loadparm.Globals.szSAM_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, &loadparm.Globals.szSECRETS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &loadparm.Globals.szSPOOLSS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, &loadparm.Globals.szWINS_CONFIG_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, &loadparm.Globals.szWINS_URL)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, &loadparm.Globals.szWinbindSeparator)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, &loadparm.Globals.szWinbinddSocketDirectory)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, &loadparm.Globals.szTemplateShell)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, &loadparm.Globals.szTemplateHomedir)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &loadparm.Globals.bWinbindSealedPipes)
-_PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, &loadparm.Globals.szPrivateDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, &loadparm.Globals.szServerString)
-_PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, &loadparm.Globals.szLockDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, &loadparm.Globals.szModulesDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, &loadparm.Globals.szSetupDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, &loadparm.Globals.ncalrpc_dir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_piddir, &loadparm.Globals.szPidDir)
-_PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &loadparm.Globals.dcerpc_ep_servers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_server_services, &loadparm.Globals.server_services)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, &loadparm.Globals.ntptr_providor)
-_PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, &loadparm.Globals.szAutoServices)
-_PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, &loadparm.Globals.szPasswdChat)
-_PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, &loadparm.Globals.szPasswordServers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, &loadparm.Globals.szNameResolveOrder)
-_PUBLIC_ FN_GLOBAL_STRING(lp_realm, &loadparm.Globals.szRealm)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, &loadparm.Globals.socket_options)
-_PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, &loadparm.Globals.szWorkgroup)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, &loadparm.Globals.szNetbiosName)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_scope, &loadparm.Globals.szNetbiosScope)
-_PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, &loadparm.Globals.szWINSservers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, &loadparm.Globals.szInterfaces)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, &loadparm.Globals.szSocketAddress)
-_PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, &loadparm.Globals.szNetbiosAliases)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, server_role)
+_PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, smb_ports)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_nbt_port, nbt_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_dgram_port, dgram_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, cldap_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, krb5_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, kpasswd_port)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, web_port)
+_PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, swat_directory)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, tls_enabled)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_keyfile, tls_keyfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_certfile, tls_certfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, tls_cafile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, tls_crlfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, tls_dhpfile)
+_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, szShareBackend)
+_PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, szSAM_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, szSECRETS_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, szSPOOLSS_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, szWINS_CONFIG_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, szWINS_URL)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, szWinbindSeparator)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, szWinbinddSocketDirectory)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, szTemplateShell)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, szTemplateHomedir)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, bWinbindSealedPipes)
+_PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, szPrivateDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, szServerString)
+_PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, szLockDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, szModulesDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, szSetupDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, ncalrpc_dir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
+_PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
+_PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, ntptr_providor)
+_PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, szAutoServices)
+_PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, szPasswdChat)
+_PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, szPasswordServers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, szNameResolveOrder)
+_PUBLIC_ FN_GLOBAL_STRING(lp_realm, szRealm)
+_PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, socket_options)
+_PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, szWorkgroup)
+_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, szNetbiosName)
+_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_scope, szNetbiosScope)
+_PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, szWINSservers)
+_PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, szInterfaces)
+_PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, szSocketAddress)
+_PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, szNetbiosAliases)
 
-_PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, &loadparm.Globals.bDisableNetbios)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, &loadparm.Globals.bWINSsupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, &loadparm.Globals.bWINSdnsProxy)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, &loadparm.Globals.szWINSHook)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, &loadparm.Globals.bLocalMaster)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, &loadparm.Globals.bReadRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, &loadparm.Globals.bLargeReadwrite)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, &loadparm.Globals.bWriteRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, &loadparm.Globals.bNullPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &loadparm.Globals.bObeyPamRestrictions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, &loadparm.Globals.bEncryptPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, &loadparm.Globals.bTimeServer)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &loadparm.Globals.bBindInterfacesOnly)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, &loadparm.Globals.bUnicode)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, &loadparm.Globals.bNTStatusSupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_lanman_auth, &loadparm.Globals.bLanmanAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_ntlm_auth, &loadparm.Globals.bNTLMAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_plaintext_auth, &loadparm.Globals.bClientPlaintextAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_lanman_auth, &loadparm.Globals.bClientLanManAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &loadparm.Globals.bClientNTLMv2Auth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_use_spnego_principal, &loadparm.Globals.client_use_spnego_principal)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_host_msdfs, &loadparm.Globals.bHostMSDfs)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unix_extensions, &loadparm.Globals.bUnixExtensions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_use_spnego, &loadparm.Globals.bUseSpnego)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_rpc_big_endian, &loadparm.Globals.bRpcBigEndian)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_wins_ttl, &loadparm.Globals.max_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, &loadparm.Globals.min_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, &loadparm.Globals.max_mux)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, &loadparm.Globals.max_xmit)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, &loadparm.Globals.pwordlevel)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, &loadparm.Globals.srv_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, &loadparm.Globals.srv_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, &loadparm.Globals.cli_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &loadparm.Globals.cli_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &loadparm.Globals.security)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &loadparm.Globals.paranoid_server_security)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, &loadparm.Globals.announce_as)
-_PUBLIC_ FN_GLOBAL_LIST(lp_js_include, &loadparm.Globals.jsInclude)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, bDisableNetbios)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, bWINSsupport)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, bWINSdnsProxy)
+_PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, szWINSHook)
+_PUBLIC_ FN_GLOBAL_STRING(lp_configfile, szConfigFile)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, bLocalMaster)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, bReadRaw)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, bLargeReadwrite)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, bWriteRaw)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, bNullPasswords)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, bObeyPamRestrictions)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, bEncryptPasswords)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, bTimeServer)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, bBindInterfacesOnly)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, bUnicode)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, bNTStatusSupport)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_lanman_auth, bLanmanAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_ntlm_auth, bNTLMAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_plaintext_auth, bClientPlaintextAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_lanman_auth, bClientLanManAuth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, bClientNTLMv2Auth)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_client_use_spnego_principal, client_use_spnego_principal)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_host_msdfs, bHostMSDfs)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_unix_extensions, bUnixExtensions)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_use_spnego, bUseSpnego)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_rpc_big_endian, bRpcBigEndian)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_wins_ttl, max_wins_ttl)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, min_wins_ttl)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, max_mux)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, max_xmit)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, pwordlevel)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, srv_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, srv_minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, cli_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, cli_minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_security, security)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
+_PUBLIC_ FN_GLOBAL_LIST(lp_js_include, jsInclude)
 _PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
 _PUBLIC_ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 _PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
@@ -792,8 +784,8 @@ _PUBLIC_ FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, &loadparm.Globals.server_signing)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, &loadparm.Globals.client_signing)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, server_signing)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, client_signing)
 
 /* local prototypes */
 static int map_parameter(const char *pszParmName);
@@ -2314,8 +2306,6 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 		}
 	}
 
-	lp_do_global_parameter(lp_ctx, "config file", dyn_CONFIGFILE);
-
 	lp_do_global_parameter(lp_ctx, "share backend", "classic");
 	
 	lp_do_global_parameter(lp_ctx, "server role", "standalone");
@@ -2460,16 +2450,16 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
  False on failure.
 ***************************************************************************/
 
-bool lp_load(void)
+bool lp_load(const char *filename)
 {
 	char *n2;
 	bool bRetval;
 	struct param_opt *data;
 	struct loadparm_context *lp_ctx = &loadparm;
 
-	global_loadparm = lp_ctx;
+	filename = talloc_strdup(talloc_autofree_context(), filename);
 
-	bRetval = false;
+	global_loadparm = lp_ctx;
 
 	if (lp_ctx->Globals.param_opt != NULL) {
 		struct param_opt *next;
@@ -2483,12 +2473,14 @@ bool lp_load(void)
 
 	if (!loadparm_init(lp_ctx))
 		return false;
+
+	lp_ctx->Globals.szConfigFile = filename;
 	
 	lp_ctx->bInGlobalSection = true;
-	n2 = standard_sub_basic(talloc_autofree_context(), lp_configfile());
+	n2 = standard_sub_basic(talloc_autofree_context(), lp_ctx->Globals.szConfigFile);
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
-	add_to_file_list(lp_ctx, lp_configfile(), n2);
+	add_to_file_list(lp_ctx, lp_ctx->Globals.szConfigFile, n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	lp_ctx->currentService = NULL;
@@ -2500,7 +2492,7 @@ bool lp_load(void)
 		if (lp_ctx->currentService != NULL)
 			bRetval = service_ok(lp_ctx->currentService);
 
-	lp_add_auto_services(lp_ctx, lp_auto_services());
+	lp_add_auto_services(lp_ctx, lp_auto_services(lp_ctx));
 
 	lp_add_hidden(lp_ctx, "IPC$", "IPC");
 	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
@@ -2606,9 +2598,9 @@ const char *volume_label(struct loadparm_service *service)
  If we are PDC then prefer us as DMB
 ************************************************************/
 
-bool lp_domain_logons(void)
+bool lp_domain_logons(struct loadparm_context *lp_ctx)
 {
-	return (lp_server_role() == ROLE_DOMAIN_CONTROLLER);
+	return (lp_server_role(lp_ctx) == ROLE_DOMAIN_CONTROLLER);
 }
 
 const char *lp_printername(struct loadparm_service *service)

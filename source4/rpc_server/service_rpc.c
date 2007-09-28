@@ -256,7 +256,8 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dce
 		e->ep_description->endpoint = talloc_strdup(dce_ctx, "DEFAULT");
 	}
 
-	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description->endpoint);
+	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(global_loadparm), 
+				    e->ep_description->endpoint);
 
 	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
@@ -362,7 +363,7 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_
 	NTSTATUS status;
 
 	/* Add TCP/IP sockets */
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
+	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
 		int num_interfaces = iface_count();
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
@@ -371,7 +372,8 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	} else {
-		status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, lp_socket_address());
+		status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, 
+						  lp_socket_address(global_loadparm));
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -412,13 +414,13 @@ static void dcesrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[dcesrv]");
 
 	status = dcesrv_init_context(task->event_ctx,
-				     lp_dcerpc_endpoint_servers(),
+				     lp_dcerpc_endpoint_servers(global_loadparm),
 				     &dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir())) {
-		mkdir(lp_ncalrpc_dir(), 0755);
+	if (!directory_exist(lp_ncalrpc_dir(global_loadparm))) {
+		mkdir(lp_ncalrpc_dir(global_loadparm), 0755);
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {

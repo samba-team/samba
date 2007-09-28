@@ -70,7 +70,7 @@ NTSTATUS dgram_mailslot_browse_reply(struct nbt_dgram_socket *dgmsock,
 		return status;
 	}
 
-	make_nbt_name_client(&myname, lp_netbios_name());
+	make_nbt_name_client(&myname, lp_netbios_name(global_loadparm));
 
 	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name, 
 					   request->src_addr, request->src_port);

@@ -591,7 +591,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, TEST_MACHINE_NAME, lp_workgroup());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, TEST_MACHINE_NAME, lp_workgroup(global_loadparm));
 
 	uint8_t lm_session_key[8];
 	uint8_t user_session_key[16];
@@ -739,7 +739,7 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(), lp_workgroup());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
 
 	DATA_BLOB ntlm_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 	DATA_BLOB ntlm_session_key = data_blob_talloc(samlogon_state->mem_ctx, NULL, 16);
@@ -1512,7 +1512,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 		return False;
 	}
 
-	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup());
+	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup(global_loadparm));
 
 	user_ctx = torture_create_testuser(torture,
 					   TEST_USER_NAME,
@@ -1735,7 +1735,7 @@ BOOL torture_rpc_samlogon(struct torture_context *torture)
 				.username      = talloc_asprintf(mem_ctx, 
 								 "%s@%s", 
 								 TEST_USER_NAME,
-								 lp_realm()),
+								 lp_realm(global_loadparm)),
 				.password      = user_password,
 				.network_login = True,
 				.expected_interactive_error = NT_STATUS_OK,

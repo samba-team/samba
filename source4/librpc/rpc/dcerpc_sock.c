@@ -479,7 +479,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 
 	make_nbt_name_server(&name, server);
 	resolve_req = resolve_name_send(&name, c->event_ctx, 
-					lp_name_resolve_order());
+					lp_name_resolve_order(global_loadparm));
 	composite_continue(c, resolve_req, continue_ip_resolve_name, c);
 	return c;
 }
@@ -619,7 +619,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	s->conn = conn;
 
 	string_replace(canon, '/', '\\');
-	s->full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(), canon);
+	s->full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(global_loadparm), canon);
 	if (composite_nomem(s->full_path, c)) return c;
 
 	/* prepare server address using path and transport name */

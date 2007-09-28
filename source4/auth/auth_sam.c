@@ -151,7 +151,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 	NTSTATUS status;
 
 	if (acct_flags & ACB_PWNOTREQ) {
-		if (lp_null_passwords()) {
+		if (lp_null_passwords(global_loadparm)) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", 
 				 user_info->mapped.account_name));
 			return NT_STATUS_OK;
@@ -349,10 +349,10 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 	}
 
 	is_local_name = is_myname(user_info->mapped.domain_name);
-	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup());
+	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup(global_loadparm));
 
 	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 		case ROLE_STANDALONE:
 			return NT_STATUS_OK;
 
@@ -388,14 +388,14 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 	const char *domain;
 
 	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 		case ROLE_STANDALONE:
 		case ROLE_DOMAIN_MEMBER:
-			domain = lp_netbios_name();
+			domain = lp_netbios_name(global_loadparm);
 			break;
 
 		case ROLE_DOMAIN_CONTROLLER:
-			domain = lp_workgroup();
+			domain = lp_workgroup(global_loadparm);
 			break;
 
 		default:

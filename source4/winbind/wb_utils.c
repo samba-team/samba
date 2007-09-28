@@ -30,10 +30,10 @@
 BOOL wb_samba3_split_username(TALLOC_CTX *mem_ctx, const char *domuser,
 				 char **domain, char **user)
 {
-	char *p = strchr(domuser, *lp_winbind_separator());
+	char *p = strchr(domuser, *lp_winbind_separator(global_loadparm));
 
 	if (p == NULL) {
-		*domain = talloc_strdup(mem_ctx, lp_workgroup());
+		*domain = talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
 	} else {
 		*domain = talloc_strndup(mem_ctx, domuser,
 					 PTR_DIFF(p, domuser));

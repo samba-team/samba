@@ -32,6 +32,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"
+#include "param/param.h"
 
 struct dn_list {
 	struct cli_credentials *creds;
@@ -88,7 +89,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, BOOL delet
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	cli_credentials_set_conf(item->creds);
+	cli_credentials_set_conf(item->creds, global_loadparm);
 	status = cli_credentials_set_secrets(item->creds, module->ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {

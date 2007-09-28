@@ -76,7 +76,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		cli_credentials_set_conf(credentials);
+		cli_credentials_set_conf(credentials, global_loadparm);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
@@ -85,7 +85,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	} else if (machine_account) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
 		credentials = cli_credentials_init(private);
-		cli_credentials_set_conf(credentials);
+		cli_credentials_set_conf(credentials, global_loadparm);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 		}

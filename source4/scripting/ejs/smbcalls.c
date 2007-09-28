@@ -111,7 +111,7 @@ static int ejs_typeof_native(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_libinclude(int eid, int argc, char **argv)
 {
 	int i, j;
-	const char **js_include = lp_js_include();
+	const char **js_include = lp_js_include(global_loadparm);
 
 	if (js_include == NULL || js_include[0] == NULL) {
 		ejsSetErrorMsg(eid, "js include path not set");

@@ -104,7 +104,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address);
 		creq = resolve_name_send(&name, result->event_ctx,
-					 lp_name_resolve_order());
+					 lp_name_resolve_order(global_loadparm));
 		if (composite_nomem(creq, result)) goto failed;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;

@@ -73,7 +73,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	if (state->host_name == NULL) goto failed;
 
 	if (port == 0) {
-		const char **ports = lp_smb_ports();
+		const char **ports = lp_smb_ports(global_loadparm);
 		int i;
 
 		for (i=0;ports[i];i++) /* noop */ ;
@@ -120,7 +120,7 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->ctx->status =
-		socket_set_option(sock, lp_socket_options(), NULL);
+		socket_set_option(sock, lp_socket_options(global_loadparm), NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
 

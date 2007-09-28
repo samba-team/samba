@@ -145,9 +145,9 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 
 	state->r.in.domainname = state->domain_name;
 	state->r.in.ip_address = state->dcs[0].address;
-	state->r.in.my_computername = lp_netbios_name();
+	state->r.in.my_computername = lp_netbios_name(global_loadparm);
 	state->r.in.my_accountname = talloc_asprintf(state, "%s$",
-						     lp_netbios_name());
+						     lp_netbios_name(global_loadparm));
 	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
 	state->r.in.account_control = ACB_WSTRUST;
 	state->r.in.domain_sid = state->domain_sid;

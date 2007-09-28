@@ -245,7 +245,7 @@ BOOL torture_createuser(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
-	req.in.domain_name = lp_workgroup();
+	req.in.domain_name = lp_workgroup(global_loadparm);
 	req.out.error_string = NULL;
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
@@ -291,7 +291,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
-	req.in.domain_name = lp_workgroup();
+	req.in.domain_name = lp_workgroup(global_loadparm);
 
 	status = torture_rpc_connection(torture,
 					&p,
@@ -301,7 +301,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
 		ret = False;
 		goto done;
@@ -488,7 +488,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	name = talloc_strdup(prep_mem_ctx, TEST_USERNAME);
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
 		ret = False;
 		goto done;
@@ -511,7 +511,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	for (fld = 1; fld < FIELDS_NUM - 1; fld++) {
 		ZERO_STRUCT(req);
-		req.in.domain_name = lp_workgroup();
+		req.in.domain_name = lp_workgroup(global_loadparm);
 		req.in.user_name = name;
 
 		set_test_changes(mem_ctx, &req, 1, &name, fld);
@@ -524,7 +524,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		}
 
 		ZERO_STRUCT(user_req);
-		user_req.in.domain_name = lp_workgroup();
+		user_req.in.domain_name = lp_workgroup(global_loadparm);
 		user_req.in.user_name = name;
 
 		status = libnet_UserInfo(ctx, mem_ctx, &user_req);
@@ -563,7 +563,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 			/* restore original testing username - it's useful when test fails
 			   because it prevents from problems with recreating account */
 			ZERO_STRUCT(req);
-			req.in.domain_name = lp_workgroup();
+			req.in.domain_name = lp_workgroup(global_loadparm);
 			req.in.user_name = name;
 			req.in.account_name = TEST_USERNAME;
 			
@@ -624,7 +624,7 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 		return False;
 	}
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
 		ret = False;
 		goto done;
@@ -682,7 +682,7 @@ BOOL torture_userlist(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	domain_name.string = lp_workgroup();
+	domain_name.string = lp_workgroup(global_loadparm);
 	mem_ctx = talloc_init("torture user list");
 
 	ZERO_STRUCT(req);

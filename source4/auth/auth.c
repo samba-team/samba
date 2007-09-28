@@ -417,7 +417,7 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct auth_context **auth_ctx)
 {
 	const char **auth_methods = NULL;
-	switch (lp_server_role()) {
+	switch (lp_server_role(global_loadparm)) {
 	case ROLE_STANDALONE:
 		auth_methods = lp_parm_string_list(NULL, "auth methods", "standalone", NULL);
 		break;

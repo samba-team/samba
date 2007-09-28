@@ -86,7 +86,7 @@ NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	s3call->response.data.info.winbind_separator = *lp_winbind_separator();
+	s3call->response.data.info.winbind_separator = *lp_winbind_separator(global_loadparm);
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version,
 				SAMBA_VERSION_STRING);
 	return NT_STATUS_OK;
@@ -96,7 +96,7 @@ NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name,
-				lp_workgroup());
+				lp_workgroup(global_loadparm));
 	return NT_STATUS_OK;
 }
 
@@ -104,7 +104,7 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name,
-				lp_netbios_name());
+				lp_netbios_name(global_loadparm));
 	return NT_STATUS_OK;
 }
 

@@ -78,7 +78,7 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
 	/* if its not from the nbt port, then it wasn't a broadcast from us */
-	if (src->port != lp_nbt_port()) {
+	if (src->port != lp_nbt_port(global_loadparm)) {
 		return False;
 	}
 

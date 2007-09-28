@@ -44,28 +44,28 @@
  configuration settings.
 ************************************************/
 
-static int do_global_checks(void)
+static int do_global_checks(struct loadparm_context *lp_ctx)
 {
 	int ret = 0;
 
-	if (!directory_exist(lp_lockdir())) {
+	if (!directory_exist(lp_lockdir(lp_ctx))) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
-		       lp_lockdir());
+		       lp_lockdir(lp_ctx));
 		ret = 1;
 	}
 
-	if (!directory_exist(lp_piddir())) {
+	if (!directory_exist(lp_piddir(lp_ctx))) {
 		fprintf(stderr, "ERROR: pid directory %s does not exist\n",
-		       lp_piddir());
+		       lp_piddir(lp_ctx));
 		ret = 1;
 	}
 
-	if (strlen(lp_winbind_separator()) != 1) {
+	if (strlen(lp_winbind_separator(lp_ctx)) != 1) {
 		fprintf(stderr,"ERROR: the 'winbind separator' parameter must be a single character.\n");
 		ret = 1;
 	}
 
-	if (*lp_winbind_separator() == '+') {
+	if (*lp_winbind_separator(lp_ctx) == '+') {
 		fprintf(stderr,"'winbind separator = +' might cause problems with group membership.\n");
 	}
 
@@ -139,16 +139,16 @@ static int do_global_checks(void)
 	/* We need this to force the output */
 	lp_set_cmdline(global_loadparm, "log level", "2");
 
-	fprintf(stderr,"Load smb config files from %s\n",lp_configfile());
+	fprintf(stderr, "Loaded smb config files from %s\n", lp_configfile(global_loadparm));
 
-	if (!lp_load()) {
+	if (!lp_load(lp_configfile(global_loadparm))) {
 		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}
 
 	fprintf(stderr,"Loaded services file OK.\n");
 
-	ret = do_global_checks();
+	ret = do_global_checks(global_loadparm);
 
 	for (s=0;s<lp_numservices(global_loadparm);s++) {
 		struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
