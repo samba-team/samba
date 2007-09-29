@@ -39,8 +39,6 @@ enum gensec_priority {
 	GENSEC_OTHER = 0
 };
 
-enum credentials_use_kerberos;
-
 struct gensec_security;
 struct gensec_target {
 	const char *principal;
@@ -63,6 +61,7 @@ enum gensec_role
 };
 
 struct auth_session_info;
+struct cli_credentials;
 
 struct gensec_update_request {
 	struct gensec_security *gensec_security;
