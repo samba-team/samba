@@ -123,13 +123,6 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ldb_tdb
 ################################################
 
-./lib/ldb/common/ldb.o: lib/ldb/common/ldb.c Makefile
-	@echo Compiling $<
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) \
-	-DLDB_MODULESDIR=\"$(MODULESDIR)/ldb\" \
-	-c $(FIRST_PREREQ) -o $@
-
-
 ################################################
 # Start SUBSYSTEM ldb
 [LIBRARY::LIBLDB]
