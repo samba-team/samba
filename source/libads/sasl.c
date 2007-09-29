@@ -268,7 +268,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 #ifdef HAVE_GSSAPI
 static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 {
-	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
 	ADS_STATUS status;
 	int gss_rc;
 	uint32 minor_status;
@@ -309,7 +309,7 @@ static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 
 static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
 {
-	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
 	ADS_STATUS status;
 	int gss_rc;
 	uint32 minor_status;
@@ -347,7 +347,7 @@ static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
 
 static void ads_sasl_gssapi_disconnect(ADS_STRUCT *ads)
 {
-	gss_ctx_id_t context_handle = ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
 	uint32 minor_status;
 
 	gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
