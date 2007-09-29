@@ -123,12 +123,6 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ldb_tdb
 ################################################
 
-./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
-	@echo Compiling $<
-	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) \
-	-DSHLIBEXT=\"$(SHLIBEXT)\" \
-	-c $(FIRST_PREREQ) -o $@
-
 ./lib/ldb/common/ldb.o: lib/ldb/common/ldb.c Makefile
 	@echo Compiling $<
 	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) \
