@@ -3085,6 +3085,26 @@ if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
 fi
 fi
 
+dnl test for ipv6
+AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_IPV6,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>],
+[
+struct sockaddr_storage sa_store;
+struct addrinfo *ai = NULL;
+int s = socket(AF_INET6, SOCK_STREAM, 0)
+int ret = getaddrinfo(NULL, NULL, NULL &ai);
+if (ret != 0) {
+	const char *es = gai_strerror(ret);
+}
+freeaddrinfo(ai);
+],
+samba_cv_HAVE_IPV6=yes,samba_cv_HAVE_IPV6=no)])
+if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
+    AC_DEFINE(HAVE_IPV6,1,[Whether the system has IPv6 support])
+fi
 
 ################################################
 # look for a method of setting the effective uid
