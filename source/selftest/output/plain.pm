@@ -13,8 +13,7 @@ sub new($$$$) {
 		immediate => $immediate, 
 		statistics => $statistics,
 		test_output => {},
-		suitesfailed => [],
-		start => time()
+		suitesfailed => []
 	};
 	bless($self, $class);
 }
