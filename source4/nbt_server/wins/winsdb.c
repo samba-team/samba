@@ -988,7 +988,7 @@ static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
 	talloc_free(h->ldb);
 	h->ldb = NULL;
 
-	if (lp_parm_bool(NULL,"winsdb", "nosync", false)) {
+	if (lp_parm_bool(global_loadparm, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
@@ -1021,7 +1021,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 	h = talloc(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
 
-	if (lp_parm_bool(NULL,"winsdb", "nosync", false)) {
+	if (lp_parm_bool(global_loadparm, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
@@ -1031,7 +1031,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 
 	h->caller = caller;
 
-	owner = lp_parm_string(NULL, "winsdb", "local_owner");
+	owner = lp_parm_string(global_loadparm, NULL, "winsdb", "local_owner");
 	if (!owner) {
 		owner = iface_n_ip(0);
 	}

@@ -307,7 +307,7 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(NULL, "torture", "samba4", False)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)) {
 		printf("skipping DsReplicaGetInfo test against Samba4\n");
 		return True;
 	}
@@ -380,12 +380,12 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (!lp_parm_bool(NULL, "torture", "dangerous", False)) {
+	if (!lp_parm_bool(global_loadparm, NULL, "torture", "dangerous", False)) {
 		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
 		return True;
 	}
 
-	if (lp_parm_bool(NULL, "torture", "samba4", False)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)) {
 		printf("skipping DsReplicaSync test against Samba4\n");
 		return True;
 	}
@@ -448,7 +448,7 @@ static BOOL test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(NULL, "torture", "samba4", False)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)) {
 		printf("skipping DsReplicaUpdateRefs test against Samba4\n");
 		return True;
 	}
@@ -515,7 +515,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(NULL, "torture", "samba4", False)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)) {
 		printf("skipping DsGetNCChanges test against Samba4\n");
 		return True;
 	}
@@ -544,7 +544,7 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req5.highwatermark.highest_usn		= 0;
 			r.in.req.req5.uptodateness_vector		= NULL;
 			r.in.req.req5.replica_flags			= 0;
-			if (lp_parm_bool(NULL, "drsuapi","compression", False)) {
+			if (lp_parm_bool(global_loadparm, NULL, "drsuapi","compression", False)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			r.in.req.req5.max_object_count			= 0;
@@ -566,10 +566,10 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req8.highwatermark.highest_usn		= 0;
 			r.in.req.req8.uptodateness_vector		= NULL;
 			r.in.req.req8.replica_flags			= 0;
-			if (lp_parm_bool(NULL,"drsuapi","compression",False)) {
+			if (lp_parm_bool(global_loadparm, NULL,"drsuapi","compression",False)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(NULL,"drsuapi","neighbour_writeable",True)) {
+			if (lp_parm_bool(global_loadparm, NULL,"drsuapi","neighbour_writeable",True)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP

@@ -53,7 +53,7 @@ static const char *sclassic_string_option(struct share_config *scfg, const char 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string(s, parm, val);
+		ret = lp_parm_string(global_loadparm, s, parm, val);
 		if (!ret) {
 			ret = defval;
 		}
@@ -113,7 +113,7 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_int(s, parm, val, defval);
+		ret = lp_parm_int(global_loadparm, s, parm, val, defval);
 		if (!ret) {
 			ret = defval;
 		}
@@ -169,7 +169,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_bool(s, parm, val, defval);
+		ret = lp_parm_bool(global_loadparm, s, parm, val, defval);
 		talloc_free(parm);
 		return ret;
 	}
@@ -236,7 +236,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string_list(s, parm, val, ",;");
+		ret = lp_parm_string_list(global_loadparm, s, parm, val, ",;");
 		talloc_free(parm);
 		return ret;
 	}

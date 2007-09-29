@@ -711,7 +711,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		printf("Samba3 does not yet support create times "
 		       "everywhere\n");
 	}

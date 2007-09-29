@@ -677,7 +677,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 	}
 
-	target_str = lp_parm_string(NULL, "convert", "target");
+	target_str = lp_parm_string(global_loadparm, NULL, "convert", "target");
 
 	if (!target_str || strcasecmp(target_str, "openldap") == 0) {
 		target = TARGET_OPENLDAP;

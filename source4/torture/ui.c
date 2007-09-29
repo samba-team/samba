@@ -363,25 +363,25 @@ BOOL torture_run_test(struct torture_context *context,
 int torture_setting_int(struct torture_context *test, const char *name, 
 							int default_value)
 {
-	return lp_parm_int(NULL, "torture", name, default_value);
+	return lp_parm_int(global_loadparm, NULL, "torture", name, default_value);
 }
 
 double torture_setting_double(struct torture_context *test, const char *name, 
 							double default_value)
 {
-	return lp_parm_double(NULL, "torture", name, default_value);
+	return lp_parm_double(global_loadparm, NULL, "torture", name, default_value);
 }
 
 bool torture_setting_bool(struct torture_context *test, const char *name, 
 							bool default_value)
 {
-	return lp_parm_bool(NULL, "torture", name, default_value);
+	return lp_parm_bool(global_loadparm, NULL, "torture", name, default_value);
 }
 
 const char *torture_setting_string(struct torture_context *test, const char *name, 
 							const char *default_value)
 {
-	const char *ret = lp_parm_string(NULL, "torture", name);
+	const char *ret = lp_parm_string(global_loadparm, NULL, "torture", name);
 
 	if (ret == NULL)
 		return default_value;

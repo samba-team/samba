@@ -199,7 +199,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if ((!from || !to) && !lp_parm_bool(NULL, "iconv", "native", true)) {
+	if ((!from || !to) && !lp_parm_bool(global_loadparm, NULL, "iconv", "native", true)) {
 		goto failed;
 	}
 	if (!from) {

@@ -305,8 +305,8 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 BOOL torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
 {
 	NTSTATUS status;
-	const char *host = lp_parm_string(NULL, "torture", "host");
-	const char *share = lp_parm_string(NULL, "torture", "share");
+	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
 
 	status = smb2_connect(mem_ctx, host, share, credentials, tree, 

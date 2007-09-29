@@ -599,8 +599,8 @@ static bool test_async(struct torture_context *tctx,
 	session->vuid = setup.out.vuid;
 
 	printf("create new tree context\n");
-	share = lp_parm_string(NULL, "torture", "share");
-	host  = lp_parm_string(NULL, "torture", "host");
+	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
+	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	tree = smbcli_tree_init(session, tctx, False);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;

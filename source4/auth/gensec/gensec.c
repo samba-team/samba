@@ -1108,7 +1108,7 @@ _PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_secu
 _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_security) 
 {
 	/* We allow the target hostname to be overriden for testing purposes */
-	const char *target_hostname = lp_parm_string(NULL, "gensec", "target_hostname");
+	const char *target_hostname = lp_parm_string(global_loadparm, NULL, "gensec", "target_hostname");
 	if (target_hostname) {
 		return target_hostname;
 	}
@@ -1206,7 +1206,7 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 */
 NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 {
-	if (!lp_parm_bool(NULL, "gensec", ops->name, ops->enabled)) {
+	if (!lp_parm_bool(global_loadparm, NULL, "gensec", ops->name, ops->enabled)) {
 		DEBUG(2,("gensec subsystem %s is disabled\n", ops->name));
 		return NT_STATUS_OK;
 	}

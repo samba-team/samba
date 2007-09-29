@@ -1511,7 +1511,7 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
-		if (lp_parm_bool(NULL, "become_dc", "print", false)) {
+		if (lp_parm_bool(global_loadparm, NULL, "become_dc", "print", false)) {
 			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		} else {

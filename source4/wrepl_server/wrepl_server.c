@@ -83,26 +83,26 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 	}
 
 	/* the default renew interval is 6 days */
-	service->config.renew_interval	  = lp_parm_int(NULL,"wreplsrv","renew_interval", 6*24*60*60);
+	service->config.renew_interval	  = lp_parm_int(global_loadparm, NULL,"wreplsrv","renew_interval", 6*24*60*60);
 
 	/* the default tombstone (extinction) interval is 6 days */
-	service->config.tombstone_interval= lp_parm_int(NULL,"wreplsrv","tombstone_interval", 6*24*60*60);
+	service->config.tombstone_interval= lp_parm_int(global_loadparm, NULL,"wreplsrv","tombstone_interval", 6*24*60*60);
 
 	/* the default tombstone (extinction) timeout is 1 day */
-	service->config.tombstone_timeout = lp_parm_int(NULL,"wreplsrv","tombstone_timeout", 1*24*60*60);
+	service->config.tombstone_timeout = lp_parm_int(global_loadparm, NULL,"wreplsrv","tombstone_timeout", 1*24*60*60);
 
 	/* the default tombstone extra timeout is 3 days */
-	service->config.tombstone_extra_timeout = lp_parm_int(NULL,"wreplsrv","tombstone_extra_timeout", 3*24*60*60);
+	service->config.tombstone_extra_timeout = lp_parm_int(global_loadparm, NULL,"wreplsrv","tombstone_extra_timeout", 3*24*60*60);
 
 	/* the default verify interval is 24 days */
-	service->config.verify_interval   = lp_parm_int(NULL,"wreplsrv","verify_interval", 24*24*60*60);
+	service->config.verify_interval   = lp_parm_int(global_loadparm, NULL,"wreplsrv","verify_interval", 24*24*60*60);
 
 	/* the default scavenging interval is 'renew_interval/2' */
-	service->config.scavenging_interval=lp_parm_int(NULL,"wreplsrv","scavenging_interval",
+	service->config.scavenging_interval=lp_parm_int(global_loadparm, NULL,"wreplsrv","scavenging_interval",
 							service->config.renew_interval/2);
 
 	/* the maximun interval to the next periodic processing event */
-	service->config.periodic_interval = lp_parm_int(NULL,"wreplsrv","periodic_interval", 15);
+	service->config.periodic_interval = lp_parm_int(global_loadparm, NULL,"wreplsrv","periodic_interval", 15);
 
 	return NT_STATUS_OK;
 }

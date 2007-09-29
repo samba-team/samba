@@ -398,7 +398,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
 			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED|
 					  FILE_ATTRIBUTE_SPARSE));
@@ -569,7 +569,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if ((io.t2open.in.num_eas != 0)
 		    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)
-		    && lp_parm_bool(NULL, "torture", "samba3", false)) {
+		    && lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 			printf("(%s) EAs not supported, not treating as fatal "
 			       "in Samba3 test\n", __location__);
 			io.t2open.in.num_eas = 0;
@@ -1346,8 +1346,8 @@ static BOOL test_raw_open_multi(void)
 	struct smbcli_state **clients;
 	struct smbcli_request **requests;
 	union smb_open *ios;
-	const char *host = lp_parm_string(NULL, "torture", "host");
-	const char *share = lp_parm_string(NULL, "torture", "share");
+	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	int i, num_files = 3;
 	struct event_context *ev;
 	int num_ok = 0;

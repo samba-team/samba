@@ -129,7 +129,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		/*
 		 * In Samba3 we gave up upon getting the error codes in
 		 * wildcard unlink correct. Trying gentest showed that this is
@@ -157,7 +157,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 	io.unlink.in.pattern = BASEDIR "\\t*";
 	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	}
 	else {
@@ -169,7 +169,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 	io.unlink.in.pattern = BASEDIR "\\*.dat";
 	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	}
 	else {
@@ -179,7 +179,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 	io.unlink.in.pattern = BASEDIR "\\*.tx?";
 	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
-	if (lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 		CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 	}
 	else {
@@ -282,7 +282,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 
-	if (!lp_parm_bool(NULL, "torture", "samba3", false)) {
+	if (!lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
 
 		/*
 		 * Known deficiency, also skipped in base-delete.

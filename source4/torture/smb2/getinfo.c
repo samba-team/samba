@@ -105,7 +105,7 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 			file_levels[i].dinfo.query_secdesc.in.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			if (lp_parm_bool(NULL, "torture", "samba4", false)) {
+			if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
 				continue;
 			}
 			file_levels[i].finfo.all_eas.in.continue_flags = 

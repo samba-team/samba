@@ -244,7 +244,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		req->received_wack = True;
 		/* although there can be a timeout in the packet, w2k3 screws it up,
 		   so better to set it ourselves */		   
-		req->timeout = lp_parm_int(NULL, "nbt", "wack_timeout", 30);
+		req->timeout = lp_parm_int(global_loadparm, NULL, "nbt", "wack_timeout", 30);
 		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
 					  timeval_current_ofs(req->timeout, 0),
 					  nbt_name_socket_timeout, req);
