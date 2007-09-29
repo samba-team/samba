@@ -48,8 +48,26 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
 		SMB_SUBSYSTEM(ldb_map, [], [LIBLDB])
+		define_ldb_modulesdir=no
 	],
 	[
+		# Here we need to do some tricks
+		# with AC_CONFIG_COMMANDS_PRE
+		# as that's the deferrs the commands
+		# to location after $prefix and $exec_prefix
+		# have usefull values and directly before
+		# creating config.status.
+		#
+		# The 'eval eval echo' trick is used to
+		# actually get the raw absolute directory
+		# path as this is needed in config.h
+		define_ldb_modulesdir=yes
+		AC_CONFIG_COMMANDS_PRE([
+		if test x"$define_ldb_modulesdir" = x"yes";then
+			LDB_MODULESDIR=`eval eval echo ${modulesdir}/ldb`
+			AC_DEFINE_UNQUOTED(LDB_MODULESDIR, "${LDB_MODULESDIR}" , [ldb Modules directory])
+		fi
+		])
 		m4_include(lib/ldb/sqlite3.m4)
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
