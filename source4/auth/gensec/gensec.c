@@ -47,10 +47,15 @@ struct gensec_security_ops **gensec_security_all(void)
 
 struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
 						       struct gensec_security_ops **old_gensec_list, 
-						       enum credentials_use_kerberos use_kerberos) 
+						       struct cli_credentials *creds)
 {
 	struct gensec_security_ops **new_gensec_list;
 	int i, j, num_mechs_in;
+	enum credentials_use_kerberos use_kerberos = CRED_AUTO_USE_KERBEROS;
+
+	if (creds) {
+		use_kerberos = cli_credentials_get_kerberos_state(creds);
+	}
 
 	if (use_kerberos == CRED_AUTO_USE_KERBEROS) {
 		if (!talloc_reference(mem_ctx, old_gensec_list)) {
@@ -112,7 +117,6 @@ struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gense
 		}
 		return backends;
 	} else {
-		enum credentials_use_kerberos use_kerberos;
 		struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 		if (!creds) {
 			if (!talloc_reference(mem_ctx, backends)) {
@@ -120,8 +124,7 @@ struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gense
 			}
 			return backends;
 		}
-		use_kerberos = cli_credentials_get_kerberos_state(creds);
-		return gensec_use_kerberos_mechs(mem_ctx, backends, use_kerberos);
+		return gensec_use_kerberos_mechs(mem_ctx, backends, creds);
 	}
 }
 
