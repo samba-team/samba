@@ -2,6 +2,8 @@
 .*ncacn_ip_tcp.* 		# transport not supported by samba 3
 .*LDAP.* 				# Samba 3 doesn't have it's own LDAP server (yet)
 .*ldap.*				# Samba 3 doesn't have it's own LDAP server (yet)
+^base.js$ 				# Samba 3 doesn't need to selftest Samba4 code
+^ldb.js$ 				# Samba 3 doesn't need to selftest Samba4 code
 ^samr.js$ 				# Uses ncalrpc, which isn't available for Samba 3
 ^winreg$ 				# Uses ncalrpc, which isn't available for Samba 3
 ^echo.js$				# Uses ncalrpc, which isn't available for Samba 3
