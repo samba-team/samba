@@ -624,7 +624,7 @@ _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 					   struct auth_session_info **_session_info) 
 {
 	return _auth_system_session_info(parent_ctx, 
-			lp_parm_bool(NULL, "system", "anonymous", false), 
+			lp_parm_bool(global_loadparm, NULL, "system", "anonymous", false), 
 			_session_info);
 }
 

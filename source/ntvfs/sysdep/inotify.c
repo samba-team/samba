@@ -245,7 +245,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
 
-	if (!lp_parm_bool(NULL, "notify", "inotify", true)) {
+	if (!lp_parm_bool(global_loadparm, NULL, "notify", "inotify", true)) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 

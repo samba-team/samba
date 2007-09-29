@@ -72,8 +72,8 @@ static struct smbcli_state *connect_to_server(void *mem_ctx,
 	NTSTATUS status;
 	struct smbcli_state *cli;
 
-	const char *host = lp_parm_string(NULL, "torture", "host");
-	const char *share = lp_parm_string(NULL, "torture", "share");
+	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 
 	status = smbcli_full_connection(mem_ctx, &cli,
 					host, share, NULL,

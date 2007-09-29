@@ -798,13 +798,14 @@ static void init_copymap(struct loadparm_service *pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(struct loadparm_service *service, 
+const char *lp_get_parametric(struct loadparm_context *lp_ctx, 
+			      struct loadparm_service *service, 
 			      const char *type, const char *option)
 {
 	char *vfskey;
         struct param_opt *data;
 	
-	data = (service == NULL ? loadparm.Globals.param_opt : service->param_opt);
+	data = (service == NULL ? lp_ctx->Globals.param_opt : service->param_opt);
     
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
@@ -820,7 +821,7 @@ const char *lp_get_parametric(struct loadparm_service *service,
 	if (service != NULL) {
 		/* Try to fetch the same option but from globals */
 		/* but only if we are not already working with Globals */
-		for (data = loadparm.Globals.param_opt; data; 
+		for (data = lp_ctx->Globals.param_opt; data; 
 		     data = data->next) {
 			if (strcmp(data->key, vfskey) == 0) {
 				free(vfskey);
@@ -902,10 +903,11 @@ static bool lp_bool(const char *s)
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char *lp_parm_string(struct loadparm_service *service, const char *type, 
+const char *lp_parm_string(struct loadparm_context *lp_ctx, 
+			   struct loadparm_service *service, const char *type, 
 			   const char *option)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 
 	if (value)
 		return lp_string(value);
@@ -917,11 +919,12 @@ const char *lp_parm_string(struct loadparm_service *service, const char *type,
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char **lp_parm_string_list(struct loadparm_service *service, 
+const char **lp_parm_string_list(struct loadparm_context *lp_ctx, 
+				 struct loadparm_service *service, 
 				 const char *type, 
 				 const char *option, const char *separator)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
 	if (value)
 		return str_list_make(talloc_autofree_context(), value, 
@@ -933,10 +936,11 @@ const char **lp_parm_string_list(struct loadparm_service *service,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-int lp_parm_int(struct loadparm_service *service, const char *type, 
+int lp_parm_int(struct loadparm_context *lp_ctx, 
+		struct loadparm_service *service, const char *type, 
 		const char *option, int default_v)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
 	if (value)
 		return lp_int(value);
@@ -949,12 +953,13 @@ int lp_parm_int(struct loadparm_service *service, const char *type,
  * Parametric option has following syntax: 'Type: option = value'.
  */
 
-int lp_parm_bytes(struct loadparm_service *service, const char *type, 
+int lp_parm_bytes(struct loadparm_context *lp_ctx, 
+		  struct loadparm_service *service, const char *type, 
 		  const char *option, int default_v)
 {
 	uint64_t bval;
 
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 
 	if (value && conv_str_size(value, &bval)) {
 		if (bval <= INT_MAX) {
@@ -968,10 +973,11 @@ int lp_parm_bytes(struct loadparm_service *service, const char *type,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-unsigned long lp_parm_ulong(struct loadparm_service *service, const char *type, 
+unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx, 
+			    struct loadparm_service *service, const char *type, 
 			    const char *option, unsigned long default_v)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
 	if (value)
 		return lp_ulong(value);
@@ -980,10 +986,11 @@ unsigned long lp_parm_ulong(struct loadparm_service *service, const char *type,
 }
 
 
-double lp_parm_double(struct loadparm_service *service, const char *type, 
+double lp_parm_double(struct loadparm_context *lp_ctx, 
+		      struct loadparm_service *service, const char *type, 
 		      const char *option, double default_v)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
 	if (value)
 		return lp_double(value);
@@ -994,10 +1001,11 @@ double lp_parm_double(struct loadparm_service *service, const char *type,
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-bool lp_parm_bool(struct loadparm_service *service, const char *type, 
+bool lp_parm_bool(struct loadparm_context *lp_ctx, 
+		  struct loadparm_service *service, const char *type, 
 		  const char *option, bool default_v)
 {
-	const char *value = lp_get_parametric(service, type, option);
+	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
 	if (value)
 		return lp_bool(value);
@@ -1569,7 +1577,8 @@ static void init_copymap(struct loadparm_service *pservice)
 /***************************************************************************
  Process a parametric option
 ***************************************************************************/
-static bool lp_do_parameter_parametric(struct loadparm_service *service, 
+static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx, 
+				       struct loadparm_service *service, 
 				       const char *pszParmName, 
 				       const char *pszParmValue, int flags)
 {
@@ -1587,7 +1596,7 @@ static bool lp_do_parameter_parametric(struct loadparm_service *service,
 	strlower(name);
 
 	if (service == NULL) {
-		data = loadparm.Globals.param_opt;
+		data = lp_ctx->Globals.param_opt;
 		mem_ctx = talloc_autofree_context();
 	} else {
 		data = service->param_opt;
@@ -1619,7 +1628,7 @@ static bool lp_do_parameter_parametric(struct loadparm_service *service,
 	paramo->value = talloc_strdup(paramo, pszParmValue);
 	paramo->flags = flags;
 	if (service == NULL) {
-		DLIST_ADD(loadparm.Globals.param_opt, paramo);
+		DLIST_ADD(lp_ctx->Globals.param_opt, paramo);
 	} else {
 		DLIST_ADD(service->param_opt, paramo);
 	}
@@ -1734,7 +1743,7 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	if (parmnum < 0) {
 		if (strchr(pszParmName, ':')) {
-			return lp_do_parameter_parametric(NULL, pszParmName, pszParmValue, 0);
+			return lp_do_parameter_parametric(lp_ctx, NULL, pszParmName, pszParmValue, 0);
 		}
 		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
 		return true;
@@ -1768,7 +1777,7 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 
 	if (parmnum < 0) {
 		if (strchr(pszParmName, ':')) {
-			return lp_do_parameter_parametric(service, pszParmName, pszParmValue, 0);
+			return lp_do_parameter_parametric(lp_ctx, service, pszParmName, pszParmValue, 0);
 		}
 		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
 		return true;
@@ -1861,7 +1870,8 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
-		return lp_do_parameter_parametric(NULL, pszParmName, pszParmValue, FLAG_CMDLINE);
+		return lp_do_parameter_parametric(lp_ctx, NULL, pszParmName, 
+						  pszParmValue, FLAG_CMDLINE);
 	}
 
 	if (parmnum < 0) {

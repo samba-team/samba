@@ -130,7 +130,7 @@ static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	md.t2mkdir.in.eas[2].value = data_blob_talloc(mem_ctx, "xx1", 3);
 	status = smb_raw_mkdir(cli->tree, &md);
 
-	if (lp_parm_bool(NULL, "torture", "samba3", false)
+	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)
 	    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)) {
 		d_printf("EAS not supported -- not treating as fatal\n");
 	}

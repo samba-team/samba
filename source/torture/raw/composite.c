@@ -87,7 +87,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
 		event_loop_once(cli->transport->socket->event.ctx);
-		if (lp_parm_bool(NULL, "torture", "progress", true)) {
+		if (lp_parm_bool(global_loadparm, NULL, "torture", "progress", true)) {
 			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
@@ -152,10 +152,10 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	io2.in.dest_host = lp_parm_string(NULL, "torture", "host");
+	io2.in.dest_host = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	io2.in.port = 0;
-	io2.in.called_name = lp_parm_string(NULL, "torture", "host");
-	io2.in.service = lp_parm_string(NULL, "torture", "share");
+	io2.in.called_name = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	io2.in.service = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	io2.in.service_type = "A:";
 
 	io2.in.credentials = cmdline_credentials;
@@ -177,7 +177,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	while (*count != torture_numops) {
 		event_loop_once(event_ctx);
-		if (lp_parm_bool(NULL, "torture", "progress", true)) {
+		if (lp_parm_bool(global_loadparm, NULL, "torture", "progress", true)) {
 			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
@@ -297,7 +297,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
 		event_loop_once(event_ctx);
-		if (lp_parm_bool(NULL, "torture", "progress", true)) {
+		if (lp_parm_bool(global_loadparm, NULL, "torture", "progress", true)) {
 			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
@@ -340,10 +340,10 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int *count = talloc_zero(mem_ctx, int);
 	BOOL ret = True;
 
-	io1.in.dest_host = lp_parm_string(NULL, "torture", "host");
+	io1.in.dest_host = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	io1.in.port = 0;
-	io1.in.called_name = lp_parm_string(NULL, "torture", "host");
-	io1.in.service = lp_parm_string(NULL, "torture", "share");
+	io1.in.called_name = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	io1.in.service = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	io1.in.service_type = "A:";
 	io1.in.credentials = cmdline_credentials;
 	io1.in.workgroup = lp_workgroup(global_loadparm);
@@ -364,7 +364,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	while (*count < torture_numops) {
 		event_loop_once(event_ctx);
-		if (lp_parm_bool(NULL, "torture", "progress", true)) {
+		if (lp_parm_bool(global_loadparm, NULL, "torture", "progress", true)) {
 			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}

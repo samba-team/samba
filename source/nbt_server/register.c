@@ -117,7 +117,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 {
 	uint32_t refresh_time;
-	uint32_t max_refresh_time = lp_parm_int(NULL, "nbtd", "max_refresh_time", 7200);
+	uint32_t max_refresh_time = lp_parm_int(global_loadparm, NULL, "nbtd", "max_refresh_time", 7200);
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
@@ -187,7 +187,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 		iname->name.scope = NULL;
 	}
 	iname->nb_flags          = nb_flags;
-	iname->ttl               = lp_parm_int(NULL, "nbtd", "bcast_ttl", 300000);
+	iname->ttl               = lp_parm_int(global_loadparm, NULL, "nbtd", "bcast_ttl", 300000);
 	iname->registration_time = timeval_zero();
 	iname->wins_server       = NULL;
 

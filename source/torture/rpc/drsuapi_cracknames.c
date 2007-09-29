@@ -589,7 +589,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
-				.skip = lp_parm_bool(NULL, "torture", "samba4", False)
+				.skip = lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,

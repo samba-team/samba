@@ -233,7 +233,7 @@ static bool test_schannel(struct torture_context *tctx,
 {
 	struct test_join *join_ctx;
 	NTSTATUS status;
-	const char *binding = lp_parm_string(NULL, "torture", "binding");
+	const char *binding = lp_parm_string(global_loadparm, NULL, "torture", "binding");
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;

@@ -105,7 +105,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
 			}
-			value = lp_get_parametric(service, type, option);
+			value = lp_get_parametric(global_loadparm, service, type, option);
 			if (value == NULL) {
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
@@ -130,7 +130,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		value = lp_get_parametric(NULL, type, option);
+		value = lp_get_parametric(global_loadparm, NULL, type, option);
 		if (value == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;

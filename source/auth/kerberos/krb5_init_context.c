@@ -250,12 +250,12 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		status = NT_STATUS_INVALID_PARAMETER;
 		switch (hi->proto) {
 		case KRB5_KRBHST_UDP:
-			if (lp_parm_bool(NULL, "krb5", "udp", true)) {
+			if (lp_parm_bool(global_loadparm, NULL, "krb5", "udp", true)) {
 				status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
 			}
 			break;
 		case KRB5_KRBHST_TCP:
-			if (lp_parm_bool(NULL, "krb5", "tcp", true)) {
+			if (lp_parm_bool(global_loadparm, NULL, "krb5", "tcp", true)) {
 				status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
 			}
 			break;
@@ -473,7 +473,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	/* Set options in kerberos */
 
 	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context,
-					   lp_parm_bool(NULL, "krb5", "set_dns_canonicalize", false));
+					   lp_parm_bool(global_loadparm, NULL, "krb5", "set_dns_canonicalize", false));
 
 	return 0;
 }
