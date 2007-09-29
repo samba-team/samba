@@ -983,7 +983,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
 			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str);
 		} else {
-		    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+		    (void)Debug1( "[%s, %2d%s] %s:%s(%d)\n",
 			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str, file, func, line );
 		}
