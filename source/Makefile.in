@@ -6,6 +6,7 @@
 # Copyright (C) 2003 Jim McDonough <jmcd@us.ibm.com>
 # Copyright (C) 2002-2003 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2006 Lars Mueller <lars@samba.org>
+# Copyright (C) 2007 James Peach <jpeach@samba.org>
 ###########################################################################
 
 prefix=@prefix@
@@ -27,6 +28,10 @@ DSO_EXPORTS=@DSO_EXPORTS@
 SONAME_VER=`grep ^$@ $(builddir)/library-versions | cut -d: -f2`
 SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
 
+# The MODULE_EXPORTS variable contains the platform-specific linker flags
+# needed to restrict the exports for VFS, IDMAP, RPC and PASSDB modules.
+MODULE_EXPORTS=@MODULE_EXPORTS@
+
 # Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
 # (GCC) warnings. This is done automtically for --enable-developer
 # and --enable-krb5developer.
@@ -38,10 +43,6 @@ EXEEXT=@EXEEXT@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
-
-# The MODULE_EXPORTS variable conatins the platform-specific linker flags
-# needed to restrict the exports for VFS, IDMAP, RPC and PASSDB modules.
-MODULE_EXPORTS=@MODULE_EXPORTS@
 
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
 AWK=@AWK@
@@ -1433,7 +1434,7 @@ bin/librpc_unixinfo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_UNIXINFO_OBJ)
 
 bin/librpc_epmapper.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EPMAPPER_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
+	@$(SHLD_MODULE) $(RPC_EPMAPPER_OBJ)
 
 bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
 	@echo "Linking $@"
