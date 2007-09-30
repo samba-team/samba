@@ -118,7 +118,7 @@ interface dcerpc
 	} dcerpc_fault;
 
 	/* the auth types we know about */
-	typedef [v1_enum] enum {
+	typedef [enum8bit] enum {
 		DCERPC_AUTH_TYPE_NONE     = 0,
 		/* this seems to be not krb5! */
 		DCERPC_AUTH_TYPE_KRB5_1   = 1,
@@ -132,17 +132,20 @@ interface dcerpc
 		DCERPC_AUTH_TYPE_MSMQ     = 100
 	} dcerpc_AuthType;
 
+	typedef [enum8bit] enum {
+		DCERPC_AUTH_LEVEL_NONE      = 1,
+		DCERPC_AUTH_LEVEL_CONNECT   = 2,
+		DCERPC_AUTH_LEVEL_CALL      = 3,
+		DCERPC_AUTH_LEVEL_PACKET    = 4,
+		DCERPC_AUTH_LEVEL_INTEGRITY = 5,
+		DCERPC_AUTH_LEVEL_PRIVACY   = 6
+	} dcerpc_AuthLevel;
+
 	const uint8 DCERPC_AUTH_LEVEL_DEFAULT	= DCERPC_AUTH_LEVEL_CONNECT;
-	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
-	const uint8 DCERPC_AUTH_LEVEL_CONNECT   = 2;
-	const uint8 DCERPC_AUTH_LEVEL_CALL      = 3;
-	const uint8 DCERPC_AUTH_LEVEL_PACKET    = 4;
-	const uint8 DCERPC_AUTH_LEVEL_INTEGRITY = 5;
-	const uint8 DCERPC_AUTH_LEVEL_PRIVACY   = 6;
 
 	typedef [public] struct {
-		uint8  auth_type; 
-		uint8  auth_level;
+		dcerpc_AuthType auth_type; 
+		dcerpc_AuthLevel auth_level;
 		uint8  auth_pad_length;
 		uint8  auth_reserved;
 		uint32 auth_context_id;
