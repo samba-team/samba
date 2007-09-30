@@ -8,8 +8,8 @@ use Exporter;
 use strict;
 
 sub new($$$$) {
-	my ($class, $verbose, $immediate, $statistics) = @_;
-	my $self = { 
+	my ($class, $statistics) = @_;
+	my $self = {
 		statistics => $statistics,
 		test_output => {}
 	};

@@ -694,7 +694,7 @@ sub teardown_env($)
 my $msg_ops;
 if ($opt_format eq "buildfarm") {
 	require output::buildfarm;
-	$msg_ops = new output::buildfarm();
+	$msg_ops = new output::buildfarm($statistics);
 } elsif ($opt_format eq "plain") {
 	require output::plain;
 	$msg_ops = new output::plain($opt_verbose, $opt_immediate, $statistics);
