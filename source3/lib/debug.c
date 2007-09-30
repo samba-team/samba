@@ -913,6 +913,7 @@ void dbgflush( void )
 
  Input:  level - Debug level of the message (not the system-wide debug
                   level. )
+	  cls   - Debuglevel class of the calling module.
           file  - Pointer to a string containing the name of the file
                   from which this function was called, or an empty string
                   if the __FILE__ macro is not implemented.
@@ -930,7 +931,7 @@ void dbgflush( void )
 
 ****************************************************************************/
 
-BOOL dbghdr( int level, const char *file, const char *func, int line )
+BOOL dbghdr(int level, int cls, const char *file, const char *func, int line)
 {
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
@@ -975,6 +976,14 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
 				", effective(%u, %u), real(%u, %u)",
 				(unsigned int)geteuid(), (unsigned int)getegid(),
 				(unsigned int)getuid(), (unsigned int)getgid()); 
+		}
+
+		if (lp_debug_class() && (cls != DBGC_ALL)) {
+			size_t hs_len = strlen(header_str);
+			slprintf(header_str + hs_len,
+				 sizeof(header_str) -1 - hs_len,
+				 ", class=%s",
+				 default_classname_table[cls]);
 		}
   
 		/* Print it all out at once to prevent split syslog output. */
