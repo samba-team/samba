@@ -36,11 +36,14 @@ sub teardown_env($$)
 
 	my $smbdpid = read_pid($envvars, "smbd");
 	my $nmbdpid = read_pid($envvars, "nmbd");
+	my $winbinddpid = read_pid($envvars, "winbindd");
 
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
+	$self->stop_sig_term($winbinddpid);
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
+	$self->stop_sig_kill($winbinddpid);
 
 	return 0;
 }
@@ -69,8 +72,13 @@ sub getlog_env_app($$$)
 sub getlog_env($$)
 {
 	my ($self, $envvars) = @_;
+	my $ret = "";
 
-	return $self->getlog_env_app($envvars, "SMBD") .  $self->getlog_env_app($envvars, "NMBD");
+	$ret .= $self->getlog_env_app($envvars, "SMBD");
+	$ret .= $self->getlog_env_app($envvars, "NMBD");
+	$ret .= $self->getlog_env_app($envvars, "WINBINDD");
+
+	return $ret;
 }
 
 sub check_env($$)
@@ -98,7 +106,10 @@ sub setup_dc($$)
 
 	my $vars = $self->provision($path, "dc");
 
-	$self->check_or_start($vars, ($ENV{NMBD_MAXTIME} or 2700), ($ENV{SMBD_MAXTIME} or 2700));
+	$self->check_or_start($vars,
+			      ($ENV{NMBD_MAXTIME} or 2700),
+			      ($ENV{WINBINDD_MAXTIME} or 2700),
+			      ($ENV{SMBD_MAXTIME} or 2700));
 
 	$self->wait_for_start($vars);
 
@@ -140,7 +151,7 @@ sub read_pid($$)
 }
 
 sub check_or_start($$$$) {
-	my ($self, $env_vars, $nmbd_maxtime, $smbd_maxtime) = @_;
+	my ($self, $env_vars, $nmbd_maxtime, $winbindd_maxtime, $smbd_maxtime) = @_;
 
 	unlink($env_vars->{NMBD_TEST_LOG});
 	print "STARTING NMBD...";
@@ -148,11 +159,28 @@ sub check_or_start($$$$) {
 	if ($pid == 0) {
 		open STDOUT, ">$env_vars->{NMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
-	
+
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
 		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "-d0", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
+	print "DONE\n";
+
+	unlink($env_vars->{WINBINDD_TEST_LOG});
+	print "STARTING WINBINDD...";
+	my $pid = fork();
+	if ($pid == 0) {
+		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
+		open STDERR, '>&STDOUT';
+
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
+		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
+		exec($self->binpath("timelimit"), $winbindd_maxtime, $self->binpath("winbindd"), "-F", "-S", "-d0", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start winbindd: $!");
+	}
+	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
 
 	unlink($env_vars->{SMBD_TEST_LOG});
@@ -161,7 +189,9 @@ sub check_or_start($$$$) {
 	if ($pid == 0) {
 		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
-	
+
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
 		exec($self->binpath("timelimit"), $smbd_maxtime, $self->binpath("smbd"), "-F", "-S", "-d0" , "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
 	}
@@ -216,6 +246,8 @@ sub provision($$$)
 	my %ret = ();
 	my $server = "localhost2";
 	my $server_ip = "127.0.0.2";
+	my $domain = "SAMBA-TEST";
+
 	my $username = `PATH=/usr/ucb:$ENV{PATH} whoami`;
 	chomp $username;
 	my $password = "test";
@@ -223,14 +255,29 @@ sub provision($$$)
 	my $srcdir="$RealBin/..";
 	my $scriptdir="$srcdir/selftest";
 	my $prefix_abs = abs_path($prefix);
-	my $shrdir="$prefix_abs/tmp";
+
+	my @dirs = ();
+
+	my $shrdir="$prefix_abs/share";
+	push(@dirs,$shrdir);
+
 	my $libdir="$prefix_abs/lib";
+	push(@dirs,$libdir);
+
 	my $piddir="$prefix_abs/pid";
-	my $conffile="$libdir/server.conf";
+	push(@dirs,$piddir);
+
 	my $privatedir="$prefix_abs/private";
+	push(@dirs,$privatedir);
+
 	my $lockdir="$prefix_abs/lockdir";
+	push(@dirs,$lockdir);
+
 	my $logdir="$prefix_abs/logs";
-	my $domain = "SAMBA-TEST";
+	push(@dirs,$logdir);
+
+	# this gets autocreated by winbindd
+	my $wbsockdir="$prefix_abs/winbindd";
 
 	## 
 	## create the test directory layout
@@ -238,10 +285,9 @@ sub provision($$$)
 	mkdir($prefix_abs, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
 	system("rm -rf $prefix_abs/*");
-	mkdir($_, 0777) foreach($privatedir,$libdir,$piddir,$lockdir,$logdir);
-	my $tmpdir = "$prefix_abs/tmp";
-	mkdir($tmpdir, 0777);
-	chmod 0777, $tmpdir;
+	mkdir($_, 0777) foreach(@dirs);
+
+	my $conffile="$libdir/server.conf";
 
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
 	print CONF "
@@ -283,8 +329,10 @@ sub provision($$$)
 
 print CONF "
 
+	winbindd:socket dir = $wbsockdir
+
 [tmp]
-	path = $tmpdir
+	path = $shrdir
 	read only = no
 	smbd:sharedelay = 100000
 	map hidden = yes
@@ -321,6 +369,7 @@ print CONF "
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
+	$ret{WINBINDD_TEST_LOG} = "$prefix/winbindd_test.log";
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret{SERVERCONFFILE} = $conffile;
 	$ret{CONFIGURATION} ="-s $conffile";
@@ -330,6 +379,7 @@ print CONF "
 	$ret{NETBIOSNAME} = $server;
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
+	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
 	return \%ret;
 }
 
