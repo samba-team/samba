@@ -306,6 +306,7 @@ typedef struct {
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
+	BOOL bDebugClass;
 	BOOL bEnableCoreFiles;
 	BOOL bHostMSDfs;
 	BOOL bUseMmap;
@@ -981,6 +982,7 @@ static struct parm_struct parm_table[] = {
 	{"debug hires timestamp", P_BOOL, P_GLOBAL, &Globals.bDebugHiresTimestamp, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, FLAG_ADVANCED}, 
+	{"debug class", P_BOOL, P_GLOBAL, &Globals.bDebugClass, NULL, NULL, FLAG_ADVANCED},
 	{"enable core files", P_BOOL, P_GLOBAL, &Globals.bEnableCoreFiles, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
@@ -1547,6 +1549,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bDebugHiresTimestamp = False;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
+	Globals.bDebugClass = False;
 	Globals.bEnableCoreFiles = True;
 	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
@@ -1958,6 +1961,7 @@ FN_GLOBAL_BOOL(lp_debug_prefix_timestamp, &Globals.bDebugPrefixTimestamp)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
 FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)
+FN_GLOBAL_BOOL(lp_debug_class, &Globals.bDebugClass)
 FN_GLOBAL_BOOL(lp_enable_core_files, &Globals.bEnableCoreFiles)
 FN_GLOBAL_BOOL(lp_browse_list, &Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_nis_home_map, &Globals.bNISHomeMap)

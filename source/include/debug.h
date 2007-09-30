@@ -40,7 +40,7 @@
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 /* PRINTFLIKE1 */
 BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbghdr( int level, const char *file, const char *func, int line );
+BOOL dbghdr( int level, int cls, const char *file, const char *func, int line );
 
 #if defined(sgi) && (_COMPILER_VERSION >= 730)
 #pragma mips_frequency_hint NEVER Debug1
@@ -167,7 +167,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
      ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
@@ -175,7 +175,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
      ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
+   && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUG( level, body ) \
@@ -183,7 +183,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
            ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
@@ -191,7 +191,7 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
            ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
 	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdr( level, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
+       && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
