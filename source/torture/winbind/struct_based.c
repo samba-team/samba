@@ -589,8 +589,14 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
+	bool ok;
+	struct torture_trust_domain *domlist = NULL;
+	int i;
+
 
 	torture_comment(torture, "Running WINBINDD_SHOW_SEQUENCE (struct based)\n");
+
+	torture_comment(torture, " - Running WINBINDD_SHOW_SEQUENCE without domain:\n");
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
@@ -599,6 +605,22 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 
 	if (rep.extra_data.data) {
 		torture_comment(torture, "%s", (char *)rep.extra_data.data);
+	}
+
+	torture_comment(torture, " - getting list of trusted domains\n");
+	ok = get_trusted_domains(torture, &domlist);
+	torture_assert(torture, ok, "failed to get trust list");
+
+	for (i=0; domlist[i].netbios_name; i++) {
+		ZERO_STRUCT(req);
+		ZERO_STRUCT(rep);
+		fstrcpy(req.domain_name, domlist[i].netbios_name);
+		torture_comment(torture, " - Running WINBINDD_SHOW_SEQUENCE "
+				"for domain %s:\n", req.domain_name);
+		DO_STRUCT_REQ_REP(WINBINDD_SHOW_SEQUENCE, &req, &rep);
+		if (rep.extra_data.data) {
+			torture_comment(torture, "%s", (char *)rep.extra_data.data);
+		}
 	}
 
 	return true;
