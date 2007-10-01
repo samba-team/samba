@@ -127,7 +127,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 	fi
 	CFLAGS="-DHAVE_OPENSSL ${INCLUDE_hcrypto} ${CFLAGS}"
 	saved_LIB_hcrypto="$LIB_hcrypto"
-	for lres in "" "-lnsl -lsocket"; do
+	for lres in "" "-ldl" "-lnsl -lsocket" "-lnsl -lsocket -ldl"; do
 		LIB_hcrypto="${saved_LIB_hcrypto} -lcrypto $lres"
 		LIB_hcrypto_a="$LIB_hcrypto"
 		LIB_hcrypto_so="$LIB_hcrypto"
