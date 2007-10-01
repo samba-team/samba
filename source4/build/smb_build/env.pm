@@ -59,10 +59,6 @@ sub PkgConfig($$$$$$$$$$$$)
 
 	print __FILE__.": creating $path\n";
 
-	if ($self->{config}->{libreplace_cv_immediate_structures} eq "yes") {
-		$cflags .= " -DHAVE_IMMEDIATE_STRUCTURES=1";
-	}
-
 	mkpath(dirname($path),0,0755);
 	open(OUT, ">$path") or die("Can't open $path: $!");
 
