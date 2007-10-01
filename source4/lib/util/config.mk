@@ -3,6 +3,7 @@
 #SO_VERSION = 0
 #DESCRIPTION = Generic utility functions
 PUBLIC_HEADERS = util.h \
+				 attr.h \
 				 byteorder.h \
 				 data_blob.h \
 				 debug.h \
