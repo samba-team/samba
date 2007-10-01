@@ -216,7 +216,7 @@ sub mk_openldap($$$)
 	system("$self->{bindir}/ad2oLschema $configuration --option=convert:target=openldap -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/backend-schema.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
-	$ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
+	$ENV{PATH} = "$ENV{OPENLDAP_PATH}/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
 
 	unlink($modconf);
 	open(CONF, ">$modconf"); close(CONF);
@@ -225,8 +225,18 @@ sub mk_openldap($$$)
 		open(CONF, ">$modconf"); 
 		# enable slapd modules
 		print CONF "
+moduleload	back_hdb
+moduleload	syncprov
+";
+		close(CONF);
+	}
+
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules
+		print CONF "
 modulepath	/usr/lib/ldap
-moduleload	back_bdb
+moduleload	back_hdb
 moduleload	syncprov
 ";
 		close(CONF);
@@ -412,7 +422,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
-#	push (@provision_options, "--quiet");
+	push (@provision_options, "--quiet");
 	push (@provision_options, "--domain=$domain");
 	push (@provision_options, "--realm=$realm");
 	push (@provision_options, "--adminpass=$password");
