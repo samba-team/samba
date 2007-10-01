@@ -356,7 +356,7 @@ void http_error(struct websrv_context *web, int code, const char *info)
 	http_output_headers(web);
 	EVENT_FD_NOT_READABLE(web->conn->event.fde);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
-	web->output.output_pending = True;
+	web->output.output_pending = true;
 }
 
 /*
@@ -452,7 +452,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	if (web->session) {
 		SETVAR(ESP_REQUEST_OBJ, "SESSION_ID", web->session->id);
 	}
-	SETVAR(ESP_REQUEST_OBJ, "COOKIE_SUPPORT", web->input.cookie?"True":"False");
+	SETVAR(ESP_REQUEST_OBJ, "COOKIE_SUPPORT", web->input.cookie?"true":"false");
 
 	SETVAR(ESP_HEADERS_OBJ, "HTTP_REFERER", web->input.referer);
 	SETVAR(ESP_HEADERS_OBJ, "HOST", web->input.host);
@@ -474,7 +474,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SAMBA");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
-	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"True":"False");
+	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"true":"false");
 }
 
 #if HAVE_SETJMP_H
@@ -543,7 +543,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 
   note that the preauth is run even for static pages such as images
 */
-static BOOL http_preauth(struct esp_state *esp)
+static bool http_preauth(struct esp_state *esp)
 {
 	const char *path = http_local_path(esp->web,
                                            HTTP_PREAUTH_URI,
@@ -551,11 +551,11 @@ static BOOL http_preauth(struct esp_state *esp)
 	int i;
 	if (path == NULL) {
 		http_error(esp->web, 500, "Internal server error");
-		return False;
+		return false;
 	}
 	if (!file_exist(path)) {
 		/* if the preath script is not installed then allow access */
-		return True;
+		return true;
 	}
 	esp_request(esp, HTTP_PREAUTH_URI);
 	for (i=0;i<esp->web->output.content.length;i++) {
@@ -564,11 +564,11 @@ static BOOL http_preauth(struct esp_state *esp)
 			   to be html, so that we can show the login page for
 			   failed access to images */
 			http_setHeader(esp->web, "Content-Type: text/html", 0);
-			return False;
+			return false;
 		}
 	}
 	data_blob_free(&esp->web->output.content);
-	return True;
+	return true;
 }
 
 
@@ -704,7 +704,7 @@ static void http_setup_session(struct esp_state *esp)
 	const char *key = NULL;
 	struct esp_data *edata = talloc_get_type(esp->web->task->private, struct esp_data);
 	struct session_data *s;
-	BOOL generated_key = False;
+	bool generated_key = false;
 
 	/* look for our session key */
 	if (cookie && (p = strstr(cookie, session_key)) && 
@@ -717,7 +717,7 @@ static void http_setup_session(struct esp_state *esp)
 		key = esp->web->input.session_key;
 	} else if (key == NULL) {
 		key = generate_random_str_list(esp, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-		generated_key = True;
+		generated_key = true;
 	}
 
 	/* try to find this session in the existing session list */
@@ -739,7 +739,7 @@ static void http_setup_session(struct esp_state *esp)
 		talloc_set_destructor(s, session_destructor);
 		if (!generated_key) {
 			mprSetPropertyValue(&esp->variables[ESP_REQUEST_OBJ], 
-					    "SESSION_EXPIRED", mprCreateStringVar("True", 0));
+					    "SESSION_EXPIRED", mprCreateStringVar("true", 0));
 		}
 	}
 
@@ -798,7 +798,7 @@ void http_process_input(struct websrv_context *web)
 		{"txt",  "text/plain"},
 		{"ico",  "image/x-icon"},
 		{"css",  "text/css"},
-		{"esp",  "text/html", True}
+		{"esp",  "text/html", true}
 	};
 
 	/*
@@ -924,7 +924,7 @@ void http_process_input(struct websrv_context *web)
 	if (!web->output.output_pending) {
 		http_output_headers(web);
 		EVENT_FD_WRITEABLE(web->conn->event.fde);
-		web->output.output_pending = True;
+		web->output.output_pending = true;
 	}
 
 	/* copy any application data to long term storage in edata */
@@ -978,11 +978,11 @@ internal_error:
 NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 {
 	if (line[0] == 0) {
-		web->input.end_of_headers = True;
+		web->input.end_of_headers = true;
 	} else if (strncasecmp(line,"GET ", 4)==0) {
 		web->input.url = talloc_strndup(web, &line[4], strcspn(&line[4], " \t"));
 	} else if (strncasecmp(line,"POST ", 5)==0) {
-		web->input.post_request = True;
+		web->input.post_request = true;
 		web->input.url = talloc_strndup(web, &line[5], strcspn(&line[5], " \t"));
 	} else if (strchr(line, ':') == NULL) {
 		http_error(web, 400, "This server only accepts GET and POST requests");
