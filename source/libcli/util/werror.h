@@ -19,7 +19,7 @@
 */
 
 #ifndef _WERROR_H_
-#define _WERROR_H
+#define _WERROR_H_
 
 #include <stdint.h>
 
@@ -29,15 +29,9 @@
    from using bool for internal functions 
 */
 
-#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32_t v;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
 #define W_ERROR_V(x) ((x).v)
-#else
-typedef uint32_t WERROR;
-#define W_ERROR(x) (x)
-#define W_ERROR_V(x) (x)
-#endif
 
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
 #define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
