@@ -198,7 +198,7 @@ sub process_file($$$)
 		}
 
 		next unless ( $is_public || $line =~ /
-			      (_DEPRECATED_ |_NORETURN_ |_WARN_UNUSED_RESULT_ |_PURE_ )*^(
+			      ^(_DEPRECATED_ |_NORETURN_ |_WARN_UNUSED_RESULT_ |_PURE_ )*(
 				  void|BOOL|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
 				  ADS_STATUS|enum\s.*\(|DATA_BLOB|WERROR|XFILE|FILE|DIR|
 			      double|TDB_CONTEXT|TDB_DATA|TALLOC_CTX|NTTIME|FN_|init_module|
