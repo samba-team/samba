@@ -77,9 +77,4 @@ typedef struct smb_iconv_s {
 #define strlower(s) strlower_m(s)
 #define strupper(s) strupper_m(s)
 
-/* from lib/charset */
-extern char *dos_charset;
-extern char *unix_charset;
-extern char *display_charset;
-
 #endif /* __CHARSET_H__ */

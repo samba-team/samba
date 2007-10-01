@@ -38,20 +38,16 @@
  * @sa lib/iconv.c
  */
 
-char *unix_charset = NULL;
-char *dos_charset = NULL;
-char *display_charset = NULL;
-
 /**
  * Return the name of a charset to give to iconv().
  **/
-static const char *charset_name(charset_t ch)
+static const char *charset_name(struct loadparm_context *lp_ctx, charset_t ch)
 {
 	switch (ch) {
 	case CH_UTF16: return "UTF-16LE";
-	case CH_UNIX: return unix_charset;
-	case CH_DOS: return dos_charset;
-	case CH_DISPLAY: return display_charset;
+	case CH_UNIX: return lp_unix_charset(lp_ctx);
+	case CH_DOS: return lp_dos_charset(lp_ctx);
+	case CH_DISPLAY: return lp_display_charset(lp_ctx);
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
 	default:
@@ -109,20 +105,20 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
 		return conv_handles[from][to];
 	}
 
-	n1 = charset_name(from);
-	n2 = charset_name(to);
+	n1 = charset_name(global_loadparm, from);
+	n2 = charset_name(global_loadparm, to);
 
 	conv_handles[from][to] = smb_iconv_open(n2,n1);
 	
 	if (conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
-		    strcasecmp(charset_name(CH_DOS), "ASCII") != 0) {
+		    strcasecmp(charset_name(global_loadparm, CH_DOS), "ASCII") != 0) {
 			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
-				 charset_name(CH_DOS)));
+				 charset_name(global_loadparm, CH_DOS)));
 			lp_set_cmdline(global_loadparm, "dos charset", "ASCII");
 
-			n1 = charset_name(from);
-			n2 = charset_name(to);
+			n1 = charset_name(global_loadparm, from);
+			n2 = charset_name(global_loadparm, to);
 			
 			conv_handles[from][to] = smb_iconv_open(n2,n1);
 		}
@@ -176,12 +172,12 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 				reason="No more room"; 
 				if (from == CH_UNIX) {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
-						 charset_name(from), charset_name(to),
+						 charset_name(global_loadparm, from), charset_name(global_loadparm, to),
 						 (int)srclen, (int)destlen, 
 						 (const char *)src));
 				} else {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
-						 charset_name(from), charset_name(to),
+						 charset_name(global_loadparm, from), charset_name(global_loadparm, to),
 						 (int)srclen, (int)destlen));
 				}
 			       return -1;
@@ -223,7 +219,7 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
 		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
-			  charset_name(from), charset_name(to)));
+			  charset_name(global_loadparm, from), charset_name(global_loadparm, to)));
 		return -1;
 	}
 
