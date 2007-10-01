@@ -88,8 +88,8 @@ provision [options]
  --partitions-only              Configure Samba's partitions, but do not modify them (ie, join a BDC)
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
- --ldap-module= MODULE          LDB mapping module to use for the LDAP backend
- --aci=         ACI             An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server
+ --ldap-module  MODULE          LDB mapping module to use for the LDAP backend
+ --aci          ACI             An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server
 You must provide at least a realm and domain
 
 ");
@@ -169,14 +169,26 @@ if (ldapbase) {
 	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
 	provision_dns(subobj, message, paths, system_session, creds);
 	message("To reproduce this provision, run with:\n");
-	message("--realm='" + subobj.REALM_CONF + "' --domain='" + subobj.DOMAIN_CONF + "' --domain-guid='" + subobj.DOMAINGUID + "' \\\n");
-	message("--policy-guid='" + subobj.POLICYGUID + "' --host-name='" + subobj.HOSTNAME + "' --host-ip='" + subobj.HOSTIP + "' \\\n");
-	message("--host-guid='" + subobj.HOSTGUID + "' --invocationid='" + subobj.INVOCATIONID + "' \\\n");
-	message("--adminpass='" + subobj.ADMINPASS + "' --krbtgtpass='" + subobj.KRBTGTPASS + "' \\\n");
-	message("--machinepass='" + subobj.MACHINEPASS + "' --dnspass='" + subobj.DNSPASS + "' \\\n");
-	message("--root='" + subobj.ROOT + "' --nobody='" + subobj.NOBODY + "' --nogroup-'" + subobj.NOGROUP + "' \\\n");
-	message("--wheel='" + subobj.WHEEL + "' --users='" + subobj.USERS + "' --server-role='" + subobj.SERVERROLE + "' \\\n");
-	message("--ldap-backend='" + subobj.LDAPBACKEND + "' --ldap-mdoule='" + subobj.LDAPMODULE + "' \\\n");
+/* 	There has to be a better way than this... */
+	message("--realm='%s' --domain='%s' \\\n", subobj.REALM_CONF, subobj.DOMAIN_CONF);
+	if (subobj.DOMAINGUID != undefined) {
+		 message("--domain-guid='%s' \\\n", subobj.DOMAINGUID);
+	}
+	if (subobj.HOSTGUID != undefined) {
+		 message("--host-guid='%s' \\\n", subobj.HOSTGUID);
+	}
+	message("--policy-guid='%s' --host-name='%s' --host-ip='%s' \\\n", subobj.POLICYGUID, subobj.HOSTNAME, subobj.HOSTIP);
+	message("--invocationid='%s' \\\n", subobj.INVOCATIONID);
+	message("--adminpass='%s' --krbtgtpass='%s' \\\n", subobj.ADMINPASS, subobj.KRBTGTPASS);
+	message("--machinepass='%s' --dnspass='%s' \\\n", subobj.MACHINEPASS, subobj.DNSPASS);
+	message("--root='%s' --nobody='%s' --nogroup-'%s' \\\n", subobj.ROOT, subobj.NOBODY, subobj.NOGROUP);
+	message("--wheel='%s' --users='%s' --server-role='%s' \\\n", subobj.WHEEL, subobj.USERS, subobj.SERVERROLE);
+	if (ldapbackend) {
+		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
+	}
+	if (ldapmodule) {
+		message("--ldap-mdoule='%s' \\\n", + subobj.LDAPMODULE);
+	}
 	message("--aci='" + subobj.ACI + "' \\\n")
 }
 
