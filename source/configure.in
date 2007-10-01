@@ -3094,8 +3094,8 @@ AC_TRY_COMPILE([
 [
 struct sockaddr_storage sa_store;
 struct addrinfo *ai = NULL;
-int s = socket(AF_INET6, SOCK_STREAM, 0)
-int ret = getaddrinfo(NULL, NULL, NULL &ai);
+int s = socket(AF_INET6, SOCK_STREAM, 0);
+int ret = getaddrinfo(NULL, NULL, NULL, &ai);
 if (ret != 0) {
 	const char *es = gai_strerror(ret);
 }
