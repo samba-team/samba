@@ -697,6 +697,33 @@ static bool torture_winbind_struct_setpwent(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_winbind_struct_getpwent(struct torture_context *torture)
+{
+	struct winbindd_request req;
+	struct winbindd_response rep;
+	struct winbindd_pw *pwent;
+
+	torture_comment(torture, "Running WINBINDD_GETPWENT (struct based)\n");
+
+	torture_comment(torture, " - Running WINBINDD_SETPWENT first\n");
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+	DO_STRUCT_REQ_REP(WINBINDD_SETPWENT, &req, &rep);
+
+	torture_comment(torture, " - Running WINBINDD_GETPWENT now\n");
+	ZERO_STRUCT(req);
+	ZERO_STRUCT(rep);
+	req.data.num_entries = 1;
+	DO_STRUCT_REQ_REP(WINBINDD_GETPWENT, &req, &rep);
+	pwent = (struct winbindd_pw *)rep.extra_data.data;
+	torture_assert(torture, (pwent != NULL), "NULL pwent");
+	torture_comment(torture, "name: %s, uid: %d, gid: %d, shell: %s\n",
+			pwent->pw_name, pwent->pw_uid, pwent->pw_gid,
+			pwent->pw_shell);
+
+	return true;
+}
+
 static bool torture_winbind_struct_endpwent(struct torture_context *torture)
 {
 	struct winbindd_request req;
@@ -731,6 +758,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "LIST_GROUPS", torture_winbind_struct_list_groups);
 	torture_suite_add_simple_test(suite, "SHOW_SEQUENCE", torture_winbind_struct_show_sequence);
 	torture_suite_add_simple_test(suite, "SETPWENT", torture_winbind_struct_setpwent);
+	torture_suite_add_simple_test(suite, "GETPWENT", torture_winbind_struct_getpwent);
 	torture_suite_add_simple_test(suite, "ENDPWENT", torture_winbind_struct_endpwent);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
