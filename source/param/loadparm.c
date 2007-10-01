@@ -2452,6 +2452,11 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 	return true;
 }
 
+_PUBLIC_ _DEPRECATED_ bool lp_load_default(void)
+{
+	return lp_load(dyn_CONFIGFILE);
+}
+
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
