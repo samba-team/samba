@@ -423,7 +423,14 @@ static BOOL wbinfo_show_sequence(const char *domain)
 
 	/* Display response */
 
-	if (response.extra_data.data) {
+	if (domain) {
+		d_printf("%s : ", domain);
+		if (response.data.sequence_number == (uint32_t)-1) {
+			d_printf("DISCONNECTED\n");
+		} else {
+			d_printf("%d\n", response.data.sequence_number);
+		}
+	} else if (response.extra_data.data) {
 		char *extra_data = (char *)response.extra_data.data;
 		d_printf("%s", extra_data);
 		SAFE_FREE(response.extra_data.data);
