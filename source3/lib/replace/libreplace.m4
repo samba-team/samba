@@ -304,7 +304,7 @@ AC_TRY_COMPILE([
 samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
 if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
-fi 
+fi
 
 
 dnl Check if the C compiler understands volatile (it should, being ANSI).
@@ -322,6 +322,8 @@ m4_include(getpass.m4)
 m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)
+m4_include(inet_ntop.m4)
+m4_include(inet_pton.m4)
 m4_include(repdir.m4)
 
 AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
