@@ -200,7 +200,7 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, e
 NTSTATUS ntvfs_init(void)
 {
 	init_module_fn static_init[] = STATIC_ntvfs_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, "ntvfs");
+	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "ntvfs");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

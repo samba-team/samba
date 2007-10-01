@@ -131,7 +131,7 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = True;
 
-	shared_init = load_samba_modules(NULL, "sys_notify");
+	shared_init = load_samba_modules(NULL, global_loadparm, "sys_notify");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

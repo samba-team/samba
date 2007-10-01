@@ -220,11 +220,13 @@ static BOOL irpc_setup(struct torture_context *tctx, void **_data)
 	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
 		       messaging_init(tctx, 
+				      lp_messaging_path(tctx, global_loadparm), 
 				      cluster_id(MSG_ID1), data->ev),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
 		       messaging_init(tctx, 
+				      lp_messaging_path(tctx, global_loadparm),
 				      cluster_id(MSG_ID2), data->ev),
 		       "Failed to init second messaging context");
 

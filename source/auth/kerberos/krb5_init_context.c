@@ -393,7 +393,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy_1);
 
-	config_file = config_path(tmp_ctx, "krb5.conf");
+	config_file = config_path(tmp_ctx, global_loadparm, "krb5.conf");
 	if (!config_file) {
 		talloc_free(tmp_ctx);
 		return ENOMEM;

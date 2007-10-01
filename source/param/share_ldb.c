@@ -37,10 +37,10 @@ static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	sdb = ldb_wrap_connect( *ctx,
-				private_path(*ctx, "share.ldb"),
-				system_session(*ctx),
-				NULL, 0, NULL);
+	sdb = ldb_wrap_connect(*ctx, global_loadparm, 
+			       private_path(*ctx, global_loadparm, "share.ldb"),
+			       system_session(*ctx),
+			       NULL, 0, NULL);
 
 	if (!sdb) {
 		talloc_free(*ctx);
@@ -569,22 +569,21 @@ done:
 	return ret;
 }
 
+static const struct share_ops ops = {
+	.name = "ldb",
+	.init = sldb_init,
+	.string_option = sldb_string_option,
+	.int_option = sldb_int_option,
+	.bool_option = sldb_bool_option,
+	.string_list_option = sldb_string_list_option,
+	.list_all = sldb_list_all,
+	.get_config = sldb_get_config,
+	.create = sldb_create,
+	.set = sldb_set,
+	.remove = sldb_remove
+};
+
 NTSTATUS share_ldb_init(void)
 {
-	static struct share_ops ops = {
-		.name = "ldb",
-		.init = sldb_init,
-		.string_option = sldb_string_option,
-		.int_option = sldb_int_option,
-		.bool_option = sldb_bool_option,
-		.string_list_option = sldb_string_list_option,
-		.list_all = sldb_list_all,
-		.get_config = sldb_get_config,
-		.create = sldb_create,
-		.set = sldb_set,
-		.remove = sldb_remove
-	};
-
 	return share_register(&ops);
 }
-

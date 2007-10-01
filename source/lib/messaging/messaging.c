@@ -530,13 +530,13 @@ static int messaging_destructor(struct messaging_context *msg)
   create the listening socket and setup the dispatcher
 */
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
+					 const char *dir,
 					 struct server_id server_id, 
 					 struct event_context *ev)
 {
 	struct messaging_context *msg;
 	NTSTATUS status;
 	struct socket_address *path;
-	char *dir;
 
 	msg = talloc_zero(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
@@ -555,11 +555,9 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create the messaging directory if needed */
-	dir = smbd_tmp_path(msg, "messaging");
 	mkdir(dir, 0700);
-	talloc_free(dir);
 
-	msg->base_path     = smbd_tmp_path(msg, "messaging");
+	msg->base_path     = talloc_reference(msg, dir);
 	msg->path          = messaging_path(msg, server_id);
 	msg->server_id     = server_id;
 	msg->idr           = idr_init(msg);
@@ -610,12 +608,13 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
    A hack, for the short term until we get 'client only' messaging in place 
 */
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
+						const char *dir,
 						struct event_context *ev)
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
 	id.id = random() % 0x10000000;
-	return messaging_init(mem_ctx, id, ev);
+	return messaging_init(mem_ctx, dir, id, ev);
 }
 /*
   a list of registered irpc server functions

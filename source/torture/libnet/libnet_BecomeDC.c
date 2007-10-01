@@ -256,7 +256,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", s->path.samdb_ldb));
 
-	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
+	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
@@ -484,7 +484,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	s->schema = NULL;
 
 	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
+	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
@@ -817,7 +817,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	s->schema = NULL;
 
 	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, s->path.samdb_ldb,
+	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {

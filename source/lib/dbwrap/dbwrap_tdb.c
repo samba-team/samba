@@ -241,7 +241,7 @@ struct db_context *db_tmp_open_tdb(TALLOC_CTX *mem_ctx, const char *name, int td
 
 	/* the name passed in should not be a full path, it should be
 	   just be the db name */
-	path = smbd_tmp_path(result, name);
+	path = smbd_tmp_path(result, global_loadparm, name);
 
 	db_tdb->wtdb = tdb_wrap_open(db_tdb, path, 0, tdb_flags,
 				     O_CREAT|O_RDWR, 0666);

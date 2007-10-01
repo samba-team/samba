@@ -78,7 +78,9 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 	/* create a messaging context, looping as we have no way to
 	   allocate temporary server ids automatically */
 	for (i=0;i<10000;i++) {
-		p->msg_ctx = messaging_init(p, cluster_id(EJS_ID_BASE + i), ev);
+		p->msg_ctx = messaging_init(p, 
+					    lp_messaging_path(p, global_loadparm),
+					    cluster_id(EJS_ID_BASE + i), ev);
 		if (p->msg_ctx) break;
 	}
 	if (p->msg_ctx == NULL) {

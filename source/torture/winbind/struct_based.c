@@ -141,7 +141,8 @@ static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture
 
 	torture_assert(torture, got_dir, "NULL WINBINDD_PRIV_PIPE_DIR\n");
 
-	default_dir = lock_path(torture, WINBINDD_PRIV_SOCKET_SUBDIR);
+	default_dir = lock_path(torture, global_loadparm, 
+				WINBINDD_PRIV_SOCKET_SUBDIR);
 	expected_dir = torture_setting_string(torture,
 					      "winbindd private pipe dir",
 					      default_dir);

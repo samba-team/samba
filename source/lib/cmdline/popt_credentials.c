@@ -37,7 +37,7 @@
  */
 
 
-static BOOL dont_ask;
+static bool dont_ask;
 
 enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS };
 

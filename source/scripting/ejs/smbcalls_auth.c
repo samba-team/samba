@@ -30,9 +30,11 @@
 #include "libcli/security/security.h"
 
 static int ejs_doauth(MprVarHandle eid,
-		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
-		      const char *password, const char *domain, const char *workstation,
-		      struct socket_address *remote_host, const char **auth_types)
+		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, 
+		      const char *username, const char *password, 
+		      const char *domain, const char *workstation,
+		      struct socket_address *remote_host, 
+		      const char **auth_types)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -54,7 +56,7 @@ static int ejs_doauth(MprVarHandle eid,
 	} else {
 		/* Hope we can find the event context somewhere up there... */
 		ev = event_context_find(tmp_ctx);
-		msg = messaging_client_init(tmp_ctx, ev);
+		msg = messaging_client_init(tmp_ctx, global_loadparm, ev);
 	}
 
 	if (auth_types) {

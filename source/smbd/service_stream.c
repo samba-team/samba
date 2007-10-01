@@ -181,7 +181,9 @@ static void stream_new_connection(struct event_context *ev,
 	}
 
 	/* setup to receive internal messages on this connection */
-	srv_conn->msg_ctx = messaging_init(srv_conn, srv_conn->server_id, ev);
+	srv_conn->msg_ctx = messaging_init(srv_conn, 
+					   lp_messaging_path(srv_conn, global_loadparm),
+					   srv_conn->server_id, ev);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "messaging_init() failed");
 		return;

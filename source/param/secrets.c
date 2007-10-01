@@ -108,7 +108,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	path = private_path(mem_ctx, url);
+	path = private_path(mem_ctx, global_loadparm, url);
 	if (!path) {
 		return NULL;
 	}
@@ -117,7 +117,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 
 	/* Secrets.ldb *must* always be local.  If we call for a
 	 * system_session() we will recurse */
-	ldb = ldb_wrap_connect(mem_ctx, path, NULL, NULL, 0, NULL);
+	ldb = ldb_wrap_connect(mem_ctx, global_loadparm, path, NULL, NULL, 0, NULL);
 	talloc_free(path);
 	if (!ldb) {
 		return NULL;

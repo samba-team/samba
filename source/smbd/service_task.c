@@ -25,6 +25,7 @@
 #include "smbd/service.h"
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
+#include "param/param.h"
 
 /*
   terminate a task service
@@ -64,7 +65,9 @@ static void task_server_callback(struct event_context *event_ctx,
 	task->model_ops = state->model_ops;
 	task->server_id = server_id;
 
-	task->msg_ctx = messaging_init(task, task->server_id, task->event_ctx);
+	task->msg_ctx = messaging_init(task, 
+				       lp_messaging_path(task, global_loadparm),
+				       task->server_id, task->event_ctx);
 	if (!task->msg_ctx) {
 		task_server_terminate(task, "messaging_init() failed");
 		return;

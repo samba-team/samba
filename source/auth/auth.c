@@ -519,7 +519,7 @@ NTSTATUS auth_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = True;
 	
-	shared_init = load_samba_modules(NULL, "auth");
+	shared_init = load_samba_modules(NULL, global_loadparm, "auth");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

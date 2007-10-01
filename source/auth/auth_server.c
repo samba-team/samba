@@ -195,8 +195,8 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	struct smbcli_state *cli;
 	static uint8_t badpass[24];
 	static fstring baduser; 
-	static BOOL tested_password_server = False;
-	static BOOL bad_password_server = False;
+	static bool tested_password_server = false;
+	static bool bad_password_server = false;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL locally_made_cli = False;
 
@@ -206,7 +206,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * password file.
 	 */
 
-	if(is_myname(user_info->domain.str)) {
+	if (lp_is_myname(global_loadparm, user_info->domain.str)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}

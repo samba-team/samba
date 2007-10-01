@@ -55,7 +55,7 @@ BOOL gencache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	cache_fname = lock_path(mem_ctx, "gencache.tdb");
+	cache_fname = lock_path(mem_ctx, global_loadparm, "gencache.tdb");
 	if (cache_fname != NULL) {
 		DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 	} else {

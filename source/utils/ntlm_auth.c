@@ -461,7 +461,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!ev) {
 				exit(1);
 			}
-			msg = messaging_client_init(state, ev);
+			msg = messaging_client_init(state, global_loadparm, ev);
 			if (!msg) {
 				exit(1);
 			}
