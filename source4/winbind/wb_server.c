@@ -155,7 +155,7 @@ static void winbind_task_init(struct task_server *task)
 							  WINBINDD_SAMBA3_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
-	listen_socket->privileged	= False;
+	listen_socket->privileged	= false;
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
@@ -170,7 +170,7 @@ static void winbind_task_init(struct task_server *task)
 			      WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
-	listen_socket->privileged	= True;
+	listen_socket->privileged	= true;
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,

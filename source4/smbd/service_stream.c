@@ -84,13 +84,13 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 */
 static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 {
-	conn->processing = True;
+	conn->processing = true;
 	if (flags & EVENT_FD_WRITE) {
 		conn->ops->send_handler(conn, flags);
 	} else if (flags & EVENT_FD_READ) {
 		conn->ops->recv_handler(conn, flags);
 	}
-	conn->processing = False;
+	conn->processing = false;
 
 	if (conn->terminate) {
 		stream_terminate_connection(conn, conn->terminate);

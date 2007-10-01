@@ -128,14 +128,14 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 	char *p = strchr(domuser,*lp_winbind_separator(global_loadparm));
 
 	if (!p) {
-		return False;
+		return false;
 	}
         
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 
-	return True;
+	return true;
 }
 
 /**
@@ -168,8 +168,8 @@ static void base64_decode_inplace(char *s)
 
 /* Authenticate a user with a plaintext password */
 
-static BOOL check_plaintext_auth(const char *user, const char *pass, 
-				 BOOL stdout_diagnostics)
+static bool check_plaintext_auth(const char *user, const char *pass, 
+				 bool stdout_diagnostics)
 {
         return (strcmp(pass, opt_password) == 0);
 }
@@ -259,7 +259,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 		rfc1738_unescape(pass);
 	}
 	
-	if (check_plaintext_auth(user, pass, False)) {
+	if (check_plaintext_auth(user, pass, false)) {
 		mux_printf(mux_id, "OK\n");
 	} else {
 		mux_printf(mux_id, "ERR\n");
@@ -345,15 +345,15 @@ static bool in_list(const char *s, const char *list, bool casesensitive)
 
 static void gensec_want_feature_list(struct gensec_security *state, char* feature_list)
 {
-	if (in_list("NTLMSSP_FEATURE_SESSION_KEY", feature_list, True)) {
+	if (in_list("NTLMSSP_FEATURE_SESSION_KEY", feature_list, true)) {
 		DEBUG(10, ("want GENSEC_FEATURE_SESSION_KEY\n"));
 		gensec_want_feature(state, GENSEC_FEATURE_SESSION_KEY);
 	}
-	if (in_list("NTLMSSP_FEATURE_SIGN", feature_list, True)) {
+	if (in_list("NTLMSSP_FEATURE_SIGN", feature_list, true)) {
 		DEBUG(10, ("want GENSEC_FEATURE_SIGN\n"));
 		gensec_want_feature(state, GENSEC_FEATURE_SIGN);
 	}
-	if (in_list("NTLMSSP_FEATURE_SEAL", feature_list, True)) {
+	if (in_list("NTLMSSP_FEATURE_SEAL", feature_list, true)) {
 		DEBUG(10, ("want GENSEC_FEATURE_SEAL\n"));
 		gensec_want_feature(state, GENSEC_FEATURE_SEAL);
 	}
@@ -376,7 +376,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	struct messaging_context *msg;
 
 	NTSTATUS nt_status;
-	BOOL first = False;
+	bool first = false;
 	const char *reply_code;
 	struct cli_credentials *creds;
 
@@ -461,7 +461,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!ev) {
 				exit(1);
 			}
-			msg = messaging_client_init(state, global_loadparm, ev);
+			msg = messaging_client_init(state, lp_messaging_path(state, global_loadparm), ev);
 			if (!msg) {
 				exit(1);
 			}
@@ -508,12 +508,12 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case GSS_SPNEGO_SERVER:
 			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_SPNEGO);
 			if (!in.length) {
-				first = True;
+				first = true;
 			}
 			break;
 		case NTLMSSP_CLIENT_1:
 			if (!in.length) {
-				first = True;
+				first = true;
 			}
 			/* fall through */
 		case SQUID_2_5_NTLMSSP:
@@ -701,8 +701,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	static char *username;
 	static char *domain;
 	static char *plaintext_password;
-	static BOOL ntlm_server_1_user_session_key;
-	static BOOL ntlm_server_1_lm_session_key;
+	static bool ntlm_server_1_user_session_key;
+	static bool ntlm_server_1_lm_session_key;
 	
 	if (strequal(buf, ".")) {
 		if (!full_username && !username) {	
@@ -715,7 +715,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 					return;
 				}
 			}
-			if (check_plaintext_auth(full_username, plaintext_password, False)) {
+			if (check_plaintext_auth(full_username, plaintext_password, false)) {
 				mux_printf(mux_id, "Authenticated: Yes\n");
 			} else {
 				mux_printf(mux_id, "Authenticated: No\n");
@@ -808,8 +808,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		SAFE_FREE(username);
 		SAFE_FREE(domain);
 		SAFE_FREE(plaintext_password);
-		ntlm_server_1_user_session_key = False;
-		ntlm_server_1_lm_session_key = False;
+		ntlm_server_1_user_session_key = false;
+		ntlm_server_1_lm_session_key = false;
 		mux_printf(mux_id, ".\n");
 
 		return;
@@ -1122,7 +1122,7 @@ int main(int argc, const char **argv)
 		char *user;
 
 		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(global_loadparm), opt_username);
-		if (!check_plaintext_auth(user, opt_password, True)) {
+		if (!check_plaintext_auth(user, opt_password, true)) {
 			return 1;
 		}
 	}

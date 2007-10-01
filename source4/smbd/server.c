@@ -123,25 +123,25 @@ static void sig_term(int sig)
 static void setup_signals(void)
 {
 	/* we are never interested in SIGPIPE */
-	BlockSignals(True,SIGPIPE);
+	BlockSignals(true,SIGPIPE);
 
 #if defined(SIGFPE)
 	/* we are never interested in SIGFPE */
-	BlockSignals(True,SIGFPE);
+	BlockSignals(true,SIGFPE);
 #endif
 
 	/* We are no longer interested in USR1 */
-	BlockSignals(True, SIGUSR1);
+	BlockSignals(true, SIGUSR1);
 
 #if defined(SIGUSR2)
 	/* We are no longer interested in USR2 */
-	BlockSignals(True,SIGUSR2);
+	BlockSignals(true,SIGUSR2);
 #endif
 
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't recieve them. */
-	BlockSignals(False, SIGHUP);
-	BlockSignals(False, SIGTERM);
+	BlockSignals(false, SIGHUP);
+	BlockSignals(false, SIGTERM);
 
 	CatchSignal(SIGHUP, sig_hup);
 	CatchSignal(SIGTERM, sig_term);

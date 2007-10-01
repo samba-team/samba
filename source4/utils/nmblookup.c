@@ -34,12 +34,12 @@
 static struct {
 	const char *broadcast_address;
 	const char *unicast_address;
-	BOOL find_master;
-	BOOL wins_lookup;
-	BOOL node_status;
-	BOOL root_port;
-	BOOL lookup_by_ip;
-	BOOL case_sensitive;
+	bool find_master;
+	bool wins_lookup;
+	bool node_status;
+	bool root_port;
+	bool lookup_by_ip;
+	bool case_sensitive;
 } options;
 
 /*
@@ -102,7 +102,7 @@ static char *node_status_flags(TALLOC_CTX *mem_ctx, uint16_t flags)
 }
 
 /* do a single node status */
-static BOOL do_node_status(struct nbt_name_socket *nbtsock,
+static bool do_node_status(struct nbt_name_socket *nbtsock,
 			   const char *addr)
 {
 	struct nbt_name_status io;
@@ -133,10 +133,10 @@ static BOOL do_node_status(struct nbt_name_socket *nbtsock,
 		       io.out.status.statistics.unit_id[3],
 		       io.out.status.statistics.unit_id[4],
 		       io.out.status.statistics.unit_id[5]);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /* do a single node query */
@@ -144,7 +144,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 			      const char *addr, 
 			      const char *node_name, 
 			      enum nbt_name_type node_type,
-			      BOOL broadcast)
+			      bool broadcast)
 {
 	struct nbt_name_query io;
 	NTSTATUS status;
@@ -176,7 +176,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static BOOL process_one(const char *name)
+static bool process_one(const char *name)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
@@ -184,7 +184,7 @@ static BOOL process_one(const char *name)
 	struct socket_address *all_zero_addr;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status = NT_STATUS_OK;
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!options.case_sensitive) {
 		name = strupper_talloc(tmp_ctx, name);
@@ -214,14 +214,14 @@ static BOOL process_one(const char *name)
 		
 		if (!all_zero_addr) {
 			talloc_free(tmp_ctx);
-			return False;
+			return false;
 		}
 
 		status = socket_listen(nbtsock->sock, all_zero_addr, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to bind to local port 137 - %s\n", nt_errstr(status));
 			talloc_free(tmp_ctx);
-			return False;
+			return false;
 		}
 	}
 
@@ -232,22 +232,22 @@ static BOOL process_one(const char *name)
 	}
 
 	if (options.broadcast_address) {
-		status = do_node_query(nbtsock, options.broadcast_address, node_name, node_type, True);
+		status = do_node_query(nbtsock, options.broadcast_address, node_name, node_type, true);
 	} else if (options.unicast_address) {
-		status = do_node_query(nbtsock, options.unicast_address, node_name, node_type, False);
+		status = do_node_query(nbtsock, options.unicast_address, node_name, node_type, false);
 	} else {
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
 			const char *bcast = iface_n_bcast(i);
 			if (bcast == NULL) continue;
-			status = do_node_query(nbtsock, bcast, node_name, node_type, True);
+			status = do_node_query(nbtsock, bcast, node_name, node_type, true);
 			if (NT_STATUS_IS_OK(status)) break;
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Lookup failed - %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(tmp_ctx);
@@ -259,7 +259,7 @@ static BOOL process_one(const char *name)
 */
 int main(int argc, const char *argv[])
 {
-	BOOL ret = True;
+	bool ret = true;
 	poptContext pc;
 	int opt;
 	enum {
@@ -316,22 +316,22 @@ int main(int argc, const char *argv[])
 			options.unicast_address = poptGetOptArg(pc);
 			break;
 		case OPT_FIND_MASTER:
-			options.find_master = True;
+			options.find_master = true;
 			break;
 		case OPT_WINS_LOOKUP:
-			options.wins_lookup = True;
+			options.wins_lookup = true;
 			break;
 		case OPT_NODE_STATUS:
-			options.node_status = True;
+			options.node_status = true;
 			break;
 		case OPT_ROOT_PORT:
-			options.root_port = True;
+			options.root_port = true;
 			break;
 		case OPT_LOOKUP_BY_IP:
-			options.lookup_by_ip = True;
+			options.lookup_by_ip = true;
 			break;
 		case OPT_CASE_SENSITIVE:
-			options.case_sensitive = True;
+			options.case_sensitive = true;
 			break;
 		}
 	}

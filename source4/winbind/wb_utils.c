@@ -27,7 +27,7 @@
  * as one string.
  * TODO: We probably will need to handle other formats later. */
 
-BOOL wb_samba3_split_username(TALLOC_CTX *mem_ctx, const char *domuser,
+bool wb_samba3_split_username(TALLOC_CTX *mem_ctx, const char *domuser,
 				 char **domain, char **user)
 {
 	char *p = strchr(domuser, *lp_winbind_separator(global_loadparm));

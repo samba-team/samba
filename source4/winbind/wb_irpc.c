@@ -54,7 +54,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	ctx->async.fn = wb_irpc_SamLogon_callback;
 	ctx->async.private_data = s;
 
-	msg->defer_reply = True;
+	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }
 
