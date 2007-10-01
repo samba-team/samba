@@ -87,6 +87,9 @@ struct loadparm_global
 
 	const char **smb_ports;
 	char *ncalrpc_dir;
+	char *dos_charset;
+	char *unix_charset;
+	char *display_charset;
 	char *szLockDir;
 	char *szModulesDir;
 	char *szPidDir;
@@ -381,10 +384,10 @@ static struct parm_struct parm_table[] = {
 
 	{"server role", P_ENUM, P_GLOBAL, &loadparm.Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
 
-	{"dos charset", P_STRING, P_GLOBAL, &dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix charset", P_STRING, P_GLOBAL, &unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"dos charset", P_STRING, P_GLOBAL, &loadparm.Globals.dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"unix charset", P_STRING, P_GLOBAL, &loadparm.Globals.unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ncalrpc dir", P_STRING, P_GLOBAL, &loadparm.Globals.ncalrpc_dir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"display charset", P_STRING, P_GLOBAL, &display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"display charset", P_STRING, P_GLOBAL, &loadparm.Globals.display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
@@ -698,6 +701,9 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, szLockDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, szModulesDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, szSetupDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, ncalrpc_dir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, dos_charset)
+_PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, unix_charset)
+_PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, display_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
 _PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
