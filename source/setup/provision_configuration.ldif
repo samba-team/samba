@@ -66,29 +66,6 @@ instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2181038080
 
-dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-objectClass: top
-objectClass: server
-cn: ${NETBIOSNAME}
-instanceType: 4
-showInAdvancedViewOnly: TRUE
-systemFlags: 1375731712
-dNSHostName: ${DNSNAME}
-serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
-
-dn: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-objectClass: top
-objectClass: applicationSettings
-objectClass: nTDSDSA
-cn: NTDS Settings
-options: 1
-instanceType: 4
-showInAdvancedViewOnly: TRUE
-systemFlags: 33554432
-dMDLocation: ${SCHEMADN}
-invocationId: ${INVOCATIONID}
-msDS-Behavior-Version: 2
-
 dn: CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
