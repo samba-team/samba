@@ -63,7 +63,8 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 
-	state->req = smb_raw_negotiate_send(state->transport, lp_cli_maxprotocol(global_loadparm));
+	state->req = smb_raw_negotiate_send(state->transport, 
+					    lp_cli_maxprotocol(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;
@@ -172,7 +173,8 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 
 		state->io_setup->in.credentials = cli_credentials_init(state);
 		NT_STATUS_HAVE_NO_MEMORY(state->io_setup->in.credentials);
-		cli_credentials_set_conf(state->io_setup->in.credentials, global_loadparm);
+		cli_credentials_set_conf(state->io_setup->in.credentials, 
+					 global_loadparm);
 		cli_credentials_set_anonymous(state->io_setup->in.credentials);
 
 		/* If the preceding attempt was with extended security, we
@@ -459,7 +461,8 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 
 	state->stage = CONNECT_RESOLVE;
 	make_nbt_name_server(&name, io->in.dest_host);
-	state->creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order(global_loadparm));
+	state->creq = resolve_name_send(&name, c->event_ctx, 
+					lp_name_resolve_order(global_loadparm));
 
 	if (state->creq == NULL) goto failed;
 	state->creq->async.private_data = c;

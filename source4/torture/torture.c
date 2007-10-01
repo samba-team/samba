@@ -65,7 +65,7 @@ struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
 int torture_init(void)
 {
 	init_module_fn static_init[] = STATIC_torture_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, "torture");
+	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "torture");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

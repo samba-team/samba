@@ -228,7 +228,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_ldb = ldb_wrap_connect(tmp_ctx, remote_ldb_url, 
+	remote_ldb = ldb_wrap_connect(tmp_ctx, global_loadparm, 
+				      remote_ldb_url, 
 				      NULL, ctx->cred, 0, NULL);
 	if (!remote_ldb) {
 		r->out.error_string = NULL;

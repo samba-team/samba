@@ -34,6 +34,8 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 
+#include "param/param.h"
+
 static bool test_check_uptodatevector(struct torture_context *torture,
 				      struct ldb_context *ldb,
 				      struct ldb_dn *partition_dn)
@@ -158,7 +160,7 @@ BOOL torture_ldap_uptodatevector(struct torture_context *torture)
 	url = talloc_asprintf(torture, "ldap://%s/", host);
 	if (!url) goto failed;
 
-	ldb = ldb_wrap_connect(torture, url,
+	ldb = ldb_wrap_connect(torture, global_loadparm, url,
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);

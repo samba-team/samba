@@ -35,8 +35,9 @@
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, private_path(mem_ctx, 
-						      lp_wins_config_url(global_loadparm)),
+	return ldb_wrap_connect(mem_ctx, global_loadparm, private_path(mem_ctx, 
+			        global_loadparm, 
+				lp_wins_config_url(global_loadparm)),
 				system_session(mem_ctx), NULL, 0, NULL);
 }
 

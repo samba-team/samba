@@ -342,14 +342,16 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info)
 {
-	BOOL is_local_name, is_my_domain;
+	bool is_local_name, is_my_domain;
 
 	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	is_local_name = is_myname(user_info->mapped.domain_name);
-	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup(global_loadparm));
+	is_local_name = lp_is_myname(global_loadparm, 
+				  user_info->mapped.domain_name);
+	is_my_domain  = lp_is_mydomain(global_loadparm, 
+				       user_info->mapped.domain_name); 
 
 	/* check whether or not we service this domain/workgroup name */
 	switch (lp_server_role(global_loadparm)) {

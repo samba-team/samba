@@ -57,7 +57,8 @@ BOOL smbcli_transport_establish(struct smbcli_state *cli,
 /* wrapper around smb_raw_negotiate() */
 NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 {
-	return smb_raw_negotiate(cli->transport, lp_cli_maxprotocol(global_loadparm));
+	return smb_raw_negotiate(cli->transport, 
+				 lp_cli_maxprotocol(global_loadparm));
 }
 
 /* wrapper around smb_raw_sesssetup() */

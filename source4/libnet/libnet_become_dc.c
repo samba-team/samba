@@ -790,7 +790,7 @@ static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s, struct be
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	ldap->ldb = ldb_wrap_connect(s, url,
+	ldap->ldb = ldb_wrap_connect(s, global_loadparm, url,
 				     NULL,
 				     s->libnet->cred,
 				     0, NULL);

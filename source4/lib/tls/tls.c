@@ -357,11 +357,11 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	struct tls_params *params;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *keyfile = private_path(tmp_ctx, lp_tls_keyfile(global_loadparm));
-	const char *certfile = private_path(tmp_ctx, lp_tls_certfile(global_loadparm));
-	const char *cafile = private_path(tmp_ctx, lp_tls_cafile(global_loadparm));
-	const char *crlfile = private_path(tmp_ctx, lp_tls_crlfile(global_loadparm));
-	const char *dhpfile = private_path(tmp_ctx, lp_tls_dhpfile(global_loadparm));
+	const char *keyfile = private_path(tmp_ctx, global_loadparm, lp_tls_keyfile(global_loadparm));
+	const char *certfile = private_path(tmp_ctx, global_loadparm, lp_tls_certfile(global_loadparm));
+	const char *cafile = private_path(tmp_ctx, global_loadparm, lp_tls_cafile(global_loadparm));
+	const char *crlfile = private_path(tmp_ctx, global_loadparm, lp_tls_crlfile(global_loadparm));
+	const char *dhpfile = private_path(tmp_ctx, global_loadparm, lp_tls_dhpfile(global_loadparm));
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
 
 	params = talloc(mem_ctx, struct tls_params);
@@ -565,7 +565,7 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	}
 	new_sock->private_data    = tls;
 
-	cafile = private_path(tls, lp_tls_cafile(global_loadparm));
+	cafile = private_path(tls, global_loadparm, lp_tls_cafile(global_loadparm));
 	if (!cafile || !*cafile) {
 		goto failed;
 	}

@@ -184,7 +184,7 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	smb_setup_ejs_param();
         smb_setup_ejs_literal();
 	
-	shared_init = load_samba_modules(NULL, "smbcalls");
+	shared_init = load_samba_modules(NULL, global_loadparm, "smbcalls");
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

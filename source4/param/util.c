@@ -35,20 +35,26 @@
  */
 
 
+_PUBLIC_ bool lp_is_mydomain(struct loadparm_context *lp_ctx, 
+			     const char *domain)
+{
+	return strequal(lp_workgroup(lp_ctx), domain);
+}
+
 /**
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
-_PUBLIC_ bool is_myname(const char *name)
+_PUBLIC_ bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
 {
 	const char **aliases;
 	int i;
 
-	if (strcasecmp(name, lp_netbios_name(global_loadparm)) == 0) {
+	if (strcasecmp(name, lp_netbios_name(lp_ctx)) == 0) {
 		return True;
 	}
 
-	aliases = lp_netbios_aliases(global_loadparm);
+	aliases = lp_netbios_aliases(lp_ctx);
 	for (i=0; aliases && aliases[i]; i++) {
 		if (strcasecmp(name, aliases[i]) == 0) {
 			return True;
@@ -62,7 +68,8 @@ _PUBLIC_ bool is_myname(const char *name)
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-_PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+			 const char *name)
 {
 	char *fname, *dname;
 	if (name == NULL) {
@@ -72,7 +79,7 @@ _PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 		return talloc_strdup(mem_ctx, name);
 	}
 
-	dname = talloc_strdup(mem_ctx, lp_lockdir(global_loadparm));
+	dname = talloc_strdup(mem_ctx, lp_lockdir(lp_ctx));
 	trim_string(dname,"","/");
 	
 	if (!directory_exist(dname)) {
@@ -83,44 +90,6 @@ _PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 
 	talloc_free(dname);
 
-	return fname;
-}
-
-
-/**
- A useful function for returning a path in the Samba piddir directory.
-**/
-static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
-{
-	char *fname, *dname;
-
-	dname = talloc_strdup(mem_ctx, lp_piddir(global_loadparm));
-	trim_string(dname,"","/");
-	
-	if (!directory_exist(dname)) {
-		mkdir(dname,0755);
-	}
-	
-	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
-
-	talloc_free(dname);
-
-	return fname;
-}
-
-
-/**
- * @brief Returns an absolute path to a file in the Samba lib directory.
- *
- * @param name File to find, relative to DATADIR.
- *
- * @retval Pointer to a talloc'ed string containing the full path.
- **/
-
-_PUBLIC_ char *data_path(TALLOC_CTX* mem_ctx, const char *name)
-{
-	char *fname;
-	fname = talloc_asprintf(mem_ctx, "%s/%s", dyn_DATADIR, name);
 	return fname;
 }
 
@@ -132,10 +101,11 @@ _PUBLIC_ char *data_path(TALLOC_CTX* mem_ctx, const char *name)
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-_PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+			   const char *name)
 {
 	char *fname, *config_dir, *p;
-	config_dir = talloc_strdup(mem_ctx, lp_configfile(global_loadparm));
+	config_dir = talloc_strdup(mem_ctx, lp_configfile(lp_ctx));
 	p = strrchr(config_dir, '/');
 	if (!p) {
 		return NULL;
@@ -154,7 +124,9 @@ _PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, const char *name)
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-_PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, 
+			    struct loadparm_context *lp_ctx,
+			    const char *name)
 {
 	char *fname;
 	if (name == NULL) {
@@ -163,7 +135,7 @@ _PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
 	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
 		return talloc_strdup(mem_ctx, name);
 	}
-	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(global_loadparm), name);
+	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), name);
 	return fname;
 }
 
@@ -172,11 +144,13 @@ _PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
   for smbd go. If NULL is passed for name then return the directory 
   path itself
 */
-_PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
+_PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, 
+			     struct loadparm_context *lp_ctx, 
+			     const char *name)
 {
 	char *fname, *dname;
 
-	dname = pid_path(mem_ctx, "smbd.tmp");
+	dname = private_path(mem_ctx, lp_ctx, "smbd.tmp");
 	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
@@ -276,12 +250,13 @@ _PUBLIC_ bool run_init_functions(init_module_fn *fns)
 	return ret;
 }
 
-static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
+static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+			  const char *name)
 {
 	const char *env_moduledir = getenv("LD_SAMBA_MODULE_PATH");
 	return talloc_asprintf(mem_ctx, "%s/%s", 
-						   env_moduledir?env_moduledir:lp_modulesdir(global_loadparm), 
-						   name);
+			       env_moduledir?env_moduledir:lp_modulesdir(lp_ctx), 
+			       name);
 }
 
 /**
@@ -290,9 +265,9 @@ static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
  * Will return an array of function pointers to initialization functions
  */
 
-_PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
+_PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem)
 {
-	char *path = modules_path(mem_ctx, subsystem);
+	char *path = modules_path(mem_ctx, lp_ctx, subsystem);
 	init_module_fn *ret;
 
 	ret = load_modules(mem_ctx, path);
@@ -302,4 +277,9 @@ _PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *sub
 	return ret;
 }
 
+_PUBLIC_ const char *lp_messaging_path(TALLOC_CTX *mem_ctx, 
+				       struct loadparm_context *lp_ctx)
+{
+	return smbd_tmp_path(mem_ctx, lp_ctx, "messaging");
+}
 

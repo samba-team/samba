@@ -41,14 +41,15 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	path = smbd_tmp_path(mem_ctx, "schannel.ldb");
+	path = smbd_tmp_path(mem_ctx, global_loadparm, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}
 
 	existed = file_exist(path);
 	
-	ldb = ldb_wrap_connect(mem_ctx, path, system_session(mem_ctx), 
+	ldb = ldb_wrap_connect(mem_ctx, global_loadparm, path, 
+			       system_session(mem_ctx), 
 			       NULL, LDB_FLG_NOSYNC, NULL);
 	talloc_free(path);
 	if (!ldb) {

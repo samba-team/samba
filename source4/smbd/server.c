@@ -93,7 +93,7 @@ static void cleanup_tmp_files(void)
 	char *path;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	path = smbd_tmp_path(mem_ctx, NULL);
+	path = smbd_tmp_path(mem_ctx, global_loadparm, NULL);
 
 	recursive_delete(path);
 	talloc_free(mem_ctx);
@@ -296,7 +296,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	process_model_init(); 
 
-	shared_init = load_samba_modules(NULL, "service");
+	shared_init = load_samba_modules(NULL, global_loadparm, "service");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

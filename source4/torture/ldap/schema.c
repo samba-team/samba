@@ -31,6 +31,8 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
+#include "param/param.h"
+
 struct test_rootDSE {
 	const char *defaultdn;
 	const char *rootdn;
@@ -374,7 +376,7 @@ BOOL torture_ldap_schema(struct torture_context *torture)
 
 	url = talloc_asprintf(torture, "ldap://%s/", host);
 
-	ldb = ldb_wrap_connect(torture, url,
+	ldb = ldb_wrap_connect(torture, global_loadparm, url,
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);

@@ -446,7 +446,7 @@ static NTSTATUS dcesrv_init(struct event_context *event_context,
 NTSTATUS server_service_rpc_init(void)
 {
 	init_module_fn static_init[] = STATIC_dcerpc_server_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, "dcerpc_server");
+	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "dcerpc_server");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

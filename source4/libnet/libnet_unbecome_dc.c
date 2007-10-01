@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
+#include "param/param.h"
 
 /*****************************************************************************
  * Windows 2003 (w2k3) does the following steps when changing the server role
@@ -307,7 +308,7 @@ static NTSTATUS unbecomeDC_ldap_connect(struct libnet_UnbecomeDC_state *s)
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	s->ldap.ldb = ldb_wrap_connect(s, url,
+	s->ldap.ldb = ldb_wrap_connect(s, global_loadparm, url,
 				       NULL,
 				       s->libnet->cred,
 				       0, NULL);

@@ -31,5 +31,6 @@ struct auth_session_info;
 struct ldb_message;
 struct ldb_dn;
 struct cli_credentials;
+struct loadparm_context;
 
 #include "lib/db_wrap_proto.h"

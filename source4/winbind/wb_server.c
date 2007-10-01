@@ -166,7 +166,7 @@ static void winbind_task_init(struct task_server *task)
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
 	listen_socket->socket_path	=
-		smbd_tmp_path(listen_socket,
+		smbd_tmp_path(listen_socket, global_loadparm, 
 			      WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;

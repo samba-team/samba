@@ -68,7 +68,7 @@ struct test_spoolss_context {
 #endif
 
 #define COMPARE_UINT32(tctx, c, r, e) do {\
-	_CHECK_FIELD_SIZE(c, r, e,uint32_t); \
+	_CHECK_FIELD_SIZE(c, r, e, uint32_t); \
 	torture_assert_int_equal(tctx, c.e, r.e, "invalid value"); \
 } while(0)
 

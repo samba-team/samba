@@ -103,6 +103,7 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
   TODO:  We need an error_string parameter
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
+				     struct loadparm_context *lp_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,
 				     struct cli_credentials *credentials,
@@ -121,7 +122,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	}
 
 	ldb_set_modules_dir(ldb, 
-			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(global_loadparm)));
+			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
 
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
@@ -143,7 +144,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	
-	if (strcmp(lp_sam_url(global_loadparm), url) == 0) {
+	if (strcmp(lp_sam_url(lp_ctx), url) == 0) {
 		dsdb_set_global_schema(ldb);
 	}
 
@@ -157,14 +158,14 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
-	real_url = private_path(ldb, url);
+	real_url = private_path(ldb, lp_ctx, url);
 	if (real_url == NULL) {
 		talloc_free(ldb);
 		return NULL;
 	}
 
 	/* allow admins to force non-sync ldb for all databases */
-	if (lp_parm_bool(global_loadparm, NULL, "ldb", "nosync", false)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 

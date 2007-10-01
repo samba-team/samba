@@ -112,7 +112,7 @@ NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	s3call->response.extra_data.data =
-		smbd_tmp_path(s3call, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+		smbd_tmp_path(s3call, global_loadparm, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data.data);
 	return NT_STATUS_OK;
 }

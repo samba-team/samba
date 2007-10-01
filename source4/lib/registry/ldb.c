@@ -23,6 +23,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "param/param.h"
 
 static struct hive_operations reg_backend_ldb;
 
@@ -317,9 +318,9 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 }
 
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location, 
-								struct auth_session_info *session_info,
-								struct cli_credentials *credentials,
-								struct hive_key **k)
+			 struct auth_session_info *session_info,
+			 struct cli_credentials *credentials,
+			 struct hive_key **k)
 {
 	struct ldb_key_data *kd;
 	struct ldb_context *wrap;
@@ -327,7 +328,8 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 	if (location == NULL) 
 		return WERR_INVALID_PARAM;
 
-	wrap = ldb_wrap_connect(parent_ctx, location, session_info, credentials, 0, NULL);
+	wrap = ldb_wrap_connect(parent_ctx, global_loadparm, 
+				location, session_info, credentials, 0, NULL);
 
 	if (wrap == NULL) {
 		DEBUG(1, (__FILE__": unable to connect\n"));

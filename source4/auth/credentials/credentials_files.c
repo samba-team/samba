@@ -308,7 +308,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	} else {
 		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
-			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, keytab));
+			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, global_loadparm, keytab));
 			if (keytab) {
 				cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
 			}
