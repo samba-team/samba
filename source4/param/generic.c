@@ -36,19 +36,20 @@ struct param_section *param_get_section(struct param_context *ctx, const char *n
 	return NULL;
 }
 
-struct param *param_section_get (struct param_section *section, const char *name)
+struct param_opt *param_section_get(struct param_section *section, 
+				    const char *name)
 {
-	struct param *p;
+	struct param_opt *p;
 
 	for (p = section->parameters; p; p = p->next) {
-		if (strcasecmp_m(p->name, name) == 0) 
+		if (strcasecmp_m(p->key, name) == 0) 
 			return p;
 	}
 
 	return NULL;
 }
 
-struct param *param_get (struct param_context *ctx, const char *section_name, const char *name)
+struct param_opt *param_get (struct param_context *ctx, const char *section_name, const char *name)
 {
 	struct param_section *section = param_get_section(ctx, section_name);
 	if (section == NULL)
@@ -58,10 +59,10 @@ struct param *param_get (struct param_context *ctx, const char *section_name, co
 }
 
 /* Look up parameter. If it is not found, add it */
-static struct param *param_get_add(struct param_context *ctx, const char *section_name, const char *name)
+static struct param_opt *param_get_add(struct param_context *ctx, const char *section_name, const char *name)
 {
 	struct param_section *section;
-	struct param *p;
+	struct param_opt *p;
 
 	section = param_get_section(ctx, section_name);
 
@@ -76,11 +77,11 @@ static struct param *param_get_add(struct param_context *ctx, const char *sectio
 
 	p = param_section_get(section, name);
 	if (p == NULL) {
-		p = talloc_zero(section, struct param);
+		p = talloc_zero(section, struct param_opt);
 		if (p == NULL)
 			return NULL;
 
-		p->name = talloc_strdup(p, name);
+		p->key = talloc_strdup(p, name);
 		DLIST_ADD(section->parameters, p);
 	}
 	
@@ -89,7 +90,7 @@ static struct param *param_get_add(struct param_context *ctx, const char *sectio
 
 const char *param_get_string(struct param_context *ctx, const char *section, const char *param)
 {
-	struct param *p = param_get(ctx, section, param);
+	struct param_opt *p = param_get(ctx, section, param);
 
 	if (p == NULL)
 		return NULL;
@@ -99,7 +100,7 @@ const char *param_get_string(struct param_context *ctx, const char *section, con
 
 int param_set_string(struct param_context *ctx, const char *section, const char *param, const char *value)
 {
-	struct param *p = param_get_add(ctx, section, param);
+	struct param_opt *p = param_get_add(ctx, section, param);
 
 	if (p == NULL)
 		return -1;
@@ -112,7 +113,7 @@ int param_set_string(struct param_context *ctx, const char *section, const char 
 const char **param_get_string_list(struct param_context *ctx, const char *section, const char *param,
 				 const char *separator)
 {
-	struct param *p = param_get(ctx, section, param);
+	struct param_opt *p = param_get(ctx, section, param);
 	
 	if (p == NULL)
 		return NULL;
@@ -120,19 +121,14 @@ const char **param_get_string_list(struct param_context *ctx, const char *sectio
 	if (separator == NULL)
 		separator = LIST_SEP;
 	
-	if (p->list_value == NULL) {
-		p->list_value = str_list_make(ctx, p->value, separator);
-	}
-
-	return p->list_value;
+	return str_list_make(ctx, p->value, separator);
 }
 
 int param_set_string_list(struct param_context *ctx, const char *section, const char *param, const char **list)
 {
-	struct param *p = param_get_add(ctx, section, param);	
+	struct param_opt *p = param_get_add(ctx, section, param);	
 
 	p->value = str_list_join(p, list, ' ');
-	p->list_value = str_list_copy(p, list);
 
 	return 0;
 }
@@ -149,7 +145,7 @@ int param_get_int(struct param_context *ctx, const char *section, const char *pa
 
 void param_set_int(struct param_context *ctx, const char *section, const char *param, int value)
 {
-	struct param *p = param_get_add(ctx, section, param);
+	struct param_opt *p = param_get_add(ctx, section, param);
 
 	if (!p) 
 		return;
@@ -169,7 +165,7 @@ unsigned long param_get_ulong(struct param_context *ctx, const char *section, co
 
 void param_set_ulong(struct param_context *ctx, const char *section, const char *name, unsigned long value)
 {
-	struct param *p = param_get_add(ctx, section, name);
+	struct param_opt *p = param_get_add(ctx, section, name);
 
 	if (!p)
 		return;
@@ -201,14 +197,14 @@ static bool param_sfunc (const char *name, void *_ctx)
 static bool param_pfunc (const char *name, const char *value, void *_ctx)
 {
 	struct param_context *ctx = (struct param_context *)_ctx;
-	struct param *p = param_section_get(ctx->sections, name);
+	struct param_opt *p = param_section_get(ctx->sections, name);
 
 	if (!p) {
-		p = talloc_zero(ctx->sections, struct param);
+		p = talloc_zero(ctx->sections, struct param_opt);
 		if (p == NULL)
 			return False;
 
-		p->name = talloc_strdup(p, name);
+		p->key = talloc_strdup(p, name);
 		p->value = talloc_strdup(p, value);
 		DLIST_ADD(ctx->sections->parameters, p);
 	} else { /* Replace current value */
@@ -253,11 +249,11 @@ int param_write(struct param_context *ctx, const char *fn)
 		return -1;
 	
 	for (section = ctx->sections; section; section = section->next) {
-		struct param *param;
+		struct param_opt *param;
 		
 		fdprintf(file, "[%s]\n", section->name);
 		for (param = section->parameters; param; param = param->next) {
-			fdprintf(file, "\t%s = %s\n", param->name, param->value);
+			fdprintf(file, "\t%s = %s\n", param->key, param->value);
 		}
 		fdprintf(file, "\n");
 	}

@@ -155,10 +155,10 @@ static int ejs_param_data(MprVarHandle eid, int argc, char **argv)
 
 	for (sec = ctx->sections; sec; sec = sec->next) {
 		struct MprVar ps = mprObject("array");
-		struct param *p;
+		struct param_opt *p;
 
 		for (p = sec->parameters; p; p = p->next) {
-			mprSetVar(&ps, p->name, mprString(p->value));
+			mprSetVar(&ps, p->key, mprString(p->value));
 		}
 		
 		mprSetVar(&ret, sec->name, ps);

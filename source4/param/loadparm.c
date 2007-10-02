@@ -71,13 +71,6 @@ static bool bLoaded = false;
 static bool do_parameter(const char *, const char *, void *);
 static bool defaults_saved = false;
 
-struct param_opt {
-	struct param_opt *prev, *next;
-	char *key;
-	char *value;
-	int flags;
-};
-
 /* 
  * This structure describes global (ie., server-wide) parameters.
  */
