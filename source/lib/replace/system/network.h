@@ -118,4 +118,8 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define INET6_ADDRSTRLEN 46
 #endif
 
+#ifndef HAVE_SA_FAMILY_T
+typedef unsigned short int sa_family_t;
+#endif
+
 #endif
