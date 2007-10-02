@@ -2106,18 +2106,18 @@ SELFTEST = $(PERL) $(samba4srcdir)/selftest/selftest.pl --prefix=${selftest_pref
 ##
 test: all torture timelimit
 	@echo Running Test suite
-	@$(SELFTEST) --socket-wrapper $(TESTS)
+	@$(SELFTEST) --socket-wrapper --immediate $(TESTS)
 
 htmltest: all torture timelimit
 	@echo Running Test suite
-	@$(SELFTEST) --socket-wrapper --format=html $(TESTS)
+	@$(SELFTEST) --socket-wrapper --format=html --immediate $(TESTS)
 
 valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	 $(SELFTEST) --socket-wrapper
+	 $(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
 gdbtest: all torture timelimit
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
