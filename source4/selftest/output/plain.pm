@@ -81,16 +81,21 @@ sub start_test($$)
 sub end_test($$$$$$)
 {
 	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+	my $append = "";
 
-	if ($unexpected and $self->{immediate} and not $self->{verbose}) {
-		if ($reason) {
-			print "$testname: $result [ $reason ]\n";
-		} else {
-			print "$testname: $result\n";
-		}
-		print $self->{test_output}->{$state->{NAME}}."\n";
+	unless ($unexpected) {
+		$self->{test_output}->{$state->{NAME}} = "";
+		return;
 	}
-	$self->{test_output}->{$state->{NAME}} = "";
+
+	$append = "UNEXPECTED($result): $testname\n";
+
+	$self->{test_output}->{$state->{NAME}} .= $append;
+
+	if ($self->{immediate} and not $self->{verbose}) {
+		print $self->{test_output}->{$state->{NAME}};
+		$self->{test_output}->{$state->{NAME}} = "";
+	}
 }
 
 sub summary($)
