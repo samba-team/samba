@@ -102,7 +102,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	struct ifaddrs *ifptr = NULL;
 	int total = 0;
 
-	if (getifaddrs(&ifp) < 0) {
+	if (getifaddrs(&iflist) < 0) {
 		return -1;
 	}
 
@@ -110,6 +110,10 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	for (ifptr = iflist, total = 0;
 			ifptr != NULL && total < max_interfaces;
 			ifptr = ifptr->ifa_next) {
+
+		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
+			continue;
+		}
 
 		/* Skip ipv6 for now. */
 		if (ifptr->ifa_addr->sa_family != AF_INET) {
@@ -125,7 +129,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			((struct sockaddr_in *)ifptr->ifa_addr).sin_addr;
 
 		ifaces[total].iface_netmask.netmask =
-			((struct sockaddr_in *)ifptr->ifa_addr)->sin_addr;
+			((struct sockaddr_in *)ifptr->ifa_netmask)->sin_addr;
 
 		strncpy(ifaces[total].name, ifptr->ifa_name,
 				sizeof(ifaces[total].name)-1);
