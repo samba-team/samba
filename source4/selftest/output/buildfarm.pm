@@ -59,7 +59,7 @@ sub end_testsuite($$$$$)
 	if ($ret == $expected_ret) {
 		$out .= "ALL OK\n";
 	} else {
-		$out .= "ERROR: $ret";
+		$out .= "ERROR: $ret\n";
 		$out .= $self->{test_output}->{$state->{NAME}};
 	}
 
@@ -85,7 +85,11 @@ sub start_test($$$)
 
 sub end_test($$$$$$)
 {
-	my ($self, $state, $testname, $result, $expected, $reason) = @_;
+	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+
+	return unless ($unexpected);
+
+	$self->{test_output}->{$state->{NAME}} .= "UNEXPECTED($result): $testname\n";
 }
 
 sub summary($)
