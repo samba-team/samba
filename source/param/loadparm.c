@@ -318,10 +318,12 @@ static const struct enum_list enum_bool_auto[] = {
 };
 
 /* Client-side offline caching policy types */
-#define CSC_POLICY_MANUAL 0
-#define CSC_POLICY_DOCUMENTS 1
-#define CSC_POLICY_PROGRAMS 2
-#define CSC_POLICY_DISABLE 3
+enum csc_policy { 
+	CSC_POLICY_MANUAL=0, 
+	CSC_POLICY_DOCUMENTS=1, 
+	CSC_POLICY_PROGRAMS=2,
+	CSC_POLICY_DISABLE=3
+};
 
 static const struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
@@ -366,13 +368,11 @@ static const struct enum_list enum_server_role[] = {
  * is implied in current control logic. This may change at some later time. A
  * flag value of 0 means - show as development option only.
  *
- * The FLAG_HIDE is explicit. Paramters set this way do NOT appear in any edit
+ * The FLAG_HIDE is explicit. Parameters set this way do NOT appear in any edit
  * screen in SWAT. This is used to exclude parameters as well as to squash all
  * parameters that have been duplicated by pseudonyms.
  */
 static struct parm_struct parm_table[] = {
-	{"Base Options", P_SEP, P_SEPARATOR},
-
 	{"config file", P_STRING, P_GLOBAL, &loadparm.Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
 
 	{"server role", P_ENUM, P_GLOBAL, &loadparm.Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
@@ -397,8 +397,6 @@ static struct parm_struct parm_table[] = {
 	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &loadparm.Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
 	{"server services", P_LIST, P_GLOBAL, &loadparm.Globals.server_services, NULL, NULL, FLAG_ADVANCED},
 
-	{"Security Options", P_SEP, P_SEPARATOR},
-	
 	{"security", P_ENUM, P_GLOBAL, &loadparm.Globals.security, NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &loadparm.Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"null passwords", P_BOOL, P_GLOBAL, &loadparm.Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -429,13 +427,9 @@ static struct parm_struct parm_table[] = {
 	{"hosts allow", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 
-	{"Logging Options", P_SEP, P_SEPARATOR},
-
 	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_HIDE},
 	{"log file", P_STRING, P_GLOBAL, &logfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	
-	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
 	{"smb ports", P_LIST, P_GLOBAL, &loadparm.Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"nbt port", P_INTEGER, P_GLOBAL, &loadparm.Globals.nbt_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -478,8 +472,6 @@ static struct parm_struct parm_table[] = {
 	{"client signing", P_ENUM, P_GLOBAL, &loadparm.Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"rpc big endian", P_BOOL, P_GLOBAL, &loadparm.Globals.bRpcBigEndian, NULL, NULL, FLAG_DEVELOPER},
 
-	{"Tuning Options", P_SEP, P_SEPARATOR},
-		
 	{"max connections", P_INTEGER, P_LOCAL, &sDefault.iMaxConnections, NULL, NULL, FLAG_SHARE},
 	{"paranoid server security", P_BOOL, P_GLOBAL, &loadparm.Globals.paranoid_server_security, NULL, NULL, FLAG_DEVELOPER},
 	{"socket options", P_STRING, P_GLOBAL, &loadparm.Globals.socket_options, NULL, NULL, FLAG_DEVELOPER},
@@ -487,8 +479,6 @@ static struct parm_struct parm_table[] = {
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"case insensitive filesystem", P_BOOL, P_LOCAL, &sDefault.bCIFileSystem, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 
-	{"Printing Options", P_SEP, P_SEPARATOR},
-	
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_PRINT},
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_HIDE},
@@ -496,40 +486,25 @@ static struct parm_struct parm_table[] = {
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_HIDE},
 
-	{"Filename Handling", P_SEP, P_SEPARATOR},
-	
 	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
-	{"Domain Options", P_SEP, P_SEPARATOR},
-	
-	{"Logon Options", P_SEP, P_SEPARATOR},
-
-
-	{"Browse Options", P_SEP, P_SEPARATOR},
-	
 	{"preferred master", P_ENUM, P_GLOBAL, &loadparm.Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"prefered master", P_ENUM, P_GLOBAL, &loadparm.Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE},
 	{"local master", P_BOOL, P_GLOBAL, &loadparm.Globals.bLocalMaster, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"browseable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"browsable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_HIDE},
 
-	{"WINS Options", P_SEP, P_SEPARATOR},
-	
 	{"wins server", P_LIST, P_GLOBAL, &loadparm.Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"wins support", P_BOOL, P_GLOBAL, &loadparm.Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"dns proxy", P_BOOL, P_GLOBAL, &loadparm.Globals.bWINSdnsProxy, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"wins hook", P_STRING, P_GLOBAL, &loadparm.Globals.szWINSHook, NULL, NULL, FLAG_ADVANCED}, 
 
-	{"Locking Options", P_SEP, P_SEPARATOR},
-	
 	{"csc policy", P_ENUM, P_LOCAL, &sDefault.iCSCPolicy, NULL, enum_csc_policy, FLAG_SHARE | FLAG_GLOBAL},
 	
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
-	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
-	
 	{"share backend", P_STRING, P_GLOBAL, &loadparm.Globals.szShareBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"preload", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"auto services", P_STRING, P_GLOBAL, &loadparm.Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1716,8 +1691,6 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				return false;
 			}
 			break;
-		case P_SEP:
-			break;
 	}
 
 	if (parm_table[parmnum].flags & FLAG_DEFAULT) {
@@ -1975,8 +1948,6 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 				fprintf(f, "%s", *(char **)ptr);
 			}
 			break;
-		case P_SEP:
-			break;
 	}
 }
 
@@ -2010,8 +1981,6 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 				p2 = NULL;
 			return (p1 == p2 || strequal(p1, p2));
 		}
-		case P_SEP:
-			break;
 	}
 	return false;
 }
@@ -2088,8 +2057,6 @@ static bool is_default(int i)
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
 				*(int *)parm_table[i].ptr;
-		case P_SEP:
-			break;
 	}
 	return false;
 }
@@ -2202,9 +2169,6 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 	if (snum == -1) {
 		/* do the globals */
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
-				return &parm_table[(*i)++];
-
 			if (!parm_table[*i].ptr
 			    || (*parm_table[*i].label == '-'))
 				continue;
@@ -2220,9 +2184,6 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 		struct loadparm_service *pService = lp_ctx->ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
-				return &parm_table[(*i)++];
-
 			if (parm_table[*i].class == P_LOCAL &&
 			    parm_table[*i].ptr &&
 			    (*parm_table[*i].label != '-') &&
