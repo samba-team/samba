@@ -126,7 +126,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		ifaces[total].sa_family = ifptr->ifa_addr->sa_family;
 
 		ifaces[total].iface_addr.ip =
-			((struct sockaddr_in *)ifptr->ifa_addr).sin_addr;
+			((struct sockaddr_in *)ifptr->ifa_addr)->sin_addr;
 
 		ifaces[total].iface_netmask.netmask =
 			((struct sockaddr_in *)ifptr->ifa_netmask)->sin_addr;
