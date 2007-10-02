@@ -686,11 +686,6 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 	return regval_ctr_numvals(values);
 }
 
-/***********************************************************************
- Stub function since we do not currently support storing registry 
- values in the registry.tdb
- ***********************************************************************/
-
 BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 {
 	TDB_DATA old_data, data;
