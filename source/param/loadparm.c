@@ -120,9 +120,9 @@ struct loadparm_global
 	char *szWinbinddSocketDirectory;
 	char *szTemplateShell;
 	char *szTemplateHomedir;
-	int bWinbindSealedPipes;
+	bool bWinbindSealedPipes;
 	char *swat_directory;
-	int tls_enabled;
+	bool tls_enabled;
 	char *tls_keyfile;
 	char *tls_certfile;
 	char *tls_cafile;
@@ -135,8 +135,8 @@ struct loadparm_global
 	int srv_minprotocol;
 	int cli_maxprotocol;
 	int cli_minprotocol;
-	int security;
-	int paranoid_server_security;
+	enum security_types security;
+	bool paranoid_server_security;
 	int max_wins_ttl;
 	int min_wins_ttl;
 	int announce_as;	/* This is initialised in init_globals */
@@ -147,35 +147,35 @@ struct loadparm_global
 	int kpasswd_port;
 	int web_port;
 	char *socket_options;
-	int bWINSsupport;
-	int bWINSdnsProxy;
+	bool bWINSsupport;
+	bool bWINSdnsProxy;
 	char *szWINSHook; 
-	int bLocalMaster;
-	int bPreferredMaster;
-	int bEncryptPasswords;
-	int bNullPasswords;
-	int bObeyPamRestrictions;
-	int bLargeReadwrite;
-	int bReadRaw;
-	int bWriteRaw;
-	int bTimeServer;
-	int bBindInterfacesOnly;
-	int bNTSmbSupport;
-	int bNTStatusSupport;
-	int bLanmanAuth;
-	int bNTLMAuth;
-	int bUseSpnego;
+	bool bLocalMaster;
+	bool bPreferredMaster;
+	bool bEncryptPasswords;
+	bool bNullPasswords;
+	bool bObeyPamRestrictions;
+	bool bLargeReadwrite;
+	bool bReadRaw;
+	bool bWriteRaw;
+	bool bTimeServer;
+	bool bBindInterfacesOnly;
+	bool bNTSmbSupport;
+	bool bNTStatusSupport;
+	bool bLanmanAuth;
+	bool bNTLMAuth;
+	bool bUseSpnego;
 	int server_signing;
 	int client_signing;
-	int bClientPlaintextAuth;
-	int bClientLanManAuth;
-	int bClientNTLMv2Auth;
-	int client_use_spnego_principal;
-	int bHostMSDfs;
-	int bUnicode;
-	int bUnixExtensions;
-	int bDisableNetbios;
-	int bRpcBigEndian;
+	bool bClientPlaintextAuth;
+	bool bClientLanManAuth;
+	bool bClientNTLMv2Auth;
+	bool client_use_spnego_principal;
+	bool bHostMSDfs;
+	bool bUnicode;
+	bool bUnixExtensions;
+	bool bDisableNetbios;
+	bool bRpcBigEndian;
 	struct param_opt *param_opt;
 };
 
@@ -2033,7 +2033,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 
 
 /***************************************************************************
- Determine if a partcular base parameter is currentl set to the default value.
+ Determine if a particular base parameter is currentl set to the default value.
 ***************************************************************************/
 
 static bool is_default(int i)
