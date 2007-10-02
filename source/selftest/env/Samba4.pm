@@ -293,6 +293,7 @@ sub provision($$$$$$)
 	my $ncalrpcdir = "$prefix_abs/ncalrpc";
 	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
+	my $winbindd_priv_pipe_dir = "$piddir/smbd.tmp/winbind_pipe";
 
 	my $configuration = "--configfile=$conffile";
 	my $ldapdir = "$privatedir/ldap";
@@ -452,6 +453,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 		PASSWORD => $password,
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
+		WINBINDD_PRIV_PIPE_DIR => $winbindd_priv_pipe_dir,
 		NCALRPCDIR => $ncalrpcdir,
 		LOCKDIR => $lockdir,
 		CONFIGURATION => $configuration,

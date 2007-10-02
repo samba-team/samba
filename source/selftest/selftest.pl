@@ -617,7 +617,8 @@ my @exported_envvars = (
 
 	# misc stuff
 	"KRB5_CONFIG",
-	"WINBINDD_SOCKET_DIR"
+	"WINBINDD_SOCKET_DIR",
+	"WINBINDD_PRIV_PIPE_DIR"
 );
 
 $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 

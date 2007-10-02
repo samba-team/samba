@@ -278,6 +278,7 @@ sub provision($$$)
 
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
+	my $wbsockprivdir="$lockdir/winbindd_privileged";
 
 	## 
 	## create the test directory layout
@@ -380,6 +381,7 @@ print CONF "
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
 	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
+	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
 	return \%ret;
 }
 
