@@ -591,21 +591,16 @@ struct torture_domain_sequence {
 	uint32_t seq;
 };
 
-static bool torture_winbind_struct_show_sequence(struct torture_context *torture)
+static bool get_sequence_numbers(struct torture_context *torture,
+				 struct torture_domain_sequence **seqs)
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
 	bool ok;
 	const char *extra_data;
 	fstring line;
-	uint32_t i;
 	uint32_t count = 0;
-	struct torture_trust_domain *domlist = NULL;
 	struct torture_domain_sequence *s = NULL;
-
-	torture_comment(torture, "Running WINBINDD_SHOW_SEQUENCE (struct based)\n");
-
-	torture_comment(torture, " - Running WINBINDD_SHOW_SEQUENCE without domain:\n");
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
@@ -614,8 +609,6 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 
 	extra_data = (char *)rep.extra_data.data;
 	torture_assert(torture, extra_data, "NULL sequence list");
-
-	torture_comment(torture, "%s", extra_data);
 
 	while (next_token(&extra_data, line, "\n", sizeof(fstring))) {
 		char *p, *lp;
@@ -632,13 +625,15 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 		s[count].netbios_name = talloc_strdup(s, lp);
 
 		lp = p+1;
-		torture_assert(torture, strncmp(lp, ": ", 2) == 0, "invalid line format");
+		torture_assert(torture, strncmp(lp, ": ", 2) == 0,
+			       "invalid line format");
 		lp += 2;
 		if (strcmp(lp, "DISCONNECTED") == 0) {
 			seq = (uint32_t)-1;
 		} else {
 			seq = (uint32_t)strtol(lp, &p, 10);
-			torture_assert(torture, (*p == '\0'), "invalid line format");
+			torture_assert(torture, (*p == '\0'),
+				       "invalid line format");
 			torture_assert(torture, (seq != (uint32_t)-1),
 				       "sequence number -1 encountered");
 		}
@@ -646,35 +641,64 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 
 		count++;
 	}
+	SAFE_FREE(rep.extra_data.data);
 
-	torture_comment(torture, " - getting list of trusted domains\n");
+	torture_assert(torture, count >= 2, "The list of domain sequence "
+		       "numbers should contain 2 entries");
+
+	*seqs = s;
+	return true;
+}
+
+static bool torture_winbind_struct_show_sequence(struct torture_context *torture)
+{
+	bool ok;
+	uint32_t i;
+	struct torture_trust_domain *domlist = NULL;
+	struct torture_domain_sequence *s = NULL;
+
+	torture_comment(torture, "Running WINBINDD_SHOW_SEQUENCE (struct based)\n");
+
+	ok = get_sequence_numbers(torture, &s);
+	torture_assert(torture, ok, "failed to get list of sequence numbers");
+
 	ok = get_trusted_domains(torture, &domlist);
 	torture_assert(torture, ok, "failed to get trust list");
 
 	for (i=0; domlist[i].netbios_name; i++) {
+		struct winbindd_request req;
+		struct winbindd_response rep;
 		uint32_t seq;
 
-		ok = (s[i].netbios_name != NULL);
-		torture_assert(torture, ok, "more domains recieved in second run");
-		ok = (strcmp(domlist[i].netbios_name, s[i].netbios_name) == 0);
-		torture_assert(torture, ok, "inconsistent order of domain lists");
+		torture_assert(torture, s[i].netbios_name,
+			       "more domains recieved in second run");
+		torture_assert_str_equal(torture, domlist[i].netbios_name,
+					 s[i].netbios_name,
+					 "inconsistent order of domain lists");
 
 		ZERO_STRUCT(req);
 		ZERO_STRUCT(rep);
-
 		fstrcpy(req.domain_name, domlist[i].netbios_name);
 
-		torture_comment(torture, " - Running WINBINDD_SHOW_SEQUENCE "
-				"for domain %s:\n", req.domain_name);
-
 		DO_STRUCT_REQ_REP(WINBINDD_SHOW_SEQUENCE, &req, &rep);
+
 		seq = rep.data.sequence_number;
 
-		torture_comment(torture, "%s : ", req.domain_name);
+		if (i == 0) {
+			torture_assert(torture, (seq != (uint32_t)-1),
+				       "BUILTIN domain disconnected");
+		} else if (i == 1) {
+			torture_assert(torture, (seq != (uint32_t)-1),
+				       "local domain disconnected");
+		}
+
+
 		if (seq == (uint32_t)-1) {
-			torture_comment(torture, "DISCONNECTED\n");
+			torture_comment(torture, " * %s : DISCONNECTED\n",
+					req.domain_name);
 		} else {
-			torture_comment(torture, "%d\n", seq);
+			torture_comment(torture, " * %s : %d\n",
+					req.domain_name, seq);
 		}
 		torture_assert(torture, (seq >= s[i].seq),
 			       "illegal sequence number encountered");
