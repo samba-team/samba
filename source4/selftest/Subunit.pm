@@ -9,7 +9,10 @@ use strict;
 sub parse_results($$$$$)
 {
 	my ($msg_ops, $msg_state, $statistics, $fh, $expecting_failure) = @_;
-	my $expected_ret = 1;
+	my $unexpected_ok = 0;
+	my $expected_fail = 0;
+	my $unexpected_fail = 0;
+	my $unexpected_err = 0;
 	my $open_tests = {};
 
 	while(<$fh>) {
@@ -34,6 +37,7 @@ sub parse_results($$$$$)
 				if ($expecting_failure->("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
 					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+					$unexpected_ok++;
 				} else {
 					$statistics->{TESTS_EXPECTED_OK}++;
 					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
@@ -43,10 +47,11 @@ sub parse_results($$$$$)
 				if ($expecting_failure->("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
 					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
-					$expected_ret = 0;
+					$expected_fail++;
 				} else {
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
 					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+					$unexpected_fail++;
 				}
 			} elsif ($1 eq "skip") {
 				$statistics->{TESTS_SKIP}++;
@@ -56,6 +61,7 @@ sub parse_results($$$$$)
 				$statistics->{TESTS_ERROR}++;
 				delete $open_tests->{$2};
 				$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+				$unexpected_err++;
 			}
 		} else {
 			$msg_ops->output_msg($msg_state, $_);
@@ -63,12 +69,18 @@ sub parse_results($$$$$)
 	}
 
 	foreach (keys %$open_tests) {
-		$msg_ops->end_test($msg_state, $_, "error", 1, 
-						   "was started but never finished!");
+		$msg_ops->end_test($msg_state, $_, "error", 1,
+				   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
+		$unexpected_err++;
 	}
 
-	return $expected_ret;
+	return 1 if $unexpected_err > 0;
+	return 1 if $unexpected_fail > 0;
+	return 1 if $unexpected_ok > 0 and $expected_fail > 0;
+	return 0 if $unexpected_ok > 0 and $expected_fail == 0;
+	return 0 if $expected_fail > 0;
+	return 1;
 }
 
 1;
