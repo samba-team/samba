@@ -20,21 +20,21 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
-struct param_context {
-	struct param_section *sections;
+struct param_opt {
+	struct param_opt *prev, *next;
+	char *key;
+	char *value;
+	int flags;
 };
 
-struct param {
-	const char *name;
-	char *value;
-	const char **list_value;
-	struct param *prev, *next;
+struct param_context {
+	struct param_section *sections;
 };
 
 struct param_section {
 	const char *name;
 	struct param_section *prev, *next;
-	struct param *parameters;
+	struct param_opt *parameters;
 };
 
 struct param_context;
