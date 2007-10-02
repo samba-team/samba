@@ -248,6 +248,7 @@ sub run_testsuite($$$$$$$)
 		$msg_ops, $msg_state, $statistics, *RESULT, \&expecting_failure);
 
 	my $ret = close(RESULT);
+	$ret = 0 unless $ret == 1;
 
 	cleanup_pcap($msg_state, $expected_ret, $ret);
 
