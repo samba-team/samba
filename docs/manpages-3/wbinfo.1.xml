@@ -252,7 +252,7 @@
 		<listitem><para>Store username and password used by winbindd
 		during session setup to a domain controller.  This enables
 		winbindd to operate in a Windows 2000 domain with Restrict
-		Anonymous turned on (a.k.a. Permissions compatiable with
+		Anonymous turned on (a.k.a. Permissions compatible with
 		Windows 2000 servers only).
 		</para></listitem>
 		</varlistentry>
