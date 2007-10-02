@@ -106,4 +106,16 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define INADDR_NONE 0xffffffff
 #endif
 
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT EINVAL
+#endif
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46
+#endif
+
 #endif

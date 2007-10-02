@@ -158,8 +158,8 @@ int get_my_ip_address( struct in_addr **ips )
 	}
 
 	for ( i=0; i<n; i++ ) {
-		if ( nics[i].ip.s_addr != loopback_ip.s_addr ) {
-			memcpy( &list[count++], &nics[i].ip, sizeof( struct in_addr ) );
+		if ( nics[i].iface_addr.ip.s_addr != loopback_ip.s_addr ) {
+			memcpy( &list[count++], &nics[i].iface_addr.ip, sizeof( struct in_addr ) );
 		}
 	}
 	*ips = list;
