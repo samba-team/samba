@@ -17,7 +17,8 @@ all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_test
 # Make sure all tests get run
 for t in `$samba4bindir/smbtorture --list | grep "^RPC-"`
 do
-	if ! echo $all_tests | grep $t  > /dev/null
+	echo $all_tests | grep $t  > /dev/null
+	if [ $? -ne 0 ]
 	then
 		auto_rpc_tests="$auto_rpc_tests $t"
 	fi
