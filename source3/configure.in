@@ -3093,7 +3093,7 @@ if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
 fi
 
 if test $iface = no; then
-AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_GETIFADDRS,[
+AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
@@ -3103,7 +3103,7 @@ AC_TRY_RUN([
            samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface ifconf is available])
+    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
 fi
 fi
 
