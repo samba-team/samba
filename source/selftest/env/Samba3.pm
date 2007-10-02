@@ -244,7 +244,7 @@ sub provision($$$)
 	##
 
 	my %ret = ();
-	my $server = "localhost2";
+	my $server = "LOCALHOST2";
 	my $server_ip = "127.0.0.2";
 	my $domain = "SAMBA-TEST";
 
