@@ -170,7 +170,7 @@ sub check_or_start($$$$) {
 
 	unlink($env_vars->{WINBINDD_TEST_LOG});
 	print "STARTING WINBINDD...";
-	my $pid = fork();
+	$pid = fork();
 	if ($pid == 0) {
 		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
