@@ -103,12 +103,12 @@ static void interpret_interface(char *token)
 
         zero_ip(&ip);
         zero_ip(&nmask);
-	
+
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
 		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
-			add_interface(probed_ifaces[i].ip,
-				      probed_ifaces[i].netmask);
+			add_interface(probed_ifaces[i].iface_addr.ip,
+				      probed_ifaces[i].iface_netmask.netmask);
 			added = 1;
 		}
 	}
@@ -119,10 +119,11 @@ static void interpret_interface(char *token)
 	if (!p) {
 		ip = *interpret_addr2(token);
 		for (i=0;i<total_probed;i++) {
-			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
-			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
-				add_interface(probed_ifaces[i].ip,
-					      probed_ifaces[i].netmask);
+			if (ip.s_addr == probed_ifaces[i].iface_addr.ip.s_addr &&
+			    !ip_equal(allones_ip,
+				    probed_ifaces[i].iface_netmask.netmask)) {
+				add_interface(probed_ifaces[i].iface_addr.ip,
+					      probed_ifaces[i].iface_netmask.netmask);
 				return;
 			}
 		}
@@ -145,8 +146,8 @@ static void interpret_interface(char *token)
 	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
-			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
-				add_interface(probed_ifaces[i].ip, nmask);
+			if (same_net(ip, probed_ifaces[i].iface_addr.ip, nmask)) {
+				add_interface(probed_ifaces[i].iface_addr.ip, nmask);
 				return;
 			}
 		}
@@ -203,11 +204,11 @@ void load_interfaces(void)
 		for (i=0;i<total_probed;i++) {
 			if (
 #if !defined(__s390__)
-			    probed_ifaces[i].netmask.s_addr != allones_ip.s_addr &&
+			    probed_ifaces[i].iface_netmask.netmask.s_addr != allones_ip.s_addr &&
 #endif
-			    probed_ifaces[i].ip.s_addr != loopback_ip.s_addr) {
-				add_interface(probed_ifaces[i].ip, 
-					      probed_ifaces[i].netmask);
+			    probed_ifaces[i].iface_addr.ip.s_addr != loopback_ip.s_addr) {
+				add_interface(probed_ifaces[i].iface_addr.ip,
+					      probed_ifaces[i].iface_netmask.netmask);
 			}
 		}
 		return;

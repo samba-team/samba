@@ -995,7 +995,7 @@ AC_CHECK_HEADERS(limits.h float.h pthread.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
-AC_CHECK_HEADERS(sys/un.h)
+AC_CHECK_HEADERS(sys/un.h ifaddrs.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(sys/sysmacros.h)
@@ -1082,6 +1082,7 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
+AC_CHECK_TYPE(socklen_t, int)
 AC_CHECK_TYPE(comparison_fn_t,
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
@@ -3038,6 +3039,42 @@ SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
 
+dnl test for sa_family_t
+AC_CACHE_CHECK([for sa_family_t],samba_cv_HAVE_SA_FAMILY_T,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+],
+[
+sa_family_t foo;
+],
+samba_cv_HAVE_SA_FAMILY_T=yes,samba_cv_HAVE_SA_FAMILY_T=no)])
+if test x"$samba_cv_HAVE_SA_FAMILY_T" = x"yes"; then
+    AC_DEFINE(HAVE_SA_FAMILY_T,1,[Whether the system has sa_family_t])
+fi
+
+dnl test for getifaddrs and freeifaddrs
+AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>],
+[
+struct ifaddrs *ifp = NULL;
+int ret = getifaddrs (&ifp);
+freeifaddrs(ifp);
+],
+samba_cv_HAVE_GETIFADDRS=yes,samba_cv_HAVE_GETIFADDRS=no)])
+if test x"$samba_cv_HAVE_GETIFADDRS" = x"yes"; then
+    AC_DEFINE(HAVE_GETIFADDRS,1,[Whether the system has getifaddrs])
+    AC_DEFINE(HAVE_FREEIFADDRS,1,[Whether the system has freeifaddrs])
+fi
+
 ##################
 # look for a method of finding the list of network interfaces
 iface=no;
@@ -3053,6 +3090,21 @@ AC_TRY_RUN([
 CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
+fi
+
+if test $iface = no; then
+AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_GETIFADDRS,[
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+AC_TRY_RUN([
+#define HAVE_IFACE_GETIFADDRS 1
+#define AUTOCONF_TEST 1
+#include "${srcdir-.}/lib/interfaces.c"],
+           samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
+CPPFLAGS="$SAVE_CPPFLAGS"
+if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface ifconf is available])
+fi
 fi
 
 if test $iface = no; then

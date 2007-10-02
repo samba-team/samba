@@ -1262,4 +1262,8 @@ void exit_server_fault(void) NORETURN_ATTRIBUTE ;
 #include "libnscd.h"
 #endif
 
+#ifndef HAVE_SA_FAMILY_T
+typedef unsigned short int sa_family_t;
+#endif
+
 #endif /* _INCLUDES_H */

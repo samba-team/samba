@@ -2138,7 +2138,7 @@ BOOL is_myname_or_ipaddr(const char *s)
 
 	/* optimize for the common case */
 
-	if (strequal(servername, global_myname())) 
+	if (strequal(servername, global_myname()))
 		return True;
 
 	/* check for an alias */
@@ -2148,10 +2148,10 @@ BOOL is_myname_or_ipaddr(const char *s)
 
 	/* check for loopback */
 
-	if (strequal(servername, "127.0.0.1")) 
+	if (strequal(servername, "127.0.0.1"))
 		return True;
 
-	if (strequal(servername, "localhost")) 
+	if (strequal(servername, "localhost"))
 		return True;
 
 	/* maybe it's my dns name */
@@ -2159,7 +2159,7 @@ BOOL is_myname_or_ipaddr(const char *s)
 	if ( get_mydnsfullname( dnsname ) )
 		if ( strequal( servername, dnsname ) )
 			return True;
-		
+
 	/* handle possible CNAME records */
 
 	if ( !is_ipaddress( servername ) ) {
@@ -2171,25 +2171,25 @@ BOOL is_myname_or_ipaddr(const char *s)
 			putip( (char*)&return_ip, (char*)hp->h_addr );
 			fstrcpy( name, inet_ntoa( return_ip ) );
 			servername = name;
-		}	
+		}
 	}
-		
+
 	/* maybe its an IP address? */
 	if (is_ipaddress(servername)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
-		
+
 		ip = interpret_addr(servername);
 		if ((ip==0) || (ip==0xffffffff))
 			return False;
-			
+
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
-			if (ip == nics[i].ip.s_addr)
+			if (ip == nics[i].iface_addr.ip.s_addr)
 				return True;
 		}
-	}	
+	}
 
 	/* no match */
 	return False;
@@ -2217,14 +2217,14 @@ BOOL is_myworkgroup(const char *s)
    WinXP => "Windows 2002 5.1"
    WinXP 64bit => "Windows XP 5.2"
    Win2k => "Windows 2000 5.0"
-   NT4   => "Windows NT 4.0" 
+   NT4   => "Windows NT 4.0"
    Win9x => "Windows 4.0"
- Windows 2003 doesn't set the native lan manager string but 
+ Windows 2003 doesn't set the native lan manager string but
  they do set the domain to "Windows 2003 5.2" (probably a bug).
 ********************************************************************/
 
 void ra_lanman_string( const char *native_lanman )
-{	
+{
 	if ( strcmp( native_lanman, "Windows 2002 5.1" ) == 0 )
 		set_remote_arch( RA_WINXP );
 	else if ( strcmp( native_lanman, "Windows XP 5.2" ) == 0 )

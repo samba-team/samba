@@ -330,18 +330,18 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
 #endif
 
+#if !defined(HAVE_INET_PTON) || !defined(HAVE_INET_NTOP)
+#include "system/network.h"
+#endif
+
 #ifndef HAVE_INET_PTON
-#define inet_pton rep_inet_pton
 int rep_inet_pton(int af, const char *src, void *dst);
+#define inet_pton rep_inet_pton
 #endif
 
 #ifndef HAVE_INET_NTOP
-#define inet_ntop rep_inet_ntop
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
-#endif
-
-#ifndef EAFNOSUPPORT
-#define EAFNOSUPPORT EINVAL
+#define inet_ntop rep_inet_ntop
 #endif
 
 #ifdef HAVE_LIMITS_H
