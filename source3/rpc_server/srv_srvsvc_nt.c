@@ -129,64 +129,64 @@ static void enum_file_fn( const struct share_mode_entry *e,
 {
 	struct file_enum_count *fenum =
 		(struct file_enum_count *)private_data;
+
+	struct srvsvc_NetFileInfo3 *f;
+	int i = fenum->count;
+	files_struct fsp;
+	struct byte_range_lock *brl;
+	int num_locks = 0;
+	pstring fullpath;
+	uint32 permissions;
  
 	/* If the pid was not found delete the entry from connections.tdb */
 
-	if ( process_exists(e->pid) ) {
-		struct srvsvc_NetFileInfo3 *f;
-		int i = fenum->count;
-		files_struct fsp;
-		struct byte_range_lock *brl;
-		int num_locks = 0;
-		pstring fullpath;
-		uint32 permissions;
-		
-		f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, struct srvsvc_NetFileInfo3, i+1 );			
-		if ( !f ) {
-			DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
-			return;
-		}
-		fenum->info = f;
-
-		/* need to count the number of locks on a file */
-		
-		ZERO_STRUCT( fsp );		
-		fsp.file_id = e->id;
-		
-		if ( (brl = brl_get_locks_readonly(NULL,&fsp)) != NULL ) {
-			num_locks = brl->num_locks;
-			TALLOC_FREE( brl );
-		}
-		
-		if ( strcmp( fname, "." ) == 0 ) {
-			pstr_sprintf( fullpath, "C:%s", sharepath );
-		} else {
-			pstr_sprintf( fullpath, "C:%s/%s", sharepath, fname );
-		}
-		string_replace( fullpath, '/', '\\' );
-		
-		/* mask out create (what ever that is) */
-		permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
-
-		fenum->info[i].fid = e->share_file_id;
-		fenum->info[i].permissions = permissions;
-		fenum->info[i].num_locks = num_locks;
-		if (!(fenum->info[i].user = talloc_strdup(
-			      fenum->ctx, uidtoname(e->uid)))) {
-			/* There's not much we can do here. */
-			fenum->info[i].user = "";
-		}
-		if (!(fenum->info[i].path = talloc_strdup(
-			      fenum->ctx, fullpath))) {
-			/* There's not much we can do here. */
-			fenum->info[i].path = "";
-		}
-			
-		fenum->count++;
+	if (!process_exists(e->pid)) {
+		return;
 	}
+		
+	f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info,
+				  struct srvsvc_NetFileInfo3, i+1 );
+	if ( !f ) {
+		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
+		return;
+	}
+	fenum->info = f;
 
-	return;
+	/* need to count the number of locks on a file */
+		
+	ZERO_STRUCT( fsp );		
+	fsp.file_id = e->id;
+		
+	if ( (brl = brl_get_locks_readonly(NULL,&fsp)) != NULL ) {
+		num_locks = brl->num_locks;
+		TALLOC_FREE( brl );
+	}
+		
+	if ( strcmp( fname, "." ) == 0 ) {
+		pstr_sprintf( fullpath, "C:%s", sharepath );
+	} else {
+		pstr_sprintf( fullpath, "C:%s/%s", sharepath, fname );
+	}
+	string_replace( fullpath, '/', '\\' );
+		
+	/* mask out create (what ever that is) */
+	permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
 
+	fenum->info[i].fid = e->share_file_id;
+	fenum->info[i].permissions = permissions;
+	fenum->info[i].num_locks = num_locks;
+	if (!(fenum->info[i].user = talloc_strdup(
+		      fenum->ctx, uidtoname(e->uid)))) {
+		/* There's not much we can do here. */
+		fenum->info[i].user = "";
+	}
+	if (!(fenum->info[i].path = talloc_strdup(
+		      fenum->ctx, fullpath))) {
+		/* There's not much we can do here. */
+		fenum->info[i].path = "";
+	}
+			
+	fenum->count++;
 }
 
 /*******************************************************************
