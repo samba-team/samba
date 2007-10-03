@@ -3,7 +3,7 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Tim Potter      2000-2001
-   Copyright (C) Jeremy Allison  1992-2005
+   Copyright (C) Jeremy Allison  1992-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,35 @@
    particular modules */
 static int client_fd = -1;
 /* What to print out on a client disconnect error. */
-static char client_ip_string[16];
+static char client_ip_string[INET6_ADDRSTRLEN];
+
+/****************************************************************************
+ Pritn out an IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_sockaddr(char *dest,
+			size_t destlen,
+			struct sockaddr_storage *psa)
+{
+	if (destlen > 0) {
+		dest[0] = '\0';
+	}
+#ifdef AF_INET6
+	if (psa->ss_family == AF_INET6) {
+		inet_ntop(AF_INET6,
+			&((struct sockaddr_in6 *)psa)->sin6_addr,
+			dest,
+			destlen);
+	}
+#endif
+	if (psa->ss_family == AF_INET) {
+		inet_ntop(AF_INET,
+			&((struct sockaddr_in *)psa)->sin_addr,
+			dest,
+			destlen);
+	}
+	return dest;
+}
 
 void client_setfd(int fd)
 {
@@ -38,44 +66,49 @@ void client_setfd(int fd)
 
 static char *get_socket_addr(int fd)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	struct sockaddr_storage sa;
 	socklen_t length = sizeof(sa);
-	static fstring addr_buf;
+	static char addr_buf[INET6_ADDRSTRLEN];
 
-	fstrcpy(addr_buf,"0.0.0.0");
+	addr_buf[0] = '\0';
 
 	if (fd == -1) {
 		return addr_buf;
 	}
 
-	if (getsockname(fd, &sa, &length) < 0) {
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
 		DEBUG(0,("getsockname failed. Error was %s\n",
-					strerror(errno) ));
+			strerror(errno) ));
 		return addr_buf;
 	}
 
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-
-	return addr_buf;
+	return print_sockaddr(addr_buf, sizeof(addr_buf), &sa);
 }
 
 static int get_socket_port(int fd)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	struct sockaddr_storage sa;
 	socklen_t length = sizeof(sa);
 
-	if (fd == -1)
-		return -1;
-
-	if (getsockname(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n",
-					strerror(errno) ));
+	if (fd == -1) {
 		return -1;
 	}
 
-	return ntohs(sockin->sin_port);
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n",
+			strerror(errno) ));
+		return -1;
+	}
+
+#ifdef AF_INET6
+	if (sa.ss_family == AF_INET6) {
+		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
+	}
+#endif
+	if (sa.ss_family == AF_INET) {
+		return ntohs(((struct sockaddr_in *)&sa)->sin_port);
+	}
+	return -1;
 }
 
 char *client_name(void)
@@ -97,26 +130,6 @@ int client_socket_port(void)
 {
 	return get_socket_port(client_fd);
 }
-
-struct in_addr *client_inaddr(struct sockaddr *sa)
-{
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (sa);
-	socklen_t  length = sizeof(*sa);
-
-	if (getpeername(client_fd, sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n",
-					strerror(errno) ));
-		return NULL;
-	}
-
-	return &sockin->sin_addr;
-}
-
-/* the last IP received from */
-struct in_addr lastip;
-
-/* the last port received from */
-int lastport=0;
 
 int smb_read_error = 0;
 
@@ -281,35 +294,42 @@ void set_socket_options(int fd, const char *options)
  Read from a socket.
 ****************************************************************************/
 
-ssize_t read_udp_socket(int fd,char *buf,size_t len)
+ssize_t read_udp_v4_socket(int fd,
+			char *buf,
+			size_t len,
+			struct sockaddr_storage *psa)
 {
 	ssize_t ret;
-	struct sockaddr_in sock;
-	socklen_t socklen = sizeof(sock);
+	socklen_t socklen = sizeof(*psa);
+	struct sockaddr_in *si = (struct sockaddr_in *)psa;
 
-	memset((char *)&sock,'\0',socklen);
-	memset((char *)&lastip,'\0',sizeof(lastip));
+	memset((char *)psa,'\0',socklen);
+
 	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,
-			(struct sockaddr *)&sock,&socklen);
+			(struct sockaddr *)psa,&socklen);
 	if (ret <= 0) {
 		/* Don't print a low debug error for a non-blocking socket. */
 		if (errno == EAGAIN) {
-			DEBUG(10,("read socket returned EAGAIN. ERRNO=%s\n",
-						strerror(errno)));
+			DEBUG(10,("read_udp_v4_socket: returned EAGAIN\n"));
 		} else {
-			DEBUG(2,("read socket failed. ERRNO=%s\n",
-						strerror(errno)));
+			DEBUG(2,("read_udp_v4_socket: failed. errno=%s\n",
+				strerror(errno)));
 		}
-		return(0);
+		return 0;
 	}
 
-	lastip = sock.sin_addr;
-	lastport = ntohs(sock.sin_port);
+	if (psa->ss_family != AF_INET) {
+		DEBUG(2,("read_udp_v4_socket:: invalid address family %d "
+			"(not IPv4)\n", (int)psa->ss_family));
+		return 0;
+	}
 
-	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %lu\n",
-			inet_ntoa(lastip), lastport, (unsigned long)ret));
+	DEBUG(10,("read_udp_socket: ip %s port %d read: %lu\n",
+			inet_ntoa(si->sin_addr),
+			si->sin_port,
+			(unsigned long)ret));
 
-	return(ret);
+	return ret;
 }
 
 /****************************************************************************
@@ -1231,7 +1251,6 @@ int open_udp_socket(const char *host, int port)
 
 	return res;
 }
-
 
 /*******************************************************************
  Matchname - determine if host name matches IP address. Used to
