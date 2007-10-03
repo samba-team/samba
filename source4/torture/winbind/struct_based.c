@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester - winbind struct based protocol
    Copyright (C) Stefan Metzmacher 2007
+   Copyright (C) Michael Adam 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -99,6 +100,18 @@ static bool torture_winbind_struct_ping(struct torture_context *torture)
 	return true;
 }
 
+
+static char winbind_separator(struct torture_context *torture)
+{
+	struct winbindd_response rep;
+
+	ZERO_STRUCT(rep);
+
+	DO_STRUCT_REQ_REP(WINBINDD_INFO, NULL, &rep);
+
+	return rep.data.info.winbind_separator;
+}
+
 static bool torture_winbind_struct_info(struct torture_context *torture)
 {
 	struct winbindd_response rep;
@@ -176,23 +189,34 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 	return true;
 }
 
-static bool torture_winbind_struct_domain_name(struct torture_context *torture)
+static bool get_winbind_domain(struct torture_context *torture, char **domain)
 {
 	struct winbindd_response rep;
-	const char *expected;
 
 	ZERO_STRUCT(rep);
 
-	torture_comment(torture, "Running WINBINDD_DOMAIN_NAME (struct based)\n");
-
 	DO_STRUCT_REQ_REP(WINBINDD_DOMAIN_NAME, NULL, &rep);
+
+	*domain = talloc_strdup(torture, rep.data.domain_name);
+	torture_assert(torture, domain, "talloc error");
+
+	return true;
+}
+
+static bool torture_winbind_struct_domain_name(struct torture_context *torture)
+{
+	const char *expected;
+	char *domain;
+
+	torture_comment(torture, "Running WINBINDD_DOMAIN_NAME (struct based)\n");
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios domain",
 					  lp_workgroup(global_loadparm));
 
-	torture_assert_str_equal(torture,
-				 rep.data.domain_name, expected,
+	get_winbind_domain(torture, &domain);
+
+	torture_assert_str_equal(torture, domain, expected,
 				 "winbindd's netbios domain doesn't match");
 
 	return true;
@@ -556,32 +580,102 @@ static bool torture_winbind_struct_dsgetdcname(struct torture_context *torture)
 	return true;
 }
 
-static bool torture_winbind_struct_list_users(struct torture_context *torture)
+static bool get_user_list(struct torture_context *torture, char ***users)
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
-
-	torture_comment(torture, "Running WINBINDD_LIST_USERS (struct based)\n");
+	char **u = NULL;
+	uint32_t count;
+	fstring name;
+	const char *extra_data;
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
 
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_USERS, &req, &rep);
 
+	extra_data = (char *)rep.extra_data.data;
+	torture_assert(torture, extra_data, "NULL extra data");
+
+	for(count = 0;
+	    next_token(&extra_data, name, ",", sizeof(fstring));
+	    count++)
+	{
+		u = talloc_realloc(torture, u, char *, count + 2);
+		u[count+1] = NULL;
+		u[count] = talloc_strdup(u, name);
+	}
+
+	SAFE_FREE(rep.extra_data.data);
+
+	*users = u;
 	return true;
 }
 
-static bool torture_winbind_struct_list_groups(struct torture_context *torture)
+static bool torture_winbind_struct_list_users(struct torture_context *torture)
+{
+	char **users;
+	uint32_t count;
+	bool ok;
+
+	torture_comment(torture, "Running WINBINDD_LIST_USERS (struct based)\n");
+
+	ok = get_user_list(torture, &users);
+	torture_assert(torture, ok, "failed to get group list");
+
+	for (count = 0; users[count]; count++) { }
+
+	torture_comment(torture, "got %d users\n", count);
+
+	return true;
+}
+
+static bool get_group_list(struct torture_context *torture, char ***groups)
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
-
-	torture_comment(torture, "Running WINBINDD_LIST_GROUPS (struct based)\n");
+	char **g = NULL;
+	uint32_t count;
+	fstring name;
+	const char *extra_data;
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(rep);
 
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_GROUPS, &req, &rep);
+
+	extra_data = (char *)rep.extra_data.data;
+	torture_assert(torture, extra_data, "NULL extra data");
+
+	for(count = 0;
+	    next_token(&extra_data, name, ",", sizeof(fstring));
+	    count++)
+	{
+		g = talloc_realloc(torture, g, char *, count + 2);
+		g[count+1] = NULL;
+		g[count] = talloc_strdup(g, name);
+	}
+
+	SAFE_FREE(rep.extra_data.data);
+
+	*groups = g;
+	return true;
+}
+
+static bool torture_winbind_struct_list_groups(struct torture_context *torture)
+{
+	char **groups;
+	uint32_t count;
+	bool ok;
+
+	torture_comment(torture, "Running WINBINDD_LIST_GROUPS (struct based)\n");
+
+	ok = get_group_list(torture, &groups);
+	torture_assert(torture, ok, "failed to get group list");
+
+	for (count = 0; groups[count]; count++) { }
+
+	torture_comment(torture, "got %d groups\n", count);
 
 	return true;
 }
@@ -764,6 +858,107 @@ static bool torture_winbind_struct_endpwent(struct torture_context *torture)
 	return true;
 }
 
+/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
+   form DOMAIN/user into a domain and a user */
+
+static bool parse_domain_user(struct torture_context *torture,
+			      const char *domuser, fstring domain,
+			      fstring user)
+{
+	char *p = strchr(domuser, winbind_separator(torture));
+	char *dom;
+
+	if (!p) {
+		/* Maybe it was a UPN? */
+		if ((p = strchr(domuser, '@')) != NULL) {
+			fstrcpy(domain, "");
+			fstrcpy(user, domuser);
+			return true;
+		}
+
+		fstrcpy(user, domuser);
+		get_winbind_domain(torture, &dom);
+		fstrcpy(domain, dom);
+		return true;
+	}
+
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper_m(domain);
+
+	return true;
+}
+
+static bool lookup_name_sid_list(struct torture_context *torture, char **list)
+{
+	uint32_t count;
+
+	for (count = 0; list[count]; count++) {
+		struct winbindd_request req;
+		struct winbindd_response rep;
+		char *sid;
+		char *name;
+
+		ZERO_STRUCT(req);
+		ZERO_STRUCT(rep);
+
+		parse_domain_user(torture, list[count], req.data.name.dom_name,
+				  req.data.name.name);
+
+		DO_STRUCT_REQ_REP(WINBINDD_LOOKUPNAME, &req, &rep);
+
+		sid = talloc_strdup(torture, rep.data.sid.sid);
+
+		ZERO_STRUCT(req);
+		ZERO_STRUCT(rep);
+
+		fstrcpy(req.data.sid, sid);
+
+		DO_STRUCT_REQ_REP(WINBINDD_LOOKUPSID, &req, &rep);
+
+		name = talloc_asprintf(torture, "%s%c%s",
+				       rep.data.name.dom_name,
+				       winbind_separator(torture),
+				       rep.data.name.name);
+
+		torture_assert_casestr_equal(torture, list[count], name,
+					 "LOOKUP_SID after LOOKUP_NAME != id");
+
+#if 0
+		torture_comment(torture, " %s -> %s -> %s\n", list[count],
+				sid, name);
+#endif
+
+		talloc_free(sid);
+		talloc_free(name);
+	}
+
+	return true;
+}
+
+static bool torture_winbind_struct_lookup_name_sid(struct torture_context *torture)
+{
+	char **users;
+	char **groups;
+	uint32_t count;
+	bool ok;
+
+	torture_comment(torture, "Running WINBINDD_LOOKUP_NAME_SID (struct based)\n");
+
+	ok = get_user_list(torture, &users);
+	torture_assert(torture, ok, "failed to retrieve list of users");
+	lookup_name_sid_list(torture, users);
+	talloc_free(users);
+
+	ok = get_group_list(torture, &groups);
+	torture_assert(torture, ok, "failed to retrieve list of groups");
+	lookup_name_sid_list(torture, groups);
+	talloc_free(groups);
+
+	return true;
+}
+
 struct torture_suite *torture_winbind_struct_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "STRUCT");
@@ -785,6 +980,7 @@ struct torture_suite *torture_winbind_struct_init(void)
 	torture_suite_add_simple_test(suite, "SETPWENT", torture_winbind_struct_setpwent);
 	torture_suite_add_simple_test(suite, "GETPWENT", torture_winbind_struct_getpwent);
 	torture_suite_add_simple_test(suite, "ENDPWENT", torture_winbind_struct_endpwent);
+	torture_suite_add_simple_test(suite, "LOOKUP_NAME_SID", torture_winbind_struct_lookup_name_sid);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
 
