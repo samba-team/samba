@@ -127,7 +127,8 @@ typedef unsigned short int sa_family_t;
 #endif
 
 #ifndef HAVE_SOCKADDR_STORAGE
-#define sockaddr_storage sockaddr
+#define sockaddr_storage sockaddr_in
+#define ss_family sin_family
 #endif
 
 #endif
