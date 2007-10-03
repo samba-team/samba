@@ -625,7 +625,7 @@ static int net_getlocalsid(int argc, const char **argv)
 
 	if(!initialize_password_db(False, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
-			  "backend knowlege (such as the sid stored in LDAP)\n"));
+			  "backend knowledge (such as the sid stored in LDAP)\n"));
 	}
 
 	/* first check to see if we can even access secrets, so we don't
@@ -695,7 +695,16 @@ static int net_getdomainsid(int argc, const char **argv)
 
 	if(!initialize_password_db(False, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
-			  "backend knowlege (such as the sid stored in LDAP)\n"));
+			  "backend knowledge (such as the sid stored in LDAP)\n"));
+	}
+
+	/* first check to see if we can even access secrets, so we don't
+	   panic when we can't. */
+
+	if (!secrets_init()) {
+		d_fprintf(stderr, "Unable to open secrets.tdb.  Can't fetch domain"
+				  "SID for name: %s\n", get_global_sam_name());
+		return 1;
 	}
 
 	/* Generate one, if it doesn't exist */
