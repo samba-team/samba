@@ -128,7 +128,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 			  void *private_data )
 {
 	struct file_enum_count *fenum =
-		(struct file_enum_count *)&private_data;
+		(struct file_enum_count *)private_data;
  
 	/* If the pid was not found delete the entry from connections.tdb */
 
