@@ -62,8 +62,6 @@ BOOL session_claim(user_struct *vuser)
 {
 	TDB_DATA key, data;
 	int i = 0;
-	struct sockaddr sa;
-	struct in_addr *client_ip;
 	struct sessionid sessionid;
 	struct server_id pid = procid_self();
 	fstring keystr;
@@ -124,7 +122,7 @@ BOOL session_claim(user_struct *vuser)
 
 			TALLOC_FREE(rec);
 		}
-		
+
 		if (i == MAX_SESSION_ID) {
 			SMB_ASSERT(rec == NULL);
 			DEBUG(1,("session_claim: out of session IDs "
@@ -147,16 +145,16 @@ BOOL session_claim(user_struct *vuser)
 			return False;
 		}
 
-		snprintf(sessionid.id_str, sizeof(sessionid.id_str), 
-			 SESSION_TEMPLATE, (long unsigned int)sys_getpid(), 
+		snprintf(sessionid.id_str, sizeof(sessionid.id_str),
+			 SESSION_TEMPLATE, (long unsigned int)sys_getpid(),
 			 vuser->vuid);
 	}
 
 	SMB_ASSERT(rec != NULL);
 
 	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
-           needed because utmp and PAM both expect DNS names 
-	   
+           needed because utmp and PAM both expect DNS names
+
 	   client_name() handles this case internally.
 	*/
 
@@ -172,10 +170,8 @@ BOOL session_claim(user_struct *vuser)
 	sessionid.uid = vuser->uid;
 	sessionid.gid = vuser->gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
-	fstrcpy(sessionid.ip_addr, client_addr());
+	fstrcpy(sessionid.ip_addr_str, client_addr());
 	sessionid.connect_start = time(NULL);
-
-	client_ip = client_inaddr(&sa);
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str,
 				   sessionid.hostname)) {
@@ -200,8 +196,8 @@ BOOL session_claim(user_struct *vuser)
 	}
 
 	if (lp_utmp()) {
-		sys_utmp_claim(sessionid.username, sessionid.hostname, 
-			       client_ip,
+		sys_utmp_claim(sessionid.username, sessionid.hostname,
+			       sessionid.ip_addr_str,
 			       sessionid.id_str, sessionid.id_num);
 	}
 
@@ -224,7 +220,6 @@ void session_yield(user_struct *vuser)
 {
 	TDB_DATA key;
 	struct sessionid sessionid;
-	struct in_addr *client_ip;
 	struct db_context *ctx;
 	struct db_record *rec;
 
@@ -245,11 +240,9 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, rec->value.dptr, sizeof(sessionid));
 
-	client_ip = interpret_addr2(sessionid.ip_addr);
-
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
-			       client_ip,
+			       sessionid.ip_addr_str,
 			       sessionid.id_str, sessionid.id_num);
 	}
 

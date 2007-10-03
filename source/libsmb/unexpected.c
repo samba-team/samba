@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    handle unexpected packets
    Copyright (C) Andrew Tridgell 2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -29,13 +29,12 @@ struct unexpected_key {
 	int count;
 };
 
-
-
 /****************************************************************************
- all unexpected packets are passed in here, to be stored in a unexpected
+ All unexpected packets are passed in here, to be stored in a unexpected
  packet database. This allows nmblookup and other tools to receive packets
- erroneoously sent to the wrong port by broken MS systems
-  **************************************************************************/
+ erroneoously sent to the wrong port by broken MS systems.
+**************************************************************************/
+
 void unexpected_packet(struct packet_struct *p)
 {
 	static int count;
@@ -43,9 +42,10 @@ void unexpected_packet(struct packet_struct *p)
 	struct unexpected_key key;
 	char buf[1024];
 	int len=0;
+	uint32_t enc_ip;
 
 	if (!tdbd) {
-		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 0, 
+		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 0,
 			       TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
 			       O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {
@@ -55,8 +55,13 @@ void unexpected_packet(struct packet_struct *p)
 	}
 
 	memset(buf,'\0',sizeof(buf));
-	
-	len = build_packet(buf, p);
+
+	/* Encode the ip addr and port. */
+	enc_ip = ntohl(p->ip.s_addr);
+	SIVAL(buf,0,enc_ip);
+	SSVAL(buf,4,p->port);
+
+	len = build_packet(&buf[6], sizeof(buf)-6, p) + 6;
 
 	key.packet_type = p->packet_type;
 	key.timestamp = p->timestamp;
@@ -74,8 +79,9 @@ void unexpected_packet(struct packet_struct *p)
 static time_t lastt;
 
 /****************************************************************************
-delete the record if it is too old
-  **************************************************************************/
+ Delete the record if it is too old.
+**************************************************************************/
+
 static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct unexpected_key key;
@@ -91,8 +97,9 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 
 /****************************************************************************
-delete all old unexpected packets
-  **************************************************************************/
+ Delete all old unexpected packets.
+**************************************************************************/
+
 void clear_unexpected(time_t t)
 {
 	if (!tdbd) return;
@@ -112,22 +119,39 @@ static enum packet_type match_type;
 static const char *match_name;
 
 /****************************************************************************
-tdb traversal fn to find a matching 137 packet
-  **************************************************************************/
+ tdb traversal fn to find a matching 137 packet.
+**************************************************************************/
+
 static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct unexpected_key key;
+	struct in_addr ip;
+	uint32_t enc_ip;
+	int port;
 	struct packet_struct *p;
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
 	if (key.packet_type != match_type) return 0;
 
-	p = parse_packet((char *)dbuf.dptr, dbuf.dsize, match_type);
+	if (dbuf.dsize < 6) {
+		return 0;
+	}
 
-	if ((match_type == NMB_PACKET && 
+	/* Decode the ip addr and port. */
+	enc_ip = IVAL(dbuf.dptr,0);
+	ip.s_addr = htonl(enc_ip);
+	port = SVAL(dbuf.dptr,4);
+
+	p = parse_packet((char *)&dbuf.dptr[6],
+			dbuf.dsize-6,
+			match_type,
+			ip,
+			port);
+
+	if ((match_type == NMB_PACKET &&
 	     p->packet.nmb.header.name_trn_id == match_id) ||
-	    (match_type == DGRAM_PACKET && 
+	    (match_type == DGRAM_PACKET &&
 	     match_mailslot_name(p, match_name))) {
 		matched_packet = p;
 		return -1;
@@ -138,11 +162,11 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	return 0;
 }
 
-
 /****************************************************************************
-check for a particular packet in the unexpected packet queue
-  **************************************************************************/
-struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
+ Check for a particular packet in the unexpected packet queue.
+**************************************************************************/
+
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 					 const char *mailslot_name)
 {
 	TDB_CONTEXT *tdb2;

@@ -766,7 +766,7 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 /****************************************************************************
  Queue a query name packet to a given address from the WINS subnet.
 ****************************************************************************/
- 
+
 struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
                           response_function resp_fn,
                           timeout_response_function timeout_fn,
@@ -805,7 +805,7 @@ struct response_record *queue_query_name_from_wins_server( struct in_addr to_ip,
 /****************************************************************************
  Queue a node status packet to a given name and address.
 ****************************************************************************/
- 
+
 struct response_record *queue_node_status( struct subnet_record *subrec,
                           response_function resp_fn,
                           timeout_response_function timeout_fn,
@@ -835,7 +835,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
 		p->locked = False;
 		free_packet(p);
 		return NULL;
-	} 
+	}
 
 	if((rrec = make_response_record(subrec,           /* subnet record. */
 					p,                     /* packet we sent. */
@@ -867,11 +867,11 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 	BOOL loopback_this_packet = False;
 	int rr_type = RR_TYPE_NB;
 	const char *packet_type = "unknown";
-  
+
 	/* Check if we are sending to or from ourselves. */
 	if(ismyip(orig_packet->ip) && (orig_packet->port == global_nmb_port))
 		loopback_this_packet = True;
-  
+
 	nmb = &packet.packet.nmb;
 
 	/* Do a partial copy of the packet. We clear the locked flag and
@@ -944,28 +944,28 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	nmb->header.nm_flags.bcast = False;
 	nmb->header.nm_flags.trunc = False;
 	nmb->header.nm_flags.authoritative = True;
-  
+
 	nmb->header.rcode = rcode;
 	nmb->header.qdcount = 0;
 	nmb->header.ancount = 1;
 	nmb->header.nscount = 0;
 	nmb->header.arcount = 0;
-  
+
 	memset((char*)&nmb->question,'\0',sizeof(nmb->question));
-  
+
 	nmb->answers = &answers;
 	memset((char*)nmb->answers,'\0',sizeof(*nmb->answers));
-  
+
 	nmb->answers->rr_name  = orig_nmb->question.question_name;
 	nmb->answers->rr_type  = rr_type;
 	nmb->answers->rr_class = RR_CLASS_IN;
 	nmb->answers->ttl      = ttl;
-  
+
 	if (data && len) {
 		nmb->answers->rdlength = len;
 		memcpy(nmb->answers->rdata, data, len);
 	}
-  
+
 	packet.packet_type = NMB_PACKET;
 	/* Ensure we send out on the same fd that the original
 		packet came in on to give the correct source IP address. */
@@ -973,7 +973,7 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	packet.timestamp = time(NULL);
 
 	debug_nmb_packet(&packet);
-  
+
 	if(loopback_this_packet) {
 		struct packet_struct *lo_packet;
 		DEBUG(5,("reply_netbios_packet: sending packet to ourselves.\n"));
@@ -1000,9 +1000,9 @@ static void queue_packet(struct packet_struct *packet)
 		packet_queue = packet;
 		return;
 	}
-  
+
 	/* find the bottom */
-	for (p=packet_queue;p->next;p=p->next) 
+	for (p=packet_queue;p->next;p=p->next)
 		;
 
 	p->next = packet;
@@ -1104,7 +1104,7 @@ packet from %s IP %s\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip)));
 			process_master_browser_announce(subrec, p, buf+1);
 			break;
 		case ANN_BecomeBackup:
-			/* 
+			/*
 			 * We don't currently implement this. Log it just in case.
 			 */
 			debug_browse_data(buf, len);
@@ -1118,7 +1118,7 @@ command ANN_BecomeBackup from %s IP %s to %s\n", subrec->subnet_name, nmb_namest
 command code %d from %s IP %s to %s\n", subrec->subnet_name, command, nmb_namestr(&dgram->source_name),
 				inet_ntoa(p->ip), nmb_namestr(&dgram->dest_name)));
 			break;
-	} 
+	}
 }
 
 /****************************************************************************
@@ -1345,7 +1345,7 @@ static BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
 
 	return ignore;
 }
- 
+
 /****************************************************************************
   Validate a request nmb packet.
 ****************************************************************************/
@@ -1510,7 +1510,7 @@ not allowed.\n"));
 					break;
 			}
 			break;
-      
+
 		case NMB_NAME_RELEASE_OPCODE:
 			if(subrec == wins_server_subnet)
 				wins_process_name_release_request(subrec, p);
@@ -1549,7 +1549,7 @@ found for id = %hu. Ignoring packet.\n", nmb->header.name_trn_id));
 	rrec->num_msgs++;
 	/* Ensure we don't re-send the request. */
 	rrec->repeat_count = 0;
-  
+
 	/* Call the response received function for this packet. */
 	(*rrec->resp_fn)(subrec, rrec, p);
 }
@@ -1582,7 +1582,7 @@ void run_packet_queue(void)
 		}
 		free_packet(p);
 	}
-} 
+}
 
 /*******************************************************************
  Retransmit or timeout elements from all the outgoing subnet response
@@ -1601,7 +1601,7 @@ void retransmit_or_expire_response_records(time_t t)
 
 		for (rrec = subrec->responselist; rrec; rrec = nextrrec) {
 			nextrrec = rrec->next;
-   
+
 			if (rrec->repeat_time <= t) {
 				if (rrec->repeat_count > 0) {
 					/* Resend while we have a non-zero repeat_count. */
@@ -1712,7 +1712,7 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 
 	*ppset = pset;
 	*psock_array = sock_array;
- 
+
 	return False;
 }
 
@@ -1756,7 +1756,7 @@ BOOL listen_for_packets(BOOL run_election)
 	}
 #endif
 
-	/* 
+	/*
 	 * During elections and when expecting a netbios response packet we
 	 * need to send election packets at tighter intervals.
 	 * Ideally it needs to be the interval (in ms) between time now and
@@ -1778,7 +1778,7 @@ BOOL listen_for_packets(BOOL run_election)
 			return False;
 		}
 	}
-	
+
 	/* Prepare for the select - allow certain signals. */
 
 	BlockSignals(False, SIGTERM);
@@ -1886,7 +1886,7 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
 	/* generate_name_trn_id(); */ /* Not used, so gone, RJS */
 
 	/* DIRECT GROUP or UNIQUE datagram. */
-	dgram->header.msg_type = unique ? 0x10 : 0x11; 
+	dgram->header.msg_type = unique ? 0x10 : 0x11;
 	dgram->header.flags.node_type = M_NODE;
 	dgram->header.flags.first = True;
 	dgram->header.flags.more = False;
@@ -1895,7 +1895,7 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
 	dgram->header.source_port = DGRAM_PORT;
 	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
 	dgram->header.packet_offset = 0;
-  
+
 	make_nmb_name(&dgram->source_name,srcname,src_type);
 	make_nmb_name(&dgram->dest_name,dstname,dest_type);
 
@@ -1918,7 +1918,7 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
 	p2 = smb_buf(ptr);
 	safe_strcpy_base(p2, mailslot, dgram->data, sizeof(dgram->data));
 	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2);
-  
+
 	if (((p2+len) > dgram->data+sizeof(dgram->data)) || ((p2+len) < p2)) {
 		DEBUG(0, ("send_mailslot: Cannot write beyond end of packet\n"));
 		return False;

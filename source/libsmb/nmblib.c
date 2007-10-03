@@ -1,27 +1,25 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NBT netbios library routines
    Copyright (C) Andrew Tridgell 1994-1998
-   
+   Copyright (C) Jeremy Allison 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
-
-extern struct in_addr lastip;
-extern int lastport;
 
 int num_good_sends = 0;
 int num_good_receives = 0;
@@ -82,12 +80,12 @@ static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
 			unsigned char x = res->rdata[i+j];
 			if (x < 32 || x > 127)
 				x = '.';
-	  
+
 			if (i+j >= res->rdlength)
 				break;
 			DEBUGADD(4, ("%c", x));
 		}
-      
+
 		DEBUGADD(4, ("   hex "));
 
 		for (j = 0; j < MAX_NETBIOSNAME_LEN; j++) {
@@ -95,7 +93,7 @@ static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
 				break;
 			DEBUGADD(4, ("%02X", (unsigned char)res->rdata[i+j]));
 		}
-      
+
 		DEBUGADD(4, ("\n"));
 	}
 }
@@ -109,19 +107,22 @@ void debug_nmb_packet(struct packet_struct *p)
 	struct nmb_packet *nmb = &p->packet.nmb;
 
 	if( DEBUGLVL( 4 ) ) {
-		dbgtext( "nmb packet from %s(%d) header: id=%d opcode=%s(%d) response=%s\n",
+		dbgtext( "nmb packet from %s(%d) header: id=%d "
+				"opcode=%s(%d) response=%s\n",
 			inet_ntoa(p->ip), p->port,
 			nmb->header.name_trn_id,
 			lookup_opcode_name(nmb->header.opcode),
 			nmb->header.opcode,
 			BOOLSTR(nmb->header.response) );
-		dbgtext( "    header: flags: bcast=%s rec_avail=%s rec_des=%s trunc=%s auth=%s\n",
+		dbgtext( "    header: flags: bcast=%s rec_avail=%s "
+				"rec_des=%s trunc=%s auth=%s\n",
 			BOOLSTR(nmb->header.nm_flags.bcast),
 			BOOLSTR(nmb->header.nm_flags.recursion_available),
 			BOOLSTR(nmb->header.nm_flags.recursion_desired),
 			BOOLSTR(nmb->header.nm_flags.trunc),
 			BOOLSTR(nmb->header.nm_flags.authoritative) );
-		dbgtext( "    header: rcode=%d qdcount=%d ancount=%d nscount=%d arcount=%d\n",
+		dbgtext( "    header: rcode=%d qdcount=%d ancount=%d "
+				"nscount=%d arcount=%d\n",
 			nmb->header.rcode,
 			nmb->header.qdcount,
 			nmb->header.ancount,
@@ -155,17 +156,18 @@ static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
 			     BOOL *got_pointer,int *ret)
 {
 	int loop_count=0;
-  
+
 	while ((ubuf[*offset] & 0xC0) == 0xC0) {
 		if (!*got_pointer)
 			(*ret) += 2;
 		(*got_pointer)=True;
 		(*offset) = ((ubuf[*offset] & ~0xC0)<<8) | ubuf[(*offset)+1];
-		if (loop_count++ == 10 || (*offset) < 0 || (*offset)>(length-2)) {
-			return(False);
+		if (loop_count++ == 10 ||
+				(*offset) < 0 || (*offset)>(length-2)) {
+			return False;
 		}
 	}
-	return(True);
+	return True;
 }
 
 /*******************************************************************
@@ -183,12 +185,12 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 	int offset = ofs;
 
 	if (length - offset < 2)
-		return(0);  
+		return(0);
 
 	/* handle initial name pointers */
 	if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret))
 		return(0);
-  
+
 	m = ubuf[offset];
 
 	if (!m)
@@ -214,14 +216,15 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 	name->name[n] = 0;
 
 	if (n==MAX_NETBIOSNAME_LEN) {
-		/* parse out the name type, its always in the 16th byte of the name */
+		/* parse out the name type, its always
+		 * in the 16th byte of the name */
 		name->name_type = ((unsigned char)name->name[15]) & 0xff;
-  
+
 		/* remove trailing spaces */
 		name->name[15] = 0;
 		n = 14;
 		while (n && name->name[n]==' ')
-			name->name[n--] = 0;  
+			name->name[n--] = 0;
 	}
 
 	/* now the domain parts (if any) */
@@ -253,7 +256,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 		if (loop_count++ == 10)
 			return 0;
 	}
-	name->scope[n++] = 0;  
+	name->scope[n++] = 0;
 
 	return(ret);
 }
@@ -268,7 +271,8 @@ void put_name(char *dest, const char *name, int pad, unsigned int name_type)
 {
 	size_t len = strlen(name);
 
-	memcpy(dest, name, (len < MAX_NETBIOSNAME_LEN) ? len : MAX_NETBIOSNAME_LEN - 1);
+	memcpy(dest, name, (len < MAX_NETBIOSNAME_LEN) ?
+			len : MAX_NETBIOSNAME_LEN - 1);
 	if (len < MAX_NETBIOSNAME_LEN - 1) {
 		memset(dest + len, pad, MAX_NETBIOSNAME_LEN - 1 - len);
 	}
@@ -282,6 +286,8 @@ void put_name(char *dest, const char *name, int pad, unsigned int name_type)
  Compressed names are really weird. The "compression" doubles the
  size. The idea is that it also means that compressed names conform
  to the doman name system. See RFC1002.
+
+ If buf == NULL this is a length calculation.
 ******************************************************************/
 
 static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
@@ -297,33 +303,42 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 		put_name(buf1, name->name, ' ', name->name_type);
 	}
 
-	buf[offset] = 0x20;
+	if (buf) {
+		buf[offset] = 0x20;
+	}
 
 	ret = 34;
 
 	for (m=0;m<MAX_NETBIOSNAME_LEN;m++) {
-		buf[offset+1+2*m] = 'A' + ((buf1[m]>>4)&0xF);
-		buf[offset+2+2*m] = 'A' + (buf1[m]&0xF);
+		if (buf) {
+			buf[offset+1+2*m] = 'A' + ((buf1[m]>>4)&0xF);
+			buf[offset+2+2*m] = 'A' + (buf1[m]&0xF);
+		}
 	}
 	offset += 33;
 
-	buf[offset] = 0;
+	if (buf) {
+		buf[offset] = 0;
+	}
 
 	if (name->scope[0]) {
 		/* XXXX this scope handling needs testing */
 		ret += strlen(name->scope) + 1;
-		safe_strcpy(&buf[offset+1],name->scope,sizeof(name->scope));  
-  
-		p = &buf[offset+1];
-		while ((p = strchr_m(p,'.'))) {
-			buf[offset] = PTR_DIFF(p,&buf[offset+1]);
-			offset += (buf[offset] + 1);
+		if (buf) {
+			safe_strcpy(&buf[offset+1],name->scope,
+					sizeof(name->scope));
+
 			p = &buf[offset+1];
+			while ((p = strchr_m(p,'.'))) {
+				buf[offset] = PTR_DIFF(p,&buf[offset+1]);
+				offset += (buf[offset] + 1);
+				p = &buf[offset+1];
+			}
+			buf[offset] = strlen(&buf[offset+1]);
 		}
-		buf[offset] = strlen(&buf[offset+1]);
 	}
 
-	return(ret);
+	return ret;
 }
 
 /*******************************************************************
@@ -341,7 +356,8 @@ char *nmb_namestr(const struct nmb_name *n)
 	if (!n->scope[0])
 		slprintf(p,sizeof(fstring)-1, "%s<%02x>",name,n->name_type);
 	else
-		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",name,n->name_type,n->scope);
+		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",
+				name,n->name_type,n->scope);
 
 	i = (i+1)%4;
 	return(p);
@@ -363,7 +379,8 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
 	memset((char *)*recs,'\0',sizeof(**recs)*count);
 
 	for (i=0;i<count;i++) {
-		int l = parse_nmb_name(inbuf,*offset,length,&(*recs)[i].rr_name);
+		int l = parse_nmb_name(inbuf,*offset,length,
+				&(*recs)[i].rr_name);
 		(*offset) += l;
 		if (!l || (*offset)+10 > length) {
 			SAFE_FREE(*recs);
@@ -374,19 +391,20 @@ static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
 		(*recs)[i].ttl = RIVAL(inbuf,(*offset)+4);
 		(*recs)[i].rdlength = RSVAL(inbuf,(*offset)+8);
 		(*offset) += 10;
-		if ((*recs)[i].rdlength>sizeof((*recs)[i].rdata) || 
+		if ((*recs)[i].rdlength>sizeof((*recs)[i].rdata) ||
 				(*offset)+(*recs)[i].rdlength > length) {
 			SAFE_FREE(*recs);
 			return(False);
 		}
 		memcpy((*recs)[i].rdata,inbuf+(*offset),(*recs)[i].rdlength);
-		(*offset) += (*recs)[i].rdlength;    
+		(*offset) += (*recs)[i].rdlength;
 	}
 	return(True);
 }
 
 /*******************************************************************
  Put a resource record into a packet.
+ If buf == NULL this is a length calculation.
 ******************************************************************/
 
 static int put_res_rec(char *buf,int offset,struct res_rec *recs,int count)
@@ -398,42 +416,52 @@ static int put_res_rec(char *buf,int offset,struct res_rec *recs,int count)
 		int l = put_nmb_name(buf,offset,&recs[i].rr_name);
 		offset += l;
 		ret += l;
-		RSSVAL(buf,offset,recs[i].rr_type);
-		RSSVAL(buf,offset+2,recs[i].rr_class);
-		RSIVAL(buf,offset+4,recs[i].ttl);
-		RSSVAL(buf,offset+8,recs[i].rdlength);
-		memcpy(buf+offset+10,recs[i].rdata,recs[i].rdlength);
+		if (buf) {
+			RSSVAL(buf,offset,recs[i].rr_type);
+			RSSVAL(buf,offset+2,recs[i].rr_class);
+			RSIVAL(buf,offset+4,recs[i].ttl);
+			RSSVAL(buf,offset+8,recs[i].rdlength);
+			memcpy(buf+offset+10,recs[i].rdata,recs[i].rdlength);
+		}
 		offset += 10+recs[i].rdlength;
 		ret += 10+recs[i].rdlength;
 	}
 
-	return(ret);
+	return ret;
 }
 
 /*******************************************************************
  Put a compressed name pointer record into a packet.
+ If buf == NULL this is a length calculation.
 ******************************************************************/
 
-static int put_compressed_name_ptr(unsigned char *buf,int offset,struct res_rec *rec,int ptr_offset)
-{  
+static int put_compressed_name_ptr(unsigned char *buf,
+				int offset,
+				struct res_rec *rec,
+				int ptr_offset)
+{
 	int ret=0;
-	buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
-	buf[offset+1] = (ptr_offset & 0xFF);
+	if (buf) {
+		buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
+		buf[offset+1] = (ptr_offset & 0xFF);
+	}
 	offset += 2;
 	ret += 2;
-	RSSVAL(buf,offset,rec->rr_type);
-	RSSVAL(buf,offset+2,rec->rr_class);
-	RSIVAL(buf,offset+4,rec->ttl);
-	RSSVAL(buf,offset+8,rec->rdlength);
-	memcpy(buf+offset+10,rec->rdata,rec->rdlength);
+	if (buf) {
+		RSSVAL(buf,offset,rec->rr_type);
+		RSSVAL(buf,offset+2,rec->rr_class);
+		RSIVAL(buf,offset+4,rec->ttl);
+		RSSVAL(buf,offset+8,rec->rdlength);
+		memcpy(buf+offset+10,rec->rdata,rec->rdlength);
+	}
 	offset += 10+rec->rdlength;
 	ret += 10+rec->rdlength;
-    
-	return(ret);
+
+	return ret;
 }
 
 /*******************************************************************
- Parse a dgram packet. Return False if the packet can't be parsed 
+ Parse a dgram packet. Return False if the packet can't be parsed
  or is invalid for some reason, True otherwise.
 
  This is documented in section 4.4.1 of RFC1002.
@@ -466,19 +494,22 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
 
 	if (dgram->header.msg_type == 0x10 ||
 			dgram->header.msg_type == 0x11 ||
-			dgram->header.msg_type == 0x12) {      
-		offset += parse_nmb_name(inbuf,offset,length,&dgram->source_name);
-		offset += parse_nmb_name(inbuf,offset,length,&dgram->dest_name);
+			dgram->header.msg_type == 0x12) {
+		offset += parse_nmb_name(inbuf,offset,length,
+				&dgram->source_name);
+		offset += parse_nmb_name(inbuf,offset,length,
+				&dgram->dest_name);
 	}
 
-	if (offset >= length || (length-offset > sizeof(dgram->data))) 
+	if (offset >= length || (length-offset > sizeof(dgram->data)))
 		return(False);
 
 	dgram->datasize = length-offset;
 	memcpy(dgram->data,inbuf+offset,dgram->datasize);
 
 	/* Paranioa. Ensure the last 2 bytes in the dgram buffer are
-	   zero. This should be true anyway, just enforce it for paranioa sake. JRA. */
+	   zero. This should be true anyway, just enforce it for
+	   paranioa sake. JRA. */
 	SMB_ASSERT(dgram->datasize <= (sizeof(dgram->data)-2));
 	memset(&dgram->data[sizeof(dgram->data)-2], '\0', 2);
 
@@ -486,7 +517,7 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
 }
 
 /*******************************************************************
- Parse a nmb packet. Return False if the packet can't be parsed 
+ Parse a nmb packet. Return False if the packet can't be parsed
  or is invalid for some reason, True otherwise.
 ******************************************************************/
 
@@ -511,15 +542,16 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 	nmb->header.nm_flags.recursion_available = (nm_flags&8)?True:False;
 	nmb->header.nm_flags.recursion_desired = (nm_flags&0x10)?True:False;
 	nmb->header.nm_flags.trunc = (nm_flags&0x20)?True:False;
-	nmb->header.nm_flags.authoritative = (nm_flags&0x40)?True:False;  
+	nmb->header.nm_flags.authoritative = (nm_flags&0x40)?True:False;
 	nmb->header.rcode = CVAL(inbuf,3) & 0xF;
 	nmb->header.qdcount = RSVAL(inbuf,4);
 	nmb->header.ancount = RSVAL(inbuf,6);
 	nmb->header.nscount = RSVAL(inbuf,8);
 	nmb->header.arcount = RSVAL(inbuf,10);
-  
+
 	if (nmb->header.qdcount) {
-		offset = parse_nmb_name(inbuf,12,length,&nmb->question.question_name);
+		offset = parse_nmb_name(inbuf,12,length,
+				&nmb->question.question_name);
 		if (!offset)
 			return(False);
 
@@ -534,16 +566,19 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 	}
 
 	/* and any resource records */
-	if (nmb->header.ancount && !parse_alloc_res_rec(inbuf,&offset,length,&nmb->answers,
+	if (nmb->header.ancount &&
+			!parse_alloc_res_rec(inbuf,&offset,length,&nmb->answers,
 					nmb->header.ancount))
 		return(False);
 
-	if (nmb->header.nscount && !parse_alloc_res_rec(inbuf,&offset,length,&nmb->nsrecs,
+	if (nmb->header.nscount &&
+			!parse_alloc_res_rec(inbuf,&offset,length,&nmb->nsrecs,
 					nmb->header.nscount))
 		return(False);
-  
-	if (nmb->header.arcount && !parse_alloc_res_rec(inbuf,&offset,length,&nmb->additional,
-					nmb->header.arcount))
+
+	if (nmb->header.arcount &&
+			!parse_alloc_res_rec(inbuf,&offset,length,
+				&nmb->additional, nmb->header.arcount))
 		return(False);
 
 	return(True);
@@ -554,7 +589,7 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 ******************************************************************/
 
 static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
-{  
+{
 	struct nmb_packet *nmb;
 	struct nmb_packet *copy_nmb;
 	struct packet_struct *pkt_copy;
@@ -582,21 +617,24 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 	/* Now copy any resource records. */
 
 	if (nmb->answers) {
-		if((copy_nmb->answers = SMB_MALLOC_ARRAY(struct res_rec,nmb->header.ancount)) == NULL)
+		if((copy_nmb->answers = SMB_MALLOC_ARRAY(
+				struct res_rec,nmb->header.ancount)) == NULL)
 			goto free_and_exit;
-		memcpy((char *)copy_nmb->answers, (char *)nmb->answers, 
+		memcpy((char *)copy_nmb->answers, (char *)nmb->answers,
 				nmb->header.ancount * sizeof(struct res_rec));
 	}
 	if (nmb->nsrecs) {
-		if((copy_nmb->nsrecs = SMB_MALLOC_ARRAY(struct res_rec, nmb->header.nscount)) == NULL)
+		if((copy_nmb->nsrecs = SMB_MALLOC_ARRAY(
+				struct res_rec, nmb->header.nscount)) == NULL)
 			goto free_and_exit;
-		memcpy((char *)copy_nmb->nsrecs, (char *)nmb->nsrecs, 
+		memcpy((char *)copy_nmb->nsrecs, (char *)nmb->nsrecs,
 				nmb->header.nscount * sizeof(struct res_rec));
 	}
 	if (nmb->additional) {
-		if((copy_nmb->additional = SMB_MALLOC_ARRAY(struct res_rec, nmb->header.arcount)) == NULL)
+		if((copy_nmb->additional = SMB_MALLOC_ARRAY(
+				struct res_rec, nmb->header.arcount)) == NULL)
 			goto free_and_exit;
-		memcpy((char *)copy_nmb->additional, (char *)nmb->additional, 
+		memcpy((char *)copy_nmb->additional, (char *)nmb->additional,
 				nmb->header.arcount * sizeof(struct res_rec));
 	}
 
@@ -618,7 +656,7 @@ static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
 ******************************************************************/
 
 static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
-{ 
+{
 	struct packet_struct *pkt_copy;
 
 	if(( pkt_copy = SMB_MALLOC_P(struct packet_struct)) == NULL) {
@@ -643,20 +681,20 @@ static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
 ******************************************************************/
 
 struct packet_struct *copy_packet(struct packet_struct *packet)
-{  
+{
 	if(packet->packet_type == NMB_PACKET)
 		return copy_nmb_packet(packet);
 	else if (packet->packet_type == DGRAM_PACKET)
 		return copy_dgram_packet(packet);
 	return NULL;
 }
- 
+
 /*******************************************************************
  Free up any resources associated with an nmb packet.
 ******************************************************************/
 
 static void free_nmb_packet(struct nmb_packet *nmb)
-{  
+{
 	SAFE_FREE(nmb->answers);
 	SAFE_FREE(nmb->nsrecs);
 	SAFE_FREE(nmb->additional);
@@ -667,7 +705,7 @@ static void free_nmb_packet(struct nmb_packet *nmb)
 ******************************************************************/
 
 static void free_dgram_packet(struct dgram_packet *nmb)
-{  
+{
 	/* We have nothing to do for a dgram packet. */
 }
 
@@ -676,8 +714,8 @@ static void free_dgram_packet(struct dgram_packet *nmb)
 ******************************************************************/
 
 void free_packet(struct packet_struct *packet)
-{  
-	if (packet->locked) 
+{
+	if (packet->locked)
 		return;
 	if (packet->packet_type == NMB_PACKET)
 		free_nmb_packet(&packet->packet.nmb);
@@ -692,7 +730,9 @@ void free_packet(struct packet_struct *packet)
 ******************************************************************/
 
 struct packet_struct *parse_packet(char *buf,int length,
-				   enum packet_type packet_type)
+				   enum packet_type packet_type,
+				   struct in_addr ip,
+				   int port)
 {
 	struct packet_struct *p;
 	BOOL ok=False;
@@ -703,8 +743,8 @@ struct packet_struct *parse_packet(char *buf,int length,
 
 	p->next = NULL;
 	p->prev = NULL;
-	p->ip = lastip;
-	p->port = lastport;
+	p->ip = ip;
+	p->port = port;
 	p->locked = False;
 	p->timestamp = time(NULL);
 	p->packet_type = packet_type;
@@ -713,7 +753,7 @@ struct packet_struct *parse_packet(char *buf,int length,
 	case NMB_PACKET:
 		ok = parse_nmb(buf,length,&p->packet.nmb);
 		break;
-		
+
 	case DGRAM_PACKET:
 		ok = parse_dgram(buf,length,&p->packet.dgram);
 		break;
@@ -735,27 +775,34 @@ struct packet_struct *parse_packet(char *buf,int length,
 struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 {
 	struct packet_struct *packet;
+	struct sockaddr_storage sa;
+	struct sockaddr_in *si = (struct sockaddr_in *)&sa;
 	char buf[MAX_DGRAM_SIZE];
 	int length;
-	
-	length = read_udp_socket(fd,buf,sizeof(buf));
-	if (length < MIN_DGRAM_SIZE)
-		return(NULL);
-	
-	packet = parse_packet(buf, length, packet_type);
+
+	length = read_udp_v4_socket(fd,buf,sizeof(buf),&sa);
+	if (length < MIN_DGRAM_SIZE || sa.ss_family != AF_INET) {
+		return NULL;
+	}
+
+	packet = parse_packet(buf,
+			length,
+			packet_type,
+			si->sin_addr,
+			si->sin_port);
 	if (!packet)
 		return NULL;
 
 	packet->fd = fd;
-	
+
 	num_good_receives++;
-	
+
 	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
 		 length, inet_ntoa(packet->ip), packet->port ) );
-	
+
 	return(packet);
 }
-					 
+
 /*******************************************************************
  Send a udp packet on a already open socket.
 ******************************************************************/
@@ -771,16 +818,17 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 	putip((char *)&sock_out.sin_addr,(char *)&ip);
 	sock_out.sin_port = htons( port );
 	sock_out.sin_family = AF_INET;
-  
+
 	DEBUG( 5, ( "Sending a packet of len %d to (%s) on port %d\n",
 			len, inet_ntoa(ip), port ) );
 
 	/*
 	 * Patch to fix asynch error notifications from Linux kernel.
 	 */
-	
+
 	for (i = 0; i < 5; i++) {
-		ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out, sizeof(sock_out)) >= 0);
+		ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out,
+					sizeof(sock_out)) >= 0);
 		if (ret || errno != ECONNREFUSED)
 			break;
 	}
@@ -797,48 +845,41 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 
 /*******************************************************************
  Build a dgram packet ready for sending.
-
- XXXX This currently doesn't handle packets too big for one
- datagram. It should split them and use the packet_offset, more and
- first flags to handle the fragmentation. Yuck.
-
-   [...but it isn't clear that we would ever need to send a
-   a fragmented NBT Datagram.  The IP layer does its own
-   fragmentation to ensure that messages can fit into the path
-   MTU.  It *is* important to be able to receive and rebuild
-   fragmented NBT datagrams, just in case someone out there
-   really has implemented this 'feature'.  crh -)------ ]
-
+ If buf == NULL this is a length calculation.
 ******************************************************************/
 
-static int build_dgram(char *buf,struct packet_struct *p)
+static int build_dgram(char *buf, size_t len, struct packet_struct *p)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	unsigned char *ubuf = (unsigned char *)buf;
 	int offset=0;
 
 	/* put in the header */
-	ubuf[0] = dgram->header.msg_type;
-	ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
-	if (dgram->header.flags.more)
-		ubuf[1] |= 1;
-	if (dgram->header.flags.first)
-		ubuf[1] |= 2;
-	RSSVAL(ubuf,2,dgram->header.dgm_id);
-	putip(ubuf+4,(char *)&dgram->header.source_ip);
-	RSSVAL(ubuf,8,dgram->header.source_port);
-	RSSVAL(ubuf,12,dgram->header.packet_offset);
+	if (buf) {
+		ubuf[0] = dgram->header.msg_type;
+		ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
+		if (dgram->header.flags.more)
+			ubuf[1] |= 1;
+		if (dgram->header.flags.first)
+			ubuf[1] |= 2;
+		RSSVAL(ubuf,2,dgram->header.dgm_id);
+		putip(ubuf+4,(char *)&dgram->header.source_ip);
+		RSSVAL(ubuf,8,dgram->header.source_port);
+		RSSVAL(ubuf,12,dgram->header.packet_offset);
+	}
 
 	offset = 14;
 
 	if (dgram->header.msg_type == 0x10 ||
 			dgram->header.msg_type == 0x11 ||
-			dgram->header.msg_type == 0x12) {      
+			dgram->header.msg_type == 0x12) {
 		offset += put_nmb_name((char *)ubuf,offset,&dgram->source_name);
 		offset += put_nmb_name((char *)ubuf,offset,&dgram->dest_name);
 	}
 
-	memcpy(ubuf+offset,dgram->data,dgram->datasize);
+	if (buf) {
+		memcpy(ubuf+offset,dgram->data,dgram->datasize);
+	}
 	offset += dgram->datasize;
 
 	/* automatically set the dgm_length
@@ -846,9 +887,11 @@ static int build_dgram(char *buf,struct packet_struct *p)
 	 *       include the fourteen-byte header. crh
 	 */
 	dgram->header.dgm_length = (offset - 14);
-	RSSVAL(ubuf,10,dgram->header.dgm_length); 
+	if (buf) {
+		RSSVAL(ubuf,10,dgram->header.dgm_length);
+	}
 
-	return(offset);
+	return offset;
 }
 
 /*******************************************************************
@@ -879,59 +922,90 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
 
 /*******************************************************************
  Build a nmb packet ready for sending.
-
- XXXX this currently relies on not being passed something that expands
- to a packet too big for the buffer. Eventually this should be
- changed to set the trunc bit so the receiver can request the rest
- via tcp (when that becomes supported)
+ If buf == NULL this is a length calculation.
 ******************************************************************/
 
-static int build_nmb(char *buf,struct packet_struct *p)
+static int build_nmb(char *buf, size_t len, struct packet_struct *p)
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
 	unsigned char *ubuf = (unsigned char *)buf;
 	int offset=0;
 
-	/* put in the header */
-	RSSVAL(ubuf,offset,nmb->header.name_trn_id);
-	ubuf[offset+2] = (nmb->header.opcode & 0xF) << 3;
-	if (nmb->header.response)
-		ubuf[offset+2] |= (1<<7);
-	if (nmb->header.nm_flags.authoritative && 
-			nmb->header.response)
-		ubuf[offset+2] |= 0x4;
-	if (nmb->header.nm_flags.trunc)
-		ubuf[offset+2] |= 0x2;
-	if (nmb->header.nm_flags.recursion_desired)
-		ubuf[offset+2] |= 0x1;
-	if (nmb->header.nm_flags.recursion_available &&
-			nmb->header.response)
-		ubuf[offset+3] |= 0x80;
-	if (nmb->header.nm_flags.bcast)
-		ubuf[offset+3] |= 0x10;
-	ubuf[offset+3] |= (nmb->header.rcode & 0xF);
+	if (len && len < 12) {
+		return 0;
+	}
 
-	RSSVAL(ubuf,offset+4,nmb->header.qdcount);
-	RSSVAL(ubuf,offset+6,nmb->header.ancount);
-	RSSVAL(ubuf,offset+8,nmb->header.nscount);
-	RSSVAL(ubuf,offset+10,nmb->header.arcount);
-  
+	/* put in the header */
+	if (buf) {
+		RSSVAL(ubuf,offset,nmb->header.name_trn_id);
+		ubuf[offset+2] = (nmb->header.opcode & 0xF) << 3;
+		if (nmb->header.response)
+			ubuf[offset+2] |= (1<<7);
+		if (nmb->header.nm_flags.authoritative &&
+				nmb->header.response)
+			ubuf[offset+2] |= 0x4;
+		if (nmb->header.nm_flags.trunc)
+			ubuf[offset+2] |= 0x2;
+		if (nmb->header.nm_flags.recursion_desired)
+			ubuf[offset+2] |= 0x1;
+		if (nmb->header.nm_flags.recursion_available &&
+				nmb->header.response)
+			ubuf[offset+3] |= 0x80;
+		if (nmb->header.nm_flags.bcast)
+			ubuf[offset+3] |= 0x10;
+		ubuf[offset+3] |= (nmb->header.rcode & 0xF);
+
+		RSSVAL(ubuf,offset+4,nmb->header.qdcount);
+		RSSVAL(ubuf,offset+6,nmb->header.ancount);
+		RSSVAL(ubuf,offset+8,nmb->header.nscount);
+		RSSVAL(ubuf,offset+10,nmb->header.arcount);
+	}
+
 	offset += 12;
 	if (nmb->header.qdcount) {
 		/* XXXX this doesn't handle a qdcount of > 1 */
-		offset += put_nmb_name((char *)ubuf,offset,&nmb->question.question_name);
-		RSSVAL(ubuf,offset,nmb->question.question_type);
-		RSSVAL(ubuf,offset+2,nmb->question.question_class);
+		if (len) {
+			/* Length check. */
+			int extra = put_nmb_name(NULL,offset,
+					&nmb->question.question_name);
+			if (offset + extra > len) {
+				return 0;
+			}
+		}
+		offset += put_nmb_name((char *)ubuf,offset,
+				&nmb->question.question_name);
+		if (buf) {
+			RSSVAL(ubuf,offset,nmb->question.question_type);
+			RSSVAL(ubuf,offset+2,nmb->question.question_class);
+		}
 		offset += 4;
 	}
 
-	if (nmb->header.ancount)
+	if (nmb->header.ancount) {
+		if (len) {
+			/* Length check. */
+			int extra = put_res_rec(NULL,offset,nmb->answers,
+					nmb->header.ancount);
+			if (offset + extra > len) {
+				return 0;
+			}
+		}
 		offset += put_res_rec((char *)ubuf,offset,nmb->answers,
 				nmb->header.ancount);
+	}
 
-	if (nmb->header.nscount)
+	if (nmb->header.nscount) {
+		if (len) {
+			/* Length check. */
+			int extra = put_res_rec(NULL,offset,nmb->nsrecs,
+				nmb->header.nscount);
+			if (offset + extra > len) {
+				return 0;
+			}
+		}
 		offset += put_res_rec((char *)ubuf,offset,nmb->nsrecs,
 				nmb->header.nscount);
+	}
 
 	/*
 	 * The spec says we must put compressed name pointers
@@ -941,37 +1015,53 @@ static int build_nmb(char *buf,struct packet_struct *p)
 	 */
 
 	if((nmb->header.response == False) &&
-			((nmb->header.opcode == NMB_NAME_REG_OPCODE) ||
-			(nmb->header.opcode == NMB_NAME_RELEASE_OPCODE) ||
-			(nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_8) ||
-			(nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_9) ||
-			(nmb->header.opcode == NMB_NAME_MULTIHOMED_REG_OPCODE)) &&
-			(nmb->header.arcount == 1)) {
+		((nmb->header.opcode == NMB_NAME_REG_OPCODE) ||
+		(nmb->header.opcode == NMB_NAME_RELEASE_OPCODE) ||
+		(nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_8) ||
+		(nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_9) ||
+		(nmb->header.opcode == NMB_NAME_MULTIHOMED_REG_OPCODE)) &&
+		(nmb->header.arcount == 1)) {
 
-		offset += put_compressed_name_ptr(ubuf,offset,nmb->additional,12);
-
+		if (len) {
+			/* Length check. */
+			int extra = put_compressed_name_ptr(NULL,offset,
+					nmb->additional,12);
+			if (offset + extra > len) {
+				return 0;
+			}
+		}
+		offset += put_compressed_name_ptr(ubuf,offset,
+				nmb->additional,12);
 	} else if (nmb->header.arcount) {
+		if (len) {
+			/* Length check. */
+			int extra = put_res_rec(NULL,offset,nmb->additional,
+				nmb->header.arcount);
+			if (offset + extra > len) {
+				return 0;
+			}
+		}
 		offset += put_res_rec((char *)ubuf,offset,nmb->additional,
-			nmb->header.arcount);  
+			nmb->header.arcount);
 	}
-	return(offset);
+	return offset;
 }
 
 /*******************************************************************
  Linearise a packet.
 ******************************************************************/
 
-int build_packet(char *buf, struct packet_struct *p)
+int build_packet(char *buf, size_t buflen, struct packet_struct *p)
 {
 	int len = 0;
 
 	switch (p->packet_type) {
 	case NMB_PACKET:
-		len = build_nmb(buf,p);
+		len = build_nmb(buf,buflen,p);
 		break;
 
 	case DGRAM_PACKET:
-		len = build_dgram(buf,p);
+		len = build_dgram(buf,buflen,p);
 		break;
 	}
 
@@ -989,7 +1079,7 @@ BOOL send_packet(struct packet_struct *p)
 
 	memset(buf,'\0',sizeof(buf));
 
-	len = build_packet(buf, p);
+	len = build_packet(buf, sizeof(buf), p);
 
 	if (!len)
 		return(False);
@@ -1015,16 +1105,17 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 
 	if ((ret = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout)) == -1) {
 		/* errno should be EBADF or EINVAL. */
-		DEBUG(0,("select returned -1, errno = %s (%d)\n", strerror(errno), errno));
+		DEBUG(0,("select returned -1, errno = %s (%d)\n",
+					strerror(errno), errno));
 		return NULL;
 	}
 
 	if (ret == 0) /* timeout */
 		return NULL;
 
-	if (FD_ISSET(fd,&fds)) 
+	if (FD_ISSET(fd,&fds))
 		return(read_packet(fd,type));
-	
+
 	return(NULL);
 }
 
@@ -1057,7 +1148,8 @@ struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id)
  The timeout is in milliseconds.
 ***************************************************************************/
 
-struct packet_struct *receive_dgram_packet(int fd, int t, const char *mailslot_name)
+struct packet_struct *receive_dgram_packet(int fd, int t,
+		const char *mailslot_name)
 {
 	struct packet_struct *p;
 
@@ -1114,8 +1206,8 @@ int matching_quad_bits(unsigned char *p1, unsigned char *p2)
 		if ((p1[i] & (1<<(7-j))) != (p2[i] & (1<<(7-j))))
 			break;
 		ret++;
-	}	
-	
+	}
+
 	return ret;
 }
 
@@ -1127,7 +1219,8 @@ static unsigned char sort_ip[4];
 
 static int name_query_comp(unsigned char *p1, unsigned char *p2)
 {
-	return matching_quad_bits(p2+2, sort_ip) - matching_quad_bits(p1+2, sort_ip);
+	return matching_quad_bits(p2+2, sort_ip) -
+		matching_quad_bits(p1+2, sort_ip);
 }
 
 /****************************************************************************
@@ -1163,7 +1256,7 @@ char *dns_to_netbios_name(const char *dns_name)
 	int i;
 	StrnCpy(netbios_name, dns_name, MAX_NETBIOSNAME_LEN-1);
 	netbios_name[15] = 0;
-	
+
 	/* ok.  this is because of a stupid microsoft-ism.  if the called host
 	   name contains a '.', microsoft clients expect you to truncate the
 	   netbios name up to and including the '.'  this even applies, by
@@ -1300,7 +1393,7 @@ static char *name_ptr(char *buf,int ofs)
 	} else {
 		return(buf+ofs);
 	}
-}  
+}
 
 /****************************************************************************
  Extract a netbios name from a buf (into a unix string) return name type.
@@ -1316,7 +1409,7 @@ int name_extract(char *buf,int ofs, fstring name)
 		return(0);
 	return(name_interpret(p,name));
 }
-  
+
 /****************************************************************************
  Return the total storage length of a mangled name.
 ****************************************************************************/
