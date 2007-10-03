@@ -1347,7 +1347,7 @@ _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop)
 failed:
 
 #if HAVE_PTHREAD
-	pthread_mutex_lock(&winbind_nss_mutex);
+	pthread_mutex_unlock(&winbind_nss_mutex);
 #endif
 
 	return ret;
