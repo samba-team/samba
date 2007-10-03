@@ -1082,7 +1082,6 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
-AC_CHECK_TYPE(socklen_t, int)
 AC_CHECK_TYPE(comparison_fn_t,
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
@@ -2502,6 +2501,16 @@ if test x"$samba_cv_HAVE_UT_UT_EXIT" = x"yes"; then
     AC_DEFINE(HAVE_UT_UT_EXIT,1,[Whether the utmp struct has a property ut_exit])
 fi
 
+dnl Look for the IPv6 varient by preference. Many systems have both.
+AC_CACHE_CHECK([for ut_addr_v6 in utmp],samba_cv_HAVE_UT_UT_ADDR_V6,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_addr_v6[0] = 0;],
+samba_cv_HAVE_UT_UT_ADDR_V6=yes,samba_cv_HAVE_UT_UT_ADDR_V6=no,samba_cv_HAVE_UT_UT_ADDR_V6=cross)])
+if test x"$samba_cv_HAVE_UT_UT_ADDR_V6" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_ADDR_V6,1,[Whether the utmp struct has a property ut_addr_v6])
+fi
+
 AC_CACHE_CHECK([for ut_addr in utmp],samba_cv_HAVE_UT_UT_ADDR,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <utmp.h>],
@@ -3039,11 +3048,29 @@ SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
 
+dnl test for socklen_t
+AC_CACHE_CHECK([for socklen_t],samba_cv_HAVE_SA_FAMILY_T,[
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+],
+[
+socklen_t foo;
+],
+samba_cv_HAVE_SOCKLEN_T=yes,samba_cv_HAVE_SOCKLEN_T=no)])
+if test x"$samba_cv_HAVE_SOCKLEN_T" = x"yes"; then
+    AC_DEFINE(HAVE_SOCKLEN_T,1,[Whether the system has socklen_t])
+fi
+
 dnl test for sa_family_t
 AC_CACHE_CHECK([for sa_family_t],samba_cv_HAVE_SA_FAMILY_T,[
 AC_TRY_COMPILE([
-#include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 ],
@@ -3157,6 +3184,20 @@ samba_cv_HAVE_IPV6=yes,samba_cv_HAVE_IPV6=no)])
 if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
     AC_DEFINE(HAVE_IPV6,1,[Whether the system has IPv6 support])
 fi
+
+dnl test for struct sockaddr_storage
+AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_SOCKADDR_STORAGE,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>],
+[
+struct sockaddr_storage sa_store;
+],
+samba_cv_HAVE_SOCKADDR_STORAGE=yes,samba_cv_HAVE_SOCKADDR_STORAGE=no)])
+if test x"$samba_cv_HAVE_SOCKADDR_STORAGE" = x"yes"; then
+    AC_DEFINE(HAVE_SOCKADDR_STORAGE,1,[Whether the system has struct sockaddr_storage])
+fi
+
 
 ################################################
 # look for a method of setting the effective uid
