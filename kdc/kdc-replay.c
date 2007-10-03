@@ -136,7 +136,9 @@ main(int argc, char **argv)
 
 	ret = krb5_addr2sockaddr (context, &a, (struct sockaddr *)&sa,
 				  &salen, 88);
-	if (ret)
+	if (ret == KRB5_PROG_ATYPE_NOSUPP)
+	    goto out;
+	else if (ret)
 	    krb5_err(context, 1, ret, "krb5_addr2sockaddr");
 
 	ret = krb5_print_address(&a, astr, sizeof(astr), NULL);
@@ -181,6 +183,7 @@ main(int argc, char **argv)
 		krb5_errx(context, 1, "tag not invalid");
 	}
 
+    out:
 	krb5_data_free(&d);
 	krb5_free_address(context, &a);
     }
