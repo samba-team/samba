@@ -427,10 +427,19 @@ AC_ARG_WITH(samba4srcdir,
     AC_MSG_ERROR([--with-samba4srcdir should take a path])
   ;;
   * )
-    samba4srcdir="$withval"
-    if test -z "$samba4srcdir" -a ! -f $samba4srcdir; then
-    	AC_MSG_ERROR(['$samba4srcdir' does not  exist!])
+    if test -z "$withval" -a ! -f $withval; then
+    	AC_MSG_ERROR(['$withval' does not  exist!])
     fi
+	
+	if test -f "$withval/selftest/selftest.pl"; then
+		samba4srcdir="$withval"
+	else
+		if test -f "$withval/source/selftest/selftest.pl"; then
+			samba4srcdir="$withval/source"
+		else
+			AC_MSG_ERROR([unable to find selftest.pl in '$withval'!])
+		fi
+	fi
   ;;
  esac
 ])
