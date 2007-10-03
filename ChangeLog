@@ -1,3 +1,8 @@
+2007-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kdc-replay.c: Catch KRB5_PROG_ATYPE_NOSUPP from
+	krb5_addr2sockaddr and igore thte test is that case.
+	
 2007-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/context.c (krb5_free_context): free
