@@ -37,6 +37,7 @@ extern userdom_struct current_user_info;
 
 struct file_enum_count {
 	TALLOC_CTX *ctx;
+	const char *username;
 	uint32 count;
 	struct srvsvc_NetFileInfo3 *info;
 };
@@ -55,43 +56,49 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 {
 	struct pipe_open_rec prec;
 	struct file_enum_count *fenum = (struct file_enum_count *)p;
+	struct srvsvc_NetFileInfo3 *f;
+	int i = fenum->count;
+	pstring fullpath;
+	const char *username;
  
 	if (rec->value.dsize != sizeof(struct pipe_open_rec))
 		return 0;
 
 	memcpy(&prec, rec->value.dptr, sizeof(struct pipe_open_rec));
  
-	if ( process_exists(prec.pid) ) {
-		struct srvsvc_NetFileInfo3 *f;
-		int i = fenum->count;
-		pstring fullpath;
-		
-		snprintf( fullpath, sizeof(fullpath), "\\PIPE\\%s", prec.name );
-		
-		f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, struct srvsvc_NetFileInfo3, i+1 );
-		if ( !f ) {
-			DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
-			return 1;
-		}
-
-		fenum->info = f;
-		
-		fenum->info[i].fid = (uint32)((procid_to_pid(&prec.pid)<<16) & prec.pnum);
-		fenum->info[i].permissions = (FILE_READ_DATA|FILE_WRITE_DATA);
-		fenum->info[i].num_locks = 0;
-		if (!(fenum->info[i].user = talloc_strdup(
-			      fenum->ctx, uidtoname(prec.uid)))) {
-			/* There's not much we can do here. */
-			fenum->info[i].user = "";
-		}
-		if (!(fenum->info[i].path = talloc_strdup(
-			      fenum->ctx, fullpath))) {
-			/* There's not much we can do here. */
-			fenum->info[i].path = "";
-		}
-			
-		fenum->count++;
+	if ( !process_exists(prec.pid) ) {
+		return 0;
 	}
+
+	username = uidtoname(prec.uid);
+
+	if ((fenum->username != NULL)
+	    && !strequal(username, fenum->username)) {
+		return 0;
+	}
+		
+	snprintf( fullpath, sizeof(fullpath), "\\PIPE\\%s", prec.name );
+		
+	f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info,
+				  struct srvsvc_NetFileInfo3, i+1 );
+	if ( !f ) {
+		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
+		return 1;
+	}
+
+	fenum->info = f;
+		
+	fenum->info[i].fid = (uint32)((procid_to_pid(&prec.pid)<<16) & prec.pnum);
+	fenum->info[i].permissions = (FILE_READ_DATA|FILE_WRITE_DATA);
+	fenum->info[i].num_locks = 0;
+	fenum->info[i].user = talloc_move(fenum->ctx, &username);
+	if (!(fenum->info[i].path = talloc_strdup(
+		      fenum->ctx, fullpath))) {
+		/* There's not much we can do here. */
+		fenum->info[i].path = "";
+	}
+
+	fenum->count++;
 
 	return 0;
 }
@@ -99,12 +106,14 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 /*******************************************************************
 ********************************************************************/
 
-static WERROR net_enum_pipes( TALLOC_CTX *ctx, struct srvsvc_NetFileInfo3 **info, 
+static WERROR net_enum_pipes( TALLOC_CTX *ctx, const char *username,
+			      struct srvsvc_NetFileInfo3 **info,
                               uint32 *count, uint32 *resume )
 {
 	struct file_enum_count fenum;
 
 	fenum.ctx = ctx;
+	fenum.username = username;
 	fenum.info = *info;
 	fenum.count = *count;
 
@@ -137,10 +146,18 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	int num_locks = 0;
 	pstring fullpath;
 	uint32 permissions;
+	const char *username;
  
 	/* If the pid was not found delete the entry from connections.tdb */
 
 	if (!process_exists(e->pid)) {
+		return;
+	}
+
+	username = uidtoname(e->uid);
+
+	if ((fenum->username != NULL)
+	    && !strequal(username, fenum->username)) {
 		return;
 	}
 		
@@ -175,11 +192,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	fenum->info[i].fid = e->share_file_id;
 	fenum->info[i].permissions = permissions;
 	fenum->info[i].num_locks = num_locks;
-	if (!(fenum->info[i].user = talloc_strdup(
-		      fenum->ctx, uidtoname(e->uid)))) {
-		/* There's not much we can do here. */
-		fenum->info[i].user = "";
-	}
+	fenum->info[i].user = talloc_move(fenum->ctx, &username);
 	if (!(fenum->info[i].path = talloc_strdup(
 		      fenum->ctx, fullpath))) {
 		/* There's not much we can do here. */
@@ -192,12 +205,14 @@ static void enum_file_fn( const struct share_mode_entry *e,
 /*******************************************************************
 ********************************************************************/
 
-static WERROR net_enum_files( TALLOC_CTX *ctx, struct srvsvc_NetFileInfo3 **info, 
+static WERROR net_enum_files( TALLOC_CTX *ctx, const char *username,
+			      struct srvsvc_NetFileInfo3 **info,
                               uint32 *count, uint32 *resume )
 {
 	struct file_enum_count f_enum_cnt;
 
 	f_enum_cnt.ctx = ctx;
+	f_enum_cnt.username = username;
 	f_enum_cnt.count = *count;
 	f_enum_cnt.info = *info;
 	
@@ -1047,7 +1062,9 @@ static WERROR init_srv_conn_info_ctr(pipes_struct *p, union srvsvc_NetConnCtr *c
  makes a SRV_R_NET_FILE_ENUM structure.
 ********************************************************************/
 
-static WERROR net_file_enum_3(pipes_struct *p, union srvsvc_NetFileCtr *ctr, uint32 *resume_hnd, uint32 *num_entries )
+static WERROR net_file_enum_3(pipes_struct *p, union srvsvc_NetFileCtr *ctr,
+			      uint32 *resume_hnd, const char *username,
+			      uint32 *num_entries )
 {
 	WERROR status;
 
@@ -1057,11 +1074,13 @@ static WERROR net_file_enum_3(pipes_struct *p, union srvsvc_NetFileCtr *ctr, uin
 
 	ctr->ctr3 = TALLOC_ZERO_P(p->mem_ctx, struct srvsvc_NetFileCtr3);
 	
-	status = net_enum_files(p->mem_ctx, &ctr->ctr3->array, num_entries, resume_hnd );
+	status = net_enum_files(p->mem_ctx, username, &ctr->ctr3->array,
+				num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(status))
 		return status;
 		
-	status = net_enum_pipes(p->mem_ctx, &ctr->ctr3->array, num_entries, resume_hnd );
+	status = net_enum_pipes(p->mem_ctx, username, &ctr->ctr3->array,
+				num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(status))
 		return status;
 
@@ -1077,7 +1096,8 @@ WERROR _srvsvc_NetFileEnum(pipes_struct *p, struct srvsvc_NetFileEnum *r)
 {
 	switch ( *r->in.level ) {
 	case 3:
-		return net_file_enum_3(p, r->in.ctr, r->in.resume_handle, r->out.totalentries );	
+		return net_file_enum_3(p, r->in.ctr, r->in.resume_handle,
+				       r->in.user, r->out.totalentries );
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
