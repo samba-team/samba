@@ -3195,7 +3195,7 @@ if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
 fi
 
 dnl test for struct sockaddr_storage
-AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE,[
+AC_CACHE_CHECK([for struct sockaddr_storage],samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE,[
 AC_TRY_COMPILE([
 #include <sys/socket.h>
 #include <sys/types.h>],
@@ -3205,6 +3205,19 @@ struct sockaddr_storage sa_store;
 samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=yes,samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=no)])
 if test x"$samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,1,[Whether the system has struct sockaddr_storage])
+fi
+
+dnl test for struct struct sockaddr_in6
+AC_CACHE_CHECK([for struct sockaddr_in6],samba_cv_HAVE_STRUCT_SOCKADDR_IN6,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>],
+[
+struct sockaddr_in6 sa6;
+],
+samba_cv_HAVE_STRUCT_SOCKADDR_IN6=yes,samba_cv_HAVE_STRUCT_SOCKADDR_IN6=no)])
+if test x"$samba_cv_HAVE_STRUCT_SOCKADDR_IN6" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6,1,[Whether the system has struct sockaddr_in6])
 fi
 
 dnl test for struct addrinfo
