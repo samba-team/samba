@@ -4,6 +4,7 @@ $includedir/../bin/smbtorture -V
 $SRCDIR/selftest/test_ejs.sh $CONFIGURATION
 $SRCDIR/selftest/test_ldap.sh 
 $SRCDIR/selftest/test_nbt.sh "dc"
+$SRCDIR/selftest/test_winbind.sh "dc"
 $SRCDIR/selftest/test_rpc.sh
 $SRCDIR/selftest/test_net.sh
 $SRCDIR/selftest/test_session_key.sh
@@ -17,3 +18,4 @@ $SRCDIR/selftest/test_simple.sh
 $SRCDIR/selftest/test_s3upgrade.sh $PREFIX/upgrade
 $SRCDIR/selftest/test_member.sh
 $SRCDIR/selftest/test_nbt.sh "member"
+$SRCDIR/selftest/test_winbind.sh "member"
