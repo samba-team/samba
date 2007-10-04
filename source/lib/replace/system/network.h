@@ -126,9 +126,13 @@ typedef int socklen_t;
 typedef unsigned short int sa_family_t;
 #endif
 
-#ifndef HAVE_SOCKADDR_STORAGE
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
 #define sockaddr_storage sockaddr_in
 #define ss_family sin_family
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 256
 #endif
 
 #endif
