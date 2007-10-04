@@ -4887,6 +4887,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
+	struct srvsvc_NetFileCtr3 ctr3;
 	union srvsvc_NetFileCtr ctr;
 	NTSTATUS result;
 	uint32 hnd;
@@ -4900,6 +4901,8 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	/* if argc > 0, must be user command */
 	if (argc > 0)
 		username = smb_xstrdup(argv[0]);
+
+	ctr.ctr3 = &ctr3;
 		
 	result = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx, NULL, NULL,
 					   username, &level, &ctr,
