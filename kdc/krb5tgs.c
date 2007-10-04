@@ -1099,11 +1099,14 @@ tgs_parse_request(krb5_context context,
     ret = hdb_enctype2key(context, &(*krbtgt)->entry, 
 			  ap_req.ticket.enc_part.etype, &tkey);
     if(ret){
-	char *str, *p;
+	char *str = NULL, *p = NULL;
+
 	krb5_enctype_to_string(context, ap_req.ticket.enc_part.etype, &str);
 	krb5_unparse_name(context, princ, &p);
-	kdc_log(context, config, 0,
-		"No server key with enctype %s found for %s", str, p);
+ 	kdc_log(context, config, 0,
+		"No server key with enctype %s found for %s",
+		str ? str : "<unknown enctype>",
+		p ? p : "<unparse_name failed>");
 	free(str);
 	free(p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
