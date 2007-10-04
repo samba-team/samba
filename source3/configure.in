@@ -1370,7 +1370,7 @@ AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
 AC_CHECK_FUNCS(mlock munlock mlockall munlockall)
-AC_CHECK_FUNCS(memalign posix_memalign)
+AC_CHECK_FUNCS(memalign posix_memalign hstrerror)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open)
@@ -3195,18 +3195,55 @@ if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
 fi
 
 dnl test for struct sockaddr_storage
-AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_SOCKADDR_STORAGE,[
+AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE,[
 AC_TRY_COMPILE([
 #include <sys/socket.h>
 #include <sys/types.h>],
 [
 struct sockaddr_storage sa_store;
 ],
-samba_cv_HAVE_SOCKADDR_STORAGE=yes,samba_cv_HAVE_SOCKADDR_STORAGE=no)])
-if test x"$samba_cv_HAVE_SOCKADDR_STORAGE" = x"yes"; then
-    AC_DEFINE(HAVE_SOCKADDR_STORAGE,1,[Whether the system has struct sockaddr_storage])
+samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=yes,samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=no)])
+if test x"$samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,1,[Whether the system has struct sockaddr_storage])
 fi
 
+dnl test for struct addrinfo
+AC_CACHE_CHECK([for struct addrinfo],samba_cv_HAVE_STRUCT_ADDRINFO,[
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>],
+[
+struct addrinfo ai;
+],
+samba_cv_HAVE_STRUCT_ADDRINFO=yes,samba_cv_HAVE_STRUCT_ADDRINFO=no)])
+if test x"$samba_cv_HAVE_STRUCT_ADDRINFO" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_ADDRINFO,1,[Whether the system has struct addrinfo])
+fi
+
+dnl test for getaddrinfo/getnameinfo
+AC_CACHE_CHECK([for getaddrinfo],samba_cv_HAVE_GETADDRINFO,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>],
+[
+struct sockaddr sa;
+struct addrinfo *ai = NULL;
+int ret = getaddrinfo(NULL, NULL, NULL, &ai);
+if (ret != 0) {
+	const char *es = gai_strerror(ret);
+}
+freeaddrinfo(ai);
+ret = getnameinfo(&sa, sizeof(sa),
+		NULL, 0,
+		NULL, 0, 0);
+
+],
+samba_cv_HAVE_GETADDRINFO=yes,samba_cv_HAVE_GETADDRINFO=no)])
+if test x"$samba_cv_HAVE_GETADDRINFO" = x"yes"; then
+    AC_DEFINE(HAVE_GETADDRINFO,1,[Whether the system has getaddrinfo and getnameinfo])
+fi
 
 ################################################
 # look for a method of setting the effective uid

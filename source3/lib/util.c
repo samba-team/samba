@@ -1203,7 +1203,7 @@ void safe_free(void *p)
 
 BOOL get_myname(char *my_name)
 {
-	pstring hostname;
+	fstring hostname;
 
 	*hostname = 0;
 
@@ -1211,7 +1211,7 @@ BOOL get_myname(char *my_name)
 	if (gethostname(hostname, sizeof(hostname)) == -1) {
 		DEBUG(0,("gethostname failed\n"));
 		return False;
-	} 
+	}
 
 	/* Ensure null termination. */
 	hostname[sizeof(hostname)-1] = '\0';
@@ -1222,10 +1222,10 @@ BOOL get_myname(char *my_name)
 
 		if (p)
 			*p = 0;
-		
+
 		fstrcpy(my_name,hostname);
 	}
-	
+
 	return(True);
 }
 

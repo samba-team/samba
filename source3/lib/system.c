@@ -683,7 +683,7 @@ int sys_chroot(const char *dname)
 }
 
 /**************************************************************************
-A wrapper for gethostbyname() that tries avoids looking up hostnames 
+A wrapper for gethostbyname() that tries avoids looking up hostnames
 in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
@@ -691,7 +691,7 @@ apparent reason.
 struct hostent *sys_gethostbyname(const char *name)
 {
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
-	char query[256], hostname[256];
+	char query[HOST_NAME_MAX], hostname[HOST_NAME_MAX];
 	char *domain;
 
 	/* Does this name have any dots in it? If so, make no change */
@@ -699,9 +699,9 @@ struct hostent *sys_gethostbyname(const char *name)
 	if (strchr_m(name, '.'))
 		return(gethostbyname(name));
 
-	/* Get my hostname, which should have domain name 
+	/* Get my hostname, which should have domain name
 		attached. If not, just do the gethostname on the
-		original string. 
+		original string.
 	*/
 
 	gethostname(hostname, sizeof(hostname) - 1);
