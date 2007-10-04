@@ -1,3 +1,11 @@
+2007-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: More prettier printing of enctype, from KAMADA
+	Ken'ichi.
+
+	* lib/krb5/crypto.c (krb5_enctype_to_string): make sure string is
+	NULL on failure.
+
 2007-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kdc-replay.c: Catch KRB5_PROG_ATYPE_NOSUPP from
