@@ -2768,6 +2768,7 @@ krb5_enctype_to_string(krb5_context context,
     if(e == NULL) {
 	krb5_set_error_string (context, "encryption type %d not supported",
 			       etype);
+	*string = NULL;
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     *string = strdup(e->name);
