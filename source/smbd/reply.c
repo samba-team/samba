@@ -3923,7 +3923,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		if(IVAL(req->inbuf,smb_vwv12) != 0) {
 			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(inbuf,smb_vwv12) ));
+				 (unsigned int)IVAL(req->inbuf,smb_vwv12) ));
 			reply_doserror(req, ERRDOS, ERRbadaccess);
 			END_PROFILE(SMBwriteX);
 			return;
