@@ -80,3 +80,4 @@ BASE-DEFER_OPEN
 BASE-SCAN-IOCTL
 ^ldb$
 ^samba3sam.js$
+member:WINBIND-.*		# Samba3 doesn't provide the member env yet
