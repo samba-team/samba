@@ -1,15 +1,16 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    macros to go along with the lib/replace/ portability layer code
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Jeremy Allison 2007.
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -70,7 +71,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #endif
-
 
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
@@ -139,7 +139,7 @@ int setenv(const char *name, const char *value, int overwrite);
 
 #ifndef HAVE_UNSETENV
 #define unsetenv rep_unsetenv
-int rep_unsetenv(const char *name); 
+int rep_unsetenv(const char *name);
 #endif
 
 #ifndef HAVE_SETEUID
@@ -163,7 +163,7 @@ char *rep_strcasestr(const char *haystack, const char *needle);
 #endif
 
 #ifndef HAVE_STRTOK_R
-#define strtok_r rep_strtok_r 
+#define strtok_r rep_strtok_r
 char *rep_strtok_r(char *s, const char *delim, char **save_ptr);
 #endif
 
@@ -328,6 +328,17 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
 #ifndef HAVE_PWRITE
 #define pwrite rep_pwrite
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
+#endif
+
+#ifndef HAVE_INET_PTON
+int rep_inet_pton(int af, const char *src, void *dst);
+#define inet_pton rep_inet_pton
+#endif
+
+#ifndef HAVE_INET_NTOP
+#include "system/network.h"
+const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#define inet_ntop rep_inet_ntop
 #endif
 
 #ifdef HAVE_LIMITS_H
