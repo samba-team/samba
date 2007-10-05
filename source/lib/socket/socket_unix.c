@@ -82,7 +82,7 @@ static NTSTATUS unixdom_connect_complete(struct socket_context *sock, uint32_t f
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
+		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -161,7 +161,7 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
+		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
 			return unixdom_error(errno);
 		}
@@ -190,7 +190,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 	}
 
 	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, False);
+		int ret = set_blocking(new_fd, false);
 		if (ret == -1) {
 			close(new_fd);
 			return map_nt_error_from_unix(errno);

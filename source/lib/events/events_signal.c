@@ -217,8 +217,8 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 		if (sig_state->pipe_hack[0] == 0 && 
 		    sig_state->pipe_hack[1] == 0) {
 			pipe(sig_state->pipe_hack);
-			set_blocking(sig_state->pipe_hack[0], False);
-			set_blocking(sig_state->pipe_hack[1], False);
+			set_blocking(sig_state->pipe_hack[0], false);
+			set_blocking(sig_state->pipe_hack[1], false);
 		}
 		ev->pipe_fde = event_add_fd(ev, ev, sig_state->pipe_hack[0],
 					    EVENT_FD_READ, signal_pipe_handler, NULL);

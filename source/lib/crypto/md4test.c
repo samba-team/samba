@@ -25,9 +25,9 @@ struct torture_context;
 /*
  This uses the test values from rfc1320
 */
-BOOL torture_local_crypto_md4(struct torture_context *torture) 
+bool torture_local_crypto_md4(struct torture_context *torture) 
 {
-	BOOL ret = True;
+	bool ret = true;
 	uint32_t i;
 	struct {
 		const char *data;
@@ -74,7 +74,7 @@ BOOL torture_local_crypto_md4(struct torture_context *torture)
 			dump_data(0, data.data, data.length);
 			dump_data(0, md4blob.data, md4blob.length);
 			dump_data(0, md4, sizeof(md4));
-			ret = False;
+			ret = false;
 		}
 		talloc_free(md4blob.data);
 	}

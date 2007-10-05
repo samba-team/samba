@@ -57,7 +57,7 @@ bool torture_local_crypto_sha1(struct torture_context *tctx)
     struct SHA1Context sha;
     int i, j, err;
     uint8_t Message_Digest[20];
-    BOOL ret = True;
+    bool ret = true;
     char tmp[60 + 10];
 
     /*
@@ -94,7 +94,7 @@ bool torture_local_crypto_sha1(struct torture_context *tctx)
         torture_comment(tctx, "\n");
         torture_comment(tctx, "Should match:\n\t%s\n", resultarray[j]);
 	if (strcmp(resultarray[j], tmp) != 0) {
-	    ret = False;	
+	    ret = false;	
 	}
     }
 

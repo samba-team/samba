@@ -355,7 +355,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
 		const char *oid = ldb_msg_find_attr_as_string(msg, "attributeID", NULL);
 		const char *syntax = ldb_msg_find_attr_as_string(msg, "attributeSyntax", NULL);
-		BOOL single_value = ldb_msg_find_attr_as_bool(msg, "isSingleValued", False);
+		bool single_value = ldb_msg_find_attr_as_bool(msg, "isSingleValued", false);
 		const struct syntax_map *map = find_syntax_map_by_ad_oid(syntax);
 		char *schema_entry = NULL;
 		int j;

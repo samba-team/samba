@@ -54,7 +54,7 @@ static struct ipv4_addr tov4(struct in_addr in)
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
+static struct interface *iface_find(struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
 	if (is_zero_ip(tov4(ip))) return local_interfaces;
@@ -321,7 +321,7 @@ const char *iface_best_ip(const char *dest)
 	load_interfaces();
 
 	ip.s_addr = interpret_addr(dest);
-	iface = iface_find(ip, True);
+	iface = iface_find(ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
@@ -329,25 +329,25 @@ const char *iface_best_ip(const char *dest)
 }
 
 /**
-  return True if an IP is one one of our local networks
+  return true if an IP is one one of our local networks
 */
-BOOL iface_is_local(const char *dest)
+bool iface_is_local(const char *dest)
 {
 	struct in_addr ip;
 
 	load_interfaces();
 
 	ip.s_addr = interpret_addr(dest);
-	if (iface_find(ip, True)) {
-		return True;
+	if (iface_find(ip, true)) {
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /**
-  return True if a IP matches a IP/netmask pair
+  return true if a IP matches a IP/netmask pair
 */
-BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
+bool iface_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
 	return same_net(interpret_addr2(ip1),
 			interpret_addr2(ip2),

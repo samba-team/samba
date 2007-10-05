@@ -39,13 +39,13 @@ struct packet_context {
 	size_t packet_size;
 	void *private;
 	struct fd_event *fde;
-	BOOL serialise;
+	bool serialise;
 	int processing;
-	BOOL recv_disable;
-	BOOL nofree;
+	bool recv_disable;
+	bool nofree;
 
-	BOOL busy;
-	BOOL destructor_called;
+	bool busy;
+	bool destructor_called;
 
 	struct send_element {
 		struct send_element *next, *prev;
@@ -63,7 +63,7 @@ struct packet_context {
 static int packet_destructor(struct packet_context *pc)
 {
 	if (pc->busy) {
-		pc->destructor_called = True;
+		pc->destructor_called = true;
 		/* now we refuse the talloc_free() request. The free will
 		   happen again in the packet_recv() code */
 		return -1;
@@ -156,7 +156,7 @@ _PUBLIC_ void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
 */
 _PUBLIC_ void packet_set_serialise(struct packet_context *pc)
 {
-	pc->serialise = True;
+	pc->serialise = true;
 }
 
 /*
@@ -173,7 +173,7 @@ _PUBLIC_ void packet_set_initial_read(struct packet_context *pc, uint32_t initia
 */
 _PUBLIC_ void packet_set_nofree(struct packet_context *pc)
 {
-	pc->nofree = True;
+	pc->nofree = true;
 }
 
 
@@ -373,11 +373,11 @@ next_partial:
 		pc->processing = 1;
 	}
 
-	pc->busy = True;
+	pc->busy = true;
 
 	status = pc->callback(pc->private, blob);
 
-	pc->busy = False;
+	pc->busy = false;
 
 	if (pc->destructor_called) {
 		talloc_free(pc);
@@ -429,7 +429,7 @@ next_partial:
 _PUBLIC_ void packet_recv_disable(struct packet_context *pc)
 {
 	EVENT_FD_NOT_READABLE(pc->fde);
-	pc->recv_disable = True;
+	pc->recv_disable = true;
 }
 
 /*
@@ -438,7 +438,7 @@ _PUBLIC_ void packet_recv_disable(struct packet_context *pc)
 _PUBLIC_ void packet_recv_enable(struct packet_context *pc)
 {
 	EVENT_FD_READABLE(pc->fde);
-	pc->recv_disable = False;
+	pc->recv_disable = false;
 	if (pc->num_read != 0 && pc->packet_size >= pc->num_read) {
 		event_add_timed(pc->ev, pc, timeval_zero(), packet_next_event, pc);
 	}

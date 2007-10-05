@@ -90,7 +90,10 @@ static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 	ac->up_context = context;
 	ac->up_callback = callback;
 
-	ac->pending = False;
+	ac->pending = false;
+
+
+
 	ac->saved_referrals = NULL;
 	ac->num_referrals = 0;
 
@@ -110,7 +113,7 @@ static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 	rep_control = talloc_get_type(ares->controls[0]->data, struct ldb_paged_control);
 	if (rep_control->cookie_len == 0) {
 		/* we are done */
-		ac->pending = False;
+		ac->pending = false;
 		return LDB_SUCCESS;
 	}
 
@@ -135,7 +138,7 @@ static int check_ps_continuation(struct ldb_reply *ares, struct ps_context *ac)
 					    rep_control->cookie_len);
 	req_control->cookie_len = rep_control->cookie_len;
 
-	ac->pending = True;
+	ac->pending = true;
 	return LDB_SUCCESS;
 }
 
@@ -395,7 +398,7 @@ static int check_supported_paged(struct ldb_context *ldb, void *context,
 		if (ldb_msg_check_string_attribute(ares->message,
 						   "supportedControl",
 						   LDB_CONTROL_PAGED_RESULTS_OID)) {
-			data->paged_supported = True;
+			data->paged_supported = true;
 		}
 	}
 	return LDB_SUCCESS;
@@ -415,7 +418,7 @@ static int ps_init(struct ldb_module *module)
 		return LDB_ERR_OTHER;
 	}
 	module->private_data = data;
-	data->paged_supported = False;
+	data->paged_supported = false;
 
 	req = talloc(module, struct ldb_request);
 	if (req == NULL) {

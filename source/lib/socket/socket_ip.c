@@ -72,7 +72,7 @@ static NTSTATUS ip_connect_complete(struct socket_context *sock, uint32_t flags)
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
+		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -190,7 +190,7 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
+		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -217,7 +217,7 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 	}
 
 	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, False);
+		int ret = set_blocking(new_fd, false);
 		if (ret == -1) {
 			close(new_fd);
 			return map_nt_error_from_unix(errno);
@@ -673,7 +673,7 @@ static NTSTATUS ipv6_listen(struct socket_context *sock,
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
+		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -700,7 +700,7 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 	}
 
 	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, False);
+		int ret = set_blocking(new_fd, false);
 		if (ret == -1) {
 			close(new_fd);
 			return map_nt_error_from_unix(errno);
