@@ -39,7 +39,7 @@ struct lsa_info {
 	uint32 access;
 };
 
-struct generic_mapping lsa_generic_mapping = {
+const struct generic_mapping lsa_generic_mapping = {
 	POLICY_READ,
 	POLICY_WRITE,
 	POLICY_EXECUTE,

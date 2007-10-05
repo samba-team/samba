@@ -29,7 +29,7 @@ static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
 
 /* Map generic permissions to file object specific permissions */
 
-static struct generic_mapping file_generic_mapping = {
+static const struct generic_mapping file_generic_mapping = {
         FILE_GENERIC_READ,
         FILE_GENERIC_WRITE,
         FILE_GENERIC_EXECUTE,

@@ -27,7 +27,7 @@
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
-extern struct generic_mapping file_generic_mapping;
+extern const struct generic_mapping file_generic_mapping;
 extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS

@@ -42,14 +42,14 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 /* Map generic permissions to printer object specific permissions */
 
-GENERIC_MAPPING printer_generic_mapping = {
+const struct generic_mapping printer_generic_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
 	PRINTER_ALL_ACCESS
 };
 
-STANDARD_MAPPING printer_std_mapping = {
+const struct standard_mapping printer_std_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
@@ -58,14 +58,14 @@ STANDARD_MAPPING printer_std_mapping = {
 
 /* Map generic permissions to print server object specific permissions */
 
-GENERIC_MAPPING printserver_generic_mapping = {
+const struct generic_mapping printserver_generic_mapping = {
 	SERVER_READ,
 	SERVER_WRITE,
 	SERVER_EXECUTE,
 	SERVER_ALL_ACCESS
 };
 
-STANDARD_MAPPING printserver_std_mapping = {
+const struct generic_mapping printserver_std_mapping = {
 	SERVER_READ,
 	SERVER_WRITE,
 	SERVER_EXECUTE,

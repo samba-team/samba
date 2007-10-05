@@ -24,7 +24,7 @@
 
 /* Map generic permissions to file object specific permissions */
 
-struct generic_mapping file_generic_mapping = {
+const struct generic_mapping file_generic_mapping = {
 	FILE_GENERIC_READ,
 	FILE_GENERIC_WRITE,
 	FILE_GENERIC_EXECUTE,
