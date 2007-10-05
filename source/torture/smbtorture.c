@@ -380,9 +380,16 @@ static void subunit_comment(struct torture_context *test,
 	fprintf(stderr, "%s", comment);
 }
 
+static void subunit_warning(struct torture_context *test,
+			    const char *comment)
+{
+	fprintf(stderr, "WARNING!: %s\n", comment);
+}
+
 const static struct torture_ui_ops subunit_ui_ops = {
 	.init = subunit_init,
 	.comment = subunit_comment,
+	.warning = subunit_warning,
 	.test_start = subunit_test_start,
 	.test_result = subunit_test_result,
 	.suite_start = subunit_suite_start
