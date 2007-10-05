@@ -647,6 +647,7 @@ nt_err_code_struct nt_err_desc[] =
 
 const char *nt_errstr(NTSTATUS nt_code)
 {
+        static pstring msg;
         int idx = 0;
 
 #ifdef HAVE_LDAP
@@ -655,6 +656,8 @@ const char *nt_errstr(NTSTATUS nt_code)
 	}
 #endif
 
+	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
+
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
                         return nt_errs[idx].nt_errstr;
@@ -662,8 +665,7 @@ const char *nt_errstr(NTSTATUS nt_code)
 		idx++;
 	}
 
-	return talloc_asprintf(talloc_tos(), "NT code 0x%08x",
-			       NT_STATUS_V(nt_code));
+        return msg;
 }
 
 /************************************************************************
@@ -684,6 +686,28 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 	/* fall back to NT_STATUS_XXX string */
 	
 	return nt_errstr(nt_code);
+}
+
+/*****************************************************************************
+ Returns an NT_STATUS constant as a string for inclusion in autogen C code.
+ *****************************************************************************/
+
+const char *get_nt_error_c_code(NTSTATUS nt_code)
+{
+        static pstring out;
+        int idx = 0;
+
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+                    NT_STATUS_V(nt_code)) {
+                        return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+
+	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
+
+        return out;
 }
 
 /*****************************************************************************
