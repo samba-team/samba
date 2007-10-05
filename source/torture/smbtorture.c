@@ -169,6 +169,9 @@ static void print_test_list(void)
 	struct torture_suite *s;
 	struct torture_tcase *t;
 
+	if (torture_root == NULL)
+		return;
+
 	for (o = torture_root->children; o; o = o->next) {
 		for (s = o->children; s; s = s->next) {
 			printf("%s-%s\n", o->name, s->name);
