@@ -15,7 +15,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBCLI_LSA \
 		LIBPOPT \
 		POPT_SAMBA \
-		POPT_CREDENTIALS
+		POPT_CREDENTIALS \
+		LIBCLI_RAW 
 # End BINARY smbclient
 #################################
 
