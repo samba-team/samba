@@ -105,7 +105,7 @@ static void event_backend_init(void)
 	init_module_fn static_init[] = STATIC_LIBEVENTS_MODULES;
 	init_module_fn *shared_init;
 	if (event_backends) return;
-	shared_init = load_samba_modules(NULL, global_loadparm, "LIBEVENTS");
+	shared_init = load_samba_modules(NULL, global_loadparm, "events");
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
 #else
