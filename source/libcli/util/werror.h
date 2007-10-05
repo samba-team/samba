@@ -19,7 +19,7 @@
 */
 
 #ifndef _WERROR_H_
-#define _WERROR_H
+#define _WERROR_H_
 
 #include <stdint.h>
 
