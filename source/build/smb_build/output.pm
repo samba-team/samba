@@ -55,9 +55,11 @@ sub generate_shared_library($)
 		$lib->{SHAREDDIR} = $lib->{BASEDIR};
 	} else {
 		if ($lib->{TYPE} eq "MODULE") {
-			$lib->{SHAREDDIR} = "bin/modules/$lib->{SUBSYSTEM}";
+			my $sane_subsystem = lc($lib->{SUBSYSTEM});
+			$sane_subsystem =~ s/^lib//;
+			$lib->{SHAREDDIR} = "bin/modules/$sane_subsystem";
 			$lib->{LIBRARY_REALNAME} = $link_name;
-			$lib->{LIBRARY_REALNAME} =~ s/^$lib->{SUBSYSTEM}_//g;
+			$lib->{LIBRARY_REALNAME} =~ s/^$sane_subsystem\_//g;
 			$lib->{LIBRARY_REALNAME}.= ".\$(SHLIBEXT)";
 		} else {
 			$lib->{SHAREDDIR} = "bin/shared";
