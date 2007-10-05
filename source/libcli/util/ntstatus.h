@@ -29,9 +29,15 @@
    from using bool for internal functions 
 */
 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32_t v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
 #define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32_t NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
 
 /* Win32 Status codes. */
 

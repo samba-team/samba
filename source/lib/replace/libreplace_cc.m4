@@ -159,8 +159,8 @@ AC_CACHE_CHECK([for immediate structures],libreplace_cv_immediate_structures,[
 	libreplace_cv_immediate_structures=no,
 	libreplace_cv_immediate_structures=cross)
 ])
-if test x"$libreplace_cv_immediate_structures" = x"no"; then
-	AC_MSG_ERROR([compiler does not support immediate structures])
+if test x"$libreplace_cv_immediate_structures" = x"yes"; then
+	AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
 fi
 
 AC__LIBREPLACE_ONLY_CC_CHECKS_END
