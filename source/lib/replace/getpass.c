@@ -140,69 +140,65 @@ static void catch_signal(int signum,void (*handler)(int ))
 
 char *getsmbpass(const char *prompt)
 {
-  FILE *in, *out;
-  int echo_off;
-  static char buf[256];
-  static size_t bufsize = sizeof(buf);
-  size_t nread;
+	FILE *in, *out;
+	int echo_off;
+	static char buf[256];
+	static size_t bufsize = sizeof(buf);
+	size_t nread;
 
-  /* Catch problematic signals */
-  catch_signal(SIGINT, SIGNAL_CAST SIG_IGN);
+	/* Catch problematic signals */
+	catch_signal(SIGINT, SIGNAL_CAST SIG_IGN);
 
-  /* Try to write to and read from the terminal if we can.
-     If we can't open the terminal, use stderr and stdin.  */
+	/* Try to write to and read from the terminal if we can.
+		If we can't open the terminal, use stderr and stdin.  */
 
-  in = fopen ("/dev/tty", "w+");
-  if (in == NULL)
-    {
-      in = stdin;
-      out = stderr;
-    }
-  else
-    out = in;
-
-  setvbuf(in, NULL, _IONBF, 0);
-
-  /* Turn echoing off if it is on now.  */
-
-  if (tcgetattr (fileno (in), &t) == 0)
-    {
-	  if (ECHO_IS_ON(t))
-	{
-		TURN_ECHO_OFF(t);
-		echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
-		TURN_ECHO_ON(t);
+	in = fopen ("/dev/tty", "w+");
+	if (in == NULL) {
+		in = stdin;
+		out = stderr;
+	} else {
+		out = in;
 	}
-      else
-	echo_off = 0;
-    }
-  else
-    echo_off = 0;
 
-  /* Write the prompt.  */
-  fputs (prompt, out);
-  fflush (out);
+	setvbuf(in, NULL, _IONBF, 0);
 
-  /* Read the password.  */
-  buf[0] = 0;
-  fgets(buf, bufsize, in);
-  nread = strlen(buf);
-  if (buf[nread - 1] == '\n')
-    buf[nread - 1] = '\0';
+	/* Turn echoing off if it is on now.  */
 
-  /* Restore echoing.  */
-  if (echo_off)
-    (void) tcsetattr (fileno (in), TCSANOW, &t);
+	if (tcgetattr (fileno (in), &t) == 0) {
+		if (ECHO_IS_ON(t)) {
+			TURN_ECHO_OFF(t);
+			echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
+			TURN_ECHO_ON(t);
+		} else {
+			echo_off = 0;
+		}
+	} else {
+		echo_off = 0;
+	}
 
-  if (in != stdin)
-    /* We opened the terminal; now close it.  */
-    fclose (in);
+	/* Write the prompt.  */
+	fputs(prompt, out);
+	fflush(out);
 
-  /* Catch problematic signals */
-  catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
+	/* Read the password.  */
+	buf[0] = 0;
+	fgets(buf, bufsize, in);
+	nread = strlen(buf);
+	if (buf[nread - 1] == '\n')
+		buf[nread - 1] = '\0';
 
-  printf("\n");
-  return buf;
+	/* Restore echoing.  */
+	if (echo_off)
+		tcsetattr (fileno (in), TCSANOW, &t);
+
+	if (in != stdin) /* We opened the terminal; now close it.  */
+		fclose(in);
+
+	/* Catch problematic signals */
+	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
+
+	printf("\n");
+	return buf;
 }
 
 #else
