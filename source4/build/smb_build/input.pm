@@ -99,7 +99,9 @@ sub check_module($$$)
 	}
 
 	if (grep(/SHARED_LIBRARY/, @{$mod->{OUTPUT_TYPE}})) {
-		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
+		my $sane_subsystem = lc($mod->{SUBSYSTEM});
+		$sane_subsystem =~ s/^lib//;
+		$mod->{INSTALLDIR} = "MODULESDIR/$sane_subsystem";
 		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 	} 
 	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
