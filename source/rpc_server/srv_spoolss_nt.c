@@ -63,7 +63,7 @@ static uint32 smb_connections=0;
 
 /* in printing/nt_printing.c */
 
-extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
+extern struct standard_mapping printer_std_mapping, printserver_std_mapping;
 
 /* API table for Xcv Monitor functions */
 

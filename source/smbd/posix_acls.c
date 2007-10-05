@@ -21,7 +21,7 @@
 #include "includes.h"
 
 extern struct current_user current_user;
-extern struct generic_mapping file_generic_mapping;
+extern const struct generic_mapping file_generic_mapping;
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS

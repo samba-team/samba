@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern struct generic_mapping file_generic_mapping;
+extern const struct generic_mapping file_generic_mapping;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
 extern BOOL global_client_failed_oplock_break;

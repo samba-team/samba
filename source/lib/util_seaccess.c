@@ -146,7 +146,7 @@ static BOOL get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32
    objects.  Each type of object has its own mapping of generic to object
    specific access rights. */
 
-void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
+void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping)
 {
 	uint32 old_mask = *access_mask;
 

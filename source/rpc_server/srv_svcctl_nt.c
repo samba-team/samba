@@ -49,9 +49,9 @@ extern SERVICE_CONTROL_OPS wins_svc_ops;
 
 struct service_control_op *svcctl_ops;
 
-static struct generic_mapping scm_generic_map =
+static const struct generic_mapping scm_generic_map =
 	{ SC_MANAGER_READ_ACCESS, SC_MANAGER_WRITE_ACCESS, SC_MANAGER_EXECUTE_ACCESS, SC_MANAGER_ALL_ACCESS };
-static struct generic_mapping svc_generic_map =
+static const struct generic_mapping svc_generic_map =
 	{ SERVICE_READ_ACCESS, SERVICE_WRITE_ACCESS, SERVICE_EXECUTE_ACCESS, SERVICE_ALL_ACCESS };
 
 

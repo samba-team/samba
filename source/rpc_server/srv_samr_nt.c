@@ -72,32 +72,32 @@ struct samr_info {
 	TALLOC_CTX *mem_ctx;
 };
 
-static struct generic_mapping sam_generic_mapping = {
+static const struct generic_mapping sam_generic_mapping = {
 	GENERIC_RIGHTS_SAM_READ,
 	GENERIC_RIGHTS_SAM_WRITE,
 	GENERIC_RIGHTS_SAM_EXECUTE,
 	GENERIC_RIGHTS_SAM_ALL_ACCESS};
-static struct generic_mapping dom_generic_mapping = {
+static const struct generic_mapping dom_generic_mapping = {
 	GENERIC_RIGHTS_DOMAIN_READ,
 	GENERIC_RIGHTS_DOMAIN_WRITE,
 	GENERIC_RIGHTS_DOMAIN_EXECUTE,
 	GENERIC_RIGHTS_DOMAIN_ALL_ACCESS};
-static struct generic_mapping usr_generic_mapping = {
+static const struct generic_mapping usr_generic_mapping = {
 	GENERIC_RIGHTS_USER_READ,
 	GENERIC_RIGHTS_USER_WRITE,
 	GENERIC_RIGHTS_USER_EXECUTE,
 	GENERIC_RIGHTS_USER_ALL_ACCESS};
-static struct generic_mapping usr_nopwchange_generic_mapping = {
+static const struct generic_mapping usr_nopwchange_generic_mapping = {
 	GENERIC_RIGHTS_USER_READ,
 	GENERIC_RIGHTS_USER_WRITE,
 	GENERIC_RIGHTS_USER_EXECUTE & ~SA_RIGHT_USER_CHANGE_PASSWORD,
 	GENERIC_RIGHTS_USER_ALL_ACCESS};
-static struct generic_mapping grp_generic_mapping = {
+static const struct generic_mapping grp_generic_mapping = {
 	GENERIC_RIGHTS_GROUP_READ,
 	GENERIC_RIGHTS_GROUP_WRITE,
 	GENERIC_RIGHTS_GROUP_EXECUTE,
 	GENERIC_RIGHTS_GROUP_ALL_ACCESS};
-static struct generic_mapping ali_generic_mapping = {
+static const struct generic_mapping ali_generic_mapping = {
 	GENERIC_RIGHTS_ALIAS_READ,
 	GENERIC_RIGHTS_ALIAS_WRITE,
 	GENERIC_RIGHTS_ALIAS_EXECUTE,
@@ -107,7 +107,7 @@ static struct generic_mapping ali_generic_mapping = {
 *******************************************************************/
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size,
-                                     struct generic_mapping *map,
+                                     const struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
 	DOM_SID domadmin_sid;
