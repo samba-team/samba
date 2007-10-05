@@ -646,7 +646,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	msg->r.ModifyDNRequest.deleteolddn = True;
+	msg->r.ModifyDNRequest.deleteolddn = true;
 
 	return ildb_request_send(ildb, msg, req);
 }

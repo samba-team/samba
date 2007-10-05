@@ -120,7 +120,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 
 	state->flags = flags;
 
-	set_blocking(socket_get_fd(sock), False);
+	set_blocking(socket_get_fd(sock), false);
 
 	if (server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
 		struct nbt_name name;

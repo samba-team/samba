@@ -39,7 +39,7 @@
 #define ALLONES  ((uint32_t)0xFFFFFFFF)
 
 /* masked_match - match address against netnumber/netmask */
-static BOOL masked_match(TALLOC_CTX *mem_ctx, const char *tok, const char *slash, const char *s)
+static bool masked_match(TALLOC_CTX *mem_ctx, const char *tok, const char *slash, const char *s)
 {
 	uint32_t net;
 	uint32_t mask;
@@ -47,7 +47,7 @@ static BOOL masked_match(TALLOC_CTX *mem_ctx, const char *tok, const char *slash
 	char *tok_cpy;
 
 	if ((addr = interpret_addr(s)) == INADDR_NONE)
-		return False;
+		return false;
 
 	tok_cpy = talloc_strdup(mem_ctx, tok);
 	tok_cpy[PTR_DIFF(slash,tok)] = '\0';
@@ -64,14 +64,14 @@ static BOOL masked_match(TALLOC_CTX *mem_ctx, const char *tok, const char *slash
 
 	if (net == INADDR_NONE || mask == INADDR_NONE) {
 		DEBUG(0,("access: bad net/mask access control: %s\n", tok));
-		return False;
+		return false;
 	}
 	
 	return (addr & mask) == (net & mask);
 }
 
 /* string_match - match string against token */
-static BOOL string_match(TALLOC_CTX *mem_ctx, const char *tok,const char *s, char *invalid_char)
+static bool string_match(TALLOC_CTX *mem_ctx, const char *tok,const char *s, char *invalid_char)
 {
 	size_t     tok_len;
 	size_t     str_len;
@@ -79,50 +79,50 @@ static BOOL string_match(TALLOC_CTX *mem_ctx, const char *tok,const char *s, cha
 
 	*invalid_char = '\0';
 
-	/* Return True if a token has the magic value "ALL". Return
+	/* Return true if a token has the magic value "ALL". Return
 	 * FAIL if the token is "FAIL". If the token starts with a "."
-	 * (domain name), return True if it matches the last fields of
+	 * (domain name), return true if it matches the last fields of
 	 * the string. If the token has the magic value "LOCAL",
-	 * return True if the string does not contain a "."
+	 * return true if the string does not contain a "."
 	 * character. If the token ends on a "." (network number),
-	 * return True if it matches the first fields of the
+	 * return true if it matches the first fields of the
 	 * string. If the token begins with a "@" (netgroup name),
-	 * return True if the string is a (host) member of the
-	 * netgroup. Return True if the token fully matches the
+	 * return true if the string is a (host) member of the
+	 * netgroup. Return true if the token fully matches the
 	 * string. If the token is a netnumber/netmask pair, return
-	 * True if the address is a member of the specified subnet.  
+	 * true if the address is a member of the specified subnet.  
 	 */
 
 	if (tok[0] == '.') {			/* domain: match last fields */
 		if ((str_len = strlen(s)) > (tok_len = strlen(tok))
 		    && strcasecmp(tok, s + str_len - tok_len)==0) {
-			return True;
+			return true;
 		}
 	} else if (tok[0] == '@') { /* netgroup: look it up */
 		DEBUG(0,("access: netgroup support is not available\n"));
-		return False;
+		return false;
 	} else if (strcmp(tok, "ALL")==0) {	/* all: match any */
-		return True;
+		return true;
 	} else if (strcmp(tok, "FAIL")==0) {	/* fail: match any */
 		return FAIL;
 	} else if (strcmp(tok, "LOCAL")==0) {	/* local: no dots */
 		if (strchr(s, '.') == 0 && strcasecmp(s, "unknown") != 0) {
-			return True;
+			return true;
 		}
 	} else if (strcasecmp(tok, s)==0) {   /* match host name or address */
-		return True;
+		return true;
 	} else if (tok[(tok_len = strlen(tok)) - 1] == '.') {	/* network */
 		if (strncmp(tok, s, tok_len) == 0)
-			return True;
+			return true;
 	} else if ((cut = strchr(tok, '/')) != 0) {	/* netnumber/netmask */
 		if (isdigit((int)s[0]) && masked_match(mem_ctx, tok, cut, s))
-			return True;
+			return true;
 	} else if (strchr(tok, '*') != 0) {
 		*invalid_char = '*';
 	} else if (strchr(tok, '?') != 0) {
 		*invalid_char = '?';
 	}
-	return False;
+	return false;
 }
 
 struct client_addr {
@@ -131,9 +131,9 @@ struct client_addr {
 };
 
 /* client_match - match host name and address against token */
-static BOOL client_match(TALLOC_CTX *mem_ctx, const char *tok, struct client_addr *client)
+static bool client_match(TALLOC_CTX *mem_ctx, const char *tok, struct client_addr *client)
 {
-	BOOL match;
+	bool match;
 	char invalid_char = '\0';
 
 	/*
@@ -158,12 +158,12 @@ token '%s' in an allow/deny hosts line.\n", invalid_char, tok ));
 }
 
 /* list_match - match an item against a list of tokens with exceptions */
-static BOOL list_match(TALLOC_CTX *mem_ctx, const char **list, struct client_addr *client)
+static bool list_match(TALLOC_CTX *mem_ctx, const char **list, struct client_addr *client)
 {
-	BOOL match = False;
+	bool match = false;
 
 	if (!list)
-		return False;
+		return false;
 
 	/*
 	 * Process tokens one at a time. We have exhausted all possible matches
@@ -175,18 +175,18 @@ static BOOL list_match(TALLOC_CTX *mem_ctx, const char **list, struct client_add
 	for (; *list ; list++) {
 		if (strcmp(*list, "EXCEPT")==0)	/* EXCEPT: give up */
 			break;
-		if ((match = client_match(mem_ctx, *list, client)))	/* True or FAIL */
+		if ((match = client_match(mem_ctx, *list, client)))	/* true or FAIL */
 			break;
 	}
 
-	/* Process exceptions to True or FAIL matches. */
-	if (match != False) {
+	/* Process exceptions to true or FAIL matches. */
+	if (match != false) {
 		while (*list  && strcmp(*list, "EXCEPT")!=0)
 			list++;
 
 		for (; *list; list++) {
 			if (client_match(mem_ctx, *list, client)) /* Exception Found */
-				return False;
+				return false;
 		}
 	}
 
@@ -194,7 +194,7 @@ static BOOL list_match(TALLOC_CTX *mem_ctx, const char **list, struct client_add
 }
 
 /* return true if access should be allowed */
-static BOOL allow_access_internal(TALLOC_CTX *mem_ctx,
+static bool allow_access_internal(TALLOC_CTX *mem_ctx,
 				  const char **deny_list,const char **allow_list,
 				  const char *cname, const char *caddr)
 {
@@ -213,15 +213,15 @@ static BOOL allow_access_internal(TALLOC_CTX *mem_ctx,
 			list_match(mem_ctx, deny_list, &client) &&
 				(!allow_list ||
 				!list_match(mem_ctx, allow_list, &client))) {
-			return False;
+			return false;
 		}
-		return True;
+		return true;
 	}
 
 	/* if theres no deny list and no allow list then allow access */
 	if ((!deny_list || *deny_list == 0) && 
 	    (!allow_list || *allow_list == 0)) {
-		return True;  
+		return true;  
 	}
 
 	/* if there is an allow list but no deny list then allow only hosts
@@ -237,27 +237,27 @@ static BOOL allow_access_internal(TALLOC_CTX *mem_ctx,
 	/* if there are both types of list then allow all hosts on the
            allow list */
 	if (list_match(mem_ctx, allow_list, &client))
-		return True;
+		return true;
 
 	/* if there are both types of list and it's not on the allow then
 	   allow it if its not on the deny */
 	if (list_match(mem_ctx, deny_list, &client))
-		return False;
+		return false;
 	
-	return True;
+	return true;
 }
 
 /* return true if access should be allowed */
-BOOL allow_access(TALLOC_CTX *mem_ctx,
+bool allow_access(TALLOC_CTX *mem_ctx,
 		  const char **deny_list, const char **allow_list,
 		  const char *cname, const char *caddr)
 {
-	BOOL ret;
+	bool ret;
 	char *nc_cname = talloc_strdup(mem_ctx, cname);
 	char *nc_caddr = talloc_strdup(mem_ctx, caddr);
 
 	if (!nc_cname || !nc_caddr) {
-		return False;
+		return false;
 	}
 	
 	ret = allow_access_internal(mem_ctx, deny_list, allow_list, nc_cname, nc_caddr);
@@ -271,12 +271,12 @@ BOOL allow_access(TALLOC_CTX *mem_ctx,
 /* return true if the char* contains ip addrs only.  Used to avoid 
 gethostbyaddr() calls */
 
-static BOOL only_ipaddrs_in_list(const char** list)
+static bool only_ipaddrs_in_list(const char** list)
 {
-	BOOL only_ip = True;
+	bool only_ip = true;
 	
 	if (!list)
-		return True;
+		return true;
 			
 	for (; *list ; list++) {
 		/* factor out the special strings */
@@ -293,7 +293,7 @@ static BOOL only_ipaddrs_in_list(const char** list)
 			 * have a '/' in them
 			 */
 			if ((strchr(*list, '/')) == NULL) {
-				only_ip = False;
+				only_ip = false;
 				DEBUG(3,("only_ipaddrs_in_list: list has non-ip address (%s)\n", *list));
 				break;
 			}
@@ -304,30 +304,30 @@ static BOOL only_ipaddrs_in_list(const char** list)
 }
 
 /* return true if access should be allowed to a service for a socket */
-BOOL socket_check_access(struct socket_context *sock, 
+bool socket_check_access(struct socket_context *sock, 
 			 const char *service_name,
 			 const char **allow_list, const char **deny_list)
 {
-	BOOL ret;
+	bool ret;
 	const char *name="";
 	struct socket_address *addr;
 	TALLOC_CTX *mem_ctx;
 
 	if ((!deny_list  || *deny_list==0) && 
 	    (!allow_list || *allow_list==0)) {
-		return True;
+		return true;
 	}
 
 	mem_ctx = talloc_init("socket_check_access");
 	if (!mem_ctx) {
-		return False;
+		return false;
 	}
 
 	addr = socket_get_peer_addr(sock, mem_ctx);
 	if (!addr) {
 		DEBUG(0,("socket_check_access: Denied connection from unknown host: could not get peer address from kernel\n"));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
@@ -342,7 +342,7 @@ BOOL socket_check_access(struct socket_context *sock,
 	if (!addr) {
 		DEBUG(0,("socket_check_access: Denied connection from unknown host\n"));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	ret = allow_access(mem_ctx, deny_list, allow_list, name, addr->addr);

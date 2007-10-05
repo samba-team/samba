@@ -46,7 +46,7 @@ enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS };
 */
 void popt_common_dont_ask(void)
 {
-	dont_ask = True;
+	dont_ask = true;
 }
 
 static void popt_common_credentials_callback(poptContext con, 
@@ -105,7 +105,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 	case OPT_KERBEROS:
 	{
-		BOOL use_kerberos = True;
+		bool use_kerberos = true;
 		/* Force us to only use kerberos */
 		if (arg) {
 			if (!set_boolean(arg, &use_kerberos)) {

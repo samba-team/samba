@@ -77,7 +77,7 @@ _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socke
 	/* we don't do a connect() on dgram sockets, so need to set
 	   non-blocking at socket create time */
 	if (!(flags & SOCKET_FLAG_BLOCK) && type == SOCKET_TYPE_DGRAM) {
-		set_blocking(socket_get_fd(*new_sock), False);
+		set_blocking(socket_get_fd(*new_sock), false);
 	}
 
 	talloc_set_destructor(*new_sock, socket_destructor);
@@ -502,12 +502,12 @@ _PUBLIC_ void set_socket_options(int fd, const char *options)
 		int ret=0,i;
 		int value = 1;
 		char *p;
-		BOOL got_value = False;
+		bool got_value = false;
 
 		if ((p = strchr(tok,'='))) {
 			*p = 0;
 			value = atoi(p+1);
-			got_value = True;
+			got_value = true;
 		}
 
 		for (i=0;socket_options[i].name;i++)

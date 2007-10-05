@@ -40,7 +40,7 @@ typedef gnutls_datum gnutls_datum_t;
 struct tls_params {
 	gnutls_certificate_credentials x509_cred;
 	gnutls_dh_params dh_params;
-	BOOL tls_enabled;
+	bool tls_enabled;
 };
 #endif
 
@@ -48,32 +48,32 @@ struct tls_params {
 struct tls_context {
 	struct socket_context *socket;
 	struct fd_event *fde;
-	BOOL tls_enabled;
+	bool tls_enabled;
 #if ENABLE_GNUTLS
 	gnutls_session session;
-	BOOL done_handshake;
-	BOOL have_first_byte;
+	bool done_handshake;
+	bool have_first_byte;
 	uint8_t first_byte;
-	BOOL tls_detect;
+	bool tls_detect;
 	const char *plain_chars;
-	BOOL output_pending;
+	bool output_pending;
 	gnutls_certificate_credentials xcred;
-	BOOL interrupted;
+	bool interrupted;
 #endif
 };
 
-BOOL tls_enabled(struct socket_context *sock)
+bool tls_enabled(struct socket_context *sock)
 {
 	struct tls_context *tls;
 	if (!sock) {
-		return False;
+		return false;
 	}
 	if (strcmp(sock->backend_name, "tls") != 0) {
-		return False;
+		return false;
 	}
 	tls = talloc_get_type(sock->private_data, struct tls_context);
 	if (!tls) {
-		return False;
+		return false;
 	}
 	return tls->tls_enabled;
 }
@@ -117,7 +117,7 @@ static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
 	
 	if (tls->have_first_byte) {
 		*(uint8_t *)buf = tls->first_byte;
-		tls->have_first_byte = False;
+		tls->have_first_byte = false;
 		return 1;
 	}
 
@@ -213,7 +213,7 @@ static NTSTATUS tls_handshake(struct tls_context *tls)
 		DEBUG(0,("TLS gnutls_handshake failed - %s\n", gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
-	tls->done_handshake = True;
+	tls->done_handshake = true;
 	return NT_STATUS_OK;
 }
 
@@ -235,7 +235,7 @@ static NTSTATUS tls_interrupted(struct tls_context *tls)
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
 		return STATUS_MORE_ENTRIES;
 	}
-	tls->interrupted = False;
+	tls->interrupted = false;
 	return NT_STATUS_OK;
 }
 
@@ -274,15 +274,15 @@ static NTSTATUS tls_socket_recv(struct socket_context *sock, void *buf,
 		status = socket_recv(tls->socket, &tls->first_byte, 1, nread);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (*nread == 0) return NT_STATUS_OK;
-		tls->tls_detect = False;
+		tls->tls_detect = false;
 		/* look for the first byte of a valid HTTP operation */
 		if (strchr(tls->plain_chars, tls->first_byte)) {
 			/* not a tls link */
-			tls->tls_enabled = False;
+			tls->tls_enabled = false;
 			*(uint8_t *)buf = tls->first_byte;
 			return NT_STATUS_OK;
 		}
-		tls->have_first_byte = True;
+		tls->have_first_byte = true;
 	}
 
 	if (!tls->tls_enabled) {
@@ -300,7 +300,7 @@ static NTSTATUS tls_socket_recv(struct socket_context *sock, void *buf,
 		if (gnutls_record_get_direction(tls->session) == 1) {
 			EVENT_FD_WRITEABLE(tls->fde);
 		}
-		tls->interrupted = True;
+		tls->interrupted = true;
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
@@ -336,7 +336,7 @@ static NTSTATUS tls_socket_send(struct socket_context *sock,
 		if (gnutls_record_get_direction(tls->session) == 1) {
 			EVENT_FD_WRITEABLE(tls->fde);
 		}
-		tls->interrupted = True;
+		tls->interrupted = true;
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
@@ -371,7 +371,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	}
 
 	if (!lp_tls_enabled(global_loadparm) || keyfile == NULL || *keyfile == 0) {
-		params->tls_enabled = False;
+		params->tls_enabled = false;
 		talloc_free(tmp_ctx);
 		return params;
 	}
@@ -438,14 +438,14 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 		
 	gnutls_certificate_set_dh_params(params->x509_cred, params->dh_params);
 
-	params->tls_enabled = True;
+	params->tls_enabled = true;
 
 	talloc_free(tmp_ctx);
 	return params;
 
 init_failed:
 	DEBUG(0,("GNUTLS failed to initialise - %s\n", gnutls_strerror(ret)));
-	params->tls_enabled = False;
+	params->tls_enabled = false;
 	talloc_free(tmp_ctx);
 	return params;
 }
@@ -510,16 +510,16 @@ struct socket_context *tls_init_server(struct tls_params *params,
 
 	tls->plain_chars = plain_chars;
 	if (plain_chars) {
-		tls->tls_detect = True;
+		tls->tls_detect = true;
 	} else {
-		tls->tls_detect = False;
+		tls->tls_detect = false;
 	}
 
-	tls->output_pending  = False;
-	tls->done_handshake  = False;
-	tls->have_first_byte = False;
-	tls->tls_enabled     = True;
-	tls->interrupted     = False;
+	tls->output_pending  = false;
+	tls->done_handshake  = false;
+	tls->have_first_byte = false;
+	tls->tls_enabled     = true;
+	tls->interrupted     = false;
 	
 	new_sock->state = SOCKET_STATE_SERVER_CONNECTED;
 
@@ -586,13 +586,13 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	gnutls_transport_set_pull_function(tls->session, (gnutls_pull_func)tls_pull);
 	gnutls_transport_set_push_function(tls->session, (gnutls_push_func)tls_push);
 	gnutls_transport_set_lowat(tls->session, 0);
-	tls->tls_detect = False;
+	tls->tls_detect = false;
 
-	tls->output_pending  = False;
-	tls->done_handshake  = False;
-	tls->have_first_byte = False;
-	tls->tls_enabled     = True;
-	tls->interrupted     = False;
+	tls->output_pending  = false;
+	tls->done_handshake  = false;
+	tls->have_first_byte = false;
+	tls->tls_enabled     = true;
+	tls->interrupted     = false;
 	
 	new_sock->state = SOCKET_STATE_CLIENT_CONNECTED;
 
@@ -600,7 +600,7 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 
 failed:
 	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
-	tls->tls_enabled = False;
+	tls->tls_enabled = false;
 	return new_sock;
 }
 
@@ -649,7 +649,7 @@ static const struct socket_ops tls_socket_ops = {
 	.fn_get_fd		= tls_socket_get_fd
 };
 
-BOOL tls_support(struct tls_params *params)
+bool tls_support(struct tls_params *params)
 {
 	return params->tls_enabled;
 }
@@ -685,9 +685,9 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	return NULL;
 }
 
-BOOL tls_support(struct tls_params *params)
+bool tls_support(struct tls_params *params)
 {
-	return False;
+	return false;
 }
 
 #endif

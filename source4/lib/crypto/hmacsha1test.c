@@ -31,9 +31,9 @@ static DATA_BLOB data_blob_repeat_byte(uint8_t byte, size_t length)
 /*
  This uses the test values from rfc2202
 */
-BOOL torture_local_crypto_hmacsha1(struct torture_context *torture) 
+bool torture_local_crypto_hmacsha1(struct torture_context *torture) 
 {
-	BOOL ret = True;
+	bool ret = true;
 	uint32_t i;
 	struct {
 		DATA_BLOB key;
@@ -89,7 +89,7 @@ BOOL torture_local_crypto_hmacsha1(struct torture_context *torture)
 			dump_data(0, testarray[i].data.data, testarray[i].data.length);
 			dump_data(0, testarray[i].sha1.data, testarray[i].sha1.length);
 			dump_data(0, sha1, sizeof(sha1));
-			ret = False;
+			ret = false;
 		}
 	}
 

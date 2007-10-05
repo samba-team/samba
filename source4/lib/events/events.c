@@ -80,11 +80,11 @@ bool event_register_backend(const char *name, const struct event_ops *ops)
 {
 	struct event_ops_list *e;
 	e = talloc(talloc_autofree_context(), struct event_ops_list);
-	if (e == NULL) return False;
+	if (e == NULL) return false;
 	e->name = name;
 	e->ops = ops;
 	DLIST_ADD(event_backends, e);
-	return True;
+	return true;
 }
 
 /*
