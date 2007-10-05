@@ -281,22 +281,22 @@ _NORETURN_ static void max_runtime_handler(int sig)
 struct timeval last_suite_started;
 
 static void simple_suite_start(struct torture_context *ctx,
-							   struct torture_suite *suite)
+			       struct torture_suite *suite)
 {
 	last_suite_started = timeval_current();
 	printf("Running %s\n", suite->name);
 }
 
 static void simple_suite_finish(struct torture_context *ctx,
-							   struct torture_suite *suite)
+			        struct torture_suite *suite)
 {
 
 	printf("%s took %g secs\n\n", suite->name, 
 		   timeval_elapsed(&last_suite_started));
 }
 
-static void simple_test_result (struct torture_context *context, 
-								enum torture_result res, const char *reason)
+static void simple_test_result(struct torture_context *context, 
+			       enum torture_result res, const char *reason)
 {
 	switch (res) {
 	case TORTURE_OK:
@@ -315,14 +315,14 @@ static void simple_test_result (struct torture_context *context,
 	}
 }
 
-static void simple_comment (struct torture_context *test, 
-							const char *comment)
+static void simple_comment(struct torture_context *test, 
+			   const char *comment)
 {
 	printf("%s", comment);
 }
 
 static void simple_warning(struct torture_context *test, 
-						   const char *comment)
+			   const char *comment)
 {
 	fprintf(stderr, "WARNING: %s\n", comment);
 }
@@ -341,19 +341,19 @@ static void subunit_init(struct torture_context *ctx)
 }
 
 static void subunit_suite_start(struct torture_context *ctx,
-							   struct torture_suite *suite)
+				struct torture_suite *suite)
 {
 }
 
-static void subunit_test_start (struct torture_context *ctx, 
-							    struct torture_tcase *tcase,
-								struct torture_test *test)
+static void subunit_test_start(struct torture_context *ctx, 
+			       struct torture_tcase *tcase,
+			       struct torture_test *test)
 {
 	printf("test: %s\n", test->name);
 }
 
-static void subunit_test_result (struct torture_context *context, 
-								 enum torture_result res, const char *reason)
+static void subunit_test_result(struct torture_context *context, 
+				enum torture_result res, const char *reason)
 {
 	switch (res) {
 	case TORTURE_OK:
@@ -374,8 +374,8 @@ static void subunit_test_result (struct torture_context *context,
 	printf("\n");
 }
 
-static void subunit_comment (struct torture_context *test, 
-							 const char *comment)
+static void subunit_comment(struct torture_context *test,
+			    const char *comment)
 {
 	fprintf(stderr, "%s", comment);
 }
@@ -389,7 +389,7 @@ const static struct torture_ui_ops subunit_ui_ops = {
 };
 
 static void quiet_suite_start(struct torture_context *ctx,
-				       		  struct torture_suite *suite)
+			      struct torture_suite *suite)
 {
 	int i;
 	ctx->quiet = true;
@@ -399,13 +399,13 @@ static void quiet_suite_start(struct torture_context *ctx,
 }
 
 static void quiet_suite_finish(struct torture_context *ctx,
-				       		  struct torture_suite *suite)
+			       struct torture_suite *suite)
 {
 	putchar('\n');
 }
 
-static void quiet_test_result (struct torture_context *context, 
-							   enum torture_result res, const char *reason)
+static void quiet_test_result(struct torture_context *context, 
+			      enum torture_result res, const char *reason)
 {
 	fflush(stdout);
 	switch (res) {
