@@ -307,6 +307,11 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	   should hang off that */
 	event_ctx = event_context_init(talloc_autofree_context());
 
+	if (event_ctx == NULL) {
+		DEBUG(0,("Initializing event context failed\n"));
+		return 1;
+	}
+
 	/* initialise clustering if needed */
 	cluster_ctdb_init(event_ctx, model);
 
