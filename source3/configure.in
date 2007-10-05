@@ -3198,7 +3198,8 @@ dnl test for struct sockaddr_storage
 AC_CACHE_CHECK([for struct sockaddr_storage],samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE,[
 AC_TRY_COMPILE([
 #include <sys/socket.h>
-#include <sys/types.h>],
+#include <sys/types.h>
+#include <netinet/in.h>],
 [
 struct sockaddr_storage sa_store;
 ],
@@ -3211,7 +3212,8 @@ dnl test for struct struct sockaddr_in6
 AC_CACHE_CHECK([for struct sockaddr_in6],samba_cv_HAVE_STRUCT_SOCKADDR_IN6,[
 AC_TRY_COMPILE([
 #include <sys/socket.h>
-#include <sys/types.h>],
+#include <sys/types.h>
+#include <netinet/in.h>],
 [
 struct sockaddr_in6 sa6;
 ],
