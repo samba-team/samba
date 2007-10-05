@@ -789,7 +789,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 			length,
 			packet_type,
 			si->sin_addr,
-			si->sin_port);
+			ntohs(si->sin_port));
 	if (!packet)
 		return NULL;
 
