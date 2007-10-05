@@ -36,9 +36,9 @@ typedef long long int64_t;
 
 /* Include headers */
 
-#include "lib/replace/replace.h"
-#include "lib/talloc/talloc.h"
-#include "lib/ldb/include/ldb.h"
+#include <stdbool.h>
+#include "talloc.h"
+#include "ldb.h"
 
 %}
 
@@ -237,3 +237,5 @@ int ldb_msg_sanity_check(struct ldb_context *ldb, const struct ldb_message *msg)
 /* struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn); */
 
 /* char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *dn); */
+
+%rename(ldb_context) Ldb;
