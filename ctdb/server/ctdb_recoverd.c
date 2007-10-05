@@ -45,6 +45,7 @@ struct ctdb_recoverd {
 	struct timeval priority_time;
 	bool need_takeover_run;
 	bool need_recovery;
+	uint32_t node_flags;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -724,6 +725,24 @@ static uint32_t new_generation(void)
 
 	return generation;
 }
+
+/*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(0,("New recovery culprit %u\n", culprit));
+		/* either a new node is the culprit, or we've decide to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter++;
+}
 		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -741,14 +760,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
-	if (rec->last_culprit != culprit ||
-	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		/* either a new node is the culprit, or we've decide to forgive them */
-		rec->last_culprit = culprit;
-		rec->first_recover_time = timeval_current();
-		rec->culprit_counter = 0;
-	}
-	rec->culprit_counter++;
+	ctdb_set_culprit(rec, culprit);
 
 	if (rec->culprit_counter > 2*nodemap->num) {
 		DEBUG(0,("Node %u has caused %u recoveries in %.0f seconds - banning it for %u seconds\n",
@@ -758,6 +770,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	if (!ctdb_recovery_lock(ctdb, true)) {
+		ctdb_set_culprit(rec, pnn);
 		DEBUG(0,("Unable to get recovery lock - aborting recovery\n"));
 		return -1;
 	}
@@ -963,6 +976,7 @@ struct election_message {
 	uint32_t num_connected;
 	struct timeval priority_time;
 	uint32_t pnn;
+	uint32_t node_flags;
 };
 
 /*
@@ -978,6 +992,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	em->pnn = rec->ctdb->pnn;
 	em->priority_time = rec->priority_time;
+	em->node_flags = rec->node_flags;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
 	if (ret != 0) {
@@ -998,12 +1013,36 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message *em)
 {
 	struct election_message myem;
-	int cmp;
+	int cmp = 0;
 
 	ctdb_election_data(rec, &myem);
 
+	/* try to use a unbanned node */
+	if ((em->node_flags & NODE_FLAGS_BANNED) &&
+	    !(myem.node_flags & NODE_FLAGS_BANNED)) {
+		cmp = 1;
+	}
+	if (!(em->node_flags & NODE_FLAGS_BANNED) &&
+	    (myem.node_flags & NODE_FLAGS_BANNED)) {
+		cmp = -1;
+	}
+
+	/* try to use a healthy node */
+	if (cmp == 0) {
+		if ((em->node_flags & NODE_FLAGS_UNHEALTHY) &&
+		    !(myem.node_flags & NODE_FLAGS_UNHEALTHY)) {
+			cmp = 1;
+		}
+		if (!(em->node_flags & NODE_FLAGS_UNHEALTHY) &&
+		    (myem.node_flags & NODE_FLAGS_UNHEALTHY)) {
+			cmp = -1;
+		}
+	}
+
 	/* try to use the most connected node */
-	cmp = (int)myem.num_connected - (int)em->num_connected;
+	if (cmp == 0) {
+		cmp = (int)myem.num_connected - (int)em->num_connected;
+	}
 
 	/* then the longest running node */
 	if (cmp == 0) {
@@ -1433,6 +1472,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
 	struct ctdb_all_public_ips *ips;
+	char c;
 
 	rec = talloc_zero(ctdb, struct ctdb_recoverd);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
@@ -1497,6 +1537,8 @@ again:
 		goto again;
 	}
 
+	/* remember our own node flags */
+	rec->node_flags = nodemap->nodes[pnn].flags;
 
 	/* count how many active nodes there are */
 	num_active = 0;
@@ -1597,7 +1639,6 @@ again:
 		goto again;
 	}
 
-
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
 	*/
@@ -1639,7 +1680,7 @@ again:
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;		
 	}
 
@@ -1648,7 +1689,7 @@ again:
 	 */
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	case MONITOR_FAILED:
 		goto again;
@@ -1659,6 +1700,20 @@ again:
 	}
 
 
+	/* we should have the reclock - check its not stale */
+	if (ctdb->recovery_lock_fd == -1) {
+		DEBUG(0,("recovery master doesn't have the recovery lock\n"));
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		goto again;
+	}
+
+	if (read(ctdb->recovery_lock_fd, &c, 1) == -1) {
+		DEBUG(0,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		goto again;
+	}
 
 	/* get the nodemap for all active remote nodes and verify
 	   they are the same as for this node
@@ -1813,7 +1868,7 @@ again:
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
 			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
-				    vnnmap, nodemap->nodes[j].pnn);
+				    vnnmap, ctdb->pnn);
 		}
 	}
 
