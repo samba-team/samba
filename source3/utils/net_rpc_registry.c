@@ -319,6 +319,17 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 	return status;
 }
 
+static NTSTATUS registry_getsd(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *pipe_hnd,
+			       struct policy_handle *key_hnd,
+			       uint32_t sec_info,
+			       struct KeySecurityData *sd)
+{
+	return rpccli_winreg_GetKeySecurity(pipe_hnd, mem_ctx, key_hnd,
+					    sec_info, sd);
+}
+
+
 static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  struct policy_handle *key_hnd,
@@ -965,6 +976,76 @@ out:
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
+					    const char *domain_name,
+					    struct cli_state *cli,
+					    struct rpc_pipe_client *pipe_hnd,
+					    TALLOC_CTX *mem_ctx,
+					    int argc,
+					    const char **argv)
+{
+	POLICY_HND pol_hive, pol_key;
+	NTSTATUS status;
+	struct KeySecurityData *sd = NULL;
+	uint32_t sec_info;
+	DATA_BLOB blob;
+	struct security_descriptor sec_desc;
+
+	if (argc != 1) {
+		d_printf("Usage:    net rpc registry getsd <path>\n");
+		d_printf("Example:  net rpc registry getsd 'HKLM\\Software\\Samba'\n");
+		return NT_STATUS_OK;
+	}
+
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_READ,
+				  &pol_hive, &pol_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	sd = TALLOC_ZERO_P(mem_ctx, struct KeySecurityData);
+	if (!sd) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	sd->size = 0x1000;
+	sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+
+	status = registry_getsd(mem_ctx, pipe_hnd, &pol_key, sec_info, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "getting sd failed: %s\n",
+			  nt_errstr(status));
+		goto out;
+	}
+
+	blob.data = sd->data;
+	blob.length = sd->size;
+
+	ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
+			     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+	display_sec_desc(&sec_desc);
+
+ out:
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
+
+	return status;
+}
+
+
+static int rpc_registry_getsd(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_WINREG, 0,
+		rpc_registry_getsd_internal, argc, argv );
+}
+
+/********************************************************************
+********************************************************************/
+
 int net_rpc_registry(int argc, const char **argv) 
 {
 	struct functable2 func[] = {
@@ -984,6 +1065,8 @@ int net_rpc_registry(int argc, const char **argv)
 		  "Dump a registry file" },
 		{ "copy", rpc_registry_copy,
 		  "Copy a registry file" },
+		{ "getsd", rpc_registry_getsd,
+		  "Get security descriptor" },
 		{NULL, NULL, NULL}
 	};
 	
