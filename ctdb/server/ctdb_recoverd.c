@@ -735,6 +735,7 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
 
 	if (rec->last_culprit != culprit ||
 	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(0,("New recovery culprit %u\n", culprit));
 		/* either a new node is the culprit, or we've decide to forgive them */
 		rec->last_culprit = culprit;
 		rec->first_recover_time = timeval_current();
@@ -1679,7 +1680,7 @@ again:
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;		
 	}
 
@@ -1688,7 +1689,7 @@ again:
 	 */
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	case MONITOR_FAILED:
 		goto again;
@@ -1702,7 +1703,7 @@ again:
 	/* we should have the reclock - check its not stale */
 	if (ctdb->recovery_lock_fd == -1) {
 		DEBUG(0,("recovery master doesn't have the recovery lock\n"));
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, pnn);		
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 
@@ -1710,7 +1711,7 @@ again:
 		DEBUG(0,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, pnn);
+		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 
@@ -1867,7 +1868,7 @@ again:
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
 			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
-				    vnnmap, nodemap->nodes[j].pnn);
+				    vnnmap, ctdb->pnn);
 		}
 	}
 
