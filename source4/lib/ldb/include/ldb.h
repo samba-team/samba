@@ -1044,15 +1044,6 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		       enum ldb_scope scope, const char * const *attrs,
 		       const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
 
-/*
-  like ldb_search() but takes a parse tree
-*/
-int ldb_search_bytree(struct ldb_context *ldb, 
-		      struct ldb_dn *base,
-		      enum ldb_scope scope,
-		      struct ldb_parse_tree *tree,
-		      const char * const *attrs, struct ldb_result **res);
-
 /**
   Add a record to the database.
 
@@ -1418,9 +1409,6 @@ bool ldb_dn_is_special(struct ldb_dn *dn);
 bool ldb_dn_check_special(struct ldb_dn *dn, const char *check);
 bool ldb_dn_is_null(struct ldb_dn *dn);
 
-
-/* useful functions for ldb_message structure manipulation */
-int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
 
 /**
    Compare two attributes
