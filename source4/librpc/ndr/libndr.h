@@ -285,7 +285,6 @@ typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 
 #include "librpc/gen_ndr/misc.h"
-#include "libcli/util/werror.h"
 #include "librpc/ndr/libndr_proto.h"
 
 extern const struct ndr_syntax_id ndr_transfer_syntax;
