@@ -614,8 +614,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	struct registry_value **values = NULL;
 	
 	if (argc != 1 ) {
-		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
-		d_printf("Example:  net rpc enumerate 'HKLM\\Software\\Samba'\n");
+		d_printf("Usage:    net rpc registry enumerate <path> [recurse]\n");
+		d_printf("Example:  net rpc registry enumerate 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_OK;
 	}
 
@@ -716,7 +716,7 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	struct winreg_String filename;
 	
 	if (argc != 2 ) {
-		d_printf("Usage:    net rpc backup <path> <file> \n");
+		d_printf("Usage:    net rpc registry backup <path> <file> \n");
 		return NT_STATUS_OK;
 	}
 	
@@ -882,7 +882,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 	REGF_NK_REC *nk;
 	
 	if (argc != 1 ) {
-		d_printf("Usage:    net rpc dump <file> \n");
+		d_printf("Usage:    net rpc registry dump <file> \n");
 		return 0;
 	}
 	
@@ -926,7 +926,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 	int result = 1;
 	
 	if (argc != 2 ) {
-		d_printf("Usage:    net rpc copy <srcfile> <newfile>\n");
+		d_printf("Usage:    net rpc registry copy <srcfile> <newfile>\n");
 		return 0;
 	}
 	
