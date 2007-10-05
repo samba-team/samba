@@ -724,6 +724,23 @@ static uint32_t new_generation(void)
 
 	return generation;
 }
+
+/*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		/* either a new node is the culprit, or we've decide to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter++;
+}
 		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -741,14 +758,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
-	if (rec->last_culprit != culprit ||
-	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		/* either a new node is the culprit, or we've decide to forgive them */
-		rec->last_culprit = culprit;
-		rec->first_recover_time = timeval_current();
-		rec->culprit_counter = 0;
-	}
-	rec->culprit_counter++;
+	ctdb_set_culprit(rec, culprit);
 
 	if (rec->culprit_counter > 2*nodemap->num) {
 		DEBUG(0,("Node %u has caused %u recoveries in %.0f seconds - banning it for %u seconds\n",
@@ -758,6 +768,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	if (!ctdb_recovery_lock(ctdb, true)) {
+		ctdb_set_culprit(rec, pnn);
 		DEBUG(0,("Unable to get recovery lock - aborting recovery\n"));
 		return -1;
 	}
