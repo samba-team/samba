@@ -399,14 +399,47 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	REGSUBKEY_CTR *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname;
 	
+	/*
+	 * fetch a list of the old subkeys so we can determine if anything has
+	 * changed
+	 */
+
+	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
+		goto fail;
+	}
+
+	regdb_fetch_keys( key, old_subkeys );
+
+	if (ctr->num_subkeys == old_subkeys->num_subkeys) {
+
+		for (i = 0; i<ctr->num_subkeys; i++) {
+			if (strcmp(ctr->subkeys[i],
+				   old_subkeys->subkeys[i]) != 0) {
+				break;
+			}
+		}
+		if (i == ctr->num_subkeys) {
+			/*
+			 * Nothing changed, no point to even start a tdb
+			 * transaction
+			 */
+			TALLOC_FREE(old_subkeys);
+			return True;
+		}
+	}
+
 	if ( tdb_transaction_start( tdb_reg->tdb ) == -1 ) {
 		DEBUG(0, ("regdb_store_keys: tdb_transaction_start failed\n"));
 		return False;
 	}
 
-	/* fetch a list of the old subkeys so we can determine if any were
-	 * deleted */
-	
+	/*
+	 * Re-fetch the old keys inside the transaction
+	 */
+
+	TALLOC_FREE(old_subkeys);
+
 	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		goto fail;
@@ -660,7 +693,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 {
-	TDB_DATA data;
+	TDB_DATA old_data, data;
 	pstring keystr;
 	int len, ret;
 	
@@ -684,8 +717,19 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 	pstr_sprintf( keystr, "%s/%s", REG_VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
+	old_data = tdb_fetch_bystring(tdb_reg->tdb, keystr);
+
+	if ((old_data.dptr != NULL)
+	    && (old_data.dsize == data.dsize)
+	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0)) {
+		SAFE_FREE(old_data.dptr);
+		SAFE_FREE(data.dptr);
+		return True;
+	}
+
 	ret = tdb_trans_store_bystring(tdb_reg->tdb, keystr, data, TDB_REPLACE);
 	
+	SAFE_FREE( old_data.dptr );
 	SAFE_FREE( data.dptr );
 	
 	return ret != -1 ;
