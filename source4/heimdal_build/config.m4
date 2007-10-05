@@ -71,8 +71,6 @@ AC_CHECK_FUNCS([				\
 	cgetent					\
 	getprogname				\
 	inet_aton				\
-	inet_ntop				\
-	inet_pton				\
 	gethostname				\
 	getnameinfo				\
 	iruserok				\
@@ -100,8 +98,6 @@ AC_CHECK_FUNCS([				\
 	errx					\
 	warnx					\
 	flock					\
-	getaddrinfo				\
-	freeaddrinfo				\
 	getipnodebyname				\
 	getipnodebyaddr				\
 	freehostent				\
@@ -229,49 +225,6 @@ SMB_ENABLE(KERBEROS_LIB, YES)
 SMB_ENABLE(asn1_compile, YES)
 SMB_ENABLE(compile_et, YES)
 
-# only add getaddrinfo and related functions if needed
-SMB_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
-if test t$ac_cv_func_getaddrinfo != tyes; then
-	SMB_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
-fi
-
-SMB_ENABLE(HEIMDAL_ROKEN_GETNAMEINFO, NO)
-if test t$ac_cv_func_getnameinfo != tyes; then
-	SMB_ENABLE(HEIMDAL_ROKEN_GETNAMEINFO, YES)
-fi
-
-# only add inet_aton if needed
-SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
-if test t$ac_cv_func_inet_aton != tyes; then
-	SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
-fi
-
-SMB_ENABLE(HEIMDAL_ROKEN_INET_NTOP, NO)
-if test x"$ac_cv_func_inet_ntop" = x"no"; then
-    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_ntop)
-    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_ntop)
-    if test x"$ac_cv_lib_ext_nsl_s_inet_ntop" != x"yes" &&
-       test x"$ac_cv_lib_ext_nsl_inet_ntop" != x"yes"; then
-	SMB_ENABLE(HEIMDAL_ROKEN_INET_NTOP, YES)
-    else
-	SMB_ENABLE(NSL,YES)
-    fi
-fi
-
-SMB_ENABLE(HEIMDAL_ROKEN_INET_PTON, NO)
-if test x"$ac_cv_func_inet_pton" = x"no"; then
-    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_pton)
-    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_pton)
-    if test x"$ac_cv_lib_ext_nsl_s_inet_pton" != x"yes" &&
-       test x"$ac_cv_lib_ext_nsl_inet_pton" != x"yes"; then
-	SMB_ENABLE(HEIMDAL_ROKEN_INET_PTON, YES)
-    else
-	SMB_ENABLE(NSL,YES)
-    fi
-fi
-
-SMB_EXT_LIB(NSL,[${NSL_LIBS}],[],[],[])
-
 # only add closefrom if needed
 SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, NO)
 if test t$ac_cv_func_closefrom != tyes; then
@@ -285,29 +238,3 @@ if test t$ac_cv_func_getprogname != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, YES)
 	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_H, YES)
 fi
-
-# only add gai_strerror if needed
-SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
-AC_CHECK_FUNC(gai_strerror)
-
-if test t$ac_cv_func_gai_strerror != tyes; then
-    AC_CHECK_LIB_EXT(nsl, GAI_LIBS, gai_strerror)
-    AC_CHECK_LIB_EXT(socket, GAI_LIBS, gai_strerror)
-    AC_CHECK_LIB_EXT(xnet, GAI_LIBS, gai_strerror)
-
-    dnl We can't just call AC_CHECK_FUNCS(gai_strerror) here, because the value
-    dnl has been cached.
-    if test x"$ac_cv_lib_ext_nsl_gai_strerror" = x"yes" ||
-       test x"$ac_cv_lib_ext_socket_gai_strerror" = x"yes" ||
-       test x"$ac_cv_lib_ext_xnet_gai_strerror" = x"yes"; then
-        AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror()])
-	SMB_ENABLE(GAI, YES)
-    else
-	SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
-    fi
-
-else
-    AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
-fi
-
-SMB_EXT_LIB(GAI,[${GAI_LIBS}],[${GAI_CFLAGS}],[${GAI_CPPFLAGS}],[${GAI_LDFLAGS}])
