@@ -138,6 +138,21 @@ static void catch_signal(int signum,void (*handler)(int ))
 #endif
 }
 
+static sig_atomic_t gotintr;
+static int in_fd = -1;
+
+/***************************************************************
+ Signal function to tell us were ^C'ed.
+****************************************************************/
+
+static void gotintr_sig(void)
+{
+	gotintr = 1;
+	if (in_fd != -1)
+		close(in_fd); /* Safe way to force a return. */
+	in_fd = -1;
+}
+
 char *getsmbpass(const char *prompt)
 {
 	FILE *in, *out;
@@ -147,7 +162,7 @@ char *getsmbpass(const char *prompt)
 	size_t nread;
 
 	/* Catch problematic signals */
-	catch_signal(SIGINT, SIGNAL_CAST SIG_IGN);
+	catch_signal(SIGINT, SIGNAL_CAST gotintr_sig);
 
 	/* Try to write to and read from the terminal if we can.
 		If we can't open the terminal, use stderr and stdin.  */
@@ -182,14 +197,21 @@ char *getsmbpass(const char *prompt)
 
 	/* Read the password.  */
 	buf[0] = 0;
-	fgets(buf, bufsize, in);
+	if (!gotintr) {
+		in_fd = fileno(in);
+		fgets(buf, bufsize, in);
+	}
 	nread = strlen(buf);
 	if (buf[nread - 1] == '\n')
 		buf[nread - 1] = '\0';
 
 	/* Restore echoing.  */
-	if (echo_off)
-		tcsetattr (fileno (in), TCSANOW, &t);
+	if (echo_off) {
+		if (gotintr && in_fd == -1)
+			in = fopen ("/dev/tty", "w+");
+		if (in != NULL)
+			tcsetattr (fileno (in), TCSANOW, &t);
+	}
 
 	if (in != stdin) /* We opened the terminal; now close it.  */
 		fclose(in);
@@ -198,6 +220,12 @@ char *getsmbpass(const char *prompt)
 	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
 
 	printf("\n");
+
+	if (gotintr) {
+		printf("Interupted by signal.\n");
+		fflush(stdout);
+		exit(1);
+	}
 	return buf;
 }
 
