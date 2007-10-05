@@ -319,12 +319,12 @@ ssize_t read_udp_v4_socket(int fd,
 	}
 
 	if (psa->ss_family != AF_INET) {
-		DEBUG(2,("read_udp_v4_socket:: invalid address family %d "
+		DEBUG(2,("read_udp_v4_socket: invalid address family %d "
 			"(not IPv4)\n", (int)psa->ss_family));
 		return 0;
 	}
 
-	DEBUG(10,("read_udp_socket: ip %s port %d read: %lu\n",
+	DEBUG(10,("read_udp_v4_socket: ip %s port %d read: %lu\n",
 			inet_ntoa(si->sin_addr),
 			si->sin_port,
 			(unsigned long)ret));
