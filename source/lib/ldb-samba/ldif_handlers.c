@@ -78,7 +78,7 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static BOOL ldb_comparision_objectSid_isString(const struct ldb_val *v)
+static bool ldb_comparision_objectSid_isString(const struct ldb_val *v)
 {
 	if (v->length < 3) {
 		return False;
@@ -86,7 +86,7 @@ static BOOL ldb_comparision_objectSid_isString(const struct ldb_val *v)
 
 	if (strncmp("S-", (const char *)v->data, 2) != 0) return False;
 	
-	return True;
+	return true;
 }
 
 /*
@@ -176,7 +176,7 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static BOOL ldb_comparision_objectGUID_isString(const struct ldb_val *v)
+static bool ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 {
 	struct GUID guid;
 	NTSTATUS status;
@@ -191,7 +191,7 @@ static BOOL ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 		return False;
 	}
 
-	return True;
+	return true;
 }
 
 /*
