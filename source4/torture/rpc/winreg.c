@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for winreg rpc operations
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Jelmer Vernooij 2004-2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,8 +33,8 @@
 #define TEST_SUBKEY TEST_KEY3 "\\subkey"
 
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx,
-				      struct initshutdown_String *name,
-				      const char *s)
+				     struct initshutdown_String *name,
+				     const char *s)
 {
 	name->name = talloc(mem_ctx, struct initshutdown_String_sub);
 	name->name->name = s;
@@ -64,7 +64,7 @@ static bool test_GetVersion(struct dcerpc_pipe *p,
 	r.out.version = &v;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_GetVersion(p, tctx, &r),
-							   "GetVersion failed");
+				   "GetVersion failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "GetVersion failed");
 
@@ -115,7 +115,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.secdesc = NULL;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey(p, tctx, &r),
-		"CreateKey failed");
+				   "CreateKey failed");
 
 	torture_assert_werr_ok(tctx,  r.out.result, "CreateKey failed");
 
@@ -166,7 +166,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	r.in.secdesc = &secbuf;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CreateKey(p, tctx, &r),
-		"CreateKey with sd failed");
+				   "CreateKey with sd failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "CreateKey with sd failed");
 
@@ -189,7 +189,7 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	r.in.sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_GetKeySecurity(p, tctx, &r),
-		"GetKeySecurity failed");
+				   "GetKeySecurity failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "GetKeySecurity failed");
 
@@ -216,7 +216,7 @@ static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.handle = r.out.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_CloseKey(p, tctx, &r),
-							        "CloseKey failed");
+				   "CloseKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "CloseKey failed");
 
@@ -301,7 +301,7 @@ static bool test_DeleteKeyWithSubkey(struct dcerpc_pipe *p,
 	init_winreg_String(&r.in.key, key);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteKey(p, tctx, &r),
-							  	 "DeleteKeyWithSubkey failed");
+				   "DeleteKeyWithSubkey failed");
 
 	torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
 				  "DeleteKeyWithSubkey failed");
@@ -336,8 +336,8 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	init_winreg_String(r.in.classname, class);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_winreg_QueryInfoKey(p, tctx, &r),
-		"QueryInfoKey failed");
+				   dcerpc_winreg_QueryInfoKey(p, tctx, &r),
+				   "QueryInfoKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "QueryInfoKey failed");
 
@@ -375,11 +375,10 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			struct policy_handle key_handle;
 
 			torture_comment(tctx, "EnumKey: %d: %s\n", r.in.enum_index, 
-							r.out.name->name);
+					r.out.name->name);
 
-			if (!test_OpenKey(
-				    p, tctx, handle, r.out.name->name,
-				    &key_handle)) {
+			if (!test_OpenKey(p, tctx, handle, r.out.name->name,
+					  &key_handle)) {
 			} else {
 				test_key(p, tctx, &key_handle, depth + 1);
 			}
@@ -490,8 +489,9 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.size = &size;
 
 	do {
-		torture_assert_ntstatus_ok(tctx, dcerpc_winreg_EnumValue(p, tctx, &r),
-									 "EnumValue failed");
+		torture_assert_ntstatus_ok(tctx, 
+					   dcerpc_winreg_EnumValue(p, tctx, &r),
+					   "EnumValue failed");
 
 		if (W_ERROR_IS_OK(r.out.result)) {
 			ret &= test_QueryValue(p, tctx, handle, r.out.name->name);
@@ -502,7 +502,7 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	} while (W_ERROR_IS_OK(r.out.result));
 
 	torture_assert_werr_equal(tctx, r.out.result, WERR_NO_MORE_ITEMS,
-		"EnumValue failed");
+				  "EnumValue failed");
 
 	return ret;
 }
