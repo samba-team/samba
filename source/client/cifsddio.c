@@ -38,7 +38,7 @@ struct fd_handle
 
 #define IO_HANDLE_TO_FD(h) (((struct fd_handle *)(h))->fd)
 
-static BOOL fd_seek_func(void * handle, uint64_t offset)
+static bool fd_seek_func(void * handle, uint64_t offset)
 {
 	ssize_t ret;
 
@@ -46,13 +46,13 @@ static BOOL fd_seek_func(void * handle, uint64_t offset)
 	if (ret < 0) {
 		fprintf(stderr, "%s: seek failed: %s\n",
 				PROGNAME, strerror(errno));
-		return(False);
+		return(false);
 	}
 
-	return(True);
+	return(true);
 }
 
-static BOOL fd_read_func(void * handle,
+static bool fd_read_func(void * handle,
 			uint8_t * buf,
 			uint64_t wanted,
 			uint64_t * actual)
@@ -64,14 +64,14 @@ static BOOL fd_read_func(void * handle,
 		fprintf(stderr, "%s: %llu byte read failed: %s\n",
 				PROGNAME, (unsigned long long)wanted,
 				strerror(errno));
-		return(False);
+		return(false);
 	}
 
 	*actual = (uint64_t)ret;
-	return(True);
+	return(true);
 }
 
-static BOOL fd_write_func(void * handle,
+static bool fd_write_func(void * handle,
 			uint8_t * buf,
 			uint64_t wanted,
 			uint64_t * actual)
@@ -83,11 +83,11 @@ static BOOL fd_write_func(void * handle,
 		fprintf(stderr, "%s: %llu byte write failed: %s\n",
 				PROGNAME, (unsigned long long)wanted,
 				strerror(errno));
-		return(False);
+		return(false);
 	}
 
 	*actual = (uint64_t)ret;
-	return(True);
+	return(true);
 }
 
 static struct dd_iohandle * open_fd_handle(const char * path,
@@ -152,7 +152,7 @@ struct cifs_handle
 static bool smb_seek_func(void * handle, uint64_t offset)
 {
 	IO_HANDLE_TO_SMB(handle)->offset = offset;
-	return(True);
+	return(true);
 }
 
 static bool smb_read_func(void * handle, uint8_t * buf, uint64_t wanted,
@@ -180,7 +180,7 @@ static bool smb_read_func(void * handle, uint8_t * buf, uint64_t wanted,
 		fprintf(stderr, "%s: %llu byte read failed: %s\n",
 				PROGNAME, (unsigned long long)wanted,
 				nt_errstr(ret));
-		return(False);
+		return(false);
 	}
 
 	/* Trap integer wrap. */
@@ -188,7 +188,7 @@ static bool smb_read_func(void * handle, uint8_t * buf, uint64_t wanted,
 
 	*actual = r.readx.out.nread;
 	smbh->offset += r.readx.out.nread;
-	return(True);
+	return(true);
 }
 
 static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
@@ -212,12 +212,12 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 		fprintf(stderr, "%s: %llu byte write failed: %s\n",
 				PROGNAME, (unsigned long long)wanted,
 				nt_errstr(ret));
-		return(False);
+		return(false);
 	}
 
 	*actual = w.writex.out.nwritten;
 	smbh->offset += w.writex.out.nwritten;
-	return(True);
+	return(true);
 }
 
 static struct smbcli_state * init_smb_session(const char * host,
@@ -359,7 +359,7 @@ struct dd_iohandle * dd_open_path(const char * path,
  * NOTE: The IO buffer is guaranteed to be big enough to fit
  * need_size + block_size bytes into it.
  */
-BOOL dd_fill_block(struct dd_iohandle * h,
+bool dd_fill_block(struct dd_iohandle * h,
 		uint8_t * buf,
 		uint64_t * buf_size,
 		uint64_t need_size,
@@ -373,7 +373,7 @@ BOOL dd_fill_block(struct dd_iohandle * h,
 	while (*buf_size < need_size) {
 
 		if (!h->io_read(h, buf + (*buf_size), block_size, &read_size)) {
-			return(False);
+			return(false);
 		}
 
 		if (read_size == 0) {
@@ -398,14 +398,14 @@ BOOL dd_fill_block(struct dd_iohandle * h,
 		}
 	}
 
-	return(True);
+	return(true);
 }
 
 /* Flush a buffer that contains buf_size bytes. Use writes of block_size to do it,
  * and shift any remaining bytes back to the head of the buffer when there are
  * no more block_size sized IOs left.
  */
-BOOL dd_flush_block(struct dd_iohandle * h,
+bool dd_flush_block(struct dd_iohandle * h,
 		uint8_t * buf,
 		uint64_t * buf_size,
 		uint64_t block_size)
@@ -419,13 +419,13 @@ BOOL dd_flush_block(struct dd_iohandle * h,
 	if ((*buf_size) < block_size) {
 
 		if (!h->io_write(h, buf, *buf_size, &write_size)) {
-			return(False);
+			return(false);
 		}
 
 		if (write_size == 0) {
 			fprintf(stderr, "%s: unexpectedly wrote 0 bytes\n",
 					PROGNAME);
-			return(False);
+			return(false);
 		}
 
 		total_size += write_size;
@@ -437,13 +437,13 @@ BOOL dd_flush_block(struct dd_iohandle * h,
 	while (((*buf_size) - total_size) >= block_size) {
 
 		if (!h->io_write(h, buf + total_size, block_size, &write_size)) {
-			return(False);
+			return(false);
 		}
 
 		if (write_size == 0) {
 			fprintf(stderr, "%s: unexpectedly wrote 0 bytes\n",
 					PROGNAME);
-			return(False);
+			return(false);
 		}
 
 		if (write_size == block_size) {
@@ -485,7 +485,7 @@ BOOL dd_flush_block(struct dd_iohandle * h,
 			(unsigned long long)(*buf_size)));
 	}
 
-	return(True);
+	return(true);
 }
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */

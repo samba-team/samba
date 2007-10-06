@@ -58,12 +58,12 @@ struct smbclient_context {
 	struct smbcli_state *cli;
 	char *fileselection;
 	time_t newer_than;
-	BOOL prompt;
-	BOOL recurse;
+	bool prompt;
+	bool recurse;
 	int archive_level;
-	BOOL lowercase;
+	bool lowercase;
 	int printmode;
-	BOOL translation;
+	bool translation;
 };
 
 /* timing globals */
@@ -105,7 +105,7 @@ static void dos_clean_name(char *s)
 write to a local file with CR/LF->LF translation if appropriate. return the 
 number taken from the buffer. This may not equal the number written.
 ****************************************************************************/
-static int writefile(int f, const void *_b, int n, BOOL translation)
+static int writefile(int f, const void *_b, int n, bool translation)
 {
 	const uint8_t *b = (const uint8_t *)_b;
 	int i;
@@ -133,7 +133,7 @@ static int writefile(int f, const void *_b, int n, BOOL translation)
   read from a file with LF->CR/LF translation if appropriate. return the 
   number read. read approx n bytes.
 ****************************************************************************/
-static int readfile(void *_b, int n, XFILE *f, BOOL translation)
+static int readfile(void *_b, int n, XFILE *f, bool translation)
 {
 	uint8_t *b = (uint8_t *)_b;
 	int i;
@@ -299,7 +299,7 @@ static bool mask_match(struct smbcli_state *c, const char *string,
 	if (ISDOTDOT(string))
 		string = ".";
 	if (ISDOT(pattern))
-		return False;
+		return false;
 	
 	if (is_case_sensitive)
 		return ms_fnmatch(pattern, string, 
@@ -319,27 +319,27 @@ static bool mask_match(struct smbcli_state *c, const char *string,
 /*******************************************************************
   decide if a file should be operated on
   ********************************************************************/
-static BOOL do_this_one(struct smbclient_context *ctx, struct clilist_file_info *finfo)
+static bool do_this_one(struct smbclient_context *ctx, struct clilist_file_info *finfo)
 {
-	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY) return(True);
+	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY) return(true);
 
 	if (ctx->fileselection && 
-	    !mask_match(ctx->cli, finfo->name,ctx->fileselection,False)) {
+	    !mask_match(ctx->cli, finfo->name,ctx->fileselection,false)) {
 		DEBUG(3,("mask_match %s failed\n", finfo->name));
-		return False;
+		return false;
 	}
 
 	if (ctx->newer_than && finfo->mtime < ctx->newer_than) {
 		DEBUG(3,("newer_than %s failed\n", finfo->name));
-		return(False);
+		return(false);
 	}
 
 	if ((ctx->archive_level==1 || ctx->archive_level==2) && !(finfo->attrib & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
-		return(False);
+		return(false);
 	}
 	
-	return(True);
+	return(true);
 }
 
 /****************************************************************************
@@ -371,8 +371,8 @@ static void do_du(struct smbclient_context *ctx, struct clilist_file_info *finfo
 	}
 }
 
-static BOOL do_list_recurse;
-static BOOL do_list_dirs;
+static bool do_list_recurse;
+static bool do_list_dirs;
 static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
@@ -532,7 +532,7 @@ static void do_list_helper(struct clilist_file_info *f, const char *mask, void *
 a wrapper around smbcli_list that adds recursion
   ****************************************************************************/
 static void do_list(struct smbclient_context *ctx, const char *mask,uint16_t attribute,
-	     void (*fn)(struct smbclient_context *, struct clilist_file_info *),BOOL rec, BOOL dirs)
+	     void (*fn)(struct smbclient_context *, struct clilist_file_info *),bool rec, bool dirs)
 {
 	static int in_do_list = 0;
 
@@ -628,7 +628,7 @@ static int cmd_dir(struct smbclient_context *ctx, const char **args)
 		}
 	}
 
-	do_list(ctx, mask, attribute, display_finfo, ctx->recurse, True);
+	do_list(ctx, mask, attribute, display_finfo, ctx->recurse, true);
 
 	rc = do_dskattr(ctx);
 
@@ -659,7 +659,7 @@ static int cmd_du(struct smbclient_context *ctx, const char **args)
 		mask = talloc_asprintf(ctx, "%s\\*", ctx->remote_cur_dir);
 	}
 
-	do_list(ctx, mask, attribute, do_du, ctx->recurse, True);
+	do_list(ctx, mask, attribute, do_du, ctx->recurse, true);
 
 	talloc_free(mask);
 
@@ -674,10 +674,10 @@ static int cmd_du(struct smbclient_context *ctx, const char **args)
 /****************************************************************************
   get a file from rname to lname
   ****************************************************************************/
-static int do_get(struct smbclient_context *ctx, char *rname, const char *lname, BOOL reget)
+static int do_get(struct smbclient_context *ctx, char *rname, const char *lname, bool reget)
 {  
 	int handle = 0, fnum;
-	BOOL newhandle = False;
+	bool newhandle = false;
 	uint8_t *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
@@ -715,7 +715,7 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *lname,
 		} else {
 			handle = open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 		}
-		newhandle = True;
+		newhandle = true;
 	}
 	if (handle < 0) {
 		d_printf("Error opening local file %s\n",lname);
@@ -818,24 +818,24 @@ static int cmd_get(struct smbclient_context *ctx, const char **args)
 	
 	dos_clean_name(rname);
 	
-	return do_get(ctx, rname, lname, False);
+	return do_get(ctx, rname, lname, false);
 }
 
 /****************************************************************************
  Put up a yes/no prompt.
 ****************************************************************************/
-static BOOL yesno(char *p)
+static bool yesno(char *p)
 {
 	char ans[4];
 	printf("%s",p);
 
 	if (!fgets(ans,sizeof(ans)-1,stdin))
-		return(False);
+		return(false);
 
 	if (*ans == 'y' || *ans == 'Y')
-		return(True);
+		return(true);
 
-	return(False);
+	return(false);
 }
 
 /****************************************************************************
@@ -862,7 +862,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 
 	if (!(finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)) {
 		asprintf(&rname, "%s%s",ctx->remote_cur_dir,finfo->name);
-		do_get(ctx, rname, finfo->name, False);
+		do_get(ctx, rname, finfo->name, false);
 		SAFE_FREE(rname);
 		return;
 	}
@@ -890,7 +890,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 
 	mget_mask = talloc_asprintf(NULL, "%s*", ctx->remote_cur_dir);
 	
-	do_list(ctx, mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,False, True);
+	do_list(ctx, mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,false, true);
 	chdir("..");
 	talloc_free(ctx->remote_cur_dir);
 
@@ -926,7 +926,7 @@ static int cmd_more(struct smbclient_context *ctx, const char **args)
 	rname = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir, args[1]);
 	dos_clean_name(rname);
 
-	rc = do_get(ctx, rname, lname, False);
+	rc = do_get(ctx, rname, lname, false);
 
 	pager=getenv("PAGER");
 
@@ -959,14 +959,14 @@ static int cmd_mget(struct smbclient_context *ctx, const char **args)
 		mget_mask = talloc_strdup(ctx, args[i]);
 		if (mget_mask[0] != '\\')
 			mget_mask = talloc_append_string(ctx, mget_mask, "\\");
-		do_list(ctx, mget_mask, attribute,do_mget,False,True);
+		do_list(ctx, mget_mask, attribute,do_mget,false,true);
 
 		talloc_free(mget_mask);
 	}
 
 	if (mget_mask == NULL) {
 		mget_mask = talloc_asprintf(ctx, "%s\\*", ctx->remote_cur_dir);
-		do_list(ctx, mget_mask, attribute,do_mget,False,True);
+		do_list(ctx, mget_mask, attribute,do_mget,false,true);
 		talloc_free(mget_mask);
 	}
 	
@@ -1056,7 +1056,7 @@ static int cmd_altname(struct smbclient_context *ctx, const char **args)
 	if (!NT_STATUS_IS_OK(smbcli_qpathinfo_alt_name(ctx->cli->tree, name, &altname))) {
 		d_printf("%s getting alt name for %s\n",
 			 smbcli_errstr(ctx->cli->tree),name);
-		return(False);
+		return(false);
 	}
 	d_printf("%s\n", altname);
 
@@ -1067,7 +1067,7 @@ static int cmd_altname(struct smbclient_context *ctx, const char **args)
 /****************************************************************************
   put a single file
   ****************************************************************************/
-static int do_put(struct smbclient_context *ctx, char *rname, char *lname, BOOL reput)
+static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool reput)
 {
 	int fnum;
 	XFILE *f;
@@ -1224,7 +1224,7 @@ static int cmd_put(struct smbclient_context *ctx, const char **args)
 		return 1;
 	}
 
-	return do_put(ctx, rname, lname, False);
+	return do_put(ctx, rname, lname, false);
 }
 
 /*************************************
@@ -1234,7 +1234,7 @@ static int cmd_put(struct smbclient_context *ctx, const char **args)
 static struct file_list {
 	struct file_list *prev, *next;
 	char *file_path;
-	BOOL isdir;
+	bool isdir;
 } *file_list;
 
 /****************************************************************************
@@ -1258,17 +1258,17 @@ static void free_file_list (struct file_list * list)
   seek in a directory/file list until you get something that doesn't start with
   the specified name
   ****************************************************************************/
-static BOOL seek_list(struct file_list *list, char *name)
+static bool seek_list(struct file_list *list, char *name)
 {
 	while (list) {
 		trim_string(list->file_path,"./","\n");
 		if (strncmp(list->file_path, name, strlen(name)) != 0) {
-			return(True);
+			return(true);
 		}
 		list = list->next;
 	}
       
-	return(False);
+	return(false);
 }
 
 /****************************************************************************
@@ -1321,17 +1321,17 @@ static const char *readdirname(DIR *p)
 
 /****************************************************************************
   Recursive file matching function act as find
-  match must be always set to True when calling this function
+  match must be always set to true when calling this function
 ****************************************************************************/
 static int file_find(struct smbclient_context *ctx, struct file_list **list, const char *directory, 
-		      const char *expression, BOOL match)
+		      const char *expression, bool match)
 {
 	DIR *dir;
 	struct file_list *entry;
         struct stat statbuf;
         int ret;
         char *path;
-	BOOL isdir;
+	bool isdir;
 	const char *dname;
 
         dir = opendir(directory);
@@ -1346,14 +1346,14 @@ static int file_find(struct smbclient_context *ctx, struct file_list **list, con
 			continue;
 		}
 
-		isdir = False;
+		isdir = false;
 		if (!match || !gen_fnmatch(expression, dname)) {
 			if (ctx->recurse) {
 				ret = stat(path, &statbuf);
 				if (ret == 0) {
 					if (S_ISDIR(statbuf.st_mode)) {
-						isdir = True;
-						ret = file_find(ctx, list, path, expression, False);
+						isdir = true;
+						ret = file_find(ctx, list, path, expression, false);
 					}
 				} else {
 					d_printf("file_find: cannot stat file %s\n", path);
@@ -1399,7 +1399,7 @@ static int cmd_mput(struct smbclient_context *ctx, const char **args)
 	
 		file_list = NULL;
 
-		ret = file_find(ctx, &file_list, ".", args[i], True);
+		ret = file_find(ctx, &file_list, ".", args[i], true);
 		if (ret) {
 			free_file_list(file_list);
 			continue;
@@ -1455,7 +1455,7 @@ static int cmd_mput(struct smbclient_context *ctx, const char **args)
 
 			dos_format(rname);
 
-			do_put(ctx, rname, lname, False);
+			do_put(ctx, rname, lname, false);
 		}
 		free_file_list(file_list);
 		SAFE_FREE(quest);
@@ -1492,7 +1492,7 @@ static int cmd_print(struct smbclient_context *ctx, const char **args)
 		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)getpid());
 	}
 
-	return do_put(ctx, rname, lname, False);
+	return do_put(ctx, rname, lname, false);
 }
 
 
@@ -2470,7 +2470,7 @@ static int cmd_reget(struct smbclient_context *ctx, const char **args)
 	else
 		local_name = talloc_strdup(ctx, args[1]);
 	
-	return do_get(ctx, remote_name, local_name, True);
+	return do_get(ctx, remote_name, local_name, true);
 }
 
 /****************************************************************************
@@ -2499,7 +2499,7 @@ static int cmd_reput(struct smbclient_context *ctx, const char **args)
 	
 	dos_clean_name(remote_name);
 
-	return do_put(ctx, remote_name, local_name, True);
+	return do_put(ctx, remote_name, local_name, true);
 }
 
 
@@ -2545,7 +2545,7 @@ static void display_share_result(struct srvsvc_NetShareCtr1 *ctr1)
 /****************************************************************************
 try and browse available shares on a host
 ****************************************************************************/
-static BOOL browse_host(const char *query_host)
+static bool browse_host(const char *query_host)
 {
 	struct dcerpc_pipe *p;
 	char *binding;
@@ -2564,7 +2564,7 @@ static BOOL browse_host(const char *query_host)
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
@@ -2594,19 +2594,19 @@ static BOOL browse_host(const char *query_host)
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("Failed NetShareEnumAll %s - %s/%s\n", 
 			 binding, nt_errstr(status), win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return False;
+	return false;
 }
 
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-static BOOL list_servers(const char *wk_grp)
+static bool list_servers(const char *wk_grp)
 {
 	d_printf("REWRITE: list servers not implemented\n");
-	return False;
+	return false;
 }
 
 /* Some constants for completing filename arguments */
@@ -3105,7 +3105,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 	const char *dest_ip = NULL;
 	int opt;
 	const char *query_host = NULL;
-	BOOL message = False;
+	bool message = false;
 	const char *desthost = NULL;
 #ifdef KANJI
 	const char *term_code = KANJI;
@@ -3160,7 +3160,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 			name_type = 0x03; 
 			desthost = strdup(poptGetOptArg(pc));
 			if( 0 == port ) port = 139;
- 			message = True;
+ 			message = true;
  			break;
 		case 'I':
 			dest_ip = poptGetOptArg(pc);
