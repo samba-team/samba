@@ -75,8 +75,8 @@ struct lpdb_context {
 
 	struct ldb_message *local_message;
 
-	BOOL added_objectGUID;
-	BOOL added_objectClass;
+	bool added_objectGUID;
+	bool added_objectClass;
 
 	struct ldb_reply *search_res;
 };
@@ -660,7 +660,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
 		if (!ldb_attr_in_list(req->op.search.attrs, "objectGUID")) {
 			search_attrs = ldb_attr_list_copy_add(req, req->op.search.attrs, "objectGUID");
-			ac->added_objectGUID = True;
+			ac->added_objectGUID = true;
 			if (!search_attrs) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
@@ -669,7 +669,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 		}
 		if (!ldb_attr_in_list(search_attrs, "objectClass")) {
 			search_attrs = ldb_attr_list_copy_add(req, search_attrs, "objectClass");
-			ac->added_objectClass = True;
+			ac->added_objectClass = true;
 			if (!search_attrs) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}

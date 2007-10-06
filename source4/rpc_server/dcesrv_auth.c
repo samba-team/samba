@@ -29,10 +29,10 @@
 
 /*
   parse any auth information from a dcerpc bind request
-  return False if we can't handle the auth request for some 
+  return false if we can't handle the auth request for some 
   reason (in which case we send a bind_nak)
 */
-BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
+bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 {
 	struct cli_credentials *server_credentials;
 	struct ncacn_packet *pkt = &call->pkt;
@@ -42,12 +42,12 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 
 	if (pkt->u.bind.auth_info.length == 0) {
 		dce_conn->auth_state.auth_info = NULL;
-		return True;
+		return true;
 	}
 
 	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
 	if (!dce_conn->auth_state.auth_info) {
-		return False;
+		return false;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
@@ -55,20 +55,20 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	status = gensec_server_start(dce_conn, call->event_ctx, call->msg_ctx, &auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC for DCERPC server: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 
 	server_credentials 
 		= cli_credentials_init(call);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
-		return False;
+		return false;
 	}
 	
 	cli_credentials_set_conf(server_credentials, global_loadparm);
@@ -89,10 +89,10 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 			  (int)auth->auth_info->auth_type,
 			  (int)auth->auth_info->auth_level,
 			  nt_errstr(status)));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -138,7 +138,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 /*
   process the final stage of a auth request
 */
-BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
+bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -148,7 +148,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security ||
 	    pkt->u.auth3.auth_info.length == 0) {
-		return False;
+		return false;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.auth3.auth_info,
@@ -156,7 +156,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* Pass the extra data we got from the client down to gensec for processing */
@@ -169,26 +169,26 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return False;
+			return false;
 		}
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-		return True;
+		return true;
 	} else {
 		DEBUG(4, ("dcesrv_auth_auth3: failed to authenticate: %s\n", 
 			  nt_errstr(status)));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /*
   parse any auth information from a dcerpc alter request
-  return False if we can't handle the auth request for some 
+  return false if we can't handle the auth request for some 
   reason (in which case we send a bind_nak (is this true for here?))
 */
-BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
+bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -196,17 +196,17 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
 
 	/* on a pure interface change there is no auth blob */
 	if (pkt->u.alter.auth_info.length == 0) {
-		return True;
+		return true;
 	}
 
 	/* We can't work without an existing gensec state */
 	if (!dce_conn->auth_state.gensec_security) {
-		return False;
+		return false;
 	}
 
 	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
 	if (!dce_conn->auth_state.auth_info) {
-		return False;
+		return false;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.alter.auth_info,
@@ -214,10 +214,10 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -296,7 +296,7 @@ static NTSTATUS dcesrv_check_connect_verifier(DATA_BLOB *blob)
 /*
   check credentials on a request
 */
-BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
+bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -307,14 +307,14 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
-		return True;
+		return true;
 	}
 
 	auth_blob.length = 8 + pkt->auth_length;
 
 	/* check for a valid length */
 	if (pkt->u.request.stub_and_verifier.length < auth_blob.length) {
-		return False;
+		return false;
 	}
 
 	auth_blob.data = 
@@ -325,7 +325,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	/* pull the auth structure */
 	ndr = ndr_pull_init_blob(&auth_blob, call);
 	if (!ndr) {
-		return False;
+		return false;
 	}
 
 	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
@@ -335,7 +335,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(ndr);
-		return False;
+		return false;
 	}
 
 	/* check signature or unseal the packet */
@@ -375,7 +375,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	/* remove the indicated amount of padding */
 	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
 		talloc_free(ndr);
-		return False;
+		return false;
 	}
 	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
 	talloc_free(ndr);
@@ -387,7 +387,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 /* 
    push a signed or sealed dcerpc request packet into a blob
 */
-BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
+bool dcesrv_auth_response(struct dcesrv_call_state *call,
 			  DATA_BLOB *blob, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -404,7 +404,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	ndr = ndr_push_init_ctx(call);
 	if (!ndr) {
-		return False;
+		return false;
 	}
 
 	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
@@ -413,7 +413,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* pad to 16 byte multiple, match win2k3 */
@@ -426,7 +426,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		status = dcesrv_connect_verifier(call,
 						 &dce_conn->auth_state.auth_info->credentials);
 		if (!NT_STATUS_IS_OK(status)) {
-			return False;
+			return false;
 		}
 	} else {
 
@@ -444,7 +444,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, 
 				      dce_conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* extract the whole packet as a blob */
@@ -519,8 +519,8 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}	
 
-	return True;
+	return true;
 }

@@ -88,7 +88,7 @@ static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_conne
 /*
   see if a uuid and if_version match to an interface
 */
-static BOOL interface_match(const struct dcesrv_interface *if1,
+static bool interface_match(const struct dcesrv_interface *if1,
 							const struct dcesrv_interface *if2)
 {
 	return (if1->syntax_id.if_version == if2->syntax_id.if_version && 
@@ -113,7 +113,7 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
 /*
   see if a uuid and if_version match to an interface
 */
-static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
+static bool interface_match_by_uuid(const struct dcesrv_interface *iface,
 				    const struct GUID *uuid, uint32_t if_version)
 {
 	return (iface->syntax_id.if_version == if_version && 
@@ -160,7 +160,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
 	struct dcerpc_binding *binding;
-	BOOL add_ep = False;
+	bool add_ep = false;
 	NTSTATUS status;
 	
 	status = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
@@ -179,7 +179,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 		ZERO_STRUCTP(ep);
 		ep->ep_description = talloc_reference(ep, binding);
-		add_ep = True;
+		add_ep = true;
 
 		/* add mgmt interface */
 		ifl = talloc(dce_ctx, struct dcesrv_if_list);
@@ -338,7 +338,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->event_ctx = event_ctx;
 	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
-	p->processing = False;
+	p->processing = false;
 	p->state_flags = state_flags;
 	ZERO_STRUCT(p->transport);
 
@@ -983,15 +983,15 @@ _PUBLIC_ struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_co
 /*
   work out if we have a full packet yet
 */
-static BOOL dce_full_packet(const DATA_BLOB *data)
+static bool dce_full_packet(const DATA_BLOB *data)
 {
 	if (data->length < DCERPC_FRAG_LEN_OFFSET+2) {
-		return False;
+		return false;
 	}
 	if (dcerpc_get_frag_length(data) > data->length) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /*

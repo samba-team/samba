@@ -123,7 +123,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 				DEBUG(2,("Unable to open samdb in determining server announce flags\n"));
 			} else {
 				/* Determine if we are the pdc */
-				BOOL is_pdc = samdb_is_pdc(samctx);
+				bool is_pdc = samdb_is_pdc(samctx);
 				if (is_pdc) {
 					default_server_announce |= SV_TYPE_DOMAIN_CTRL;
 				} else {
@@ -148,7 +148,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 #if 0
 	{ 
 		/* TODO: announce us as print server when we are a print server */
-		BOOL is_print_server = False;
+		bool is_print_server = false;
 		if (is_print_server) {
 			default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 		}
@@ -210,8 +210,8 @@ _PUBLIC_ const char *dcesrv_common_get_userpath(TALLOC_CTX *mem_ctx, struct dces
 _PUBLIC_ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_name)
 {
 	if (strpbrk(share_name, INVALID_SHARE_NAME_CHARS)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }

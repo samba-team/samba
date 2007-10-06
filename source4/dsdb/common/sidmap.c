@@ -68,26 +68,26 @@ _PUBLIC_ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
   check the sAMAccountType field of a search result to see if
   the account is a user account
 */
-static BOOL is_user_account(struct ldb_message *res)
+static bool is_user_account(struct ldb_message *res)
 {
 	uint_t atype = samdb_result_uint(res, "sAMAccountType", 0);
 	if (atype && (!(atype & ATYPE_ACCOUNT))) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /*
   check the sAMAccountType field of a search result to see if
   the account is a group account
 */
-static BOOL is_group_account(struct ldb_message *res)
+static bool is_group_account(struct ldb_message *res)
 {
 	uint_t atype = samdb_result_uint(res, "sAMAccountType", 0);
 	if (atype && atype == ATYPE_NORMAL_ACCOUNT) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 
@@ -217,7 +217,7 @@ allocated_sid:
 /*
   see if a sid is a group - very inefficient!
 */
-_PUBLIC_ BOOL sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid *sid)
+_PUBLIC_ bool sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid *sid)
 {
 	const char *attrs[] = { "sAMAccountType", NULL };
 	int ret;
@@ -225,7 +225,7 @@ _PUBLIC_ BOOL sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid 
 	struct ldb_message **res;
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
-	BOOL is_group;
+	bool is_group;
 
 	tmp_ctx = talloc_new(sidmap);
 
@@ -240,19 +240,19 @@ _PUBLIC_ BOOL sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid 
 	status = sidmap_primary_domain_sid(sidmap, tmp_ctx, &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	if (dom_sid_in_domain(domain_sid, sid)) {
 		uint32_t rid = sid->sub_auths[sid->num_auths-1];
 		if (rid >= SIDMAP_LOCAL_GROUP_BASE) {
 			talloc_free(tmp_ctx);
-			return True;
+			return true;
 		}
 	}
 
 	talloc_free(tmp_ctx);
-	return False;
+	return false;
 }
 
 /*

@@ -1558,7 +1558,7 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 	if (data.dsize < sizeof(uint32_t) ||
 	    d->length != data.dsize) {
 		DEBUG(0,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
-		state->done = True;
+		state->done = true;
 		return;
 	}
 
@@ -1569,12 +1569,12 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 
 	if (key.dsize == 0 && data.dsize == 0) {
 		/* end of traverse */
-		state->done = True;
+		state->done = true;
 		return;
 	}
 
 	if (state->fn(ctdb, key, data, state->private_data) != 0) {
-		state->done = True;
+		state->done = true;
 	}
 
 	state->count++;
@@ -1594,7 +1594,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	uint64_t srvid = (getpid() | 0xFLL<<60);
 	struct traverse_state state;
 
-	state.done = False;
+	state.done = false;
 	state.count = 0;
 	state.private_data = private_data;
 	state.fn = fn;
