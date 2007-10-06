@@ -70,7 +70,7 @@ static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8
 
 	SSVAL(req->in.body, 0, 2);
 
-	status = smb2srv_setup_reply(req, 0x18, False, 0);
+	status = smb2srv_setup_reply(req, 0x18, false, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	0x0000);
@@ -372,7 +372,7 @@ static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 		unknown1 = 0x0001;
 	}
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, false, 0));
 
 	SIVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
 	SSVAL(req->out.hdr,	SMB2_HDR_UNKNOWN1,unknown1);
@@ -389,7 +389,7 @@ void smb2srv_tcon_recv(struct smb2srv_request *req)
 {
 	union smb_tcon *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x08, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x08, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_tcon);
 
 	io->smb2.level		= RAW_TCON_SMB2;
@@ -422,7 +422,7 @@ static void smb2srv_tdis_send(struct smb2srv_request *req)
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x04, False, 0);
+	status = smb2srv_setup_reply(req, 0x04, false, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
@@ -438,7 +438,7 @@ void smb2srv_tdis_recv(struct smb2srv_request *req)
 {
 	uint16_t _pad;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, false);
 
 	_pad	= SVAL(req->in.body, 0x02);
 

@@ -31,7 +31,7 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	union smb_open *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_open);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, True, io->smb2.out.blob.length));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, io->smb2.out.blob.length));
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out.oplock_flags);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.create_action);
@@ -58,7 +58,7 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	union smb_open *io;
 	DATA_BLOB blob;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_open);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_create_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -88,7 +88,7 @@ static void smb2srv_close_send(struct ntvfs_request *ntvfs)
 	union smb_close *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_close);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x3C, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x3C, false, 0));
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out.flags);
 	SIVAL(req->out.body,	0x04,	io->smb2.out._pad);
@@ -107,7 +107,7 @@ void smb2srv_close_recv(struct smb2srv_request *req)
 {
 	union smb_close *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_close);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_close_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -126,7 +126,7 @@ static void smb2srv_flush_send(struct ntvfs_request *ntvfs)
 	union smb_flush *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_flush);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, false, 0));
 
 	SSVAL(req->out.body,	0x02,	0);
 
@@ -138,7 +138,7 @@ void smb2srv_flush_recv(struct smb2srv_request *req)
 	union smb_flush *io;
 	uint16_t _pad;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_flush);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_flush_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -157,7 +157,7 @@ static void smb2srv_read_send(struct ntvfs_request *ntvfs)
 	union smb_read *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_read);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, True, io->smb2.out.data.length));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, true, io->smb2.out.data.length));
 
 	/* TODO: avoid the memcpy */
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, io->smb2.out.data));
@@ -170,7 +170,7 @@ void smb2srv_read_recv(struct smb2srv_request *req)
 {
 	union smb_read *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_read);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_read_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -199,7 +199,7 @@ static void smb2srv_write_send(struct ntvfs_request *ntvfs)
 	union smb_write *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_write);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, True, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, true, 0));
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out._pad);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.nwritten);
@@ -212,7 +212,7 @@ void smb2srv_write_recv(struct smb2srv_request *req)
 {
 	union smb_write *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_write);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_write_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -234,7 +234,7 @@ static void smb2srv_lock_send(struct ntvfs_request *ntvfs)
 	union smb_lock *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS_ERR(io, union smb_lock);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, false, 0));
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out.unknown1);
 
@@ -245,7 +245,7 @@ void smb2srv_lock_recv(struct smb2srv_request *req)
 {
 	union smb_lock *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_lock);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_lock_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -269,7 +269,7 @@ static void smb2srv_ioctl_send(struct ntvfs_request *ntvfs)
 	union smb_ioctl *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS_ERR(io, union smb_ioctl);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x30, True, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x30, true, 0));
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out._pad);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.function);
@@ -294,7 +294,7 @@ void smb2srv_ioctl_recv(struct smb2srv_request *req)
 	union smb_ioctl *io;
 	struct smb2_handle h;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_ioctl);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_ioctl_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
@@ -330,7 +330,7 @@ static void smb2srv_notify_send(struct ntvfs_request *ntvfs)
 	DATA_BLOB blob = data_blob(NULL, 0);
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_notify);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, 0));
 
 #define MAX_BYTES_PER_CHAR 3
 	
@@ -384,7 +384,7 @@ void smb2srv_notify_recv(struct smb2srv_request *req)
 {
 	union smb_notify *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_notify);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_notify_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 

@@ -614,25 +614,25 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint
 /*
   pull a DATA_BLOB from a request packet, returning a talloced blob
 
-  return False if any part is outside the data portion of the packet
+  return false if any part is outside the data portion of the packet
 */
-BOOL req_pull_blob(struct smbsrv_request *req, const uint8_t *src, int len, DATA_BLOB *blob)
+bool req_pull_blob(struct smbsrv_request *req, const uint8_t *src, int len, DATA_BLOB *blob)
 {
 	if (len != 0 && req_data_oob(req, src, len)) {
-		return False;
+		return false;
 	}
 
 	(*blob) = data_blob_talloc(req, src, len);
 
-	return True;
+	return true;
 }
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-BOOL req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count)
+bool req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count)
 {
 	if (count == 0) {
-		return False;
+		return false;
 	}
 	
 	/* be careful with wraparound! */
@@ -640,9 +640,9 @@ BOOL req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count
 	    ptr >= req->in.data + req->in.data_size ||
 	    count > req->in.data_size ||
 	    ptr + count > req->in.data + req->in.data_size) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 

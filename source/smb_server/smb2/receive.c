@@ -59,7 +59,7 @@ struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 }
 
 NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_size,
-			     BOOL body_dynamic_present, uint32_t body_dynamic_size)
+			     bool body_dynamic_present, uint32_t body_dynamic_size)
 {
 	uint32_t flags = 0x00000001;
 	uint32_t pid = IVAL(req->in.hdr, SMB2_HDR_PID);
@@ -237,7 +237,7 @@ void smb2srv_send_error(struct smb2srv_request *req, NTSTATUS error)
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 8, True, 0);
+	status = smb2srv_setup_reply(req, 8, true, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
@@ -521,7 +521,7 @@ NTSTATUS smbsrv_init_smb2_connection(struct smbsrv_connection *smb_conn)
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
 	smb_conn->config.security = SEC_USER;
-	smb_conn->config.nt_status_support = True;
+	smb_conn->config.nt_status_support = true;
 
 	status = smbsrv_init_sessions(smb_conn, UINT64_MAX);
 	NT_STATUS_NOT_OK_RETURN(status);

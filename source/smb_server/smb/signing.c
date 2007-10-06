@@ -63,12 +63,12 @@ void smbsrv_sign_packet(struct smbsrv_request *req)
   setup the signing key for a connection. Called after authentication succeeds
   in a session setup
 */
-BOOL smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
+bool smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
 			  DATA_BLOB *session_key,
 			  DATA_BLOB *response)
 {
 	if (!set_smb_signing_common(&smb_conn->signing)) {
-		return False;
+		return false;
 	}
 	return smbcli_simple_set_signing(smb_conn,
 					 &smb_conn->signing, session_key, response);
@@ -90,38 +90,38 @@ void smbsrv_signing_restart(struct smbsrv_connection *smb_conn,
 			 * pretend we have seen a
 			 * valid packet, so we don't
 			 * turn it off */
-			smb_conn->signing.seen_valid = True;
+			smb_conn->signing.seen_valid = true;
 		}
 	}
 }
 
-BOOL smbsrv_init_signing(struct smbsrv_connection *smb_conn)
+bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->signing.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&smb_conn->signing)) {
-		return False;
+		return false;
 	}
 	
 	switch (lp_server_signing(global_loadparm)) {
 	case SMB_SIGNING_OFF:
-		smb_conn->signing.allow_smb_signing = False;
+		smb_conn->signing.allow_smb_signing = false;
 		break;
 	case SMB_SIGNING_SUPPORTED:
-		smb_conn->signing.allow_smb_signing = True;
+		smb_conn->signing.allow_smb_signing = true;
 		break;
 	case SMB_SIGNING_REQUIRED:
-		smb_conn->signing.allow_smb_signing = True;
-		smb_conn->signing.mandatory_signing = True;
+		smb_conn->signing.allow_smb_signing = true;
+		smb_conn->signing.mandatory_signing = true;
 		break;
 	case SMB_SIGNING_AUTO:
 		if (lp_domain_logons(global_loadparm)) {
-			smb_conn->signing.allow_smb_signing = True;
+			smb_conn->signing.allow_smb_signing = true;
 		} else {
-			smb_conn->signing.allow_smb_signing = False;
+			smb_conn->signing.allow_smb_signing = false;
 		}
 		break;
 	}
-	return True;
+	return true;
 }
 
 /*
@@ -151,24 +151,24 @@ void smbsrv_signing_no_reply(struct smbsrv_request *req)
 ************************************************************/
 /**
  * Check a packet supplied by the server.
- * @return False if we had an established signing connection
- *         which had a back checksum, True otherwise
+ * @return false if we had an established signing connection
+ *         which had a back checksum, true otherwise
  */
-BOOL smbsrv_signing_check_incoming(struct smbsrv_request *req)
+bool smbsrv_signing_check_incoming(struct smbsrv_request *req)
 {
-	BOOL good;
+	bool good;
 
 	req_signing_alloc_seq_num(req);
 
 	switch (req->smb_conn->signing.signing_state) 
 	{
 	case SMB_SIGNING_ENGINE_OFF:
-		return True;
+		return true;
 	case SMB_SIGNING_ENGINE_BSRSPYL:
 	case SMB_SIGNING_ENGINE_ON:
 	{			
 		if (req->in.size < (HDR_SS_FIELD + 8)) {
-			return False;
+			return false;
 		} else {
 			good = check_signed_incoming_message(&req->in, 
 							     &req->smb_conn->signing.mac_key, 
@@ -179,5 +179,5 @@ BOOL smbsrv_signing_check_incoming(struct smbsrv_request *req)
 		}
 	}
 	}
-	return False;
+	return false;
 }
