@@ -44,11 +44,6 @@
 #endif
 #include "util/util.h"
 
-typedef bool BOOL;
-
-#define False false
-#define True true
-
 #include "libcli/util/error.h"
 
 /* String routines */

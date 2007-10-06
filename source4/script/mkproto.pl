@@ -133,7 +133,6 @@ sub handle_loadparm($$)
 
 		my %tmap = (
 			    "BOOL" => "bool ",
-				"bool" => "bool ",
 			    "CONST_STRING" => "const char *",
 			    "STRING" => "const char *",
 			    "INTEGER" => "int ",
@@ -199,7 +198,7 @@ sub process_file($$$)
 
 		next unless ( $is_public || $line =~ /
 			      ^(_DEPRECATED_ |_NORETURN_ |_WARN_UNUSED_RESULT_ |_PURE_ )*(
-				  void|BOOL|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
+				  void|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
 				  ADS_STATUS|enum\s.*\(|DATA_BLOB|WERROR|XFILE|FILE|DIR|
 			      double|TDB_CONTEXT|TDB_DATA|TALLOC_CTX|NTTIME|FN_|init_module|
 			      GtkWidget|GType|smb_ucs2_t|krb5_error_code)
@@ -209,7 +208,6 @@ sub process_file($$$)
 
 		$target->("\n$comment") if (defined($comment)); $comment = undef;
 
-		$line =~ s/BOOL /bool /g;
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;
 			$target->("$line;\n");
@@ -219,7 +217,6 @@ sub process_file($$$)
 		$target->($line);
 
 		while ($line = <FH>) {
-			$line =~ s/BOOL /bool /g;
 			if ($line =~ /\)\s*$/o) {
 				chomp $line;
 				$target->("$line;\n");
