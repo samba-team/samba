@@ -219,7 +219,7 @@ fail:
 	return;
 }
 
-BOOL check_arg_bool(const char * name)
+bool check_arg_bool(const char * name)
 {
 	struct argdef * arg;
 
@@ -230,7 +230,7 @@ BOOL check_arg_bool(const char * name)
 
 	DEBUG(0, ("invalid argument name: %s", name));
 	SMB_ASSERT(0);
-	return(False);
+	return(false);
 }
 
 uint64_t check_arg_numeric(const char * name)
@@ -549,9 +549,9 @@ int main(int argc, const char ** argv)
 	set_arg_val("if", NULL);
 	set_arg_val("of", NULL);
 	/* Options. */
-	set_arg_val("direct", False);
-	set_arg_val("sync", False);
-	set_arg_val("oplock", False);
+	set_arg_val("direct", false);
+	set_arg_val("sync", false);
+	set_arg_val("oplock", false);
 
 	pctx = poptGetContext(PROGNAME, argc, argv, poptions, 0);
 	while ((i = poptGetNextOpt(pctx)) != -1) {
