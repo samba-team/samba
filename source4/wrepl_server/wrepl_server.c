@@ -198,7 +198,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 								    WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
 		partner->push.change_count	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
-		partner->push.use_inform	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushUseInform", False);
+		partner->push.use_inform	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushUseInform", false);
 
 		DEBUG(3,("wreplsrv_load_partners: found partner: %s type: 0x%X\n",
 			partner->address, partner->type));
@@ -218,7 +218,7 @@ NTSTATUS wreplsrv_fill_wrepl_table(struct wreplsrv_service *service,
 				   TALLOC_CTX *mem_ctx,
 				   struct wrepl_table *table_out,
 				   const char *initiator,
-				   BOOL full_table)
+				   bool full_table)
 {
 	struct wreplsrv_owner *cur;
 	uint32_t i = 0;
