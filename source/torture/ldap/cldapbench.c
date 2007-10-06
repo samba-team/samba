@@ -53,7 +53,7 @@ static bool bench_cldap(struct torture_context *tctx, const char *address)
 	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
 	int num_sent=0;
 	struct timeval tv = timeval_current();
-	BOOL ret = True;
+	bool ret = true;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_netlogon search;
 	struct bench_state *state;

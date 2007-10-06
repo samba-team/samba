@@ -52,7 +52,7 @@ static bool test_num_calls(struct torture_context *tctx,
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
 		       uuid_str, iface->name, nt_errstr(status));
 		talloc_free(uuid_str);
-		return True;
+		return true;
 	}
 
 	/* make null calls */
@@ -60,7 +60,7 @@ static bool test_num_calls(struct torture_context *tctx,
 	memset(stub_in.data, 0xFF, stub_in.length);
 
 	for (i=0;i<200;i++) {
-		status = dcerpc_request(p, NULL, i, False, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, i, false, mem_ctx, &stub_in, &stub_out);
 		if (!NT_STATUS_IS_OK(status) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			break;
@@ -99,7 +99,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	TALLOC_CTX *loop_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	const struct ndr_interface_list *l;
 	struct dcerpc_binding *b;
 
@@ -136,12 +136,12 @@ bool torture_rpc_scanner(struct torture_context *torture)
 		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
-			ret = False;
+			ret = false;
 			continue;
 		}
 	
 		if (!test_inq_if_ids(torture, p, torture, test_num_calls, l->table)) {
-			ret = False;
+			ret = false;
 		}
 	}
 

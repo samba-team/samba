@@ -323,7 +323,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		if (!null_nttime(info->basic_info.in.write_time)) {
 			newstats.dos.write_time = info->basic_info.in.write_time;
 			newstats.dos.flags |= XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME;
-			h->sticky_write_time = True;
+			h->sticky_write_time = true;
 		}
 		if (!null_nttime(info->basic_info.in.change_time)) {
 			newstats.dos.change_time = info->basic_info.in.change_time;

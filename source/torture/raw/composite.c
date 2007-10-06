@@ -43,7 +43,7 @@ static void loadfile_complete(struct composite_context *c)
 /*
   test a simple savefile/loadfile combination
 */
-static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const char *fname = BASEDIR "\\test.txt";
 	NTSTATUS status;
@@ -69,7 +69,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) savefile failed: %s\n", __location__,nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	io2.in.fname = fname;
@@ -98,30 +98,30 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_loadfile_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) loadfile[%d] failed - %s\n", __location__, i, nt_errstr(status));
-			return False;
+			return false;
 		}
 
 		if (io2.out.size != len) {
 			printf("(%s) wrong length in returned data - %d should be %d\n",__location__,
 			       io2.out.size, (int)len);
-			return False;
+			return false;
 		}
 		
 		if (memcmp(io2.out.data, data, len) != 0) {
 			printf("(%s) wrong data in loadfile!\n",__location__);
-			return False;
+			return false;
 		}
 	}
 
 	talloc_free(data);
 
-	return True;
+	return true;
 }
 
 /*
   test a simple savefile/loadfile combination
 */
-static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const char *fname = BASEDIR "\\test.txt";
 	NTSTATUS status;
@@ -134,7 +134,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	extern int torture_numops;
 	struct event_context *event_ctx;
 	int *count = talloc_zero(mem_ctx, int);
-	BOOL ret = True;
+	bool ret = true;
 
 	data = talloc_array(mem_ctx, uint8_t, len);
 
@@ -149,7 +149,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_composite_savefile(cli->tree, &io1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) savefile failed: %s\n",__location__, nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	io2.in.dest_host = lp_parm_string(global_loadparm, NULL, "torture", "host");
@@ -189,7 +189,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) loadfile[%d] failed - %s\n", __location__, i,
 			       nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -197,13 +197,13 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) wrong length in returned data - %d "
 			       "should be %d\n", __location__,
 			       io2.out.size, (int)len);
-			ret = False;
+			ret = false;
 			continue;
 		}
 		
 		if (memcmp(io2.out.data, data, len) != 0) {
 			printf("(%s) wrong data in loadfile!\n", __location__);
-			ret = False;
+			ret = false;
 			continue;
 		}
 	}
@@ -214,7 +214,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 /*
   test setfileacl
 */
-static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct smb_composite_appendacl **io;
 	struct smb_composite_appendacl **io_orig;
@@ -244,7 +244,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_savefile(cli->tree, &io1);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) savefile failed: %s\n", __location__, nt_errstr(status));
-			return False;
+			return false;
 		}
 
 		io_orig[i] = talloc (io_orig, struct smb_composite_appendacl);
@@ -253,7 +253,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_appendacl(cli->tree, io_orig[i], io_orig[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
-			return False;
+			return false;
 		}
 	}
 	
@@ -273,7 +273,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = security_descriptor_dacl_add(test_sd, ace);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	/* set parameters for appendacl async call */
@@ -308,13 +308,13 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_appendacl_recv(c[i], io[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) appendacl[%d] failed - %s\n", __location__, i, nt_errstr(status));
-			return False;
+			return false;
 		}
 		
 		security_descriptor_dacl_add(io_orig[i]->out.sd, ace);
 		if (!security_acl_equal(io_orig[i]->out.sd->dacl, io[i]->out.sd->dacl)) {
 			printf("(%s) appendacl[%d] failed - needed acl isn't set\n", __location__, i);
-			return False;
+			return false;
 		}
 	}
 	
@@ -323,11 +323,11 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	talloc_free (test_sid);
 	talloc_free (test_sd);
 		
-	return True;
+	return true;
 }
 
 /* test a query FS info by asking for share's GUID */
-static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	char *guid = NULL;
 	NTSTATUS status;
@@ -338,7 +338,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	extern int torture_numops;
 	struct event_context *event_ctx;
 	int *count = talloc_zero(mem_ctx, int);
-	BOOL ret = True;
+	bool ret = true;
 
 	io1.in.dest_host = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	io1.in.port = 0;
@@ -375,7 +375,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_fsinfo_recv(c[i], mem_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) fsinfo[%d] failed - %s\n", __location__, i, nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -383,7 +383,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) wrong level in returned info - %d "
 			       "should be %d\n", __location__,
 			       io1.out.fsinfo->generic.level, RAW_QFS_OBJECTID_INFORMATION);
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -406,7 +406,7 @@ bool torture_raw_composite(struct torture_context *tctx,
 	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_fetchfile(cli, tctx);

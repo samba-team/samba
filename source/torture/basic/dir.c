@@ -38,7 +38,7 @@ bool torture_dirtest1(struct torture_context *tctx,
 {
 	int i;
 	int fnum;
-	BOOL correct = True;
+	bool correct = true;
 	extern int torture_numops;
 	struct timeval tv;
 
@@ -53,7 +53,7 @@ bool torture_dirtest1(struct torture_context *tctx,
 		if (fnum == -1) {
 			fprintf(stderr,"(%s) Failed to open %s\n", 
 				__location__, fname);
-			return False;
+			return false;
 		}
 		smbcli_close(cli->tree, fnum);
 		free(fname);
@@ -81,11 +81,11 @@ bool torture_dirtest2(struct torture_context *tctx,
 {
 	int i;
 	int fnum, num_seen;
-	BOOL correct = True;
+	bool correct = true;
 	extern int torture_entries;
 
 	if (!torture_setup_dir(cli, "\\LISTDIR")) {
-		return False;
+		return false;
 	}
 
 	torture_comment(tctx, "Creating %d files\n", torture_entries);
@@ -102,7 +102,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 		if (fnum == -1) {
 			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
 				__location__, fname, smbcli_errstr(cli->tree));
-			return False;
+			return false;
 		}
 		free(fname);
 		smbcli_close(cli->tree, fnum);
@@ -113,7 +113,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 		if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
 			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
 				__location__, fname, smbcli_errstr(cli->tree));
-			return False;
+			return false;
 		}
 		free(fname);
 	}
@@ -123,7 +123,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	/* We should see (torture_entries) each of files & directories + . and .. */
 	if (num_seen != (2*torture_entries)+2) {
-		correct = False;
+		correct = false;
 		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
 			__location__, (2*torture_entries)+2, num_seen);
 	}
@@ -135,7 +135,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_DIRECTORY<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
 	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries+2) {
-		correct = False;
+		correct = false;
 		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
 			__location__, torture_entries+2, num_seen);
 	}
@@ -143,7 +143,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 	num_seen = smbcli_list_old(cli->tree, "\\LISTDIR\\*", (FILE_ATTRIBUTE_ARCHIVE<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, NULL);
 	torture_comment(tctx, "num_seen = %d\n", num_seen );
 	if (num_seen != torture_entries) {
-		correct = False;
+		correct = false;
 		fprintf(stderr,"(%s) entry count mismatch, should be %d, was %d\n",
 			__location__, torture_entries, num_seen);
 	}
@@ -152,7 +152,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 	if (smbcli_deltree(cli->tree, "\\LISTDIR") == -1) {
 		fprintf(stderr,"(%s) Failed to deltree %s, error=%s\n", "\\LISTDIR", 
 			__location__, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 #if 0

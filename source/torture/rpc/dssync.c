@@ -173,10 +173,10 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	return ctx;
 }
 
-static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncBindInfo *b)
+static bool _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncBindInfo *b)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct event_context *event = NULL;
 
 	status = dcerpc_pipe_connect_b(ctx,
@@ -186,7 +186,7 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = dcerpc_drsuapi_DsBind(b->pipe, ctx, &b->req);
@@ -196,10 +196,10 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 			errstr = dcerpc_errstr(ctx, b->pipe->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(b->req.out.result)) {
 		printf("DsBind failed - %s\n", win_errstr(b->req.out.result));
-		ret = False;
+		ret = false;
 	}
 
 	ZERO_STRUCT(b->peer_bind_info28);
@@ -223,15 +223,15 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	return ret;
 }
 
-static BOOL test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
+static bool test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	status = torture_ldap_connection(ctx, &l->conn, ctx->ldap_url);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to LDAP: %s\n", ctx->ldap_url);
-		return False;
+		return false;
 	}
 
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
@@ -239,19 +239,19 @@ static BOOL test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *creden
 	status = torture_ldap_bind_sasl(l->conn, credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to bind to LDAP:\n");
-		return False;
+		return false;
 	}
 	printf("bound to LDAP.\n");
 
 	return ret;
 }
 
-static BOOL test_GetInfo(struct DsSyncTest *ctx)
+static bool test_GetInfo(struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
 	struct drsuapi_DsNameString names[1];
-	BOOL ret = True;
+	bool ret = true;
 
 	struct cldap_socket *cldap = cldap_socket_init(ctx, NULL);
 	struct cldap_netlogon search;
@@ -274,10 +274,10 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 			errstr = dcerpc_errstr(ctx, ctx->admin.drsuapi.pipe->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 	ctx->domain_dn = r.out.ctr.ctr1->array[0].result_name;
@@ -430,7 +430,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 		const char *dn;
 		struct dom_sid *sid = NULL;
 		uint32_t rid = 0;
-		BOOL dn_printed = False;
+		bool dn_printed = false;
 		uint32_t i;
 
 		if (!cur->object.identifier) continue;
@@ -504,7 +504,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			if (!dn_printed) {
 				object_id++;
 				DEBUG(0,("DN[%u] %s\n", object_id, dn));
-				dn_printed = True;
+				dn_printed = true;
 			}
 			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
 				    name, (long)enc_data->length, (long)plain_data.length));
@@ -531,10 +531,10 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 	}
 }
 
-static BOOL test_FetchData(struct DsSyncTest *ctx)
+static bool test_FetchData(struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int i, y = 0;
 	uint64_t highest_usn = 0;
 	const char *partition = NULL;
@@ -582,7 +582,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 				    &gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to get gensec session key: %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
@@ -686,16 +686,16 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 					errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
 				}
 				printf("dcerpc_drsuapi_DsGetNCChanges failed - %s\n", errstr);
-				ret = False;
+				ret = false;
 			} else if (!W_ERROR_IS_OK(r.out.result)) {
 				printf("DsGetNCChanges failed - %s\n", win_errstr(r.out.result));
-				ret = False;
+				ret = false;
 			}
 
-			if (ret == True && *r.out.level == 1) {
+			if (ret == true && *r.out.level == 1) {
 				out_level = 1;
 				ctr1 = &r.out.ctr.ctr1;
-			} else if (ret == True && *r.out.level == 2) {
+			} else if (ret == true && *r.out.level == 2) {
 				out_level = 1;
 				ctr1 = r.out.ctr.ctr2.ctr.mszip1.ctr1;
 			}
@@ -713,10 +713,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 				}
 			}
 
-			if (ret == True && *r.out.level == 6) {
+			if (ret == true && *r.out.level == 6) {
 				out_level = 6;
 				ctr6 = &r.out.ctr.ctr6;
-			} else if (ret == True && *r.out.level == 7
+			} else if (ret == true && *r.out.level == 7
 				   && r.out.ctr.ctr7.level == 6
 				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
 				out_level = 6;
@@ -743,10 +743,10 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	return ret;
 }
 
-static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
+static bool test_FetchNT4Data(struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct drsuapi_DsGetNT4ChangeLog r;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
@@ -774,16 +774,16 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 				errstr = dcerpc_errstr(ctx, ctx->new_dc.drsuapi.pipe->last_fault_code);
 			}
 			printf("dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n", errstr);
-			ret = False;
+			ret = false;
 		} else if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_DOMAIN_ROLE)) {
 			printf("DsGetNT4ChangeLog not supported by target server\n");
 			break;
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("DsGetNT4ChangeLog failed - %s\n", win_errstr(r.out.result));
-			ret = False;
+			ret = false;
 		} else if (r.out.level != 1) {
 			printf("DsGetNT4ChangeLog unknown level - %u\n", r.out.level);
-			ret = False;
+			ret = false;
 		} else if (NT_STATUS_IS_OK(r.out.info.info1.status)) {
 		} else if (NT_STATUS_EQUAL(r.out.info.info1.status, STATUS_MORE_ENTRIES)) {
 			cookie.length	= r.out.info.info1.length1;
@@ -791,7 +791,7 @@ static BOOL test_FetchNT4Data(struct DsSyncTest *ctx)
 			continue;
 		} else {
 			printf("DsGetNT4ChangeLog failed - %s\n", nt_errstr(r.out.info.info1.status));
-			ret = False;
+			ret = false;
 		}
 
 		break;

@@ -260,7 +260,7 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct lookup_name_state *s;
 	struct rpc_request *lookup_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;

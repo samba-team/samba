@@ -493,7 +493,7 @@ int main(int argc,char *argv[])
 	static const char *target = "other";
 	struct dcerpc_binding *binding_struct;
 	NTSTATUS status;
-	int shell = False;
+	int shell = false;
 	static const char *ui_ops_name = "simple";
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
@@ -520,7 +520,7 @@ int main(int argc,char *argv[])
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
 		{"load-module",  0,  POPT_ARG_STRING, &extra_module,     0, "load tests from DSO file",    "SOFILE"},
-		{"shell", 		0, POPT_ARG_NONE, &shell, True, "Run shell", NULL},
+		{"shell", 		0, POPT_ARG_NONE, &shell, true, "Run shell", NULL},
 		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba3|samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
 		 "run async tests", NULL},

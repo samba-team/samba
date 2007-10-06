@@ -72,7 +72,8 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
   create a transport structure based on an established socket
 */
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
-					       TALLOC_CTX *parent_ctx, BOOL primary)
+					       TALLOC_CTX *parent_ctx, 
+					       bool primary)
 {
 	struct smbcli_transport *transport;
 
@@ -261,7 +262,7 @@ NTSTATUS smbcli_transport_connect_recv(struct smbcli_request *req)
 /*
   send a session request (if needed)
 */
-BOOL smbcli_transport_connect(struct smbcli_transport *transport,
+bool smbcli_transport_connect(struct smbcli_transport *transport,
 			      struct nbt_name *calling, 
 			      struct nbt_name *called)
 {
@@ -269,7 +270,7 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 	NTSTATUS status;
 
 	if (transport->socket->port == 445) {
-		return True;
+		return true;
 	}
 
 	req = smbcli_transport_connect_send(transport, 
@@ -500,16 +501,16 @@ error:
 
 /*
   process some read/write requests that are pending
-  return False if the socket is dead
+  return false if the socket is dead
 */
-BOOL smbcli_transport_process(struct smbcli_transport *transport)
+bool smbcli_transport_process(struct smbcli_transport *transport)
 {
 	NTSTATUS status;
 	size_t npending;
 
 	packet_queue_run(transport->packet);
 	if (transport->socket->sock == NULL) {
-		return False;
+		return false;
 	}
 
 	status = socket_pending(transport->socket->sock, &npending);
@@ -517,9 +518,9 @@ BOOL smbcli_transport_process(struct smbcli_transport *transport)
 		packet_recv(transport->packet);
 	}
 	if (transport->socket->sock == NULL) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /*

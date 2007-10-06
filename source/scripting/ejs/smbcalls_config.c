@@ -138,7 +138,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		mpr_ReturnString(eid, *(char **)parm_ptr);
 		break;
 	case P_BOOL:
-		mpr_Return(eid, mprCreateBoolVar(*(BOOL *)parm_ptr));
+		mpr_Return(eid, mprCreateBoolVar(*(bool *)parm_ptr));
 		break;
 	case P_INTEGER:
 	case P_OCTAL:
@@ -187,7 +187,7 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
-	BOOL ret = lp_load(lp_configfile(global_loadparm));
+	bool ret = lp_load(lp_configfile(global_loadparm));
 	if (ret) {
 		unload_interfaces();
 	}

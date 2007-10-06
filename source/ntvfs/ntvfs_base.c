@@ -113,7 +113,7 @@ _PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 	return &critical_sizes;
 }
 
-_PUBLIC_ BOOL ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
+_PUBLIC_ bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
 {
 	/* The comparison would be easier with memcmp, but compiler-interset
 	 * alignment padding is not guaranteed to be zeroed.
@@ -122,28 +122,28 @@ _PUBLIC_ BOOL ntvfs_interface_differs(const struct ntvfs_critical_sizes *const i
 #define FIELD_DIFFERS(field) (iface->field != critical_sizes.field)
 
 	if (FIELD_DIFFERS(interface_version))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_critical_sizes))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_context))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_module_context))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_ops))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_async_state))
-		return True;
+		return true;
 
 	if (FIELD_DIFFERS(sizeof_ntvfs_request))
-		return True;
+		return true;
 
 	/* Versions match. */
-	return False;
+	return false;
 
 #undef FIELD_DIFFERS
 }

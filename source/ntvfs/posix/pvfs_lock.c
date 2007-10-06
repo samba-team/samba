@@ -104,7 +104,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	enum brl_type rw;
 	NTSTATUS status;
 	int i;
-	BOOL timed_out;
+	bool timed_out;
 
 	timed_out = (reason != PVFS_WAIT_EVENT);
 
@@ -136,7 +136,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	}
 	if (NT_STATUS_IS_OK(status)) {
 		f->lock_count++;
-		timed_out = False;
+		timed_out = false;
 	}
 
 	/* if we have failed and timed out, or succeeded, then we

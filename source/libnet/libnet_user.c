@@ -62,7 +62,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct create_user_state *s;
 	struct composite_context *create_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -231,7 +231,7 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct delete_user_state *s;
 	struct composite_context *delete_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -402,7 +402,7 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct modify_user_state *s;
 	struct composite_context *userinfo_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
@@ -629,7 +629,7 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct user_info_state *s;
 	struct composite_context *lookup_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -878,7 +878,7 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct userlist_state *s;
 	struct rpc_request *query_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -952,7 +952,7 @@ static void continue_domain_queried(struct rpc_request *req)
 	struct composite_context *c;
 	struct userlist_state *s;
 	struct rpc_request *enum_req;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 	
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct userlist_state);

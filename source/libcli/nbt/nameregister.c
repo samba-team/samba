@@ -80,7 +80,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 					   io->in.dest_addr, lp_nbt_port(global_loadparm));
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
-				    io->in.timeout, io->in.retries, False);
+				    io->in.timeout, io->in.retries, false);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);
@@ -166,7 +166,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 
 	status = nbt_name_register_recv(state->req, state, state->io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		if (state->io->in.register_demand == True) {
+		if (state->io->in.register_demand == true) {
 			/* all done */
 			c->state = COMPOSITE_STATE_DONE;
 			c->status = NT_STATUS_OK;
@@ -174,7 +174,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 		}
 
 		/* the registration timed out - good, send the demand */
-		state->io->in.register_demand = True;
+		state->io->in.register_demand = true;
 		state->io->in.retries         = 0;
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
@@ -226,9 +226,9 @@ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *n
 	state->io->in.dest_addr       = io->in.dest_addr;
 	state->io->in.address         = io->in.address;
 	state->io->in.nb_flags        = io->in.nb_flags;
-	state->io->in.register_demand = False;
-	state->io->in.broadcast       = True;
-	state->io->in.multi_homed     = False;
+	state->io->in.register_demand = false;
+	state->io->in.broadcast       = true;
+	state->io->in.multi_homed     = false;
 	state->io->in.ttl             = io->in.ttl;
 	state->io->in.timeout         = 1;
 	state->io->in.retries         = 2;
@@ -379,9 +379,9 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 	state->io->in.dest_addr       = state->wins_servers[0];
 	state->io->in.address         = io->in.addresses[0];
 	state->io->in.nb_flags        = io->in.nb_flags;
-	state->io->in.broadcast       = False;
-	state->io->in.register_demand = False;
-	state->io->in.multi_homed     = (io->in.nb_flags & NBT_NM_GROUP)?False:True;
+	state->io->in.broadcast       = false;
+	state->io->in.register_demand = false;
+	state->io->in.multi_homed     = (io->in.nb_flags & NBT_NM_GROUP)?false:true;
 	state->io->in.ttl             = io->in.ttl;
 	state->io->in.timeout         = 3;
 	state->io->in.retries         = 2;

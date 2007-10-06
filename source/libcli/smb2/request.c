@@ -31,7 +31,7 @@
   initialise a smb2 request
 */
 struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_t opcode,
-				       uint16_t body_fixed_size, BOOL body_dynamic_present,
+				       uint16_t body_fixed_size, bool body_dynamic_present,
 				       uint32_t body_dynamic_size)
 {
 	struct smb2_request *req;
@@ -113,7 +113,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
     initialise a smb2 request for tree operations
 */
 struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opcode,
-					    uint16_t body_fixed_size, BOOL body_dynamic_present,
+					    uint16_t body_fixed_size, bool body_dynamic_present,
 					    uint32_t body_dynamic_size)
 {
 	struct smb2_request *req = smb2_request_init(tree->session->transport, opcode, 
@@ -157,16 +157,16 @@ NTSTATUS smb2_request_destroy(struct smb2_request *req)
 /*
   receive a response to a packet
 */
-BOOL smb2_request_receive(struct smb2_request *req)
+bool smb2_request_receive(struct smb2_request *req)
 {
 	/* req can be NULL when a send has failed. This eliminates lots of NULL
 	   checks in each module */
-	if (!req) return False;
+	if (!req) return false;
 
 	/* keep receiving packets until this one is replied to */
 	while (req->state <= SMB2_REQUEST_RECV) {
 		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
-			return False;
+			return false;
 		}
 	}
 
@@ -174,13 +174,13 @@ BOOL smb2_request_receive(struct smb2_request *req)
 }
 
 /* Return true if the last packet was in error */
-BOOL smb2_request_is_error(struct smb2_request *req)
+bool smb2_request_is_error(struct smb2_request *req)
 {
 	return NT_STATUS_IS_ERR(req->status);
 }
 
 /* Return true if the last packet was OK */
-BOOL smb2_request_is_ok(struct smb2_request *req)
+bool smb2_request_is_ok(struct smb2_request *req)
 {
 	return NT_STATUS_IS_OK(req->status);
 }
@@ -188,16 +188,16 @@ BOOL smb2_request_is_ok(struct smb2_request *req)
 /*
   check if a range in the reply body is out of bounds
 */
-BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
+bool smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 {
 	/* be careful with wraparound! */
 	if (ptr < buf->body ||
 	    ptr >= buf->body + buf->body_size ||
 	    size > buf->body_size ||
 	    ptr + size > buf->body + buf->body_size) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 size_t smb2_padding_size(uint32_t offset, size_t n)

@@ -1415,7 +1415,7 @@ bool torture_denytest1(struct torture_context *tctx,
 {
 	int fnum1, fnum2;
 	int i;
-	BOOL correct = True;
+	bool correct = true;
 	struct timeval tv, tv_start;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 	int failures=0;
@@ -1461,7 +1461,7 @@ bool torture_denytest1(struct torture_context *tctx,
 			}
 		}
 
-		if (torture_setting_bool(tctx, "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", false) || 
 			res != denytable1[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1479,7 +1479,7 @@ bool torture_denytest1(struct torture_context *tctx,
 		}
 
 		if (res != denytable1[i].result) {
-			correct = False;
+			correct = false;
 			CHECK_MAX_FAILURES(failed);
 		}
 
@@ -1506,7 +1506,7 @@ bool torture_denytest2(struct torture_context *tctx,
 {
 	int fnum1, fnum2;
 	int i;
-	BOOL correct = True;
+	bool correct = true;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 	struct timeval tv, tv_start;
 	int failures=0;
@@ -1548,7 +1548,7 @@ bool torture_denytest2(struct torture_context *tctx,
 			}
 		}
 
-		if (torture_setting_bool(tctx, "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", false) || 
 			res != denytable2[i].result) {
 			int64_t tdif;
 			GetTimeOfDay(&tv);
@@ -1566,7 +1566,7 @@ bool torture_denytest2(struct torture_context *tctx,
 		}
 
 		if (res != denytable2[i].result) {
-			correct = False;
+			correct = false;
 			CHECK_MAX_FAILURES(failed);
 		}
 
@@ -1616,7 +1616,7 @@ bool torture_denytest3(struct torture_context *tctx,
 	smbcli_unlink(cli1->tree, fname);
 	torture_comment(tctx, "fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
-	return True;
+	return true;
 }
 
 struct bit_value {
@@ -1658,7 +1658,7 @@ static const char *bit_string(TALLOC_CTX *mem_ctx, const struct bit_value *bv, i
   determine if two opens conflict
 */
 static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2, uint32_t am2,
-				       BOOL read_for_execute, enum deny_result *res)
+				       bool read_for_execute, enum deny_result *res)
 {
 #define CHECK_MASK(am, sa, right, share) do { \
 	if (((am) & (right)) && !((sa) & (share))) { \
@@ -1721,7 +1721,7 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
 /*
   a denytest for ntcreatex
  */
-static BOOL torture_ntdenytest(struct torture_context *tctx, 
+static bool torture_ntdenytest(struct torture_context *tctx, 
 							   struct smbcli_state *cli1, struct smbcli_state *cli2, int client)
 {
 	const struct bit_value share_access_bits[] = {
@@ -1741,7 +1741,7 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 	};
 	int fnum1;
 	int i;
-	BOOL correct = True;
+	bool correct = true;
 	struct timeval tv, tv_start;
 	const char *fname;
 	int nbits1 = ARRAY_SIZE(share_access_bits);
@@ -1787,7 +1787,7 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 		int b_am1 = random() & ((1<<nbits2)-1);
 		int b_sa2 = random() & ((1<<nbits1)-1);
 		int b_am2 = random() & ((1<<nbits2)-1);
-		BOOL read_for_execute;
+		bool read_for_execute;
 
 		progress_bar(tctx, i, torture_numops);
 		
@@ -1801,9 +1801,9 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 		status2 = smb_raw_open(cli2->tree, mem_ctx, &io2);
 
 		if (random() % 2 == 0) {
-			read_for_execute = True;
+			read_for_execute = true;
 		} else {
-			read_for_execute = False;
+			read_for_execute = false;
 		}
 		
 		if (!NT_STATUS_IS_OK(status1)) {
@@ -1853,7 +1853,7 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 		GetTimeOfDay(&tv);
 		tdif = usec_time_diff(&tv, &tv_start);
 		tdif /= 1000;
-		if (torture_setting_bool(tctx, "showall", False) || 
+		if (torture_setting_bool(tctx, "showall", false) || 
 		    !NT_STATUS_EQUAL(status2, status2_p) ||
 		    res != res2) {
 			torture_comment(tctx, "\n%-20s %-70s\n%-20s %-70s %4s %4s  %s/%s\n",
@@ -1871,7 +1871,7 @@ static BOOL torture_ntdenytest(struct torture_context *tctx,
 		if (res != res2 ||
 		    !NT_STATUS_EQUAL(status2, status2_p)) {
 			CHECK_MAX_FAILURES(failed);
-			correct = False;
+			correct = false;
 		}
 		
 		talloc_free(mem_ctx);
@@ -1916,7 +1916,7 @@ bool torture_ntdenytest2(struct torture_context *torture,
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_comment(tctx, "(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -1924,7 +1924,7 @@ bool torture_ntdenytest2(struct torture_context *torture,
 	if ((v) != (correct)) { \
 		torture_comment(tctx, "(%s) wrong value for %s  0x%x - should be 0x%x\n", \
 		       __location__, #v, (int)(v), (int)correct); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 /*
@@ -1938,7 +1938,7 @@ bool torture_denydos_sharing(struct torture_context *tctx,
 	const char *fname = "\\torture_denydos.txt";
 	NTSTATUS status;
 	int fnum1 = -1, fnum2 = -1;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *mem_ctx;
 

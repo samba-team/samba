@@ -32,7 +32,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -40,13 +40,13 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, (int)v, (int)correct); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 /*
   check that a stream has the right contents
 */
-static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
+static bool check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 			 const char *fname, const char *sname, 
 			 const char *value)
 {
@@ -62,15 +62,15 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	if (value == NULL) {
 		if (fnum != -1) {
 			printf("should have failed stream open of %s\n", full_name);
-			return False;
+			return false;
 		}
-		return True;
+		return true;
 	}
 	    
 	if (fnum == -1) {
 		printf("Failed to open stream '%s' - %s\n", 
 		       full_name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	buf = talloc_array(mem_ctx, uint8_t, strlen(value)+11);
@@ -79,28 +79,28 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	if (ret != strlen(value)) {
 		printf("Failed to read %lu bytes from stream '%s' - got %d\n",
 		       (long)strlen(value), full_name, (int)ret);
-		return False;
+		return false;
 	}
 
 	if (memcmp(buf, value, strlen(value)) != 0) {
 		printf("Bad data in stream\n");
-		return False;
+		return false;
 	}
 
 	smbcli_close(cli->tree, fnum);
-	return True;
+	return true;
 }
 
 /*
   test basic io on streams
 */
-static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\stream.txt";
 	const char *sname1, *sname2;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	ssize_t retsize;
 
@@ -219,7 +219,7 @@ bool torture_raw_streams(struct torture_context *torture,
 	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_stream_io(cli, torture);

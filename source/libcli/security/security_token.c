@@ -79,19 +79,19 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 
 /* These really should be cheaper... */
 
-BOOL security_token_is_sid(const struct security_token *token, const struct dom_sid *sid)
+bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid)
 {
 	if (dom_sid_equal(token->user_sid, sid)) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
-BOOL security_token_is_sid_string(const struct security_token *token, const char *sid_string)
+bool security_token_is_sid_string(const struct security_token *token, const char *sid_string)
 {
-	BOOL ret;
+	bool ret;
 	struct dom_sid *sid = dom_sid_parse_talloc(NULL, sid_string);
-	if (!sid) return False;
+	if (!sid) return false;
 
 	ret = security_token_is_sid(token, sid);
 
@@ -99,32 +99,32 @@ BOOL security_token_is_sid_string(const struct security_token *token, const char
 	return ret;
 }
 
-BOOL security_token_is_system(const struct security_token *token) 
+bool security_token_is_system(const struct security_token *token) 
 {
 	return security_token_is_sid_string(token, SID_NT_SYSTEM);
 }
 
-BOOL security_token_is_anonymous(const struct security_token *token) 
+bool security_token_is_anonymous(const struct security_token *token) 
 {
 	return security_token_is_sid_string(token, SID_NT_ANONYMOUS);
 }
 
-BOOL security_token_has_sid(const struct security_token *token, const struct dom_sid *sid)
+bool security_token_has_sid(const struct security_token *token, const struct dom_sid *sid)
 {
 	int i;
 	for (i = 0; i < token->num_sids; i++) {
 		if (dom_sid_equal(token->sids[i], sid)) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
-BOOL security_token_has_sid_string(const struct security_token *token, const char *sid_string)
+bool security_token_has_sid_string(const struct security_token *token, const char *sid_string)
 {
-	BOOL ret;
+	bool ret;
 	struct dom_sid *sid = dom_sid_parse_talloc(NULL, sid_string);
-	if (!sid) return False;
+	if (!sid) return false;
 
 	ret = security_token_has_sid(token, sid);
 
@@ -132,12 +132,12 @@ BOOL security_token_has_sid_string(const struct security_token *token, const cha
 	return ret;
 }
 
-BOOL security_token_has_builtin_administrators(const struct security_token *token)
+bool security_token_has_builtin_administrators(const struct security_token *token)
 {
 	return security_token_has_sid_string(token, SID_BUILTIN_ADMINISTRATORS);
 }
 
-BOOL security_token_has_nt_authenticated_users(const struct security_token *token)
+bool security_token_has_nt_authenticated_users(const struct security_token *token)
 {
 	return security_token_has_sid_string(token, SID_NT_AUTHENTICATED_USERS);
 }

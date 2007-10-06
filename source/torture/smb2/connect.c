@@ -189,7 +189,7 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 /* 
    basic testing of SMB2 connection calls
 */
-BOOL torture_smb2_connect(struct torture_context *torture)
+bool torture_smb2_connect(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -197,7 +197,7 @@ BOOL torture_smb2_connect(struct torture_context *torture)
 	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	h1 = torture_smb2_create(tree, "test9.dat");
@@ -205,56 +205,56 @@ BOOL torture_smb2_connect(struct torture_context *torture)
 	status = torture_smb2_write(tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	status = torture_smb2_close(tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	status = torture_smb2_close(tree, h2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smb2_util_close(tree, h1);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("close should have closed the handle - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smb2_tdis(tree);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("tdis failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smb2_tdis(tree);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		printf("tdis should have disabled session - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
  	status = smb2_logoff(tree->session);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Logoff failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smb2_logoff(tree->session);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("Logoff should have disabled session - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smb2_keepalive(tree->session->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("keepalive failed? - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }

@@ -31,7 +31,7 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, false, 0);
 	if (req == NULL) return NULL;
 
 	/* this seems to be a bug, they use 0x29 but only send 0x28 bytes */
@@ -64,7 +64,7 @@ NTSTATUS smb2_getinfo_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x08, true);
 
 	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.blob);
 	if (!NT_STATUS_IS_OK(status)) {

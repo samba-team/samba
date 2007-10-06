@@ -50,7 +50,7 @@ static bool tdb_add_record(struct tdb_wrap *tdbw, const char *fmt1,
 /*
   test tdb speed
 */
-static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
+static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 {
 	struct timeval tv;
 	struct tdb_wrap *tdbw;
@@ -120,32 +120,32 @@ static BOOL test_tdb_speed(struct torture_context *torture, const void *_data)
 
 	unlink("test.tdb");
 	talloc_free(tmp_ctx);
-	return True;
+	return true;
 
 failed:
 	unlink("test.tdb");
 	talloc_free(tmp_ctx);
-	return False;
+	return false;
 }
 
 
-static BOOL ldb_add_record(struct ldb_context *ldb, unsigned rid)
+static bool ldb_add_record(struct ldb_context *ldb, unsigned rid)
 {
 	struct ldb_message *msg;	
 	int ret;
 
 	msg = ldb_msg_new(ldb);
 	if (msg == NULL) {
-		return False;
+		return false;
 	}
 
 	msg->dn = ldb_dn_new_fmt(msg, ldb, "SID=S-1-5-21-53173311-3623041448-2049097239-%u", rid);
 	if (msg->dn == NULL) {
-		return False;
+		return false;
 	}
 
 	if (ldb_msg_add_fmt(msg, "UID", "%u", rid) != 0) {
-		return False;
+		return false;
 	}
 
 	ret = ldb_add(ldb, msg);
@@ -159,7 +159,7 @@ static BOOL ldb_add_record(struct ldb_context *ldb, unsigned rid)
 /*
   test ldb speed
 */
-static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
+static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 {
 	struct timeval tv;
 	struct ldb_context *ldb;
@@ -241,12 +241,12 @@ static BOOL test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	unlink("./test.ldb");
 	talloc_free(tmp_ctx);
-	return True;
+	return true;
 
 failed:
 	unlink("./test.ldb");
 	talloc_free(tmp_ctx);
-	return False;
+	return false;
 }
 
 struct torture_suite *torture_local_dbspeed(TALLOC_CTX *mem_ctx)

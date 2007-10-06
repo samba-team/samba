@@ -29,7 +29,7 @@
 #define TEST_GROUPNAME  "libnetgroupinfotest"
 
 
-static BOOL test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle,
 			   struct dom_sid2 *domain_sid, const char* group_name,
 			   uint32_t *rid)
@@ -49,7 +49,7 @@ static BOOL test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(group);
@@ -63,19 +63,19 @@ static BOOL test_groupinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_groupinfo(p, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_groupinfo - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-BOOL torture_groupinfo(struct torture_context *torture)
+bool torture_groupinfo(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct policy_handle h;
 	struct lsa_String name;
 	struct dom_sid2 sid;
@@ -88,7 +88,7 @@ BOOL torture_groupinfo(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	name.string = lp_workgroup(global_loadparm);
@@ -97,22 +97,22 @@ BOOL torture_groupinfo(struct torture_context *torture)
 	 * Testing synchronous version
 	 */
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_group_create(p, mem_ctx, &h, TEST_GROUPNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_groupinfo(p, mem_ctx, &h, &sid, TEST_GROUPNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_group_cleanup(p, mem_ctx, &h, TEST_GROUPNAME)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

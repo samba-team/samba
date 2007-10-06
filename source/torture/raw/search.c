@@ -30,7 +30,7 @@
 /*
   callback function for single_search
 */
-static BOOL single_search_callback(void *private, const union smb_search_data *file)
+static bool single_search_callback(void *private, const union smb_search_data *file)
 {
 	union smb_search_data *data = (union smb_search_data *)private;
 
@@ -234,7 +234,7 @@ static union smb_search_data *find(const char *name)
 static bool test_one_file(struct torture_context *tctx, 
 			  struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = "\\torture_search.txt";
 	const char *fname2 = "\\torture_search-NOTEXIST.txt";
@@ -246,7 +246,7 @@ static bool test_one_file(struct torture_context *tctx,
 	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -274,7 +274,7 @@ static bool test_one_file(struct torture_context *tctx,
 			printf("search level %s(%d) failed - %s\n",
 			       levels[i].name, (int)levels[i].level, 
 			       nt_errstr(levels[i].status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -295,7 +295,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       levels[i].name, (int)levels[i].level, 
 			       nt_errstr(expected_status),
 			       nt_errstr(status));
-			ret = False;
+			ret = false;
 		}
 	}
 
@@ -328,7 +328,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, (int)s->sname1.field1, \
 				#sname2, #field2, (int)v.sname2.out.field2); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -340,7 +340,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, timestring(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -352,7 +352,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, nt_time_string(tctx, s->sname1.field1), \
 				#sname2, #field2, nt_time_string(tctx, v.sname2.out.field2)); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -364,7 +364,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, s->sname1.field1, \
 				#sname2, #field2, v.sname2.out.field2.s); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -378,7 +378,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				#sname2, #field2, v.sname2.out.field2.s); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -392,7 +392,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, s->sname1.field1.s, \
 				fname); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -405,7 +405,7 @@ static bool test_one_file(struct torture_context *tctx,
 			       __location__, \
 				#sname1, #field1, s->sname1.field1, \
 				fname); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 	
@@ -509,7 +509,7 @@ struct multiple_result {
 /*
   callback function for multiple_search
 */
-static BOOL multiple_search_callback(void *private, const union smb_search_data *file)
+static bool multiple_search_callback(void *private, const union smb_search_data *file)
 {
 	struct multiple_result *data = (struct multiple_result *)private;
 
@@ -658,7 +658,7 @@ static bool test_many_files(struct torture_context *tctx,
 	const int num_files = 700;
 	int i, fnum, t;
 	char *fname;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct multiple_result result;
 	struct {
@@ -751,7 +751,7 @@ static bool test_many_files(struct torture_context *tctx,
 /*
   check a individual file result
 */
-static bool check_result(struct multiple_result *result, const char *name, BOOL exist, uint32_t attrib)
+static bool check_result(struct multiple_result *result, const char *name, bool exist, uint32_t attrib)
 {
 	int i;
 	for (i=0;i<result->count;i++) {
@@ -761,7 +761,7 @@ static bool check_result(struct multiple_result *result, const char *name, BOOL 
 		if (exist) {
 			printf("failed: '%s' should exist with attribute %s\n", 
 			       name, attrib_string(result->list, attrib));
-			return False;
+			return false;
 		}
 		return true;
 	}
@@ -769,14 +769,14 @@ static bool check_result(struct multiple_result *result, const char *name, BOOL 
 	if (!exist) {
 		printf("failed: '%s' should NOT exist (has attribute %s)\n", 
 		       name, attrib_string(result->list, result->list[i].both_directory_info.attrib));
-		return False;
+		return false;
 	}
 
 	if ((result->list[i].both_directory_info.attrib&0xFFF) != attrib) {
 		printf("failed: '%s' should have attribute 0x%x (has 0x%x)\n",
 		       name, 
 		       attrib, result->list[i].both_directory_info.attrib);
-		return False;
+		return false;
 	}
 	return true;
 }
@@ -790,7 +790,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	const int num_files = 20;
 	int i, fnum;
 	char *fname;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct multiple_result result;
 	union smb_search_first io;
@@ -798,7 +798,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Creating %d files\n", num_files);
@@ -808,7 +808,7 @@ static bool test_modify_search(struct torture_context *tctx,
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		talloc_free(fname);
@@ -876,16 +876,16 @@ static bool test_modify_search(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 20);
 
-	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "t014-14.txt", False, 0);
-	ret &= check_result(&result, "t015-15.txt", False, 0);
-	ret &= check_result(&result, "t016-16.txt", True, FILE_ATTRIBUTE_NORMAL);
-	ret &= check_result(&result, "t017-17.txt", False, 0);
-	ret &= check_result(&result, "t018-18.txt", True, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "t019-19.txt", True, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "T013-13.txt.2", True, FILE_ATTRIBUTE_ARCHIVE);
-	ret &= check_result(&result, "T003-3.txt.2", False, 0);
-	ret &= check_result(&result, "T013-13.txt.3", True, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "t009-9.txt", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "t014-14.txt", false, 0);
+	ret &= check_result(&result, "t015-15.txt", false, 0);
+	ret &= check_result(&result, "t016-16.txt", true, FILE_ATTRIBUTE_NORMAL);
+	ret &= check_result(&result, "t017-17.txt", false, 0);
+	ret &= check_result(&result, "t018-18.txt", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "t019-19.txt", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "T013-13.txt.2", true, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "T003-3.txt.2", false, 0);
+	ret &= check_result(&result, "T013-13.txt.3", true, FILE_ATTRIBUTE_ARCHIVE);
 
 	if (!ret) {
 		for (i=0;i<result.count;i++) {
@@ -912,12 +912,12 @@ static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 	const int num_files = 700;
 	int i, fnum;
 	char *fname;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct multiple_result result;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Creating %d files\n", num_files);
@@ -927,7 +927,7 @@ static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		talloc_free(fname);
@@ -976,12 +976,12 @@ static bool test_many_dirs(struct torture_context *tctx,
 	const int num_dirs = 20;
 	int i, fnum, n;
 	char *fname, *dname;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_search_data *file, *file2, *file3;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Creating %d dirs\n", num_dirs);
@@ -992,7 +992,7 @@ static bool test_many_dirs(struct torture_context *tctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) Failed to create %s - %s\n", 
 			       __location__, dname, nt_errstr(status));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
@@ -1002,7 +1002,7 @@ static bool test_many_dirs(struct torture_context *tctx,
 			if (fnum == -1) {
 				printf("(%s) Failed to create %s - %s\n", 
 				       __location__, fname, smbcli_errstr(cli->tree));
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			talloc_free(fname);
@@ -1034,14 +1034,14 @@ static bool test_many_dirs(struct torture_context *tctx,
 		if (io.search_first.out.count != 1) {
 			printf("(%s) search first gave %d entries for dir %d - %s\n",
 			       __location__, io.search_first.out.count, i, nt_errstr(status));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		CHECK_STATUS(status, NT_STATUS_OK);
 		if (strncasecmp(file[i].search.name, fname, strlen(fname)) != 0) {
 			printf("(%s) incorrect name '%s' expected '%s'[12].txt\n", 
 			       __location__, file[i].search.name, fname);
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
@@ -1067,14 +1067,14 @@ static bool test_many_dirs(struct torture_context *tctx,
 		if (io2.search_next.out.count != 1) {
 			printf("(%s) search next gave %d entries for dir %d - %s\n",
 			       __location__, io2.search_next.out.count, i, nt_errstr(status));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		CHECK_STATUS(status, NT_STATUS_OK);
 		if (strncasecmp(file2[i].search.name, fname, strlen(fname)) != 0) {
 			printf("(%s) incorrect name '%s' expected '%s'[12].txt\n", 
 			       __location__, file2[i].search.name, fname);
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
@@ -1100,7 +1100,7 @@ static bool test_many_dirs(struct torture_context *tctx,
 		if (io2.search_next.out.count != 1) {
 			printf("(%s) search next gave %d entries for dir %d - %s\n",
 			       __location__, io2.search_next.out.count, i, nt_errstr(status));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		CHECK_STATUS(status, NT_STATUS_OK);
@@ -1108,14 +1108,14 @@ static bool test_many_dirs(struct torture_context *tctx,
 		if (strncasecmp(file3[i].search.name, file2[i].search.name, 3) != 0) {
 			printf("(%s) incorrect name '%s' on rewind at dir %d\n", 
 			       __location__, file2[i].search.name, i);
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
 		if (strcmp(file3[i].search.name, file2[i].search.name) != 0) {
 			printf("(%s) server did not rewind - got '%s' expected '%s'\n", 
 			       __location__, file3[i].search.name, file2[i].search.name);
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
@@ -1142,14 +1142,14 @@ static bool test_os2_delete(struct torture_context *tctx,
 	int total_deleted = 0;
 	int i, fnum;
 	char *fname;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_search_first io;
 	union smb_search_next io2;
 	struct multiple_result result;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing OS/2 style delete on %d files\n", num_files);
@@ -1159,7 +1159,7 @@ static bool test_os2_delete(struct torture_context *tctx,
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		talloc_free(fname);
@@ -1227,7 +1227,7 @@ static bool test_os2_delete(struct torture_context *tctx,
 	if (total_deleted != num_files) {
 		printf("error: deleted %d - expected to delete %d\n", 
 		       total_deleted, num_files);
-		ret = False;
+		ret = false;
 	}
 
 done:
@@ -1250,7 +1250,7 @@ static bool test_ea_list(struct torture_context *tctx,
 						 struct smbcli_state *cli)
 {
 	int  fnum;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_search_first io;
 	union smb_search_next nxt;
@@ -1258,7 +1258,7 @@ static bool test_ea_list(struct torture_context *tctx,
 	union smb_setfileinfo setfile;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_SEARCH_EA_LIST level\n");

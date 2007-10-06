@@ -23,9 +23,9 @@
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
-_PUBLIC_ BOOL smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_t ack_level)
+_PUBLIC_ bool smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_t ack_level)
 {
-	BOOL ret;
+	bool ret;
 	struct smbcli_request *req;
 
 	req = smbcli_request_setup(tree, SMBlockingX, 8, 0);
@@ -53,7 +53,7 @@ _PUBLIC_ BOOL smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_
 set the oplock handler for a connection
 ****************************************************************************/
 _PUBLIC_ void smbcli_oplock_handler(struct smbcli_transport *transport, 
-			BOOL (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
+			bool (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
 			void *private)
 {
 	transport->oplock.handler = handler;

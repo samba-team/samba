@@ -126,7 +126,7 @@ static struct brl_handle *brl_tdb_create_handle(TALLOC_CTX *mem_ctx, struct ntvf
 /*
   see if two locking contexts are equal
 */
-static BOOL brl_tdb_same_context(struct lock_context *ctx1, struct lock_context *ctx2)
+static bool brl_tdb_same_context(struct lock_context *ctx1, struct lock_context *ctx2)
 {
 	return (cluster_id_equal(&ctx1->server, &ctx2->server) &&
 		ctx1->smbpid == ctx2->smbpid &&
@@ -139,7 +139,7 @@ static BOOL brl_tdb_same_context(struct lock_context *ctx1, struct lock_context 
   lck1 is the existing lock. lck2 is the new lock we are 
   looking at adding
 */
-static BOOL brl_tdb_overlap(struct lock_struct *lck1, 
+static bool brl_tdb_overlap(struct lock_struct *lck1, 
 			    struct lock_struct *lck2)
 {
 	/* this extra check is not redundent - it copes with locks
@@ -147,12 +147,12 @@ static BOOL brl_tdb_overlap(struct lock_struct *lck1,
 	if (lck1->size != 0 &&
 	    lck1->start == lck2->start &&
 	    lck1->size == lck2->size) {
-		return True;
+		return true;
 	}
 	    
 	if (lck1->start >= (lck2->start+lck2->size) ||
 	    lck2->start >= (lck1->start+lck1->size)) {
-		return False;
+		return false;
 	}
 
 	/* we have a conflict. Now check to see if lck1 really still
@@ -163,28 +163,28 @@ static BOOL brl_tdb_overlap(struct lock_struct *lck1,
 	 * hasn't been written yet. When clustered this will need to
 	 * call into ctdb */
 
-	return True;
+	return true;
 } 
 
 /*
  See if lock2 can be added when lock1 is in place.
 */
-static BOOL brl_tdb_conflict(struct lock_struct *lck1, 
+static bool brl_tdb_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
 	/* pending locks don't conflict with anything */
 	if (lck1->lock_type >= PENDING_READ_LOCK ||
 	    lck2->lock_type >= PENDING_READ_LOCK) {
-		return False;
+		return false;
 	}
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
-		return False;
+		return false;
 	}
 
 	if (brl_tdb_same_context(&lck1->context, &lck2->context) &&
 	    lck2->lock_type == READ_LOCK && lck1->ntvfs == lck2->ntvfs) {
-		return False;
+		return false;
 	}
 
 	return brl_tdb_overlap(lck1, lck2);
@@ -195,16 +195,16 @@ static BOOL brl_tdb_conflict(struct lock_struct *lck1,
  Check to see if this lock conflicts, but ignore our own locks on the
  same fnum only.
 */
-static BOOL brl_tdb_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
+static bool brl_tdb_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
 {
 	/* pending locks don't conflict with anything */
 	if (lck1->lock_type >= PENDING_READ_LOCK ||
 	    lck2->lock_type >= PENDING_READ_LOCK) {
-		return False;
+		return false;
 	}
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
-		return False;
+		return false;
 
 	/*
 	 * note that incoming write calls conflict with existing READ
@@ -214,7 +214,7 @@ static BOOL brl_tdb_conflict_other(struct lock_struct *lck1, struct lock_struct 
 	if (brl_tdb_same_context(&lck1->context, &lck2->context) &&
 	    lck1->ntvfs == lck2->ntvfs &&
 	    (lck2->lock_type == READ_LOCK || lck1->lock_type == WRITE_LOCK)) {
-		return False;
+		return false;
 	}
 
 	return brl_tdb_overlap(lck1, lck2);

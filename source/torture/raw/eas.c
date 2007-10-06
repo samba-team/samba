@@ -33,26 +33,26 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
-static	BOOL maxeadebug; /* need that here, to allow no file delete in debug case */
+static	bool maxeadebug; /* need that here, to allow no file delete in debug case */
 
-static BOOL check_ea(struct smbcli_state *cli, 
+static bool check_ea(struct smbcli_state *cli, 
 		     const char *fname, const char *eaname, const char *value)
 {
 	NTSTATUS status = torture_check_ea(cli, fname, eaname, value);
 	return NT_STATUS_IS_OK(status);
 }
 
-static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	union smb_setfileinfo setfile;
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 
 	printf("TESTING SETFILEINFO EA_SET\n");
@@ -208,7 +208,7 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
 			}
 			i -= (high - low + 1) / 2;
 		}
-	} while (True);
+	} while (true);
 
 	return low;
 }
@@ -222,21 +222,21 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
  * maxeasize    65536   limit the max. size for a single EA name
  * maxeanames     101   limit of the number of tested names
  * maxeastart       1   this EA size is used to test for the 1st EA (atm)
- * maxeadebug       0   if set True, further debug output is done - in addition
+ * maxeadebug       0   if set true, further debug output is done - in addition
  *                      the testfile is not deleted for further inspection!
  *
  * Set some/all of these options on the cmdline with:
  * --option torture:maxeasize=1024 --option torture:maxeadebug=1 ...
  *
  */
-static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea_max.txt";
 	int fnum = -1;
-	BOOL ret = True;
-	BOOL err = False;
+	bool ret = true;
+	bool err = false;
 
 	int       i, j, k, last, total;
 	DATA_BLOB eablob;
@@ -255,19 +255,19 @@ static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* Do some sanity check on possibly passed parms */
 	if (maxeasize <= 0) {
 		printf("Invalid parameter 'maxeasize=%d'",maxeasize);
-		err = True;
+		err = true;
 	}
 	if (maxeanames <= 0) {
 		printf("Invalid parameter 'maxeanames=%d'",maxeanames);
-		err = True;
+		err = true;
 	}
 	if (maxeastart <= 0) {
 		printf("Invalid parameter 'maxeastart=%d'",maxeastart);
-		err = True;
+		err = true;
 	}
 	if (maxeadebug < 0) {
 		printf("Invalid parameter 'maxeadebug=%d'",maxeadebug);
-		err = True;
+		err = true;
 	}
 	if (err) {
 	  printf("\n\n");
@@ -353,7 +353,7 @@ static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf ("NOTE: More EAs could be available!\n");
 	} 
 	if (total == 0) {
-		ret = False;
+		ret = false;
 	}
 done:
 	smbcli_close(cli->tree, fnum);
@@ -363,12 +363,12 @@ done:
 /*
   test using NTTRANS CREATE to create a file with an initial EA set
 */
-static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea2.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	struct ea_struct eas[3];
 	struct smb_ea_list ea_list;
@@ -450,7 +450,7 @@ bool torture_raw_eas(struct torture_context *torture, struct smbcli_state *cli)
 	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_eas(cli, torture);
@@ -467,17 +467,17 @@ bool torture_raw_eas(struct torture_context *torture, struct smbcli_state *cli)
 bool torture_max_eas(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	mem_ctx = talloc_init("torture_raw_eas");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_max_eas(cli, mem_ctx);

@@ -45,7 +45,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	NTSTATUS status, status2;
 	const char *call_name;
 	time_t basetime = (time(NULL) - 86400) & ~1;
-	BOOL check_fnum;
+	bool check_fnum;
 	int n = time(NULL) % 100;
 	
 	asprintf(&path_fname, BASEDIR "\\fname_test_%d.txt", n);
@@ -54,7 +54,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 #define RECREATE_FILE(fname) do { \
@@ -63,7 +63,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	if (fnum == -1) { \
 		printf("(%s) ERROR: open of %s failed (%s)\n", \
 		       __location__, fname, smbcli_errstr(cli->tree)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -76,7 +76,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	RECREATE_BOTH;
 	
 #define CHECK_CALL_FNUM(call, rightstatus) do { \
-	check_fnum = True; \
+	check_fnum = true; \
 	call_name = #call; \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
 	sfinfo.generic.in.file.fnum = fnum; \
@@ -84,18 +84,18 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
-		ret = False; \
+		ret = false; \
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
 	finfo1.generic.in.file.fnum = fnum; \
 	status2 = smb_raw_fileinfo(cli->tree, torture, &finfo1); \
 	if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_CALL_PATH(call, rightstatus) do { \
-	check_fnum = False; \
+	check_fnum = false; \
 	call_name = #call; \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
 	sfinfo.generic.in.file.path = path_fname; \
@@ -107,7 +107,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
-		ret = False; \
+		ret = false; \
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
 	finfo1.generic.in.file.path = path_fname; \
@@ -118,7 +118,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 	} \
 	if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status2)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK1(call) \
@@ -137,7 +137,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 		} \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("%s - %s\n", #call, nt_errstr(status2)); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 
@@ -148,7 +148,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
 		dump_all_info(torture, &finfo1); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_TIME(call, stype, field, value) do { \
@@ -161,7 +161,7 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 		printf("\t%s", timestring(torture, value)); \
 		printf("\t%s\n", nt_time_string(torture, finfo2.stype.out.field)); \
 		dump_all_info(torture, &finfo1); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_STR(call, stype, field, value) do { \
@@ -172,14 +172,14 @@ bool torture_raw_sfileinfo(struct torture_context *torture,
 		        value, \
 			finfo2.stype.out.field); \
 		dump_all_info(torture, &finfo1); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -447,7 +447,7 @@ done:
 bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 								  struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 	int fnum_saved, d_fnum, fnum2, fnum = -1;
 	char *fnum_fname;
 	char *fnum_fname_new;
@@ -457,7 +457,7 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status, status2;
 	const char *call_name;
-	BOOL check_fnum;
+	bool check_fnum;
 	int n = time(NULL) % 100;
 	
 	asprintf(&path_fname, BASEDIR "\\fname_test_%d.txt", n);
@@ -466,7 +466,7 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	RECREATE_BOTH;
@@ -597,5 +597,5 @@ bool torture_raw_sfileinfo_bug(struct torture_context *torture,
 
 	printf("now try and delete %s\n", fname);
 
-	return True;
+	return true;
 }

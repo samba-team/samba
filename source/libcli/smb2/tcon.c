@@ -27,7 +27,7 @@
   initialise a smb2_session structure
  */
 struct smb2_tree *smb2_tree_init(struct smb2_session *session,
-				 TALLOC_CTX *parent_ctx, BOOL primary)
+				 TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smb2_tree *tree;
 
@@ -53,7 +53,7 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 	NTSTATUS status;
 
 	req = smb2_request_init(tree->session->transport, SMB2_OP_TCON, 
-				0x08, True, 0);
+				0x08, true, 0);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
@@ -81,7 +81,7 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x10, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x10, false);
 
 	io->out.tid      = IVAL(req->in.hdr,  SMB2_HDR_TID);
 

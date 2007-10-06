@@ -27,7 +27,7 @@
 /*
   Handle setfileinfo/setpathinfo passthu constructions
 */
-BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
+bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 				  enum smb_setfileinfo_level level,
 				  union smb_setfileinfo *parms, 
 				  DATA_BLOB *blob)
@@ -36,7 +36,7 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 
 #define NEED_BLOB(n) do { \
 	  *blob = data_blob_talloc(mem_ctx, NULL, n); \
-	  if (blob->data == NULL) return False; \
+	  if (blob->data == NULL) return false; \
         } while (0)
 
 	switch (level) {
@@ -48,22 +48,22 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 		smbcli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
 		SIVAL(blob->data,           32, parms->basic_info.in.attrib);
 		SIVAL(blob->data,           36, 0); /* padding */
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
 		NEED_BLOB(4);
 		SIVAL(blob->data, 0, parms->disposition_info.in.delete_on_close);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
 		NEED_BLOB(8);
 		SBVAL(blob->data, 0, parms->allocation_info.in.alloc_size);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		NEED_BLOB(8);
 		SBVAL(blob->data, 0, parms->end_of_file_info.in.size);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 		NEED_BLOB(12);
@@ -73,17 +73,17 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 						parms->rename_information.in.new_name, 
 						STR_UNICODE|STR_TERMINATE);
 		SIVAL(blob->data, 8, len - 2);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		NEED_BLOB(8);
 		SBVAL(blob->data, 0, parms->position_information.in.position);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		NEED_BLOB(4);
 		SIVAL(blob->data, 0, parms->mode_information.in.mode);
-		return True;
+		return true;
 
 	case RAW_FILEINFO_SEC_DESC: {
 		NTSTATUS status;
@@ -91,9 +91,9 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 		status = ndr_push_struct_blob(blob, mem_ctx,
 					      parms->set_secdesc.in.sd,
 					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-		if (!NT_STATUS_IS_OK(status)) return False;
+		if (!NT_STATUS_IS_OK(status)) return false;
 
-		return True;
+		return true;
 	}
 
 		/* Unhandled levels */
@@ -107,16 +107,16 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 
 	default:
 		DEBUG(0,("Unhandled setfileinfo passthru level %d\n", level));
-		return False;
+		return false;
 	}
 
-	return False;
+	return false;
 }
 
 /*
   Handle setfileinfo/setpathinfo trans2 backend.
 */
-static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
+static bool smb_raw_setinfo_backend(struct smbcli_tree *tree,
 				    TALLOC_CTX *mem_ctx,
 				    union smb_setfileinfo *parms, 
 				    DATA_BLOB *blob)
@@ -127,7 +127,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 	case RAW_SFILEINFO_SETATTRE:
 	case RAW_SFILEINFO_SEC_DESC:
 		/* not handled here */
-		return False;
+		return false;
 
 	case RAW_SFILEINFO_STANDARD:
 		NEED_BLOB(12);
@@ -137,12 +137,12 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 				  blob->data, 4, parms->standard.in.access_time);
 		raw_push_dos_date2(tree->session->transport, 
 				  blob->data, 8, parms->standard.in.write_time);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_EA_SET:
 		NEED_BLOB(ea_list_size(parms->ea_set.in.num_eas, parms->ea_set.in.eas));
 		ea_put_list(blob->data, parms->ea_set.in.num_eas, parms->ea_set.in.eas);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
@@ -164,7 +164,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		SBVAL(blob->data, 76, parms->unix_basic.in.unique_id);
 		SBVAL(blob->data, 84, parms->unix_basic.in.permissions);
 		SBVAL(blob->data, 92, parms->unix_basic.in.nlink);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_UNIX_INFO2:
 		NEED_BLOB(116);
@@ -184,7 +184,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		smbcli_push_nttime(blob->data, 100, parms->unix_info2.in.create_time);
 		SIVAL(blob->data, 108, parms->unix_info2.in.file_flags);
 		SIVAL(blob->data, 112, parms->unix_info2.in.flags_mask);
-		return True;
+		return true;
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
@@ -230,7 +230,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		break;
 	}
 
-	return False;
+	return false;
 }
 
 /****************************************************************************

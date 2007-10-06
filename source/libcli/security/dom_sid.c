@@ -241,24 +241,24 @@ NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 }
 
 /*
-  return True if the 2nd sid is in the domain given by the first sid
+  return true if the 2nd sid is in the domain given by the first sid
 */
-BOOL dom_sid_in_domain(const struct dom_sid *domain_sid, 
+bool dom_sid_in_domain(const struct dom_sid *domain_sid, 
 		       const struct dom_sid *sid)
 {
 	int i;
 
 	if (!domain_sid || !sid) {
-		return False;
+		return false;
 	}
 
 	if (domain_sid->num_auths > sid->num_auths) {
-		return False;
+		return false;
 	}
 
 	for (i = domain_sid->num_auths-1; i >= 0; --i) {
 		if (domain_sid->sub_auths[i] != sid->sub_auths[i]) {
-			return False;
+			return false;
 		}
 	}
 

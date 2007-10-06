@@ -88,7 +88,7 @@ static struct smbcli_state *connect_to_server(void *mem_ctx,
 	return cli;
 }
 
-static BOOL sid_parse(void *mem_ctx,
+static bool sid_parse(void *mem_ctx,
 		struct torture_context *torture,
 		DATA_BLOB *data, size_t *offset,
 		struct dom_sid **psid)
@@ -126,10 +126,10 @@ static BOOL sid_parse(void *mem_ctx,
 		(*offset) += 4;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
+static bool smb_raw_query_posix_whoami(void *mem_ctx,
 				struct torture_context *torture,
 				struct smbcli_state *cli,
 				struct smb_whoami *whoami,
@@ -205,7 +205,7 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 				"invalid SID count");
 		torture_assert_int_equal(torture, whoami->num_sid_bytes, 0,
 				"invalid SID byte count");
-		return True;
+		return true;
 	}
 
 	if (whoami->num_gids != 0) {
@@ -233,7 +233,7 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 	if (tp.out.data.length == offset) {
 		torture_assert_int_equal(torture, whoami->num_sids, 0,
 				"invalid SID count");
-		return True;
+		return true;
 	}
 
 	/* All the remaining bytes must be the SID list. */
@@ -252,7 +252,7 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 			if (!sid_parse(mem_ctx, torture,
 					&tp.out.data, &offset,
 					&whoami->sid_list[i])) {
-				return False;
+				return false;
 			}
 
 		}
@@ -262,10 +262,10 @@ static BOOL smb_raw_query_posix_whoami(void *mem_ctx,
 	torture_assert_int_equal(torture, tp.out.data.length, offset,
 			"trailing garbage bytes");
 
-	return True;
+	return true;
 }
 
-BOOL torture_unix_whoami(struct torture_context *torture)
+bool torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	struct cli_credentials *anon_credentials;
@@ -332,11 +332,11 @@ BOOL torture_unix_whoami(struct torture_context *torture)
 	}
 
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 
 fail:
 	talloc_free(mem_ctx);
-	return False;
+	return false;
 
 }
 

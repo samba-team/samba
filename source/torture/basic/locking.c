@@ -48,7 +48,7 @@ static bool torture_locktest1(struct torture_context *tctx,
 	uint_t lock_timeout;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
@@ -71,14 +71,14 @@ static bool torture_locktest1(struct torture_context *tctx,
 		"lock2 succeeded! This is a locking bug\n");
 
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-			 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+			 NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	torture_assert(tctx,
 		!NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK)),
 		"lock2 succeeded! This is a locking bug\n");
 
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return false;
 
 	torture_assert_ntstatus_ok(tctx, 
 		smbcli_lock(cli1->tree, fnum1, 5, 9, 0, WRITE_LOCK),
@@ -90,21 +90,21 @@ static bool torture_locktest1(struct torture_context *tctx,
 		"lock2 succeeded! This is a locking bug");
 	
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK)),
 		"lock2 succeeded! This is a locking bug");
 	
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+				 NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum3, 0, 4, 0, WRITE_LOCK)),
 		"lock2 succeeded! This is a locking bug");
 
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-			 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+			 NT_STATUS_FILE_LOCK_CONFLICT)) return false;
 
 	lock_timeout = (6 + (random() % 20));
 	torture_comment(tctx, "Testing lock timeout with timeout=%u\n", 
@@ -115,7 +115,7 @@ static bool torture_locktest1(struct torture_context *tctx,
 		"lock3 succeeded! This is a locking bug\n");
 
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+				 NT_STATUS_FILE_LOCK_CONFLICT)) return false;
 	t2 = time(NULL);
 
 	if (t2 - t1 < 5) {
@@ -133,7 +133,7 @@ static bool torture_locktest1(struct torture_context *tctx,
 		"lock4 succeeded! This is a locking bug");
 		
 	if (!check_error(__location__, cli2, ERRDOS, ERRlock, 
-			 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+			 NT_STATUS_FILE_LOCK_CONFLICT)) return false;
 
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
 		talloc_asprintf(tctx, "close2 failed (%s)", smbcli_errstr(cli1->tree)));
@@ -166,7 +166,7 @@ static bool torture_locktest2(struct torture_context *tctx,
 	int fnum1, fnum2, fnum3;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	torture_comment(tctx, "Testing pid context\n");
@@ -202,21 +202,21 @@ static bool torture_locktest2(struct torture_context *tctx,
 		"WRITE lock1 succeeded! This is a locking bug");
 		
 	if (!check_error(__location__, cli, ERRDOS, ERRlock, 
-			 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+			 NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_lock(cli->tree, fnum2, 0, 4, 0, WRITE_LOCK)),
 		"WRITE lock2 succeeded! This is a locking bug");
 
 	if (!check_error(__location__, cli, ERRDOS, ERRlock, 
-			 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+			 NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_lock(cli->tree, fnum2, 0, 4, 0, READ_LOCK)),
 		"READ lock2 succeeded! This is a locking bug");
 
 	if (!check_error(__location__, cli, ERRDOS, ERRlock, 
-			 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+			 NT_STATUS_FILE_LOCK_CONFLICT)) return false;
 
 	torture_assert_ntstatus_ok(tctx, 
 		smbcli_lock(cli->tree, fnum1, 100, 4, 0, WRITE_LOCK),
@@ -235,7 +235,7 @@ static bool torture_locktest2(struct torture_context *tctx,
 
 	if (!check_error(__location__, cli, 
 				 ERRDOS, ERRnotlocked, 
-				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+				 NT_STATUS_RANGE_NOT_LOCKED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_unlock(cli->tree, fnum1, 0, 8)),
@@ -243,13 +243,13 @@ static bool torture_locktest2(struct torture_context *tctx,
 
 	if (!check_error(__location__, cli, 
 			 ERRDOS, ERRnotlocked, 
-			 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+			 NT_STATUS_RANGE_NOT_LOCKED)) return false;
 
 	torture_assert(tctx, 
 		!NT_STATUS_IS_OK(smbcli_lock(cli->tree, fnum3, 0, 4, 0, WRITE_LOCK)),
 		"lock3 succeeded! This is a locking bug");
 
-	if (!check_error(__location__, cli, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
+	if (!check_error(__location__, cli, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return false;
 
 	cli->session->pid = 1;
 
@@ -285,7 +285,7 @@ static bool torture_locktest3(struct torture_context *tctx,
 	torture_comment(tctx, "Testing 32 bit offset ranges");
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
@@ -362,7 +362,7 @@ static bool torture_locktest3(struct torture_context *tctx,
 }
 
 #define EXPECTED(ret, v) if ((ret) != (v)) { \
-        torture_comment(tctx, "** "); correct = False; \
+        torture_comment(tctx, "** "); correct = false; \
         }
 
 /*
@@ -374,12 +374,12 @@ static bool torture_locktest4(struct torture_context *tctx,
 {
 	const char *fname = BASEDIR "\\lockt4.lck";
 	int fnum1, fnum2, f;
-	BOOL ret;
+	bool ret;
 	uint8_t buf[1000];
-	BOOL correct = True;
+	bool correct = true;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
@@ -389,80 +389,80 @@ static bool torture_locktest4(struct torture_context *tctx,
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
 		torture_comment(tctx, "Failed to create file\n");
-		correct = False;
+		correct = false;
 		goto fail;
 	}
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 2, 4, 0, WRITE_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "the same process %s set overlapping write locks\n", ret?"can":"cannot");
 	    
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 10, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 12, 4, 0, READ_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s set overlapping read locks\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 20, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 22, 4, 0, WRITE_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "a different connection %s set overlapping write locks\n", ret?"can":"cannot");
 	    
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 30, 4, 0, READ_LOCK)) &&
 		NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 32, 4, 0, READ_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "a different connection %s set overlapping read locks\n", ret?"can":"cannot");
 	
 	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, smbcli_lock(cli1->tree, fnum1, 40, 4, 0, WRITE_LOCK))) &&
 	      NT_STATUS_IS_OK((cli1->session->pid = 2, smbcli_lock(cli1->tree, fnum1, 42, 4, 0, WRITE_LOCK)));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "a different pid %s set overlapping write locks\n", ret?"can":"cannot");
 	    
 	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, smbcli_lock(cli1->tree, fnum1, 50, 4, 0, READ_LOCK))) &&
 	      NT_STATUS_IS_OK((cli1->session->pid = 2, smbcli_lock(cli1->tree, fnum1, 52, 4, 0, READ_LOCK)));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "a different pid %s set overlapping read locks\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 60, 4, 0, READ_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s set the same read lock twice\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 70, 4, 0, WRITE_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "the same process %s set the same write lock twice\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 80, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 80, 4, 0, WRITE_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "the same process %s overlay a read lock with a write lock\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 90, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 90, 4, 0, READ_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK((cli1->session->pid = 1, smbcli_lock(cli1->tree, fnum1, 100, 4, 0, WRITE_LOCK))) &&
 	      NT_STATUS_IS_OK((cli1->session->pid = 2, smbcli_lock(cli1->tree, fnum1, 100, 4, 0, READ_LOCK)));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "a different pid %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 110, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 112, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 110, 6));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "the same process %s coalesce read locks\n", ret?"can":"cannot");
 
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 120, 4, 0, WRITE_LOCK)) &&
 	      (smbcli_read(cli2->tree, fnum2, buf, 120, 4) == 4);
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "this server %s strict write locking\n", ret?"doesn't do":"does");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 130, 4, 0, READ_LOCK)) &&
 	      (smbcli_write(cli2->tree, fnum2, 0, buf, 130, 4) == 4);
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "this server %s strict read locking\n", ret?"doesn't do":"does");
 
 
@@ -470,7 +470,7 @@ static bool torture_locktest4(struct torture_context *tctx,
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 140, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 140, 4)) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 140, 4));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "this server %s do recursive read locking\n", ret?"does":"doesn't");
 
 
@@ -480,21 +480,21 @@ static bool torture_locktest4(struct torture_context *tctx,
 	      (smbcli_read(cli2->tree, fnum2, buf, 150, 4) == 4) &&
 	      !(smbcli_write(cli2->tree, fnum2, 0, buf, 150, 4) == 4) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 150, 4));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "this server %s do recursive lock overlays\n", ret?"does":"doesn't");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 160, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 160, 4)) &&
 	      (smbcli_write(cli2->tree, fnum2, 0, buf, 160, 4) == 4) &&		
 	      (smbcli_read(cli2->tree, fnum2, buf, 160, 4) == 4);		
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 170, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 170, 4)) &&
 	      (smbcli_write(cli2->tree, fnum2, 0, buf, 170, 4) == 4) &&		
 	      (smbcli_read(cli2->tree, fnum2, buf, 170, 4) == 4);		
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 190, 4, 0, WRITE_LOCK)) &&
@@ -502,7 +502,7 @@ static bool torture_locktest4(struct torture_context *tctx,
 	      NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 190, 4)) &&
 	      !(smbcli_write(cli2->tree, fnum2, 0, buf, 190, 4) == 4) &&		
 	      (smbcli_read(cli2->tree, fnum2, buf, 190, 4) == 4);		
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s remove the first lock first\n", ret?"does":"doesn't");
 
 	smbcli_close(cli1->tree, fnum1);
@@ -516,7 +516,7 @@ static bool torture_locktest4(struct torture_context *tctx,
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK));
         smbcli_close(cli1->tree, f);
 	smbcli_close(cli1->tree, fnum1);
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the server %s have the NT byte range lock bug\n", !ret?"does":"doesn't");
 
  fail:
@@ -535,12 +535,12 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 {
 	const char *fname = BASEDIR "\\lockt5.lck";
 	int fnum1, fnum2, fnum3;
-	BOOL ret;
+	bool ret;
 	uint8_t buf[1000];
-	BOOL correct = True;
+	bool correct = true;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
@@ -558,7 +558,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 	smbcli_close(cli1->tree, fnum1);
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 7, 1, 0, WRITE_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "this server %s the NT locking bug\n", ret ? "doesn't have" : "has");
 	smbcli_close(cli1->tree, fnum1);
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
@@ -566,11 +566,11 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 1, 1, 0, READ_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s overlay a write with a read lock\n", ret?"can":"cannot");
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 
 	torture_comment(tctx, "a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
 
@@ -578,7 +578,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 	smbcli_unlock(cli2->tree, fnum2, 0, 4);
 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum3, 0, 4, 0, READ_LOCK));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 
 	torture_comment(tctx, "the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
 
@@ -589,7 +589,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK)) &&
 		  NT_STATUS_IS_OK(smbcli_lock(cli1->tree, fnum1, 0, 4, 0, READ_LOCK));
 
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s stack read locks\n", ret?"can":"cannot");
 
 	/* Unlock the first process lock, then check this was the WRITE lock that was
@@ -598,7 +598,7 @@ static bool torture_locktest5(struct torture_context *tctx, struct smbcli_state 
 ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 	NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 0, 4, 0, READ_LOCK));
 
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the first unlock removes the %s lock\n", ret?"WRITE":"READ");
 
 	/* Unlock the process 2 lock. */
@@ -610,17 +610,17 @@ ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 		  NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 		  NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4));
 
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 	torture_comment(tctx, "the same process %s unlock the stack of 4 locks\n", ret?"can":"cannot"); 
 
 	/* Ensure the next unlock fails. */
 	ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4));
-	EXPECTED(ret, False);
+	EXPECTED(ret, false);
 	torture_comment(tctx, "the same process %s count the lock stack\n", !ret?"can":"cannot"); 
 
 	/* Ensure connection 2 can get a write lock. */
 	ret = NT_STATUS_IS_OK(smbcli_lock(cli2->tree, fnum2, 0, 4, 0, WRITE_LOCK));
-	EXPECTED(ret, True);
+	EXPECTED(ret, true);
 
 	torture_comment(tctx, "a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
 
@@ -644,7 +644,7 @@ static bool torture_locktest6(struct torture_context *tctx,
 	NTSTATUS status;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	for (i=0;i<1;i++) {
@@ -665,7 +665,7 @@ static bool torture_locktest6(struct torture_context *tctx,
 		smbcli_unlink(cli->tree, fname[i]);
 	}
 
-	return True;
+	return true;
 }
 
 static bool torture_locktest7(struct torture_context *tctx, 
@@ -676,7 +676,7 @@ static bool torture_locktest7(struct torture_context *tctx,
 	int fnum2 = -1;
 	size_t size;
 	uint8_t buf[200];
-	BOOL correct = False;
+	bool correct = false;
 
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 				   talloc_asprintf(tctx, "Unable to set up %s", BASEDIR));
@@ -785,7 +785,7 @@ static bool torture_locktest7(struct torture_context *tctx,
 	cli1->session->pid = 1;
 
 	smbcli_unlock(cli1->tree, fnum1, 130, 4);
-	correct = True;
+	correct = true;
 
 fail:
 	smbcli_close(cli1->tree, fnum1);

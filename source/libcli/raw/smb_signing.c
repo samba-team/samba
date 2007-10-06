@@ -28,41 +28,41 @@
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
-BOOL set_smb_signing_common(struct smb_signing_context *sign_info)
+bool set_smb_signing_common(struct smb_signing_context *sign_info)
 {
 	if (sign_info->doing_signing) {
 		DEBUG(5, ("SMB Signing already in progress, so we don't start it again\n"));
-		return False;
+		return false;
 	}
 
 	if (!sign_info->allow_smb_signing) {
 		DEBUG(5, ("SMB Signing has been locally disabled\n"));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
-static BOOL smbcli_set_smb_signing_common(struct smbcli_transport *transport)
+static bool smbcli_set_smb_signing_common(struct smbcli_transport *transport)
 {
 	if (!set_smb_signing_common(&transport->negotiate.sign_info)) {
-		return False;
+		return false;
 	}
 
 	if (!(transport->negotiate.sec_mode & 
 	      (NEGOTIATE_SECURITY_SIGNATURES_REQUIRED|NEGOTIATE_SECURITY_SIGNATURES_ENABLED))) {
 		DEBUG(5, ("SMB Signing is not negotiated by the peer\n"));
-		return False;
+		return false;
 	}
 
 	/* These calls are INCOMPATIBLE with SMB signing */
-	transport->negotiate.readbraw_supported = False;
-	transport->negotiate.writebraw_supported = False;
+	transport->negotiate.readbraw_supported = false;
+	transport->negotiate.writebraw_supported = false;
 
-	return True;
+	return true;
 }
 
 void mark_packet_signed(struct request_buffer *out) 
@@ -73,17 +73,17 @@ void mark_packet_signed(struct request_buffer *out)
 	SSVAL(out->hdr, HDR_FLG2, flags2);
 }
 
-BOOL signing_good(struct smb_signing_context *sign_info, 
-			 unsigned int seq, BOOL good) 
+bool signing_good(struct smb_signing_context *sign_info, 
+			 unsigned int seq, bool good) 
 {
 	if (good) {
 		if (!sign_info->doing_signing) {
 			DEBUG(5, ("Seen valid packet, so turning signing on\n"));
-			sign_info->doing_signing = True;
+			sign_info->doing_signing = true;
 		}
 		if (!sign_info->seen_valid) {
 			DEBUG(5, ("Seen valid packet, so marking signing as 'seen valid'\n"));
-			sign_info->seen_valid = True;
+			sign_info->seen_valid = true;
 		}
 	} else {
 		if (!sign_info->seen_valid) {
@@ -91,14 +91,14 @@ BOOL signing_good(struct smb_signing_context *sign_info,
 			DEBUG(5, ("signing_good: signing negotiated but not required and peer\n"
 				  "isn't sending correct signatures. Turning off.\n"));
 			smbcli_set_signing_off(sign_info);
-			return True;
+			return true;
 		} else {
 			/* bad packet after signing started - fail and disconnect. */
 			DEBUG(0, ("signing_good: BAD SIG: seq %u\n", seq));
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
@@ -133,9 +133,9 @@ void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, unsig
 	Uncomment this to test if the remote server actually verifies signitures...*/
 }
 
-BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
+bool check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
 {
-	BOOL good;
+	bool good;
 	uint8_t calc_md5_mac[16];
 	uint8_t *server_sent_mac;
 	uint8_t sequence_buf[8];
@@ -146,12 +146,12 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 
 	/* room enough for the signature? */
 	if (in->size < NBT_HDR_SIZE + HDR_SS_FIELD + 8) {
-		return False;
+		return false;
 	}
 
 	if (!mac_key->length) {
 		/* NO key yet */
-		return False;
+		return false;
 	}
 
 	/* its quite bogus to be guessing sequence numbers, but very useful
@@ -258,24 +258,24 @@ void smbcli_request_calculate_sign_mac(struct smbcli_request *req)
  @note Used as an initialisation only - it will not correctly
        shut down a real signing mechanism
 */
-BOOL smbcli_set_signing_off(struct smb_signing_context *sign_info)
+bool smbcli_set_signing_off(struct smb_signing_context *sign_info)
 {
 	DEBUG(5, ("Shutdown SMB signing\n"));
-	sign_info->doing_signing = False;
+	sign_info->doing_signing = false;
 	sign_info->next_seq_num = 0;
 	data_blob_free(&sign_info->mac_key);
 	sign_info->signing_state = SMB_SIGNING_ENGINE_OFF;
-	return True;
+	return true;
 }
 
 /**
  SMB signing - TEMP implementation - setup the MAC key.
 
 */
-BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
+bool smbcli_temp_set_signing(struct smbcli_transport *transport)
 {
 	if (!smbcli_set_smb_signing_common(transport)) {
-		return False;
+		return false;
 	}
 	DEBUG(5, ("BSRSPYL SMB signing enabled\n"));
 	smbcli_set_signing_off(&transport->negotiate.sign_info);
@@ -283,7 +283,7 @@ BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
 	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
 	transport->negotiate.sign_info.signing_state = SMB_SIGNING_ENGINE_BSRSPYL;
 
-	return True;
+	return true;
 }
 
 /***********************************************************
@@ -291,22 +291,22 @@ BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
 ************************************************************/
 /**
  * Check a packet supplied by the server.
- * @return False if we had an established signing connection
- *         which had a back checksum, True otherwise
+ * @return false if we had an established signing connection
+ *         which had a back checksum, true otherwise
  */
-BOOL smbcli_request_check_sign_mac(struct smbcli_request *req) 
+bool smbcli_request_check_sign_mac(struct smbcli_request *req) 
 {
-	BOOL good;
+	bool good;
 
 	switch (req->transport->negotiate.sign_info.signing_state) 
 	{
 	case SMB_SIGNING_ENGINE_OFF:
-		return True;
+		return true;
 	case SMB_SIGNING_ENGINE_BSRSPYL:
 	case SMB_SIGNING_ENGINE_ON:
 	{			
 		if (req->in.size < (HDR_SS_FIELD + 8)) {
-			return False;
+			return false;
 		} else {
 			good = check_signed_incoming_message(&req->in, 
 							     &req->transport->negotiate.sign_info.mac_key, 
@@ -317,14 +317,14 @@ BOOL smbcli_request_check_sign_mac(struct smbcli_request *req)
 		}
 	}
 	}
-	return False;
+	return false;
 }
 
 
 /***********************************************************
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
-BOOL smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
+bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 			       struct smb_signing_context *sign_info,
 			       const DATA_BLOB *user_session_key, 
 			       const DATA_BLOB *response)
@@ -354,19 +354,19 @@ BOOL smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 
 	sign_info->signing_state = SMB_SIGNING_ENGINE_ON;
 
-	return True;
+	return true;
 }
 
 
 /***********************************************************
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
-BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
+bool smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 					 const DATA_BLOB user_session_key, 
 					 const DATA_BLOB response)
 {
 	if (!smbcli_set_smb_signing_common(transport)) {
-		return False;
+		return false;
 	}
 
 	return smbcli_simple_set_signing(transport,
@@ -380,21 +380,21 @@ bool smbcli_init_signing(struct smbcli_transport *transport)
 {
 	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&transport->negotiate.sign_info)) {
-		return False;
+		return false;
 	}
 	
 	switch (lp_client_signing(global_loadparm)) {
 	case SMB_SIGNING_OFF:
-		transport->negotiate.sign_info.allow_smb_signing = False;
+		transport->negotiate.sign_info.allow_smb_signing = false;
 		break;
 	case SMB_SIGNING_SUPPORTED:
 	case SMB_SIGNING_AUTO:
-		transport->negotiate.sign_info.allow_smb_signing = True;
+		transport->negotiate.sign_info.allow_smb_signing = true;
 		break;
 	case SMB_SIGNING_REQUIRED:
-		transport->negotiate.sign_info.allow_smb_signing = True;
-		transport->negotiate.sign_info.mandatory_signing = True;
+		transport->negotiate.sign_info.allow_smb_signing = true;
+		transport->negotiate.sign_info.mandatory_signing = true;
 		break;
 	}
-	return True;
+	return true;
 }

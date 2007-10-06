@@ -258,7 +258,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 
 	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs, 
-			      False, NULL, NULL, &sasl_mechs_msgs);
+			      false, NULL, NULL, &sasl_mechs_msgs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n", 
 			  nt_errstr(status)));

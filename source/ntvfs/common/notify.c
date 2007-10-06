@@ -58,7 +58,7 @@ struct notify_list {
 #define NOTIFY_KEY "notify array"
 
 #define NOTIFY_ENABLE		"notify:enable"
-#define NOTIFY_ENABLE_DEFAULT	True
+#define NOTIFY_ENABLE_DEFAULT	true
 
 static NTSTATUS notify_remove_all(struct notify_context *notify);
 static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
@@ -86,7 +86,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 {
 	struct notify_context *notify;
 
-	if (share_bool_option(scfg, NOTIFY_ENABLE, NOTIFY_ENABLE_DEFAULT) != True) {
+	if (share_bool_option(scfg, NOTIFY_ENABLE, NOTIFY_ENABLE_DEFAULT) != true) {
 		return NULL;
 	}
 

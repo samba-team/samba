@@ -41,8 +41,8 @@ enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};
 static enum rdwr_mode check_rdwr(struct smbcli_tree *tree, int fnum)
 {
 	uint8_t c = 1;
-	BOOL can_read  = (smbcli_read(tree, fnum, &c, 0, 1) == 1);
-	BOOL can_write = (smbcli_write(tree, fnum, 0, &c, 0, 1) == 1);
+	bool can_read  = (smbcli_read(tree, fnum, &c, 0, 1) == 1);
+	bool can_write = (smbcli_write(tree, fnum, 0, &c, 0, 1) == 1);
 	if ( can_read &&  can_write) return RDWR_RDWR;
 	if ( can_read && !can_write) return RDWR_RDONLY;
 	if (!can_read &&  can_write) return RDWR_WRONLY;
@@ -67,7 +67,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -75,7 +75,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	fnum = create_complex_file(cli, mem_ctx, fname); \
 	if (fnum == -1) { \
 		printf("(%s) Failed to create %s - %s\n", __location__, fname, smbcli_errstr(cli->tree)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -84,7 +84,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	if (m != correct) { \
 		printf("(%s) Incorrect readwrite mode %s - expected %s\n", \
 		       __location__, rdwr_string(m), rdwr_string(correct)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_TIME(t, field) do { \
@@ -101,7 +101,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 		       timestring(mem_ctx, t1), \
 		       timestring(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_NTTIME(t, field) do { \
@@ -117,7 +117,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 		       nt_time_string(mem_ctx, t), \
 		       nt_time_string(mem_ctx, t2)); \
 		dump_all_info(mem_ctx, &finfo); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_ALL_INFO(v, field) do { \
@@ -129,14 +129,14 @@ static const char *rdwr_string(enum rdwr_mode m)
 		printf("(%s) wrong value for field %s  0x%x - 0x%x\n", \
 		       __location__, #field, (int)v, (int)(finfo.all_info.out.field)); \
 		dump_all_info(mem_ctx, &finfo); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) wrong value for %s  0x%x - should be 0x%x\n", \
 		       __location__, #v, (int)(v), (int)correct); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define SET_ATTRIB(sattrib) do { \
@@ -154,14 +154,14 @@ static const char *rdwr_string(enum rdwr_mode m)
 /*
   test RAW_OPEN_OPEN
 */
-static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
 	const char *fname = BASEDIR "\\torture_open.txt";
 	NTSTATUS status;
 	int fnum = -1, fnum2;
-	BOOL ret = True;
+	bool ret = true;
 
 	printf("Checking RAW_OPEN_OPEN\n");
 
@@ -265,7 +265,7 @@ done:
 /*
   test RAW_OPEN_OPENX
 */
-static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -273,26 +273,26 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname_exe = BASEDIR "\\torture_openx.exe";
 	NTSTATUS status;
 	int fnum = -1, fnum2;
-	BOOL ret = True;
+	bool ret = true;
 	int i;
 	struct timeval tv;
 	struct {
 		uint16_t open_func;
-		BOOL with_file;
+		bool with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {
-		{ OPENX_OPEN_FUNC_OPEN, 	                  True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_OPEN,  	                  False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_FAIL, 	                  True,  NT_STATUS_DOS(ERRDOS, ERRbadaccess) },
-		{ OPENX_OPEN_FUNC_FAIL, 	                  False, NT_STATUS_DOS(ERRDOS, ERRbadaccess) },
-		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN, 	                  true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN,  	                  false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_FAIL, 	                  true,  NT_STATUS_DOS(ERRDOS, ERRbadaccess) },
+		{ OPENX_OPEN_FUNC_FAIL, 	                  false, NT_STATUS_DOS(ERRDOS, ERRbadaccess) },
+		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
 	};
 
 	printf("Checking RAW_OPEN_OPENX\n");
@@ -314,7 +314,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			fnum = create_complex_file(cli, mem_ctx, fname);
 			if (fnum == -1) {
 				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			smbcli_close(cli->tree, fnum);
@@ -325,7 +325,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
-			ret = False;
+			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status)) {
 			smbcli_close(cli->tree, io.openx.out.file.fnum);
@@ -358,7 +358,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check the fields when the file already existed */
 	fnum2 = create_complex_file(cli, mem_ctx, fname);
 	if (fnum2 == -1) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	smbcli_close(cli->tree, fnum2);
@@ -426,7 +426,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (timeval_elapsed(&tv) > 3.0) {
 		printf("(%s) Incorrect timing in openx with timeout - waited %.2f seconds\n",
 		       __location__, timeval_elapsed(&tv));
-		ret = False;
+		ret = false;
 	}
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
@@ -495,7 +495,7 @@ done:
 
   many thanks to kukks for a sniff showing how this works with os2->w2k
 */
-static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -504,31 +504,31 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\torture_t2open_3.txt";
 	NTSTATUS status;
 	int fnum;
-	BOOL ret = True;
+	bool ret = true;
 	int i;
 	struct {
 		uint16_t open_func;
-		BOOL with_file;
+		bool with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {
-		{ OPENX_OPEN_FUNC_OPEN, 	                  True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_OPEN,  	                  False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_FAIL, 	                  True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL, 	                  False, NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OBJECT_NAME_COLLISION },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC, 	                  False, NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, True,  NT_STATUS_OK },
-		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, False, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN, 	                  true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN,  	                  false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_OPEN  | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_FAIL, 	                  true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_FAIL, 	                  false, NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_FAIL  | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OBJECT_NAME_COLLISION },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC, 	                  false, NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, true,  NT_STATUS_OK },
+		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
 	};
 
 	fnum = create_complex_file(cli, mem_ctx, fname1);
 	if (fnum == -1) {
 		d_printf("Failed to create file %s - %s\n", fname1, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	smbcli_close(cli->tree, fnum);
@@ -580,7 +580,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_func);
-			ret = False;
+			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status)) {
 			smbcli_close(cli->tree, io.t2open.out.file.fnum);
@@ -660,7 +660,7 @@ done:
 /*
   test RAW_OPEN_NTCREATEX
 */
-static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -668,27 +668,27 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *dname = BASEDIR "\\torture_ntcreatex.dir";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	int i;
 	struct {
 		uint32_t open_disp;
-		BOOL with_file;
+		bool with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {
-		{ NTCREATEX_DISP_SUPERSEDE, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_SUPERSEDE, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN, 	        True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN, 	        False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ NTCREATEX_DISP_CREATE, 	True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ NTCREATEX_DISP_CREATE, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN_IF, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN_IF, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE, 	False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ NTCREATEX_DISP_OVERWRITE_IF, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE_IF, 	False, NT_STATUS_OK },
-		{ 6, 			        True,  NT_STATUS_INVALID_PARAMETER },
-		{ 6, 	                        False, NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_SUPERSEDE, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_SUPERSEDE, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE, 	true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ NTCREATEX_DISP_CREATE, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	false, NT_STATUS_OK },
+		{ 6, 			        true,  NT_STATUS_INVALID_PARAMETER },
+		{ 6, 	                        false, NT_STATUS_INVALID_PARAMETER },
 	};
 
 	printf("Checking RAW_OPEN_NTCREATEX\n");
@@ -713,7 +713,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR|O_TRUNC, DENY_NONE);
 			if (fnum == -1) {
 				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			smbcli_close(cli->tree, fnum);
@@ -724,7 +724,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_disp);
-			ret = False;
+			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
 			smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
@@ -756,7 +756,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	smbcli_close(cli->tree, fnum);
@@ -833,7 +833,7 @@ done:
 /*
   test RAW_OPEN_NTTRANS_CREATE
 */
-static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -841,27 +841,27 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *dname = BASEDIR "\\torture_ntcreatex.dir";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	int i;
 	struct {
 		uint32_t open_disp;
-		BOOL with_file;
+		bool with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {
-		{ NTCREATEX_DISP_SUPERSEDE, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_SUPERSEDE, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN, 	        True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN, 	        False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ NTCREATEX_DISP_CREATE, 	True,  NT_STATUS_OBJECT_NAME_COLLISION },
-		{ NTCREATEX_DISP_CREATE, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN_IF, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OPEN_IF, 	False, NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE, 	False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-		{ NTCREATEX_DISP_OVERWRITE_IF, 	True,  NT_STATUS_OK },
-		{ NTCREATEX_DISP_OVERWRITE_IF, 	False, NT_STATUS_OK },
-		{ 6, 			        True,  NT_STATUS_INVALID_PARAMETER },
-		{ 6, 	                        False, NT_STATUS_INVALID_PARAMETER },
+		{ NTCREATEX_DISP_SUPERSEDE, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_SUPERSEDE, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE, 	true,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ NTCREATEX_DISP_CREATE, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	false, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	false, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	true,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	false, NT_STATUS_OK },
+		{ 6, 			        true,  NT_STATUS_INVALID_PARAMETER },
+		{ 6, 	                        false, NT_STATUS_INVALID_PARAMETER },
 	};
 
 	printf("Checking RAW_OPEN_NTTRANS_CREATE\n");
@@ -888,7 +888,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR|O_TRUNC, DENY_NONE);
 			if (fnum == -1) {
 				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			smbcli_close(cli->tree, fnum);
@@ -899,7 +899,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
 			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_disp);
-			ret = False;
+			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
 			smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
@@ -931,7 +931,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	smbcli_close(cli->tree, fnum);
@@ -1012,14 +1012,14 @@ done:
   open_disposition==NTCREATEX_DISP_OVERWRITE_IF. Windows 2003 allows the
   second open.
 */
-static BOOL test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io, io1;
 	union smb_lock io2;
 	struct smb_lock_entry lock[1];
 	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	printf("Testing ntcreatex with a byte range locked file\n");
 
@@ -1082,13 +1082,13 @@ static BOOL test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 /*
   test RAW_OPEN_MKNEW
 */
-static BOOL test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_mknew.txt";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
 
@@ -1137,13 +1137,13 @@ done:
 /*
   test RAW_OPEN_CREATE
 */
-static BOOL test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_create.txt";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
 
@@ -1193,12 +1193,12 @@ done:
 /*
   test RAW_OPEN_CTEMP
 */
-static BOOL test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
 	const char *name, *fname = NULL;
@@ -1236,13 +1236,13 @@ done:
 /*
   test chained RAW_OPEN_OPENX_READX
 */
-static BOOL test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_chained.txt";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	const char *buf = "test";
 	char buf2[4];
 
@@ -1278,7 +1278,7 @@ static BOOL test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
 		d_printf("wrong data in reply buffer\n");
-		ret = False;
+		ret = false;
 	}
 
 done:
@@ -1293,13 +1293,13 @@ done:
   NetApp filers are known to fail on this.
   
 */
-static BOOL test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_no_leading_slash.txt";
 	NTSTATUS status;
 	int fnum = -1;
-	BOOL ret = True;
+	bool ret = true;
 	const char *buf = "test";
 
 	printf("Checking RAW_OPEN_OPENX without leading slash on path\n");
@@ -1335,13 +1335,13 @@ done:
 
 /* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
 
-static BOOL test_raw_open_multi(void)
+static bool test_raw_open_multi(void)
 {
 	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_test_oplock_multi");
 	const char *fname = "\\test_oplock.dat";
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_open io;
 	struct smbcli_state **clients;
 	struct smbcli_request **requests;
@@ -1360,11 +1360,11 @@ static BOOL test_raw_open_multi(void)
 	if ((ev == NULL) || (clients == NULL) || (requests == NULL) ||
 	    (ios == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		return False;
+		return false;
 	}
 
 	if (!torture_open_connection_share(mem_ctx, &cli, host, share, ev)) {
-		return False;
+		return false;
 	}
 
 	cli->tree->session->transport->options.request_timeout = 60000;
@@ -1373,7 +1373,7 @@ static BOOL test_raw_open_multi(void)
 		if (!torture_open_connection_share(mem_ctx, &(clients[i]),
 						   host, share, ev)) {
 			DEBUG(0, ("Could not open %d'th connection\n", i));
-			return False;
+			return false;
 		}
 		clients[i]->tree->session->transport->
 			options.request_timeout = 60000;
@@ -1405,19 +1405,19 @@ static BOOL test_raw_open_multi(void)
 		requests[i] = smb_raw_open_send(clients[i]->tree, &ios[i]);
 		if (requests[i] == NULL) {
 			DEBUG(0, ("could not send %d'th request\n", i));
-			return False;
+			return false;
 		}
 	}
 
 	DEBUG(10, ("waiting for replies\n"));
 	while (1) {
-		BOOL unreplied = False;
+		bool unreplied = false;
 		for (i=0; i<num_files; i++) {
 			if (requests[i] == NULL) {
 				continue;
 			}
 			if (requests[i]->state < SMBCLI_REQUEST_DONE) {
-				unreplied = True;
+				unreplied = true;
 				break;
 			}
 			status = smb_raw_open_recv(requests[i], mem_ctx,
@@ -1443,12 +1443,12 @@ static BOOL test_raw_open_multi(void)
 
 		if (event_loop_once(ev) != 0) {
 			DEBUG(0, ("event_loop_once failed\n"));
-			return False;
+			return false;
 		}
 	}
 
 	if ((num_ok != 1) || (num_ok + num_collision != num_files)) {
-		ret = False;
+		ret = false;
 	}
 
 	for (i=0; i<num_files; i++) {

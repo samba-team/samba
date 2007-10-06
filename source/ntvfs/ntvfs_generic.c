@@ -116,21 +116,21 @@ static NTSTATUS ntvfs_map_async_finish(struct ntvfs_request *req, NTSTATUS statu
   see if a filename ends in EXE COM DLL or SYM. This is needed for the
   DENY_DOS mapping for OpenX
 */
-BOOL is_exe_filename(const char *fname)
+bool is_exe_filename(const char *fname)
 {
 	char *p;
 	p = strrchr(fname, '.');
 	if (!p) {
-		return False;
+		return false;
 	}
 	p++;
 	if (strcasecmp(p, "EXE") == 0 ||
 	    strcasecmp(p, "COM") == 0 ||
 	    strcasecmp(p, "DLL") == 0 ||
 	    strcasecmp(p, "SYM") == 0) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 
@@ -1247,7 +1247,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	rd2->readx.level = RAW_READ_READX;
-	rd2->readx.in.read_for_execute = False;
+	rd2->readx.in.read_for_execute = false;
 
 	switch (rd->generic.level) {
 	case RAW_READ_READX:

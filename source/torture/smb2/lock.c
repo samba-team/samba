@@ -32,7 +32,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -40,13 +40,13 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, v, correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
-static BOOL test_valid_request(struct torture_context *torture, struct smb2_tree *tree)
+static bool test_valid_request(struct torture_context *torture, struct smb2_tree *tree)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct smb2_handle h;
 	uint8_t buf[200];
@@ -194,11 +194,11 @@ struct test_lock_read_write_state {
 	NTSTATUS read_h2_status;
 };
 
-static BOOL test_lock_read_write(struct torture_context *torture,
+static bool test_lock_read_write(struct torture_context *torture,
 				 struct smb2_tree *tree,
 				 struct test_lock_read_write_state *s)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct smb2_handle h1, h2;
 	uint8_t buf[200];
@@ -317,7 +317,7 @@ done:
 	return ret;
 }
 
-static BOOL test_lock_rw_none(struct torture_context *torture, struct smb2_tree *tree)
+static bool test_lock_rw_none(struct torture_context *torture, struct smb2_tree *tree)
 {
 	struct test_lock_read_write_state s = {
 		.fname			= "lock_rw_none.dat",
@@ -331,7 +331,7 @@ static BOOL test_lock_rw_none(struct torture_context *torture, struct smb2_tree 
 	return test_lock_read_write(torture, tree, &s);
 }
 
-static BOOL test_lock_rw_shared(struct torture_context *torture, struct smb2_tree *tree)
+static bool test_lock_rw_shared(struct torture_context *torture, struct smb2_tree *tree)
 {
 	struct test_lock_read_write_state s = {
 		.fname			= "lock_rw_shared.dat",
@@ -345,7 +345,7 @@ static BOOL test_lock_rw_shared(struct torture_context *torture, struct smb2_tre
 	return test_lock_read_write(torture, tree, &s);
 }
 
-static BOOL test_lock_rw_exclusiv(struct torture_context *torture, struct smb2_tree *tree)
+static bool test_lock_rw_exclusiv(struct torture_context *torture, struct smb2_tree *tree)
 {
 	struct test_lock_read_write_state s = {
 		.fname			= "lock_rw_exclusiv.dat",

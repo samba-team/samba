@@ -287,7 +287,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	return result;
 }
 
-static BOOL test_netshareenum(struct smbcli_tree *tree)
+static bool test_netshareenum(struct smbcli_tree *tree)
 {
 	struct rap_NetShareEnum r;
 	int i;
@@ -297,7 +297,7 @@ static BOOL test_netshareenum(struct smbcli_tree *tree)
 	r.in.bufsize = 8192;
 
 	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(tree, tmp_ctx, &r)))
-		return False;
+		return false;
 
 	for (i=0; i<r.out.count; i++) {
 		printf("%s %d %s\n", r.out.info[i].info1.name,
@@ -307,7 +307,7 @@ static BOOL test_netshareenum(struct smbcli_tree *tree)
 
 	talloc_free(tmp_ctx);
 
-	return True;
+	return true;
 }
 
 static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
@@ -385,7 +385,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 	return result;
 }
 
-static BOOL test_netserverenum(struct smbcli_tree *tree)
+static bool test_netserverenum(struct smbcli_tree *tree)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
@@ -398,7 +398,7 @@ static BOOL test_netserverenum(struct smbcli_tree *tree)
 	r.in.domain = NULL;
 
 	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(tree, tmp_ctx, &r)))
-		return False;
+		return false;
 
 	for (i=0; i<r.out.count; i++) {
 		switch (r.in.level) {
@@ -415,7 +415,7 @@ static BOOL test_netserverenum(struct smbcli_tree *tree)
 
 	talloc_free(tmp_ctx);
 
-	return True;
+	return true;
 }
 
 _PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
@@ -477,14 +477,14 @@ _PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
-static BOOL test_netservergetinfo(struct smbcli_tree *tree)
+static bool test_netservergetinfo(struct smbcli_tree *tree)
 {
 	struct rap_WserverGetInfo r;
-	BOOL res = True;
+	bool res = true;
 	TALLOC_CTX *mem_ctx;
 
 	if (!(mem_ctx = talloc_new(tree))) {
-		return False;
+		return false;
 	}
 
 	r.in.bufsize = 0xffff;
@@ -498,9 +498,9 @@ static BOOL test_netservergetinfo(struct smbcli_tree *tree)
 	return res;
 }
 
-static BOOL test_rap(struct smbcli_tree *tree)
+static bool test_rap(struct smbcli_tree *tree)
 {
-	BOOL res = True;
+	bool res = true;
 
 	res &= test_netserverenum(tree);
 	res &= test_netshareenum(tree);
@@ -509,20 +509,20 @@ static BOOL test_rap(struct smbcli_tree *tree)
 	return res;
 }
 
-BOOL torture_rap_basic(struct torture_context *torture)
+bool torture_rap_basic(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	mem_ctx = talloc_init("torture_rap_basic");
 
 	if (!test_rap(cli->tree)) {
-		ret = False;
+		ret = false;
 	}
 
 	torture_close_connection(cli);
@@ -531,7 +531,7 @@ BOOL torture_rap_basic(struct torture_context *torture)
 	return ret;
 }
 
-BOOL torture_rap_scan(struct torture_context *torture)
+bool torture_rap_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;
@@ -540,7 +540,7 @@ BOOL torture_rap_scan(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rap_scan");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 	
 	for (callno = 0; callno < 0xffff; callno++) {
@@ -557,7 +557,7 @@ BOOL torture_rap_scan(struct torture_context *torture)
 
 	torture_close_connection(cli);
 
-	return True;
+	return true;
 }
 
 NTSTATUS torture_rap_init(void)

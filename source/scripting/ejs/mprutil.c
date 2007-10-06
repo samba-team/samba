@@ -134,7 +134,7 @@ struct MprVar mprString(const char *s)
 	if (s == NULL) {
 		return mprCreatePtrVar(NULL);
 	}
-	return mprCreateStringVar(s, True);
+	return mprCreateStringVar(s, true);
 }
 
 /*

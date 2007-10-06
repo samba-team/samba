@@ -150,10 +150,10 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 	return ok;
 }
 
-BOOL torture_ldap_uptodatevector(struct torture_context *torture)
+bool torture_ldap_uptodatevector(struct torture_context *torture)
 {
 	struct ldb_context *ldb;
-	BOOL ret = True;
+	bool ret = true;
 	const char *host = torture_setting_string(torture, "host", NULL);
 	char *url;
 
@@ -172,5 +172,5 @@ BOOL torture_ldap_uptodatevector(struct torture_context *torture)
 
 	return ret;
 failed:
-	return False;
+	return false;
 }

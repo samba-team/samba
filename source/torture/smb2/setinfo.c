@@ -36,10 +36,10 @@
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_smb2_setinfo(struct torture_context *torture)
+bool torture_smb2_setinfo(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_handle handle;
 	char *fname;
@@ -60,7 +60,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	fname_new = talloc_asprintf(mem_ctx, BASEDIR "fnum_test_new_%d.txt", n);
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 #define RECREATE_FILE(fname) do { \
@@ -69,7 +69,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) { \
 		printf("(%s) ERROR: open of %s failed (%s)\n", \
 		       __location__, fname, nt_errstr(status)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -87,7 +87,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	} \
 	} while (0)
@@ -99,7 +99,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		status2 = smb2_getinfo_file(tree, mem_ctx, &finfo2); \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("(%s) %s - %s\n", __location__, #call, nt_errstr(status2)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 		} \
 	}} while (0)
@@ -111,7 +111,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
 		torture_smb2_all_info(tree, handle); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -125,7 +125,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		printf("\t%s", timestring(mem_ctx, value)); \
 		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
 		torture_smb2_all_info(tree, handle); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -133,7 +133,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -262,7 +262,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		NDR_PRINT_DEBUG(security_descriptor, finfo2.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
-		ret = False;
+		ret = false;
 	}
 
 	printf("remove it again\n");
@@ -281,7 +281,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		NDR_PRINT_DEBUG(security_descriptor, finfo2.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
-		ret = False;
+		ret = false;
 	}
 
 done:

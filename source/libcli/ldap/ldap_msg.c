@@ -32,7 +32,7 @@ struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
+bool add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 			 struct ldb_message_element *attrib)
 {
 	attrib->values = talloc_realloc(mem_ctx, 
@@ -40,16 +40,16 @@ BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 					  DATA_BLOB,
 					  attrib->num_values+1);
 	if (attrib->values == NULL)
-		return False;
+		return false;
 
 	attrib->values[attrib->num_values].data = talloc_steal(attrib->values, 
 							       value->data);
 	attrib->values[attrib->num_values].length = value->length;
 	attrib->num_values += 1;
-	return True;
+	return true;
 }
 
-BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
+bool add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       const struct ldb_message_element *attrib,
 				       struct ldb_message_element **attribs,
 				       int *num_attribs)
@@ -60,16 +60,16 @@ BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    *num_attribs+1);
 
 	if (*attribs == NULL)
-		return False;
+		return false;
 
 	(*attribs)[*num_attribs] = *attrib;
 	talloc_steal(*attribs, attrib->values);
 	talloc_steal(*attribs, attrib->name);
 	*num_attribs += 1;
-	return True;
+	return true;
 }
 
-BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
+bool add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod *mod,
 				    struct ldap_mod **mods,
 				    int *num_mods)
@@ -77,10 +77,10 @@ BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 	*mods = talloc_realloc(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
 
 	if (*mods == NULL)
-		return False;
+		return false;
 
 	(*mods)[*num_mods] = *mod;
 	*num_mods += 1;
-	return True;
+	return true;
 }
 

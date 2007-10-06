@@ -33,7 +33,7 @@
  Initialize the session context
 ****************************************************************************/
 struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport, 
-					   TALLOC_CTX *parent_ctx, BOOL primary)
+					   TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smbcli_session *session;
 	uint16_t flags2;

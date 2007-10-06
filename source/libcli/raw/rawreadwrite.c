@@ -31,13 +31,13 @@
 ****************************************************************************/
 struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
 {
-	BOOL bigoffset = False;
+	bool bigoffset = false;
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
 	case RAW_READ_READBRAW:
 		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
-			bigoffset = True;
+			bigoffset = true;
 		}
 		SETUP_REQUEST(SMBreadbraw, bigoffset? 10:8, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->readbraw.in.file.fnum);
@@ -69,7 +69,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 
 	case RAW_READ_READX:
 		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
-			bigoffset = True;
+			bigoffset = true;
 		}
 		SETUP_REQUEST(SMBreadX, bigoffset ? 12 : 10, 0);
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
@@ -206,7 +206,7 @@ NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 ****************************************************************************/
 struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
 {
-	BOOL bigoffset = False;
+	bool bigoffset = false;
 	struct smbcli_request *req = NULL; 
 
 	switch (parms->generic.level) {
@@ -253,7 +253,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 
 	case RAW_WRITE_WRITEX:
 		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
-			bigoffset = True;
+			bigoffset = true;
 		}
 		SETUP_REQUEST(SMBwriteX, bigoffset ? 14 : 12, parms->writex.in.count);
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);

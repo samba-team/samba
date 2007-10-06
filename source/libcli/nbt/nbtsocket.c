@@ -241,7 +241,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		/* we know we won't need any more retries - the server
 		   has received our request */
 		req->num_retries   = 0;
-		req->received_wack = True;
+		req->received_wack = true;
 		/* although there can be a timeout in the packet, w2k3 screws it up,
 		   so better to set it ourselves */		   
 		req->timeout = lp_parm_int(global_loadparm, NULL, "nbt", "wack_timeout", 30);
@@ -355,7 +355,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 					       struct socket_address *dest,
 					       struct nbt_name_packet *request,
 					       int timeout, int retries,
-					       BOOL allow_multiple_replies)
+					       bool allow_multiple_replies)
 {
 	struct nbt_name_request *req;
 	int id;
@@ -367,7 +367,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	req->nbtsock                = nbtsock;
 	req->allow_multiple_replies = allow_multiple_replies;
 	req->state                  = NBT_REQUEST_SEND;
-	req->is_reply               = False;
+	req->is_reply               = false;
 	req->timeout                = timeout;
 	req->num_retries            = retries;
 	req->dest                   = dest;
@@ -431,7 +431,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	req->dest = dest;
 	if (talloc_reference(req, dest) == NULL) goto failed;
 	req->state     = NBT_REQUEST_SEND;
-	req->is_reply = True;
+	req->is_reply = true;
 
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 

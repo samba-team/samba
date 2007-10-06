@@ -25,7 +25,7 @@
 struct delete_state {
 	struct smbcli_tree *tree;
 	int total_deleted;
-	BOOL failed;
+	bool failed;
 };
 
 /* 
@@ -61,14 +61,14 @@ static void delete_fn(struct clilist_file_info *finfo, const char *name, void *s
 		if (NT_STATUS_IS_ERR(smbcli_rmdir(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
 				 s, smbcli_errstr(dstate->tree)));
-			dstate->failed = True;
+			dstate->failed = true;
 		}
 		dstate->total_deleted++;
 	} else {
 		if (NT_STATUS_IS_ERR(smbcli_unlink(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
 				 s, smbcli_errstr(dstate->tree)));
-			dstate->failed = True;
+			dstate->failed = true;
 		}
 		dstate->total_deleted++;
 	}
@@ -87,7 +87,7 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 
 	dstate.tree = tree;
 	dstate.total_deleted = 0;
-	dstate.failed = False;
+	dstate.failed = false;
 
 	/* it might be a file */
 	if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {

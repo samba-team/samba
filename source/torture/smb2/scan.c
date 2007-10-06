@@ -35,7 +35,7 @@
 /* 
    scan for valid SMB2 getinfo levels
 */
-BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
+bool torture_smb2_getinfo_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -45,20 +45,20 @@ BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
 	int c, i;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex file '%s'\n", FNAME);
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, FNAME ":2ndstream");
 
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex dir  '%s'\n", DNAME);
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, DNAME ":2ndstream");
 
@@ -97,13 +97,13 @@ BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }
 
 /* 
    scan for valid SMB2 setinfo levels
 */
-BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
+bool torture_smb2_setinfo_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -113,13 +113,13 @@ BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
 	int c, i;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex file '%s'\n", FNAME);
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, FNAME ":2ndstream");
 
@@ -143,14 +143,14 @@ BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }
 
 
 /* 
    scan for valid SMB2 scan levels
 */
-BOOL torture_smb2_find_scan(struct torture_context *torture)
+bool torture_smb2_find_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -160,13 +160,13 @@ BOOL torture_smb2_find_scan(struct torture_context *torture)
 	int i;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open roothandle - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(io);
@@ -191,13 +191,13 @@ BOOL torture_smb2_find_scan(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }
 
 /* 
    scan for valid SMB2 opcodes
 */
-BOOL torture_smb2_scan(struct torture_context *torture)
+bool torture_smb2_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -212,13 +212,13 @@ BOOL torture_smb2_scan(struct torture_context *torture)
 			      event_context_find(mem_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connection failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	tree->session->transport->options.timeout = 3;
 
 	for (opcode=0;opcode<1000;opcode++) {
-		req = smb2_request_init_tree(tree, opcode, 2, False, 0);
+		req = smb2_request_init_tree(tree, opcode, 2, false, 0);
 		SSVAL(req->out.body, 0, 0);
 		smb2_transport_send(req);
 		if (!smb2_request_receive(req)) {
@@ -227,7 +227,7 @@ BOOL torture_smb2_scan(struct torture_context *torture)
 					      event_context_find(mem_ctx));
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Connection failed - %s\n", nt_errstr(status));
-				return False;
+				return false;
 			}
 			tree->session->transport->options.timeout = 3;
 		} else {
@@ -238,5 +238,5 @@ BOOL torture_smb2_scan(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }

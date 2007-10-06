@@ -161,12 +161,12 @@ static bool test_samr_ops(struct torture_context *tctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 				printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(status));
-				return False;
+				return false;
 			}
 		}
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -177,7 +177,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct lsa_GetUserName r;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct lsa_StringPointer authority_name_p;
 
 	printf("\nTesting GetUserName\n");
@@ -194,30 +194,30 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		printf("not considering %s to be an error\n", nt_errstr(status));
 	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("GetUserName failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else {
 		if (!r.out.account_name) {
-			return False;
+			return false;
 		}
 		
 		if (strcmp(r.out.account_name->string, "ANONYMOUS LOGON") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
 			       r.out.account_name->string, "ANONYMOUS LOGON");
-			return False;
+			return false;
 		}
 		if (!r.out.authority_name || !r.out.authority_name->string) {
-			return False;
+			return false;
 		}
 		
 		if (strcmp(r.out.authority_name->string->string, "NT AUTHORITY") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
 			       r.out.authority_name->string->string, "NT AUTHORITY");
-			return False;
+			return false;
 		}
 	}
 	if (!test_many_LookupSids(p, tctx, NULL)) {
 		printf("LsaLookupSids3 failed!\n");
-		return False;
+		return false;
 	}
 
 	return ret;
@@ -388,7 +388,7 @@ static bool test_schannel(struct torture_context *tctx,
  */
 bool torture_rpc_schannel(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	struct {
 		uint16_t acct_flags;
 		uint32_t dcerpc_flags;

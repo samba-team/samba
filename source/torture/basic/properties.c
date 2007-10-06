@@ -91,7 +91,7 @@ static void show_bits(const struct bitmapping *bm, uint32_t value)
 bool torture_test_properties(struct torture_context *torture, 
 			     struct smbcli_state *cli)
 {
-	BOOL correct = True;
+	bool correct = true;
 	union smb_fsinfo fs;
 	NTSTATUS status;
 	
@@ -103,7 +103,7 @@ bool torture_test_properties(struct torture_context *torture,
 	status = smb_raw_fsinfo(cli->tree, cli, &fs);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("qfsinfo failed - %s\n", nt_errstr(status));
-		correct = False;
+		correct = false;
 	} else {
 		d_printf("Filesystem attributes: 0x%08x\n", 
 			 fs.attribute_info.out.fs_attr);

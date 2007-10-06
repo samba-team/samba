@@ -28,14 +28,14 @@
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
-static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
 	struct srvsvc_NetShareCtr0 c0;
 	uint32_t levels[] = {0, 1, 2, 501, 502};
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	uint32_t resume_handle;
 
 	ZERO_STRUCT(c0);
@@ -53,7 +53,7 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 		if (!W_ERROR_IS_OK(r.out.result)) {
@@ -68,10 +68,10 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   benchmark srvsvc netshareenumall queries
 */
-static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct timeval tv = timeval_current();
-	BOOL ret = True;
+	bool ret = true;
 	int timelimit = lp_parm_int(global_loadparm, NULL, "torture", "timelimit", 10);
 	int count=0;
 
@@ -95,12 +95,12 @@ static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL torture_bench_rpc(struct torture_context *torture)
+bool torture_bench_rpc(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");
 
@@ -109,11 +109,11 @@ BOOL torture_bench_rpc(struct torture_context *torture)
 					&ndr_table_srvsvc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	if (!bench_NetShareEnumAll(p, mem_ctx)) {
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(mem_ctx);

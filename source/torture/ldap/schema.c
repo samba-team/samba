@@ -43,13 +43,13 @@ struct test_rootDSE {
 struct test_schema_ctx {
 	struct ldb_paged_control *ctrl;
 	uint32_t count;
-	BOOL pending;
+	bool pending;
 
 	int (*callback)(void *, struct ldb_context *ldb, struct ldb_message *);
 	void *private_data;
 };
 
-static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *root)
+static bool test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *root)
 {
 	int ret;
 	struct ldb_message *msg;
@@ -60,10 +60,10 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 	ret = ldb_search(ldb, ldb_dn_new(ldb, ldb, NULL), LDB_SCOPE_BASE, 
 			 NULL, NULL, &r);
 	if (ret != LDB_SUCCESS) {
-		return False;
+		return false;
 	} else if (r->count != 1) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
 
 	msg = r->msgs[0];
@@ -79,7 +79,7 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 
 	talloc_free(r);
 
-	return True;
+	return true;
 }
 
 static int test_schema_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
@@ -115,7 +115,7 @@ static int test_schema_search_callback(struct ldb_context *ldb, void *context, s
 			actx->ctrl->cookie_len = ctrl->cookie_len;
 
 			if (actx->ctrl->cookie_len > 0) {
-				actx->pending = True;
+				actx->pending = true;
 			}
 		}
 		break;
@@ -138,7 +138,7 @@ static int test_schema_search_callback(struct ldb_context *ldb, void *context, s
 	return LDB_SUCCESS;
 }
 
-static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE *root,
+static bool test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE *root,
 				    const char *filter,
 				    int (*callback)(void *, struct ldb_context *ldb, struct ldb_message *),
 				    void *private_data)
@@ -155,7 +155,7 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	ctrl = talloc_array(req, struct ldb_control *, 2);
 	ctrl[0] = talloc(ctrl, struct ldb_control);
 	ctrl[0]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
-	ctrl[0]->critical = True;
+	ctrl[0]->critical = true;
 	control = talloc(ctrl[0], struct ldb_paged_control);
 	control->size = 1000;
 	control->cookie = NULL;
@@ -179,25 +179,25 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	actx->callback		= callback;
 	actx->private_data	= private_data;
 again:
-	actx->pending		= False;
+	actx->pending		= false;
 
 	ret = ldb_request(ldb, req);
 	if (ret != LDB_SUCCESS) {
 		d_printf("search failed - %s\n", ldb_errstring(ldb));
-		return False;
+		return false;
 	}
 
 	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		d_printf("search error - %s\n", ldb_errstring(ldb));
-		return False;
+		return false;
 	}
 
 	if (actx->pending)
 		goto again;
 
 	d_printf("filter[%s] count[%u]\n", filter, actx->count);
-	return True;
+	return true;
 }
 
 static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_message *msg)
@@ -245,9 +245,9 @@ failed:
 	return LDB_ERR_OTHER;
 }
 
-static BOOL test_create_schema(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema **_schema)
+static bool test_create_schema(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema **_schema)
 {
-	BOOL ret = True;
+	bool ret = true;
 	struct dsdb_schema *schema;
 
 	schema = talloc_zero(ldb, struct dsdb_schema);
@@ -259,13 +259,13 @@ static BOOL test_create_schema(struct ldb_context *ldb, struct test_rootDSE *roo
 	ret &= test_create_schema_type(ldb, root, "(objectClass=classSchema)",
 				       test_add_class, schema);
 
-	if (ret == True) {
+	if (ret == true) {
 		*_schema = schema;
 	}
 	return ret;
 }
 
-static BOOL test_dump_not_replicated(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
+static bool test_dump_not_replicated(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
 {
 	struct dsdb_attribute *a;
 	uint32_t a_i = 1;
@@ -278,10 +278,10 @@ static BOOL test_dump_not_replicated(struct ldb_context *ldb, struct test_rootDS
 			 a->lDAPDisplayName);
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_dump_partial(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
+static bool test_dump_partial(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
 {
 	struct dsdb_attribute *a;
 	uint32_t a_i = 1;
@@ -295,10 +295,10 @@ static BOOL test_dump_partial(struct ldb_context *ldb, struct test_rootDSE *root
 			 a->lDAPDisplayName);
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_dump_contructed(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
+static bool test_dump_contructed(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
 {
 	struct dsdb_attribute *a;
 	uint32_t a_i = 1;
@@ -311,10 +311,10 @@ static BOOL test_dump_contructed(struct ldb_context *ldb, struct test_rootDSE *r
 			 a->lDAPDisplayName);
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
+static bool test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
 {
 	struct dsdb_attribute *a;
 	uint32_t a_i = 1;
@@ -350,7 +350,7 @@ static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 
 			om_hex = data_blob_hex_string(ldb, &a->oMObjectClass);
 			if (!om_hex) {
-				return False;
+				return false;
 			}
 
 			d_printf("attr[%4u]: %s %u '%s' '%s'\n", a_i++,
@@ -360,13 +360,13 @@ static BOOL test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 		}
 	}
 
-	return True;
+	return true;
 }
 
-BOOL torture_ldap_schema(struct torture_context *torture)
+bool torture_ldap_schema(struct torture_context *torture)
 {
 	struct ldb_context *ldb;
-	BOOL ret = True;
+	bool ret = true;
 	const char *host = torture_setting_string(torture, "host", NULL);
 	char *url;
 	struct test_rootDSE rootDSE;

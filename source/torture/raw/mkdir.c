@@ -30,23 +30,23 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
 /*
   test mkdir ops
 */
-static BOOL test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_mkdir md;
 	struct smb_rmdir rd;
 	const char *path = BASEDIR "\\mkdir.dir";
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	/* 

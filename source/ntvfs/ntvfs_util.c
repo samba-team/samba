@@ -112,7 +112,7 @@ _PUBLIC_ NTSTATUS ntvfs_handle_set_backend_data(struct ntvfs_handle *h,
 						TALLOC_CTX *private_data)
 {
 	struct ntvfs_handle_data *d;
-	BOOL first_time = h->backend_data?False:True;
+	bool first_time = h->backend_data?false:true;
 
 	for (d=h->backend_data; d; d = d->next) {
 		if (d->owner != ntvfs) continue;

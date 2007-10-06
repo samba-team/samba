@@ -42,7 +42,7 @@ static bool test_sidtouid(struct torture_context *tctx, struct dcerpc_pipe *p)
 	if (NT_STATUS_EQUAL(NT_STATUS_NONE_MAPPED, status)) {
 	} else torture_assert_ntstatus_ok(tctx, status, "SidToUid failed");
 
-	return True;
+	return true;
 }
 
 /*

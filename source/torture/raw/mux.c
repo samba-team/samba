@@ -30,7 +30,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -38,12 +38,12 @@
 /*
   test the delayed reply to a open that leads to a sharing violation
 */
-static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	NTSTATUS status;
 	int fnum1, fnum2;
-	BOOL ret = True;
+	bool ret = true;
 	struct smbcli_request *req1, *req2;
 	struct timeval tv;
 	double d;
@@ -104,7 +104,7 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	d = timeval_elapsed(&tv);
 	if (d > 0.25) {
 		printf("bad timeout after cancel - %.2f should be <0.25\n", d);
-		ret = False;
+		ret = false;
 	}
 
 	printf("close the 2nd sync open\n");
@@ -117,7 +117,7 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	d = timeval_elapsed(&tv);
 	if (d > 0.25) {
 		printf("bad timeout for async conflict - %.2f should be <0.25\n", d);
-		ret = False;
+		ret = false;
 	} else {
 		printf("async open delay %.2f\n", d);
 	}
@@ -141,12 +141,12 @@ done:
 /*
   test a write that hits a byte range lock and send the close after the write
 */
-static BOOL test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_write io;
 	NTSTATUS status;
 	int fnum;
-	BOOL ret = True;
+	bool ret = true;
 	struct smbcli_request *req;
 
 	printf("testing multiplexed lock/write/close\n");
@@ -154,7 +154,7 @@ static BOOL test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = smbcli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -163,7 +163,7 @@ static BOOL test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* lock a range */
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK))) {
 		printf("lock failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -197,12 +197,12 @@ done:
 /*
   test a lock that conflicts with an existing lock
 */
-static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_lock io;
 	NTSTATUS status;
 	int fnum;
-	BOOL ret = True;
+	bool ret = true;
 	struct smbcli_request *req;
 	struct smb_lock_entry lock[1];
 	struct timeval t;
@@ -212,7 +212,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = smbcli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -256,7 +256,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("async lock took %.2f msec\n", timeval_elapsed(&t) * 1000);
 	if (timeval_elapsed(&t) > 0.1) {
 		printf("failed to trigger early lock retry\n");
-		return False;		
+		return false;		
 	}
 
 	printf("reopening with an exit\n");
@@ -330,7 +330,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("async lock exit took %.2f msec\n", timeval_elapsed(&t) * 1000);
 	if (timeval_elapsed(&t) > 0.1) {
 		printf("failed to trigger early lock failure\n");
-		return False;		
+		return false;		
 	}
 
 done:

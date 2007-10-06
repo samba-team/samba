@@ -24,15 +24,16 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
+
 #include "torture/libnet/utils.h"
 
 
-static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle,
 			 const char *name)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct libnet_rpc_useradd user;
 	
 	user.in.domain_handle = *domain_handle;
@@ -43,14 +44,14 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_useradd(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call libnet_rpc_useradd - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
 	return ret;
 }
 
 
-static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle, const char* username)
 {
 	NTSTATUS status;
@@ -65,21 +66,20 @@ static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	c = libnet_rpc_useradd_send(p, &user, msg_handler);
 	if (!c) {
 		printf("Failed to call async libnet_rpc_useradd\n");
-		return False;
+		return false;
 	}
 
 	status = libnet_rpc_useradd_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Calling async libnet_rpc_useradd failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 
 }
 
-
-static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, int num_changes,
 			 struct libnet_rpc_usermod *mod, char **username)
 {
@@ -206,14 +206,14 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_usermod(p, mem_ctx, mod);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_usermod - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, const char *username)
 {
 	NTSTATUS status;
@@ -225,10 +225,10 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_userdel(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -238,7 +238,7 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("'%s' field does not match\n", #fld); \
 		printf("received: '%s'\n", i->fld.string); \
 		printf("expected: '%s'\n", mod->in.change.fld); \
-		return False; \
+		return false; \
 	}
 
 
@@ -252,7 +252,7 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("expected: '%s (+%ld us)'\n", \
 			       timestring(mem_ctx, mod->in.change.fld->tv_sec), \
 			       mod->in.change.fld->tv_usec); \
-			return False; \
+			return false; \
 		} \
 	}
 
@@ -262,11 +262,11 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("'%s' field does not match\n", #fld); \
 		printf("received: '%04x'\n", i->fld); \
 		printf("expected: '%04x'\n", mod->in.change.fld); \
-		return False; \
+		return false; \
 	}
 
 
-static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, struct libnet_rpc_usermod *mod,
 			 const char *username)
 {
@@ -284,7 +284,7 @@ static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_userinfo(p, mem_ctx, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	i = &info.out.info.info21;
@@ -300,11 +300,11 @@ static BOOL test_compare(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	CMP_TIME_FLD(acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
 	CMP_NUM_FLD(acct_flags, USERMOD_FIELD_ACCT_FLAGS)
 
-	return True;
+	return true;
 }
 
 
-BOOL torture_useradd(struct torture_context *torture)
+bool torture_useradd(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -313,7 +313,7 @@ BOOL torture_useradd(struct torture_context *torture)
 	struct dom_sid2 sid;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("test_useradd");
 
@@ -322,37 +322,37 @@ BOOL torture_useradd(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_useradd(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_useradd_async(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -372,7 +372,7 @@ bool torture_userdel(struct torture_context *torture)
 	uint32_t rid;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("test_userdel");
 
@@ -381,22 +381,22 @@ bool torture_userdel(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_create(p, mem_ctx, &h, name, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
        	if (!test_userdel(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -406,7 +406,7 @@ done:
 }
 
 
-BOOL torture_usermod(struct torture_context *torture)
+bool torture_usermod(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -417,7 +417,7 @@ BOOL torture_usermod(struct torture_context *torture)
 	int i;
 	char *name;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("test_userdel");
 
@@ -426,7 +426,7 @@ BOOL torture_usermod(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -434,12 +434,12 @@ BOOL torture_usermod(struct torture_context *torture)
 	name = talloc_strdup(mem_ctx, TEST_USERNAME);
 
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_create(p, mem_ctx, &h, name, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -447,19 +447,19 @@ BOOL torture_usermod(struct torture_context *torture)
 		struct libnet_rpc_usermod m;
 
 		if (!test_usermod(p, mem_ctx, &h, i, &m, &name)) {
-			ret = False;
+			ret = false;
 			goto cleanup;
 		}
 
 		if (!test_compare(p, mem_ctx, &h, &m, name)) {
-			ret = False;
+			ret = false;
 			goto cleanup;
 		}
 	}
 	
 cleanup:	
 	if (!test_user_cleanup(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

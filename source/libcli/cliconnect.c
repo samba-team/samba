@@ -30,24 +30,24 @@
 /*
   wrapper around smbcli_sock_connect()
 */
-BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
+bool smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 {
 	struct smbcli_socket *sock;
 
 	sock = smbcli_sock_connect_byname(server, 0, NULL, NULL);
 
-	if (sock == NULL) return False;
+	if (sock == NULL) return false;
 	
-	cli->transport = smbcli_transport_init(sock, cli, True);
+	cli->transport = smbcli_transport_init(sock, cli, true);
 	if (!cli->transport) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /* wrapper around smbcli_transport_connect() */
-BOOL smbcli_transport_establish(struct smbcli_state *cli, 
+bool smbcli_transport_establish(struct smbcli_state *cli, 
 				struct nbt_name *calling,
 				struct nbt_name *called)
 {
@@ -68,7 +68,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
 
-	cli->session = smbcli_session_init(cli->transport, cli, True);
+	cli->session = smbcli_session_init(cli->transport, cli, true);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -91,7 +91,7 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	cli->tree = smbcli_tree_init(cli->session, cli, True);
+	cli->tree = smbcli_tree_init(cli->session, cli, true);
 	if (!cli->tree) return NT_STATUS_UNSUCCESSFUL;
 
 	mem_ctx = talloc_init("tcon");
@@ -216,7 +216,7 @@ bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 
 	if (strncmp(unc_name, "\\\\", 2) &&
 	    strncmp(unc_name, "//", 2)) {
-		return False;
+		return false;
 	}
 
 	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
@@ -228,13 +228,13 @@ bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	}
 
 	if (*hostname && *sharename) {
-		return True;
+		return true;
 	}
 
 	talloc_free(*hostname);
 	talloc_free(*sharename);
 	*hostname = *sharename = NULL;
-	return False;
+	return false;
 }
 
 

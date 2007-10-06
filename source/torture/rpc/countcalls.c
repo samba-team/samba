@@ -29,9 +29,9 @@
 
 
 	
-BOOL count_calls(TALLOC_CTX *mem_ctx,
+bool count_calls(TALLOC_CTX *mem_ctx,
 		 const struct ndr_interface_table *iface,
-	BOOL all) 
+	bool all) 
 {
 	struct dcerpc_pipe *p;
 	DATA_BLOB stub_in, stub_out;
@@ -43,14 +43,14 @@ BOOL count_calls(TALLOC_CTX *mem_ctx,
 	    || NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
 		if (all) {
 			/* Not fatal if looking for all pipes */
-			return True;
+			return true;
 		} else {
 			printf("Failed to open '%s' to count calls - %s\n", iface->name, nt_errstr(status));
-			return False;
+			return false;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open '%s' to count calls - %s\n", iface->name, nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	stub_in = data_blob_talloc(p, mem_ctx, 0);
@@ -58,7 +58,7 @@ BOOL count_calls(TALLOC_CTX *mem_ctx,
 	printf("\nScanning pipe '%s'\n", iface->name);
 
 	for (i=0;i<500;i++) {
-		status = dcerpc_request(p, NULL, i, False, p, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, i, false, p, &stub_in, &stub_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			i--;
@@ -90,41 +90,41 @@ BOOL count_calls(TALLOC_CTX *mem_ctx,
 	if (i==500) {
 		talloc_free(p);
 		printf("no limit on calls: %s!?\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	printf("Found %d calls\n", i);
 
 	talloc_free(p);
 	
-	return True;
+	return true;
 
 }
 
-BOOL torture_rpc_countcalls(struct torture_context *torture)
+bool torture_rpc_countcalls(struct torture_context *torture)
 {
 	const struct ndr_interface_table *iface;
 	const char *iface_name;
-	BOOL ret = True;
+	bool ret = true;
 	const struct ndr_interface_list *l;
 	TALLOC_CTX *mem_ctx = talloc_named(torture, 0, "torture_rpc_countcalls context");
 	if (!mem_ctx) {
-		return False;
+		return false;
 	}
 	iface_name = lp_parm_string(global_loadparm, NULL, "countcalls", "interface");
 	if (iface_name != NULL) {
 		iface = ndr_table_by_name(iface_name);
 		if (!iface) {
 			printf("Unknown interface '%s'\n", iface_name);
-			return False;
+			return false;
 		}
-		return count_calls(mem_ctx, iface, False);
+		return count_calls(mem_ctx, iface, false);
 	}
 
 	for (l=ndr_table_list();l;l=l->next) {		
 		TALLOC_CTX *loop_ctx;
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_councalls loop context");
-		ret &= count_calls(loop_ctx, l->table, True);
+		ret &= count_calls(loop_ctx, l->table, true);
 		talloc_free(loop_ctx);
 	}
 	return ret;

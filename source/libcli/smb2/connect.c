@@ -69,7 +69,7 @@ static void continue_session(struct composite_context *creq)
 	c->status = smb2_session_setup_spnego_recv(creq);
 	if (!composite_is_ok(c)) return;
 
-	state->tree = smb2_tree_init(state->session, state, True);
+	state->tree = smb2_tree_init(state->session, state, true);
 	if (composite_nomem(state->tree, c)) return;
 
 	state->tcon.in.unknown1 = 0x09;
@@ -99,7 +99,7 @@ static void continue_negprot(struct smb2_request *req)
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!composite_is_ok(c)) return;
 
-	state->session = smb2_session_init(transport, state, True);
+	state->session = smb2_session_init(transport, state, true);
 	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);

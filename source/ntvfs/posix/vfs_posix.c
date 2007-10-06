@@ -56,7 +56,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
 	if (share_bool_option(scfg, PVFS_FAKE_OPLOCKS, PVFS_FAKE_OPLOCKS_DEFAULT))
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
-	if (share_bool_option(scfg, PVFS_AIO, False))
+	if (share_bool_option(scfg, PVFS_AIO, false))
 		pvfs->flags |= PVFS_FLAG_LINUX_AIO;
 
 	/* file perm options */
@@ -234,7 +234,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 #ifdef SIGXFSZ
 	/* who had the stupid idea to generate a signal on a large
 	   file write instead of just failing it!? */
-	BlockSignals(True, SIGXFSZ);
+	BlockSignals(true, SIGXFSZ);
 #endif
 
 	return NT_STATUS_OK;

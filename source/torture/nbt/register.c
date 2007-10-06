@@ -68,9 +68,9 @@ static bool nbt_register_own(struct torture_context *tctx)
 	io.in.dest_addr = address;
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
-	io.in.register_demand = False;
-	io.in.broadcast = True;
-	io.in.multi_homed = False;
+	io.in.register_demand = false;
+	io.in.broadcast = true;
+	io.in.multi_homed = false;
 	io.in.ttl = 1234;
 	io.in.timeout = 3;
 	io.in.retries = 0;
@@ -86,7 +86,7 @@ static bool nbt_register_own(struct torture_context *tctx)
 
 	/* check a register demand */
 	io.in.address = myaddress;
-	io.in.register_demand = True;
+	io.in.register_demand = true;
 
 	status = nbt_name_register(nbtsock, tctx, &io);
 
@@ -134,7 +134,7 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 	io.in.dest_addr = address;
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
-	io.in.broadcast = False;
+	io.in.broadcast = false;
 	io.in.ttl = 1234;
 	io.in.timeout = 3;
 	io.in.retries = 0;

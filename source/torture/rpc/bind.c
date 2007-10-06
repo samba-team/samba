@@ -41,27 +41,27 @@
 
 */
 
-BOOL torture_multi_bind(struct torture_context *torture) 
+bool torture_multi_bind(struct torture_context *torture) 
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *binding;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	BOOL ret;
+	bool ret;
 
 	mem_ctx = talloc_init("torture_multi_bind");
 
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	status = dcerpc_pipe_auth(mem_ctx, &p, binding, &ndr_table_lsarpc, cmdline_credentials);
@@ -69,10 +69,10 @@ BOOL torture_multi_bind(struct torture_context *torture)
 	if (NT_STATUS_IS_OK(status)) {
 		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 
 			GUID_string(mem_ctx, &ndr_table_lsarpc.syntax_id.uuid), nt_errstr(status));
-		ret = False;
+		ret = false;
 	} else {
 		printf("\n");
-		ret = True;
+		ret = true;
 	}
 
 	talloc_free(mem_ctx);

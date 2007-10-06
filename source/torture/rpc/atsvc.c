@@ -76,7 +76,7 @@ static bool test_JobEnum(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 	for (i = 0; i < r.out.ctr->entries_read; i++) {
 		if (!test_JobGetInfo(p, tctx, r.out.ctr->first_entry[i].job_id)) {
-			ret = False;
+			ret = false;
 		}
 	}
 

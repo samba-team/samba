@@ -28,7 +28,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%d) Incorrect status %s - should be %s\n", \
 		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -36,7 +36,7 @@
 	if ((v) != (correct)) { \
 		printf("(%d) Incorrect value %s=%d - should be %d\n", \
 		       __LINE__, #v, (int)v, (int)correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -45,25 +45,25 @@
 /*
   test seek ops
 */
-static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_seek io;
 	union smb_fileinfo finfo;
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum, fnum2;
 	const char *fname = BASEDIR "\\test.txt";
 	uint8_t c[2];
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to open test.txt - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -142,7 +142,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(c);
 	if (smbcli_write(cli->tree, fnum, 0, c, 0, 2) != 2) {
 		printf("Write failed - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;		
 	}
 
@@ -162,7 +162,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	if (smbcli_read(cli->tree, fnum, c, 0, 1) != 1) {
 		printf("Read failed - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;		
 	}
 
@@ -181,7 +181,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
 		printf("2nd open failed - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;

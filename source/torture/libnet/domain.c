@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 
-static BOOL test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
+static bool test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 			    struct lsa_String *domname,
 			    struct policy_handle *domain_handle)
 {
@@ -40,15 +40,15 @@ static BOOL test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 	status = libnet_DomainOpen(net_ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Composite domain open failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	*domain_handle = io.out.domain_handle;
-	return True;
+	return true;
 }
 
 
-static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -63,20 +63,20 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
-	return True;
+	return true;
 }
 
 
-BOOL torture_domainopen(struct torture_context *torture)
+bool torture_domainopen(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct libnet_context *net_ctx;
 	struct event_context *evt_ctx;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct policy_handle h;
 	struct lsa_String name;
 
@@ -90,7 +90,7 @@ BOOL torture_domainopen(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	name.string = lp_workgroup(global_loadparm);
@@ -99,12 +99,12 @@ BOOL torture_domainopen(struct torture_context *torture)
 	 * Testing synchronous version
 	 */
 	if (!test_domainopen(net_ctx, mem_ctx, &name, &h)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_cleanup(net_ctx->samr.pipe, mem_ctx, &h)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

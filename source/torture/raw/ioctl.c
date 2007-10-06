@@ -31,18 +31,18 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%d) Incorrect status %s - should be %s\n", \
 		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
 
 /* test some ioctls */
-static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_ioctl ctl;
 	int fnum;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *fname = BASEDIR "\\test.dat";
 
 	printf("TESTING IOCTL FUNCTIONS\n");
@@ -50,7 +50,7 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
 		printf("Failed to create test.dat - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -81,11 +81,11 @@ done:
 }
 
 /* test some filesystem control functions */
-static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	int fnum;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *fname = BASEDIR "\\test.dat";
 	union smb_ioctl nt;
 
@@ -94,7 +94,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
 		printf("Failed to create test.dat - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -102,7 +102,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nt.ioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = FSCTL_SET_SPARSE;
 	nt.ntioctl.in.file.fnum = fnum;
-	nt.ntioctl.in.fsctl = True;
+	nt.ntioctl.in.fsctl = true;
 	nt.ntioctl.in.filter = 0;
 	nt.ntioctl.in.max_data = 0;
 	nt.ntioctl.in.blob = data_blob(NULL, 0);
@@ -114,7 +114,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nt.ioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = FSCTL_REQUEST_BATCH_OPLOCK;
 	nt.ntioctl.in.file.fnum = fnum;
-	nt.ntioctl.in.fsctl = True;
+	nt.ntioctl.in.fsctl = true;
 	nt.ntioctl.in.filter = 0;
 	nt.ntioctl.in.max_data = 0;
 	nt.ntioctl.in.blob = data_blob(NULL, 0);
@@ -157,7 +157,7 @@ bool torture_raw_ioctl(struct torture_context *torture,
 	bool ret = true;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_ioctl(cli, torture);

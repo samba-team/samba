@@ -32,7 +32,7 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 {
 	struct smb2_request *req;
 	
-	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26, False, 0);
+	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26, false, 0);
 	if (req == NULL) return NULL;
 
 	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
@@ -60,7 +60,7 @@ NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x40, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x40, true);
 
 	io->out._pad         = SVAL(req->in.body, 0x02);
 	io->out.unknown2     = IVAL(req->in.body, 0x04);

@@ -333,7 +333,7 @@ NTSTATUS ea_pull_name_list(const DATA_BLOB *blob,
 /*
   put a ea_name list into a data blob
 */
-BOOL ea_push_name_list(TALLOC_CTX *mem_ctx,
+bool ea_push_name_list(TALLOC_CTX *mem_ctx,
 		       DATA_BLOB *data, uint_t num_names, struct ea_name *eas)
 {
 	int i;
@@ -344,7 +344,7 @@ BOOL ea_push_name_list(TALLOC_CTX *mem_ctx,
 
 	*data = data_blob_talloc(mem_ctx, NULL, ea_size);
 	if (data->data == NULL) {
-		return False;
+		return false;
 	}
 
 	SIVAL(data->data, 0, ea_size);
@@ -357,5 +357,5 @@ BOOL ea_push_name_list(TALLOC_CTX *mem_ctx,
 		off += 1+nlen+1;
 	}
 
-	return True;
+	return true;
 }

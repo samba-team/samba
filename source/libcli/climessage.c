@@ -26,7 +26,7 @@
 /****************************************************************************
 start a message sequence
 ****************************************************************************/
-BOOL smbcli_message_start(struct smbcli_tree *tree, const char *host, const char *username, 
+bool smbcli_message_start(struct smbcli_tree *tree, const char *host, const char *username, 
 		       int *grp)
 {
 	struct smbcli_request *req; 
@@ -38,20 +38,20 @@ BOOL smbcli_message_start(struct smbcli_tree *tree, const char *host, const char
 	    !smbcli_request_receive(req) ||
 	    smbcli_is_error(tree)) {
 		smbcli_request_destroy(req);
-		return False;
+		return false;
 	}
 
 	*grp = SVAL(req->in.vwv, VWV(0));
 	smbcli_request_destroy(req);
 
-	return True;
+	return true;
 }
 
 
 /****************************************************************************
 send a message 
 ****************************************************************************/
-BOOL smbcli_message_text(struct smbcli_tree *tree, char *msg, int len, int grp)
+bool smbcli_message_text(struct smbcli_tree *tree, char *msg, int len, int grp)
 {
 	struct smbcli_request *req; 
 	
@@ -64,17 +64,17 @@ BOOL smbcli_message_text(struct smbcli_tree *tree, char *msg, int len, int grp)
 	    !smbcli_request_receive(req) ||
 	    smbcli_is_error(tree)) {
 		smbcli_request_destroy(req);
-		return False;
+		return false;
 	}
 
 	smbcli_request_destroy(req);
-	return True;
+	return true;
 }      
 
 /****************************************************************************
 end a message 
 ****************************************************************************/
-BOOL smbcli_message_end(struct smbcli_tree *tree, int grp)
+bool smbcli_message_end(struct smbcli_tree *tree, int grp)
 {
 	struct smbcli_request *req; 
 	
@@ -85,10 +85,10 @@ BOOL smbcli_message_end(struct smbcli_tree *tree, int grp)
 	    !smbcli_request_receive(req) ||
 	    smbcli_is_error(tree)) {
 		smbcli_request_destroy(req);
-		return False;
+		return false;
 	}
 
 	smbcli_request_destroy(req);
-	return True;
+	return true;
 }      
 

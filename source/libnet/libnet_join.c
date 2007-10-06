@@ -926,7 +926,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	r2->in.netbios_name	= netbios_name;
 	r2->in.level		= LIBNET_JOINDOMAIN_AUTOMATIC;
 	r2->in.acct_type	= acct_type;
-	r2->in.recreate_account = False;
+	r2->in.recreate_account = false;
 	status = libnet_JoinDomain(ctx, r2, r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, r2->out.error_string);

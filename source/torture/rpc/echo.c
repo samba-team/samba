@@ -230,7 +230,7 @@ static bool test_sleep(struct torture_context *tctx,
 #define ASYNC_COUNT 3
 	struct rpc_request *req[ASYNC_COUNT];
 	struct echo_TestSleep r[ASYNC_COUNT];
-	BOOL done[ASYNC_COUNT];
+	bool done[ASYNC_COUNT];
 	struct timeval snd[ASYNC_COUNT];
 	struct timeval rcv[ASYNC_COUNT];
 	struct timeval diff[ASYNC_COUNT];
@@ -243,7 +243,7 @@ static bool test_sleep(struct torture_context *tctx,
 	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=yes\" to disable\n");
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		done[i]		= False;
+		done[i]		= false;
 		snd[i]		= timeval_current();
 		rcv[i]		= timeval_zero();
 		r[i].in.seconds = ASYNC_COUNT-i;
@@ -256,10 +256,10 @@ static bool test_sleep(struct torture_context *tctx,
 		torture_assert(tctx, event_loop_once(ctx) == 0, 
 					   "Event context loop failed");
 		for (i=0;i<ASYNC_COUNT;i++) {
-			if (done[i] == False && req[i]->state == RPC_REQUEST_DONE) {
+			if (done[i] == false && req[i]->state == RPC_REQUEST_DONE) {
 				int rounded_tdiff;
 				total_done++;
-				done[i] = True;
+				done[i] = true;
 				rcv[i]	= timeval_current();
 				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
@@ -393,7 +393,7 @@ static bool test_timeout(struct torture_context *tctx,
 		torture_comment(tctx, "Failed to send async sleep request\n");
 		goto failed;
 	}
-	req->ignore_timeout = True;
+	req->ignore_timeout = true;
 
 	status	= dcerpc_ndr_request_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
@@ -412,7 +412,7 @@ static bool test_timeout(struct torture_context *tctx,
 		torture_comment(tctx, "Failed to send async sleep request\n");
 		goto failed;
 	}
-	req->ignore_timeout = True;
+	req->ignore_timeout = true;
 	status	= dcerpc_ndr_request_recv(req);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_IO_TIMEOUT, 
 		"request should have timed out");

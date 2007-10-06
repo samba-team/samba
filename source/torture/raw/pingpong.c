@@ -37,10 +37,10 @@
        over and over until it completes.
 
    reading from the file can be enabled with
-	 --option=torture:read=True
+	 --option=torture:read=true
 
    writing to the file can be enabled with
-	 --option=torture:write=True
+	 --option=torture:write=true
 
 */
 #include "includes.h"
@@ -148,7 +148,7 @@ static void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
 	io.readx.in.maxcnt = 1;
 	io.readx.in.offset = offset;
 	io.readx.in.remaining = 0;
-	io.readx.in.read_for_execute = False;
+	io.readx.in.read_for_execute = false;
 	io.readx.out.data = c;
 
 	status = smb_raw_read(cli->tree, &io);
@@ -181,8 +181,8 @@ bool torture_ping_pong(struct torture_context *torture)
 	const char *fn;
 	int num_locks;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
-	static BOOL do_reads;
-	static BOOL do_writes;
+	static bool do_reads;
+	static bool do_writes;
 	int lock_timeout;
 	int fd;
 	struct smbcli_state *cli;

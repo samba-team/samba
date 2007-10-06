@@ -31,7 +31,7 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18, false, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.flags);
@@ -54,7 +54,7 @@ NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x3C, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x3C, false);
 
 	io->out.flags       = SVAL(req->in.body, 0x02);
 	io->out._pad        = IVAL(req->in.body, 0x04);

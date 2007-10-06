@@ -193,7 +193,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 
 	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
 		if (flags & 0x00000002) {
-			req->cancel.can_cancel = True;
+			req->cancel.can_cancel = true;
 			req->cancel.pending_id = IVAL(hdr, SMB2_HDR_PID);
 			for (i=0; i< req->cancel.do_cancel; i++) {
 				smb2_cancel(req);

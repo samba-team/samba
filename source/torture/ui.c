@@ -105,8 +105,8 @@ struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
 }
 
 void torture_tcase_set_fixture(struct torture_tcase *tcase, 
-		BOOL (*setup) (struct torture_context *, void **),
-		BOOL (*teardown) (struct torture_context *, void *))
+		bool (*setup) (struct torture_context *, void **),
+		bool (*teardown) (struct torture_context *, void *))
 {
 	tcase->setup = setup;
 	tcase->teardown = teardown;
@@ -155,7 +155,7 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 	tcase->description = NULL;
 	tcase->setup = NULL;
 	tcase->teardown = NULL;
-	tcase->fixture_persistent = True;
+	tcase->fixture_persistent = true;
 	tcase->tests = NULL;
 
 	DLIST_ADD_END(suite->testcases, tcase, struct torture_tcase *);
@@ -175,10 +175,10 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	return tcase;
 }
 
-BOOL torture_run_suite(struct torture_context *context, 
+bool torture_run_suite(struct torture_context *context, 
 					   struct torture_suite *suite)
 {
-	BOOL ret = True;
+	bool ret = true;
 	struct torture_tcase *tcase;
 	struct torture_suite *tsuite;
 	char *old_testname;
@@ -310,10 +310,10 @@ static bool internal_torture_run_test(struct torture_context *context,
 	return success;
 }
 
-BOOL torture_run_tcase(struct torture_context *context, 
+bool torture_run_tcase(struct torture_context *context, 
 					   struct torture_tcase *tcase)
 {
-	BOOL ret = True;
+	bool ret = true;
 	char *old_testname;
 	struct torture_test *test;
 
@@ -358,7 +358,7 @@ done:
 	return ret;
 }
 
-BOOL torture_run_test(struct torture_context *context, 
+bool torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {

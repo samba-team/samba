@@ -27,12 +27,12 @@
 #include "torture/libnet/utils.h"
 
 
-static BOOL test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *domain_handle,
 			  const char *name)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct libnet_rpc_groupadd group;
 
 	group.in.domain_handle = *domain_handle;
@@ -43,14 +43,14 @@ static BOOL test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_groupadd(p, mem_ctx, &group);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_groupadd - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
 	return ret;
 }
 
 
-BOOL torture_groupadd(struct torture_context *torture)
+bool torture_groupadd(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -59,7 +59,7 @@ BOOL torture_groupadd(struct torture_context *torture)
 	struct dom_sid2 sid;
 	const char *name = TEST_GROUPNAME;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("test_groupadd");
 
@@ -68,22 +68,22 @@ BOOL torture_groupadd(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_groupadd(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_group_cleanup(p, mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	

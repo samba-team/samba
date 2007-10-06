@@ -51,7 +51,7 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, True, False);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, true, false);
 	talloc_free(address_list);
 
 	return c;	

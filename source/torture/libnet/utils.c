@@ -29,7 +29,7 @@
 #include "param/param.h"
 
 
-BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid)
 {
@@ -48,7 +48,7 @@ BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
 	r2.in.connect_handle = &h;
@@ -59,7 +59,7 @@ BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	r3.in.connect_handle = &h;
@@ -72,17 +72,17 @@ BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else {
 		*handle = domain_handle;
 	}
 
 	*sid = *r2.out.sid;
-	return True;
+	return true;
 }
 
 
-BOOL test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *domain_handle,
 		       const char *name)
 {
@@ -105,7 +105,7 @@ BOOL test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	rid = r1.out.rids.ids[0];
@@ -120,7 +120,7 @@ BOOL test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenUser failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	r3.in.user_handle  = &user_handle;
@@ -131,14 +131,14 @@ BOOL test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
-	return True;
+	return true;
 }
 
 
-BOOL test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
 		      uint32_t *rid)
 {
@@ -164,7 +164,7 @@ BOOL test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			printf("User (%s) already exists - attempting to delete and recreate account again\n", name);
 			if (!test_user_cleanup(p, mem_ctx, handle, name)) {
-				return False;
+				return false;
 			}
 
 			printf("creating user account\n");
@@ -172,18 +172,18 @@ BOOL test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("CreateUser failed - %s\n", nt_errstr(status));
-				return False;
+				return false;
 			}
-			return True;
+			return true;
 		}
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-BOOL test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
 			const char *name)
 {
@@ -206,7 +206,7 @@ BOOL test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	rid = r1.out.rids.ids[0];
@@ -221,7 +221,7 @@ BOOL test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_OpenGroup(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenGroup failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	r3.in.group_handle  = &group_handle;
@@ -232,14 +232,14 @@ BOOL test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_DeleteDomainGroup(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteGroup failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
-	return True;
+	return true;
 }
 
 
-BOOL test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle, const char *name,
 		       uint32_t *rid)
 {
@@ -265,7 +265,7 @@ BOOL test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			printf("Group (%s) already exists - attempting to delete and recreate account again\n", name);
 			if (!test_group_cleanup(p, mem_ctx, handle, name)) {
-				return False;
+				return false;
 			}
 
 			printf("creating group account\n");
@@ -273,14 +273,14 @@ BOOL test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("CreateGroup failed - %s\n", nt_errstr(status));
-				return False;
+				return false;
 			}
-			return True;
+			return true;
 		}
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 

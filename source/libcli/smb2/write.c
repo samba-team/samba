@@ -31,7 +31,7 @@ struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *
 	NTSTATUS status;
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, 0x30, True, io->in.data.length);
+	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, 0x30, true, io->in.data.length);
 	if (req == NULL) return NULL;
 
 	status = smb2_push_o16s32_blob(&req->out, 0x02, io->in.data);
@@ -62,7 +62,7 @@ NTSTATUS smb2_write_recv(struct smb2_request *req, struct smb2_write *io)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x10, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x10, true);
 
 	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.nwritten = IVAL(req->in.body, 0x04);

@@ -32,7 +32,7 @@
 */
 NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
 			      uint32_t tag,
-			      DATA_BLOB add, BOOL last)
+			      DATA_BLOB add, bool last)
 {
 	uint32_t ofs = blob->length;
 	uint8_t pad = smb2_padding_size(add.length, 8);
@@ -65,7 +65,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL, 0);
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, True, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.oplock_flags);
@@ -90,7 +90,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas));
 		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas);
-		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EXTA, b, False);
+		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EXTA, b, false);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
@@ -100,7 +100,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	/* an empty MxAc tag seems to be used to ask the server to
 	   return the maximum access mask allowed on the file */
-	status = smb2_create_blob_add(req, &blob, CREATE_TAG_MXAC, data_blob(NULL, 0), True);
+	status = smb2_create_blob_add(req, &blob, CREATE_TAG_MXAC, data_blob(NULL, 0), true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
@@ -130,7 +130,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x58, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x58, true);
 
 	io->out.oplock_flags   = SVAL(req->in.body, 0x02);
 	io->out.create_action  = IVAL(req->in.body, 0x04);

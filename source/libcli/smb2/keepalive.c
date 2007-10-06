@@ -30,7 +30,7 @@ struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init(transport, SMB2_OP_KEEPALIVE, 0x04, False, 0);
+	req = smb2_request_init(transport, SMB2_OP_KEEPALIVE, 0x04, false, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0);
@@ -51,7 +51,7 @@ NTSTATUS smb2_keepalive_recv(struct smb2_request *req)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x04, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
 	return smb2_request_destroy(req);
 }
 

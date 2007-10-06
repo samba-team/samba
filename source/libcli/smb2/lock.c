@@ -30,7 +30,7 @@ struct smb2_request *smb2_lock_send(struct smb2_tree *tree, struct smb2_lock *io
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_LOCK, 0x30, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_LOCK, 0x30, false, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.unknown1);
@@ -57,7 +57,7 @@ NTSTATUS smb2_lock_recv(struct smb2_request *req, struct smb2_lock *io)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x04, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
 
 	io->out.unknown1 = SVAL(req->in.body, 0x02);
 

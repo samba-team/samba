@@ -67,7 +67,7 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 	return cli;
 }
 
-static BOOL check_unix_info2(struct torture_context *torture,
+static bool check_unix_info2(struct torture_context *torture,
 			struct unix_info2 *info2)
 {
 	printf("\tcreate_time=0x%016llu flags=0x%08x mask=0x%08x\n",
@@ -75,7 +75,7 @@ static BOOL check_unix_info2(struct torture_context *torture,
 			info2->file_flags, info2->flags_mask);
 
 	if (info2->file_flags == 0) {
-		return True;
+		return true;
 	}
 
 	/* If we have any file_flags set, they must be within the range
@@ -88,7 +88,7 @@ static BOOL check_unix_info2(struct torture_context *torture,
 			info2->file_flags, info2->flags_mask);
 	}
 
-	return True;
+	return true;
 }
 
 static NTSTATUS set_path_info2(void *mem_ctx,
@@ -122,7 +122,7 @@ static NTSTATUS set_path_info2(void *mem_ctx,
 	return smb_raw_setpathinfo(cli->tree, &sfinfo);
 }
 
-static BOOL query_file_path_info2(void *mem_ctx,
+static bool query_file_path_info2(void *mem_ctx,
 			struct torture_context *torture,
 			struct smbcli_state *cli,
 			int fnum,
@@ -163,13 +163,13 @@ static BOOL query_file_path_info2(void *mem_ctx,
 	info2->flags_mask = finfo.unix_info2.out.flags_mask;
 
 	if (!check_unix_info2(torture, info2)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL query_file_info2(void *mem_ctx,
+static bool query_file_info2(void *mem_ctx,
 			struct torture_context *torture,
 			struct smbcli_state *cli,
 			int fnum,
@@ -179,7 +179,7 @@ static BOOL query_file_info2(void *mem_ctx,
 			fnum, NULL, info2);
 }
 
-static BOOL query_path_info2(void *mem_ctx,
+static bool query_path_info2(void *mem_ctx,
 			struct torture_context *torture,
 			struct smbcli_state *cli,
 			const char *fname,
@@ -189,7 +189,7 @@ static BOOL query_path_info2(void *mem_ctx,
 			-1, fname, info2);
 }
 
-static BOOL search_callback(void *private, const union smb_search_data *fdata)
+static bool search_callback(void *private, const union smb_search_data *fdata)
 {
 	struct unix_info2 *info2 = (struct unix_info2 *)private;
 
@@ -210,10 +210,10 @@ static BOOL search_callback(void *private, const union smb_search_data *fdata)
 	info2->file_flags = fdata->unix_info2.file_flags;
 	info2->flags_mask = fdata->unix_info2.flags_mask;
 
-	return True;
+	return true;
 }
 
-static BOOL find_single_info2(void *mem_ctx,
+static bool find_single_info2(void *mem_ctx,
 			struct torture_context *torture,
 			struct smbcli_state *cli,
 			const char *fname,
@@ -267,7 +267,7 @@ static void set_no_metadata_change(struct unix_info2 *info2)
 		((uint64_t)SMB_SIZE_NO_CHANGE_HI << 32) | SMB_SIZE_NO_CHANGE_LO;
 }
 
-static BOOL verify_setinfo_flags(void *mem_ctx,
+static bool verify_setinfo_flags(void *mem_ctx,
 			struct torture_context *torture,
 			struct smbcli_state *cli,
 			const char *fname)
@@ -276,11 +276,11 @@ static BOOL verify_setinfo_flags(void *mem_ctx,
 	uint32_t smb_fmask;
 	int i;
 
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 
 	if (!query_path_info2(mem_ctx, torture, cli, fname, &info2)) {
-		return False;
+		return false;
 	}
 
 	smb_fmask = info2.flags_mask;
@@ -302,7 +302,7 @@ static BOOL verify_setinfo_flags(void *mem_ctx,
 
 			if (!query_path_info2(mem_ctx, torture, cli,
 						fname, &info2)) {
-				return False;
+				return false;
 			}
 
 			ASSERT_FLAGS_MATCH(&info2, 1 << i);
@@ -339,7 +339,7 @@ static int create_file(struct smbcli_state *cli, const char * fname)
 		0, 0);
 }
 
-static BOOL match_info2(struct torture_context *torture,
+static bool match_info2(struct torture_context *torture,
 		const struct unix_info2 *pinfo,
 		const struct unix_info2 *finfo)
 {
@@ -382,13 +382,13 @@ static BOOL match_info2(struct torture_context *torture,
 	torture_assert_u64_equal(torture, finfo->create_time, pinfo->create_time,
 			"create_time mismatch");
 
-	return True;
+	return true;
 }
 
 
 #define FILENAME "\\smb_unix_info2.txt"
 
-BOOL unix_torture_unix_info2(struct torture_context *torture)
+bool unix_torture_unix_info2(struct torture_context *torture)
 {
 	void *mem_ctx;
 	struct smbcli_state *cli;
@@ -401,7 +401,7 @@ BOOL unix_torture_unix_info2(struct torture_context *torture)
 
 	if (!(cli = connect_to_server(torture))) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	smbcli_unlink(cli->tree, FILENAME);
@@ -442,7 +442,7 @@ BOOL unix_torture_unix_info2(struct torture_context *torture)
 	smbcli_unlink(cli->tree, FILENAME);
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 
 fail:
 
@@ -450,7 +450,7 @@ fail:
 	smbcli_unlink(cli->tree, FILENAME);
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
-	return False;
+	return false;
 
 }
 

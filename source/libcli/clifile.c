@@ -30,7 +30,7 @@
 
 static NTSTATUS smbcli_link_internal(struct smbcli_tree *tree, 
 				  const char *fname_src, 
-				  const char *fname_dst, BOOL hard_link)
+				  const char *fname_dst, bool hard_link)
 {
 	union smb_setfileinfo parms;
 	NTSTATUS status;
@@ -84,7 +84,7 @@ uint32_t unix_perms_to_wire(mode_t perms)
 NTSTATUS smbcli_unix_symlink(struct smbcli_tree *tree, const char *fname_src, 
 			  const char *fname_dst)
 {
-	return smbcli_link_internal(tree, fname_src, fname_dst, False);
+	return smbcli_link_internal(tree, fname_src, fname_dst, false);
 }
 
 /****************************************************************************
@@ -93,7 +93,7 @@ NTSTATUS smbcli_unix_symlink(struct smbcli_tree *tree, const char *fname_src,
 NTSTATUS smbcli_unix_hardlink(struct smbcli_tree *tree, const char *fname_src, 
 			   const char *fname_dst)
 {
-	return smbcli_link_internal(tree, fname_src, fname_dst, True);
+	return smbcli_link_internal(tree, fname_src, fname_dst, true);
 }
 
 
@@ -206,7 +206,8 @@ NTSTATUS smbcli_rmdir(struct smbcli_tree *tree, const char *dname)
 /****************************************************************************
  Set or clear the delete on close flag.
 ****************************************************************************/
-NTSTATUS smbcli_nt_delete_on_close(struct smbcli_tree *tree, int fnum, BOOL flag)
+NTSTATUS smbcli_nt_delete_on_close(struct smbcli_tree *tree, int fnum, 
+				   bool flag)
 {
 	union smb_setfileinfo parms;
 	NTSTATUS status;

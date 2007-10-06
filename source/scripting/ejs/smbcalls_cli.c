@@ -61,7 +61,7 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	transport = smbcli_transport_init(sock, sock, False);
+	transport = smbcli_transport_init(sock, sock, false);
 
 	if (!transport) {
 		ejsSetErrorMsg(eid, "transport init failed");
@@ -192,7 +192,7 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 	/* Do session setup */
 
-	session = smbcli_session_init(transport, transport, False);
+	session = smbcli_session_init(transport, transport, false);
 
 	if (!session) {
 		ejsSetErrorMsg(eid, "session init failed");
@@ -252,7 +252,7 @@ static int ejs_cli_tree_connect(MprVarHandle eid, int argc, MprVar **argv)
 	}
 
 	session = argv[0]->ptr;
-	tree = smbcli_tree_init(session, session, False);
+	tree = smbcli_tree_init(session, session, false);
 
 	if (!tree) {
 		ejsSetErrorMsg(eid, "tree init failed");
@@ -442,7 +442,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.service                = sharename;
 	io.in.service_type           = "?????";
 	io.in.credentials            = creds;
-	io.in.fallback_to_anonymous  = False;
+	io.in.fallback_to_anonymous  = false;
 	io.in.workgroup              = lp_workgroup(global_loadparm);
 
 	result = smb_composite_connect(&io, mem_ctx, NULL);

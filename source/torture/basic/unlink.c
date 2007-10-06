@@ -37,7 +37,7 @@ bool torture_unlinktest(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	const char *fname = BASEDIR "\\unlink.tst";
 	int fnum;
-	BOOL correct = True;
+	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 

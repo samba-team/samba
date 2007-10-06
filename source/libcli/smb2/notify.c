@@ -32,7 +32,7 @@ struct smb2_request *smb2_notify_send(struct smb2_tree *tree, struct smb2_notify
 	struct smb2_request *req;
 	uint32_t old_timeout;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_NOTIFY, 0x20, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_NOTIFY, 0x20, false, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.hdr,  SMB2_HDR_UNKNOWN1,	0x0030);
@@ -67,7 +67,7 @@ NTSTATUS smb2_notify_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x08, true);
 
 	status = smb2_pull_o16s32_blob(&req->in, mem_ctx, req->in.body+0x02, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
