@@ -42,7 +42,7 @@ void nbtd_bad_packet(struct nbt_name_packet *packet,
   see if an incoming packet is a broadcast packet from one of our own
   interfaces
 */
-BOOL nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock, 
+bool nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock, 
 				struct nbt_name_packet *packet, 
 				const struct socket_address *src)
 {
@@ -51,7 +51,7 @@ BOOL nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock,
 
 	/* if its not a broadcast then its not considered a self packet */
 	if (!(packet->operation & NBT_FLAG_BROADCAST)) {
-		return False;
+		return false;
 	}
 
 	/* 
@@ -63,13 +63,13 @@ BOOL nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock,
 	 */
 	if (iface->nbtsock == nbtsock &&
 	    iface != iface->nbtsrv->bcast_interface) {
-		return False;
+		return false;
 	}
 
 	return nbtd_self_packet(nbtsock, packet, src);
 }
 
-BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock, 
+bool nbtd_self_packet(struct nbt_name_socket *nbtsock, 
 		      struct nbt_name_packet *packet, 
 		      const struct socket_address *src)
 {
@@ -79,18 +79,18 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	
 	/* if its not from the nbt port, then it wasn't a broadcast from us */
 	if (src->port != lp_nbt_port(global_loadparm)) {
-		return False;
+		return false;
 	}
 
 	/* we have to loop over our interface list, seeing if its from
 	   one of our own interfaces */
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
 		if (strcmp(src->addr, iface->ip_address) == 0) {
-			return True;
+			return true;
 		}
 	}
 
-	return False;
+	return false;
 }
 
 

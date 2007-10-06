@@ -366,8 +366,8 @@ static int winsdb_addr_sort_list (struct winsdb_addr **p1, struct winsdb_addr **
 	struct winsdb_addr *a1 = talloc_get_type(*p1, struct winsdb_addr);
 	struct winsdb_addr *a2 = talloc_get_type(*p2, struct winsdb_addr);
 	struct winsdb_handle *h= talloc_get_type(opaque, struct winsdb_handle);
-	BOOL a1_owned = False;
-	BOOL a2_owned = False;
+	bool a1_owned = false;
+	bool a2_owned = false;
 
 	/*
 	 * first the owned addresses with the newest to the oldest address
@@ -378,11 +378,11 @@ static int winsdb_addr_sort_list (struct winsdb_addr **p1, struct winsdb_addr **
 	}
 
 	if (strcmp(a2->wins_owner, h->local_owner) == 0) {
-		a2_owned = True;
+		a2_owned = true;
 	}
 
 	if (strcmp(a1->wins_owner, h->local_owner) == 0) {
-		a1_owned = True;
+		a1_owned = true;
 	}
 
 	return a2_owned - a1_owned;
@@ -391,12 +391,12 @@ static int winsdb_addr_sort_list (struct winsdb_addr **p1, struct winsdb_addr **
 struct winsdb_addr **winsdb_addr_list_add(struct winsdb_handle *h, const struct winsdb_record *rec,
 					  struct winsdb_addr **addresses, const char *address,
 					  const char *wins_owner, time_t expire_time,
-					  BOOL is_name_registration)
+					  bool is_name_registration)
 {
 	struct winsdb_addr *old_addr = NULL;
 	size_t len = 0;
 	size_t i;
-	BOOL found_old_replica = False;
+	bool found_old_replica = false;
 
 	/*
 	 * count the addresses and maybe
@@ -444,10 +444,10 @@ struct winsdb_addr **winsdb_addr_list_add(struct winsdb_handle *h, const struct 
 	 * record at all, find the oldest owned address
 	 */
 	for (i=0; addresses[i]; i++) {
-		BOOL cur_is_replica = False;
+		bool cur_is_replica = false;
 		/* find out if the current address is a replica */
 		if (strcmp(addresses[i]->wins_owner, h->local_owner) != 0) {
-			cur_is_replica = True;
+			cur_is_replica = true;
 		}
 
 		/*
@@ -461,7 +461,7 @@ struct winsdb_addr **winsdb_addr_list_add(struct winsdb_handle *h, const struct 
 		 * that would be replaced
 		 */
 		if (!found_old_replica && cur_is_replica) {
-			found_old_replica = True;
+			found_old_replica = true;
 			old_addr = addresses[i];
 			continue;
 		}
@@ -621,7 +621,7 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	struct ldb_message_element *el;
 	struct nbt_name *name;
 	uint32_t i, j, num_values;
-	BOOL we_are_owner = False;
+	bool we_are_owner = false;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
 	if (rec == NULL) {
@@ -683,7 +683,7 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	}
 
 	if (strcmp(rec->wins_owner, h->local_owner) == 0) {
-		we_are_owner = True;
+		we_are_owner = true;
 	}
 
 	/* 
@@ -945,7 +945,7 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
+static bool winsdb_check_or_add_module_list(struct winsdb_handle *h)
 {
 	int trans;
 	int ret;
@@ -997,17 +997,17 @@ static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
 	if (!h->ldb) goto failed;
 
 	talloc_free(tmp_ctx);
-	return True;
+	return true;
 
 skip:
 	if (trans == LDB_SUCCESS) ldb_transaction_cancel(h->ldb);
 	talloc_free(tmp_ctx);
-	return True;
+	return true;
 
 failed:
 	if (trans == LDB_SUCCESS) ldb_transaction_cancel(h->ldb);
 	talloc_free(tmp_ctx);
-	return False;
+	return false;
 }
 
 struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_caller caller)
@@ -1015,7 +1015,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 	struct winsdb_handle *h = NULL;
 	const char *owner;
 	unsigned int flags = 0;
-	BOOL ret;
+	bool ret;
 	int ldb_err;
 
 	h = talloc(mem_ctx, struct winsdb_handle);

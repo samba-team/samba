@@ -96,9 +96,9 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	io.in.address         = iface->ip_address;
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
-	io.in.register_demand = False;
-	io.in.broadcast       = True;
-	io.in.multi_homed     = False;
+	io.in.register_demand = false;
+	io.in.broadcast       = true;
+	io.in.multi_homed     = false;
 	io.in.timeout         = 3;
 	io.in.retries         = 0;
 

@@ -119,7 +119,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 {
 	struct nbtd_server *server =
 		talloc_get_type(msg->private, struct nbtd_server);
-	struct nbtd_interface *iface = nbtd_find_request_iface(server, req->in.ip_address, True);
+	struct nbtd_interface *iface = nbtd_find_request_iface(server, req->in.ip_address, true);
 	struct getdc_state *s;
 	struct nbt_ntlogon_packet p;
 	struct nbt_ntlogon_sam_logon *r;
@@ -169,7 +169,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 		return status;
 	}
 
-	msg->defer_reply = True;
+	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }
 

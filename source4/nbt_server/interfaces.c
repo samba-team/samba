@@ -282,7 +282,7 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	const char **ret = NULL;
 	struct nbtd_interface *iface2;
-	BOOL is_loopback = False;
+	bool is_loopback = false;
 
 	if (iface->ip_address) {
 		is_loopback = iface_same_net(iface->ip_address, "127.0.0.1", "255.0.0.0");
@@ -313,7 +313,7 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
   find the interface to use for sending a outgoing request
 */
 struct nbtd_interface *nbtd_find_request_iface(struct nbtd_server *nbtd_server,
-					       const char *address, BOOL allow_bcast_iface)
+					       const char *address, bool allow_bcast_iface)
 {
 	struct nbtd_interface *cur;
 
@@ -337,7 +337,7 @@ struct nbtd_interface *nbtd_find_request_iface(struct nbtd_server *nbtd_server,
  * find the interface to use for sending a outgoing reply
  */
 struct nbtd_interface *nbtd_find_reply_iface(struct nbtd_interface *iface,
-					     const char *address, BOOL allow_bcast_iface)
+					     const char *address, bool allow_bcast_iface)
 {
 	struct nbtd_server *nbtd_server = iface->nbtsrv;
 
