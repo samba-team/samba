@@ -51,7 +51,7 @@ struct kpasswd_socket {
 };
 
 /* Return true if there is a valid error packet formed in the error_blob */
-static BOOL kpasswdd_make_error_reply(struct kdc_server *kdc, 
+static bool kpasswdd_make_error_reply(struct kdc_server *kdc, 
 				     TALLOC_CTX *mem_ctx, 
 				     uint16_t result_code, 
 				     const char *error_string, 
@@ -64,33 +64,33 @@ static BOOL kpasswdd_make_error_reply(struct kdc_server *kdc,
 
 	len = push_utf8_talloc(mem_ctx, &error_string_utf8, error_string);
 	if (len == -1) {
-		return False;
+		return false;
 	}
 
 	*error_blob = data_blob_talloc(mem_ctx, NULL, 2 + len + 1);
 	if (!error_blob->data) {
-		return False;
+		return false;
 	}
 	RSSVAL(error_blob->data, 0, result_code);
 	memcpy(error_blob->data + 2, error_string_utf8, len + 1);
-	return True;
+	return true;
 }
 
 /* Return true if there is a valid error packet formed in the error_blob */
-static BOOL kpasswdd_make_unauth_error_reply(struct kdc_server *kdc, 
+static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc, 
 					    TALLOC_CTX *mem_ctx, 
 					    uint16_t result_code, 
 					    const char *error_string, 
 					    DATA_BLOB *error_blob) 
 {
-	BOOL ret;
+	bool ret;
 	int kret;
 	DATA_BLOB error_bytes;
 	krb5_data k5_error_bytes, k5_error_blob;
 	ret = kpasswdd_make_error_reply(kdc, mem_ctx, result_code, error_string, 
 				       &error_bytes);
 	if (!ret) {
-		return False;
+		return false;
 	}
 	k5_error_bytes.data = error_bytes.data;
 	k5_error_bytes.length = error_bytes.length;
@@ -98,17 +98,17 @@ static BOOL kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
 			     result_code, NULL, &k5_error_bytes, 
 			     NULL, NULL, NULL, NULL, &k5_error_blob);
 	if (kret) {
-		return False;
+		return false;
 	}
 	*error_blob = data_blob_talloc(mem_ctx, k5_error_blob.data, k5_error_blob.length);
 	krb5_data_free(&k5_error_blob);
 	if (!error_blob->data) {
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
-static BOOL kpasswd_make_pwchange_reply(struct kdc_server *kdc, 
+static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc, 
 					TALLOC_CTX *mem_ctx, 
 					NTSTATUS status, 
 					enum samr_RejectReason reject_reason,
@@ -169,7 +169,7 @@ static BOOL kpasswd_make_pwchange_reply(struct kdc_server *kdc,
    Return true if there is a valid error packet (or sucess) formed in
    the error_blob
 */
-static BOOL kpasswdd_change_password(struct kdc_server *kdc,
+static bool kpasswdd_change_password(struct kdc_server *kdc,
 				     TALLOC_CTX *mem_ctx, 
 				     struct auth_session_info *session_info,
 				     const char *password,
@@ -197,7 +197,7 @@ static BOOL kpasswdd_change_password(struct kdc_server *kdc,
 	status = samdb_set_password_sid(samdb, mem_ctx, 
 					session_info->security_token->user_sid,
 					password, NULL, NULL, 
-					True, /* this is a user password change */
+					true, /* this is a user password change */
 					&reject_reason,
 					&dominfo);
 	return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
@@ -208,7 +208,7 @@ static BOOL kpasswdd_change_password(struct kdc_server *kdc,
 
 }
 
-static BOOL kpasswd_process_request(struct kdc_server *kdc,
+static bool kpasswd_process_request(struct kdc_server *kdc,
 				    TALLOC_CTX *mem_ctx, 
 				    struct gensec_security *gensec_security,
 				    uint16_t version,
@@ -229,7 +229,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	{
 		char *password = talloc_strndup(mem_ctx, (const char *)input->data, input->length);
 		if (!password) {
-			return False;
+			return false;
 		}
 		return kpasswdd_change_password(kdc, mem_ctx, session_info, 
 						password, reply);
@@ -256,7 +256,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 
 		msg = ldb_msg_new(mem_ctx);
 		if (!msg) {
-			return False;
+			return false;
 		}
 
 		ret = decode_ChangePasswdDataMS(input->data, input->length,
@@ -273,7 +273,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 					  chpw.newpasswd.length);
 		if (!password) {
 			free_ChangePasswdDataMS(&chpw);
-			return False;
+			return false;
 		}
 		if ((chpw.targname && !chpw.targrealm) 
 		    || (!chpw.targname && chpw.targrealm)) {
@@ -362,7 +362,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 			status = samdb_set_password(samdb, mem_ctx,
 						    set_password_on_dn, NULL,
 						    msg, password, NULL, NULL, 
-						    False, /* this is not a user password change */
+						    false, /* this is not a user password change */
 						    &reject_reason, &dominfo);
 		}
 
@@ -401,10 +401,10 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 								 version),
 						 reply);
 	}
-	return True;
+	return true;
 }
 
-BOOL kpasswdd_process(struct kdc_server *kdc,
+bool kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,
@@ -412,7 +412,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		      struct socket_address *my_addr,
 		      int datagram_reply)
 {
-	BOOL ret;
+	bool ret;
 	const uint16_t header_len = 6;
 	uint16_t len;
 	uint16_t ap_req_len;
@@ -428,20 +428,20 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	
 	if (!tmp_ctx) {
-		return False;
+		return false;
 	}
 
 	/* Be parinoid.  We need to ensure we don't just let the
 	 * caller lead us into a buffer overflow */
 	if (input->length <= header_len) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	len = RSVAL(input->data, 0);
 	if (input->length != len) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	/* There are two different versions of this protocol so far,
@@ -451,7 +451,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	ap_req_len = RSVAL(input->data, 4);
 	if ((ap_req_len >= len) || (ap_req_len + header_len) >= len) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 	
 	krb_priv_len = len - ap_req_len;
@@ -461,13 +461,13 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_server_start(tmp_ctx, kdc->task->event_ctx, kdc->task->msg_ctx, &gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	server_credentials = cli_credentials_init(tmp_ctx);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
-		return False;
+		return false;
 	}
 
 	/* We want the credentials subsystem to use the krb5 context
@@ -493,7 +493,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_set_credentials(gensec_security, server_credentials);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	/* The kerberos PRIV packets include these addresses.  MIT
@@ -501,12 +501,12 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_set_peer_addr(gensec_security, peer_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 	nt_status = gensec_set_my_addr(gensec_security, my_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	/* We want the GENSEC wrap calls to generate PRIV tokens */
@@ -515,7 +515,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_start_mech_by_name(gensec_security, "krb5");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return False;
+		return false;
 	}
 
 	/* Accept the AP-REQ and generate teh AP-REP we need for the reply */
@@ -560,7 +560,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 				      &kpasswd_req, &kpasswd_rep); 
 	if (!ret) {
 		/* Argh! */
-		return False;
+		return false;
 	}
 
 	/* And wrap up the reply: This ensures that the error message
@@ -585,7 +585,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 reply:
 	*reply = data_blob_talloc(mem_ctx, NULL, krb_priv_rep.length + ap_rep.length + header_len);
 	if (!reply->data) {
-		return False;
+		return false;
 	}
 
 	RSSVAL(reply->data, 0, reply->length);
