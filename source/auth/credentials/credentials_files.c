@@ -39,7 +39,7 @@
  * @param obtained This enum describes how 'specified' this password is
  */
 
-BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
+bool cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
 				       int fd, enum credentials_obtained obtained)
 {
 	char *p;
@@ -61,18 +61,18 @@ BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials,
 				break;
 			} else {
 				fprintf(stderr, "Error reading password from file descriptor %d: %s\n", fd, "empty password\n");
-				return False;
+				return false;
 			}
 
 		default:
 			fprintf(stderr, "Error reading password from file descriptor %d: %s\n",
 					fd, strerror(errno));
-			return False;
+			return false;
 		}
 	}
 
 	cli_credentials_set_password(credentials, pass, obtained);
-	return True;
+	return true;
 }
 
 /**
@@ -83,15 +83,15 @@ BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials,
  * @param obtained This enum describes how 'specified' this password is
  */
 
-BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained)
+bool cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained)
 {
 	int fd = open(file, O_RDONLY, 0);
-	BOOL ret;
+	bool ret;
 
 	if (fd < 0) {
 		fprintf(stderr, "Error opening password file %s: %s\n",
 				file, strerror(errno));
-		return False;
+		return false;
 	}
 
 	ret = cli_credentials_parse_password_fd(credentials, fd, obtained);
@@ -109,7 +109,7 @@ BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, co
  * @param obtained This enum describes how 'specified' this password is
  */
 
-BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
+bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
 {
 	uint16_t len = 0;
 	char *ptr, *val, *param;
@@ -122,7 +122,7 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
 	{
 		/* fail if we can't open the credentials file */
 		d_printf("ERROR: Unable to open credentials file!\n");
-		return False;
+		return false;
 	}
 
 	for (i = 0; i < numlines; i++) {
@@ -158,7 +158,7 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
 
 	talloc_free(lines);
 
-	return True;
+	return true;
 }
 
 
@@ -203,10 +203,10 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	const char *keytab;
 	
 	/* ok, we are going to get it now, don't recurse back here */
-	cred->machine_account_pending = False;
+	cred->machine_account_pending = false;
 
 	/* some other parts of the system will key off this */
-	cred->machine_account = True;
+	cred->machine_account = true;
 
 	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
 
@@ -331,7 +331,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
-	cred->machine_account_pending = False;
+	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
 	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRIMARY_DOMAIN_DN,
@@ -350,7 +350,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
-	cred->machine_account_pending = False;
+	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
@@ -371,7 +371,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
-	cred->machine_account_pending = False;
+	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRINCIPAL_SEARCH,
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
@@ -391,7 +391,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
  */
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
 {
-	cred->machine_account_pending = True;
+	cred->machine_account_pending = true;
 }
 
 

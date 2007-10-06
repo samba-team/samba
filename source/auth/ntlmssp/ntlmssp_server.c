@@ -359,7 +359,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 			SMB_ASSERT(gensec_ntlmssp_state->internal_chal.data 
 				   && gensec_ntlmssp_state->internal_chal.length == 8);
 			
-			gensec_ntlmssp_state->doing_ntlm2 = True;
+			gensec_ntlmssp_state->doing_ntlm2 = true;
 
 			memcpy(gensec_ntlmssp_state->crypt.ntlm2.session_nonce, gensec_ntlmssp_state->internal_chal.data, 8);
 			memcpy(&gensec_ntlmssp_state->crypt.ntlm2.session_nonce[8], gensec_ntlmssp_state->lm_resp.data, 8);
@@ -617,7 +617,7 @@ static const uint8_t *auth_ntlmssp_get_challenge(const struct gensec_ntlmssp_sta
  *
  * @return If the effective challenge used by the auth subsystem may be modified
  */
-static BOOL auth_ntlmssp_may_set_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
+static bool auth_ntlmssp_may_set_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 {
 	return auth_challenge_may_be_modified(gensec_ntlmssp_state->auth_context);
 }
@@ -661,7 +661,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 
 	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
 	user_info->flags = 0;
-	user_info->mapped_state = False;
+	user_info->mapped_state = false;
 	user_info->client.account_name = gensec_ntlmssp_state->user;
 	user_info->client.domain_name = gensec_ntlmssp_state->domain;
 	user_info->workstation_name = gensec_ntlmssp_state->workstation;
@@ -753,7 +753,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(global_loadparm) 
 					  && lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "allow_lm_key", false));
 
-	gensec_ntlmssp_state->server_multiple_authentications = False;
+	gensec_ntlmssp_state->server_multiple_authentications = false;
 	
 	gensec_ntlmssp_state->neg_flags = 
 		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_UNKNOWN_02000000;

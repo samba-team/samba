@@ -53,7 +53,7 @@ static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 		server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 		NT_STATUS_HAVE_NO_MEMORY(server_info);
 		
-		server_info->authenticated = True;
+		server_info->authenticated = true;
 		
 		server_info->account_name = talloc_steal(server_info, pwd->pw_name);
 		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);

@@ -343,7 +343,7 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 			 struct smb_krb5_context *smb_krb5_context,
 			 const char **enctype_strings,
 			 krb5_keytab keytab,
-			 BOOL add_old) 
+			 bool add_old) 
 {
 	krb5_error_code ret;
 	const char *password_s;
@@ -484,7 +484,7 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 					  struct cli_credentials *machine_account,
 					  struct smb_krb5_context *smb_krb5_context,
-					  krb5_keytab keytab, BOOL *found_previous)
+					  krb5_keytab keytab, bool *found_previous)
 {
 	krb5_error_code ret, ret2;
 	krb5_kt_cursor cursor;
@@ -496,7 +496,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	*found_previous = False;
+	*found_previous = false;
 	princ_string = cli_credentials_get_principal(machine_account, mem_ctx);
 
 	/* Get the principal we will store the new keytab entries under */
@@ -575,7 +575,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			}
 			
 		} else {
-			*found_previous = True;
+			*found_previous = true;
 		}
 		
 		/* Free the entry, we don't need it any more */
@@ -609,7 +609,7 @@ int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 			   struct keytab_container *keytab_container) 
 {
 	krb5_error_code ret;
-	BOOL found_previous;
+	bool found_previous;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -629,7 +629,7 @@ int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	ret = create_keytab(mem_ctx, machine_account, smb_krb5_context, 
 			    enctype_strings, 
 			    keytab_container->keytab, 
-			    found_previous ? False : True);
+			    found_previous ? false : true);
 	talloc_free(mem_ctx);
 	return ret;
 }

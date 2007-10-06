@@ -25,7 +25,7 @@
 #include "auth/gensec/gensec.h"
 #include "libcli/util/asn_1.h"
 
-static BOOL read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
+static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			      struct spnego_negTokenInit *token)
 {
 	ZERO_STRUCTP(token);
@@ -37,7 +37,7 @@ static BOOL read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		int i;
 		uint8_t context;
 		if (!asn1_peek_uint8(asn1, &context)) {
-			asn1->has_error = True;
+			asn1->has_error = true;
 			break;
 		}
 
@@ -79,7 +79,7 @@ static BOOL read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			uint8_t type_peek;
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
 			if (!asn1_peek_uint8(asn1, &type_peek)) {
-				asn1->has_error = True;
+				asn1->has_error = true;
 				break;
 			}
 			if (type_peek == ASN1_OCTET_STRING) {
@@ -101,7 +101,7 @@ static BOOL read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			break;
 		}
 		default:
-			asn1->has_error = True;
+			asn1->has_error = true;
 			break;
 		}
 	}
@@ -112,7 +112,7 @@ static BOOL read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 	return !asn1->has_error;
 }
 
-static BOOL write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
+static bool write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
 {
 	asn1_push_tag(asn1, ASN1_CONTEXT(0));
 	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
@@ -175,7 +175,7 @@ static BOOL write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenIni
 	return !asn1->has_error;
 }
 
-static BOOL read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx, 
+static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx, 
 			      struct spnego_negTokenTarg *token)
 {
 	ZERO_STRUCTP(token);
@@ -186,7 +186,7 @@ static BOOL read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		uint8_t context;
 		if (!asn1_peek_uint8(asn1, &context)) {
-			asn1->has_error = True;
+			asn1->has_error = true;
 			break;
 		}
 
@@ -214,7 +214,7 @@ static BOOL read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			asn1_end_tag(asn1);
 			break;
 		default:
-			asn1->has_error = True;
+			asn1->has_error = true;
 			break;
 		}
 	}
@@ -225,7 +225,7 @@ static BOOL read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 	return !asn1->has_error;
 }
 
-static BOOL write_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTarg *token)
+static bool write_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTarg *token)
 {
 	asn1_push_tag(asn1, ASN1_CONTEXT(1));
 	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
@@ -282,7 +282,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 	asn1_load(asn1, data);
 
 	if (!asn1_peek_uint8(asn1, &context)) {
-		asn1->has_error = True;
+		asn1->has_error = true;
 	} else {
 		switch (context) {
 		case ASN1_APPLICATION(0):
@@ -299,7 +299,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 			}
 			break;
 		default:
-			asn1->has_error = True;
+			asn1->has_error = true;
 			break;
 		}
 	}
@@ -330,7 +330,7 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 		write_negTokenTarg(asn1, &spnego->negTokenTarg);
 		break;
 	default:
-		asn1->has_error = True;
+		asn1->has_error = true;
 		break;
 	}
 
@@ -343,9 +343,9 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 	return ret;
 }
 
-BOOL spnego_free_data(struct spnego_data *spnego)
+bool spnego_free_data(struct spnego_data *spnego)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!spnego) goto out;
 
@@ -366,7 +366,7 @@ BOOL spnego_free_data(struct spnego_data *spnego)
 		data_blob_free(&spnego->negTokenTarg.mechListMIC);
 		break;
 	default:
-		ret = False;
+		ret = false;
 		break;
 	}
 	ZERO_STRUCTP(spnego);

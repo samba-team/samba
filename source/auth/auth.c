@@ -42,7 +42,7 @@ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-BOOL auth_challenge_may_be_modified(struct auth_context *auth_ctx) 
+bool auth_challenge_may_be_modified(struct auth_context *auth_ctx) 
 {
 	return auth_ctx->challenge.may_be_modified;
 }
@@ -93,7 +93,7 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_
 		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
 		auth_ctx->challenge.set_by		= "random";
 
-		auth_ctx->challenge.may_be_modified	= True;
+		auth_ctx->challenge.may_be_modified	= true;
 	}
 
 	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
@@ -104,7 +104,7 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_
 }
 
 struct auth_check_password_sync_state {
-	BOOL finished;
+	bool finished;
 	NTSTATUS status;
 	struct auth_serversupplied_info *server_info;
 };
@@ -115,7 +115,7 @@ static void auth_check_password_sync_callback(struct auth_check_password_request
 	struct auth_check_password_sync_state *s = talloc_get_type(private_data,
 						   struct auth_check_password_sync_state);
 
-	s->finished = True;
+	s->finished = true;
 	s->status = auth_check_password_recv(req, s, &s->server_info);
 }
 
@@ -376,7 +376,7 @@ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
 	ctx = talloc(mem_ctx, struct auth_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->challenge.set_by		= NULL;
-	ctx->challenge.may_be_modified	= False;
+	ctx->challenge.may_be_modified	= false;
 	ctx->challenge.data		= data_blob(NULL, 0);
 	ctx->methods			= NULL;
 	ctx->event_ctx			= ev;
@@ -511,13 +511,13 @@ const struct auth_critical_sizes *auth_interface_version(void)
 
 NTSTATUS auth_init(void)
 {
-	static BOOL initialized = False;
+	static bool initialized = false;
 
 	init_module_fn static_init[] = STATIC_auth_MODULES;
 	init_module_fn *shared_init;
 	
 	if (initialized) return NT_STATUS_OK;
-	initialized = True;
+	initialized = true;
 	
 	shared_init = load_samba_modules(NULL, global_loadparm, "auth");
 

@@ -40,7 +40,7 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	       const char *format, ...)
 {
 	int i;
@@ -66,7 +66,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			head_size += 8;
 			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
 			if (n == -1) {
-				return False;
+				return false;
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;
@@ -77,7 +77,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			head_size += 8;
 			n = push_ascii_talloc(pointers, (char **)&pointers[i].data, s);
 			if (n == -1) {
-				return False;
+				return false;
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 1;
@@ -89,7 +89,7 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			s = va_arg(ap, char *);
 			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
 			if (n == -1) {
-				return False;
+				return false;
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;
@@ -175,14 +175,14 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	
 	talloc_free(pointers);
 
-	return True;
+	return true;
 }
 
 
 /* a helpful macro to avoid running over the end of our blob */
 #define NEED_DATA(amount) \
 if ((head_ofs + amount) > blob->length) { \
-        return False; \
+        return false; \
 }
 
 /*
@@ -198,7 +198,7 @@ if ((head_ofs + amount) > blob->length) { \
   C = constant ascii string
  */
 
-BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
+bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 		 const char *format, ...)
 {
 	int i;
@@ -226,21 +226,21 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
-					return False;
+					return false;
 				}
 				if (len1 & 1) {
 					/* if odd length and unicode */
-					return False;
+					return false;
 				}
 				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
-					return False;
+					return false;
 
 				if (0 < len1) {
 					pull_string(p, blob->data + ptr, sizeof(p), 
 						    len1, STR_UNICODE|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
-						return False;
+						return false;
 					}
 				} else {
 					(*ps) = "";
@@ -259,18 +259,18 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				*ps = "";
 			} else {
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
-					return False;
+					return false;
 				}
 
 				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
-					return False;	
+					return false;	
 
 				if (0 < len1) {
 					pull_string(p, blob->data + ptr, sizeof(p), 
 						    len1, STR_ASCII|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
-						return False;
+						return false;
 					}
 				} else {
 					(*ps) = "";
@@ -289,11 +289,11 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
-					return False;
+					return false;
 				}
 
 				if (blob->data + ptr < (uint8_t *)ptr || blob->data + ptr < blob->data)
-					return False;	
+					return false;	
 			
 				*b = data_blob_talloc(mem_ctx, blob->data + ptr, len1);
 			}
@@ -304,7 +304,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			/* make sure its in the right format - be strict */
 			NEED_DATA(len1);
 			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
-				return False;	
+				return false;	
 			
 			*b = data_blob_talloc(mem_ctx, blob->data + head_ofs, len1);
 			head_ofs += len1;
@@ -318,18 +318,18 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			s = va_arg(ap, char *);
 
 			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
-				return False;	
+				return false;	
 	
 			head_ofs += pull_string(p, blob->data+head_ofs, sizeof(p), 
 						blob->length - head_ofs, 
 						STR_ASCII|STR_TERMINATE);
 			if (strcmp(s, p) != 0) {
-				return False;
+				return false;
 			}
 			break;
 		}
 	}
 	va_end(ap);
 
-	return True;
+	return true;
 }

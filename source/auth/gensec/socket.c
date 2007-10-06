@@ -34,13 +34,13 @@ struct gensec_socket {
 	struct packet_context *packet;
 	DATA_BLOB read_buffer;  /* SASL packets are turned into liniarlised data here, for reading */
 	size_t orig_send_len;
-	BOOL eof;
+	bool eof;
 	NTSTATUS error;
-	BOOL interrupted;
+	bool interrupted;
 	void (*recv_handler)(void *, uint16_t);
 	void *recv_private;
 	int in_extra_read;
-	BOOL wrap; /* Should we be wrapping on this socket at all? */
+	bool wrap; /* Should we be wrapping on this socket at all? */
 };
 
 static NTSTATUS gensec_socket_init_fn(struct socket_context *sock)
@@ -190,7 +190,7 @@ static void gensec_socket_error_handler(void *private, NTSTATUS status)
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-		gensec_socket->eof = True;
+		gensec_socket->eof = true;
 	} else {
 		gensec_socket->error = status;
 	}
@@ -331,7 +331,7 @@ static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 static void send_callback(void *private) 
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
-	gensec_socket->interrupted = False;
+	gensec_socket->interrupted = false;
 }
 
 /*
@@ -384,7 +384,7 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 		return nt_status;
 	}
 	
-	gensec_socket->interrupted = True;
+	gensec_socket->interrupted = true;
 	gensec_socket->error = NT_STATUS_OK;
 
 	nt_status = packet_send_callback(gensec_socket->packet, 
@@ -446,17 +446,17 @@ NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL) &&
 	    !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		
-		gensec_socket->wrap = False;
+		gensec_socket->wrap = false;
 		*new_socket = new_sock;
 		return NT_STATUS_OK;
 	}
 
 	gensec_socket->gensec_security = gensec_security;
 
-	gensec_socket->wrap          = True;
-	gensec_socket->eof           = False;
+	gensec_socket->wrap          = true;
+	gensec_socket->eof           = false;
 	gensec_socket->error         = NT_STATUS_OK;
-	gensec_socket->interrupted   = False;
+	gensec_socket->interrupted   = false;
 	gensec_socket->in_extra_read = 0;
 
 	gensec_socket->read_buffer   = data_blob(NULL, 0);

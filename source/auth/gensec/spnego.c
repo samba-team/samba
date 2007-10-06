@@ -41,7 +41,7 @@ struct spnego_state {
 	enum spnego_message_type expected_packet;
 	enum spnego_state_position state_position;
 	struct gensec_security *sub_sec_security;
-	BOOL no_response_expected;
+	bool no_response_expected;
 
 	const char *neg_oid;
 };
@@ -59,7 +59,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
-	spnego_state->no_response_expected = False;
+	spnego_state->no_response_expected = false;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -77,7 +77,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
-	spnego_state->no_response_expected = False;
+	spnego_state->no_response_expected = false;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -329,16 +329,16 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 	struct gensec_security_ops **all_ops
 		= gensec_security_mechs(gensec_security, out_mem_ctx);
 	for (i=0; all_ops[i]; i++) {
-		BOOL is_spnego;
+		bool is_spnego;
 		NTSTATUS nt_status;
 		if (!all_ops[i]->oid) {
 			continue;
 		}
 
-		is_spnego = False;
+		is_spnego = false;
 		for (j=0; all_ops[i]->oid[j]; j++) {
 			if (strcasecmp(GENSEC_OID_SPNEGO,all_ops[i]->oid[j]) == 0) {
-				is_spnego = True;
+				is_spnego = true;
 			}
 		}
 		if (is_spnego) {
@@ -622,7 +622,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_state->neg_oid = all_sec[i].oid;
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->no_response_expected = True;
+			spnego_state->no_response_expected = true;
 		}
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -820,7 +820,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->no_response_expected = True;
+			spnego_state->no_response_expected = true;
 		}
 		
 		spnego_free_data(&spnego);
@@ -947,7 +947,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 						  &unwrapped_out);
 
 			if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->no_response_expected = True;
+				spnego_state->no_response_expected = true;
 			}
 		} 
 		
@@ -999,12 +999,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static BOOL gensec_spnego_have_feature(struct gensec_security *gensec_security,
+static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
 				       uint32_t feature) 
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
-		return False;
+		return false;
 	}
 	
 	return gensec_have_feature(spnego_state->sub_sec_security, 
@@ -1039,7 +1039,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.session_key	  = gensec_spnego_session_key,
 	.session_info     = gensec_spnego_session_info,
 	.have_feature     = gensec_spnego_have_feature,
-	.enabled          = True,
+	.enabled          = true,
 	.priority         = GENSEC_SPNEGO
 };
 

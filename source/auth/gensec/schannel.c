@@ -208,7 +208,7 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 	}
 
 	state = (struct schannel_state *)gensec_security->private_data;
-	state->initiator = False;
+	state->initiator = false;
 		
 	return NT_STATUS_OK;
 }
@@ -224,26 +224,26 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 	}
 
 	state = (struct schannel_state *)gensec_security->private_data;
-	state->initiator = True;
+	state->initiator = true;
 		
 	return NT_STATUS_OK;
 }
 
 
-static BOOL schannel_have_feature(struct gensec_security *gensec_security,
+static bool schannel_have_feature(struct gensec_security *gensec_security,
 					 uint32_t feature)
 {
 	if (feature & (GENSEC_FEATURE_SIGN | 
 		       GENSEC_FEATURE_SEAL)) {
-		return True;
+		return true;
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return True;
+		return true;
 	}
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 
@@ -261,7 +261,7 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.session_info	= schannel_session_info,
 	.sig_size	= schannel_sig_size,
 	.have_feature   = schannel_have_feature,
-	.enabled        = True,
+	.enabled        = true,
 	.priority       = GENSEC_SCHANNEL
 };
 

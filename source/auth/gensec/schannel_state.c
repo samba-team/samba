@@ -35,7 +35,7 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 {
 	char *path;
 	struct ldb_context *ldb;
-	BOOL existed;
+	bool existed;
 	const char *init_ldif = 
 		"dn: @ATTRIBUTES\n" \
 		"computerName: CASE_INSENSITIVE\n" \
