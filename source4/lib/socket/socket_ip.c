@@ -47,6 +47,7 @@ static NTSTATUS ipv4_init(struct socket_context *sock)
 	}
 
 	sock->backend_name = "ipv4";
+	sock->family = AF_INET;
 
 	return NT_STATUS_OK;
 }
@@ -278,7 +279,7 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 	struct sockaddr_in *from_addr;
 	socklen_t from_len = sizeof(*from_addr);
 	struct socket_address *src;
-	const char *addr;
+	char addrstring[INET_ADDRSTRLEN];
 	
 	src = talloc(addr_ctx, struct socket_address);
 	if (!src) {
@@ -309,12 +310,12 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 
 	src->sockaddrlen = from_len;
 
-	addr = inet_ntoa(from_addr->sin_addr);
-	if (addr == NULL) {
+	if (inet_ntop(AF_INET, &from_addr->sin_addr, addrstring, 
+			 sizeof(addrstring)) == NULL) {
 		talloc_free(src);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	src->addr = talloc_strdup(src, addr);
+	src->addr = talloc_strdup(src, addrstring);
 	if (src->addr == NULL) {
 		talloc_free(src);
 		return NT_STATUS_NO_MEMORY;
@@ -412,8 +413,8 @@ static struct socket_address *ipv4_get_peer_addr(struct socket_context *sock, TA
 {
 	struct sockaddr_in *peer_addr;
 	socklen_t len = sizeof(*peer_addr);
-	const char *addr;
 	struct socket_address *peer;
+	char addrstring[INET_ADDRSTRLEN];
 	int ret;
 	
 	peer = talloc(mem_ctx, struct socket_address);
@@ -438,12 +439,12 @@ static struct socket_address *ipv4_get_peer_addr(struct socket_context *sock, TA
 
 	peer->sockaddrlen = len;
 
-	addr = inet_ntoa(peer_addr->sin_addr);
-	if (addr == NULL) {
+	if (inet_ntop(AF_INET, &peer_addr->sin_addr, addrstring,
+			 sizeof(addrstring)) == NULL) {
 		talloc_free(peer);
 		return NULL;
 	}
-	peer->addr = talloc_strdup(peer, addr);
+	peer->addr = talloc_strdup(peer, addrstring);
 	if (!peer->addr) {
 		talloc_free(peer);
 		return NULL;
@@ -457,8 +458,8 @@ static struct socket_address *ipv4_get_my_addr(struct socket_context *sock, TALL
 {
 	struct sockaddr_in *local_addr;
 	socklen_t len = sizeof(*local_addr);
-	const char *addr;
 	struct socket_address *local;
+	char addrstring[INET_ADDRSTRLEN];
 	int ret;
 	
 	local = talloc(mem_ctx, struct socket_address);
@@ -483,12 +484,12 @@ static struct socket_address *ipv4_get_my_addr(struct socket_context *sock, TALL
 
 	local->sockaddrlen = len;
 
-	addr = inet_ntoa(local_addr->sin_addr);
-	if (addr == NULL) {
+	if (inet_ntop(AF_INET, &local_addr->sin_addr, addrstring, 
+			 sizeof(addrstring)) == NULL) {
 		talloc_free(local);
 		return NULL;
 	}
-	local->addr = talloc_strdup(local, addr);
+	local->addr = talloc_strdup(local, addrstring);
 	if (!local->addr) {
 		talloc_free(local);
 		return NULL;
@@ -580,6 +581,7 @@ static NTSTATUS ipv6_init(struct socket_context *sock)
 	}
 
 	sock->backend_name = "ipv6";
+	sock->family = AF_INET6;
 
 	return NT_STATUS_OK;
 }
