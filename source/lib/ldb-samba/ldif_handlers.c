@@ -81,10 +81,10 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 static bool ldb_comparision_objectSid_isString(const struct ldb_val *v)
 {
 	if (v->length < 3) {
-		return False;
+		return false;
 	}
 
-	if (strncmp("S-", (const char *)v->data, 2) != 0) return False;
+	if (strncmp("S-", (const char *)v->data, 2) != 0) return false;
 	
 	return true;
 }
@@ -181,14 +181,14 @@ static bool ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 	struct GUID guid;
 	NTSTATUS status;
 
-	if (v->length < 33) return False;
+	if (v->length < 33) return false;
 
 	/* see if the input if null-terninated (safety check for the below) */
-	if (v->data[v->length] != '\0') return False;
+	if (v->data[v->length] != '\0') return false;
 
 	status = GUID_from_string((const char *)v->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	return true;

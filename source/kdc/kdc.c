@@ -51,7 +51,7 @@ struct kdc_reply {
 	DATA_BLOB packet;
 };
 
-typedef BOOL (*kdc_process_fn_t)(struct kdc_server *kdc,
+typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 				 TALLOC_CTX *mem_ctx, 
 				 DATA_BLOB *input, 
 				 DATA_BLOB *reply,
@@ -311,7 +311,7 @@ static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
    calling conventions
 */
 
-static BOOL kdc_process(struct kdc_server *kdc,
+static bool kdc_process(struct kdc_server *kdc,
 			TALLOC_CTX *mem_ctx, 
 			DATA_BLOB *input, 
 			DATA_BLOB *reply,
@@ -337,7 +337,7 @@ static BOOL kdc_process(struct kdc_server *kdc,
 					    datagram_reply);
 	if (ret == -1) {
 		*reply = data_blob(NULL, 0);
-		return False;
+		return false;
 	}
 	if (k5_reply.length) {
 		*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
@@ -345,7 +345,7 @@ static BOOL kdc_process(struct kdc_server *kdc,
 	} else {
 		*reply = data_blob(NULL, 0);	
 	}
-	return True;
+	return true;
 }
 
 /*

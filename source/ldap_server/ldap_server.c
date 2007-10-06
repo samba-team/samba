@@ -369,7 +369,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		conn->sockets.tls = tls_socket;
 
 	} else if (port == 3268) /* Global catalog */ {
-		conn->global_catalog = True;
+		conn->global_catalog = true;
 	}
 	conn->packet = packet_init(conn);
 	if (conn->packet == NULL) {
