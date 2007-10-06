@@ -1,19 +1,19 @@
 
-/* 
+/*
    Unix SMB/CIFS implementation.
    Registry hive interface
-   Copyright (C) Jelmer Vernooij					  2003-2007.
-   
+   Copyright (C) Jelmer Vernooij				  2003-2007.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -24,10 +24,10 @@
 #include "system/filesys.h"
 
 /** Open a registry file/host/etc */
-_PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location, 
-							  struct auth_session_info *session_info, 
-							  struct cli_credentials *credentials, 
-							  struct hive_key **root)
+_PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
+			      struct auth_session_info *session_info,
+			      struct cli_credentials *credentials,
+			      struct hive_key **root)
 {
 	int fd, num;
 	char peek[20];
@@ -54,28 +54,33 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 		return reg_open_regf_file(parent_ctx, location, root);
 	} else if (!strncmp(peek, "TDB file", 8)) {
 		close(fd);
-		return reg_open_ldb_file(parent_ctx, location, session_info, credentials, root);
+		return reg_open_ldb_file(parent_ctx, location, session_info,
+					 credentials, root);
 	}
 
 	return WERR_BADFILE;
 }
 
-_PUBLIC_ WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
-						 const char **classname, uint32_t *num_subkeys, 
-						 uint32_t *num_values,
-						 NTTIME *last_change_time)
+_PUBLIC_ WERROR hive_key_get_info(TALLOC_CTX *mem_ctx,
+				  const struct hive_key *key,
+				  const char **classname, uint32_t *num_subkeys,
+				  uint32_t *num_values,
+				  NTTIME *last_change_time)
 {
-	return key->ops->get_key_info(mem_ctx, key, classname, num_subkeys, 
-									num_values, last_change_time);
+	return key->ops->get_key_info(mem_ctx, key, classname, num_subkeys,
+				      num_values, last_change_time);
 }
 
-_PUBLIC_ WERROR hive_key_add_name(TALLOC_CTX *ctx, const struct hive_key *parent_key,
-						 const char *name, const char *classname, struct security_descriptor *desc,
-						 struct hive_key **key)
+_PUBLIC_ WERROR hive_key_add_name(TALLOC_CTX *ctx,
+				  const struct hive_key *parent_key,
+				  const char *name, const char *classname,
+				  struct security_descriptor *desc,
+				  struct hive_key **key)
 {
 	SMB_ASSERT(strchr(name, '\\') == NULL);
 
-	return parent_key->ops->add_key(ctx, parent_key, name, classname, desc, key);
+	return parent_key->ops->add_key(ctx, parent_key, name, classname,
+					desc, key);
 }
 
 _PUBLIC_ WERROR hive_key_del(const struct hive_key *key, const char *name)
@@ -84,20 +89,21 @@ _PUBLIC_ WERROR hive_key_del(const struct hive_key *key, const char *name)
 }
 
 _PUBLIC_ WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
-							   const struct hive_key *key, const char *name, 
-							   struct hive_key **subkey)
+				     const struct hive_key *key,
+				     const char *name,
+				     struct hive_key **subkey)
 {
 	return key->ops->get_key_by_name(mem_ctx, key, name, subkey);
 }
 
 WERROR hive_enum_key(TALLOC_CTX *mem_ctx,
-					const struct hive_key *key, uint32_t idx, 
-					const char **name,
-					const char **classname,
-					NTTIME *last_mod_time)
+		     const struct hive_key *key, uint32_t idx,
+		     const char **name,
+		     const char **classname,
+		     NTTIME *last_mod_time)
 {
-	return key->ops->enum_key(mem_ctx, key, idx, name, classname, 
-							  last_mod_time);
+	return key->ops->enum_key(mem_ctx, key, idx, name, classname,
+				  last_mod_time);
 }
 
 WERROR hive_set_value(struct hive_key *key, const char *name, uint32_t type,
@@ -109,9 +115,9 @@ WERROR hive_set_value(struct hive_key *key, const char *name, uint32_t type,
 	return key->ops->set_value(key, name, type, data);
 }
 
-WERROR hive_get_value (TALLOC_CTX *mem_ctx, 
-					   struct hive_key *key, const char *name, 
-					   uint32_t *type, DATA_BLOB *data)
+WERROR hive_get_value(TALLOC_CTX *mem_ctx,
+		      struct hive_key *key, const char *name,
+		      uint32_t *type, DATA_BLOB *data)
 {
 	if (key->ops->get_value_by_name == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -119,9 +125,10 @@ WERROR hive_get_value (TALLOC_CTX *mem_ctx,
 	return key->ops->get_value_by_name(mem_ctx, key, name, type, data);
 }
 
-WERROR hive_get_value_by_index (TALLOC_CTX *mem_ctx, 
-					   struct hive_key *key, uint32_t idx, const char **name, 
-					   uint32_t *type, DATA_BLOB *data)
+WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
+			       struct hive_key *key, uint32_t idx,
+			       const char **name,
+			       uint32_t *type, DATA_BLOB *data)
 {
 	if (key->ops->enum_value == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -130,7 +137,7 @@ WERROR hive_get_value_by_index (TALLOC_CTX *mem_ctx,
 }
 
 
-WERROR hive_del_value (struct hive_key *key, const char *name)
+WERROR hive_del_value(struct hive_key *key, const char *name)
 {
 	if (key->ops->delete_value == NULL)
 		return WERR_NOT_SUPPORTED;

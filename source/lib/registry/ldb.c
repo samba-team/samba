@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Registry interface
    Copyright (C) Jelmer Vernooij  2004-2007.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
 
 static struct hive_operations reg_backend_ldb;
 
-struct ldb_key_data 
+struct ldb_key_data
 {
 	struct hive_key key;
 	struct ldb_context *ldb;
@@ -36,12 +36,15 @@ struct ldb_key_data
 	int subkey_count, value_count;
 };
 
-static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char **name, 
-								 uint32_t *type, DATA_BLOB *data)
+static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+				 const char **name, uint32_t *type,
+				 DATA_BLOB *data)
 {
 	const struct ldb_val *val;
 	if (name != NULL)
-		*name = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "value", NULL));
+		*name = talloc_strdup(mem_ctx,
+				      ldb_msg_find_attr_as_string(msg, "value",
+				      NULL));
 
 	if (type != NULL)
 		*type = ldb_msg_find_attr_as_uint(msg, "type", 0);
@@ -51,8 +54,9 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		data->length = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, 
-											 val->data, val->length, (void **)&data->data);
+		data->length = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
+						     val->data, val->length,
+						     (void **)&data->data);
 		break;
 
 	case REG_DWORD: {
@@ -67,9 +71,10 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 	}
 }
 
-static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, 
-						TALLOC_CTX *mem_ctx, const char *name, 
-						uint32_t type, DATA_BLOB data)
+static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
+					      TALLOC_CTX *mem_ctx,
+					      const char *name,
+					      uint32_t type, DATA_BLOB data)
 {
 	struct ldb_val val;
 	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
@@ -80,13 +85,17 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, 
-										   (void *)data.data, data.length, (void **)&val.data);
+		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
+						   (void *)data.data,
+						   data.length,
+						   (void **)&val.data);
 		ldb_msg_add_value(msg, "data", &val, NULL);
 		break;
 
 	case REG_DWORD:
-		ldb_msg_add_string(msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data.data, 0)));
+		ldb_msg_add_string(msg, "data",
+				   talloc_asprintf(mem_ctx, "0x%x",
+				   		   IVAL(data.data, 0)));
 		break;
 	default:
 		ldb_msg_add_value(msg, "data", &data, NULL);
@@ -94,7 +103,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 
 
 	type_s = talloc_asprintf(mem_ctx, "%u", type);
-	ldb_msg_add_string(msg, "type", type_s); 
+	ldb_msg_add_string(msg, "type", type_s);
 
 	return msg;
 }
@@ -103,20 +112,20 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 static int reg_close_ldb_key(struct ldb_key_data *key)
 {
 	if (key->subkeys != NULL) {
-		talloc_free(key->subkeys); 
+		talloc_free(key->subkeys);
 		key->subkeys = NULL;
 	}
 
 	if (key->values != NULL) {
-		talloc_free(key->values); 
+		talloc_free(key->values);
 		key->values = NULL;
 	}
 	return 0;
 }
 
-static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx, 
-									  const struct hive_key *from, 
-									  const char *path, const char *add)
+static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
+				      const struct hive_key *from,
+				      const char *path, const char *add)
 {
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *ret;
@@ -173,7 +182,8 @@ static WERROR cache_subkeys(struct ldb_key_data *kd)
 	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &res);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Error getting subkeys for '%s': %s\n", ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
+		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
+			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -190,10 +200,12 @@ static WERROR cache_values(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL, &res);
+	ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL,
+			 "(value=*)", NULL, &res);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
+		DEBUG(0, ("Error getting values for '%s': %s\n",
+			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 	kd->value_count = res->count;
@@ -203,11 +215,11 @@ static WERROR cache_values(struct ldb_key_data *kd)
 }
 
 
-static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, 
-						   const struct hive_key *k, uint32_t idx, 
-						   const char **name,
-						   const char **classname,
-						   NTTIME *last_mod_time)
+static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
+				   const struct hive_key *k, uint32_t idx,
+				   const char **name,
+				   const char **classname,
+				   NTTIME *last_mod_time)
 {
 	struct ldb_message_element *el;
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
@@ -215,21 +227,21 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 	/* Do a search if necessary */
 	if (kd->subkeys == NULL) {
 		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
-	} 
+	}
 
-	if (idx >= kd->subkey_count) 
+	if (idx >= kd->subkey_count)
 		return WERR_NO_MORE_ITEMS;
 
 	el = ldb_msg_find_element(kd->subkeys[idx], "key");
 	SMB_ASSERT(el != NULL);
 	SMB_ASSERT(el->num_values != 0);
-	
+
 	if (name != NULL)
 		*name = talloc_strdup(mem_ctx, (char *)el->values[0].data);
 
 	if (classname != NULL)
 		*classname = NULL; /* TODO: Store properly */
-	
+
 	if (last_mod_time != NULL)
 		*last_mod_time = 0; /* TODO: we need to add this to the
 						ldb backend properly */
@@ -237,8 +249,9 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct hive_key *k, int idx, 
-								  const char **name, uint32_t *data_type, DATA_BLOB *data)
+static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct hive_key *k,
+				  int idx, const char **name,
+				  uint32_t *data_type, DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 
@@ -247,16 +260,18 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct hive_key *k,
 		W_ERROR_NOT_OK_RETURN(cache_values(kd));
 	}
 
-	if(idx >= kd->value_count) return WERR_NO_MORE_ITEMS;
+	if (idx >= kd->value_count)
+		return WERR_NO_MORE_ITEMS;
 
-	reg_ldb_unpack_value(mem_ctx, kd->values[idx], 
-						 name, data_type, data);
+	reg_ldb_unpack_value(mem_ctx, kd->values[idx],
+			     name, data_type, data);
 
 	return WERR_OK;
 }
 
-static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k, 
-					const char *name, uint32_t *data_type, DATA_BLOB *data)
+static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
+			    const char *name, uint32_t *data_type,
+			    DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 	struct ldb_context *c = kd->ldb;
@@ -269,7 +284,8 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	talloc_free(query);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
+		DEBUG(0, ("Error getting values for '%s': %s\n",
+			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -281,8 +297,8 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	return WERR_OK;
 }
 
-static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h, 
-						   const char *name, struct hive_key **key)
+static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
+			   const char *name, struct hive_key **key)
 {
 	struct ldb_result *res;
 	struct ldb_dn *ldap_path;
@@ -296,11 +312,12 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
 
 	if (ret != LDB_SUCCESS) {
-		DEBUG(3, ("Error opening key '%s': %s\n", 
-				  ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
+		DEBUG(3, ("Error opening key '%s': %s\n",
+			ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	} else if (res->count == 0) {
-		DEBUG(3, ("Key '%s' not found\n", ldb_dn_get_linearized(ldap_path)));
+		DEBUG(3, ("Key '%s' not found\n",
+			ldb_dn_get_linearized(ldap_path)));
 		talloc_free(res);
 		return WERR_NOT_FOUND;
 	}
@@ -308,7 +325,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
 	newkd->key.ops = &reg_backend_ldb;
 	newkd->ldb = talloc_reference(newkd, kd->ldb);
-	newkd->dn = ldb_dn_copy(mem_ctx, res->msgs[0]->dn); 
+	newkd->dn = ldb_dn_copy(mem_ctx, res->msgs[0]->dn);
 
 	*key = (struct hive_key *)newkd;
 
@@ -317,7 +334,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	return WERR_OK;
 }
 
-WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location, 
+WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
 			 struct hive_key **k)
@@ -325,10 +342,10 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 	struct ldb_key_data *kd;
 	struct ldb_context *wrap;
 
-	if (location == NULL) 
+	if (location == NULL)
 		return WERR_INVALID_PARAM;
 
-	wrap = ldb_wrap_connect(parent_ctx, global_loadparm, 
+	wrap = ldb_wrap_connect(parent_ctx, global_loadparm,
 				location, session_info, credentials, 0, NULL);
 
 	if (wrap == NULL) {
@@ -349,10 +366,10 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 	return WERR_OK;
 }
 
-static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, const struct hive_key *parent, 
-						   const char *name, const char *classname,
-						   struct security_descriptor *sd, 
-						   struct hive_key **newkey)
+static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
+			  const char *name, const char *classname,
+			  struct security_descriptor *sd,
+			  struct hive_key **newkey)
 {
 	const struct ldb_key_data *parentkd = (const struct ldb_key_data *)parent;
 	struct ldb_message *msg;
@@ -365,13 +382,14 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 
 	ldb_msg_add_string(msg, "key", talloc_strdup(mem_ctx, name));
 	if (classname != NULL)
-		ldb_msg_add_string(msg, "classname", talloc_strdup(mem_ctx, classname));
+		ldb_msg_add_string(msg, "classname",
+				   talloc_strdup(mem_ctx, classname));
 
 	ret = ldb_add(parentkd->ldb, msg);
 	if (ret < 0) {
 		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parentkd->ldb)));
 		return WERR_FOOBAR;
-	} 
+	}
 
 	DEBUG(2, ("key added: %s\n", ldb_dn_get_linearized(msg->dn)));
 
@@ -385,7 +403,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	return WERR_OK;
 }
 
-static WERROR ldb_del_key (const struct hive_key *key, const char *child)
+static WERROR ldb_del_key(const struct hive_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *parentkd = talloc_get_type(key, struct ldb_key_data);
@@ -431,9 +449,9 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_set_value(struct hive_key *parent, 
-							const char *name, uint32_t type, 
-							const DATA_BLOB data)
+static WERROR ldb_set_value(struct hive_key *parent,
+			    const char *name, uint32_t type,
+			    const DATA_BLOB data)
 {
 	struct ldb_message *msg;
 	struct ldb_key_data *kd = talloc_get_type(parent, struct ldb_key_data);
@@ -454,17 +472,17 @@ static WERROR ldb_set_value(struct hive_key *parent,
 			return WERR_FOOBAR;
 		}
 	}
-	
+
 	talloc_free(mem_ctx);
 	return WERR_OK;
 }
 
-static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx, 
-							   const struct hive_key *key,
-							   const char **classname, 
-							   uint32_t *num_subkeys,
-							   uint32_t *num_values,
-							   NTTIME *last_change_time)
+static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
+			       const struct hive_key *key,
+			       const char **classname,
+			       uint32_t *num_subkeys,
+			       uint32_t *num_values,
+			       NTTIME *last_change_time)
 {
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
 

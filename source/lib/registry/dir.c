@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Registry interface
-   Copyright (C) Jelmer Vernooij					  2004-2007.
-   
+   Copyright (C) Jelmer Vernooij				  2004-2007.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,11 +29,11 @@ struct dir_key {
 
 static struct hive_operations reg_backend_dir;
 
-static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, 
-							  const struct hive_key *parent, 
-							  const char *name, const char *classname,
-							  struct security_descriptor *desc, 
-							  struct hive_key **result)
+static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx,
+			      const struct hive_key *parent,
+			      const char *name, const char *classname,
+			      struct security_descriptor *desc,
+			      struct hive_key **result)
 {
 	struct dir_key *dk = talloc_get_type(parent, struct dir_key);
 	char *path;
@@ -61,8 +61,8 @@ static WERROR reg_dir_del_key(const struct hive_key *k, const char *name)
 	char *child = talloc_asprintf(NULL, "%s/%s", dk->path, name);
 	WERROR ret;
 
-	if (rmdir(child) == 0) 
-		ret = WERR_OK; 
+	if (rmdir(child) == 0)
+		ret = WERR_OK;
 	else if (errno == ENOENT)
 		ret = WERR_NOT_FOUND;
 	else
@@ -73,25 +73,26 @@ static WERROR reg_dir_del_key(const struct hive_key *k, const char *name)
 	return ret;
 }
 
-static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, 
-							   const struct hive_key *parent, 
-							   const char *name, struct hive_key **subkey)
+static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx,
+			       const struct hive_key *parent,
+			       const char *name, struct hive_key **subkey)
 {
 	DIR *d;
 	char *fullpath;
 	const struct dir_key *p = talloc_get_type(parent, struct dir_key);
 	struct dir_key *ret;
-	
+
 	if (name == NULL) {
 		DEBUG(0, ("NULL pointer passed as directory name!"));
 		return WERR_INVALID_PARAM;
 	}
-	
+
 	fullpath = talloc_asprintf(mem_ctx, "%s/%s", p->path, name);
-	
+
 	d = opendir(fullpath);
 	if (d == NULL) {
-		DEBUG(3,("Unable to open '%s': %s\n", fullpath, strerror(errno)));
+		DEBUG(3,("Unable to open '%s': %s\n", fullpath,
+			strerror(errno)));
 		return WERR_BADFILE;
 	}
 	closedir(d);
@@ -102,11 +103,11 @@ static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, 
-								   const struct hive_key *k, uint32_t idx, 
-								   const char **name,
-								   const char **classname,
-								   NTTIME *last_mod_time)
+static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx,
+				   const struct hive_key *k, uint32_t idx,
+				   const char **name,
+				   const char **classname,
+				   NTTIME *last_mod_time)
 {
 	struct dirent *e;
 	const struct dir_key *dk = talloc_get_type(k, struct dir_key);
@@ -115,14 +116,14 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx,
 
 	d = opendir(dk->path);
 
-	if (d == NULL) 
+	if (d == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	while((e = readdir(d))) {
 		if(!ISDOT(e->d_name) && !ISDOTDOT(e->d_name)) {
 			struct stat stbuf;
 			char *thispath;
-			
+
 			/* Check if file is a directory */
 			asprintf(&thispath, "%s/%s", dk->path, e->d_name);
 			stat(thispath, &stbuf);
@@ -153,12 +154,12 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx,
 	return WERR_NO_MORE_ITEMS;
 }
 
-WERROR reg_open_directory(TALLOC_CTX *parent_ctx, 
-						  const char *location, struct hive_key **key)
+WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
+			  const char *location, struct hive_key **key)
 {
 	struct dir_key *dk;
 
-	if (location == NULL) 
+	if (location == NULL)
 		return WERR_INVALID_PARAM;
 
 	dk = talloc(parent_ctx, struct dir_key);
@@ -168,8 +169,8 @@ WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 	return WERR_OK;
 }
 
-WERROR reg_create_directory(TALLOC_CTX *parent_ctx, 
-							const char *location, struct hive_key **key)
+WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
+			    const char *location, struct hive_key **key)
 {
 	if (mkdir(location, 0700) != 0) {
 		*key = NULL;
@@ -179,11 +180,11 @@ WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
 	return reg_open_directory(parent_ctx, location, key);
 }
 
-static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key, 
-							   const char **classname,
-							   uint32_t *num_subkeys,
-							   uint32_t *num_values,
-							   NTTIME *lastmod)
+static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
+			       const char **classname,
+			       uint32_t *num_subkeys,
+			       uint32_t *num_values,
+			       NTTIME *lastmod)
 {
 	DIR *d;
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
@@ -196,7 +197,7 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 		*classname = NULL;
 
 	d = opendir(dk->path);
-	if (d == NULL) 
+	if (d == NULL)
 		return WERR_INVALID_PARAM;
 
 	if (num_subkeys != NULL)
@@ -207,10 +208,12 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 
 	while((e = readdir(d))) {
 		if(!ISDOT(e->d_name) && !ISDOTDOT(e->d_name)) {
-			char *path = talloc_asprintf(ctx, "%s/%s", dk->path, e->d_name);
+			char *path = talloc_asprintf(ctx, "%s/%s",
+						     dk->path, e->d_name);
 
 			if (stat(path, &st) < 0) {
-				DEBUG(0, ("Error statting %s: %s\n", path, strerror(errno)));
+				DEBUG(0, ("Error statting %s: %s\n", path,
+					strerror(errno)));
 				continue;
 			}
 
@@ -231,8 +234,8 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 	return WERR_OK;
 }
 
-static WERROR reg_dir_set_value (struct hive_key *key, const char *name, 
-						 uint32_t type, const DATA_BLOB data)
+static WERROR reg_dir_set_value(struct hive_key *key, const char *name,
+				uint32_t type, const DATA_BLOB data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
 	char *path = talloc_asprintf(dk, "%s/%s", dk->path, name);
@@ -245,9 +248,9 @@ static WERROR reg_dir_set_value (struct hive_key *key, const char *name,
 	return WERR_OK;
 }
 
-static WERROR reg_dir_get_value (TALLOC_CTX *mem_ctx, 
-								 struct hive_key *key, const char *name, 
-								 uint32_t *type, DATA_BLOB *data)
+static WERROR reg_dir_get_value(TALLOC_CTX *mem_ctx,
+				struct hive_key *key, const char *name,
+				uint32_t *type, DATA_BLOB *data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
 	char *path = talloc_asprintf(mem_ctx, "%s/%s", dk->path, name);
@@ -256,7 +259,7 @@ static WERROR reg_dir_get_value (TALLOC_CTX *mem_ctx,
 
 	contents = file_load(path, &size, mem_ctx);
 	talloc_free(path);
-	if (contents == NULL) 
+	if (contents == NULL)
 		return WERR_NOT_FOUND;
 
 	if (type != NULL)
@@ -267,11 +270,11 @@ static WERROR reg_dir_get_value (TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
-	
-static WERROR reg_dir_enum_value (TALLOC_CTX *mem_ctx, 
-								 const struct hive_key *key, int idx, 
-								 const char **name, 
-								 uint32_t *type, DATA_BLOB *data)
+
+static WERROR reg_dir_enum_value(TALLOC_CTX *mem_ctx,
+				 const struct hive_key *key, int idx,
+				 const char **name,
+				 uint32_t *type, DATA_BLOB *data)
 {
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
 	DIR *d;
@@ -280,19 +283,22 @@ static WERROR reg_dir_enum_value (TALLOC_CTX *mem_ctx,
 
 	d = opendir(dk->path);
 	if (d == NULL) {
-		DEBUG(3,("Unable to open '%s': %s\n", dk->path, strerror(errno)));
+		DEBUG(3,("Unable to open '%s': %s\n", dk->path,
+			strerror(errno)));
 		return WERR_BADFILE;
 	}
 
 	i = 0;
 	while((e = readdir(d))) {
-		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name)) 
+		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name))
 			continue;
 
 		if (i == idx) {
 			if (name != NULL)
 				*name = talloc_strdup(mem_ctx, e->d_name);
-			W_ERROR_NOT_OK_RETURN(reg_dir_get_value(mem_ctx, key, *name, type, data));
+			W_ERROR_NOT_OK_RETURN(reg_dir_get_value(mem_ctx, key,
+								*name, type,
+								data));
 			return WERR_OK;
 		}
 
@@ -315,7 +321,7 @@ static WERROR reg_dir_del_value (struct hive_key *key, const char *name)
 		return WERR_GENERAL_FAILURE;
 	}
 	talloc_free(path);
-		
+
 	return WERR_OK;
 }
 

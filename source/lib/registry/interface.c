@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Transparent registry backend handling
    Copyright (C) Jelmer Vernooij			2003-2007.
@@ -47,7 +47,7 @@ _PUBLIC_ const char *reg_get_predef_name(uint32_t hkey)
 {
 	int i;
 	for (i = 0; reg_predefined_keys[i].name; i++) {
-		if (reg_predefined_keys[i].handle == hkey) 
+		if (reg_predefined_keys[i].handle == hkey)
 			return reg_predefined_keys[i].name;
 	}
 
@@ -55,40 +55,42 @@ _PUBLIC_ const char *reg_get_predef_name(uint32_t hkey)
 }
 
 /** Get predefined key by name. */
-_PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, 
-											   const char *name, 
-											   struct registry_key **key)
+_PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx,
+					       const char *name,
+					       struct registry_key **key)
 {
 	int i;
-	
+
 	for (i = 0; reg_predefined_keys[i].name; i++) {
-		if (!strcasecmp(reg_predefined_keys[i].name, name)) 
-			return reg_get_predefined_key(ctx, reg_predefined_keys[i].handle, 
-										  key);
+		if (!strcasecmp(reg_predefined_keys[i].name, name))
+			return reg_get_predefined_key(ctx,
+						      reg_predefined_keys[i].handle,
+						      key);
 	}
 
 	DEBUG(1, ("No predefined key with name '%s'\n", name));
-	
+
 	return WERR_BADFILE;
 }
 
 /** Get predefined key by id. */
-_PUBLIC_ WERROR reg_get_predefined_key(const struct registry_context *ctx, 
-									   uint32_t hkey, struct registry_key **key)
+_PUBLIC_ WERROR reg_get_predefined_key(const struct registry_context *ctx,
+				       uint32_t hkey, struct registry_key **key)
 {
 	return ctx->ops->get_predefined_key(ctx, hkey, key);
 }
 
 /**
- * Open a key 
+ * Open a key
  * First tries to use the open_key function from the backend
- * then falls back to get_subkey_by_name and later get_subkey_by_index 
+ * then falls back to get_subkey_by_name and later get_subkey_by_index
  */
-_PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, 
-							 const char *name, struct registry_key **result)
+_PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent,
+			     const char *name, struct registry_key **result)
 {
 	if (parent == NULL) {
-		DEBUG(0, ("Invalid parent key specified for open of '%s'\n", name));
+		DEBUG(0, ("Invalid parent key specified for open of '%s'\n",
+			name));
 		return WERR_INVALID_PARAM;
 	}
 
@@ -103,69 +105,71 @@ _PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 /**
  * Get value by index
  */
-_PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, 
-					   const struct registry_key *key, 
+_PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx,
+					   const struct registry_key *key,
 					   uint32_t idx, const char **name,
 					   uint32_t *type, DATA_BLOB *data)
 {
-	if (key == NULL) 
+	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
 	if (key->context->ops->enum_value == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return key->context->ops->enum_value(mem_ctx, key, idx, name, type, 
-													data);
+	return key->context->ops->enum_value(mem_ctx, key, idx, name,
+					     type, data);
 }
 
-/** 
+/**
  * Get the number of subkeys.
  */
-_PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx, 
-								 const struct registry_key *key, 
-								 const char **classname,
-								 uint32_t *num_subkeys,
-								 uint32_t *num_values,
-								 NTTIME *last_change_time)
+_PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
+				 const struct registry_key *key,
+				 const char **classname,
+				 uint32_t *num_subkeys,
+				 uint32_t *num_values,
+				 NTTIME *last_change_time)
 {
-	if (key == NULL) 
+	if (key == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (key->context->ops->get_key_info == NULL)
 		return WERR_NOT_SUPPORTED;
 
 	return key->context->ops->get_key_info(mem_ctx,
-										   key, classname, num_subkeys, 
-										   num_values, last_change_time);
+					       key, classname, num_subkeys,
+					       num_values, last_change_time);
 }
 
 /**
  * Get subkey by index.
  */
-_PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, 
-		const struct registry_key *key, int idx, const char **name,
-		const char **keyclass, NTTIME *last_changed_time)
+_PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx,
+					    const struct registry_key *key,
+					    int idx, const char **name,
+					    const char **keyclass,
+					    NTTIME *last_changed_time)
 {
-	if (key == NULL) 
+	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
 	if (key->context->ops->enum_key == NULL)
 		return WERR_NOT_SUPPORTED;
 
 	return key->context->ops->enum_key(mem_ctx, key, idx, name,
-										  keyclass, last_changed_time);
+					   keyclass, last_changed_time);
 }
 
 /**
  * Get value by name.
  */
-_PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, 
-										  const struct registry_key *key, 
-										  const char *name, 
-										  uint32_t *type,
-										  DATA_BLOB *data)
+_PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx,
+					  const struct registry_key *key,
+					  const char *name,
+					  uint32_t *type,
+					  DATA_BLOB *data)
 {
-	if (key == NULL) 
+	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
 	if (key->context->ops->get_value == NULL)
@@ -179,49 +183,49 @@ _PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ WERROR reg_key_del(struct registry_key *parent, const char *name)
 {
-	if (parent == NULL) 
+	if (parent == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (parent->context->ops->delete_key == NULL)
 		return WERR_NOT_SUPPORTED;
-	
+
 	return parent->context->ops->delete_key(parent, name);
 }
 
 /**
  * Add a key.
  */
-_PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, 
-								 struct registry_key *parent, 
-								 const char *name, const char *key_class, 
-								 struct security_descriptor *desc, 
-								 struct registry_key **newkey)
+_PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx,
+				 struct registry_key *parent,
+				 const char *name, const char *key_class,
+				 struct security_descriptor *desc,
+				 struct registry_key **newkey)
 {
-	if (parent == NULL) 
+	if (parent == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (parent->context->ops->create_key == NULL) {
-		DEBUG(1, ("Backend '%s' doesn't support method add_key\n", 
+		DEBUG(1, ("Backend '%s' doesn't support method add_key\n",
 				  parent->context->ops->name));
 		return WERR_NOT_SUPPORTED;
 	}
 
-	return parent->context->ops->create_key(mem_ctx, parent, name, 
-											key_class, desc, newkey);
+	return parent->context->ops->create_key(mem_ctx, parent, name,
+						key_class, desc, newkey);
 }
 
 /**
  * Set a value.
  */
-_PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value, 
-							uint32_t type, const DATA_BLOB data)
+_PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value,
+			    uint32_t type, const DATA_BLOB data)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
 	/* A 'real' set function has preference */
 	if (key->context->ops->set_value == NULL) {
-		DEBUG(1, ("Backend '%s' doesn't support method set_value\n", 
+		DEBUG(1, ("Backend '%s' doesn't support method set_value\n",
 				  key->context->ops->name));
 		return WERR_NOT_SUPPORTED;
 	}
@@ -232,15 +236,15 @@ _PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value,
 /**
  * Get the security descriptor on a key.
  */
-_PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx, 
-								 const struct registry_key *key, 
-								 struct security_descriptor **secdesc)
+_PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx,
+				 const struct registry_key *key,
+				 struct security_descriptor **secdesc)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
 	/* A 'real' set function has preference */
-	if (key->context->ops->get_security == NULL)  
+	if (key->context->ops->get_security == NULL)
 		return WERR_NOT_SUPPORTED;
 
 	return key->context->ops->get_security(ctx, key, secdesc);
@@ -267,32 +271,32 @@ _PUBLIC_ WERROR reg_key_flush(struct registry_key *key)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (key->context->ops->flush_key == NULL)
 		return WERR_NOT_SUPPORTED;
 
 	return key->context->ops->flush_key(key);
 }
 
-_PUBLIC_ WERROR reg_get_security(TALLOC_CTX *mem_ctx, 
-								 const struct registry_key *key, 
-								 struct security_descriptor **security)
+_PUBLIC_ WERROR reg_get_security(TALLOC_CTX *mem_ctx,
+				 const struct registry_key *key,
+				 struct security_descriptor **security)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (key->context->ops->get_security == NULL)
 		return WERR_NOT_SUPPORTED;
 
 	return key->context->ops->get_security(mem_ctx, key, security);
 }
 
-_PUBLIC_ WERROR reg_set_security(struct registry_key *key, 
-								 struct security_descriptor *security)
+_PUBLIC_ WERROR reg_set_security(struct registry_key *key,
+				 struct security_descriptor *security)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
-	
+
 	if (key->context->ops->set_security == NULL)
 		return WERR_NOT_SUPPORTED;
 
