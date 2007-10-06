@@ -37,7 +37,7 @@ struct search_private {
 /****************************************************************************
  Interpret a long filename structure.
 ****************************************************************************/
-static BOOL interpret_long_filename(enum smb_search_data_level level,
+static bool interpret_long_filename(enum smb_search_data_level level,
 				    const union smb_search_data *info,
 				    struct clilist_file_info *finfo)
 {
@@ -65,14 +65,14 @@ static BOOL interpret_long_filename(enum smb_search_data_level level,
 
 	default:
 		DEBUG(0,("Unhandled level %d in interpret_long_filename\n", (int)level));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /* callback function used for trans2 search */
-static BOOL smbcli_list_new_callback(void *private, const union smb_search_data *file)
+static bool smbcli_list_new_callback(void *private, const union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	struct clilist_file_info *tdl;
@@ -83,7 +83,7 @@ static BOOL smbcli_list_new_callback(void *private, const union smb_search_data 
 			     struct clilist_file_info,
 			     state->dirlist_len + 1);
 	if (!tdl) {
-		return False;
+		return false;
 	}
 	state->dirlist = tdl;
 	state->dirlist_len++;
@@ -94,7 +94,7 @@ static BOOL smbcli_list_new_callback(void *private, const union smb_search_data 
 	state->total_received++;
 	state->ff_searchcount++;
 	
-	return True;
+	return true;
 }
 
 int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
@@ -106,7 +106,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	union smb_search_next next_parms;
 	struct search_private state;  /* for callbacks */
 	int received = 0;
-	BOOL first = True;
+	bool first = true;
 	int num_received = 0;
 	int max_matches = 512;
 	char *mask;
@@ -159,7 +159,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			received = first_parms.t2ffirst.out.count;
 			if (received <= 0) break;
 			if (ff_eos) break;
-			first = False;
+			first = false;
 		} else {
 			NTSTATUS status;
 
@@ -203,7 +203,7 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
  Interpret a short filename structure.
  The length of the structure is returned.
 ****************************************************************************/
-static BOOL interpret_short_filename(enum smb_search_data_level level,
+static bool interpret_short_filename(enum smb_search_data_level level,
 				     const union smb_search_data *info,
 				     struct clilist_file_info *finfo)
 {
@@ -223,14 +223,14 @@ static BOOL interpret_short_filename(enum smb_search_data_level level,
 
 	default:
 		DEBUG(0,("Unhandled level %d in interpret_short_filename\n", (int)level));
-		return False;
+		return false;
 	}
 	
-	return True;
+	return true;
 }
 
 /* callback function used for smb_search */
-static BOOL smbcli_list_old_callback(void *private, const union smb_search_data *file)
+static bool smbcli_list_old_callback(void *private, const union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	struct clilist_file_info *tdl;
@@ -242,7 +242,7 @@ static BOOL smbcli_list_old_callback(void *private, const union smb_search_data 
 			     state->dirlist_len + 1);
 
 	if (!tdl) {
-		return False;
+		return false;
 	}
 	state->dirlist = tdl;
 	state->dirlist_len++;
@@ -253,7 +253,7 @@ static BOOL smbcli_list_old_callback(void *private, const union smb_search_data 
 	state->ff_searchcount++;
 	state->id = file->search.id; /* return resume info */
 	
-	return True;
+	return true;
 }
 
 int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
@@ -265,7 +265,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	struct search_private state;  /* for callbacks */
 	const int num_asked = 500;
 	int received = 0;
-	BOOL first = True;
+	bool first = true;
 	int num_received = 0;
 	char *mask;
 	int i;
@@ -303,7 +303,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 		
 			received = first_parms.search_first.out.count;
 			if (received <= 0) break;
-			first = False;
+			first = false;
 		} else {
 			NTSTATUS status;
 

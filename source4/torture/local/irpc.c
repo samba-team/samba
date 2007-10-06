@@ -29,7 +29,7 @@
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
-static BOOL test_debug;
+static bool test_debug;
 
 struct irpc_test_data
 {
@@ -72,7 +72,7 @@ static void deferred_echodata(struct event_context *ev, struct timed_event *te,
 */
 static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r)
 {
-	irpc->defer_reply = True;
+	irpc->defer_reply = true;
 	event_add_timed(irpc->ev, irpc, timeval_zero(), deferred_echodata, irpc);
 	return NT_STATUS_OK;
 }
@@ -92,10 +92,10 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	/* make the call */
 	r.in.in_data = value;
 
-	test_debug = True;
+	test_debug = true;
 	status = IRPC_CALL(data->msg_ctx1, cluster_id(MSG_ID2), 
 			   rpcecho, ECHO_ADDONE, &r, test);
-	test_debug = False;
+	test_debug = false;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
 
 	/* check the answer */
@@ -209,7 +209,7 @@ static bool test_speed(struct torture_context *tctx,
 }
 
 
-static BOOL irpc_setup(struct torture_context *tctx, void **_data)
+static bool irpc_setup(struct torture_context *tctx, void **_data)
 {
 	struct irpc_test_data *data;
 
@@ -237,7 +237,7 @@ static BOOL irpc_setup(struct torture_context *tctx, void **_data)
 	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
 	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
 
-	return True;
+	return true;
 }
 
 struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)

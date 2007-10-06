@@ -83,19 +83,19 @@ struct inotify_watch_context {
   see if a particular event from inotify really does match a requested
   notify event in SMB
 */
-static BOOL filter_match(struct inotify_watch_context *w,
+static bool filter_match(struct inotify_watch_context *w,
 			 struct inotify_event *e)
 {
 	if ((e->mask & w->mask) == 0) {
 		/* this happens because inotify_add_watch() coalesces watches on the same
 		   path, oring their masks together */
-		return False;
+		return false;
 	}
 
 	/* SMB separates the filters for files and directories */
 	if (e->mask & IN_ISDIR) {
 		if ((w->filter & FILE_NOTIFY_CHANGE_DIR_NAME) == 0) {
-			return False;
+			return false;
 		}
 	} else {
 		if ((e->mask & IN_ATTRIB) &&
@@ -104,18 +104,18 @@ static BOOL filter_match(struct inotify_watch_context *w,
 				  FILE_NOTIFY_CHANGE_LAST_ACCESS|
 				  FILE_NOTIFY_CHANGE_EA|
 				  FILE_NOTIFY_CHANGE_SECURITY))) {
-			return True;
+			return true;
 		}
 		if ((e->mask & IN_MODIFY) && 
 		    (w->filter & FILE_NOTIFY_CHANGE_ATTRIBUTES)) {
-			return True;
+			return true;
 		}
 		if ((w->filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
-			return False;
+			return false;
 		}
 	}
 
-	return True;
+	return true;
 }
 	
 

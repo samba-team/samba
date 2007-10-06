@@ -34,11 +34,11 @@
    It takes a password ('unix' string), a 8 byte "crypt key" 
    and puts 24 bytes of encrypted password into p24 
 
-   Returns False if password must have been truncated to create LM hash
+   Returns false if password must have been truncated to create LM hash
 */
-BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
+bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 {
-	BOOL ret;
+	bool ret;
 	uint8_t p21[21];
 
 	memset(p21,'\0',21);
@@ -62,7 +62,7 @@ BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
  * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
  
-_PUBLIC_ BOOL E_md4hash(const char *passwd, uint8_t p16[16])
+_PUBLIC_ bool E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	void *wpwd;
@@ -72,27 +72,27 @@ _PUBLIC_ BOOL E_md4hash(const char *passwd, uint8_t p16[16])
 		/* We don't want to return fixed data, as most callers
 		 * don't check */
 		mdfour(p16, (const uint8_t *)passwd, strlen(passwd));
-		return False;
+		return false;
 	}
 	
 	len -= 2;
 	mdfour(p16, wpwd, len);
 
 	talloc_free(wpwd);
-	return True;
+	return true;
 }
 
 /**
  * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with DES, caller allocated 16 byte buffer
- * @return False if password was > 14 characters, and therefore may be incorrect, otherwise True
+ * @return false if password was > 14 characters, and therefore may be incorrect, otherwise true
  * @note p16 is filled in regardless
  */
  
-_PUBLIC_ BOOL E_deshash(const char *passwd, uint8_t p16[16])
+_PUBLIC_ bool E_deshash(const char *passwd, uint8_t p16[16])
 {
-	BOOL ret = True;
+	bool ret = true;
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
 
@@ -103,7 +103,7 @@ _PUBLIC_ BOOL E_deshash(const char *passwd, uint8_t p16[16])
 	E_P16((const uint8_t *)dospwd, p16);
 
 	if (strlen(dospwd) > 14) {
-		ret = False;
+		ret = false;
 	}
 
 	ZERO_STRUCT(dospwd);	
@@ -112,9 +112,9 @@ _PUBLIC_ BOOL E_deshash(const char *passwd, uint8_t p16[16])
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
-BOOL ntv2_owf_gen(const uint8_t owf[16],
+bool ntv2_owf_gen(const uint8_t owf[16],
 		  const char *user_in, const char *domain_in,
-		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
+		  bool upper_case_domain, /* Transform the domain into UPPER case */
 		  uint8_t kr_buf[16])
 {
 	void *user;
@@ -125,7 +125,7 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	HMACMD5Context ctx;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
 	if (!mem_ctx) {
-		return False;
+		return false;
 	}
 
 	if (!user_in) {
@@ -139,14 +139,14 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	user_in = strupper_talloc(mem_ctx, user_in);
 	if (user_in == NULL) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	if (upper_case_domain) {
 		domain_in = strupper_talloc(mem_ctx, domain_in);
 		if (domain_in == NULL) {
 			talloc_free(mem_ctx);
-			return False;
+			return false;
 		}
 	}
 
@@ -154,14 +154,14 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 	if (user_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	domain_byte_len = push_ucs2_talloc(mem_ctx, &domain, domain_in);
 	if (domain_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	SMB_ASSERT(user_byte_len >= 2);
@@ -185,7 +185,7 @@ BOOL ntv2_owf_gen(const uint8_t owf[16],
 #endif
 
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
@@ -393,7 +393,7 @@ static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx, 
+bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx, 
 			   const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal, 
 			   const DATA_BLOB *names_blob,
@@ -406,8 +406,8 @@ BOOL SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	   the username and domain.
 	   This prevents username swapping during the auth exchange
 	*/
-	if (!ntv2_owf_gen(nt_hash, user, domain, True, ntlm_v2_hash)) {
-		return False;
+	if (!ntv2_owf_gen(nt_hash, user, domain, true, ntlm_v2_hash)) {
+		return false;
 	}
 	
 	if (nt_response) {
@@ -437,10 +437,10 @@ BOOL SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 		}
 	}
 	
-	return True;
+	return true;
 }
 
-BOOL SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx, 
+bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx, 
 		      const char *user, const char *domain, 
 		      const char *password, 
 		      const DATA_BLOB *server_chal, 
@@ -460,7 +460,7 @@ BOOL SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
  encode a password buffer with a unicode password.  The buffer
  is filled with random data to make it harder to attack.
 ************************************************************/
-BOOL encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flags)
+bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flags)
 {
 	uint8_t new_pw[512];
 	size_t new_pw_len;
@@ -482,7 +482,7 @@ BOOL encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 	 */
 	SIVAL(buffer, 512, new_pw_len);
 	ZERO_STRUCT(new_pw);
-	return True;
+	return true;
 }
 
 
@@ -491,7 +491,7 @@ BOOL encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
  *new_pw_len is the length in bytes of the possibly mulitbyte
  returned password including termination.
 ************************************************************/
-BOOL decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
+bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32_t *new_pw_len,
 		      int string_flags)
 {
@@ -517,7 +517,7 @@ BOOL decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 
 	/* Password cannot be longer than the size of the password buffer */
 	if ( (byte_len < 0) || (byte_len > 512)) {
-		return False;
+		return false;
 	}
 
 	/* decode into the return buffer.  Buffer length supplied */
@@ -531,5 +531,5 @@ BOOL decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
 	
-	return True;
+	return true;
 }

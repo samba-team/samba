@@ -77,7 +77,7 @@ static struct {
 /*
   test fileinfo levels
 */
-static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
+static bool torture_smb2_fileinfo(struct smb2_tree *tree)
 {
 	struct smb2_handle hfile, hdir;
 	NTSTATUS status;
@@ -131,17 +131,17 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 		}
 	}
 
-	return True;
+	return true;
 
 failed:
-	return False;
+	return false;
 }
 
 
 /*
   test fsinfo levels
 */
-static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
+static bool torture_smb2_fsinfo(struct smb2_tree *tree)
 {
 	int i;
 	NTSTATUS status;
@@ -151,7 +151,7 @@ static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
 	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	for (i=0;i<ARRAY_SIZE(fs_levels);i++) {
@@ -160,35 +160,35 @@ static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
 		fs_levels[i].status = smb2_getinfo_fs(tree, tree, &fs_levels[i].info);
 		if (!NT_STATUS_IS_OK(fs_levels[i].status)) {
 			printf("%s failed - %s\n", fs_levels[i].name, nt_errstr(fs_levels[i].status));
-			return False;
+			return false;
 		}
 	}
 
-	return True;
+	return true;
 }
 
 
 /* basic testing of all SMB2 getinfo levels
 */
-BOOL torture_smb2_getinfo(struct torture_context *torture)
+bool torture_smb2_getinfo(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, FNAME ":streamtwo");
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, DNAME ":streamtwo");
 

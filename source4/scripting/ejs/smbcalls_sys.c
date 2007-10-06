@@ -294,7 +294,7 @@ static int ejs_sys_file_load(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 {
-	BOOL ret;
+	bool ret;
 	if (argc != 2) {
 		ejsSetErrorMsg(eid, "sys_file_save invalid arguments");
 		return -1;
@@ -311,7 +311,7 @@ static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_sys_mkdir(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	BOOL ret;
+	bool ret;
 	char *name;
 	if (argc != 2) {
 		ejsSetErrorMsg(eid, "sys_mkdir invalid arguments, need mkdir(dirname, mode)");

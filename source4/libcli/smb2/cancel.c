@@ -46,7 +46,7 @@ NTSTATUS smb2_cancel(struct smb2_request *r)
 
 	/* we don't want a seqmun for a SMB2 Cancel */
 	old_seqnum = r->transport->seqnum;
-	c = smb2_request_init(r->transport, SMB2_OP_CANCEL, 0x04, False, 0);
+	c = smb2_request_init(r->transport, SMB2_OP_CANCEL, 0x04, false, 0);
 	r->transport->seqnum = old_seqnum;
 	NT_STATUS_HAVE_NO_MEMORY(c);
 	c->seqnum = 0;

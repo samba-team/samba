@@ -91,7 +91,7 @@ _PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 				uint32_t stream_id, uint32_t share_access, 
-				uint32_t access_mask, BOOL delete_on_close,
+				uint32_t access_mask, bool delete_on_close,
 				const char *path, 
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
@@ -139,7 +139,7 @@ _PUBLIC_ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 /*
   update delete on close flag on an open file
 */
-_PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
+_PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
 {
 	return ops->odb_set_delete_on_close(lck, del_on_close);
 }
@@ -149,7 +149,7 @@ _PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_clos
   people still have the file open
 */
 _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
-					  DATA_BLOB *key, BOOL *del_on_close, 
+					  DATA_BLOB *key, bool *del_on_close, 
 					  int *open_count, char **path)
 {
 	return ops->odb_get_delete_on_close(odb, key, del_on_close, open_count, path);

@@ -24,14 +24,14 @@
 #include "vfs_posix.h"
 
 /*
-  return True if a string contains one of the CIFS wildcard characters
+  return true if a string contains one of the CIFS wildcard characters
 */
-BOOL pvfs_has_wildcard(const char *str)
+bool pvfs_has_wildcard(const char *str)
 {
 	if (strpbrk(str, "*?<>\"")) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*

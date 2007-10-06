@@ -121,7 +121,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 			talloc_free(partial_name);
 			partial_name = test_name;
 			if (i == num_components - 1) {
-				name->exists = True;
+				name->exists = true;
 			}
 			continue;
 		}
@@ -166,7 +166,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 
 	if (!name->exists) {
 		if (stat(partial_name, &name->st) == 0) {
-			name->exists = True;
+			name->exists = true;
 		}
 	}
 
@@ -229,7 +229,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
 	name->stream_id = 0;
-	name->has_wildcard = False;
+	name->has_wildcard = false;
 
 	while (*cifs_name == '\\') {
 		cifs_name++;
@@ -291,7 +291,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			if (!(flags & PVFS_RESOLVE_WILDCARD)) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
-			name->has_wildcard = True;
+			name->has_wildcard = true;
 			break;
 		case '/':
 		case '|':
@@ -456,8 +456,8 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*name)->exists = False;
-	(*name)->stream_exists = False;
+	(*name)->exists = false;
+	(*name)->stream_exists = false;
 
 	if (!(pvfs->fs_attribs & FS_ATTR_NAMED_STREAMS)) {
 		flags &= ~PVFS_RESOLVE_STREAMS;
@@ -519,7 +519,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	/* if we can stat() the full name now then we are done */
 	if (stat((*name)->full_name, &(*name)->st) == 0) {
-		(*name)->exists = True;
+		(*name)->exists = true;
 		return pvfs_fill_dos_info(pvfs, *name, -1);
 	}
 
@@ -558,9 +558,9 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	(*name)->exists = True;
-	(*name)->stream_exists = True;
-	(*name)->has_wildcard = False;
+	(*name)->exists = true;
+	(*name)->stream_exists = true;
+	(*name)->has_wildcard = false;
 	(*name)->original_name = talloc_strdup(*name, fname);
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
@@ -608,7 +608,7 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
-	name->exists = True;
+	name->exists = true;
 	
 	return pvfs_fill_dos_info(pvfs, name, fd);
 }
@@ -650,9 +650,9 @@ NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	(*name)->exists = True;
-	(*name)->stream_exists = True;
-	(*name)->has_wildcard = False;
+	(*name)->exists = true;
+	(*name)->stream_exists = true;
+	(*name)->has_wildcard = false;
 	/* we can't get the correct 'original_name', but for the purposes
 	   of this call this is close enough */
 	(*name)->original_name = talloc_reference(*name, child->original_name);

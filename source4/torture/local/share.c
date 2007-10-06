@@ -175,17 +175,17 @@ static void tcase_add_share_tests(struct torture_tcase *tcase)
 	torture_tcase_add_test(tcase, "share_double_create", test_double_create, NULL);
 }
 
-static BOOL setup_ldb(struct torture_context *tctx, void **data)
+static bool setup_ldb(struct torture_context *tctx, void **data)
 {
 	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "ldb", (struct share_context **)data));
 }
 
-static BOOL setup_classic(struct torture_context *tctx, void **data)
+static bool setup_classic(struct torture_context *tctx, void **data)
 {
 	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "classic", (struct share_context **)data));
 }
 
-static BOOL teardown(struct torture_context *tctx, void *data)
+static bool teardown(struct torture_context *tctx, void *data)
 {
 	talloc_free(data);
 	return true;

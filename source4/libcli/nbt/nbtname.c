@@ -149,7 +149,7 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const
 		/* see if we have pushed the remaing string allready,
 		 * if so we use a label pointer to this string
 		 */
-		status = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, False);
+		status = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, false);
 		if (NT_STATUS_IS_OK(status)) {
 			uint8_t b[2];
 			

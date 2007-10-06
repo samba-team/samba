@@ -309,7 +309,7 @@ NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
 /*
   send a message
 */
-BOOL smbcli_request_send(struct smbcli_request *req)
+bool smbcli_request_send(struct smbcli_request *req)
 {
 	if (IVAL(req->out.buffer, 0) == 0) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
@@ -319,23 +319,23 @@ BOOL smbcli_request_send(struct smbcli_request *req)
 
 	smbcli_transport_send(req);
 
-	return True;
+	return true;
 }
 
 
 /*
   receive a response to a packet
 */
-BOOL smbcli_request_receive(struct smbcli_request *req)
+bool smbcli_request_receive(struct smbcli_request *req)
 {
 	/* req can be NULL when a send has failed. This eliminates lots of NULL
 	   checks in each module */
-	if (!req) return False;
+	if (!req) return false;
 
 	/* keep receiving packets until this one is replied to */
 	while (req->state <= SMBCLI_REQUEST_RECV) {
 		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
-			return False;
+			return false;
 		}
 	}
 
@@ -347,7 +347,7 @@ BOOL smbcli_request_receive(struct smbcli_request *req)
   receive another reply to a request - this is used for requests that
   have multi-part replies (such as SMBtrans2)
 */
-BOOL smbcli_request_receive_more(struct smbcli_request *req)
+bool smbcli_request_receive_more(struct smbcli_request *req)
 {
 	req->state = SMBCLI_REQUEST_RECV;
 	DLIST_ADD(req->transport->pending_recv, req);
@@ -357,10 +357,10 @@ BOOL smbcli_request_receive_more(struct smbcli_request *req)
 
 
 /*
-  handle oplock break requests from the server - return True if the request was
+  handle oplock break requests from the server - return true if the request was
   an oplock break
 */
-BOOL smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
+bool smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
@@ -370,7 +370,7 @@ BOOL smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, 
 	    SVAL(hdr, HDR_MID) != 0xFFFF ||
 	    SVAL(vwv,VWV(6)) != 0 ||
 	    SVAL(vwv,VWV(7)) != 0) {
-		return False;
+		return false;
 	}
 
 	if (transport->oplock.handler) {
@@ -380,7 +380,7 @@ BOOL smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, 
 		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private);
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -395,7 +395,7 @@ NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req)
 
 
 /* Return true if the last packet was in error */
-BOOL smbcli_request_is_error(struct smbcli_request *req)
+bool smbcli_request_is_error(struct smbcli_request *req)
 {
 	return NT_STATUS_IS_ERR(req->status);
 }
@@ -676,33 +676,33 @@ DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-static BOOL smbcli_req_data_oob(struct smbcli_request *req, const uint8_t *ptr, uint32_t count)
+static bool smbcli_req_data_oob(struct smbcli_request *req, const uint8_t *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
 	if (ptr < req->in.data ||
 	    ptr >= req->in.data + req->in.data_size ||
 	    count > req->in.data_size ||
 	    ptr + count > req->in.data + req->in.data_size) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*
   pull a lump of data from a request packet
 
-  return False if any part is outside the data portion of the packet
+  return false if any part is outside the data portion of the packet
 */
-BOOL smbcli_raw_pull_data(struct smbcli_request *req, const uint8_t *src, int len, uint8_t *dest)
+bool smbcli_raw_pull_data(struct smbcli_request *req, const uint8_t *src, int len, uint8_t *dest)
 {
-	if (len == 0) return True;
+	if (len == 0) return true;
 
 	if (smbcli_req_data_oob(req, src, len)) {
-		return False;
+		return false;
 	}
 
 	memcpy(dest, src, len);
-	return True;
+	return true;
 }
 
 

@@ -74,7 +74,7 @@ static union smb_fsinfo *find(const char *name)
                #n1, #v1, (uint_t)s1->n1.out.v1, \
                #n2, #v2, (uint_t)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 #define VAL_APPROX_EQUAL(n1, v1, n2, v2) do {if (abs((int)(s1->n1.out.v1) - (int)(s2->n2.out.v2)) > 0.1*s1->n1.out.v1) { \
@@ -82,7 +82,7 @@ static union smb_fsinfo *find(const char *name)
                #n1, #v1, (uint_t)s1->n1.out.v1, \
                #n2, #v2, (uint_t)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 #define STR_EQUAL(n1, v1, n2, v2) do { \
@@ -91,7 +91,7 @@ static union smb_fsinfo *find(const char *name)
                #n1, #v1, s1->n1.out.v1, \
                #n2, #v2, s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 #define STRUCT_EQUAL(n1, v1, n2, v2) do {if (memcmp(&s1->n1.out.v1,&s2->n2.out.v2,sizeof(s1->n1.out.v1))) { \
@@ -99,7 +99,7 @@ static union smb_fsinfo *find(const char *name)
                #n1, #v1, \
                #n2, #v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 /* used to find hints on unknown values - and to make sure 
@@ -110,7 +110,7 @@ static union smb_fsinfo *find(const char *name)
 	       (uint_t)s1->n1.out.v1, \
 	       (uint_t)s1->n1.out.v1, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 /* basic testing of all RAW_QFS_* calls 
@@ -124,7 +124,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 			 struct smbcli_state *cli)
 {
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	int count;
 	union smb_fsinfo *s1, *s2;	
 
@@ -154,7 +154,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		printf("%d levels failed\n", count);
 		if (count > 13) {
 			printf("too many level failures - giving up\n");
-			return False;
+			return false;
 		}
 	}
 
@@ -212,7 +212,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		if (abs(size1 - size2) > 1) {
 			printf("Inconsistent total size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
-			ret = False;
+			ret = false;
 		}
 		printf("total disk = %.0f MB\n", size1*scale/1.0e6);
 	}
@@ -234,7 +234,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		if (abs(size1 - size2) > 1) {
 			printf("Inconsistent avail size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
-			ret = False;
+			ret = false;
 		}
 		printf("free disk = %.0f MB\n", size1*scale/1.0e6);
 	}
@@ -283,7 +283,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		if (s1->stype.out.field.s && wire_bad_flags(&s1->stype.out.field, flags, cli->transport)) { \
 			printf("(%d) incorrect string termination in %s/%s\n", \
 			       __LINE__, #stype, #field); \
-			ret = False; \
+			ret = false; \
 		} \
 	}} while (0)
 

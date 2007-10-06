@@ -33,7 +33,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -47,12 +47,12 @@ static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_lock io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_LOCK_LOCK\n");
@@ -61,7 +61,7 @@ static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -183,12 +183,12 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	union smb_lock io;
 	struct smb_lock_entry lock[1];
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_LOCK_LOCKX\n");
@@ -197,7 +197,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -363,13 +363,13 @@ static bool test_pidhigh(struct torture_context *tctx,
 	union smb_lock io;
 	struct smb_lock_entry lock[1];
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 	uint8_t c = 1;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing high pid\n");
@@ -380,13 +380,13 @@ static bool test_pidhigh(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (smbcli_write(cli->tree, fnum, 0, &c, 0, 1) != 1) {
 		printf("Failed to write 1 byte - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -405,7 +405,7 @@ static bool test_pidhigh(struct torture_context *tctx,
 
 	if (smbcli_read(cli->tree, fnum, &c, 0, 1) != 1) {
 		printf("Failed to read 1 byte - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -415,7 +415,7 @@ static bool test_pidhigh(struct torture_context *tctx,
 
 	if (smbcli_read(cli->tree, fnum, &c, 0, 1) == 1) {
 		printf("pid is incorrect handled for read with lock!\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -423,7 +423,7 @@ static bool test_pidhigh(struct torture_context *tctx,
 
 	if (smbcli_read(cli->tree, fnum, &c, 0, 1) != 1) {
 		printf("High pid is used on this server!\n");
-		ret = False;
+		ret = false;
 	} else {
 		printf("High pid is not used on this server (correct)\n");
 	}
@@ -450,14 +450,14 @@ static bool test_async(struct torture_context *tctx,
 	union smb_lock io;
 	struct smb_lock_entry lock[2];
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 	time_t t;
 	struct smbcli_request *req;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing LOCKING_ANDX_CANCEL_LOCK\n");
@@ -466,7 +466,7 @@ static bool test_async(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -492,7 +492,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -523,7 +523,7 @@ static bool test_async(struct torture_context *tctx,
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel was not immediate (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -539,7 +539,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -555,7 +555,7 @@ static bool test_async(struct torture_context *tctx,
 	if (time(NULL) > t+2) {
 		printf("lock cancel by unlock was not immediate (%s) - took %d secs\n", 
 		       __location__, (int)(time(NULL)-t));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -572,7 +572,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -584,12 +584,12 @@ static bool test_async(struct torture_context *tctx,
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel by close was not immediate (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	printf("create a new sessions\n");
-	session = smbcli_session_init(cli->transport, tctx, False);
+	session = smbcli_session_init(cli->transport, tctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(global_loadparm);
@@ -601,7 +601,7 @@ static bool test_async(struct torture_context *tctx,
 	printf("create new tree context\n");
 	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
-	tree = smbcli_tree_init(session, tctx, False);
+	tree = smbcli_tree_init(session, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
@@ -616,7 +616,7 @@ static bool test_async(struct torture_context *tctx,
 	fnum = smbcli_open(tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -644,7 +644,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -656,7 +656,7 @@ static bool test_async(struct torture_context *tctx,
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel by exit was not immediate (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -665,7 +665,7 @@ static bool test_async(struct torture_context *tctx,
 	fnum = smbcli_open(tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -693,7 +693,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -712,7 +712,7 @@ static bool test_async(struct torture_context *tctx,
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel by ulogoff was not immediate (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -723,7 +723,7 @@ static bool test_async(struct torture_context *tctx,
 	fnum = smbcli_open(tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -747,7 +747,7 @@ static bool test_async(struct torture_context *tctx,
 	req = smb_raw_lock_send(tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -759,7 +759,7 @@ static bool test_async(struct torture_context *tctx,
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel by tdis was not immediate (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -779,7 +779,7 @@ static bool test_errorcode(struct torture_context *tctx,
 	union smb_open op;
 	struct smb_lock_entry lock[2];
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum, fnum2;
 	const char *fname;
 	struct smbcli_request *req;
@@ -787,7 +787,7 @@ static bool test_errorcode(struct torture_context *tctx,
 	int t;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing LOCK_NOT_GRANTED vs. FILE_LOCK_CONFLICT\n");
@@ -1105,7 +1105,7 @@ next_run:
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -1126,7 +1126,7 @@ next_run:
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1144,7 +1144,7 @@ next_run:
 
 	if (time(NULL) < start+1) {
 		printf("lock comes back to early (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1153,7 +1153,7 @@ next_run:
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -1174,7 +1174,7 @@ next_run:
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1194,7 +1194,7 @@ next_run:
 
 	if (time(NULL) < start+1) {
 		printf("lock comes back to early (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1203,7 +1203,7 @@ next_run:
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to reopen %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -1224,7 +1224,7 @@ next_run:
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		printf("Failed to setup timed lock (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1240,7 +1240,7 @@ next_run:
 
 	if (time(NULL) < start+1) {
 		printf("lock comes back to early (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1260,13 +1260,13 @@ static bool test_changetype(struct torture_context *tctx,
 	union smb_lock io;
 	struct smb_lock_entry lock[2];
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	uint8_t c = 0;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing LOCKING_ANDX_CHANGE_LOCKTYPE\n");
@@ -1275,7 +1275,7 @@ static bool test_changetype(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1294,7 +1294,7 @@ static bool test_changetype(struct torture_context *tctx,
 
 	if (smbcli_write(cli->tree, fnum, 0, &c, 100, 1) == 1) {
 		printf("allowed write on read locked region (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1305,7 +1305,7 @@ static bool test_changetype(struct torture_context *tctx,
 
 	if (smbcli_write(cli->tree, fnum, 0, &c, 100, 1) == 1) {
 		printf("allowed write after lock change (%s)\n", __location__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

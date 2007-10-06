@@ -34,23 +34,23 @@
 
 /* global options */
 static struct gentest_options {
-	BOOL showall;
-	BOOL analyze;
-	BOOL analyze_always;
-	BOOL analyze_continuous;
+	bool showall;
+	bool analyze;
+	bool analyze_always;
+	bool analyze_continuous;
 	uint_t max_open_handles;
 	uint_t seed;
 	uint_t numops;
-	BOOL use_oplocks;
+	bool use_oplocks;
 	char **ignore_patterns;
 	const char *seeds_file;
-	BOOL use_preset_seeds;
-	BOOL fast_reconnect;
+	bool use_preset_seeds;
+	bool fast_reconnect;
 } options;
 
 /* mapping between open handles on the server and local handles */
 static struct {
-	BOOL active;
+	bool active;
 	uint_t instance;
 	uint_t server_fnum[NSERVERS];
 	const char *name;
@@ -69,17 +69,17 @@ static struct {
 /* the seeds and flags for each operation */
 static struct {
 	uint_t seed;
-	BOOL disabled;
+	bool disabled;
 } *op_parms;
 
 
 /* oplock break info */
 static struct {
-	BOOL got_break;
+	bool got_break;
 	uint16_t fnum;
 	uint16_t handle;
 	uint8_t level;
-	BOOL do_close;
+	bool do_close;
 } oplocks[NSERVERS][NINSTANCES];
 
 /* change notify reply info */
@@ -102,32 +102,32 @@ static struct {
 
 #define BAD_HANDLE 0xFFFE
 
-static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
+static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
 static void idle_func(struct smbcli_transport *transport, void *private);
 
 /*
   check if a string should be ignored. This is used as the basis
   for all error ignore settings
 */
-static BOOL ignore_pattern(const char *str)
+static bool ignore_pattern(const char *str)
 {
 	int i;
-	if (!options.ignore_patterns) return False;
+	if (!options.ignore_patterns) return false;
 
 	for (i=0;options.ignore_patterns[i];i++) {
 		if (strcmp(options.ignore_patterns[i], str) == 0 ||
 		    gen_fnmatch(options.ignore_patterns[i], str) == 0) {
 			DEBUG(2,("Ignoring '%s'\n", str));
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
 /***************************************************** 
 connect to the servers
 *******************************************************/
-static BOOL connect_servers_fast(void)
+static bool connect_servers_fast(void)
 {
 	int h, i;
 
@@ -137,13 +137,13 @@ static BOOL connect_servers_fast(void)
 		for (i=0;i<NSERVERS;i++) {
 			if (NT_STATUS_IS_ERR((smbcli_close(servers[i].cli[open_handles[h].instance]->tree,
 				       open_handles[h].server_fnum[i])))) {
-				return False;
+				return false;
 			}
-			open_handles[h].active = False;
+			open_handles[h].active = false;
 		}
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -152,13 +152,13 @@ static BOOL connect_servers_fast(void)
 /***************************************************** 
 connect to the servers
 *******************************************************/
-static BOOL connect_servers(void)
+static bool connect_servers(void)
 {
 	int i, j;
 
 	if (options.fast_reconnect && servers[0].cli[0]) {
 		if (connect_servers_fast()) {
-			return True;
+			return true;
 		}
 	}
 
@@ -191,7 +191,7 @@ static BOOL connect_servers(void)
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,
 				       nt_errstr(status));
-				return False;
+				return false;
 			}
 
 			smbcli_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
@@ -199,7 +199,7 @@ static BOOL connect_servers(void)
 		}
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -256,7 +256,7 @@ static void gen_add_handle(int instance, const char *name, uint16_t fnums[NSERVE
 	for (i=0;i<NSERVERS;i++) {
 		open_handles[h].server_fnum[i] = fnums[i];
 		open_handles[h].instance = instance;
-		open_handles[h].active = True;
+		open_handles[h].active = true;
 		open_handles[h].name = name;
 	}
 	num_open_handles++;
@@ -276,7 +276,7 @@ static void gen_remove_handle(int instance, uint16_t fnums[NSERVERS])
 	for (h=0;h<options.max_open_handles;h++) {
 		if (instance == open_handles[h].instance &&
 		    open_handles[h].server_fnum[0] == fnums[0]) {
-			open_handles[h].active = False;			
+			open_handles[h].active = false;			
 			num_open_handles--;
 			printf("CLOSE num_open_handles=%d h=%d s1=0x%x s2=0x%x (%s)\n", 
 			       num_open_handles, h, 
@@ -290,9 +290,9 @@ static void gen_remove_handle(int instance, uint16_t fnums[NSERVERS])
 }
 
 /*
-  return True with 'chance' probability as a percentage
+  return true with 'chance' probability as a percentage
 */
-static BOOL gen_chance(uint_t chance)
+static bool gen_chance(uint_t chance)
 {
 	return ((random() % 100) <= chance);
 }
@@ -474,7 +474,7 @@ static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
 /*
   generate a boolean
 */
-static BOOL gen_bool(void)
+static bool gen_bool(void)
 {
 	return gen_bits_mask2(0x1, 0xFF);
 }
@@ -727,11 +727,11 @@ static void oplock_handler_close_recv(struct smbcli_request *req)
 /*
   the oplock handler will either ack the break or close the file
 */
-static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
 	int i, j;
-	BOOL do_close;
+	bool do_close;
 	struct smbcli_tree *tree = NULL;
 	struct smbcli_request *req;
 
@@ -742,7 +742,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 		for (j=0;j<NINSTANCES;j++) {
 			if (transport == servers[i].cli[j]->transport &&
 			    tid == servers[i].cli[j]->tree->tid) {
-				oplocks[i][j].got_break = True;
+				oplocks[i][j].got_break = true;
 				oplocks[i][j].fnum = fnum;
 				oplocks[i][j].handle = fnum_to_handle(i, j, fnum);
 				oplocks[i][j].level = level;
@@ -754,7 +754,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 
 	if (!tree) {
 		printf("Oplock break not for one of our trees!?\n");
-		return False;
+		return false;
 	}
 
 	if (!do_close) {
@@ -771,13 +771,13 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 
 	if (req == NULL) {
 		printf("WARNING: close failed in oplock_handler_close\n");
-		return False;
+		return false;
 	}
 
 	req->async.fn = oplock_handler_close_recv;
 	req->async.private = NULL;
 
-	return True;
+	return true;
 }
 
 
@@ -804,19 +804,19 @@ static void idle_func(struct smbcli_transport *transport, void *private)
 /*
   compare NTSTATUS, using checking ignored patterns
 */
-static BOOL compare_status(NTSTATUS status1, NTSTATUS status2)
+static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 {
-	if (NT_STATUS_EQUAL(status1, status2)) return True;
+	if (NT_STATUS_EQUAL(status1, status2)) return true;
 
 	/* one code being an error and the other OK is always an error */
-	if (NT_STATUS_IS_OK(status1) || NT_STATUS_IS_OK(status2)) return False;
+	if (NT_STATUS_IS_OK(status1) || NT_STATUS_IS_OK(status2)) return false;
 
 	/* if we are ignoring one of the status codes then consider this a match */
 	if (ignore_pattern(nt_errstr(status1)) ||
 	    ignore_pattern(nt_errstr(status2))) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 
@@ -839,7 +839,7 @@ static void check_pending(void)
 /*
   check that the same oplock breaks have been received by all instances
 */
-static BOOL check_oplocks(const char *call)
+static bool check_oplocks(const char *call)
 {
 	int i, j;
 	int tries = 0;
@@ -860,7 +860,7 @@ again:
 				       oplocks[i][j].got_break, 
 				       oplocks[i][j].handle, 
 				       oplocks[i][j].level);
-				return False;
+				return false;
 			}
 		}
 	}
@@ -877,14 +877,14 @@ again:
 			break;
 		}
 	}	
-	return True;
+	return true;
 }
 
 
 /*
   check that the same change notify info has been received by all instances
 */
-static BOOL check_notifies(const char *call)
+static bool check_notifies(const char *call)
 {
 	int i, j;
 	int tries = 0;
@@ -902,7 +902,7 @@ again:
 				printf("Notify count inconsistent %d %d\n",
 				       notifies[0][j].notify_count,
 				       notifies[i][j].notify_count);
-				return False;
+				return false;
 			}
 
 			if (notifies[0][j].notify_count == 0) continue;
@@ -912,7 +912,7 @@ again:
 				printf("Notify status mismatch - %s - %s\n",
 				       nt_errstr(notifies[0][j].status),
 				       nt_errstr(notifies[i][j].status));
-				return False;
+				return false;
 			}
 
 			if (!NT_STATUS_IS_OK(notifies[0][j].status)) {
@@ -928,21 +928,21 @@ again:
 					printf("Notify action %d inconsistent %d %d\n", n,
 					       not1.nttrans.out.changes[n].action,
 					       not2.nttrans.out.changes[n].action);
-					return False;
+					return false;
 				}
 				if (strcmp(not1.nttrans.out.changes[n].name.s,
 					   not2.nttrans.out.changes[n].name.s)) {
 					printf("Notify name %d inconsistent %s %s\n", n,
 					       not1.nttrans.out.changes[n].name.s,
 					       not2.nttrans.out.changes[n].name.s);
-					return False;
+					return false;
 				}
 				if (not1.nttrans.out.changes[n].name.private_length !=
 				    not2.nttrans.out.changes[n].name.private_length) {
 					printf("Notify name length %d inconsistent %d %d\n", n,
 					       not1.nttrans.out.changes[n].name.private_length,
 					       not2.nttrans.out.changes[n].name.private_length);
-					return False;
+					return false;
 				}
 			}
 		}
@@ -950,7 +950,7 @@ again:
 
 	ZERO_STRUCT(notifies);
 
-	return True;
+	return true;
 }
 
 
@@ -974,13 +974,13 @@ again:
 		if (!compare_status(status[i], status[0])) { \
 			printf("status different in %s - %s %s\n", #call, \
 			       nt_errstr(status[0]), nt_errstr(status[i])); \
-			return False; \
+			return false; \
 		} \
 	} \
-	if (!check_oplocks(#call)) return False; \
-	if (!check_notifies(#call)) return False; \
+	if (!check_oplocks(#call)) return false; \
+	if (!check_notifies(#call)) return false; \
 	if (!NT_STATUS_IS_OK(status[0])) { \
-		return True; \
+		return true; \
 	} \
 } while(0)
 
@@ -1013,19 +1013,19 @@ again:
 	if (parm[0].field != parm[1].field && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
-		return False; \
+		return false; \
 	} \
 } while(0)
 
 #define CHECK_WSTR_EQUAL(field) do { \
 	if ((!parm[0].field.s && parm[1].field.s) || (parm[0].field.s && !parm[1].field.s)) { \
 		printf("%s is NULL!\n", #field); \
-		return False; \
+		return false; \
 	} \
 	if (parm[0].field.s && strcmp(parm[0].field.s, parm[1].field.s) != 0 && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - %s %s\n", #field, \
 		       parm[0].field.s, parm[1].field.s); \
-		return False; \
+		return false; \
 	} \
 	CHECK_EQUAL(field.private_length); \
 } while(0)
@@ -1033,7 +1033,7 @@ again:
 #define CHECK_BLOB_EQUAL(field) do { \
 	if (memcmp(parm[0].field.data, parm[1].field.data, parm[0].field.length) != 0 && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s\n", #field); \
-		return False; \
+		return false; \
 	} \
 	CHECK_EQUAL(field.length); \
 } while(0)
@@ -1043,7 +1043,7 @@ again:
 	    !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
-		return False; \
+		return false; \
 	} \
 } while(0)
 
@@ -1054,14 +1054,14 @@ again:
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)nt_time_to_unix(parm[0].field), \
 		       (int)nt_time_to_unix(parm[1].field)); \
-		return False; \
+		return false; \
 	} \
 } while(0)
 
 /*
   generate openx operations
 */
-static BOOL handler_openx(int instance)
+static bool handler_openx(int instance)
 {
 	union smb_open parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1099,14 +1099,14 @@ static BOOL handler_openx(int instance)
 	/* open creates a new file handle */
 	ADD_HANDLE(parm[0].openx.in.fname, openx.out.file.fnum);
 
-	return True;
+	return true;
 }
 
 
 /*
   generate open operations
 */
-static BOOL handler_open(int instance)
+static bool handler_open(int instance)
 {
 	union smb_open parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1133,14 +1133,14 @@ static BOOL handler_open(int instance)
 	/* open creates a new file handle */
 	ADD_HANDLE(parm[0].openold.in.fname, openold.out.file.fnum);
 
-	return True;
+	return true;
 }
 
 
 /*
   generate ntcreatex operations
 */
-static BOOL handler_ntcreatex(int instance)
+static bool handler_ntcreatex(int instance)
 {
 	union smb_open parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1186,13 +1186,13 @@ static BOOL handler_ntcreatex(int instance)
 	/* ntcreatex creates a new file handle */
 	ADD_HANDLE(parm[0].ntcreatex.in.fname, ntcreatex.out.file.fnum);
 
-	return True;
+	return true;
 }
 
 /*
   generate close operations
 */
-static BOOL handler_close(int instance)
+static bool handler_close(int instance)
 {
 	union smb_close parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1207,13 +1207,13 @@ static BOOL handler_close(int instance)
 
 	REMOVE_HANDLE(close.in.file.fnum);
 
-	return True;
+	return true;
 }
 
 /*
   generate unlink operations
 */
-static BOOL handler_unlink(int instance)
+static bool handler_unlink(int instance)
 {
 	union smb_unlink parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1224,13 +1224,13 @@ static BOOL handler_unlink(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_unlink(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
   generate chkpath operations
 */
-static BOOL handler_chkpath(int instance)
+static bool handler_chkpath(int instance)
 {
 	union smb_chkpath parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1240,13 +1240,13 @@ static BOOL handler_chkpath(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_chkpath(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
   generate mkdir operations
 */
-static BOOL handler_mkdir(int instance)
+static bool handler_mkdir(int instance)
 {
 	union smb_mkdir parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1257,13 +1257,13 @@ static BOOL handler_mkdir(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_mkdir(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
   generate rmdir operations
 */
-static BOOL handler_rmdir(int instance)
+static bool handler_rmdir(int instance)
 {
 	struct smb_rmdir parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1273,13 +1273,13 @@ static BOOL handler_rmdir(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_rmdir(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
   generate rename operations
 */
-static BOOL handler_rename(int instance)
+static bool handler_rename(int instance)
 {
 	union smb_rename parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1292,13 +1292,13 @@ static BOOL handler_rename(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_rename(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
   generate ntrename operations
 */
-static BOOL handler_ntrename(int instance)
+static bool handler_ntrename(int instance)
 {
 	union smb_rename parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1313,14 +1313,14 @@ static BOOL handler_ntrename(int instance)
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_rename(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 
 /*
   generate seek operations
 */
-static BOOL handler_seek(int instance)
+static bool handler_seek(int instance)
 {
 	union smb_seek parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1335,14 +1335,14 @@ static BOOL handler_seek(int instance)
 
 	CHECK_EQUAL(lseek.out.offset);
 
-	return True;
+	return true;
 }
 
 
 /*
   generate readx operations
 */
-static BOOL handler_readx(int instance)
+static bool handler_readx(int instance)
 {
 	union smb_read parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1365,13 +1365,13 @@ static BOOL handler_readx(int instance)
 	CHECK_EQUAL(readx.out.compaction_mode);
 	CHECK_EQUAL(readx.out.nread);
 
-	return True;
+	return true;
 }
 
 /*
   generate writex operations
 */
-static BOOL handler_writex(int instance)
+static bool handler_writex(int instance)
 {
 	union smb_write parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1391,13 +1391,13 @@ static BOOL handler_writex(int instance)
 	CHECK_EQUAL(writex.out.nwritten);
 	CHECK_EQUAL(writex.out.remaining);
 
-	return True;
+	return true;
 }
 
 /*
   generate lockingx operations
 */
-static BOOL handler_lockingx(int instance)
+static bool handler_lockingx(int instance)
 {
 	union smb_lock parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1430,7 +1430,7 @@ static BOOL handler_lockingx(int instance)
 	GEN_SET_FNUM(lockx.in.file.fnum);
 	GEN_CALL(smb_raw_lock(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 /*
@@ -1465,7 +1465,7 @@ static void gen_fileinfo(int instance, union smb_fileinfo *info)
 /*
   compare returned fileinfo structures
 */
-static BOOL cmp_fileinfo(int instance, 
+static bool cmp_fileinfo(int instance, 
 			 union smb_fileinfo parm[NSERVERS],
 			 NTSTATUS status[NSERVERS])
 {
@@ -1473,7 +1473,7 @@ static BOOL cmp_fileinfo(int instance,
 
 	switch (parm[0].generic.level) {
 	case RAW_FILEINFO_GENERIC:
-		return False;
+		return false;
 
 	case RAW_FILEINFO_GETATTR:
 		CHECK_EQUAL(getattr.out.attrib);
@@ -1635,13 +1635,13 @@ static BOOL cmp_fileinfo(int instance,
 		break;
 	}
 
-	return True;
+	return true;
 }
 
 /*
   generate qpathinfo operations
 */
-static BOOL handler_qpathinfo(int instance)
+static bool handler_qpathinfo(int instance)
 {
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1659,7 +1659,7 @@ static BOOL handler_qpathinfo(int instance)
 /*
   generate qfileinfo operations
 */
-static BOOL handler_qfileinfo(int instance)
+static bool handler_qfileinfo(int instance)
 {
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1777,7 +1777,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 /*
   generate setpathinfo operations
 */
-static BOOL handler_spathinfo(int instance)
+static bool handler_spathinfo(int instance)
 {
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1796,14 +1796,14 @@ static BOOL handler_spathinfo(int instance)
 
 	GEN_CALL(smb_raw_setpathinfo(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 
 /*
   generate setfileinfo operations
 */
-static BOOL handler_sfileinfo(int instance)
+static bool handler_sfileinfo(int instance)
 {
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
@@ -1816,14 +1816,14 @@ static BOOL handler_sfileinfo(int instance)
 	GEN_SET_FNUM(generic.in.file.fnum);
 	GEN_CALL(smb_raw_setfileinfo(tree, &parm[i]));
 
-	return True;
+	return true;
 }
 
 
 /*
   generate change notify operations
 */
-static BOOL handler_notify(int instance)
+static bool handler_notify(int instance)
 {
 	union smb_notify parm[NSERVERS];
 	int n;
@@ -1844,7 +1844,7 @@ static BOOL handler_notify(int instance)
 		req->async.fn = async_notify;
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -1898,7 +1898,7 @@ static void dump_seeds(void)
 */
 static struct {
 	const char *name;
-	BOOL (*handler)(int instance);
+	bool (*handler)(int instance);
 	int count, success_count;
 } gen_ops[] = {
 	{"OPEN",       handler_open},
@@ -1952,7 +1952,7 @@ static int run_test(void)
 
 	for (op=0; op<options.numops; op++) {
 		int instance, which_op;
-		BOOL ret;
+		bool ret;
 
 		if (op_parms[op].disabled) continue;
 
@@ -2025,14 +2025,14 @@ static void backtrack_analyze(void)
 			/* mark this range as disabled */
 			max = MIN(options.numops, base+chunk);
 			for (i=base;i<max; i++) {
-				op_parms[i].disabled = True;
+				op_parms[i].disabled = true;
 			}
 			printf("Testing %d ops with %d-%d disabled\n", 
 			       options.numops, base, max-1);
 			ret = run_test();
 			printf("Completed %d of %d ops\n", ret, options.numops);
 			for (i=base;i<max; i++) {
-				op_parms[i].disabled = False;
+				op_parms[i].disabled = false;
 			}
 			if (ret == options.numops) {
 				/* this chunk is needed */
@@ -2070,7 +2070,7 @@ static void backtrack_analyze(void)
 /* 
    start the main gentest process
 */
-static BOOL start_gentest(void)
+static bool start_gentest(void)
 {
 	int op;
 	int ret;
@@ -2145,21 +2145,21 @@ static void usage(void)
 /**
   split a UNC name into server and share names
 */
-static BOOL split_unc_name(const char *unc, char **server, char **share)
+static bool split_unc_name(const char *unc, char **server, char **share)
 {
 	char *p = strdup(unc);
-	if (!p) return False;
+	if (!p) return false;
 	all_string_sub(p, "\\", "/", 0);
-	if (strncmp(p, "//", 2) != 0) return False;
+	if (strncmp(p, "//", 2) != 0) return false;
 
 	(*server) = p+2;
 	p = strchr(*server, '/');
-	if (!p) return False;
+	if (!p) return false;
 
 	*p = 0;
 	(*share) = p+1;
 	
-	return True;
+	return true;
 }
 
 
@@ -2171,7 +2171,7 @@ static BOOL split_unc_name(const char *unc, char **server, char **share)
 {
 	int opt;
 	int i, username_count=0;
-	BOOL ret;
+	bool ret;
 
 	setlinebuf(stdout);
 
@@ -2230,28 +2230,28 @@ static BOOL split_unc_name(const char *unc, char **server, char **share)
 			options.seeds_file = optarg;
 			break;
 		case 'L':
-			options.use_preset_seeds = True;
+			options.use_preset_seeds = true;
 			break;
 		case 'F':
-			options.fast_reconnect = True;
+			options.fast_reconnect = true;
 			break;
 		case 'o':
 			options.numops = atoi(optarg);
 			break;
 		case 'O':
-			options.use_oplocks = True;
+			options.use_oplocks = true;
 			break;
 		case 'a':
-			options.showall = True;
+			options.showall = true;
 			break;
 		case 'A':
-			options.analyze = True;
+			options.analyze = true;
 			break;
 		case 'X':
-			options.analyze_always = True;
+			options.analyze_always = true;
 			break;
 		case 'C':
-			options.analyze_continuous = True;
+			options.analyze_continuous = true;
 			break;
 		case 'i':
 			options.ignore_patterns = file_lines_load(optarg, NULL, NULL);

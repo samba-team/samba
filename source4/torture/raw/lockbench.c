@@ -189,7 +189,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
 	io->in.credentials  = cmdline_credentials;
-	io->in.fallback_to_anonymous = False;
+	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lp_workgroup(global_loadparm);
 
 	/* kill off the remnants of the old connection */
@@ -303,9 +303,9 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 /* 
    benchmark locking calls
 */
-BOOL torture_bench_lock(struct torture_context *torture)
+bool torture_bench_lock(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	int i;
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
@@ -328,7 +328,7 @@ BOOL torture_bench_lock(struct torture_context *torture)
 		state[i].client_num = i;
 		state[i].ev = ev;
 		if (!torture_open_connection_ev(&cli, i, ev)) {
-			return False;
+			return false;
 		}
 		talloc_steal(mem_ctx, state);
 		state[i].tree = cli->tree;

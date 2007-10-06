@@ -192,21 +192,21 @@ static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 
 
 /*
-  return True if a security_token has a particular privilege bit set
+  return true if a security_token has a particular privilege bit set
 */
-BOOL security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege)
+bool security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege)
 {
 	uint64_t mask;
 
 	if (privilege < 1 || privilege > 64) {
-		return False;
+		return false;
 	}
 
 	mask = sec_privilege_mask(privilege);
 	if (token->privilege_mask & mask) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*

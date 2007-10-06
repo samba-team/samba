@@ -1162,7 +1162,7 @@ static const struct {
 /*
   check if a DOS encoded NTSTATUS code maps to the given NTSTATUS code
 */
-BOOL ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2)
+bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2)
 {
 	/* when we negotiate nt status support, we don't want to consider
 	   the mapping of dos codes, as we want to catch the cases where

@@ -31,7 +31,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 	} \
 } while (0)
 
@@ -42,7 +42,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	const char *dirname = "testdir";
 	int fnum;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
 	ssize_t nread;
 	char buf[16];
@@ -50,14 +50,14 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 
 	if ((mem_ctx = talloc_init("torture_samba3_checkfsp")) == NULL) {
 		d_printf("talloc_init failed\n");
-		return False;
+		return false;
 	}
 
 	if (!torture_open_connection_share(
 		    torture, &cli, torture_setting_string(torture, "host", NULL),
 		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -80,7 +80,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	status = smbcli_mkdir(cli->tree, dirname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -103,7 +103,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("smb_open on the directory failed: %s\n",
 				 nt_errstr(status));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		fnum = io.ntcreatex.out.file.fnum;
@@ -115,7 +115,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	if (nread >= 0) {
 		d_printf("smbcli_read on a directory succeeded, expected "
 			 "failure\n");
-		ret = False;
+		ret = false;
 	}
 
 	CHECK_STATUS(smbcli_nt_error(cli->tree),
@@ -127,7 +127,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	if (nread >= 0) {
 		d_printf("smbcli_read on a directory succeeded, expected "
 			 "failure\n");
-		ret = False;
+		ret = false;
 	}
 
 	CHECK_STATUS(smbcli_nt_error(tree2), NT_STATUS_INVALID_HANDLE);
@@ -140,7 +140,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	if (fnum == -1) {
 		d_printf("Failed to create %s - %s\n", fname,
 			 smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -335,13 +335,13 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	char *fpath1;
 	int fnum;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
-	BOOL nt_status_support;
+	bool nt_status_support;
 
 	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
 		d_printf("talloc_init failed\n");
-		return False;
+		return false;
 	}
 
 	nt_status_support = lp_nt_status_support(global_loadparm);
@@ -375,7 +375,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_mkdir(cli_nt->tree, dirname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -586,7 +586,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	goto done;
 
  fail:
-	ret = False;
+	ret = false;
 
  done:
 	if (cli_nt != NULL) {
@@ -619,11 +619,11 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	char *fpath;
 	int fnum;
 	int counter = 0;
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!(mem_ctx = talloc_init("torture_samba3_caseinsensitive"))) {
 		d_printf("talloc_init failed\n");
-		return False;
+		return false;
 	}
 
 	if (!torture_open_connection(&cli, 0)) {
@@ -656,11 +656,11 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 		    count_fn, (void *)&counter);
 
 	if (counter == 3) {
-		ret = True;
+		ret = true;
 	}
 	else {
 		d_fprintf(stderr, "expected 3 entries, got %d\n", counter);
-		ret = False;
+		ret = false;
 	}
 
  done:
@@ -677,7 +677,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 {
 	struct smbcli_state *cli;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *dirname = "posixlock";
 	const char *fname = "locked";
 	const char *fpath;
@@ -693,7 +693,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	struct smbcli_request *req;
 
 	if (!torture_open_connection(&cli, 0)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -703,33 +703,33 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(tctx, "smbcli_mkdir failed: %s\n",
 				nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!(fpath = talloc_asprintf(tctx, "%s\\%s", dirname, fname))) {
 		torture_warning(tctx, "talloc failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	fnum = smbcli_open(cli->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		torture_warning(tctx, "Could not create file %s: %s\n", fpath,
 				smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!(localdir = torture_setting_string(tctx, "localdir", NULL))) {
 		torture_warning(tctx, "Need 'localdir' setting\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!(localname = talloc_asprintf(tctx, "%s/%s/%s", localdir, dirname,
 					  fname))) {
 		torture_warning(tctx, "talloc failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -751,7 +751,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 
 	if (fcntl(fd, F_SETLK, &posix_lock) == -1) {
 		torture_warning(tctx, "fcntl failed: %s\n", strerror(errno));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -774,7 +774,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 
 	status = smb_raw_lock(cli->tree, &io);
 
-	ret = True;
+	ret = true;
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
 	if (!ret) {
@@ -791,7 +791,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	req = smb_raw_lock_send(cli->tree, &io);
 	if (req == NULL) {
 		torture_warning(tctx, "smb_raw_lock_send failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

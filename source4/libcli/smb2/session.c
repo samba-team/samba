@@ -30,7 +30,7 @@
   initialise a smb2_session structure
  */
 struct smb2_session *smb2_session_init(struct smb2_transport *transport,
-				       TALLOC_CTX *parent_ctx, BOOL primary)
+				       TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smb2_session *session;
 	NTSTATUS status;
@@ -68,7 +68,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	NTSTATUS status;
 	
 	req = smb2_request_init(session->transport, SMB2_OP_SESSSETUP, 
-				0x18, True, io->in.secblob.length);
+				0x18, true, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
@@ -105,7 +105,7 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x08, true);
 
 	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);

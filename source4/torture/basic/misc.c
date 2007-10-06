@@ -37,16 +37,16 @@
 
 extern struct cli_credentials *cmdline_credentials;
 	
-static BOOL wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_t len)
+static bool wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_t len)
 {
 	while (NT_STATUS_IS_ERR(smbcli_lock(c->tree, fnum, offset, len, -1, WRITE_LOCK))) {
-		if (!check_error(__location__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
+		if (!check_error(__location__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return false;
 	}
-	return True;
+	return true;
 }
 
 
-static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
+static bool rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 {
 	const char *lockfname = "\\torture.lck";
 	char *fname;
@@ -55,7 +55,7 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 	pid_t pid2, pid = getpid();
 	int i, j;
 	uint8_t buf[1024];
-	BOOL correct = True;
+	bool correct = true;
 
 	fnum2 = smbcli_open(c->tree, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
@@ -63,7 +63,7 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 		fnum2 = smbcli_open(c->tree, lockfname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
 		torture_comment(tctx, "open of %s failed (%s)\n", lockfname, smbcli_errstr(c->tree));
-		return False;
+		return false;
 	}
 
 	generate_random_buffer(buf, sizeof(buf));
@@ -79,19 +79,19 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 		asprintf(&fname, "\\torture.%u", n);
 
 		if (!wait_lock(c, fnum2, n*sizeof(int), sizeof(int))) {
-			return False;
+			return false;
 		}
 
 		fnum = smbcli_open(c->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
 			torture_comment(tctx, "open failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 			break;
 		}
 
 		if (smbcli_write(c->tree, fnum, 0, &pid, 0, sizeof(pid)) != sizeof(pid)) {
 			torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 		}
 
 		for (j=0;j<50;j++) {
@@ -99,7 +99,7 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 				      sizeof(pid)+(j*sizeof(buf)), 
 				      sizeof(buf)) != sizeof(buf)) {
 				torture_comment(tctx, "write failed (%s)\n", smbcli_errstr(c->tree));
-				correct = False;
+				correct = false;
 			}
 		}
 
@@ -107,27 +107,27 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 
 		if (smbcli_read(c->tree, fnum, &pid2, 0, sizeof(pid)) != sizeof(pid)) {
 			torture_comment(tctx, "read failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 		}
 
 		if (pid2 != pid) {
 			torture_comment(tctx, "data corruption!\n");
-			correct = False;
+			correct = false;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_close(c->tree, fnum))) {
 			torture_comment(tctx, "close failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_unlink(c->tree, fname))) {
 			torture_comment(tctx, "unlink failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 		}
 
 		if (NT_STATUS_IS_ERR(smbcli_unlock(c->tree, fnum2, n*sizeof(int), sizeof(int)))) {
 			torture_comment(tctx, "unlock failed (%s)\n", smbcli_errstr(c->tree));
-			correct = False;
+			correct = false;
 		}
 		free(fname);
 	}
@@ -140,7 +140,7 @@ static BOOL rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 	return correct;
 }
 
-BOOL run_torture(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
+bool run_torture(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
 {
 	return rw_torture(tctx, cli);
 }
@@ -149,7 +149,7 @@ BOOL run_torture(struct torture_context *tctx, struct smbcli_state *cli, int dum
 /*
   see how many RPC pipes we can open at once
 */
-BOOL run_pipe_number(struct torture_context *tctx, 
+bool run_pipe_number(struct torture_context *tctx, 
 					 struct smbcli_state *cli1)
 {
 	const char *pipe_name = "\\WKSSVC";
@@ -172,7 +172,7 @@ BOOL run_pipe_number(struct torture_context *tctx,
 	}
 
 	torture_comment(tctx, "pipe_number test - we can open %d %s pipes.\n", num_pipes, pipe_name );
-	return True;
+	return true;
 }
 
 
@@ -183,7 +183,7 @@ BOOL run_pipe_number(struct torture_context *tctx,
   used for testing performance when there are N idle users
   already connected
  */
-BOOL torture_holdcon(struct torture_context *tctx)
+bool torture_holdcon(struct torture_context *tctx)
 {
 	int i;
 	struct smbcli_state **cli;
@@ -195,7 +195,7 @@ BOOL torture_holdcon(struct torture_context *tctx)
 
 	for (i=0;i<torture_numops;i++) {
 		if (!torture_open_connection(&cli[i], i)) {
-			return False;
+			return false;
 		}
 		if (torture_setting_bool(tctx, "progress", true)) {
 			torture_comment(tctx, "opened %d connections\r", i);
@@ -228,34 +228,34 @@ BOOL torture_holdcon(struct torture_context *tctx)
 		fflush(stdout);
 	}
 
-	return True;
+	return true;
 }
 
 /*
 test how many open files this server supports on the one socket
 */
-BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
+bool run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int dummy)
 {
 #define MAXFID_TEMPLATE "\\maxfid\\fid%d\\maxfid.%d.%d"
 	char *fname;
 	int fnums[0x11000], i;
 	int retries=4, maxfid;
-	BOOL correct = True;
+	bool correct = true;
 
 	if (retries <= 0) {
 		torture_comment(tctx, "failed to connect\n");
-		return False;
+		return false;
 	}
 
 	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
 		torture_comment(tctx, "Failed to deltree \\maxfid - %s\n",
 		       smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\maxfid"))) {
 		torture_comment(tctx, "Failed to mkdir \\maxfid, error=%s\n", 
 		       smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	torture_comment(tctx, "Testing maximum number of open files\n");
@@ -266,7 +266,7 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 			if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
 				torture_comment(tctx, "Failed to mkdir %s, error=%s\n", 
 				       fname, smbcli_errstr(cli->tree));
-				return False;
+				return false;
 			}
 			free(fname);
 		}
@@ -299,7 +299,7 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 		if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
 			torture_comment(tctx, "unlink of %s failed (%s)\n", 
 			       fname, smbcli_errstr(cli->tree));
-			correct = False;
+			correct = false;
 		}
 		free(fname);
 
@@ -310,7 +310,7 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 		if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
 			torture_comment(tctx, "unlink of %s failed (%s)\n", 
 			       fname, smbcli_errstr(cli->tree));
-			correct = False;
+			correct = false;
 		}
 		free(fname);
 
@@ -324,12 +324,12 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 	if (smbcli_deltree(cli->tree, "\\maxfid") == -1) {
 		torture_comment(tctx, "Failed to deltree \\maxfid - %s\n",
 		       smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	torture_comment(tctx, "maxfid test finished\n");
 	if (!torture_close_connection(cli)) {
-		correct = False;
+		correct = false;
 	}
 	return correct;
 #undef MAXFID_TEMPLATE
@@ -340,7 +340,7 @@ BOOL run_maxfidtest(struct torture_context *tctx, struct smbcli_state *cli, int 
 /*
   sees what IOCTLs are supported
  */
-BOOL torture_ioctl_test(struct torture_context *tctx, 
+bool torture_ioctl_test(struct torture_context *tctx, 
 						struct smbcli_state *cli)
 {
 	uint16_t device, function;
@@ -357,7 +357,7 @@ BOOL torture_ioctl_test(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
 		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	parms.ioctl.level = RAW_IOCTL_IOCTL;
@@ -379,7 +379,7 @@ BOOL torture_ioctl_test(struct torture_context *tctx,
 		}
 	}
 
-	return True;
+	return true;
 }
 
 static void benchrw_callback(struct smbcli_request *req);
@@ -582,7 +582,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 		rd.readx.in.maxcnt	= rd.readx.in.mincnt;
 		rd.readx.in.remaining	= 0	;
 		rd.readx.out.data	= state->buffer;
-		rd.readx.in.read_for_execute = False;
+		rd.readx.in.read_for_execute = false;
 		if(state->readcnt < state->lp_params->writeblocks){
 			state->readcnt++;	
 		}else{
@@ -819,13 +819,13 @@ static struct composite_context *torture_connect_async(
 	smb->in.called_name = strupper_talloc(mem_ctx, host);
 	smb->in.service_type=NULL;
 	smb->in.credentials=cmdline_credentials;
-	smb->in.fallback_to_anonymous=False;
+	smb->in.fallback_to_anonymous=false;
 	smb->in.workgroup=workgroup;
 	
 	return smb_composite_connect_send(smb,mem_ctx,ev);
 }
 
-BOOL run_benchrw(struct torture_context *tctx)
+bool run_benchrw(struct torture_context *tctx)
 {
 	struct smb_composite_connect *smb_con;
 	const char *fname = "\\rwtest.dat";
@@ -837,7 +837,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 	struct params lpparams;
 	union smb_mkdir parms;
 	int finished = 0;
-	BOOL success=True;
+	bool success=true;
 	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	
 	torture_comment(tctx, "Start BENCH-READWRITE num_ops=%d "
@@ -911,7 +911,7 @@ BOOL run_benchrw(struct torture_context *tctx)
 			/* error occured , finish */
 			case ERROR:
 				finished++;
-				success=False;
+				success=false;
 				break;
 			/* cleanup , close connection */
 			case CLEANUP:

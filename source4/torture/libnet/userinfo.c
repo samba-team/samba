@@ -29,8 +29,7 @@
 
 #define TEST_USERNAME  "libnetuserinfotest"
 
-
-static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *domain_handle,
 			  struct dom_sid2 *domain_sid, const char* user_name,
 			  uint32_t *rid)
@@ -50,7 +49,7 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(user);
@@ -64,14 +63,14 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				struct policy_handle *domain_handle,
 				struct dom_sid2 *domain_sid, const char* user_name,
 				uint32_t *rid)
@@ -93,13 +92,13 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
 		printf("Failed to call sync libnet_rpc_userinfo_send\n");
-		return False;
+		return false;
 	}
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(user);
@@ -114,16 +113,16 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
 		printf("Failed to call sync libnet_rpc_userinfo_send\n");
-		return False;
+		return false;
 	}
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -132,7 +131,7 @@ bool torture_userinfo(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct policy_handle h;
 	struct lsa_String name;
 	struct dom_sid2 sid;
@@ -145,7 +144,7 @@ bool torture_userinfo(struct torture_context *torture)
 					&ndr_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	name.string = lp_workgroup(global_loadparm);
@@ -154,22 +153,22 @@ bool torture_userinfo(struct torture_context *torture)
 	 * Testing synchronous version
 	 */
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_userinfo(p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -177,22 +176,22 @@ bool torture_userinfo(struct torture_context *torture)
 	 * Testing asynchronous version and monitor messages
 	 */
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_userinfo_async(p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

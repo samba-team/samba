@@ -49,7 +49,7 @@ static struct {
 		printf("(%s) %s/%s should be 0x%llx - 0x%llx\n", __location__, \
 		       #call_name, #field, \
 		       (long long)io.all_info2.out.field, (long long)d->stype.field); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_CONST_STRING(call_name, stype, field, str) do { \
@@ -58,7 +58,7 @@ static struct {
 		printf("(%s) %s/%s should be '%s' - '%s'\n", __location__, \
 		       #call_name, #field, \
 		       str, d->stype.field.s); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 static union smb_search_data *find_level(const char *name)
@@ -75,26 +75,26 @@ static union smb_search_data *find_level(const char *name)
 /*
   test find levels
 */
-static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
+static bool torture_smb2_find_levels(struct smb2_tree *tree)
 {
 	struct smb2_handle handle;
 	NTSTATUS status;
 	int i;
 	struct smb2_find f;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_fileinfo io;
 	const char *alt_name;
 
 	status = smb2_create_complex_file(tree, FNAME, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
 	io.generic.in.file.handle = handle;
 	status = smb2_getinfo_file(tree, tree, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 	alt_name = talloc_strdup(tree, io.alt_name_info.out.fname.s);	
 
@@ -102,12 +102,12 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	io.generic.in.file.handle = handle;
 	status = smb2_getinfo_file(tree, tree, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(f);
@@ -130,7 +130,7 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 
 		if (count != 1) {
 			printf("Expected count 1 - got %d in %s\n", count, levels[i].name);
-			ret = False;
+			ret = false;
 		}
 
 		levels[i].data = d[0];
@@ -195,20 +195,20 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 
 /* basic testing of all SMB2 find levels
 */
-BOOL torture_smb2_find(struct torture_context *torture)
+bool torture_smb2_find(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 	torture_setup_complex_file(tree, FNAME ":streamtwo");
 

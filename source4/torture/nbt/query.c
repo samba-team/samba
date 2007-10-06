@@ -61,8 +61,8 @@ static bool bench_namequery(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
-	io.in.broadcast = False;
-	io.in.wins_lookup = False;
+	io.in.broadcast = false;
+	io.in.wins_lookup = false;
 	io.in.timeout = 1;
 
 	result = talloc_zero(tctx, struct result_struct);

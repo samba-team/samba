@@ -35,7 +35,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -46,7 +46,7 @@ static bool test_sd(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\sd.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -113,7 +113,7 @@ static bool test_sd(struct torture_context *tctx,
 		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
-		ret = False;
+		ret = false;
 	}
 
 	printf("remove it again\n");
@@ -226,7 +226,7 @@ static bool test_nttrans_create(struct torture_context *tctx,
 		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
-		ret = False;
+		ret = false;
 	}
 
 done:
@@ -243,7 +243,7 @@ done:
 	if (_q.access_information.out.access_flags != (flags)) { \
 		printf("(%s) Incorrect access_flags 0x%08x - should be 0x%08x\n", \
 		       __location__, _q.access_information.out.access_flags, (flags)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	} \
 } while (0)
@@ -259,7 +259,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\creator.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -358,7 +358,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
-		ret = False;
+		ret = false;
 	}
 
 	printf("try open for write\n");
@@ -418,7 +418,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd2);
-		ret = False;
+		ret = false;
 	}
 	
 
@@ -471,7 +471,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\generic.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -499,8 +499,8 @@ static bool test_generic_bits(struct torture_context *tctx,
 		{ SEC_GENERIC_EXECUTE, SEC_RIGHTS_DIR_EXECUTE },
 		{ SEC_GENERIC_ALL,     SEC_RIGHTS_DIR_ALL }
 	};
-	BOOL has_restore_privilege;
-	BOOL has_take_ownership_privilege;
+	bool has_restore_privilege;
+	bool has_take_ownership_privilege;
 
 	printf("TESTING FILE GENERIC BITS\n");
 
@@ -599,7 +599,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			printf("expected:\n");
 			NDR_PRINT_DEBUG(security_descriptor, sd2);
-			ret = False;
+			ret = false;
 		}
 
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -647,7 +647,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			printf("expected:\n");
 			NDR_PRINT_DEBUG(security_descriptor, sd2);
-			ret = False;
+			ret = false;
 		}
 
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -764,7 +764,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			printf("expected:\n");
 			NDR_PRINT_DEBUG(security_descriptor, sd2);
-			ret = False;
+			ret = false;
 		}
 
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -812,7 +812,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			printf("expected:\n");
 			NDR_PRINT_DEBUG(security_descriptor, sd2);
-			ret = False;
+			ret = false;
 		}
 
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -846,14 +846,14 @@ static bool test_owner_bits(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\generic.txt";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig;
 	const char *owner_sid;
-	BOOL has_restore_privilege;
-	BOOL has_take_ownership_privilege;
+	bool has_restore_privilege;
+	bool has_take_ownership_privilege;
 	uint32_t expected_bits;
 
 	printf("TESTING FILE OWNER BITS\n");
@@ -966,7 +966,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	const char *dname = BASEDIR "\\inheritance";
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	const char *fname2 = BASEDIR "\\inheritance\\testdir";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum=0, fnum2, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -1175,7 +1175,7 @@ static bool test_inheritance(struct torture_context *tctx,
 				   sd_orig->owner_sid)) {
 			printf("Bad sd in child file at %d\n", i);
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
-			ret = False;
+			ret = false;
 			goto check_dir;
 		}
 
@@ -1186,7 +1186,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			       test_flags[i].file_flags,
 			       test_flags[i].parent_flags,
 			       i);
-			ret = False;
+			ret = false;
 		}
 
 	check_dir:
@@ -1224,7 +1224,7 @@ static bool test_inheritance(struct torture_context *tctx,
 				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
 				       i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
-				ret = False;
+				ret = false;
 				continue;
 			}
 		} else if (test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
@@ -1242,7 +1242,7 @@ static bool test_inheritance(struct torture_context *tctx,
 				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
 				       i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
-				ret = False;
+				ret = false;
 				continue;
 			}
 		} else {
@@ -1255,7 +1255,7 @@ static bool test_inheritance(struct torture_context *tctx,
 				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
 				       i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
-				ret = False;
+				ret = false;
 				continue;
 			}
 		}
@@ -1308,7 +1308,7 @@ static bool test_inheritance(struct torture_context *tctx,
 		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd2);
-		ret = False;
+		ret = false;
 	}
 
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
@@ -1316,7 +1316,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("failed: w2k3 ACL bug (allowed open when ACL should deny)\n");
-		ret = False;
+		ret = false;
 		fnum2 = io.ntcreatex.out.file.fnum;
 		CHECK_ACCESS_FLAGS(fnum2, SEC_RIGHTS_FILE_ALL);
 		smbcli_close(cli->tree, fnum2);
@@ -1382,14 +1382,14 @@ done:
 /*
   test dynamic acl inheritance
 */
-static BOOL test_inheritance_dynamic(struct torture_context *tctx, 
+static bool test_inheritance_dynamic(struct torture_context *tctx, 
 									 struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	union smb_open io;
 	const char *dname = BASEDIR "\\inheritance";
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
-	BOOL ret = True;
+	bool ret = true;
 	int fnum=0, fnum2;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -1399,7 +1399,7 @@ static BOOL test_inheritance_dynamic(struct torture_context *tctx,
 	printf("TESTING DYNAMIC ACL INHERITANCE\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1533,14 +1533,14 @@ done:
 		if (!(granted & access)) {\
 			printf("(%s) %s but flags 0x%08X are not granted! granted[0x%08X] desired[0x%08X]\n", \
 			       __location__, nt_errstr(status), access, granted, desired); \
-			ret = False; \
+			ret = false; \
 			goto done; \
 		} \
 	} else { \
 		if (granted & access) {\
 			printf("(%s) %s but flags 0x%08X are granted! granted[0x%08X] desired[0x%08X]\n", \
 			       __location__, nt_errstr(status), access, granted, desired); \
-			ret = False; \
+			ret = false; \
 			goto done; \
 		} \
 	} \
@@ -1552,7 +1552,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 							struct smbcli_state *cli)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_open io;
 	union smb_fileinfo fi;
 	union smb_setfileinfo si;

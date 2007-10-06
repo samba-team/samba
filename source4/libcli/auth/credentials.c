@@ -235,15 +235,15 @@ void creds_client_authenticator(struct creds_CredentialState *creds,
 /*
   check that a credentials reply from a server is correct
 */
-BOOL creds_client_check(struct creds_CredentialState *creds,
+bool creds_client_check(struct creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials)
 {
 	if (!received_credentials || 
 	    memcmp(received_credentials->data, creds->server.data, 8) != 0) {
 		DEBUG(2,("credentials check failed\n"));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 
@@ -278,16 +278,16 @@ void creds_server_init(struct creds_CredentialState *creds,
 /*
   check that a credentials reply from a server is correct
 */
-BOOL creds_server_check(const struct creds_CredentialState *creds,
+bool creds_server_check(const struct creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials)
 {
 	if (memcmp(received_credentials->data, creds->client.data, 8) != 0) {
 		DEBUG(2,("credentials check failed\n"));
 		dump_data_pw("client creds", creds->client.data, 8);
 		dump_data_pw("calc   creds", received_credentials->data, 8);
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 NTSTATUS creds_server_step_check(struct creds_CredentialState *creds,

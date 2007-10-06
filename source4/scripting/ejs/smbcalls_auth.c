@@ -65,19 +65,19 @@ static int ejs_doauth(MprVarHandle eid,
 		nt_status = auth_context_create(tmp_ctx, ev, msg, &auth_context);
 	}
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
 		goto done;
 	}
 
 	user_info = talloc(tmp_ctx, struct auth_usersupplied_info);
 	if (!user_info) {
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 		mprSetPropertyValue(auth, "report", mprString("talloc failed"));
 		goto done;
 	}
 
-	user_info->mapped_state = True;
+	user_info->mapped_state = true;
 	user_info->client.account_name = username;
 	user_info->mapped.account_name = username;
 	user_info->client.domain_name = domain;
@@ -104,14 +104,14 @@ static int ejs_doauth(MprVarHandle eid,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", 
 				    mprString(talloc_strdup(mprMemCtx(), get_friendly_nt_error_msg(nt_status))));
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 		goto done;
 	}
 
 	nt_status = auth_generate_session_info(tmp_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 		goto done;
 	}
 
@@ -132,13 +132,13 @@ static int ejs_doauth(MprVarHandle eid,
 
 	if (security_token_is_anonymous(session_info->security_token)) {
 		mprSetPropertyValue(auth, "report", mprString("Anonymous login not permitted"));
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 		goto done;
 	}
 
 	if (!set) {
 		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
 	}
 	
 	session_info_obj = mprInitObject(eid, "session_info", 0, NULL);

@@ -30,7 +30,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -38,13 +38,13 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%ld - should be %ld\n", \
 		       __location__, #v, (long)v, (long)correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_BUFFER(buf, seed, len) do { \
 	if (!check_buffer(buf, seed, len, __LINE__)) { \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -64,7 +64,7 @@ static void setup_buffer(uint8_t *buf, uint_t seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, int line)
+static bool check_buffer(uint8_t *buf, uint_t seed, int len, int line)
 {
 	int i;
 	srandom(seed);
@@ -73,10 +73,10 @@ static BOOL check_buffer(uint8_t *buf, uint_t seed, int len, int line)
 		if (buf[i] != v) {
 			printf("Buffer incorrect at line %d! ofs=%d v1=0x%x v2=0x%x\n", 
 			       line, i, buf[i], v);
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 /*
@@ -86,7 +86,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	uint8_t *buf;
 	const int maxsize = 90000;
@@ -97,7 +97,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_READ_READ\n");
@@ -106,7 +106,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -144,7 +144,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.read.out.nread, strlen(test_data));
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
 		goto done;
 	}
@@ -156,7 +156,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.read.out.nread, strlen(test_data)-1);
 	if (memcmp(buf, test_data+1, strlen(test_data)-1) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data+1, buf);
 		goto done;
 	}
@@ -186,7 +186,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	cli->session->pid--;
@@ -213,7 +213,7 @@ static bool test_lockread(struct torture_context *tctx,
 {
 	union smb_read io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	uint8_t *buf;
 	const int maxsize = 90000;
@@ -224,7 +224,7 @@ static bool test_lockread(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_READ_LOCKREAD\n");
@@ -233,7 +233,7 @@ static bool test_lockread(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -283,7 +283,7 @@ static bool test_lockread(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.lockread.out.nread, strlen(test_data));
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
 		goto done;
 	}
@@ -299,7 +299,7 @@ static bool test_lockread(struct torture_context *tctx,
 
 	CHECK_VALUE(io.lockread.out.nread, strlen(test_data)-1);
 	if (memcmp(buf, test_data+1, strlen(test_data)-1) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data+1, buf);
 		goto done;
 	}
@@ -333,7 +333,7 @@ static bool test_lockread(struct torture_context *tctx,
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	cli->session->pid--;
@@ -358,7 +358,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_read io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	uint8_t *buf;
 	const int maxsize = 90000;
@@ -369,7 +369,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_READ_READX\n");
@@ -377,7 +377,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -388,7 +388,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	io.readx.in.maxcnt = 1;
 	io.readx.in.offset = 0;
 	io.readx.in.remaining = 0;
-	io.readx.in.read_for_execute = False;
+	io.readx.in.read_for_execute = false;
 	io.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &io);
 
@@ -418,7 +418,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	io.readx.in.file.fnum = fnum;
 	io.readx.in.offset = 0;
 	io.readx.in.remaining = 0;
-	io.readx.in.read_for_execute = False;
+	io.readx.in.read_for_execute = false;
 	io.readx.in.mincnt = strlen(test_data);
 	io.readx.in.maxcnt = strlen(test_data);
 	status = smb_raw_read(cli->tree, &io);
@@ -427,7 +427,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
 		goto done;
 	}
@@ -442,7 +442,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	if (memcmp(buf, test_data+1, strlen(test_data)-1) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data+1, buf);
 		goto done;
 	}
@@ -548,7 +548,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	cli->session->pid--;
@@ -574,7 +574,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 
 	if (NT_STATUS_IS_ERR(smbcli_lock64(cli->tree, fnum, io.readx.in.offset, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -597,7 +597,7 @@ static bool test_readbraw(struct torture_context *tctx,
 {
 	union smb_read io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum;
 	uint8_t *buf;
 	const int maxsize = 90000;
@@ -608,7 +608,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_READ_READBRAW\n");
@@ -616,7 +616,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -658,7 +658,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, strlen(test_data));
 	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
 		goto done;
 	}
@@ -671,7 +671,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, strlen(test_data)-1);
 	if (memcmp(buf, test_data+1, strlen(test_data)-1) != 0) {
-		ret = False;
+		ret = false;
 		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data+1, buf);
 		goto done;
 	}
@@ -723,7 +723,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 103, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	cli->session->pid--;
@@ -772,7 +772,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	union smb_write wr;
 	union smb_read rd;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum=0;
 	uint8_t *buf;
 	const int maxsize = 900;
@@ -782,7 +782,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Testing RAW_READ_READX with read_for_execute\n");
@@ -841,7 +841,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	rd.readx.in.maxcnt = maxsize;
 	rd.readx.in.offset = 0;
 	rd.readx.in.remaining = 0;
-	rd.readx.in.read_for_execute = True;
+	rd.readx.in.read_for_execute = true;
 	rd.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -856,7 +856,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	rd.readx.in.maxcnt = maxsize;
 	rd.readx.in.offset = 0;
 	rd.readx.in.remaining = 0;
-	rd.readx.in.read_for_execute = False;
+	rd.readx.in.read_for_execute = false;
 	rd.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
@@ -888,7 +888,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	rd.readx.in.maxcnt = maxsize;
 	rd.readx.in.offset = 0;
 	rd.readx.in.remaining = 0;
-	rd.readx.in.read_for_execute = True;
+	rd.readx.in.read_for_execute = true;
 	rd.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -903,7 +903,7 @@ static bool test_read_for_execute(struct torture_context *tctx,
 	rd.readx.in.maxcnt = maxsize;
 	rd.readx.in.offset = 0;
 	rd.readx.in.remaining = 0;
-	rd.readx.in.read_for_execute = False;
+	rd.readx.in.read_for_execute = false;
 	rd.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);

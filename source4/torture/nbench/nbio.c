@@ -36,7 +36,7 @@
 extern int nbench_line_count;
 static int nbio_id = -1;
 static int nprocs;
-static BOOL bypass_io;
+static bool bypass_io;
 static struct timeval tv_start, tv_end;
 static int warmup, timelimit;
 static int in_cleanup;
@@ -117,13 +117,13 @@ static bool nb_reestablish_locks(struct ftable *f)
 		if (!nb_do_lockx(true, f->handle, linfo->offset, linfo->size, NT_STATUS_OK)) {
 			printf("nb_reestablish_locks: failed to get lock for file %s at %lu\n",
 			       f->cp.fname, (unsigned long) linfo->offset);
-			return False;
+			return false;
 		}
 
 		linfo = linfo->next;
 	}
 
-	return True;
+	return true;
 }
 
 static bool nb_reopen_all_files(void)
@@ -140,21 +140,21 @@ static bool nb_reopen_all_files(void)
 				   f->cp.create_disposition,
 				   f->cp.handle,
 				   NT_STATUS_OK,
-				   True))
+				   true))
 		{
 			printf("-- nb_reopen_all_files: failed to open file %s\n", f->cp.fname);
-			return False;
+			return false;
 		}
 
 		if (!nb_reestablish_locks(f)) {
 			printf("--nb_reopen_all_files: failed to reestablish locks\n");
-			return False;
+			return false;
 		}
 
 		f = f->next;
 	}
 
-	return True;
+	return true;
 }
 
 bool nb_reconnect(struct smbcli_state **cli, int client)
@@ -168,17 +168,17 @@ bool nb_reconnect(struct smbcli_state **cli, int client)
 	if (!torture_open_connection(cli, client)) {
 		printf("nb_reconnect: failed to connect\n");
 		*cli = NULL;
-		return False;
+		return false;
 	}
 
 	nb_setup(*cli, client);
 
 	if (!nb_reopen_all_files()) {
 		printf("nb_reconnect: failed to reopen files in client %d\n", client);
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 void nbio_target_rate(double rate)
@@ -242,7 +242,7 @@ double nbio_latency(void)
 	return max_latency;
 }
 
-BOOL nb_tick(void)
+bool nb_tick(void)
 {
 	return children[nbio_id].done;
 }
@@ -383,7 +383,7 @@ static struct smbcli_state *c;
 /*
   a handler function for oplock break requests
 */
-static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, 
+static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, 
 			   uint16_t fnum, uint8_t level, void *private)
 {
 	struct smbcli_tree *tree = (struct smbcli_tree *)private;
@@ -412,7 +412,7 @@ static bool check_status(const char *op, NTSTATUS status, NTSTATUS ret)
 	     NT_STATUS_EQUAL(ret, NT_STATUS_CONNECTION_RESET)) 
 		&& !NT_STATUS_EQUAL (status, ret))
 	{
-		return False;
+		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(ret)) {
@@ -432,7 +432,7 @@ static bool check_status(const char *op, NTSTATUS status, NTSTATUS ret)
 		       nbench_line_count, nt_errstr(ret), nt_errstr(status));
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -453,7 +453,7 @@ bool nb_unlink(const char *fname, int attr, NTSTATUS status, bool retry)
 	if (!retry)
 		return check_status("Unlink", status, ret);
 
-	return True;
+	return true;
 }
 
 static bool nb_do_createx(struct ftable *f,
@@ -515,10 +515,10 @@ static bool nb_do_createx(struct ftable *f,
 	talloc_free(mem_ctx);
 
 	if (!check_status("NTCreateX", status, ret))
-		return False;
+		return false;
 
 	if (!NT_STATUS_IS_OK(ret))
-		return True;
+		return true;
 
 	if (f == NULL) {
 		f = talloc (NULL, struct ftable);
@@ -530,14 +530,14 @@ static bool nb_do_createx(struct ftable *f,
 	f->handle = handle;
 	f->fd = io.ntcreatex.out.file.fnum;
 
-	return True;
+	return true;
 }
 
 bool nb_createx(const char *fname, 
 	       uint_t create_options, uint_t create_disposition, int handle,
 	       NTSTATUS status)
 {
-	return nb_do_createx(NULL, fname, create_options, create_disposition, handle, status, False);
+	return nb_do_createx(NULL, fname, create_options, create_disposition, handle, status, false);
 }
 
 bool nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
@@ -550,7 +550,7 @@ bool nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status
 	i = find_handle(handle, NULL);
 
 	if (bypass_io)
-		return True;
+		return true;
 
 	buf = malloc(size);
 	memset(buf, 0xab, size);
@@ -568,7 +568,7 @@ bool nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status
 	free(buf);
 
 	if (!check_status("WriteX", status, ret))
-		return False;
+		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.writex.out.nwritten != ret_size) {
 		printf("[%d] Warning: WriteX got count %d expected %d\n", 
@@ -578,7 +578,7 @@ bool nb_writex(int handle, off_t offset, int size, int ret_size, NTSTATUS status
 
 	children[nbio_id].bytes += ret_size;
 
-	return True;
+	return true;
 }
 
 bool nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
@@ -591,7 +591,7 @@ bool nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	i = find_handle(handle, NULL);
 
 	if (bypass_io)
-		return True;
+		return true;
 
 	buf = malloc(size);
 
@@ -609,7 +609,7 @@ bool nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	free(buf);
 
 	if (!check_status("Write", status, ret))
-		return False;
+		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.write.out.nwritten != ret_size) {
 		printf("[%d] Warning: Write got count %d expected %d\n", 
@@ -619,7 +619,7 @@ bool nb_write(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 
 	children[nbio_id].bytes += ret_size;
 
-	return True;
+	return true;
 }
 
 static bool nb_do_lockx(bool relock, int handle, off_t offset, int size, NTSTATUS status)
@@ -647,7 +647,7 @@ static bool nb_do_lockx(bool relock, int handle, off_t offset, int size, NTSTATU
 	ret = smb_raw_lock(c->tree, &io);
 
 	if (!check_status("LockX", status, ret))
-		return False;
+		return false;
 
 	if (f != NULL &&
 	    !relock)
@@ -659,7 +659,7 @@ static bool nb_do_lockx(bool relock, int handle, off_t offset, int size, NTSTATU
 		DLIST_ADD_END(f->locks, linfo, struct lock_info *);
 	}
 
-	return True;
+	return true;
 }
 
 bool nb_lockx(int handle, off_t offset, int size, NTSTATUS status)
@@ -692,7 +692,7 @@ bool nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
 	ret = smb_raw_lock(c->tree, &io);
 
 	if (!check_status("UnlockX", status, ret))
-		return False;
+		return false;
 
 	if (f != NULL) {
 		struct lock_info *linfo;
@@ -703,7 +703,7 @@ bool nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
 			printf("nb_unlockx: unknown lock (%d)\n", handle);
 	}
 
-	return True;
+	return true;
 }
 
 bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
@@ -716,7 +716,7 @@ bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	i = find_handle(handle, NULL);
 
 	if (bypass_io)
-		return True;
+		return true;
 
 	buf = malloc(size);
 
@@ -726,7 +726,7 @@ bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	io.readx.in.mincnt    = size;
 	io.readx.in.maxcnt    = size;
 	io.readx.in.remaining = 0;
-	io.readx.in.read_for_execute = False;
+	io.readx.in.read_for_execute = false;
 	io.readx.out.data     = buf;
 
 	ret = smb_raw_read(c->tree, &io);
@@ -734,7 +734,7 @@ bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 	free(buf);
 
 	if (!check_status("ReadX", status, ret))
-		return False;
+		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.readx.out.nread != ret_size) {
 		printf("[%d] ERROR: ReadX got count %d expected %d\n", 
@@ -745,7 +745,7 @@ bool nb_readx(int handle, off_t offset, int size, int ret_size, NTSTATUS status)
 
 	children[nbio_id].bytes += ret_size;
 
-	return True;
+	return true;
 }
 
 bool nb_close(int handle, NTSTATUS status)
@@ -763,7 +763,7 @@ bool nb_close(int handle, NTSTATUS status)
 	ret = smb_raw_close(c->tree, &io);
 
 	if (!check_status("Close", status, ret))
-		return False;
+		return false;
 
 	if (NT_STATUS_IS_OK(ret)) {
 		struct ftable *f = find_ftable(handle);
@@ -771,7 +771,7 @@ bool nb_close(int handle, NTSTATUS status)
 		talloc_free(f);
 	}
 
-	return True;
+	return true;
 }
 
 bool nb_rmdir(const char *dname, NTSTATUS status, bool retry)
@@ -786,7 +786,7 @@ bool nb_rmdir(const char *dname, NTSTATUS status, bool retry)
 	if (!retry)
 		return check_status("Rmdir", status, ret);
 
-	return True;
+	return true;
 }
 
 bool nb_mkdir(const char *dname, NTSTATUS status, bool retry)
@@ -799,7 +799,7 @@ bool nb_mkdir(const char *dname, NTSTATUS status, bool retry)
 	/* NOTE! no error checking. Used for base fileset creation */
 	smb_raw_mkdir(c->tree, &io);
 
-	return True;
+	return true;
 }
 
 bool nb_rename(const char *old, const char *new, NTSTATUS status, bool retry)
@@ -817,7 +817,7 @@ bool nb_rename(const char *old, const char *new, NTSTATUS status, bool retry)
 	if (!retry)
 		return check_status("Rename", status, ret);
 
-	return True;
+	return true;
 }
 
 
@@ -869,7 +869,7 @@ bool nb_sfileinfo(int fnum, int level, NTSTATUS status)
 
 	if (level != RAW_SFILEINFO_BASIC_INFORMATION) {
 		printf("[%d] Warning: setfileinfo level %d not handled\n", nbench_line_count, level);
-		return True;
+		return true;
 	}
 
 	ZERO_STRUCT(io);
@@ -906,9 +906,9 @@ bool nb_qfsinfo(int level, NTSTATUS status)
 }
 
 /* callback function used for trans2 search */
-static BOOL findfirst_callback(void *private, const union smb_search_data *file)
+static bool findfirst_callback(void *private, const union smb_search_data *file)
 {
-	return True;
+	return true;
 }
 
 bool nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS status)
@@ -932,7 +932,7 @@ bool nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 	talloc_free(mem_ctx);
 
 	if (!check_status("Search", status, ret))
-		return False;
+		return false;
 
 	if (NT_STATUS_IS_OK(ret) && io.t2ffirst.out.count != count) {
 		printf("[%d] Warning: got count %d expected %d\n", 
@@ -940,7 +940,7 @@ bool nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 		       io.t2ffirst.out.count, count);
 	}
 
-	return True;
+	return true;
 }
 
 bool nb_flush(int fnum, NTSTATUS status)
@@ -984,7 +984,7 @@ bool nb_deltree(const char *dname, bool retry)
 
 	smbcli_rmdir(c->tree, dname);
 
-	return True;
+	return true;
 }
 
 

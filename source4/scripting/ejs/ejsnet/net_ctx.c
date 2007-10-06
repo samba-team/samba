@@ -166,9 +166,9 @@ static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
 		MprVar error_string = mprString(join->out.error_string);
 		
 		mprSetPropertyValue(argv[0], "error_string", error_string);
-		mpr_Return(eid, mprCreateBoolVar(False));
+		mpr_Return(eid, mprCreateBoolVar(false));
 	} else {
-		mpr_Return(eid, mprCreateBoolVar(True));
+		mpr_Return(eid, mprCreateBoolVar(true));
 	}
 	talloc_free(mem_ctx);
 	return 0;
@@ -214,9 +214,9 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 		MprVar error_string = mprString(samsync->out.error_string);
 		
 		mprSetPropertyValue(argv[0], "error_string", error_string);
-		mpr_Return(eid, mprCreateBoolVar(False));
+		mpr_Return(eid, mprCreateBoolVar(false));
 	} else {
-		mpr_Return(eid, mprCreateBoolVar(True));
+		mpr_Return(eid, mprCreateBoolVar(true));
 	}
 	talloc_free(mem_ctx);
 	return 0;

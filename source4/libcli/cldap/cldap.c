@@ -309,7 +309,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	req->state       = CLDAP_REQUEST_SEND;
 	req->timeout     = io->in.timeout;
 	req->num_retries = io->in.retries;
-	req->is_reply    = False;
+	req->is_reply    = false;
 	req->asn1        = asn1_init(req);
 	if (!req->asn1) {
 		goto failed;
@@ -337,7 +337,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	search->deref          = LDAP_DEREFERENCE_NEVER;
 	search->timelimit      = 0;
 	search->sizelimit      = 0;
-	search->attributesonly = False;
+	search->attributesonly = false;
 	search->num_attributes = str_list_length(io->in.attributes);
 	search->attributes     = io->in.attributes;
 	search->tree           = ldb_parse_tree(req, io->in.filter);
@@ -378,7 +378,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 
 	req->cldap       = cldap;
 	req->state       = CLDAP_REQUEST_SEND;
-	req->is_reply    = True;
+	req->is_reply    = true;
 	req->asn1        = asn1_init(req);
 	if (!req->asn1) {
 		goto failed;

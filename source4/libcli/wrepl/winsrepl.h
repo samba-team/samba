@@ -120,7 +120,7 @@ struct wrepl_pull_table {
 #define WREPL_NAME_TYPE(flags) (flags & WREPL_FLAGS_RECORD_TYPE)
 #define WREPL_NAME_STATE(flags) ((flags & WREPL_FLAGS_RECORD_STATE)>>2)
 #define WREPL_NAME_NODE(flags) ((flags & WREPL_FLAGS_NODE_TYPE)>>5)
-#define WREPL_NAME_IS_STATIC(flags) ((flags & WREPL_FLAGS_IS_STATIC)?True:False)
+#define WREPL_NAME_IS_STATIC(flags) ((flags & WREPL_FLAGS_IS_STATIC)?true:false)
 
 #define WREPL_NAME_FLAGS(type, state, node, is_static) \
 	(type | (state << 2) | (node << 5) | \

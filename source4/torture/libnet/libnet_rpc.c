@@ -33,12 +33,12 @@
 #include "param/param.h"
 
 
-static BOOL test_connect_service(struct libnet_context *ctx,
+static bool test_connect_service(struct libnet_context *ctx,
 				 const struct ndr_interface_table *iface,
 				 const char *binding_string,
 				 const char *hostname,
 				 const enum libnet_RpcConnect_level level,
-				 BOOL badcreds, NTSTATUS expected_status)
+				 bool badcreds, NTSTATUS expected_status)
 {
 	NTSTATUS status;
 	struct libnet_RpcConnect connect;
@@ -62,7 +62,7 @@ static BOOL test_connect_service(struct libnet_context *ctx,
 		       connect.in.dcerpc_iface->name, connect.in.binding, nt_errstr(expected_status),
 		       nt_errstr(status));
 
-		return False;
+		return false;
 	}
 
 	d_printf("PASSED. Expected: %s, received: %s\n", nt_errstr(expected_status),
@@ -79,11 +79,11 @@ static BOOL test_connect_service(struct libnet_context *ctx,
 		d_printf("Error string: %s\n", connect.out.error_string);
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL torture_rpc_connect(struct torture_context *torture,
+static bool torture_rpc_connect(struct torture_context *torture,
 				const enum libnet_RpcConnect_level level,
 				const char *bindstr, const char *hostname)
 {
@@ -94,46 +94,46 @@ static BOOL torture_rpc_connect(struct torture_context *torture,
 	
 	d_printf("Testing connection to LSA interface\n");
 	if (!test_connect_service(ctx, &ndr_table_lsarpc, bindstr,
-				  hostname, level, False, NT_STATUS_OK)) {
+				  hostname, level, false, NT_STATUS_OK)) {
 		d_printf("failed to connect LSA interface\n");
-		return False;
+		return false;
 	}
 
 	d_printf("Testing connection to SAMR interface\n");
 	if (!test_connect_service(ctx, &ndr_table_samr, bindstr,
-				  hostname, level, False, NT_STATUS_OK)) {
+				  hostname, level, false, NT_STATUS_OK)) {
 		d_printf("failed to connect SAMR interface\n");
-		return False;
+		return false;
 	}
 
 	d_printf("Testing connection to SRVSVC interface\n");
 	if (!test_connect_service(ctx, &ndr_table_srvsvc, bindstr,
-				  hostname, level, False, NT_STATUS_OK)) {
+				  hostname, level, false, NT_STATUS_OK)) {
 		d_printf("failed to connect SRVSVC interface\n");
-		return False;
+		return false;
 	}
 
 	d_printf("Testing connection to LSA interface with wrong credentials\n");
 	if (!test_connect_service(ctx, &ndr_table_lsarpc, bindstr,
-				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
+				  hostname, level, true, NT_STATUS_LOGON_FAILURE)) {
 		d_printf("failed to test wrong credentials on LSA interface\n");
-		return False;
+		return false;
 	}
 
 	d_printf("Testing connection to SAMR interface with wrong credentials\n");
 	if (!test_connect_service(ctx, &ndr_table_samr, bindstr,
-				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
+				  hostname, level, true, NT_STATUS_LOGON_FAILURE)) {
 		d_printf("failed to test wrong credentials on SAMR interface\n");
-		return False;
+		return false;
 	}
 
 	talloc_free(ctx);
 
-	return True;
+	return true;
 }
 
 
-BOOL torture_rpc_connect_srv(struct torture_context *torture)
+bool torture_rpc_connect_srv(struct torture_context *torture)
 {
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_SERVER;
 	NTSTATUS status;
@@ -141,14 +141,14 @@ BOOL torture_rpc_connect_srv(struct torture_context *torture)
 
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	return torture_rpc_connect(torture, level, NULL, binding->host);
 }
 
 
-BOOL torture_rpc_connect_pdc(struct torture_context *torture)
+bool torture_rpc_connect_pdc(struct torture_context *torture)
 {
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_PDC;
 	NTSTATUS status;
@@ -157,7 +157,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* we're accessing domain controller so the domain name should be
@@ -168,7 +168,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 }
 
 
-BOOL torture_rpc_connect_dc(struct torture_context *torture)
+bool torture_rpc_connect_dc(struct torture_context *torture)
 {
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_DC;
 	NTSTATUS status;
@@ -177,7 +177,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* we're accessing domain controller so the domain name should be
@@ -188,7 +188,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 }
 
 
-BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
+bool torture_rpc_connect_dc_info(struct torture_context *torture)
 {
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_DC_INFO;
 	NTSTATUS status;
@@ -197,7 +197,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	/* we're accessing domain controller so the domain name should be
@@ -208,7 +208,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 }
 
 
-BOOL torture_rpc_connect_binding(struct torture_context *torture)
+bool torture_rpc_connect_binding(struct torture_context *torture)
 {
 	const enum libnet_RpcConnect_level level = LIBNET_RPC_CONNECT_BINDING;
 	NTSTATUS status;
@@ -217,7 +217,7 @@ BOOL torture_rpc_connect_binding(struct torture_context *torture)
 	
 	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	bindstr = dcerpc_binding_string(torture, binding);

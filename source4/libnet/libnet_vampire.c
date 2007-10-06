@@ -81,7 +81,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 				} else {
 					user->lmpassword = keys.keys.keys2.lmpassword.pwd;
 				}
-				user->lm_password_present = True;
+				user->lm_password_present = true;
 			}
 			if (keys.keys.keys2.ntpassword.length == 16) {
 				if (rid_crypt) {
@@ -90,7 +90,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 				} else {
 					user->ntpassword = keys.keys.keys2.ntpassword.pwd;
 				}
-				user->nt_password_present = True;
+				user->nt_password_present = true;
 			}
 			/* TODO: rid decrypt history fields */
 		} else {

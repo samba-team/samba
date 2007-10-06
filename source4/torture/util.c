@@ -27,7 +27,7 @@
 /**
   check if 2 NTTIMEs are equal.
 */
-BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
+bool nt_time_equal(NTTIME *t1, NTTIME *t2)
 {
 	return *t1 == *t2;
 }
@@ -46,7 +46,7 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = smbcli_tree_init(session, tmp_ctx, False);
+	result = smbcli_tree_init(session, tmp_ctx, false);
 	if (result == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;

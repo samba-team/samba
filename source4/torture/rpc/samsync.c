@@ -223,21 +223,21 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 		     __location__, \
 		     (long long)i1, (long long)i1, \
 		     (long long)i2, (long long)i2);\
-	      ret = False;\
+	      ret = false;\
 	} \
 } while (0)
 #define TEST_INT_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
 	      printf("%s: integer mismatch: " #i1 ": 0x%08x (%d) != " #i2 ": 0x%08x (%d)\n", \
 		     __location__, i1, i1, i2, i2);			\
-	      ret = False;\
+	      ret = false;\
 	} \
 } while (0)
 #define TEST_TIME_EQUAL(t1, t2) do {\
 	if (t1 != t2) {\
 	      printf("%s: NTTIME mismatch: " #t1 ":%s != " #t2 ": %s\n", \
 		     __location__, nt_time_string(mem_ctx, t1),  nt_time_string(mem_ctx, t2));\
-	      ret = False;\
+	      ret = false;\
 	} \
 } while (0)
 
@@ -246,7 +246,7 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 	    && strcmp_safe(s1.string, s2.string) != 0) {\
 	      printf("%s: string mismatch: " #s1 ":%s != " #s2 ": %s\n", \
 		     __location__, s1.string, s2.string);\
-	      ret = False;\
+	      ret = false;\
 	} \
 } while (0)
 
@@ -254,7 +254,7 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 	if (!dom_sid_equal(s1, s2)) {\
 	      printf("%s: dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
 		     __location__, dom_sid_string(mem_ctx, s1), dom_sid_string(mem_ctx, s2));\
-	      ret = False;\
+	      ret = false;\
 	} \
 } while (0)
 
@@ -266,19 +266,19 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 						            handle); \
 	if (!sdbuf || !sdbuf->sd) { \
                 printf("Could not obtain security descriptor to match " #sd1 "\n");\
-	        ret = False; \
+	        ret = false; \
         } else {\
 		if (!security_descriptor_mask_equal(sd1.sd, sdbuf->sd, \
  			    ~SEC_DESC_SACL_PRESENT)) {\
 			printf("Security Descriptor Mismatch for %s:\n", #sd1);\
 		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamSync", sd1.sd);\
 		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamR", sdbuf->sd);\
-			ret = False;\
+			ret = false;\
 		}\
 	}\
 } while (0)
 
-static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 			   int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_DOMAIN *domain = delta->delta_union.domain;
@@ -287,7 +287,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	NTSTATUS nt_status;
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	
 	samsync_state->seq_num[database_id] = 
 		domain->sequence_num;
@@ -301,7 +301,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		break;
 	case SAM_DATABASE_PRIVS:
 		printf("DOMAIN entry on privs DB!\n");
-		return False;
+		return false;
 		break;
 	}
 	
@@ -312,7 +312,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		if (strcasecmp_m(samsync_state->domain_name[database_id], domain->domain_name.string) != 0) {
 			printf("Domain has name varies!: %s != %s\n", samsync_state->domain_name[database_id], 
 			       domain->domain_name.string);
-			return False;
+			return false;
 		}
 	}
 
@@ -339,7 +339,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			printf("QueryDomainInfo level %u failed - %s\n", 
 			       q[levels[i]].in.level, nt_errstr(nt_status));
-			return False;
+			return false;
 		}
 	}
 
@@ -367,7 +367,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	return ret;
 }
 
-static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 			   int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_POLICY *policy = delta->delta_union.policy;
@@ -382,23 +382,23 @@ static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		if (strcasecmp_m(samsync_state->domain_name[SAM_DATABASE_DOMAIN], policy->primary_domain_name.string) != 0) {
 			printf("PRIMARY domain has name varies between DOMAIN and POLICY!: %s != %s\n", samsync_state->domain_name[SAM_DATABASE_DOMAIN], 
 			       policy->primary_domain_name.string);
-			return False;
+			return false;
 		}
 	}
 
 	if (!dom_sid_equal(samsync_state->sid[SAM_DATABASE_DOMAIN], policy->sid)) {
 		printf("Domain SID from POLICY (%s) does not match domain sid from SAMR (%s)\n", 
 		       dom_sid_string(mem_ctx, policy->sid), dom_sid_string(mem_ctx, samsync_state->sid[SAM_DATABASE_DOMAIN]));
-		return False;
+		return false;
 	}
 
 	printf("\tsequence_nums[%d/PRIVS]=%llu\n",
 	       database_id, 
 	       (long long)samsync_state->seq_num[database_id]);
-	return True;
+	return true;
 }
 
-static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
@@ -411,7 +411,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	const char *domain = samsync_state->domain_name[database_id];
 	const char *username = user->account_name.string;
 	NTSTATUS nt_status;
-	BOOL ret = True;
+	bool ret = true;
 
 	struct samr_OpenUser r;
 	struct samr_QueryUserInfo q;
@@ -420,7 +420,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	struct samr_GetGroupsForUser getgroups;
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
-		return False;
+		return false;
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
@@ -431,7 +431,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	nt_status = dcerpc_samr_OpenUser(samsync_state->p_samr, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	q.in.user_handle = &user_handle;
@@ -443,7 +443,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("QueryUserInfo level %u failed - %s\n", 
 		       q.in.level, nt_errstr(nt_status));
-		ret = False;
+		ret = false;
 	}
 
 	getgroups.in.user_handle = &user_handle;
@@ -452,22 +452,22 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("GetGroupsForUser failed - %s\n",
 		       nt_errstr(nt_status));
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &user_handle)) {
 		printf("samr_handle_Close failed - %s\n", 
 		       nt_errstr(nt_status));
-		ret = False;
+		ret = false;
 	}
 	if (!ret) {
-		return False;
+		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("QueryUserInfo level %u failed - %s\n", 
 		       q.in.level, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	TEST_STRING_EQUAL(q.out.info->info21.account_name, user->account_name);
@@ -490,7 +490,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (memcmp(q.out.info->info21.logon_hours.bits, user->logon_hours.bits, 
 			   q.out.info->info21.logon_hours.units_per_week/8) != 0) {
 			printf("Logon hours mismatch\n");
-			ret = False;
+			ret = false;
 		}
 	}
 
@@ -508,7 +508,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	if (user->acct_flags & ACB_PWNOEXP) {
 		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
 			printf("ACB flags mismatch: both expired and no expiry!\n");
-			ret = False;
+			ret = false;
 		}
 		if (q.out.info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
 			printf("ACB flags mismatch: no password expiry, but force password change 0x%016llx (%lld) != 0x%016llx (%lld)\n",
@@ -516,7 +516,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 			       (unsigned long long)q.out.info->info21.force_password_change,
 			       (unsigned long long)0x7FFFFFFFFFFFFFFFULL, (unsigned long long)0x7FFFFFFFFFFFFFFFULL
 				);
-			ret = False;
+			ret = false;
 		}
 	}
 
@@ -562,7 +562,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 #if 0
 			dump_data(0, data.data, data.length);
 #endif
-			return False;
+			return false;
 		}
 	}
 
@@ -585,39 +585,39 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
 		if (user->acct_flags & ACB_DISABLED) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)) {
 		if (user->acct_flags & ACB_WSTRUST) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT)) {
 		if (user->acct_flags & ACB_SVRTRUST) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 		if (user->acct_flags & ACB_DOMTRUST) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 		if (user->acct_flags & ACB_DOMTRUST) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
 		if (user->acct_flags & ACB_AUTOLOCK) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED)) {
 		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 		if (!lm_hash_p && !nt_hash_p) {
-			return True;
+			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE)) {
 		/* We would need to know the server's current time to test this properly */
-		return True;
+		return true;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		TEST_INT_EQUAL(user->rid, info3->base.rid);
 		TEST_INT_EQUAL(user->primary_gid, info3->base.primary_gid);
@@ -660,7 +660,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (getgroups.out.rids->count == info3->base.groups.count) {
 			int i, j;
 			int count = getgroups.out.rids->count;
-			BOOL *matched = talloc_zero_array(mem_ctx, BOOL, getgroups.out.rids->count);
+			bool *matched = talloc_zero_array(mem_ctx, bool, getgroups.out.rids->count);
 				
 			for (i = 0; i < count; i++) {
 				for (j = 0; j < count; j++) {
@@ -668,14 +668,14 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 					     info3->base.groups.rids[j].rid)
 					    && (getgroups.out.rids->rids[i].attributes == 
 						info3->base.groups.rids[j].attributes)) {
-							matched[i] = True;
+							matched[i] = true;
 						}
 				}
 			}
 
 			for (i = 0; i < getgroups.out.rids->count; i++) {
-				if (matched[i] == False) {
-					ret = False;
+				if (matched[i] == false) {
+					ret = false;
 					printf("Could not find group RID %u found in getgroups in NETLOGON reply\n",
 					       getgroups.out.rids->rids[i].rid); 
 				}
@@ -685,18 +685,18 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	} else {
 		printf("Could not validate password for user %s\\%s: %s\n",
 		       domain, username, nt_errstr(nt_status));
-		return False;
+		return false;
 	} 
-	return False;
+	return false;
 }
 
-static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				 int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
 	NTSTATUS nt_status;
-	BOOL ret = True;
+	bool ret = true;
 
 	struct samr_OpenAlias r;
 	struct samr_QueryAliasInfo q;
@@ -704,7 +704,7 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
-		return False;
+		return false;
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
@@ -715,7 +715,7 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	nt_status = dcerpc_samr_OpenAlias(samsync_state->p_samr, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	q.in.alias_handle = &alias_handle;
@@ -725,13 +725,13 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	nt_status = dcerpc_samr_QueryAliasInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &alias_handle)) {
-		return False;
+		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("QueryAliasInfo level %u failed - %s\n", 
 		       q.in.level, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	TEST_STRING_EQUAL(q.out.info->all.name, alias->alias_name);
@@ -739,13 +739,13 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	return ret;
 }
 
-static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				 int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP *group = delta->delta_union.group;
 	NTSTATUS nt_status;
-	BOOL ret = True;
+	bool ret = true;
 
 	struct samr_OpenGroup r;
 	struct samr_QueryGroupInfo q;
@@ -753,7 +753,7 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
-		return False;
+		return false;
 	}
 
 	r.in.domain_handle = samsync_state->domain_handle[database_id];
@@ -764,7 +764,7 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	nt_status = dcerpc_samr_OpenGroup(samsync_state->p_samr, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	q.in.group_handle = &group_handle;
@@ -774,13 +774,13 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	nt_status = dcerpc_samr_QueryGroupInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &group_handle)) {
-		return False;
+		return false;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("QueryGroupInfo level %u failed - %s\n", 
 		       q.in.level, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
 	TEST_STRING_EQUAL(q.out.info->all.name, group->group_name);
@@ -789,7 +789,7 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	return ret;
 }
 
-static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				  int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
@@ -803,7 +803,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	struct lsa_DATA_BUF_PTR bufp2;
 	NTTIME new_mtime;
 	NTTIME old_mtime;
-	BOOL ret = True;
+	bool ret = true;
 	DATA_BLOB lsa_blob1, lsa_blob_out, session_key;
 	NTSTATUS status;
 
@@ -832,7 +832,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	status = dcerpc_lsa_OpenSecret(samsync_state->p_lsa, mem_ctx, &o);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenSecret failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 /*
@@ -842,7 +842,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	status = dcerpc_fetch_session_key(samsync_state->p_lsa, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 
@@ -862,10 +862,10 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	status = dcerpc_lsa_QuerySecret(samsync_state->p_lsa, mem_ctx, &q);
 	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
 		/* some things are just off limits */
-		return True;
+		return true;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("QuerySecret failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (q.out.old_val->buf == NULL) {
@@ -877,24 +877,24 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to decrypt secrets OLD blob: %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 
 		if (!q.out.old_mtime) {
 			printf("OLD mtime not available on LSA for secret %s\n", old->name);
-			ret = False;
+			ret = false;
 		}
 		if (old->mtime != *q.out.old_mtime) {
 			printf("OLD mtime on secret %s does not match between SAMSYNC (%s) and LSA (%s)\n", 
 			       old->name, nt_time_string(mem_ctx, old->mtime), 
 			       nt_time_string(mem_ctx, *q.out.old_mtime)); 
-			ret = False;
+			ret = false;
 		}
 
 		if (old->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
 			       old->name, (int)old->secret.length, (int)lsa_blob_out.length);
-			ret = False;
+			ret = false;
 		} else if (memcmp(lsa_blob_out.data, 
 			   old->secret.data, old->secret.length) != 0) {
 			printf("Returned secret %s doesn't match: \n",
@@ -903,7 +903,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 			dump_data(1, old->secret.data, old->secret.length);
 			DEBUG(1, ("LSA Secret:\n"));
 			dump_data(1, lsa_blob_out.data, lsa_blob_out.length);
-			ret = False;
+			ret = false;
 		}
 
 	}
@@ -917,24 +917,24 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to decrypt secrets OLD blob\n");
-			return False;
+			return false;
 		}
 		
 		if (!q.out.new_mtime) {
 			printf("NEW mtime not available on LSA for secret %s\n", new->name);
-			ret = False;
+			ret = false;
 		}
 		if (new->mtime != *q.out.new_mtime) {
 			printf("NEW mtime on secret %s does not match between SAMSYNC (%s) and LSA (%s)\n", 
 			       new->name, nt_time_string(mem_ctx, new->mtime), 
 			       nt_time_string(mem_ctx, *q.out.new_mtime)); 
-			ret = False;
+			ret = false;
 		}
 
 		if (new->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
 			       new->name, (int)new->secret.length, (int)lsa_blob_out.length);
-			ret = False;
+			ret = false;
 		} else if (memcmp(lsa_blob_out.data, 
 			   new->secret.data, new->secret.length) != 0) {
 			printf("Returned secret %s doesn't match: \n",
@@ -943,18 +943,18 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 			dump_data(1, new->secret.data, new->secret.length);
 			DEBUG(1, ("LSA Secret:\n"));
 			dump_data(1, lsa_blob_out.data, lsa_blob_out.length);
-			ret = False;
+			ret = false;
 		}
 	}
 
 	return ret;
 }
 
-static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 					  int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
 
@@ -977,7 +977,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	status = dcerpc_lsa_OpenTrustedDomain(samsync_state->p_lsa, mem_ctx, &t);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
 	for (i=0; i< ARRAY_SIZE(levels); i++) {
@@ -991,7 +991,7 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 			}
 			printf("QueryInfoTrustedDomain level %d failed - %s\n", 
 			       levels[i], nt_errstr(status));
-			return False;
+			return false;
 		}
 		info[levels[i]]  = q.out.info;
 	}
@@ -1012,11 +1012,11 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	return ret;
 }
 
-static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 					  int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct netr_DELTA_ACCOUNT *account = delta->delta_union.account;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
 
@@ -1027,7 +1027,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 
 	int i, j;
 
-	BOOL *found_priv_in_lsa;
+	bool *found_priv_in_lsa;
 
 	a.in.handle = samsync_state->lsa_handle;
 	a.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1037,31 +1037,31 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	status = dcerpc_lsa_OpenAccount(samsync_state->p_lsa, mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	TEST_SEC_DESC_EQUAL(account->sdbuf, lsa, &acct_handle);
 
-	found_priv_in_lsa = talloc_zero_array(mem_ctx, BOOL, account->privilege_entries);
+	found_priv_in_lsa = talloc_zero_array(mem_ctx, bool, account->privilege_entries);
 
 	e.in.handle = &acct_handle;
 
 	status = dcerpc_lsa_EnumPrivsAccount(samsync_state->p_lsa, mem_ctx, &e);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumPrivsAccount failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if ((account->privilege_entries && !e.out.privs)) {
 		printf("Account %s has privileges in SamSync, but not LSA\n",
 		       dom_sid_string(mem_ctx, dom_sid));
-		return False;
+		return false;
 	}
 
 	if (!account->privilege_entries && e.out.privs && e.out.privs->count) {
 		printf("Account %s has privileges in LSA, but not SamSync\n",
 		       dom_sid_string(mem_ctx, dom_sid));
-		return False;
+		return false;
 	}
 
 	TEST_INT_EQUAL(account->privilege_entries, e.out.privs->count);
@@ -1073,16 +1073,16 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 		status = dcerpc_lsa_LookupPrivName(samsync_state->p_lsa, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 		
 		if (!r.out.name) {
 			printf("\nLookupPrivName failed to return a name\n");
-			return False;
+			return false;
 		}
 		for (j=0;j<account->privilege_entries; j++) {
 			if (strcmp(r.out.name->string, account->privilege_name[j].string) == 0) {
-				found_priv_in_lsa[j] = True;
+				found_priv_in_lsa[j] = true;
 				break;
 			}
 		}
@@ -1091,7 +1091,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 		if (!found_priv_in_lsa[j]) {
 			printf("Privilage %s on account %s not found in LSA\n", account->privilege_name[j].string, 
 			       dom_sid_string(mem_ctx, dom_sid));
-			ret = False;
+			ret = false;
 		}
 	}
 	return ret;
@@ -1100,7 +1100,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 /*
   try a netlogon DatabaseSync
 */
-static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
+static bool test_DatabaseSync(struct samsync_state *samsync_state,
 			      TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -1108,7 +1108,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 	struct netr_DatabaseSync r;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i, d;
-	BOOL ret = True;
+	bool ret = true;
 	struct samsync_trusted_domain *t;
 	struct samsync_secret *s;
 	
@@ -1133,7 +1133,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 			if (!NT_STATUS_IS_OK(status) &&
 			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 				printf("DatabaseSync - %s\n", nt_errstr(status));
-				ret = False;
+				ret = false;
 				break;
 			}
 
@@ -1150,56 +1150,56 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 					if (!samsync_handle_domain(delta_ctx, samsync_state, 
 								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_DOMAIN\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_GROUP:
 					if (!samsync_handle_group(delta_ctx, samsync_state, 
 								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_USER\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_USER:
 					if (!samsync_handle_user(delta_ctx, samsync_state, 
 								 r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_USER\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_ALIAS:
 					if (!samsync_handle_alias(delta_ctx, samsync_state, 
 								  r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_ALIAS\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_POLICY:
 					if (!samsync_handle_policy(delta_ctx, samsync_state, 
 								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_POLICY\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_TRUSTED_DOMAIN:
 					if (!samsync_handle_trusted_domain(delta_ctx, samsync_state, 
 									   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_TRUSTED_DOMAIN\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_ACCOUNT:
 					if (!samsync_handle_account(delta_ctx, samsync_state, 
 								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_ACCOUNT\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_SECRET:
 					if (!samsync_handle_secret(delta_ctx, samsync_state, 
 								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_SECRET\n");
-						ret = False;
+						ret = false;
 					}
 					break;
 				case NETR_DELTA_GROUP_MEMBER:
@@ -1220,7 +1220,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				case NETR_DELTA_MODIFY_COUNT:
 				default:
 					printf("Uxpected delta type %d\n", r.out.delta_enum_array->delta_enum[d].delta_type);
-					ret = False;
+					ret = false;
 					break;
 				}
 				talloc_free(delta_ctx);
@@ -1233,7 +1233,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 	domain = samsync_state->domain_name[SAM_DATABASE_DOMAIN];
 	if (!domain) {
 		printf("Never got a DOMAIN object in samsync!\n");
-		return False;
+		return false;
 	}
 
 	trustdom_ctx = talloc_named(mem_ctx, 0, "test_DatabaseSync Trusted domains context");
@@ -1264,7 +1264,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 					printf("Verifiction of trust password to %s: should have failed (nologon interdomain trust account), instead: %s\n", 
 					       t->name, nt_errstr(nt_status));
-					ret = False;
+					ret = false;
 				}
 				
 				/* break it */
@@ -1280,7 +1280,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 					printf("Verifiction of trust password to %s: should have failed (wrong password), instead: %s\n", 
 					       t->name, nt_errstr(nt_status));
-					ret = False;
+					ret = false;
 				}
 				
 				break;
@@ -1295,14 +1295,14 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 /*
   try a netlogon DatabaseDeltas
 */
-static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX *mem_ctx)
+static bool test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	TALLOC_CTX *loop_ctx;
 	struct netr_DatabaseDeltas r;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(samsync_state->p));
 	r.in.computername = TEST_MACHINE_NAME;
@@ -1334,7 +1334,7 @@ static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED)) {
 				printf("DatabaseDeltas - %s\n", nt_errstr(status));
-				ret = False;
+				ret = false;
 			}
 
 			if (!creds_client_check(samsync_state->creds, &r.out.return_authenticator.cred)) {
@@ -1353,7 +1353,7 @@ static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 /*
   try a netlogon DatabaseSync2
 */
-static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -1361,7 +1361,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_DatabaseSync2 r;
 	const uint32_t database_ids[] = {0, 1, 2}; 
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computername = TEST_MACHINE_NAME;
@@ -1383,7 +1383,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (!NT_STATUS_IS_OK(status) &&
 			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 				printf("DatabaseSync2 - %s\n", nt_errstr(status));
-				ret = False;
+				ret = false;
 			}
 
 			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
@@ -1400,11 +1400,11 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 
-BOOL torture_rpc_samsync(struct torture_context *torture)
+bool torture_rpc_samsync(struct torture_context *torture)
 {
         NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	struct test_join *join_ctx;
 	struct test_join *join_ctx2;
 	struct test_join *user_ctx;
@@ -1437,7 +1437,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	if (!join_ctx) {
 		talloc_free(mem_ctx);
 		printf("Failed to join as BDC\n");
-		return False;
+		return false;
 	}
 	
 	test_wksta_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_WKSTA_MACHINE_NAME);
@@ -1445,7 +1445,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	if (!join_ctx2) {
 		talloc_free(mem_ctx);
 		printf("Failed to join as member\n");
-		return False;
+		return false;
 	}
 	
 	user_ctx = torture_create_testuser(torture, TEST_USER_NAME,
@@ -1454,7 +1454,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	if (!user_ctx) {
 		talloc_free(mem_ctx);
 		printf("Failed to create test account\n");
-		return False;
+		return false;
 	}
 
 	samsync_state = talloc_zero(mem_ctx, struct samsync_state);
@@ -1469,14 +1469,14 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	status = dcerpc_samr_Connect(samsync_state->p_samr, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("samr_Connect failed\n");
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
 	domain_policy = samsync_open_domain(mem_ctx, samsync_state, lp_workgroup(global_loadparm), NULL);
 	if (!domain_policy) {
 		printf("samrsync_open_domain failed\n");
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 	
@@ -1491,14 +1491,14 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	status = dcerpc_samr_SetDomainInfo(samsync_state->p_samr, mem_ctx, &s);
 
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, domain_policy)) {
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetDomainInfo level %u failed - %s\n", 
 		       s.in.level, nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 	
@@ -1508,7 +1508,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 					&ndr_table_lsarpc);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
@@ -1532,13 +1532,13 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	status = dcerpc_lsa_OpenPolicy2(samsync_state->p_lsa, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
 	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
@@ -1561,21 +1561,21 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
 	status = dcerpc_schannel_creds(samsync_state->p->conn->security_state.generic_state, 
 				       samsync_state, &samsync_state->creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 	}
 
 
 
 	status = torture_rpc_binding(torture, &b_netlogon_wksta);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
@@ -1599,7 +1599,7 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a Workstation: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto failed;
 	}
 
@@ -1607,22 +1607,22 @@ BOOL torture_rpc_samsync(struct torture_context *torture)
 				       samsync_state, &samsync_state->creds_netlogon_wksta);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to obtail schanel creds!\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_DatabaseSync(samsync_state, mem_ctx)) {
 		printf("DatabaseSync failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_DatabaseDeltas(samsync_state, mem_ctx)) {
 		printf("DatabaseDeltas failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_DatabaseSync2(samsync_state->p, mem_ctx, samsync_state->creds)) {
 		printf("DatabaseSync2 failed\n");
-		ret = False;
+		ret = false;
 	}
 failed:
 

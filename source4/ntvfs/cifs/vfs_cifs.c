@@ -46,8 +46,8 @@ struct cvfs_private {
 	struct ntvfs_module_context *ntvfs;
 	struct async_info *pending;
 	struct cvfs_file *files;
-	BOOL map_generic;
-	BOOL map_trans2;
+	bool map_generic;
+	bool map_trans2;
 };
 
 
@@ -84,15 +84,15 @@ struct async_info {
 #define CIFS_MAP_GENERIC	"cifs:map-generic"
 #define CIFS_MAP_TRANS2		"cifs:map-trans2"
 
-#define CIFS_USE_MACHINE_ACCT_DEFAULT	False
-#define CIFS_MAP_GENERIC_DEFAULT	False
-#define CIFS_MAP_TRANS2_DEFAULT		True
+#define CIFS_USE_MACHINE_ACCT_DEFAULT	false
+#define CIFS_MAP_GENERIC_DEFAULT	false
+#define CIFS_MAP_TRANS2_DEFAULT		true
 
 /*
   a handler for oplock break events from the server - these need to be passed
   along to the client
  */
-static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *p_private)
+static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *p_private)
 {
 	struct cvfs_private *private = p_private;
 	NTSTATUS status;
@@ -107,13 +107,13 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 
 	if (!h) {
 		DEBUG(5,("vfs_cifs: ignoring oplock break level %d for fnum %d\n", level, fnum));
-		return True;
+		return true;
 	}
 
 	DEBUG(5,("vfs_cifs: sending oplock break level %d for fnum %d\n", level, fnum));
 	status = ntvfs_send_oplock_break(private->ntvfs, h, level);
-	if (!NT_STATUS_IS_OK(status)) return False;
-	return True;
+	if (!NT_STATUS_IS_OK(status)) return false;
+	return true;
 }
 
 /*
@@ -130,7 +130,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct share_config *scfg = ntvfs->ctx->config;
 
 	struct cli_credentials *credentials;
-	BOOL machine_account;
+	bool machine_account;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -197,7 +197,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.port = 0;
 	io.in.called_name = host;
 	io.in.credentials = credentials;
-	io.in.fallback_to_anonymous = False;
+	io.in.fallback_to_anonymous = false;
 	io.in.workgroup = lp_workgroup(global_loadparm);
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
@@ -922,7 +922,7 @@ static NTSTATUS cvfs_lpq(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req, union smb_search_first *io, 
 				  void *search_private, 
-				  BOOL (*callback)(void *, const union smb_search_data *))
+				  bool (*callback)(void *, const union smb_search_data *))
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
@@ -935,7 +935,7 @@ static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_search_next(struct ntvfs_module_context *ntvfs, 
 				 struct ntvfs_request *req, union smb_search_next *io, 
 				 void *search_private, 
-				 BOOL (*callback)(void *, const union smb_search_data *))
+				 bool (*callback)(void *, const union smb_search_data *))
 {
 	struct cvfs_private *private = ntvfs->private_data;
 

@@ -38,12 +38,12 @@
 	if (x == DFS_MANAGER_VERSION_W2K3) {\
 		if (!W_ERROR_EQUAL(y,WERR_NOT_SUPPORTED)) {\
 			printf("expected WERR_NOT_SUPPORTED\n");\
-			return False;\
+			return false;\
 		}\
-		return True;\
+		return true;\
 	}\
 
-static BOOL test_NetShareAdd(TALLOC_CTX *mem_ctx, const char *host, const char *sharename, const char *dir)
+static bool test_NetShareAdd(TALLOC_CTX *mem_ctx, const char *host, const char *sharename, const char *dir)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareInfo2 i;
@@ -53,7 +53,7 @@ static BOOL test_NetShareAdd(TALLOC_CTX *mem_ctx, const char *host, const char *
 	printf("Creating share %s\n", sharename);
 
 	if (!(libnetctx = libnet_context_init(NULL))) {
-		return False;
+		return false;
 	}
 
 	libnetctx->cred = cmdline_credentials;
@@ -75,13 +75,13 @@ static BOOL test_NetShareAdd(TALLOC_CTX *mem_ctx, const char *host, const char *
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to add new share: %s (%s)\n", 
 			nt_errstr(status), r.out.error_string);
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_NetShareDel(TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+static bool test_NetShareDel(TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	NTSTATUS status;
 	struct libnet_context* libnetctx;
@@ -90,7 +90,7 @@ static BOOL test_NetShareDel(TALLOC_CTX *mem_ctx, const char *host, const char *
 	printf("Deleting share %s\n", sharename);
 
 	if (!(libnetctx = libnet_context_init(NULL))) {
-		return False;
+		return false;
 	}
 
 	libnetctx->cred = cmdline_credentials;
@@ -102,13 +102,13 @@ static BOOL test_NetShareDel(TALLOC_CTX *mem_ctx, const char *host, const char *
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to delete share: %s (%s)\n", 
 			nt_errstr(status), r.out.error_string);
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_CreateDir(TALLOC_CTX *mem_ctx, 
+static bool test_CreateDir(TALLOC_CTX *mem_ctx, 
 			   struct smbcli_state **cli, 
 			   const char *host, 
 			   const char *share, 
@@ -117,29 +117,29 @@ static BOOL test_CreateDir(TALLOC_CTX *mem_ctx,
 	printf("Creating directory %s\n", dir);
 
 	if (!torture_open_connection_share(mem_ctx, cli, host, share, NULL)) {
-		return False;
+		return false;
 	}
 
 	if (!torture_setup_dir(*cli, dir)) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_DeleteDir(struct smbcli_state *cli, const char *dir)
+static bool test_DeleteDir(struct smbcli_state *cli, const char *dir)
 {
 	printf("Deleting directory %s\n", dir);
 
 	if (smbcli_deltree(cli->tree, dir) == -1) {
 		printf("Unable to delete dir %s - %s\n", dir, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
+static bool test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, enum dfs_ManagerVersion *version)
 {
 	NTSTATUS status;
 	struct dfs_GetManagerVersion r;
@@ -149,13 +149,13 @@ static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, e
 	status = dcerpc_dfs_GetManagerVersion(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetManagerVersion failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+static bool test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
 {
 	NTSTATUS status;
 	enum dfs_ManagerVersion version;
@@ -164,7 +164,7 @@ static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, c
 	printf("Testing ManagerInitialize\n");
 
 	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
-		return False;
+		return false;
 	}
 
 	r.in.servername = host;
@@ -173,17 +173,17 @@ static BOOL test_ManagerInitialize(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, c
 	status = dcerpc_dfs_ManagerInitialize(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ManagerInitialize failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("dfs_ManagerInitialize failed - %s\n", win_errstr(r.out.result));
 		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level,
+static bool test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level,
 			      const char *root)
 {
 	NTSTATUS status;
@@ -199,32 +199,32 @@ static BOOL test_GetInfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16
 	status = dcerpc_dfs_GetInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetInfo failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result) && 
 		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
 		printf("dfs_GetInfo failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *root)
+static bool test_GetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *root)
 {
-	BOOL ret = True;
+	bool ret = true;
 	/* 103, 104, 105, 106 is only available on Set */
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 106};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (!test_GetInfoLevel(p, mem_ctx, levels[i], root)) {
-			ret = False;
+			ret = false;
 		}
 	}
 	return ret;
 }
 
-static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level, const char *dfs_name)
+static bool test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level, const char *dfs_name)
 {
 	NTSTATUS status;
 	struct dfs_EnumEx rex;
@@ -232,7 +232,7 @@ static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_
 	struct dfs_EnumStruct e;
 	struct dfs_Info1 s;
 	struct dfs_EnumArray1 e1;
-	BOOL ret = True;
+	bool ret = true;
 	
 	rex.in.level = level;
 	rex.in.bufsize = (uint32_t)-1;
@@ -251,7 +251,7 @@ static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_
 	status = dcerpc_dfs_EnumEx(p, mem_ctx, &rex);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumEx failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (level == 1 && rex.out.total) {
@@ -259,7 +259,7 @@ static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_
 		for (i=0;i<*rex.out.total;i++) {
 			const char *root = talloc_strdup(mem_ctx, rex.out.info->e.info1->s[i].path);
 			if (!test_GetInfo(p, mem_ctx, root)) {
-				ret = False;
+				ret = false;
 			}
 		}
 	}
@@ -271,11 +271,11 @@ static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_
 			const char *root = talloc_strdup(mem_ctx, rex.out.info->e.info300->s[i].dom_root);
 			for (k=0;k<ARRAY_SIZE(levels);k++) {
 				if (!test_EnumLevelEx(p, mem_ctx, levels[k], root)) {
-					ret = False;
+					ret = false;
 				}
 			}
 			if (!test_GetInfo(p, mem_ctx, root)) {
-				ret = False;
+				ret = false;
 			}
 		}
 	}
@@ -284,7 +284,7 @@ static BOOL test_EnumLevelEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_
 }
 
 
-static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level)
+static bool test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level)
 {
 	NTSTATUS status;
 	struct dfs_Enum r;
@@ -292,7 +292,7 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 	struct dfs_EnumStruct e;
 	struct dfs_Info1 s;
 	struct dfs_EnumArray1 e1;
-	BOOL ret = True;
+	bool ret = true;
 	
 	r.in.level = level;
 	r.in.bufsize = (uint32_t)-1;
@@ -310,11 +310,11 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 	status = dcerpc_dfs_Enum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Enum failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result) && 
 		   !W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, r.out.result)) {
 		printf("dfs_Enum failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 	if (level == 1 && r.out.total) {
@@ -322,7 +322,7 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 		for (i=0;i<*r.out.total;i++) {
 			const char *root = r.out.info->e.info1->s[i].path;
 			if (!test_GetInfo(p, mem_ctx, root)) {
-				ret = False;
+				ret = false;
 			}
 		}
 		
@@ -332,37 +332,37 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 }
 
 
-static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (!test_EnumLevel(p, mem_ctx, levels[i])) {
-			ret = False;
+			ret = false;
 		}
 	}
 
 	return ret;
 }
 
-static BOOL test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+static bool test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
 {
-	BOOL ret = True;
+	bool ret = true;
 	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (!test_EnumLevelEx(p, mem_ctx, levels[i], host)) {
-			ret = False;
+			ret = false;
 		}
 	}
 
 	return ret;
 }
 
-static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+static bool test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	struct dfs_RemoveStdRoot r;
 	NTSTATUS status;
@@ -376,16 +376,16 @@ static BOOL test_RemoveStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const
 	status = dcerpc_dfs_RemoveStdRoot(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RemoveStdRoot failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("dfs_RemoveStdRoot failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+static bool test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	NTSTATUS status;
 	struct dfs_AddStdRoot r;
@@ -400,16 +400,16 @@ static BOOL test_AddStdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const ch
 	status = dcerpc_dfs_AddStdRoot(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AddStdRoot failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("dfs_AddStdRoot failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
+static bool test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host, const char *sharename)
 {
 	NTSTATUS status;
 	struct dfs_AddStdRootForced r;
@@ -418,7 +418,7 @@ static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, co
 	printf("Testing AddStdRootForced\n");
 
 	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
-		return False;
+		return false;
 	}
 
 	r.in.servername	= host;
@@ -429,11 +429,11 @@ static BOOL test_AddStdRootForced(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, co
 	status = dcerpc_dfs_AddStdRootForced(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AddStdRootForced failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("dfs_AddStdRootForced failed - %s\n", win_errstr(r.out.result));
 		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
-		return False;
+		return false;
 	}
 
 	return test_RemoveStdRoot(p, mem_ctx, host, sharename);
@@ -456,13 +456,13 @@ static void test_cleanup_stdroot(struct dcerpc_pipe *p,
 	torture_close_connection(cli);
 }
 
-static BOOL test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
+static bool test_StdRoot(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
 {
 	const char *sharename = SMBTORTURE_DFS_SHARENAME;
 	const char *dir = SMBTORTURE_DFS_DIRNAME;
 	const char *path = SMBTORTURE_DFS_PATHNAME;
 	struct smbcli_state *cli;
-	BOOL ret;
+	bool ret;
 
 	printf("Testing StdRoot\n");
 
@@ -485,7 +485,7 @@ bool torture_rpc_dfs(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
-	BOOL ret = True;
+	bool ret = true;
 	enum dfs_ManagerVersion version;
 	const char *host = torture_setting_string(torture, "host", NULL);
 

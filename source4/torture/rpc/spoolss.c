@@ -874,12 +874,12 @@ static bool test_AddPort(struct torture_context *tctx,
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("AddPort failed - %s\n", win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
 #endif
 
-	return True;
+	return true;
 }
 
 static bool test_GetJob(struct torture_context *tctx, 
@@ -987,7 +987,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 			     struct dcerpc_pipe *p, 
 			     struct policy_handle *handle)
 {
-	bool ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
 	struct spoolss_DocumentInfo1 info1;
@@ -1211,7 +1211,7 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 
 	} while (W_ERROR_IS_OK(r.out.result));
 
-	return True;
+	return true;
 }
 
 static bool test_EnumPrinterDataEx(struct torture_context *tctx, 
@@ -1301,7 +1301,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 
 	/* only makes sense on SMB */
 	if (p->conn->transport.transport != NCACN_NP) {
-		return True;
+		return true;
 	}
 
 	torture_comment(tctx, "testing close on secondary pipe\n");
@@ -1387,7 +1387,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_OpenPrinter r;
 	struct policy_handle handle;
-	BOOL ret = True;
+	bool ret = true;
 
 	r.in.printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
 	r.in.datatype		= NULL;
@@ -1580,7 +1580,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 }
 
 #if 0
-static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, 
+static bool test_GetPrinterDriver2(struct dcerpc_pipe *p, 
 				   struct policy_handle *handle, 
 				   const char *driver_name)
 {
@@ -1600,7 +1600,7 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetPrinterDriver2 failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
@@ -1611,16 +1611,16 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetPrinterDriver2 failed - %s\n", 
 		       nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("GetPrinterDriver2 failed - %s\n", 
 		       win_errstr(r.out.result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 #endif
 
@@ -1706,12 +1706,12 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
-	BOOL ret = True;
+	bool ret = true;
 	struct test_spoolss_context *ctx;
 
 	status = torture_rpc_connection(torture, &p, &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	ctx = talloc_zero(torture, struct test_spoolss_context);

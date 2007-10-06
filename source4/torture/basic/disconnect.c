@@ -33,13 +33,13 @@
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		talloc_free(cli); \
-		return False; \
+		return false; \
 	}} while (0)
 
 /*
   test disconnect after async open
 */
-static BOOL test_disconnect_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_disconnect_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	NTSTATUS status;
@@ -71,14 +71,14 @@ static BOOL test_disconnect_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	talloc_free(cli);
 
-	return True;
+	return true;
 }
 
 
 /*
   test disconnect with timed lock
 */
-static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_lock io;
 	NTSTATUS status;
@@ -92,7 +92,7 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			   O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("open failed in mux_write - %s\n", smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
@@ -118,7 +118,7 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	talloc_free(cli);
 
-	return True;
+	return true;
 }
 
 
@@ -128,7 +128,7 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 */
 bool torture_disconnect(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx;
 	int i;
 	extern int torture_numops;
@@ -137,25 +137,25 @@ bool torture_disconnect(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_raw_mux");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	for (i=0;i<torture_numops;i++) {
 		ret &= test_disconnect_lock(cli, mem_ctx);
 		if (!torture_open_connection(&cli, 0)) {
-			return False;
+			return false;
 		}
 
 		ret &= test_disconnect_open(cli, mem_ctx);
 		if (!torture_open_connection(&cli, 0)) {
-			return False;
+			return false;
 		}
 
-		if (torture_setting_bool(torture, "samba3", False)) {
+		if (torture_setting_bool(torture, "samba3", false)) {
 			/*
 			 * In Samba3 it might happen that the old smbd from
 			 * test_disconnect_lock is not scheduled before the

@@ -30,7 +30,7 @@
 #include "param/param.h"
 
 
-static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
 {
 	NTSTATUS status;
@@ -52,7 +52,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	rid = r1.out.rids.ids[0];
@@ -67,7 +67,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenUser failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	r3.in.user_handle  = &user_handle;
@@ -78,14 +78,14 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, struct lsa_String *domname)
 {
 	NTSTATUS status;
@@ -103,7 +103,7 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
 	r2.in.connect_handle = &h;
@@ -114,7 +114,7 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	r3.in.connect_handle = &h;
@@ -127,16 +127,16 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	} else {
 		*handle = domain_handle;
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -148,14 +148,14 @@ static BOOL test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close samr domain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	
-	return True;
+	return true;
 }
 
 
-static BOOL test_lsa_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_lsa_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -167,14 +167,14 @@ static BOOL test_lsa_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_lsa_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close lsa domain failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
  			    struct policy_handle *handle, const char* user)
 {
 	NTSTATUS status;
@@ -201,7 +201,7 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			printf("User (%s) already exists - attempting to delete and recreate account again\n", user);
 			if (!test_cleanup(p, mem_ctx, handle, TEST_USERNAME)) {
-				return False;
+				return false;
 			}
 
 			printf("creating user account\n");
@@ -209,11 +209,11 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("CreateUser failed - %s\n", nt_errstr(status));
-				return False;
+				return false;
 			}
-			return True;
+			return true;
 		}		
-		return False;
+		return false;
 	}
 
 	r2.in.handle = &user_handle;
@@ -224,20 +224,20 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Close(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
-BOOL torture_createuser(struct torture_context *torture)
+bool torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_CreateUser req;
-	BOOL ret = True;
+	bool ret = true;
 
 	mem_ctx = talloc_init("test_createuser");
 
@@ -251,19 +251,19 @@ BOOL torture_createuser(struct torture_context *torture)
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_CreateUser call failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
-		ret = False;
+		ret = false;
 	}
 
 done:
@@ -273,7 +273,7 @@ done:
 }
 
 
-BOOL torture_deleteuser(struct torture_context *torture)
+bool torture_deleteuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -283,7 +283,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	const char *name = TEST_USERNAME;
 	struct libnet_context *ctx;
 	struct libnet_DeleteUser req;
-	BOOL ret = True;
+	bool ret = true;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
@@ -297,18 +297,18 @@ BOOL torture_deleteuser(struct torture_context *torture)
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_createuser(p, prep_mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -317,7 +317,7 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_DeleteUser call failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(mem_ctx);
@@ -439,26 +439,26 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 #define TEST_STR_FLD(fld) \
 	if (!strequal(req.in.fld, user_req.out.fld)) { \
 		printf("failed to change '%s'\n", #fld); \
-		ret = False; \
+		ret = false; \
 		goto cleanup; \
 	}
 
 #define TEST_TIME_FLD(fld) \
 	if (timeval_compare(req.in.fld, user_req.out.fld)) { \
 		printf("failed to change '%s'\n", #fld); \
-		ret = False; \
+		ret = false; \
 		goto cleanup; \
 	}
 
 #define TEST_NUM_FLD(fld) \
 	if (req.in.fld != user_req.out.fld) { \
 		printf("failed to change '%s'\n", #fld); \
-		ret = False; \
+		ret = false; \
 		goto cleanup; \
 	}
 
 
-BOOL torture_modifyuser(struct torture_context *torture)
+bool torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *bind;
@@ -471,7 +471,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 	struct libnet_ModifyUser req;
 	struct libnet_UserInfo user_req;
 	int fld;
-	BOOL ret = True;
+	bool ret = true;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
@@ -482,7 +482,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -490,12 +490,12 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_createuser(p, prep_mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -503,7 +503,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	status = torture_rpc_binding(mem_ctx, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -519,7 +519,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		status = libnet_ModifyUser(ctx, mem_ctx, &req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -530,7 +530,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 		status = libnet_UserInfo(ctx, mem_ctx, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
-			ret = False;
+			ret = false;
 			continue;
 		}
 
@@ -571,7 +571,7 @@ BOOL torture_modifyuser(struct torture_context *torture)
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 				talloc_free(mem_ctx);
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			
@@ -582,13 +582,13 @@ BOOL torture_modifyuser(struct torture_context *torture)
 cleanup:
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, name)) {
 		printf("cleanup failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(mem_ctx);
@@ -600,10 +600,10 @@ done:
 }
 
 
-BOOL torture_userinfo_api(struct torture_context *torture)
+bool torture_userinfo_api(struct torture_context *torture)
 {
 	const char *name = TEST_USERNAME;
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
 	struct libnet_context *ctx;
@@ -621,17 +621,17 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 					&p,
 					&ndr_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	domain_name.string = lp_workgroup(global_loadparm);
 	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_createuser(p, prep_mem_ctx, &h, name)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -645,20 +645,20 @@ BOOL torture_userinfo_api(struct torture_context *torture)
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		talloc_free(mem_ctx);
 		goto done;
 	}
 
 	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(ctx);
@@ -669,9 +669,9 @@ done:
 }
 
 
-BOOL torture_userlist(struct torture_context *torture)
+bool torture_userlist(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
 	struct libnet_context *ctx;
@@ -707,19 +707,19 @@ BOOL torture_userlist(struct torture_context *torture)
 	if (!(NT_STATUS_IS_OK(status) ||
 	      NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))) {
 		printf("libnet_UserList call failed: %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("samr domain close failed\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (!test_lsa_close(ctx->lsa.pipe, mem_ctx, &ctx->lsa.handle)) {
 		printf("lsa domain close failed\n");
-		ret = False;
+		ret = false;
 	}
 
 	talloc_free(ctx);

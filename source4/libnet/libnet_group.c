@@ -57,7 +57,7 @@ struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct group_info_state *s;
-	BOOL prereq_met = False;
+	bool prereq_met = false;
 	struct composite_context *lookup_req;
 
 	/* composite context allocation and setup */

@@ -33,13 +33,13 @@ struct name_cache_entry {
 
 struct pvfs_dir {
 	struct pvfs_state *pvfs;
-	BOOL no_wildcard;
+	bool no_wildcard;
 	char *single_name;
 	const char *pattern;
 	off_t offset;
 	DIR *dir;
 	const char *unix_path;
-	BOOL end_of_search;
+	bool end_of_search;
 	struct name_cache_entry *name_cache;
 	uint32_t name_cache_index;
 };
@@ -69,8 +69,8 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 	}
 
 	dir->pvfs = pvfs;
-	dir->no_wildcard = True;
-	dir->end_of_search = False;
+	dir->no_wildcard = true;
+	dir->end_of_search = false;
 	dir->unix_path = talloc_strdup(dir, name->full_name);
 	if (!dir->unix_path) {
 		return NT_STATUS_NO_MEMORY;
@@ -145,8 +145,8 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	}
 
 	dir->pvfs = pvfs;
-	dir->no_wildcard = False;
-	dir->end_of_search = False;
+	dir->no_wildcard = false;
+	dir->end_of_search = false;
 	dir->offset = DIR_OFFSET_DOT;
 	dir->name_cache = talloc_zero_array(dir, 
 					    struct name_cache_entry, 
@@ -187,7 +187,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 
 	/* non-wildcard searches are easy */
 	if (dir->no_wildcard) {
-		dir->end_of_search = True;
+		dir->end_of_search = true;
 		if (*ofs != 0) return NULL;
 		(*ofs)++;
 		return dir->single_name;
@@ -246,7 +246,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 		return dname;
 	}
 
-	dir->end_of_search = True;
+	dir->end_of_search = true;
 	return NULL;
 }
 
@@ -259,9 +259,9 @@ const char *pvfs_list_unix_path(struct pvfs_dir *dir)
 }
 
 /*
-  return True if end of search has been reached
+  return true if end of search has been reached
 */
-BOOL pvfs_list_eos(struct pvfs_dir *dir, off_t ofs)
+bool pvfs_list_eos(struct pvfs_dir *dir, off_t ofs)
 {
 	return dir->end_of_search;
 }
@@ -274,7 +274,7 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, off_t *ofs)
 	struct dirent *de;
 	int i;
 
-	dir->end_of_search = False;
+	dir->end_of_search = false;
 
 	if (ISDOT(name)) {
 		dir->offset = DIR_OFFSET_DOTDOT;
@@ -313,7 +313,7 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, off_t *ofs)
 		}
 	}
 
-	dir->end_of_search = True;
+	dir->end_of_search = true;
 
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
@@ -326,7 +326,7 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 	struct dirent *de;
 	int i;
 
-	dir->end_of_search = False;
+	dir->end_of_search = false;
 
 	if (resume_key == DIR_OFFSET_DOT) {
 		*ofs = DIR_OFFSET_DOTDOT;
@@ -341,7 +341,7 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 	if (resume_key == DIR_OFFSET_BASE) {
 		rewinddir(dir->dir);
 		if ((de=readdir(dir->dir)) == NULL) {
-			dir->end_of_search = True;
+			dir->end_of_search = true;
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		*ofs = telldir(dir->dir) + DIR_OFFSET_BASE;
@@ -374,7 +374,7 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 		}
 	}
 
-	dir->end_of_search = True;
+	dir->end_of_search = true;
 
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
@@ -383,21 +383,21 @@ NTSTATUS pvfs_list_seek_ofs(struct pvfs_dir *dir, uint32_t resume_key, off_t *of
 /*
   see if a directory is empty
 */
-BOOL pvfs_directory_empty(struct pvfs_state *pvfs, struct pvfs_filename *name)
+bool pvfs_directory_empty(struct pvfs_state *pvfs, struct pvfs_filename *name)
 {
 	struct dirent *de;
 	DIR *dir = opendir(name->full_name);
 	if (dir == NULL) {
-		return True;
+		return true;
 	}
 
 	while ((de = readdir(dir))) {
 		if (!ISDOT(de->d_name) && !ISDOTDOT(de->d_name)) {
 			closedir(dir);
-			return False;
+			return false;
 		}
 	}
 
 	closedir(dir);
-	return True;
+	return true;
 }

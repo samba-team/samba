@@ -29,14 +29,14 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
-static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct DsPrivate *priv, const char *dn,
 				    const char *user_principal_name, const char *service_principal_name)
 {
 	
 
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct drsuapi_DsCrackNames r;
 	enum drsuapi_DsNameFormat formats[] = {
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
@@ -81,13 +81,13 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired);
 		
 			printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-			ret = False;
+			ret = false;
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("testing DsCrackNames (matrix prep) with name '%s' from format: %d desired format:%d ",
 			       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired);
 		
 			printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-			ret = False;
+			ret = false;
 		}
 			
 		if (!ret) {
@@ -98,7 +98,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE) {
 				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
 				       r.out.ctr.ctr1->array[0].status);
-				return False;
+				return false;
 			}
 			printf ("(expected) error\n");
 			break;
@@ -106,7 +106,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_NO_MAPPING) {
 				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
 				       r.out.ctr.ctr1->array[0].status);
-				return False;
+				return false;
 			}
 			printf ("(expected) error\n");
 			break;
@@ -115,14 +115,14 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR) {
 				printf(__location__ ": Unexpected error (%d): This name lookup should fail\n", 
 				       r.out.ctr.ctr1->array[0].status);
-				return False;
+				return false;
 			}
 			printf ("(expected) error\n");
 			break;
 		default:
 			if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 				printf("Error: %d\n", r.out.ctr.ctr1->array[0].status);
-				return False;
+				return false;
 			}
 		}
 
@@ -160,12 +160,12 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				}
 				printf("testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d failed - %s",
 				       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired, errstr);
-				ret = False;
+				ret = false;
 			} else if (!W_ERROR_IS_OK(r.out.result)) {
 				printf("testing DsCrackNames (matrix) with name '%s' from format: %d desired format:%d failed - %s",
 				       names[0].str, r.in.req.req1.format_offered, r.in.req.req1.format_desired, 
 				       win_errstr(r.out.result));
-				ret = False;
+				ret = false;
 			}
 			
 			if (!ret) {
@@ -191,26 +191,26 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			} else if (n_matrix[i][j] == NULL && formats[j] == DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL) {
 			} else if (n_matrix[i][j] == NULL && n_from[j] != NULL) {
 				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
+				ret = false;
 			} else if (n_matrix[i][j] != NULL && n_from[j] == NULL) {
 				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
+				ret = false;
 			} else if (strcmp(n_matrix[i][j], n_from[j]) != 0) {
 				printf("dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s\n", formats[i], formats[j], n_matrix[i][j], n_from[j]);
-				ret = False;
+				ret = false;
 			}
 		}
 	}
 	return ret;
 }
 
-BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+bool test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			      struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
 	struct drsuapi_DsNameString names[1];
-	BOOL ret = True;
+	bool ret = true;
 	const char *dns_domain;
 	const char *nt4_domain;
 	const char *FQDN_1779_name;
@@ -254,13 +254,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -282,13 +282,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -311,13 +311,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -335,7 +335,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("local Round trip on canonical name failed: %s != %s!\n",
 		       realm_canonical, 
 		       talloc_asprintf(mem_ctx, "%s/", dns_domain));
-		    return False;
+		    return false;
 	};
 
 	realm_canonical_ex = ldb_dn_canonical_ex_string(mem_ctx, realm_dn);
@@ -345,7 +345,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("local Round trip on canonical ex name failed: %s != %s!\n",
 		       realm_canonical, 
 		       talloc_asprintf(mem_ctx, "%s\n", dns_domain));
-		    return False;
+		    return false;
 	};
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
@@ -362,13 +362,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -391,13 +391,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -420,13 +420,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
 		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
+		ret = false;
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
 		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
+		ret = false;
 	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
 		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
+		ret = false;
 	}
 
 	if (!ret) {
@@ -435,7 +435,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (strcmp(priv->domain_dns_name, r.out.ctr.ctr1->array[0].dns_domain_name) != 0) {
 		printf("DsCrackNames failed to return same DNS name - expected %s got %s\n", priv->domain_dns_name, r.out.ctr.ctr1->array[0].dns_domain_name);
-		return False;
+		return false;
 	}
 
 	FQDN_1779_dn = ldb_dn_new(mem_ctx, ldb, FQDN_1779_name);
@@ -463,7 +463,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			enum drsuapi_DsNameStatus status;
 			enum drsuapi_DsNameStatus alternate_status;
 			enum drsuapi_DsNameFlags flags;
-			BOOL skip;
+			bool skip;
 		} crack[] = {
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
@@ -589,7 +589,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
-				.skip = lp_parm_bool(global_loadparm, NULL, "torture", "samba4", False)
+				.skip = lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
@@ -941,10 +941,10 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 					errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 				}
 				printf("dcerpc_drsuapi_DsCrackNames failed on %s - %s\n", comment, errstr);
-				ret = False;
+				ret = false;
 			} else if (!W_ERROR_IS_OK(r.out.result)) {
 				printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-				ret = False;
+				ret = false;
 			} else if (r.out.ctr.ctr1->array[0].status != crack[i].status) {
 				if (crack[i].alternate_status) {
 					if (r.out.ctr.ctr1->array[0].status != crack[i].alternate_status) {
@@ -953,14 +953,14 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 						       crack[i].status,
 						       crack[i].alternate_status,
 						       comment);
-						ret = False;
+						ret = false;
 					}
 				} else {
 					printf("DsCrackNames unexpected status %d, wanted %d on: %s\n", 
 					       r.out.ctr.ctr1->array[0].status,
 					       crack[i].status,
 					       comment);
-					ret = False;
+					ret = false;
 				}
 			} else if (crack[i].expected_str
 				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
@@ -970,7 +970,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 					printf("DsCrackNames failed - got %s, expected %s on %s\n", 
 					       r.out.ctr.ctr1->array[0].result_name, 
 					       crack[i].expected_str, comment);
-					ret = False;
+					ret = false;
 				} else {
 					printf("(warning) DsCrackNames returned different case - got %s, expected %s on %s\n", 
 					       r.out.ctr.ctr1->array[0].result_name, 
@@ -982,14 +982,14 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				printf("DsCrackNames failed - got DNS name %s, expected %s on %s\n", 
 				       r.out.ctr.ctr1->array[0].result_name, 
 				       crack[i].expected_str, comment);
-				ret = False;
+				ret = false;
 			}
 		}
 	}
 
 	if (!test_DsCrackNamesMatrix(p, mem_ctx, priv, FQDN_1779_name, 
 				     user_principal_name, service_principal_name)) {
-		ret = False;
+		ret = false;
 	}
 
 	return ret;

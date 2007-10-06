@@ -365,7 +365,7 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 /*
   check the read only bit against any of the write access bits
 */
-static BOOL pvfs_read_only(struct pvfs_state *pvfs, uint32_t access_mask)
+static bool pvfs_read_only(struct pvfs_state *pvfs, uint32_t access_mask)
 {
 	if ((pvfs->flags & PVFS_FLAG_READONLY) &&
 	    (access_mask & (SEC_FILE_WRITE_DATA |
@@ -376,9 +376,9 @@ static BOOL pvfs_read_only(struct pvfs_state *pvfs, uint32_t access_mask)
 			    SEC_STD_WRITE_DAC | 
 			    SEC_STD_WRITE_OWNER | 
 			    SEC_DIR_DELETE_CHILD))) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*
@@ -548,24 +548,24 @@ NTSTATUS pvfs_access_check_parent(struct pvfs_state *pvfs,
 /*
   determine if an ACE is inheritable
 */
-static BOOL pvfs_inheritable_ace(struct pvfs_state *pvfs,
+static bool pvfs_inheritable_ace(struct pvfs_state *pvfs,
 				 const struct security_ace *ace,
-				 BOOL container)
+				 bool container)
 {
 	if (!container) {
 		return (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) != 0;
 	}
 
 	if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
-		return True;
+		return true;
 	}
 
 	if ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) &&
 	    !(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /*
@@ -576,7 +576,7 @@ static BOOL pvfs_inheritable_ace(struct pvfs_state *pvfs,
 static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs, 
 				      struct security_descriptor *parent_sd,
 				      struct security_descriptor *sd,
-				      BOOL container)
+				      bool container)
 {
 	int i;
 	
@@ -663,7 +663,7 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct pvfs_filename *parent;
 	struct security_descriptor *parent_sd, *sd;
-	BOOL container;
+	bool container;
 
 	/* form the parents path */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
@@ -716,7 +716,7 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 
 	sd->type |= SEC_DESC_DACL_PRESENT;
 
-	container = (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) ? True:False;
+	container = (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) ? true:false;
 
 	/* fill in the aces from the parent */
 	status = pvfs_acl_inherit_aces(pvfs, parent_sd, sd, container);

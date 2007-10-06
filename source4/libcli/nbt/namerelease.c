@@ -70,7 +70,7 @@ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 					   io->in.dest_addr, lp_nbt_port(global_loadparm));
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
-				    io->in.timeout, io->in.retries, False);
+				    io->in.timeout, io->in.retries, false);
 	if (req == NULL) goto failed;
 
 	talloc_free(packet);

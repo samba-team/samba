@@ -34,7 +34,7 @@
  Initialize the tree context
 ****************************************************************************/
 struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
-				     TALLOC_CTX *parent_ctx, BOOL primary)
+				     TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smbcli_tree *tree;
 
@@ -189,7 +189,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.service = service;
 	io.in.service_type = service_type;
 	io.in.credentials = credentials;
-	io.in.fallback_to_anonymous = False;
+	io.in.fallback_to_anonymous = false;
 	io.in.workgroup = lp_workgroup(global_loadparm);
 	
 	status = smb_composite_connect(&io, parent_ctx, ev);

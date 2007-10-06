@@ -56,14 +56,14 @@ static void do_reconnect(struct smbcli_state **cli, int client)
 }
 
 /* run a test that simulates an approximate netbench client load */
-static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
+static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli, int client)
 {
 	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	int i;
 	pstring line;
 	char *cname;
 	FILE *f;
-	BOOL correct = True;
+	bool correct = true;
 	double target_rate = torture_setting_double(tctx, "targetrate", 0);	
 	int n;
 
@@ -85,7 +85,7 @@ static BOOL run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 
 	if (!f) {
 		perror(loadfile);
-		return False;
+		return false;
 	}
 
 again:
@@ -212,7 +212,7 @@ done:
 		smbcli_deltree(cli->tree, "\\clients");
 	}
 	if (!torture_close_connection(cli)) {
-		correct = False;
+		correct = false;
 	}
 	
 	return correct;
@@ -220,14 +220,14 @@ done:
 
 
 /* run a test that simulates an approximate netbench client load */
-BOOL torture_nbench(struct torture_context *torture)
+bool torture_nbench(struct torture_context *torture)
 {
-	BOOL correct = True;
+	bool correct = true;
 	int torture_nprocs = torture_setting_int(torture, "nprocs", 4);
 	struct smbcli_state *cli;
 	const char *p;
 
-	read_only = torture_setting_bool(torture, "readonly", False);
+	read_only = torture_setting_bool(torture, "readonly", false);
 
 	nb_max_retries = torture_setting_int(torture, "nretries", 1);
 
@@ -245,11 +245,11 @@ BOOL torture_nbench(struct torture_context *torture)
 
 	if (torture_nprocs > 1) {
 		if (!torture_open_connection(&cli, 0)) {
-			return False;
+			return false;
 		}
 
 		if (!read_only && !torture_setup_dir(cli, "\\clients")) {
-			return False;
+			return false;
 		}
 	}
 

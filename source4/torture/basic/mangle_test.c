@@ -58,25 +58,25 @@ static bool test_one(struct torture_context *tctx ,struct smbcli_state *cli,
 	status = smbcli_qpathinfo_alt_name(cli->tree, name, &shortname);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("query altname of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	name2 = talloc_asprintf(tctx, "\\mangle_test\\%s", shortname);
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, name2))) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
 		       name2, name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	/* recreate by short name */
 	fnum = smbcli_open(cli->tree, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
 		printf("open2 of %s failed (%s)\n", name2, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
 		printf("close of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	/* and unlink by long name */
@@ -85,7 +85,7 @@ static bool test_one(struct torture_context *tctx ,struct smbcli_state *cli,
 		       name, name2, smbcli_errstr(cli->tree));
 		failures++;
 		smbcli_unlink(cli->tree, name2);
-		return True;
+		return true;
 	}
 
 	/* see if the short name is already in the tdb */
@@ -108,7 +108,7 @@ static bool test_one(struct torture_context *tctx ,struct smbcli_state *cli,
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -170,11 +170,11 @@ bool torture_mangle(struct torture_context *torture,
 	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
 	if (!tdb) {
 		printf("ERROR: Failed to open tdb\n");
-		return False;
+		return false;
 	}
 
 	if (!torture_setup_dir(cli, "\\mangle_test")) {
-		return False;
+		return false;
 	}
 
 	for (i=0;i<torture_numops;i++) {
@@ -196,7 +196,7 @@ bool torture_mangle(struct torture_context *torture,
 	smbcli_unlink(cli->tree, "\\mangle_test\\*");
 	if (NT_STATUS_IS_ERR(smbcli_rmdir(cli->tree, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
-		return False;
+		return false;
 	}
 
 	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",

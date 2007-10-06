@@ -39,7 +39,7 @@
 #define O_DIRECTORY 0
 #endif
 
-#define CHECK_READ_ONLY(req) do { if (share_bool_option(ntvfs->ctx->config, SHARE_READONLY, True)) return NT_STATUS_ACCESS_DENIED; } while (0)
+#define CHECK_READ_ONLY(req) do { if (share_bool_option(ntvfs->ctx->config, SHARE_READONLY, true)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -311,7 +311,7 @@ static NTSTATUS cifspsx_open(struct ntvfs_module_context *ntvfs,
 	int fd, flags;
 	struct cifspsx_file *f;
 	int create_flags, rdwr_flags;
-	BOOL readonly;
+	bool readonly;
 	NTSTATUS status;
 	struct ntvfs_handle *handle;
 	
@@ -829,7 +829,7 @@ static NTSTATUS cifspsx_lpq(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req, union smb_search_first *io, 
 				  void *search_private, 
-				  BOOL (*callback)(void *, const union smb_search_data *))
+				  bool (*callback)(void *, const union smb_search_data *))
 {
 	struct cifspsx_dir *dir;
 	int i;
@@ -903,7 +903,7 @@ static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_search_next(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req, union smb_search_next *io, 
 				 void *search_private, 
-				 BOOL (*callback)(void *, const union smb_search_data *))
+				 bool (*callback)(void *, const union smb_search_data *))
 {
 	struct cifspsx_dir *dir;
 	int i;

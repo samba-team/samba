@@ -30,7 +30,7 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x30, True, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x30, true, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0); /* pad */
@@ -59,7 +59,7 @@ NTSTATUS smb2_read_recv(struct smb2_request *req,
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x10, True);
+	SMB2_CHECK_PACKET_RECV(req, 0x10, true);
 
 	status = smb2_pull_o16s32_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.data);
 	if (!NT_STATUS_IS_OK(status)) {

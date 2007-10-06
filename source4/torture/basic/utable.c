@@ -166,7 +166,7 @@ bool torture_casetable(struct torture_context *tctx,
 				torture_comment(tctx, "too many chars match?? size=%d c=0x%04x\n",
 				       (int)size, c);
 				smbcli_close(cli->tree, fnum);
-				return False;
+				return false;
 			}
 
 			smbcli_read(cli->tree, fnum, c2, 0, size);

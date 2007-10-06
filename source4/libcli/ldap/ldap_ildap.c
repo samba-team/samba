@@ -41,7 +41,7 @@ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 */
 NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
 			     int scope, struct ldb_parse_tree *tree,
-			     const char * const *attrs, BOOL attributesonly, 
+			     const char * const *attrs, bool attributesonly, 
 			     struct ldb_control **control_req,
 			     struct ldb_control ***control_res,
 			     struct ldap_message ***results)
@@ -75,7 +75,7 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 	req = ldap_request_send(conn, msg);
 	talloc_steal(msg, req);
 	
-	for (i=n=0;True;i++) {
+	for (i=n=0;true;i++) {
 		struct ldap_message *res;
 		status = ldap_result_n(req, i, &res);
 		if (!NT_STATUS_IS_OK(status)) break;
@@ -114,7 +114,7 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 */
 NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
 		      int scope, const char *expression, 
-		      const char * const *attrs, BOOL attributesonly, 
+		      const char * const *attrs, bool attributesonly, 
 		      struct ldb_control **control_req,
 		      struct ldb_control ***control_res,
 		      struct ldap_message ***results)

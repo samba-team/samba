@@ -58,7 +58,7 @@ static void pvfs_notify_send_next(struct event_context *ev, struct timed_event *
   send a reply to a pending notify request
 */
 static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, 
-			     NTSTATUS status, BOOL immediate)
+			     NTSTATUS status, bool immediate)
 {
 	struct notify_pending *pending = notify_buffer->pending;
 	struct ntvfs_request *req;
@@ -118,7 +118,7 @@ static int pvfs_notify_destructor(struct pvfs_notify_buffer *n)
 {
 	notify_remove(n->f->pvfs->notify_context, n);
 	n->f->notify_buffer = NULL;
-	pvfs_notify_send(n, NT_STATUS_OK, True);
+	pvfs_notify_send(n, NT_STATUS_OK, true);
 	return 0;
 }
 
@@ -161,7 +161,7 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 
 	/* send what we have, unless its the first part of a rename */
 	if (ev->action != NOTIFY_ACTION_OLD_NAME) {
-		pvfs_notify_send(n, NT_STATUS_OK, True);
+		pvfs_notify_send(n, NT_STATUS_OK, true);
 	}
 }
 
@@ -169,7 +169,7 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
   setup a notify buffer on a directory handle
 */
 static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f, 
-				  uint32_t buffer_size, uint32_t filter, BOOL recursive)
+				  uint32_t buffer_size, uint32_t filter, bool recursive)
 {
 	NTSTATUS status;
 	struct notify_entry e;
@@ -206,9 +206,9 @@ static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
 	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, 
 								   struct pvfs_notify_buffer);
 	if (reason == PVFS_WAIT_CANCEL) {
-		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED, False);
+		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED, false);
 	} else {
-		pvfs_notify_send(notify_buffer, NT_STATUS_OK, True);
+		pvfs_notify_send(notify_buffer, NT_STATUS_OK, true);
 	}
 }
 
@@ -277,7 +277,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	}
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
-	pvfs_notify_send(f->notify_buffer, NT_STATUS_OK, False);
+	pvfs_notify_send(f->notify_buffer, NT_STATUS_OK, false);
 
 	return NT_STATUS_OK;
 }

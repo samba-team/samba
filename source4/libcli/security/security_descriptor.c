@@ -242,77 +242,77 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 /*
   compare two security ace structures
 */
-BOOL security_ace_equal(const struct security_ace *ace1, 
+bool security_ace_equal(const struct security_ace *ace1, 
 			const struct security_ace *ace2)
 {
-	if (ace1 == ace2) return True;
-	if (!ace1 || !ace2) return False;
-	if (ace1->type != ace2->type) return False;
-	if (ace1->flags != ace2->flags) return False;
-	if (ace1->access_mask != ace2->access_mask) return False;
-	if (!dom_sid_equal(&ace1->trustee, &ace2->trustee)) return False;
+	if (ace1 == ace2) return true;
+	if (!ace1 || !ace2) return false;
+	if (ace1->type != ace2->type) return false;
+	if (ace1->flags != ace2->flags) return false;
+	if (ace1->access_mask != ace2->access_mask) return false;
+	if (!dom_sid_equal(&ace1->trustee, &ace2->trustee)) return false;
 
-	return True;	
+	return true;	
 }
 
 
 /*
   compare two security acl structures
 */
-BOOL security_acl_equal(const struct security_acl *acl1, 
+bool security_acl_equal(const struct security_acl *acl1, 
 			const struct security_acl *acl2)
 {
 	int i;
 
-	if (acl1 == acl2) return True;
-	if (!acl1 || !acl2) return False;
-	if (acl1->revision != acl2->revision) return False;
-	if (acl1->num_aces != acl2->num_aces) return False;
+	if (acl1 == acl2) return true;
+	if (!acl1 || !acl2) return false;
+	if (acl1->revision != acl2->revision) return false;
+	if (acl1->num_aces != acl2->num_aces) return false;
 
 	for (i=0;i<acl1->num_aces;i++) {
-		if (!security_ace_equal(&acl1->aces[i], &acl2->aces[i])) return False;
+		if (!security_ace_equal(&acl1->aces[i], &acl2->aces[i])) return false;
 	}
-	return True;	
+	return true;	
 }
 
 /*
   compare two security descriptors.
 */
-BOOL security_descriptor_equal(const struct security_descriptor *sd1, 
+bool security_descriptor_equal(const struct security_descriptor *sd1, 
 			       const struct security_descriptor *sd2)
 {
-	if (sd1 == sd2) return True;
-	if (!sd1 || !sd2) return False;
-	if (sd1->revision != sd2->revision) return False;
-	if (sd1->type != sd2->type) return False;
+	if (sd1 == sd2) return true;
+	if (!sd1 || !sd2) return false;
+	if (sd1->revision != sd2->revision) return false;
+	if (sd1->type != sd2->type) return false;
 
-	if (!dom_sid_equal(sd1->owner_sid, sd2->owner_sid)) return False;
-	if (!dom_sid_equal(sd1->group_sid, sd2->group_sid)) return False;
-	if (!security_acl_equal(sd1->sacl, sd2->sacl))      return False;
-	if (!security_acl_equal(sd1->dacl, sd2->dacl))      return False;
+	if (!dom_sid_equal(sd1->owner_sid, sd2->owner_sid)) return false;
+	if (!dom_sid_equal(sd1->group_sid, sd2->group_sid)) return false;
+	if (!security_acl_equal(sd1->sacl, sd2->sacl))      return false;
+	if (!security_acl_equal(sd1->dacl, sd2->dacl))      return false;
 
-	return True;	
+	return true;	
 }
 
 /*
   compare two security descriptors, but allow certain (missing) parts
   to be masked out of the comparison
 */
-BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1, 
+bool security_descriptor_mask_equal(const struct security_descriptor *sd1, 
 				    const struct security_descriptor *sd2, 
 				    uint32_t mask)
 {
-	if (sd1 == sd2) return True;
-	if (!sd1 || !sd2) return False;
-	if (sd1->revision != sd2->revision) return False;
-	if ((sd1->type & mask) != (sd2->type & mask)) return False;
+	if (sd1 == sd2) return true;
+	if (!sd1 || !sd2) return false;
+	if (sd1->revision != sd2->revision) return false;
+	if ((sd1->type & mask) != (sd2->type & mask)) return false;
 
-	if (!dom_sid_equal(sd1->owner_sid, sd2->owner_sid)) return False;
-	if (!dom_sid_equal(sd1->group_sid, sd2->group_sid)) return False;
-	if ((mask & SEC_DESC_DACL_PRESENT) && !security_acl_equal(sd1->dacl, sd2->dacl))      return False;
-	if ((mask & SEC_DESC_SACL_PRESENT) && !security_acl_equal(sd1->sacl, sd2->sacl))      return False;
+	if (!dom_sid_equal(sd1->owner_sid, sd2->owner_sid)) return false;
+	if (!dom_sid_equal(sd1->group_sid, sd2->group_sid)) return false;
+	if ((mask & SEC_DESC_DACL_PRESENT) && !security_acl_equal(sd1->dacl, sd2->dacl))      return false;
+	if ((mask & SEC_DESC_SACL_PRESENT) && !security_acl_equal(sd1->sacl, sd2->sacl))      return false;
 
-	return True;	
+	return true;	
 }
 
 

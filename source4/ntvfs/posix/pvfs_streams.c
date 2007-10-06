@@ -79,7 +79,7 @@ NTSTATUS pvfs_stream_info(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 
 	/* the NULL stream always exists */
 	if (name->stream_name == NULL) {
-		name->stream_exists = True;
+		name->stream_exists = true;
 		return NT_STATUS_OK;
 	}
 
@@ -99,7 +99,7 @@ NTSTATUS pvfs_stream_info(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 		if (strcasecmp_m(s->name, name->stream_name) == 0) {
 			name->dos.alloc_size = pvfs_round_alloc_size(pvfs, s->alloc_size);
 			name->st.st_size     = s->size;
-			name->stream_exists = True;
+			name->stream_exists = true;
 			talloc_free(streams);
 			return NT_STATUS_OK;
 		}
@@ -109,7 +109,7 @@ NTSTATUS pvfs_stream_info(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 
 	name->dos.alloc_size = 0;
 	name->st.st_size     = 0;
-	name->stream_exists = False;
+	name->stream_exists = false;
 
 	return NT_STATUS_OK;
 }

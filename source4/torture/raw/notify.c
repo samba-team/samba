@@ -31,7 +31,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%d) Incorrect status %s - should be %s\n", \
 		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -40,14 +40,14 @@
 	if ((v) != (correct)) { \
 		printf("(%d) wrong value for %s  0x%x should be 0x%x\n", \
 		       __LINE__, #v, (int)v, (int)correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_WSTR(field, value, flags) do { \
 	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags, cli->transport)) { \
 		printf("(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
-			ret = False; \
+			ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -55,10 +55,10 @@
 /* 
    basic testing of change notify on directories
 */
-static BOOL test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2, 
+static bool test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2, 
 			    TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -99,7 +99,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2,
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	printf("testing notify cancel\n");
 
@@ -159,7 +159,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2,
 		if (fnum3 == -1) {
 			printf("Failed to create %s - %s\n", 
 			       fname, smbcli_errstr(cli->tree));
-			ret = False;
+			ret = false;
 			goto done;
 		}
 		talloc_free(fname);
@@ -267,7 +267,7 @@ done:
  * pair in any of the three following notify_changes.
  */
 
-static BOOL check_rename_reply(struct smbcli_state *cli,
+static bool check_rename_reply(struct smbcli_state *cli,
 			       int line,
 			       struct notify_changes *actions,
 			       uint32_t action, const char *name)
@@ -282,22 +282,22 @@ static BOOL check_rename_reply(struct smbcli_state *cli,
 					       cli->transport))) {
 				printf("(%d) name [%s] != %s\n", line,
 				       actions[i].name.s, name);
-				return False;
+				return false;
 			}
-			return True;
+			return true;
 		}
 	}
 
 	printf("(%d) expected action %d, not found\n", line, action);
-	return False;
+	return false;
 }
 
 /* 
    testing of recursive change notify
 */
-static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -333,10 +333,10 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_CREATION;
 	notify.nttrans.in.file.fnum = fnum;
 
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
-	notify.nttrans.in.recursive = False;
+	notify.nttrans.in.recursive = false;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* cancel initial requests so the buffer is setup */
@@ -357,7 +357,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rename(cli->tree, BASEDIR "\\subname2-r", BASEDIR "\\subname3-r");
 
 	notify.nttrans.in.completion_filter = 0;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 	msleep(200);
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
@@ -365,7 +365,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 	smbcli_unlink(cli->tree, BASEDIR "\\subname3-r");
 
-	notify.nttrans.in.recursive = False;
+	notify.nttrans.in.recursive = false;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
@@ -426,9 +426,9 @@ done:
 /* 
    testing of change notify mask change
 */
-static BOOL test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -464,10 +464,10 @@ static BOOL test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_ATTRIBUTES;
 	notify.nttrans.in.file.fnum = fnum;
 
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
-	notify.nttrans.in.recursive = False;
+	notify.nttrans.in.recursive = false;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* cancel initial requests so the buffer is setup */
@@ -479,7 +479,7 @@ static BOOL test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_CANCELLED);
 
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* Set to hidden then back again. */
@@ -499,10 +499,10 @@ static BOOL test_notify_mask_change(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 	 * fnum it seems to be fixed until the fnum is closed. */
 
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_CREATION;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
-	notify.nttrans.in.recursive = False;
+	notify.nttrans.in.recursive = false;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
@@ -544,9 +544,9 @@ done:
 /* 
    testing of mask bits for change notify
 */
-static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -580,7 +580,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
 	notify.nttrans.in.buffer_size = 1000;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 #define NOTIFY_MASK_TEST(setup, op, cleanup, Action, expected, nchanges) \
 	do { for (mask=i=0;i<32;i++) { \
@@ -611,21 +611,21 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			       nchanges, \
 			       notify.nttrans.out.changes[0].action, \
 			       notify.nttrans.in.completion_filter); \
-			ret = False; \
+			ret = false; \
 		} else if (notify.nttrans.out.changes[0].action != Action) { \
 			printf("ERROR: nchanges=%d action=%d expectedAction=%d filter=0x%08x\n", \
 			       notify.nttrans.out.num_changes, \
 			       notify.nttrans.out.changes[0].action, \
 			       Action, \
 			       notify.nttrans.in.completion_filter); \
-			ret = False; \
+			ret = false; \
 		} else if (strcmp(notify.nttrans.out.changes[0].name.s, "tname1") != 0) { \
 			printf("ERROR: nchanges=%d action=%d filter=0x%08x name=%s\n", \
 			       notify.nttrans.out.num_changes, \
 			       notify.nttrans.out.changes[0].action, \
 			       notify.nttrans.in.completion_filter, \
 			       notify.nttrans.out.changes[0].name.s);	\
-			ret = False; \
+			ret = false; \
 		} \
 		mask |= (1<<i); \
 	} \
@@ -633,7 +633,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (((expected) & ~mask) != 0) { \
 			printf("ERROR: trigger on too few bits. mask=0x%08x expected=0x%08x\n", \
 			       mask, expected); \
-			ret = False; \
+			ret = false; \
 		} else { \
 			printf("WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
 			       mask, expected); \
@@ -776,10 +776,10 @@ done:
 /*
   basic testing of change notify on files
 */
-static BOOL test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_open io;
 	union smb_close cl;
 	union smb_notify notify;
@@ -811,7 +811,7 @@ static BOOL test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.file.fnum = fnum;
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_STREAM_NAME;
-	notify.nttrans.in.recursive = False;
+	notify.nttrans.in.recursive = false;
 
 	printf("testing if notifies on file handles are invalid (should be)\n");
 
@@ -836,9 +836,9 @@ done:
 /*
   basic testing of change notifies followed by a tdis
 */
-static BOOL test_notify_tdis(TALLOC_CTX *mem_ctx)
+static bool test_notify_tdis(TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -849,7 +849,7 @@ static BOOL test_notify_tdis(TALLOC_CTX *mem_ctx)
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	/*
@@ -878,7 +878,7 @@ static BOOL test_notify_tdis(TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
@@ -898,9 +898,9 @@ done:
 /*
   basic testing of change notifies followed by a exit
 */
-static BOOL test_notify_exit(TALLOC_CTX *mem_ctx)
+static bool test_notify_exit(TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -911,7 +911,7 @@ static BOOL test_notify_exit(TALLOC_CTX *mem_ctx)
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	/*
@@ -940,7 +940,7 @@ static BOOL test_notify_exit(TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
@@ -959,9 +959,9 @@ done:
 /*
   basic testing of change notifies followed by a ulogoff
 */
-static BOOL test_notify_ulogoff(TALLOC_CTX *mem_ctx)
+static bool test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -972,7 +972,7 @@ static BOOL test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	/*
@@ -1001,7 +1001,7 @@ static BOOL test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
@@ -1027,9 +1027,9 @@ static void tcp_dis_handler(struct smbcli_transport *t, void *p)
 /*
   basic testing of change notifies followed by tcp disconnect
 */
-static BOOL test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
+static bool test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -1040,7 +1040,7 @@ static BOOL test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
 
 	if (!torture_open_connection(&cli, 0)) {
-		return False;
+		return false;
 	}
 
 	/*
@@ -1069,7 +1069,7 @@ static BOOL test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
@@ -1086,9 +1086,9 @@ done:
 /* 
    test setting up two change notify requests on one handle
 */
-static BOOL test_notify_double(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_double(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
@@ -1123,7 +1123,7 @@ static BOOL test_notify_double(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.nttrans.in.file.fnum = fnum;
-	notify.nttrans.in.recursive = True;
+	notify.nttrans.in.recursive = true;
 
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
@@ -1151,45 +1151,45 @@ done:
 /* 
    test multiple change notifies at different depths and with/without recursion
 */
-static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	BOOL ret = True;
+	bool ret = true;
 	union smb_notify notify;
 	union smb_open io;
 	struct smbcli_request *req;
 	struct timeval tv;
 	struct {
 		const char *path;
-		BOOL recursive;
+		bool recursive;
 		uint32_t filter;
 		int expected;
 		int fnum;
 		int counted;
 	} dirs[] = {
-		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 30 },
-		{BASEDIR "\\zqy",               True, FILE_NOTIFY_CHANGE_NAME, 8 },
-		{BASEDIR "\\atsy",              True, FILE_NOTIFY_CHANGE_NAME, 4 },
-		{BASEDIR "\\abc\\foo",          True,  FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\abc\\blah",         True,  FILE_NOTIFY_CHANGE_NAME, 13 },
-		{BASEDIR "\\abc\\blah",         False, FILE_NOTIFY_CHANGE_NAME, 7 },
-		{BASEDIR "\\abc\\blah\\a",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\abc\\blah\\b",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\abc\\blah\\c",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\abc\\fooblah",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\zqy\\xx",           True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\zqy\\yyy",          True, FILE_NOTIFY_CHANGE_NAME, 2 },
-		{BASEDIR "\\zqy\\..",           True, FILE_NOTIFY_CHANGE_NAME, 40 },
-		{BASEDIR,                       True, FILE_NOTIFY_CHANGE_NAME, 40 },
-		{BASEDIR,                       False,FILE_NOTIFY_CHANGE_NAME, 6 },
-		{BASEDIR "\\atsy",              False,FILE_NOTIFY_CHANGE_NAME, 4 },
-		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 24 },
-		{BASEDIR "\\abc",               False,FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
-		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
-		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 24 },
+		{BASEDIR "\\abc",               true, FILE_NOTIFY_CHANGE_NAME, 30 },
+		{BASEDIR "\\zqy",               true, FILE_NOTIFY_CHANGE_NAME, 8 },
+		{BASEDIR "\\atsy",              true, FILE_NOTIFY_CHANGE_NAME, 4 },
+		{BASEDIR "\\abc\\foo",          true,  FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah",         true,  FILE_NOTIFY_CHANGE_NAME, 13 },
+		{BASEDIR "\\abc\\blah",         false, FILE_NOTIFY_CHANGE_NAME, 7 },
+		{BASEDIR "\\abc\\blah\\a",      true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah\\b",      true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah\\c",      true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\fooblah",      true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\xx",           true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\yyy",          true, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\..",           true, FILE_NOTIFY_CHANGE_NAME, 40 },
+		{BASEDIR,                       true, FILE_NOTIFY_CHANGE_NAME, 40 },
+		{BASEDIR,                       false,FILE_NOTIFY_CHANGE_NAME, 6 },
+		{BASEDIR "\\atsy",              false,FILE_NOTIFY_CHANGE_NAME, 4 },
+		{BASEDIR "\\abc",               true, FILE_NOTIFY_CHANGE_NAME, 24 },
+		{BASEDIR "\\abc",               false,FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
+		{BASEDIR "\\abc",               true, FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
+		{BASEDIR "\\abc",               true, FILE_NOTIFY_CHANGE_NAME, 24 },
 	};
 	int i;
 	NTSTATUS status;
-	BOOL all_done = False;
+	bool all_done = false;
 
 	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
 
@@ -1248,11 +1248,11 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			dirs[i].counted += notify.nttrans.out.num_changes;
 		}
 		
-		all_done = True;
+		all_done = true;
 
 		for (i=0;i<ARRAY_SIZE(dirs);i++) {
 			if (dirs[i].counted != dirs[i].expected) {
-				all_done = False;
+				all_done = false;
 			}
 		}
 	} while (!all_done && timeval_elapsed(&tv) < 20);
@@ -1263,7 +1263,7 @@ static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (dirs[i].counted != dirs[i].expected) {
 			printf("ERROR: i=%d expected %d got %d for '%s'\n",
 			       i, dirs[i].expected, dirs[i].counted, dirs[i].path);
-			ret = False;
+			ret = false;
 		}
 	}
 

@@ -33,7 +33,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -41,7 +41,7 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, v, correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -49,15 +49,15 @@
 	if (!field.s || strcmp(field.s, value)) { \
 		printf("(%s) %s [%s] != %s\n", \
 			  __location__, #field, field.s, value); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
 #define FNAME "smb2-notify01.dat"
 
-static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
+static bool test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct smb2_handle dh;
 	struct smb2_notify n;
@@ -188,14 +188,14 @@ done:
 
 /* basic testing of SMB2 notify
 */
-BOOL torture_smb2_notify(struct torture_context *torture)
+bool torture_smb2_notify(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	ret &= test_valid_request(mem_ctx, tree);

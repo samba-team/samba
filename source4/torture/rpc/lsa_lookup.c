@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "libcli/security/security.h"
 
-static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+static bool open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			struct policy_handle **handle)
 {
 	struct lsa_ObjectAttribute attr;
@@ -36,7 +36,7 @@ static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 
 	*handle = talloc(mem_ctx, struct policy_handle);
 	if (!*handle) {
-		return False;
+		return false;
 	}
 
 	qos.len = 0;
@@ -61,7 +61,7 @@ static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	return NT_STATUS_IS_OK(status);
 }
 
-static BOOL get_domainsid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+static bool get_domainsid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			  struct policy_handle *handle,
 			  struct dom_sid **sid)
 {
@@ -72,10 +72,10 @@ static BOOL get_domainsid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	r.in.handle = handle;
 
 	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) return False;
+	if (!NT_STATUS_IS_OK(status)) return false;
 
 	*sid = r.out.info->domain.sid;
-	return True;
+	return true;
 }
 
 static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
@@ -127,7 +127,7 @@ static const char *sid_type_lookup(enum lsa_SidType r)
 	return "Invalid sid type\n";
 }
 
-static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+static bool test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			    struct policy_handle *handle,
 			    struct dom_sid **sids, uint32_t num_sids,
 			    int level, NTSTATUS expected_result, 
@@ -136,7 +136,7 @@ static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	struct lsa_TransNameArray names;
 	NTSTATUS status;
 	uint32_t i;
-	BOOL ret = True;
+	bool ret = true;
 
 	status = lookup_sids(mem_ctx, level, p, handle, sids, num_sids,
 			     &names);
@@ -144,12 +144,12 @@ static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 		printf("For level %d expected %s, got %s\n",
 		       level, nt_errstr(expected_result),
 		       nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK) &&
 	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-		return True;
+		return true;
 	}
 
 	for (i=0; i<num_sids; i++) {
@@ -159,13 +159,13 @@ static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			       dom_sid_string(mem_ctx, sids[i]),
 			       sid_type_lookup(types[i]),
 			       sid_type_lookup(names.names[i].sid_type));
-			ret = False;
+			ret = false;
 		}
 	}
 	return ret;
 }
 
-static BOOL get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe *p,
+static bool get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe *p,
 			       struct policy_handle *handle,
 			       struct dom_sid **sid)
 {
@@ -205,7 +205,7 @@ static BOOL get_downleveltrust(struct torture_context *tctx, struct dcerpc_pipe 
 		if ((q.out.info->info_ex.trust_direction & 2) &&
 		    (q.out.info->info_ex.trust_type == 1)) {
 			*sid = domains.domains[i].sid;
-			return True;
+			return true;
 		}
 	}
 
@@ -218,7 +218,7 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	BOOL ret = True;
+	bool ret = true;
 	struct policy_handle *handle;
 	struct dom_sid *dom_sid;
 	struct dom_sid *trusted_sid;

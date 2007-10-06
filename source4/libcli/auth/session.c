@@ -30,7 +30,7 @@
   as the in blob
 */
 static void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
-		     BOOL forward)
+		     bool forward)
 {
 	int i, k;
 
@@ -84,7 +84,7 @@ DATA_BLOB sess_encrypt_string(const char *str, const DATA_BLOB *session_key)
 	memset(src.data+8, 0,   dlen);
 	memcpy(src.data+8, str, slen);
 
-	sess_crypt_blob(&ret, &src, session_key, True);
+	sess_crypt_blob(&ret, &src, session_key, true);
 	
 	data_blob_free(&src);
 
@@ -112,7 +112,7 @@ char *sess_decrypt_string(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	sess_crypt_blob(&out, blob, session_key, False);
+	sess_crypt_blob(&out, blob, session_key, false);
 
 	if (IVAL(out.data, 4) != 1) {
 		DEBUG(0,("Unexpected revision number %d in session crypted string\n",
@@ -166,7 +166,7 @@ DATA_BLOB sess_encrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob_in, const DATA_
 	memset(src.data+8, 0, dlen);
 	memcpy(src.data+8, blob_in->data, blob_in->length);
 
-	sess_crypt_blob(&ret, &src, session_key, True);
+	sess_crypt_blob(&ret, &src, session_key, true);
 	
 	data_blob_free(&src);
 
@@ -193,7 +193,7 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sess_crypt_blob(&out, blob, session_key, False);
+	sess_crypt_blob(&out, blob, session_key, false);
 
 	if (IVAL(out.data, 4) != 1) {
 		DEBUG(2,("Unexpected revision number %d in session crypted secret (BLOB)\n",

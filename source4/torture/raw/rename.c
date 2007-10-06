@@ -27,7 +27,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -35,7 +35,7 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect %s %d - should be %d\n", \
 		       __location__, #v, (int)v, (int)correct); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define BASEDIR "\\testrename"
@@ -48,7 +48,7 @@ static bool test_mv(struct torture_context *tctx,
 {
 	union smb_rename io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
@@ -59,7 +59,7 @@ static bool test_mv(struct torture_context *tctx,
 	printf("Testing SMBmv\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Trying simple rename\n");
@@ -197,7 +197,7 @@ static bool test_ntrename(struct torture_context *tctx,
 {
 	union smb_rename io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum, i;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
@@ -206,7 +206,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	printf("Testing SMBntrename\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Trying simple rename\n");

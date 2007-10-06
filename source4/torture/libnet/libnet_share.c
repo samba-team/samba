@@ -113,13 +113,13 @@ static void test_displayshares(struct libnet_ListShares s)
 }
 
 
-BOOL torture_listshares(struct torture_context *torture)
+bool torture_listshares(struct torture_context *torture)
 {
 	struct libnet_ListShares share;
 	NTSTATUS  status;
 	uint32_t levels[] = { 0, 1, 2, 501, 502 };
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	struct libnet_context* libnetctx;
 	struct dcerpc_binding *bind;
 	TALLOC_CTX *mem_ctx;
@@ -127,14 +127,14 @@ BOOL torture_listshares(struct torture_context *torture)
 	mem_ctx = talloc_init("test_listshares");
 	status = torture_rpc_binding(torture, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
 		printf("Couldn't allocate libnet context\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -151,7 +151,7 @@ BOOL torture_listshares(struct torture_context *torture)
 		status = libnet_ListShares(libnetctx, mem_ctx, &share);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_ListShare level %u failed - %s\n", share.in.level, share.out.error_string);
-			ret = False;
+			ret = false;
 			goto done;
 		}
 
@@ -165,7 +165,7 @@ done:
 }
 
 
-static BOOL test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, const char *host,
+static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, const char *host,
 			  const char* share)
 {
 	NTSTATUS status;
@@ -187,11 +187,11 @@ static BOOL test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 	status = dcerpc_srvsvc_NetShareAdd(svc_pipe, mem_ctx, &add);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to add a new share\n");
-		return False;
+		return false;
 	}
 
 	printf("share added\n");
-	return True;
+	return true;
 }
 
 
@@ -202,7 +202,7 @@ bool torture_delshare(struct torture_context *torture)
 	struct libnet_context* libnetctx;
 	const char *host;
 	NTSTATUS  status;
-	BOOL ret = True;
+	bool ret = true;
 	struct libnet_DelShare share;
 	
 	host = torture_setting_string(torture, "host", NULL);

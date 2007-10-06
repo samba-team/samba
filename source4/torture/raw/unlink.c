@@ -29,7 +29,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -42,11 +42,11 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_unlink io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("Trying non-existant file\n");
@@ -207,7 +207,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	union smb_unlink io;
 	struct smb_rmdir dio;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum, fnum2;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *dname = BASEDIR "\\test.dir";
@@ -215,7 +215,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	dio.in.path = dname;

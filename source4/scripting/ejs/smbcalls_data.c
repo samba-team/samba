@@ -107,7 +107,7 @@ failed:
 static int ejs_blobCompare(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	DATA_BLOB *blob1, *blob2;
-	BOOL ret = False;
+	bool ret = false;
 
 	if (argc != 2) {
 		ejsSetErrorMsg(eid, "blobCompare invalid arguments");
@@ -118,24 +118,24 @@ static int ejs_blobCompare(MprVarHandle eid, int argc, struct MprVar **argv)
 	blob2 = mprToDataBlob(argv[1]);
 
 	if (blob1 == blob2) {
-		ret = True;
+		ret = true;
 		goto done;
 	}
 	if (blob1 == NULL || blob2 == NULL) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (blob1->length != blob2->length) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
 	if (memcmp(blob1->data, blob2->data, blob1->length) != 0) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
-	ret = True;
+	ret = true;
 
 done:
 	mpr_Return(eid, mprCreateBoolVar(ret));

@@ -662,7 +662,7 @@ static NTSTATUS usermod_change(struct composite_context *c,
 	uint16_t level = 27;
 
 	/* prepare UserInfo level and data based on bitmask field */
-	do_set = usermod_setfields(s, &level, i, False);
+	do_set = usermod_setfields(s, &level, i, false);
 
 	if (level < 1 || level > 26) {
 		/* apparently there's a field that the setfields routine
@@ -752,7 +752,7 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 	   of many) */
 	s->info = *s->queryuser.out.info;
 
-	usermod_setfields(s, &level, i, True);
+	usermod_setfields(s, &level, i, true);
 
 	/* prepare rpc call arguments */
 	s->setuser.in.user_handle  = &s->user_handle;

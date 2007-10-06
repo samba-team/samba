@@ -144,7 +144,7 @@ static bool deltest1(struct torture_context *tctx, struct smbcli_state *cli1, st
 	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s succeeded (should fail)", 
 		       fname));
 
-	return True;
+	return true;
 }
 
 /* Test 2 - this should delete the file on close. */
@@ -163,7 +163,7 @@ static bool deltest2(struct torture_context *tctx, struct smbcli_state *cli1, st
 		talloc_asprintf(tctx, "open of %s failed (%s)", 
 		       fname, smbcli_errstr(cli1->tree)));
 	
-	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, fnum1, True), 
+	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, fnum1, true), 
 		talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 		       smbcli_errstr(cli1->tree)));
 	
@@ -178,7 +178,7 @@ static bool deltest2(struct torture_context *tctx, struct smbcli_state *cli1, st
 		if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 			printf("(%s) close failed (%s)\n", 
 			       __location__, smbcli_errstr(cli1->tree));
-			return False;
+			return false;
 		}
 		smbcli_unlink(cli1->tree, fname);
 	}
@@ -227,7 +227,7 @@ static bool deltest3(struct torture_context *tctx, struct smbcli_state *cli1, st
 		       fname, smbcli_errstr(cli1->tree)));
 
 	torture_assert_ntstatus_ok(tctx, 
-							   smbcli_nt_delete_on_close(cli1->tree, fnum1, True),
+							   smbcli_nt_delete_on_close(cli1->tree, fnum1, true),
 							   talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 		       				   smbcli_errstr(cli1->tree)));
 	
@@ -250,9 +250,9 @@ static bool deltest3(struct torture_context *tctx, struct smbcli_state *cli1, st
 			       __location__, smbcli_errstr(cli1->tree));
 		}
 		smbcli_unlink(cli1->tree, fname);
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /* Test 4 ... */
@@ -260,7 +260,7 @@ static bool deltest4(struct torture_context *tctx, struct smbcli_state *cli1, st
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -292,7 +292,7 @@ static bool deltest4(struct torture_context *tctx, struct smbcli_state *cli1, st
 					smbcli_errstr(cli1->tree)));
 	
 	torture_assert_ntstatus_ok(tctx, 
-				smbcli_nt_delete_on_close(cli1->tree, fnum1, True), 
+				smbcli_nt_delete_on_close(cli1->tree, fnum1, true), 
 		 		talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 		        smbcli_errstr(cli1->tree)));
 
@@ -328,13 +328,13 @@ static bool deltest5(struct torture_context *tctx, struct smbcli_state *cli1, st
 	
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
-	torture_assert(tctx, !NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, True)),
+	torture_assert(tctx, !NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, true)),
 		 "setting delete_on_close on OpenX file succeeded - should fail !");
 
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
 		talloc_asprintf(tctx, "close - 2 failed (%s)", smbcli_errstr(cli1->tree)));
 
-	return True;
+	return true;
 }
 
 /* Test 6 ... */
@@ -358,7 +358,7 @@ static bool deltest6(struct torture_context *tctx, struct smbcli_state *cli1, st
 	/* This should fail - only allowed on NT opens with DELETE access. */
 	
 	torture_assert(tctx, 
-		!NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, True)),
+		!NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, true)),
 		"setting delete_on_close on file with no delete access succeeded - should fail !");
 
 	torture_assert_ntstatus_ok(tctx, 
@@ -366,14 +366,14 @@ static bool deltest6(struct torture_context *tctx, struct smbcli_state *cli1, st
 		talloc_asprintf(tctx, "close - 2 failed (%s)", 
 		       smbcli_errstr(cli1->tree)));
 
-	return True;
+	return true;
 }
 
 /* Test 7 ... */
 static bool deltest7(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
 	int fnum1 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -387,16 +387,16 @@ static bool deltest7(struct torture_context *tctx, struct smbcli_state *cli1, st
 	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open of %s failed (%s)", 
 		       fname, smbcli_errstr(cli1->tree)));
 
-	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, fnum1, True),
+	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, fnum1, true),
 			"setting delete_on_close on file failed !");
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, true, __location__);
 	
 	torture_assert_ntstatus_ok(tctx, 
-					smbcli_nt_delete_on_close(cli1->tree, fnum1, False), 
+					smbcli_nt_delete_on_close(cli1->tree, fnum1, false), 
 		 			"unsetting delete_on_close on file failed !");
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
 	
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1), 
 		talloc_asprintf(tctx, "close - 2 failed (%s)", smbcli_errstr(cli1->tree)));
@@ -419,7 +419,7 @@ static bool deltest8(struct torture_context *tctx, struct smbcli_state *cli1, st
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -447,18 +447,18 @@ static bool deltest8(struct torture_context *tctx, struct smbcli_state *cli1, st
 		       fname, smbcli_errstr(cli1->tree)));
 
 	torture_assert_ntstatus_ok(tctx, 
-					smbcli_nt_delete_on_close(cli1->tree, fnum1, True),
+					smbcli_nt_delete_on_close(cli1->tree, fnum1, true),
 		"setting delete_on_close on file failed !");
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, True, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, true, __location__);
 
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
 		talloc_asprintf(tctx, "close - 1 failed (%s)", 
 		       smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli1, -1, fname, True, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, -1, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, true, __location__);
 	
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli2->tree, fnum2),
 		talloc_asprintf(tctx, "close - 2 failed (%s)", smbcli_errstr(cli2->tree)));
@@ -490,7 +490,7 @@ static bool deltest9(struct torture_context *tctx, struct smbcli_state *cli1, st
 				   talloc_asprintf(tctx, "open of %s succeeded should have failed!", 
 		       fname));
 
-	return True;
+	return true;
 }
 
 /* Test 10 ... */
@@ -544,7 +544,7 @@ static bool deltest11(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open of %s failed (%s)", 
 		       fname, smbcli_errstr(cli1->tree)));
 
-	status = smbcli_nt_delete_on_close(cli1->tree, fnum1, True);
+	status = smbcli_nt_delete_on_close(cli1->tree, fnum1, true);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_CANNOT_DELETE, 
 		talloc_asprintf(tctx, "setting delete_on_close should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)", smbcli_errstr(cli1->tree)));
@@ -553,7 +553,7 @@ static bool deltest11(struct torture_context *tctx, struct smbcli_state *cli1, s
 		talloc_asprintf(tctx, "close failed (%s)", 
 		       smbcli_errstr(cli1->tree)));
 
-	return True;
+	return true;
 }
 
 /* Test 12 ... */
@@ -593,7 +593,7 @@ static bool deltest13(struct torture_context *tctx, struct smbcli_state *cli1, s
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -631,18 +631,18 @@ static bool deltest13(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	torture_assert_ntstatus_ok(tctx, 
 						smbcli_nt_delete_on_close(cli1->tree, fnum1,
-						       True), 
+						       true), 
 		 "setting delete_on_close on file failed !");
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, True, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, true, __location__);
 
 	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli2->tree, fnum2,
-						       False), 
+						       false), 
 		 "setting delete_on_close on file failed !");
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 	
 	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1), 
 		talloc_asprintf(tctx, "close - 1 failed (%s)", 
@@ -684,10 +684,10 @@ static bool deltest14(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, dnum1 != -1, talloc_asprintf(tctx, "open of %s failed: %s!", 
 		       dname, smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, False, __location__);
-	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, dnum1, True),
+	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, false, __location__);
+	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli1->tree, dnum1, true),
 			"setting delete_on_close on file failed !");
-	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, true, __location__);
 	smbcli_close(cli1->tree, dnum1);
 
 	/* Now it should be gone... */
@@ -751,7 +751,7 @@ static bool deltest15(struct torture_context *tctx, struct smbcli_state *cli1, s
 		talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
 		       fname_new, smbcli_errstr(cli1->tree)));
 
-	status = smbcli_nt_delete_on_close(cli2->tree, fnum2, True);
+	status = smbcli_nt_delete_on_close(cli2->tree, fnum2, true);
 
 	torture_assert_ntstatus_ok(tctx, status, 
 		"setting delete_on_close on file failed !");
@@ -761,7 +761,7 @@ static bool deltest15(struct torture_context *tctx, struct smbcli_state *cli1, s
 	/* The file should be around under the new name, there's a second
 	 * handle open */
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname_new, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname_new, true, __location__);
 
 	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
 				      SEC_GENERIC_ALL,
@@ -775,7 +775,7 @@ static bool deltest15(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
 		       fname, smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 
 	smbcli_close(cli2->tree, fnum2);
 	smbcli_close(cli1->tree, fnum1);
@@ -840,11 +840,11 @@ static bool deltest16(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert (tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", fname, smbcli_errstr(cli1->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, -1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, -1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, -1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, false, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
@@ -860,15 +860,15 @@ static bool deltest16(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
 		      fname, smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli1, -1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, -1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, -1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, True, __location__);
-	correct &= check_delete_on_close(tctx, cli2, -1, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, true, __location__);
 
 	smbcli_close(cli2->tree, fnum2);
 
@@ -885,7 +885,7 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -926,7 +926,7 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 		       fname, smbcli_errstr(cli1->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
@@ -944,12 +944,12 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 		       fname, smbcli_errstr(cli1->tree)));
 
 	/* still not reported as being set on either */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
@@ -966,7 +966,7 @@ static bool deltest18(struct torture_context *tctx, struct smbcli_state *cli1, s
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -994,7 +994,7 @@ static bool deltest18(struct torture_context *tctx, struct smbcli_state *cli1, s
 		       dname, smbcli_errstr(cli1->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, false, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, dname, 0, 
@@ -1011,12 +1011,12 @@ static bool deltest18(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
 		       dname, smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, true, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
@@ -1040,7 +1040,7 @@ static bool deltest19(struct torture_context *tctx, struct smbcli_state *cli1, s
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -1082,7 +1082,7 @@ static bool deltest19(struct torture_context *tctx, struct smbcli_state *cli1, s
 		talloc_asprintf(tctx, "open - 1 of %s failed (%s)", fname, smbcli_errstr(cli1->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, false, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, dname, 0, 
@@ -1100,7 +1100,7 @@ static bool deltest19(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, dname, true, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
@@ -1127,15 +1127,15 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 {
 	int fnum1 = -1;
 	int dnum1 = -1;
-	bool correct = True;
+	bool correct = true;
 	NTSTATUS status;
 
 	del_clean_area(cli1, cli2);
 
 	/* Test 20 -- non-empty directory hardest to get right... */
 
-	if (torture_setting_bool(tctx, "samba3", False)) {
-		return True;
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		return true;
 	}
 
 	smbcli_deltree(cli1->tree, dname);
@@ -1153,8 +1153,8 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, dnum1 != -1, talloc_asprintf(tctx, "open of %s failed: %s!", 
 		       dname, smbcli_errstr(cli1->tree)));
 
-	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, False, __location__);
-	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
+	correct &= check_delete_on_close(tctx, cli1, dnum1, dname, false, __location__);
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, true);
 
 	{
 		char *fullname;
@@ -1172,7 +1172,7 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 					"smbcli_open failed");
 	}
 
-	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, False);
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, false);
 	torture_assert_ntstatus_ok(tctx, status, 
 					"setting delete_on_close on file failed !");
 		
@@ -1187,7 +1187,7 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 		smbcli_close(cli1->tree, fnum1);
 	}
 
-	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, true);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_DIRECTORY_NOT_EMPTY,
 		 "setting delete_on_close failed");
@@ -1201,7 +1201,7 @@ static bool deltest20a(struct torture_context *tctx, struct smbcli_state *cli1, 
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -1239,12 +1239,12 @@ static bool deltest20a(struct torture_context *tctx, struct smbcli_state *cli1, 
 		       fname, smbcli_errstr(cli2->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 
 	smbcli_close(cli2->tree, fnum2);
 
@@ -1267,7 +1267,7 @@ static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, 
 {
 	int fnum1 = -1;
 	int fnum2 = -1;
-	bool correct = True;
+	bool correct = true;
 
 	del_clean_area(cli1, cli2);
 
@@ -1322,12 +1322,12 @@ static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, 
 		       fname, smbcli_errstr(cli2->tree)));
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, False, __location__);
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
 
 	/* Rename the file by handle. */
 
@@ -1349,7 +1349,7 @@ static bool deltest20b(struct torture_context *tctx, struct smbcli_state *cli1, 
 			fname, fname_new, smbcli_errstr(cli2->tree)));
 	}
 
-	correct &= check_delete_on_close(tctx, cli2, fnum2, fname_new, False, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname_new, false, __location__);
 
 	smbcli_close(cli2->tree, fnum2);
 
@@ -1371,13 +1371,13 @@ static bool deltest21(struct torture_context *tctx)
 	int fnum1 = -1;
 	struct smbcli_state *cli1;
 	struct smbcli_state *cli2;
-	bool correct = True;
+	bool correct = true;
 
 	if (!torture_open_connection(&cli1, 0))
-		return False;
+		return false;
 
 	if (!torture_open_connection(&cli2, 1))
-		return False;
+		return false;
 
 	del_clean_area(cli1, cli2);
 
@@ -1392,12 +1392,12 @@ static bool deltest21(struct torture_context *tctx)
 		       fname, smbcli_errstr(cli1->tree)));
 	
 	torture_assert_ntstatus_ok(tctx, 
-				smbcli_nt_delete_on_close(cli1->tree, fnum1, True),
+				smbcli_nt_delete_on_close(cli1->tree, fnum1, true),
 				talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 		       smbcli_errstr(cli1->tree)));
 	
 	/* Ensure delete on close is set. */
-	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, True, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, true, __location__);
 
 	/* Now yank the rug from under cli1. */
 	smbcli_transport_dead(cli1->transport, NT_STATUS_LOCAL_DISCONNECT);
@@ -1405,7 +1405,7 @@ static bool deltest21(struct torture_context *tctx)
 	fnum1 = -1;
 
 	if (!torture_open_connection(&cli1, 0)) {
-		return False;
+		return false;
 	}
 
 	/* On slow build farm machines it might happen that they are not fast
@@ -1438,10 +1438,10 @@ static bool deltest22(struct torture_context *tctx)
 	int dnum1 = -1;
 	int dnum2 = -1;
 	struct smbcli_state *cli1;
-	bool correct = True;
+	bool correct = true;
 
 	if (!torture_open_connection(&cli1, 0))
-		return False;
+		return false;
 
 	smbcli_deltree(cli1->tree, dname);
 
@@ -1480,7 +1480,7 @@ static bool deltest22(struct torture_context *tctx)
 				       dname, smbcli_errstr(cli1->tree)));
 
 	torture_assert_ntstatus_ok(
-		tctx, smbcli_nt_delete_on_close(cli1->tree, dnum1, True), 
+		tctx, smbcli_nt_delete_on_close(cli1->tree, dnum1, true), 
 		talloc_asprintf(tctx, "setting delete_on_close failed (%s)", 
 				smbcli_errstr(cli1->tree)));
 

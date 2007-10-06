@@ -52,7 +52,7 @@
 struct odb_context {
 	struct tdb_wrap *w;
 	struct ntvfs_context *ntvfs_ctx;
-	BOOL oplocks;
+	bool oplocks;
 };
 
 /*
@@ -266,7 +266,7 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
 */
 static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 				  uint32_t stream_id, uint32_t share_access, 
-				  uint32_t access_mask, BOOL delete_on_close,
+				  uint32_t access_mask, bool delete_on_close,
 				  const char *path, 
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
@@ -276,7 +276,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	struct opendb_file file;
 	NTSTATUS status;
 
-	if (odb->oplocks == False) {
+	if (odb->oplocks == false) {
 		oplock_level = OPLOCK_NONE;
 	}
 
@@ -407,7 +407,7 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
 		if (file_handle == file.entries[i].file_handle &&
 		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
 			if (file.entries[i].delete_on_close) {
-				file.delete_on_close = True;
+				file.delete_on_close = true;
 			}
 			if (i < file.num_entries-1) {
 				memmove(file.entries+i, file.entries+i+1, 
@@ -494,7 +494,7 @@ static NTSTATUS odb_tdb_rename(struct odb_lock *lck, const char *path)
 /*
   update delete on close flag on an open file
 */
-static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
+static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
 {
 	NTSTATUS status;
 	struct opendb_file file;
@@ -512,7 +512,7 @@ static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_cl
   people still have the file open
 */
 static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb, 
-					    DATA_BLOB *key, BOOL *del_on_close, 
+					    DATA_BLOB *key, bool *del_on_close, 
 					    int *open_count, char **path)
 {
 	NTSTATUS status;
@@ -525,7 +525,7 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		talloc_free(lck);
-		(*del_on_close) = False;
+		(*del_on_close) = false;
 		return NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
@@ -541,7 +541,7 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
 		*path = talloc_strdup(odb, file.path);
 		NT_STATUS_HAVE_NO_MEMORY(*path);
 		if (file.num_entries == 1 && file.entries[0].delete_on_close) {
-			(*del_on_close) = True;
+			(*del_on_close) = true;
 		}
 	}
 

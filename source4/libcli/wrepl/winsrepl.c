@@ -37,7 +37,7 @@ static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, N
 */
 static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status)
 {
-	wrepl_socket->dead = True;
+	wrepl_socket->dead = true;
 
 	if (wrepl_socket->packet) {
 		packet_recv_disable(wrepl_socket->packet);
@@ -148,7 +148,7 @@ static void wrepl_error(void *private, NTSTATUS status)
 static int wrepl_socket_destructor(struct wrepl_socket *sock)
 {
 	if (sock->dead) {
-		sock->free_skipped = True;
+		sock->free_skipped = true;
 		return -1;
 	}
 	wrepl_socket_dead(sock, NT_STATUS_LOCAL_DISCONNECT);
@@ -387,7 +387,7 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 /*
   trigger an immediate event on a wrepl_request
   the return value should only be used in wrepl_request_send()
-  this is the only place where req->trigger is True
+  this is the only place where req->trigger is true
 */
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status)
 {
@@ -406,7 +406,7 @@ static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, N
 	req->status	= status;
 
 	if (req->trigger) {
-		req->trigger = False;
+		req->trigger = false;
 		/* a zero timeout means immediate */
 		te = event_add_timed(req->wrepl_socket->event.ctx,
 				     req, timeval_zero(),
@@ -448,7 +448,7 @@ static int wrepl_send_ctrl_destructor(struct wrepl_send_ctrl_state *s)
 	/* here, we need to make sure the async request handler is called
 	 * later in the next event_loop and now now
 	 */
-	req->trigger = True;
+	req->trigger = true;
 	wrepl_request_finished(req, NT_STATUS_OK);
 
 	if (s->ctrl.disconnect_after_send) {
@@ -473,7 +473,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	if (!req) return NULL;
 	req->wrepl_socket = wrepl_socket;
 	req->state        = WREPL_REQUEST_RECV;
-	req->trigger      = True;
+	req->trigger      = true;
 
 	DLIST_ADD_END(wrepl_socket->recv_queue, req, struct wrepl_request *);
 	talloc_set_destructor(req, wrepl_request_destructor);
@@ -516,7 +516,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 		return wrepl_request_finished(req, req->status);
 	}
 
-	req->trigger = False;
+	req->trigger = false;
 	return req;
 }
 
@@ -638,8 +638,8 @@ struct wrepl_request *wrepl_associate_stop_send(struct wrepl_socket *wrepl_socke
 
 	ZERO_STRUCT(ctrl);
 	if (io->in.reason == 0) {
-		ctrl.send_only			= True;
-		ctrl.disconnect_after_send	= True;
+		ctrl.send_only			= true;
+		ctrl.disconnect_after_send	= true;
 	}
 
 	req = wrepl_request_send(wrepl_socket, packet, &ctrl);

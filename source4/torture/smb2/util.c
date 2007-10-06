@@ -94,7 +94,7 @@ NTSTATUS smb2_util_write(struct smb2_tree *tree,
   create a complex file/dir using the SMB2 protocol
 */
 static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname, 
-					 struct smb2_handle *handle, BOOL dir)
+					 struct smb2_handle *handle, bool dir)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	char buf[7] = "abc";
@@ -199,7 +199,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, 
 					 struct smb2_handle *handle)
 {
-	return smb2_create_complex(tree, fname, handle, False);
+	return smb2_create_complex(tree, fname, handle, false);
 }
 
 /*
@@ -208,7 +208,7 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname,
 NTSTATUS smb2_create_complex_dir(struct smb2_tree *tree, const char *fname, 
 				 struct smb2_handle *handle)
 {
-	return smb2_create_complex(tree, fname, handle, True);
+	return smb2_create_complex(tree, fname, handle, true);
 }
 
 /*
@@ -302,7 +302,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 /*
   open a smb2 connection
 */
-BOOL torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
+bool torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
 {
 	NTSTATUS status;
 	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
@@ -314,9 +314,9 @@ BOOL torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
 		       host, share, nt_errstr(status));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 

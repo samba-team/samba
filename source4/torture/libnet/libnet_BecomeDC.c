@@ -712,9 +712,9 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	return NT_STATUS_OK;
 }
 
-BOOL torture_net_become_dc(struct torture_context *torture)
+bool torture_net_become_dc(struct torture_context *torture)
 {
-	BOOL ret = True;
+	bool ret = true;
 	NTSTATUS status;
 	struct libnet_BecomeDC b;
 	struct libnet_UnbecomeDC u;
@@ -724,7 +724,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	uint32_t i;
 
 	s = talloc_zero(torture, struct test_become_dc_state);
-	if (!s) return False;
+	if (!s) return false;
 
 	s->netbios_name = lp_parm_string(global_loadparm, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
@@ -751,7 +751,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	if (!s->tj) {
 		DEBUG(0, ("%s failed to join domain as workstation\n",
 			  s->netbios_name));
-		return False;
+		return false;
 	}
 
 	s->ctx = libnet_context_init(torture->ev);
@@ -776,27 +776,27 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	status = libnet_BecomeDC(s->ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 
 	msg = ldb_msg_new(s);
 	if (!msg) {
 		printf("ldb_msg_new() failed\n");
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 	msg->dn = ldb_dn_new(msg, s->ldb, "cn=ROOTDSE");
 	if (!msg->dn) {
 		printf("ldb_msg_new(cn=ROOTDSE) failed\n");
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 
 	ldb_ret = ldb_msg_add_string(msg, "isSynchronized", "TRUE");
 	if (ldb_ret != LDB_SUCCESS) {
 		printf("ldb_msg_add_string(msg, isSynchronized, TRUE) failed: %d\n", ldb_ret);
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 
@@ -808,7 +808,7 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	ldb_ret = ldb_modify(s->ldb, msg);
 	if (ldb_ret != LDB_SUCCESS) {
 		printf("ldb_modify() failed: %d\n", ldb_ret);
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 	
@@ -823,14 +823,14 @@ BOOL torture_net_become_dc(struct torture_context *torture)
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
 			s->path.samdb_ldb));
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 
 	s->schema = dsdb_get_schema(s->ldb);
 	if (!s->schema) {
 		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
-		ret = False;
+		ret = false;
 		goto cleanup;
 	}
 
@@ -849,7 +849,7 @@ cleanup:
 	status = libnet_UnbecomeDC(s->ctx, s, &u);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_UnbecomeDC() failed - %s\n", nt_errstr(status));
-		ret = False;
+		ret = false;
 	}
 
 	/* Leave domain. */                          

@@ -27,37 +27,37 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
-static BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
+static bool test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	status = torture_ldap_bind(conn, userdn, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 	}
 
 	return ret;
 }
 
-static BOOL test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
+static bool test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 
 	printf("Testing sasl bind as user\n");
 
 	status = torture_ldap_bind_sasl(conn, creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 	}
 
 	return ret;
 }
 
-static BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
+static bool test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	printf("Testing multiple binds on a single connnection as anonymous and user\n");
 
@@ -75,9 +75,9 @@ static BOOL test_multibind(struct ldap_connection *conn, const char *userdn, con
 	return ret;
 }
 
-static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
+static bool test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 {
-	BOOL ret = True;
+	bool ret = true;
 	struct ldap_message *msg, *result;
 	struct ldap_request *req;
 	int i;
@@ -90,7 +90,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 
 	msg = new_ldap_message(conn);
 	if (!msg) {
-		return False;
+		return false;
 	}
 
 	msg->type = LDAP_TAG_SearchRequest;
@@ -99,7 +99,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
-	msg->r.SearchRequest.attributesonly = False;
+	msg->r.SearchRequest.attributesonly = false;
 	msg->r.SearchRequest.tree = ldb_parse_tree(msg, "(objectclass=*)");
 	msg->r.SearchRequest.num_attributes = 0;
 	msg->r.SearchRequest.attributes = NULL;
@@ -107,13 +107,13 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	req = ldap_request_send(conn, msg);
 	if (req == NULL) {
 		printf("Could not setup ldap search\n");
-		return False;
+		return false;
 	}
 
 	status = ldap_result_one(req, &result, LDAP_TAG_SearchResultEntry);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("search failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	printf("received %d replies\n", req->num_replies);
@@ -142,7 +142,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	return ret;
 }
 
-static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
+static bool test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 {
 	struct ldap_message *msg, *rep;
 	struct ldap_request *req;
@@ -152,12 +152,12 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 	printf("Testing SASL Compare: %s\n", basedn);
 
 	if (!basedn) {
-		return False;
+		return false;
 	}
 
 	msg = new_ldap_message(conn);
 	if (!msg) {
-		return False;
+		return false;
 	}
 
 	msg->type = LDAP_TAG_CompareRequest;
@@ -168,13 +168,13 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 
 	req = ldap_request_send(conn, msg);
 	if (!req) {
-		return False;
+		return false;
 	}
 
 	status = ldap_result_one(req, &rep, LDAP_TAG_CompareResponse);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("error in ldap compare request - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	DEBUG(5,("Code: %d DN: [%s] ERROR:[%s] REFERRAL:[%s]\n",
@@ -183,16 +183,16 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 		rep->r.CompareResponse.errormessage,
 		rep->r.CompareResponse.referral));
 
-	return True;
+	return true;
 }
 
 
-BOOL torture_ldap_basic(struct torture_context *torture)
+bool torture_ldap_basic(struct torture_context *torture)
 {
         NTSTATUS status;
         struct ldap_connection *conn;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	bool ret = true;
 	const char *host = torture_setting_string(torture, "host", NULL);
 	const char *userdn = torture_setting_string(torture, "ldap_userdn", NULL);
 	const char *secret = torture_setting_string(torture, "ldap_secret", NULL);
@@ -205,25 +205,25 @@ BOOL torture_ldap_basic(struct torture_context *torture)
 
 	status = torture_ldap_connection(mem_ctx, &conn, url);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	if (!test_search_rootDSE(conn, &basedn)) {
-		ret = False;
+		ret = false;
 	}
 
 	/* other basic tests here */
 
 	if (!test_multibind(conn, userdn, secret)) {
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_bind_sasl(conn, cmdline_credentials)) {
-		ret = False;
+		ret = false;
 	}
 
 	if (!test_compare_sasl(conn, basedn)) {
-		ret = False;
+		ret = false;
 	}
 
 	/* no more test we are closing */

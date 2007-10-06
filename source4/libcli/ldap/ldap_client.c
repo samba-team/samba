@@ -226,7 +226,7 @@ static void ldap_io_handler(struct event_context *ev, struct fd_event *fde,
   parse a ldap URL
 */
 static NTSTATUS ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
-				     char **host, uint16_t *port, BOOL *ldaps)
+				     char **host, uint16_t *port, bool *ldaps)
 {
 	int tmp_port = 0;
 	char protocol[11];
@@ -243,10 +243,10 @@ static NTSTATUS ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 
 	if (strequal(protocol, "ldap")) {
 		*port = 389;
-		*ldaps = False;
+		*ldaps = false;
 	} else if (strequal(protocol, "ldaps")) {
 		*port = 636;
-		*ldaps = True;
+		*ldaps = true;
 	} else {
 		DEBUG(0, ("unrecognised ldap protocol (%s)!\n", protocol));
 		return NT_STATUS_PROTOCOL_UNREACHABLE;

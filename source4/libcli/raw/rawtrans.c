@@ -27,13 +27,13 @@
 /*
   check out of bounds for incoming data
 */
-static BOOL raw_trans_oob(struct smbcli_request *req,
+static bool raw_trans_oob(struct smbcli_request *req,
 			  uint_t offset, uint_t count)
 {
 	uint8_t *ptr;
 
 	if (count == 0) {
-		return False;
+		return false;
 	}
 
 	ptr = req->in.hdr + offset;
@@ -43,9 +43,9 @@ static BOOL raw_trans_oob(struct smbcli_request *req,
 	    ptr >= req->in.data + req->in.data_size ||
 	    count > req->in.data_size ||
 	    ptr + count > req->in.data + req->in.data_size) {
-		return True;
+		return true;
 	}
-	return False;	
+	return false;	
 }
 
 /****************************************************************************

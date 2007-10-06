@@ -30,7 +30,7 @@ struct smb2_request *smb2_flush_send(struct smb2_tree *tree, struct smb2_flush *
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_FLUSH, 0x18, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_FLUSH, 0x18, false, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0); /* pad? */
@@ -53,7 +53,7 @@ NTSTATUS smb2_flush_recv(struct smb2_request *req, struct smb2_flush *io)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x04, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
 
 	return smb2_request_destroy(req);
 }

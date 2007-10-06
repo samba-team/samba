@@ -159,7 +159,7 @@ static const char *cache_lookup(struct pvfs_mangle_context *ctx, uint32_t hash)
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
  */
-static BOOL is_mangled_component(struct pvfs_mangle_context *ctx,
+static bool is_mangled_component(struct pvfs_mangle_context *ctx,
 				 const char *name, size_t len)
 {
 	unsigned int i;
@@ -168,19 +168,19 @@ static BOOL is_mangled_component(struct pvfs_mangle_context *ctx,
 
 	/* check the length */
 	if (len > 12 || len < 8)
-		return False;
+		return false;
 
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~')
-		return False;
+		return false;
 
 	/* check extension */
 	if (len > 8) {
 		if (name[8] != '.')
-			return False;
+			return false;
 		for (i=9; name[i] && i < len; i++) {
 			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
-				return False;
+				return false;
 			}
 		}
 	}
@@ -188,23 +188,23 @@ static BOOL is_mangled_component(struct pvfs_mangle_context *ctx,
 	/* check lead characters */
 	for (i=0;i<ctx->mangle_prefix;i++) {
 		if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
-			return False;
+			return false;
 		}
 	}
 	
 	/* check rest of hash */
 	if (! FLAG_CHECK(name[7], FLAG_BASECHAR)) {
-		return False;
+		return false;
 	}
 	for (i=ctx->mangle_prefix;i<6;i++) {
 		if (! FLAG_CHECK(name[i], FLAG_BASECHAR)) {
-			return False;
+			return false;
 		}
 	}
 
 	M_DEBUG(10,("is_mangled_component %s (len %u) -> yes\n", name, (unsigned int)len));
 
-	return True;
+	return true;
 }
 
 
@@ -220,7 +220,7 @@ static BOOL is_mangled_component(struct pvfs_mangle_context *ctx,
    directory separators. It should return true if any component is
    mangled
  */
-static BOOL is_mangled(struct pvfs_mangle_context *ctx, const char *name)
+static bool is_mangled(struct pvfs_mangle_context *ctx, const char *name)
 {
 	const char *p;
 	const char *s;
@@ -229,7 +229,7 @@ static BOOL is_mangled(struct pvfs_mangle_context *ctx, const char *name)
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
 		if (is_mangled_component(ctx, s, PTR_DIFF(p, s))) {
-			return True;
+			return true;
 		}
 	}
 	
@@ -245,8 +245,8 @@ static BOOL is_mangled(struct pvfs_mangle_context *ctx, const char *name)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(struct pvfs_mangle_context *ctx,
-		   const char *name, BOOL check_case, BOOL allow_wildcards)
+static bool is_8_3(struct pvfs_mangle_context *ctx,
+		   const char *name, bool check_case, bool allow_wildcards)
 {
 	int len, i;
 	char *dot_p;
@@ -254,7 +254,7 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 	/* as a special case, the names '.' and '..' are allowable 8.3 names */
 	if (name[0] == '.') {
 		if (!name[1] || (name[1] == '.' && !name[2])) {
-			return True;
+			return true;
 		}
 	}
 
@@ -265,7 +265,7 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 	 only be slower, it would be incorrect */
 	len = strlen(name);
 	if (len > 12)
-		return False;
+		return false;
 
 	/* find the '.'. Note that once again we use the non-multibyte
            function */
@@ -275,7 +275,7 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 		/* if the name doesn't contain a '.' then its length
                    must be less than 8 */
 		if (len > 8) {
-			return False;
+			return false;
 		}
 	} else {
 		int prefix_len, suffix_len;
@@ -286,12 +286,12 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 		suffix_len = len - (prefix_len+1);
 
 		if (prefix_len > 8 || suffix_len > 3 || suffix_len == 0) {
-			return False;
+			return false;
 		}
 
 		/* a 8.3 name cannot contain more than 1 '.' */
 		if (strchr(dot_p+1, '.')) {
-			return False;
+			return false;
 		}
 	}
 
@@ -300,12 +300,12 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 		/* note that we may allow wildcard petterns! */
 		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && 
 		    name[i] != '.') {
-			return False;
+			return false;
 		}
 	}
 
 	/* it is a good 8.3 name */
-	return True;
+	return true;
 }
 
 
@@ -361,7 +361,7 @@ static char *check_cache(struct pvfs_mangle_context *ctx,
 /*
   look for a DOS reserved name
 */
-static BOOL is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
+static bool is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
 {
 	if (FLAG_CHECK(name[0], FLAG_POSSIBLE1) &&
 	    FLAG_CHECK(name[1], FLAG_POSSIBLE2) &&
@@ -371,12 +371,12 @@ static BOOL is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
 		int i;
 		for (i=0; reserved_names[i]; i++) {
 			if (strcasecmp(name, reserved_names[i]) == 0) {
-				return True;
+				return true;
 			}
 		}
 	}
 
-	return False;
+	return false;
 }
 
 
@@ -384,13 +384,13 @@ static BOOL is_reserved_name(struct pvfs_mangle_context *ctx, const char *name)
  See if a filename is a legal long filename.
  A filename ending in a '.' is not legal unless it's "." or "..". JRA.
 */
-static BOOL is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
+static bool is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 {
 	while (*name) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(name, &c_size);
 		if (c == INVALID_CODEPOINT) {
-			return False;
+			return false;
 		}
 		/* all high chars are OK */
 		if (c >= 128) {
@@ -398,12 +398,12 @@ static BOOL is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 			continue;
 		}
 		if (FLAG_CHECK(c, FLAG_ILLEGAL)) {
-			return False;
+			return false;
 		}
 		name += c_size;
 	}
 
-	return True;
+	return true;
 }
 
 /*
@@ -418,7 +418,7 @@ static BOOL is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
   return NULL if we don't need to do any conversion
 */
 static char *name_map(struct pvfs_mangle_context *ctx,
-		      const char *name, BOOL need83, BOOL cache83)
+		      const char *name, bool need83, bool cache83)
 {
 	char *dot_p;
 	char lead_chars[7];
@@ -433,7 +433,7 @@ static char *name_map(struct pvfs_mangle_context *ctx,
 	if (!is_reserved_name(ctx, name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(ctx, name, False, False)) {
+		if (is_8_3(ctx, name, false, false)) {
 			return NULL;
 		}
 
@@ -646,7 +646,7 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 */
 char *pvfs_short_name_component(struct pvfs_state *pvfs, const char *name)
 {
-	return name_map(pvfs->mangle_ctx, name, True, True);
+	return name_map(pvfs->mangle_ctx, name, true, true);
 }
 
 
@@ -679,7 +679,7 @@ char *pvfs_mangled_lookup(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 /*
   look for a DOS reserved name
 */
-BOOL pvfs_is_reserved_name(struct pvfs_state *pvfs, const char *name)
+bool pvfs_is_reserved_name(struct pvfs_state *pvfs, const char *name)
 {
 	return is_reserved_name(pvfs->mangle_ctx, name);
 }
@@ -689,7 +689,7 @@ BOOL pvfs_is_reserved_name(struct pvfs_state *pvfs, const char *name)
   see if a component of a filename could be a mangled name from our
   mangling code
 */
-BOOL pvfs_is_mangled_component(struct pvfs_state *pvfs, const char *name)
+bool pvfs_is_mangled_component(struct pvfs_state *pvfs, const char *name)
 {
 	return is_mangled_component(pvfs->mangle_ctx, name, strlen(name));
 }

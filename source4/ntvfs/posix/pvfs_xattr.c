@@ -158,9 +158,9 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 	struct xattr_DosInfo2 *info2;
 
 	if (name->stream_name != NULL) {
-		name->stream_exists = False;
+		name->stream_exists = false;
 	} else {
-		name->stream_exists = True;
+		name->stream_exists = true;
 	}
 
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {

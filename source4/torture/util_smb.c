@@ -43,9 +43,9 @@ _PUBLIC_ bool torture_setup_dir(struct smbcli_state *cli, const char *dname)
 	if (smbcli_deltree(cli->tree, dname) == -1 ||
 	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
 		printf("Unable to setup %s - %s\n", dname, smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 /*
@@ -287,13 +287,13 @@ bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_transp
 {
 	bool server_unicode;
 	int len;
-	if (!str || !str->s) return True;
+	if (!str || !str->s) return true;
 	len = strlen(str->s);
 	if (flags & STR_TERMINATE) len++;
 
-	server_unicode = (transport->negotiate.capabilities&CAP_UNICODE)?True:False;
+	server_unicode = (transport->negotiate.capabilities&CAP_UNICODE)?true:false;
 	if (getenv("CLI_FORCE_ASCII") || !lp_unicode(global_loadparm)) {
-		server_unicode = False;
+		server_unicode = false;
 	}
 
 	if ((flags & STR_UNICODE) || server_unicode) {
@@ -304,9 +304,9 @@ bool wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_transp
 	if (str->private_length != len) {
 		printf("Expected wire_length %d but got %d for '%s'\n", 
 		       len, str->private_length, str->s);
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*
@@ -385,7 +385,7 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = FSCTL_SET_SPARSE;
 	nt.ntioctl.in.file.fnum = fnum;
-	nt.ntioctl.in.fsctl = True;
+	nt.ntioctl.in.fsctl = true;
 	nt.ntioctl.in.filter = 0;
 	nt.ntioctl.in.max_data = 0;
 	nt.ntioctl.in.blob = data_blob(NULL, 0);
@@ -476,7 +476,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					cmdline_credentials, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	(*c)->transport->options.use_oplocks = lp_parm_bool(global_loadparm, NULL, "torture", 
@@ -484,7 +484,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	(*c)->transport->options.use_level2_oplocks = lp_parm_bool(global_loadparm, NULL, "torture", 
 												"use_level2_oplocks", false);
 
-	return True;
+	return true;
 }
 
 _PUBLIC_ bool torture_get_conn_index(int conn_index,
@@ -500,24 +500,24 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 	
 	p = lp_parm_string(global_loadparm, NULL, "torture", "unclist");
 	if (!p) {
-		return True;
+		return true;
 	}
 
 	unc_list = file_lines_load(p, &num_unc_names, NULL);
 	if (!unc_list || num_unc_names <= 0) {
 		DEBUG(0,("Failed to load unc names list from '%s'\n", p));
-		return False;
+		return false;
 	}
 
 	if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
 			      mem_ctx, host, share)) {
 		DEBUG(0, ("Failed to parse UNC name %s\n",
 			  unc_list[conn_index % num_unc_names]));
-		return False;
+		return false;
 	}
 
 	talloc_free(unc_list);
-	return True;
+	return true;
 }
 
 
@@ -530,7 +530,7 @@ _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 	bool ret;
 
 	if (!torture_get_conn_index(conn_index, ev, &host, &share)) {
-		return False;
+		return false;
 	}
 
 	ret = torture_open_connection_share(NULL, c, host, share, ev);
@@ -550,11 +550,11 @@ _PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
 
 _PUBLIC_ bool torture_close_connection(struct smbcli_state *c)
 {
-	bool ret = True;
-	if (!c) return True;
+	bool ret = true;
+	if (!c) return true;
 	if (NT_STATUS_IS_ERR(smbcli_tdis(c))) {
 		printf("tdis failed (%s)\n", smbcli_errstr(c->tree));
-		ret = False;
+		ret = false;
 	}
 	talloc_free(c);
 	return ret;
@@ -577,17 +577,17 @@ _PUBLIC_ bool check_error(const char *location, struct smbcli_state *c,
                         printf(" expected %s or %s (at %s)\n", 
 			       nt_errstr(NT_STATUS_DOS(eclass, ecode)), 
                                nt_errstr(nterr), location);
-                        return False;
+                        return false;
                 }
         } else {
                 if (!NT_STATUS_EQUAL(nterr, status)) {
                         printf("unexpected error code %s\n", nt_errstr(status));
                         printf(" expected %s (at %s)\n", nt_errstr(nterr), location);
-                        return False;
+                        return false;
                 }
         }
 
-	return True;
+	return true;
 }
 
 static struct smbcli_state *current_cli;
@@ -609,7 +609,7 @@ double torture_create_procs(struct torture_context *tctx,
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
 	struct timeval tv;
 
-	*result = True;
+	*result = true;
 
 	synccount = 0;
 
@@ -629,7 +629,7 @@ double torture_create_procs(struct torture_context *tctx,
 
 	for (i = 0; i < torture_nprocs; i++) {
 		child_status[i] = 0;
-		child_status_out[i] = True;
+		child_status_out[i] = true;
 	}
 
 	tv = timeval_current();
@@ -684,7 +684,7 @@ double torture_create_procs(struct torture_context *tctx,
 
 	if (synccount != torture_nprocs) {
 		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
-		*result = False;
+		*result = false;
 		return timeval_elapsed(&tv);
 	}
 
@@ -704,7 +704,7 @@ double torture_create_procs(struct torture_context *tctx,
 		int ret;
 		while ((ret=waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
 		if (ret == -1 || WEXITSTATUS(status) != 0) {
-			*result = False;
+			*result = false;
 		}
 	}
 
@@ -712,7 +712,7 @@ double torture_create_procs(struct torture_context *tctx,
 	
 	for (i=0;i<torture_nprocs;i++) {
 		if (!child_status_out[i]) {
-			*result = False;
+			*result = false;
 		}
 	}
 	return timeval_elapsed(&tv);

@@ -39,7 +39,7 @@ _PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 	nt.ntioctl.level        = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function  = FSCTL_GET_SHADOW_COPY_DATA;
 	nt.ntioctl.in.file.fnum = info->in.file.fnum;
-	nt.ntioctl.in.fsctl     = True;
+	nt.ntioctl.in.fsctl     = true;
 	nt.ntioctl.in.filter    = 0;
 	nt.ntioctl.in.max_data  = info->in.max_data;
 	nt.ntioctl.in.blob      = data_blob(NULL, 0);

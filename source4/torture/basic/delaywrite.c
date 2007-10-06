@@ -31,24 +31,24 @@
 
 #define BASEDIR "\\delaywrite"
 
-static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcli_state *cli)
+static bool test_delayed_write_update(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_fileinfo finfo1, finfo2;
 	const char *fname = BASEDIR "\\torture_file.txt";
 	NTSTATUS status;
 	int fnum1 = -1;
-	BOOL ret = True;
+	bool ret = true;
 	ssize_t written;
 	time_t t;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
 		torture_comment(tctx, "Failed to open %s\n", fname);
-		return False;
+		return false;
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
@@ -59,7 +59,7 @@ static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcl
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	
 	torture_comment(tctx, "Initial write time %s\n", 
@@ -74,7 +74,7 @@ static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	if (written != 1) {
 		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
-		return False;
+		return false;
 	}
 
 	t = time(NULL);
@@ -84,7 +84,7 @@ static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcl
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
+			ret = false;
 			break;
 		}
 		torture_comment(tctx, "write time %s\n", 
@@ -100,7 +100,7 @@ static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
 		torture_comment(tctx, "Server did not update write time?!\n");
-		ret = False;
+		ret = false;
 	}
 
 
@@ -116,7 +116,7 @@ static BOOL test_delayed_write_update(struct torture_context *tctx, struct smbcl
  * Do as above, but using 2 connections.
  */
 
-static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbcli_state *cli, 
+static bool test_delayed_write_update2(struct torture_context *tctx, struct smbcli_state *cli, 
 									   struct smbcli_state *cli2)
 {
 	union smb_fileinfo finfo1, finfo2;
@@ -124,19 +124,19 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	NTSTATUS status;
 	int fnum1 = -1;
 	int fnum2 = -1;
-	BOOL ret = True;
+	bool ret = true;
 	ssize_t written;
 	time_t t;
 	union smb_flush flsh;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
 		torture_comment(tctx, "Failed to open %s\n", fname);
-		return False;
+		return false;
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
@@ -147,7 +147,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	
 	torture_comment(tctx, "Initial write time %s\n", 
@@ -180,7 +180,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("sfileinfo failed: %s\n", nt_errstr(status)));
-			return False;
+			return false;
 		}
 	}
 
@@ -193,7 +193,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
+			ret = false;
 			break;
 		}
 		torture_comment(tctx, "write time %s\n", 
@@ -209,7 +209,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	
 	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
 		torture_comment(tctx, "Server did not update write time?!\n");
-		ret = False;
+		ret = false;
 	}
 
 	/* Now try a write to see if the write time gets reset. */
@@ -222,7 +222,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	
 	torture_comment(tctx, "Modified write time %s\n", 
@@ -236,7 +236,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	if (written != 10) {
 		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
-		return False;
+		return false;
 	}
 
 	/* Just to prove to tridge that the an smbflush has no effect on
@@ -249,7 +249,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	status = smb_raw_flush(cli->tree, &flsh);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbflush failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 
 	t = time(NULL);
@@ -262,7 +262,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
+			ret = false;
 			break;
 		}
 		torture_comment(tctx, "write time %s\n", 
@@ -283,7 +283,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
 		torture_comment(tctx, "Failed to open %s\n", fname);
-		return False;
+		return false;
 	}
 	
 	torture_comment(tctx, "Doing a 10 byte write to extend the file via second fd and see if this changes the last write time.\n");
@@ -293,14 +293,14 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	if (written != 10) {
 		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
-		return False;
+		return false;
 	}
 
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
@@ -319,7 +319,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	if (written != 10) {
 		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
-		return False;
+		return false;
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
@@ -329,7 +329,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
@@ -347,7 +347,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
+			ret = false;
 			break;
 		}
 		torture_comment(tctx, "write time %s\n", 
@@ -373,7 +373,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum1 == -1) {
 		torture_comment(tctx, "Failed to open %s\n", fname);
-		return False;
+		return false;
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
@@ -384,7 +384,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	
 	torture_comment(tctx, "Second open initial write time %s\n", 
@@ -398,7 +398,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	if (written != 10) {
 		torture_comment(tctx, "write failed - wrote %d bytes (%s)\n", 
 		       (int)written, __location__);
-		return False;
+		return false;
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
@@ -408,7 +408,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		return false;
 	}
 	torture_comment(tctx, "write time %s\n", 
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
@@ -426,7 +426,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = False;
+			ret = false;
 			break;
 		}
 		torture_comment(tctx, "write time %s\n", 
@@ -468,7 +468,7 @@ static BOOL test_delayed_write_update2(struct torture_context *tctx, struct smbc
  * nasty....
  */
 
-static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_state *cli, 
+static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_state *cli, 
 								   struct smbcli_state *cli2)
 {
 	union smb_fileinfo finfo1, finfo2;
@@ -476,16 +476,16 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	NTSTATUS status;
 	int fnum1 = -1;
 	int fnum2;
-	BOOL ret = True;
+	bool ret = true;
 	ssize_t written;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
-		ret = False;
+		ret = false;
 		torture_result(tctx, TORTURE_FAIL, __location__": unable to open %s", fname);
 		goto done;
 	}
@@ -496,7 +496,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_fileinfo(cli->tree, tctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = False;
+		ret = false;
 		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", nt_errstr(status));
 		goto done;
 	}
@@ -507,7 +507,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 
 	if (written != 1) {
 		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", (int)written);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -515,7 +515,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	if (fnum2 == -1) {
 		torture_result(tctx, TORTURE_FAIL, __location__": failed to open 2nd time - %s", 
 		       smbcli_errstr(cli2->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -524,7 +524,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	if (written != 1) {
 		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", 
 		       (int)written);
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -536,21 +536,21 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", 
 			  nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.create_time !=
 	    finfo2.basic_info.out.create_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": create_time changed");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.access_time !=
 	    finfo2.basic_info.out.access_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": access_time changed");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -560,14 +560,14 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 					   "write time conn 1 = %s, conn 2 = %s", 
 		       nt_time_string(tctx, finfo1.basic_info.out.write_time),
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
 	if (finfo1.basic_info.out.change_time !=
 	    finfo2.basic_info.out.change_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": change_time changed");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 	
@@ -587,7 +587,7 @@ static BOOL test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

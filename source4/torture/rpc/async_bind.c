@@ -35,7 +35,7 @@
 */
 
 
-BOOL torture_async_bind(struct torture_context *torture)
+bool torture_async_bind(struct torture_context *torture)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
@@ -49,30 +49,30 @@ BOOL torture_async_bind(struct torture_context *torture)
 	struct dcerpc_pipe **pipe;
 	const struct ndr_interface_table **table;
 
-	if (!torture_setting_bool(torture, "async", False)) {
+	if (!torture_setting_bool(torture, "async", false)) {
 		printf("async bind test disabled - enable async tests to use\n");
-		return True;
+		return true;
 	}
 	
 	binding_string = torture_setting_string(torture, "binding", NULL);
 
 	/* talloc context */
 	mem_ctx = talloc_init("torture_async_bind");
-	if (mem_ctx == NULL) return False;
+	if (mem_ctx == NULL) return false;
 
 	bind_req = talloc_array(torture, struct composite_context*, torture_numasync);
-	if (bind_req == NULL) return False;
+	if (bind_req == NULL) return false;
 	pipe     = talloc_array(torture, struct dcerpc_pipe*, torture_numasync);
-	if (pipe == NULL) return False;
+	if (pipe == NULL) return false;
 	table    = talloc_array(torture, const struct ndr_interface_table*, torture_numasync);
-	if (table == NULL) return False;
+	if (table == NULL) return false;
 	
 	/* credentials */
 	creds = cmdline_credentials;
 
 	/* event context */
 	evt_ctx = cli_credentials_get_event_context(creds);
-	if (evt_ctx == NULL) return False;
+	if (evt_ctx == NULL) return false;
 
 	/* send bind requests */
 	for (i = 0; i < torture_numasync; i++) {
@@ -86,10 +86,10 @@ BOOL torture_async_bind(struct torture_context *torture)
 		status = dcerpc_pipe_connect_recv(bind_req[i], mem_ctx, &pipe[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("async rpc connection failed: %s\n", nt_errstr(status));
-			return False;
+			return false;
 		}
 	}
 
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 }

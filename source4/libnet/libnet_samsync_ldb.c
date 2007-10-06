@@ -247,7 +247,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	struct ldb_message **remote_msgs = NULL;
 	int ret, i;
 	uint32_t acb;
-	BOOL add = False;
+	bool add = false;
 	const char *attrs[] = { NULL };
 	/* we may change this to a global search, then fill in only the things not in ldap later */
 	const char *remote_attrs[] = { "userPrincipalName", "servicePrincipalName", 
@@ -275,7 +275,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		add = True;
+		add = true;
 	} else if (ret > 1) {
 		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s in local LDB", 
 						dom_sid_string(mem_ctx, user_sid));
@@ -517,7 +517,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
 	int ret;
-	BOOL add = False;
+	bool add = false;
 	const char *attrs[] = { NULL };
 
 	msg = ldb_msg_new(mem_ctx);
@@ -534,7 +534,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		add = True;
+		add = true;
 	} else if (ret > 1) {
 		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
 						dom_sid_string(mem_ctx, 
@@ -729,7 +729,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
 	int ret;
-	BOOL add = False;
+	bool add = false;
 	const char *attrs[] = { NULL };
 
 	msg = ldb_msg_new(mem_ctx);
@@ -746,7 +746,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		add = True;
+		add = true;
 	} else if (ret > 1) {
 		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
 						dom_sid_string(mem_ctx, 

@@ -30,8 +30,8 @@
 #include "dynconfig.h"
 
 static struct cli_credentials *credentials;
-static BOOL showall = False;
-static BOOL old_list = False;
+static bool showall = false;
+static bool old_list = false;
 static const char *maskchars = "<>\"?*abc.";
 static const char *filechars = "abcdefghijklm.";
 static int verbose;
@@ -39,12 +39,12 @@ static int die_on_error;
 static int NumLoops = 0;
 static int max_length = 20;
 
-static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const char *file)
+static bool reg_match_one(struct smbcli_state *cli, const char *pattern, const char *file)
 {
 	/* oh what a weird world this is */
-	if (old_list && strcmp(pattern, "*.*") == 0) return True;
+	if (old_list && strcmp(pattern, "*.*") == 0) return true;
 
-	if (ISDOT(pattern)) return False;
+	if (ISDOT(pattern)) return false;
 
 	if (ISDOTDOT(file)) file = ".";
 
@@ -100,7 +100,7 @@ static struct {
 	pstring long_name;
 	pstring short_name;
 } last_hit;
-static BOOL f_info_hit;
+static bool f_info_hit;
 
 static void listfn(struct clilist_file_info *f, const char *s, void *state)
 {
@@ -113,7 +113,7 @@ static void listfn(struct clilist_file_info *f, const char *s, void *state)
 	}
 	pstrcpy(last_hit.long_name, f->name);
 	pstrcpy(last_hit.short_name, f->short_name);
-	f_info_hit = True;
+	f_info_hit = true;
 }
 
 static void get_real_name(struct smbcli_state *cli, 
@@ -126,7 +126,7 @@ static void get_real_name(struct smbcli_state *cli,
 		mask = "\\masktest\\*";
 	}
 
-	f_info_hit = False;
+	f_info_hit = false;
 
 	smbcli_list_new(cli->tree, mask, 
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
@@ -350,7 +350,7 @@ static void usage(void)
 			showall = 1;
 			break;
 		case 'o':
-			old_list = True;
+			old_list = true;
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);

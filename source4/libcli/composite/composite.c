@@ -53,7 +53,7 @@ _PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
 {
 	if (c == NULL) return NT_STATUS_NO_MEMORY;
 
-	c->used_wait = True;
+	c->used_wait = true;
 
 	while (c->state < COMPOSITE_STATE_DONE) {
 		if (event_loop_once(c->event_ctx) != 0) {
@@ -69,16 +69,16 @@ _PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
  * Some composite helpers that are handy if you write larger composite
  * functions.
  */
-_PUBLIC_ BOOL composite_is_ok(struct composite_context *ctx)
+_PUBLIC_ bool composite_is_ok(struct composite_context *ctx)
 {
 	if (NT_STATUS_IS_OK(ctx->status)) {
-		return True;
+		return true;
 	}
 	ctx->state = COMPOSITE_STATE_ERROR;
 	if (ctx->async.fn != NULL) {
 		ctx->async.fn(ctx);
 	}
-	return False;
+	return false;
 }
 
 /* 
@@ -113,13 +113,13 @@ _PUBLIC_ void composite_error(struct composite_context *ctx, NTSTATUS status)
 	SMB_ASSERT(!composite_is_ok(ctx));
 }
 
-_PUBLIC_ BOOL composite_nomem(const void *p, struct composite_context *ctx)
+_PUBLIC_ bool composite_nomem(const void *p, struct composite_context *ctx)
 {
 	if (p != NULL) {
-		return False;
+		return false;
 	}
 	composite_error(ctx, NT_STATUS_NO_MEMORY);
-	return True;
+	return true;
 }
 
 _PUBLIC_ void composite_done(struct composite_context *ctx)

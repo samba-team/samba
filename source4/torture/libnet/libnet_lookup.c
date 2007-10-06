@@ -29,9 +29,9 @@
 #include "param/param.h"
 
 
-BOOL torture_lookup(struct torture_context *torture)
+bool torture_lookup(struct torture_context *torture)
 {
-	BOOL ret;
+	bool ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
@@ -59,11 +59,11 @@ BOOL torture_lookup(struct torture_context *torture)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup name %s: %s\n", lookup.in.hostname, nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
-	ret = True;
+	ret = true;
 
 	printf("Name [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
@@ -73,9 +73,9 @@ done:
 }
 
 
-BOOL torture_lookup_host(struct torture_context *torture)
+bool torture_lookup_host(struct torture_context *torture)
 {
-	BOOL ret;
+	bool ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
@@ -102,11 +102,11 @@ BOOL torture_lookup_host(struct torture_context *torture)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup host %s: %s\n", lookup.in.hostname, nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
-	ret = True;
+	ret = true;
 
 	printf("Host [%s] found at address: %s.\n", lookup.in.hostname, *lookup.out.address);
 
@@ -116,9 +116,9 @@ done:
 }
 
 
-BOOL torture_lookup_pdc(struct torture_context *torture)
+bool torture_lookup_pdc(struct torture_context *torture)
 {
-	BOOL ret;
+	bool ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
@@ -134,7 +134,7 @@ BOOL torture_lookup_pdc(struct torture_context *torture)
 
 	lookup = talloc(mem_ctx, struct libnet_LookupDCs);
 	if (!lookup) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -146,11 +146,11 @@ BOOL torture_lookup_pdc(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup pdc %s: %s\n", lookup->in.domain_name,
 		       nt_errstr(status));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
-	ret = True;
+	ret = true;
 
 	printf("DCs of domain [%s] found.\n", lookup->in.domain_name);
 	for (i = 0; i < lookup->out.num_dcs; i++) {
@@ -164,7 +164,7 @@ done:
 }
 
 
-BOOL torture_lookup_sam_name(struct torture_context *torture)
+bool torture_lookup_sam_name(struct torture_context *torture)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
@@ -175,7 +175,7 @@ BOOL torture_lookup_sam_name(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	mem_ctx = talloc_init("torture lookup sam name");
-	if (mem_ctx == NULL) return False;
+	if (mem_ctx == NULL) return false;
 
 	r.in.name = "Administrator";
 	r.in.domain_name = lp_workgroup(global_loadparm);
@@ -185,5 +185,5 @@ BOOL torture_lookup_sam_name(struct torture_context *torture)
 	talloc_free(mem_ctx);
 	talloc_free(ctx);
 
-	return True;
+	return true;
 }

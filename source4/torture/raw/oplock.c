@@ -29,14 +29,14 @@
 	if ((v) != (correct)) { \
 		torture_comment(tctx, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
 				__location__, #v, (int)v, (int)correct); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define CHECK_STATUS(tctx, status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": Incorrect status %s - should be %s", \
 		       nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -97,7 +97,7 @@ static void oplock_handler_close_recv(struct smbcli_request *req)
 /*
   a handler function for oplock break requests - close the file
 */
-static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, 
+static bool oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, 
 				 uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
@@ -114,13 +114,13 @@ static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 	req = smb_raw_close_send(tree, &io);
 	if (req == NULL) {
 		printf("failed to send close in oplock_handler_close\n");
-		return False;
+		return false;
 	}
 
 	req->async.fn = oplock_handler_close_recv;
 	req->async.private = NULL;
 
-	return True;
+	return true;
 }
 
 static bool test_raw_oplock_normal(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
@@ -1309,10 +1309,10 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 /* 
    stress testing of oplocks
 */
-BOOL torture_bench_oplock(struct torture_context *torture)
+bool torture_bench_oplock(struct torture_context *torture)
 {
 	struct smbcli_state **cli;
-	BOOL ret = True;
+	bool ret = true;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	int torture_nprocs = torture_setting_int(torture, "nprocs", 4);
 	int i, count=0;
@@ -1326,7 +1326,7 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 	torture_comment(torture, "Opening %d connections\n", torture_nprocs);
 	for (i=0;i<torture_nprocs;i++) {
 		if (!torture_open_connection_ev(&cli[i], i, ev)) {
-			return False;
+			return false;
 		}
 		talloc_steal(mem_ctx, cli[i]);
 		smbcli_oplock_handler(cli[i]->transport, oplock_handler_close, 
@@ -1334,7 +1334,7 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 	}
 
 	if (!torture_setup_dir(cli[0], BASEDIR)) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -1397,13 +1397,13 @@ static struct hold_oplock_info {
 	uint32_t share_access;
 	uint16_t fnum;
 } hold_info[] = {
-	{ BASEDIR "\\notshared_close", True,  
+	{ BASEDIR "\\notshared_close", true,  
 	  NTCREATEX_SHARE_ACCESS_NONE, },
-	{ BASEDIR "\\notshared_noclose", False, 
+	{ BASEDIR "\\notshared_noclose", false, 
 	  NTCREATEX_SHARE_ACCESS_NONE, },
-	{ BASEDIR "\\shared_close", True,  
+	{ BASEDIR "\\shared_close", true,  
 	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
-	{ BASEDIR "\\shared_noclose", False,  
+	{ BASEDIR "\\shared_noclose", false,  
 	  NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, },
 };
 
@@ -1421,7 +1421,7 @@ static bool oplock_handler_hold(struct smbcli_transport *transport,
 
 	if (i == ARRAY_SIZE(hold_info)) {
 		printf("oplock break for unknown fnum %u\n", fnum);
-		return False;
+		return false;
 	}
 
 	info = &hold_info[i];
@@ -1430,7 +1430,7 @@ static bool oplock_handler_hold(struct smbcli_transport *transport,
 		printf("oplock break on %s - closing\n",
 		       info->fname);
 		oplock_handler_close(transport, tid, fnum, level, private);
-		return True;
+		return true;
 	}
 
 	printf("oplock break on %s - acking break\n", info->fname);
@@ -1443,7 +1443,7 @@ static bool oplock_handler_hold(struct smbcli_transport *transport,
    used for manual testing of oplocks - especially interaction with
    other filesystems (such as NFS and local access)
 */
-BOOL torture_hold_oplock(struct torture_context *torture, 
+bool torture_hold_oplock(struct torture_context *torture, 
 			 struct smbcli_state *cli)
 {
 	struct event_context *ev = 
@@ -1453,7 +1453,7 @@ BOOL torture_hold_oplock(struct torture_context *torture,
 	printf("Setting up open files with oplocks in %s\n", BASEDIR);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	smbcli_oplock_handler(cli->transport, oplock_handler_hold, cli->tree);
@@ -1483,14 +1483,14 @@ BOOL torture_hold_oplock(struct torture_context *torture,
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to open %s - %s\n", 
 			       hold_info[i].fname, nt_errstr(status));
-			return False;
+			return false;
 		}
 
 		if (io.ntcreatex.out.oplock_level != BATCH_OPLOCK_RETURN) {
 			printf("Oplock not granted for %s - expected %d but got %d\n", 
 			       hold_info[i].fname, BATCH_OPLOCK_RETURN, 
 				io.ntcreatex.out.oplock_level);
-			return False;
+			return false;
 		}
 		hold_info[i].fnum = io.ntcreatex.out.file.fnum;
 	}
@@ -1498,5 +1498,5 @@ BOOL torture_hold_oplock(struct torture_context *torture,
 	printf("Waiting for oplock events\n");
 	event_loop_wait(ev);
 
-	return True;
+	return true;
 }

@@ -34,7 +34,7 @@ struct composite_context *resolve_name_wins_send(
 {
 	const char **address_list = lp_wins_server_list(global_loadparm);
 	if (address_list == NULL) return NULL;
-	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, False, True);
+	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, false, true);
 }
 
 /*

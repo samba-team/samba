@@ -123,13 +123,13 @@ _PUBLIC_ NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 
 _PUBLIC_ NTSTATUS sys_notify_init(void)
 {
-	static BOOL initialized = False;
+	static bool initialized = false;
 
 	init_module_fn static_init[] = STATIC_sys_notify_MODULES;
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
-	initialized = True;
+	initialized = true;
 
 	shared_init = load_samba_modules(NULL, global_loadparm, "sys_notify");
 

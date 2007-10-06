@@ -315,12 +315,12 @@ bool ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 {
 	NTSTATUS status = mprGetVar(&v, name);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 	if (v->type == MPR_TYPE_PTR && v->ptr == NULL) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*

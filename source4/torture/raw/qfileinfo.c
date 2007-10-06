@@ -186,7 +186,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
                #n1, #v1, (uint_t)s1->n1.out.v1, \
                #n2, #v2, (uint_t)s2->n2.out.v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 #define STR_EQUAL(n1, v1, n2, v2) do {if (strcmp_safe(s1->n1.out.v1.s, s2->n2.out.v2.s) || \
@@ -195,7 +195,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
                #n1, #v1, s1->n1.out.v1.s, s1->n1.out.v1.private_length, \
                #n2, #v2, s2->n2.out.v2.s, s2->n2.out.v2.private_length, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 #define STRUCT_EQUAL(n1, v1, n2, v2) do {if (memcmp(&s1->n1.out.v1,&s2->n2.out.v2,sizeof(s1->n1.out.v1))) { \
@@ -203,7 +203,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
                #n1, #v1, \
                #n2, #v2, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 
 /* used to find hints on unknown values - and to make sure 
@@ -215,7 +215,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 	       (uint_t)s1->n1.out.v1, \
 	       (uint_t)s1->n1.out.v1, \
 	       __FILE__, __LINE__); \
-        ret = False; \
+        ret = false; \
 }} while(0)
 #endif
 
@@ -230,14 +230,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 					    bool is_ipc)
 {
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 	int count;
 	union smb_fileinfo *s1, *s2;	
 	NTTIME correct_time;
 	uint64_t correct_size;
 	uint32_t correct_attrib;
 	const char *correct_name;
-	BOOL skip_streams = False;
+	bool skip_streams = false;
 
 	/* scan all the fileinfo and pathinfo levels */
 	for (i=0; levels[i].name; i++) {
@@ -293,7 +293,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	}
 
 	if (count != 0) {
-		ret = False;
+		ret = false;
 		printf("%d levels failed\n", count);
 		if (count > 35) {
 			torture_fail(torture, "too many level failures - giving up");
@@ -307,7 +307,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			printf("STREAM_INFO broken (%d) - skipping streams checks\n",
 			       s1 ? s1->stream_info.out.num_streams : -1);
 		}
-		skip_streams = True;
+		skip_streams = true;
 	}	
 
 
@@ -401,14 +401,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       nt_time_string(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && memcmp(&s1->stype.out.tfield, &correct_time, sizeof(correct_time)) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       nt_time_string(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #define TIME_CHECK_DOS(sname, stype, tfield) do { \
@@ -417,14 +417,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && dos_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 #if 0 /* unused */
@@ -434,14 +434,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && unx_nt_time_cmp(s1->stype.out.tfield, correct_time) != 0) { \
 		printf("(%d) path %s/%s incorrect - %s should be %s\n", __LINE__, #stype, #tfield,  \
 		       timestring(mem_ctx, s1->stype.out.tfield), \
 		       nt_time_string(mem_ctx, correct_time)); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 #endif
 
@@ -499,14 +499,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
 		       (uint_t)correct_size); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) path %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
 		       (uint_t)correct_size); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 	s1 = fnum_find("STANDARD_INFO");
@@ -553,14 +553,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
 		       (uint_t)correct_attrib); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) path %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
 		       (uint_t)s1->stype.out.tfield, \
 		       (uint_t)correct_attrib); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 	s1 = fnum_find("BASIC_INFO");
@@ -589,14 +589,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	    		wire_bad_flags(&s1->stype.out.tfield, flags, tree->session->transport))) { \
 		printf("(%d) handle %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname); \
 	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
 	    		wire_bad_flags(&s1->stype.out.tfield, flags, tree->session->transport))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 	NAME_CHECK("NAME_INFO",        name_info, fname, STR_UNICODE);
@@ -612,17 +612,17 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		if (!p) {
 			printf("Not a full path in all_info/fname? - '%s'\n", 
 			       s1->all_info.out.fname.s);
-			ret = False;
+			ret = false;
 		} else {
 			if (strcmp_safe(correct_name, p) != 0) {
 				printf("incorrect basename in all_info/fname - '%s'\n",
 				       s1->all_info.out.fname.s);
-				ret = False;
+				ret = false;
 			}
 		}
 		if (wire_bad_flags(&s1->all_info.out.fname, STR_UNICODE, tree->session->transport)) {
 			printf("Should not null terminate all_info/fname\n");
-			ret = False;
+			ret = false;
 		}
 	}
 
@@ -646,7 +646,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 					     0, 0);
 		if (fnum == -1) {
 			printf("Unable to open by alt_name - %s\n", smbcli_errstr(tree));
-			ret = False;
+			ret = false;
 		}
 		
 		if (!skip_streams) {
@@ -702,28 +702,28 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		printf("(%d) handle %s/%s != %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname1); s2 = fname_find(is_ipc, sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) path %s/%s != %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fnum_find(sname1); s2 = fname_find(is_ipc, sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) handle %s/%s != path %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
-		ret = False; \
+		ret = false; \
 	} \
 	s1 = fname_find(is_ipc, sname1); s2 = fnum_find(sname2); \
 	if (s1 && s2 && s1->stype1.out.tfield1 != s2->stype2.out.tfield2) { \
 		printf("(%d) path %s/%s != handle %s/%s - 0x%x vs 0x%x\n", __LINE__, \
                        #stype1, #tfield1, #stype2, #tfield2,  \
 		       s1->stype1.out.tfield1, s2->stype2.out.tfield2); \
-		ret = False; \
+		ret = false; \
 	}} while (0)
 
 	VAL_CHECK("STANDARD_INFO", standard_info, delete_pending, 
@@ -736,18 +736,18 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	if (s1 && is_ipc) {
 		if (s1->basic_info.out.attrib != FILE_ATTRIBUTE_NORMAL) {
 			printf("(%d) attrib basic_info/nlink incorrect - %d should be %d\n", __LINE__, s1->basic_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
-			ret = False;
+			ret = false;
 		}
 	}
 	s1 = fnum_find("STANDARD_INFO");
 	if (s1 && is_ipc) {
 		if (s1->standard_info.out.nlink != 1) {
 			printf("(%d) nlinks standard_info/nlink incorrect - %d should be 1\n", __LINE__, s1->standard_info.out.nlink);
-			ret = False;
+			ret = false;
 		}
 		if (s1->standard_info.out.delete_pending != 1) {
 			printf("(%d) nlinks standard_info/delete_pending incorrect - %d should be 1\n", __LINE__, s1->standard_info.out.delete_pending);
-			ret = False;
+			ret = false;
 		}
 	}
 	VAL_CHECK("EA_INFO",       ea_info,       ea_size, 
@@ -827,7 +827,7 @@ bool torture_raw_qfileinfo(struct torture_context *torture,
 		return false;
 	}
 
-	ret = torture_raw_qfileinfo_internals(torture, torture, cli->tree, fnum, fname, False /* is_ipc */);
+	ret = torture_raw_qfileinfo_internals(torture, torture, cli->tree, fnum, fname, false /* is_ipc */);
 	
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
@@ -846,7 +846,7 @@ bool torture_raw_qfileinfo_pipe(struct torture_context *torture,
 	NTSTATUS status;
 
 	if (!(p = dcerpc_pipe_init(torture, cli->tree->session->transport->socket->event.ctx))) {
-		return False;
+		return false;
 	}
 
 	status = dcerpc_pipe_open_smb(p, cli->tree, fname);

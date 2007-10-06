@@ -426,7 +426,7 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 {
 	int len;
 	struct smbcli_request *req = NULL; 
-	BOOL bigoffset = False;
+	bool bigoffset = false;
 
 	switch (parms->generic.level) {
 	case RAW_OPEN_T2OPEN:
@@ -527,7 +527,7 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 		smbcli_req_append_string(req, parms->openxreadx.in.fname, STR_TERMINATE);
 
 		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
-			bigoffset = True;
+			bigoffset = true;
 		}
 
 		smbcli_chained_request_setup(req, SMBreadX, bigoffset ? 12 : 10, 0);

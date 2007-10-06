@@ -19,23 +19,23 @@
 */
 
 
-BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid);
 
-BOOL test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
 		      uint32_t *rid);
 
-BOOL test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *domain_handle,
 		       const char *name);
 
-BOOL test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle, const char *name,
 		       uint32_t *rid);
 
-BOOL test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
 			const char *name);
 

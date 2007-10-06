@@ -186,7 +186,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	uint32_t create_action;
 	uint32_t access_mask = io->generic.in.access_mask;
 	struct odb_lock *lck;
-	BOOL del_on_close;
+	bool del_on_close;
 	uint32_t create_options;
 	uint32_t share_access;
 
@@ -268,14 +268,14 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
-	f->handle->sticky_write_time = False;
-	f->handle->open_completed    = False;
+	f->handle->sticky_write_time = false;
+	f->handle->open_completed    = false;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    pvfs_directory_empty(pvfs, f->handle->name)) {
-		del_on_close = True;
+		del_on_close = true;
 	} else {
-		del_on_close = False;
+		del_on_close = false;
 	}
 
 	if (name->exists) {
@@ -305,7 +305,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			return status;
 		}
 
-		f->handle->have_opendb_entry = True;
+		f->handle->have_opendb_entry = true;
 	}
 
 	DLIST_ADD(pvfs->files.list, f);
@@ -357,7 +357,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			goto cleanup_delete;
 		}
 
-		f->handle->have_opendb_entry = True;
+		f->handle->have_opendb_entry = true;
 
 		create_action = NTCREATEX_ACTION_CREATED;
 
@@ -379,7 +379,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		goto cleanup_delete;
 	}
 
-	f->handle->open_completed = True;
+	f->handle->open_completed = true;
 
 	io->generic.out.oplock_level  = OPLOCK_NONE;
 	io->generic.out.file.ntvfs    = h;
@@ -552,7 +552,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t access_mask = io->generic.in.access_mask;
 	mode_t mode;
 	uint32_t attrib;
-	BOOL del_on_close;
+	bool del_on_close;
 	struct pvfs_filename *parent;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 
@@ -656,9 +656,9 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		del_on_close = True;
+		del_on_close = true;
 	} else {
-		del_on_close = False;
+		del_on_close = false;
 	}
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
@@ -702,9 +702,9 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
-	f->handle->have_opendb_entry = True;
-	f->handle->sticky_write_time = False;
-	f->handle->open_completed    = False;
+	f->handle->have_opendb_entry = true;
+	f->handle->sticky_write_time = false;
+	f->handle->open_completed    = false;
 
 	DLIST_ADD(pvfs->files.list, f);
 
@@ -733,7 +733,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		goto cleanup_delete;
 	}
 
-	f->handle->open_completed = True;
+	f->handle->open_completed = true;
 
 	notify_trigger(pvfs->notify_context, 
 		       NOTIFY_ACTION_ADDED, 
@@ -989,8 +989,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
-	BOOL del_on_close;
-	BOOL stream_existed, stream_truncate=False;
+	bool del_on_close;
+	bool stream_existed, stream_truncate=false;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 
 	/* use the generic mapping code to avoid implementing all the
@@ -1035,7 +1035,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (name->stream_name == NULL) {
 			flags = O_TRUNC;
 		} else {
-			stream_truncate = True;
+			stream_truncate = true;
 		}
 		break;
 
@@ -1053,7 +1053,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (name->stream_name == NULL) {
 			flags = O_TRUNC;
 		} else {
-			stream_truncate = True;
+			stream_truncate = true;
 		}
 		break;
 
@@ -1133,9 +1133,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
-	f->handle->have_opendb_entry = False;
-	f->handle->sticky_write_time = False;
-	f->handle->open_completed    = False;
+	f->handle->have_opendb_entry = false;
+	f->handle->sticky_write_time = false;
+	f->handle->open_completed    = false;
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
@@ -1172,9 +1172,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	 */
 	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE &&
 	    req->ctx->protocol == PROTOCOL_SMB2) {
-		del_on_close = True;
+		del_on_close = true;
 	} else {
-		del_on_close = False;
+		del_on_close = false;
 	}
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
@@ -1206,7 +1206,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		oplock_granted = OPLOCK_BATCH;
 	}
 
-	f->handle->have_opendb_entry = True;
+	f->handle->have_opendb_entry = true;
 
 	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		flags |= O_RDWR;
@@ -1273,7 +1273,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* mark the open as having completed fully, so delete on close
 	   can now be used */
-	f->handle->open_completed     = True;
+	f->handle->open_completed     = true;
 
 	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.ntvfs    = h;
@@ -1379,7 +1379,7 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 */
 NTSTATUS pvfs_set_delete_on_close(struct pvfs_state *pvfs,
 				  struct ntvfs_request *req, 
-				  struct pvfs_file *f, BOOL del_on_close)
+				  struct pvfs_file *f, bool del_on_close)
 {
 	struct odb_lock *lck;
 	NTSTATUS status;
@@ -1532,17 +1532,17 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 /*
   determine if delete on close is set on 
 */
-BOOL pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h, 
+bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h, 
 			      int *open_count, char **path)
 {
 	NTSTATUS status;
-	BOOL del_on_close;
+	bool del_on_close;
 
 	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
 					 &del_on_close, open_count, path);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
-		return False;
+		return false;
 	}
 
 	return del_on_close;

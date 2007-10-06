@@ -61,7 +61,7 @@ static int ejs_creds_set_domain(MprVarHandle eid, int argc, char **argv)
 	}
 
 	cli_credentials_set_domain(creds, argv[0], CRED_SPECIFIED);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 
@@ -90,7 +90,7 @@ static int ejs_creds_set_username(MprVarHandle eid, int argc, char **argv)
 	}
 
 	cli_credentials_set_username(creds, argv[0], CRED_SPECIFIED);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 
@@ -119,7 +119,7 @@ static int ejs_creds_set_password(MprVarHandle eid, int argc, char **argv)
 	}
 
 	cli_credentials_set_password(creds, argv[0], CRED_SPECIFIED);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 
@@ -136,7 +136,7 @@ static int ejs_creds_set_realm(MprVarHandle eid, int argc, char **argv)
 	}
 
 	cli_credentials_set_realm(creds, argv[0], CRED_SPECIFIED);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 
@@ -165,7 +165,7 @@ static int ejs_creds_set_workstation(MprVarHandle eid, int argc, char **argv)
 	}
 	
 	cli_credentials_set_workstation(creds, argv[0], CRED_SPECIFIED);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 
@@ -193,9 +193,9 @@ static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, struct MprV
 	}
 	
 	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds))) {
-		mpr_Return(eid, mprCreateBoolVar(True));
+		mpr_Return(eid, mprCreateBoolVar(true));
 	} else {
-		mpr_Return(eid, mprCreateBoolVar(False));
+		mpr_Return(eid, mprCreateBoolVar(false));
 	}
 	return 0;
 }

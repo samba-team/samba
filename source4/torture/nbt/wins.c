@@ -77,7 +77,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
-	release.in.broadcast = False;
+	release.in.broadcast = false;
 	release.in.timeout = 3;
 	release.in.retries = 0;
 
@@ -113,8 +113,8 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_comment(tctx, "query the name to make sure its there\n");
 	query.in.name = *name;
 	query.in.dest_addr = address;
-	query.in.broadcast = False;
-	query.in.wins_lookup = True;
+	query.in.broadcast = false;
+	query.in.wins_lookup = true;
 	query.in.timeout = 3;
 	query.in.retries = 0;
 
@@ -174,7 +174,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
-	release.in.broadcast = False;
+	release.in.broadcast = false;
 	release.in.timeout = 3;
 	release.in.retries = 0;
 

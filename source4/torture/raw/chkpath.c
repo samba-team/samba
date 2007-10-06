@@ -29,7 +29,7 @@
 	if (!NT_STATUS_EQUAL(status, correct) && !NT_STATUS_EQUAL(status, dos_correct)) { \
 		printf("(%d) Incorrect status %s - should be %s\n", \
 		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -54,7 +54,7 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 	return status;
 }
 
-static BOOL test_path(struct smbcli_state *cli, const char *path, NTSTATUS expected, NTSTATUS dos_expected)
+static bool test_path(struct smbcli_state *cli, const char *path, NTSTATUS expected, NTSTATUS dos_expected)
 {
 	union smb_chkpath io;
 	NTSTATUS status;
@@ -63,19 +63,19 @@ static BOOL test_path(struct smbcli_state *cli, const char *path, NTSTATUS expec
 	if (!NT_STATUS_EQUAL(status, expected) && !NT_STATUS_EQUAL(status, dos_expected)) {
 		printf("%-40s FAILED %s should be %s or %s\n", 
 		       path, nt_errstr(status), nt_errstr(expected), nt_errstr(dos_expected));
-		return False;
+		return false;
 	} else {
 		printf("%-40s correct (%s)\n", path, nt_errstr(status));
 
 	}
-	return True;
+	return true;
 }
 
-static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_chkpath io;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	int fnum = -1;
 	int fnum1 = -1;
 
@@ -89,7 +89,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\test.txt..");
 	if (fnum == -1) {
 		printf("failed to open test.txt - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -97,7 +97,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	if (!torture_set_file_attribute(cli->tree, BASEDIR, FILE_ATTRIBUTE_HIDDEN)) {
 		printf("failed to set basedir hidden\n");
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -221,28 +221,28 @@ bool torture_raw_chkpath(struct torture_context *torture,
 	int fnum;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR "\\nt"))) {
 		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR "\\nt\\V S"))) {
 		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR "\\nt\\V S\\VB98"))) {
 		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	fnum = create_complex_file(cli, torture, BASEDIR "\\nt\\V S\\VB98\\vb6.exe");
 	if (fnum == -1) {
 		printf("failed to open \\nt\\V S\\VB98\\vb6.exe - %s\n", smbcli_errstr(cli->tree));
-		ret = False;
+		ret = false;
 		goto done;
 	}
 

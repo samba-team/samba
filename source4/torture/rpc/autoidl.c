@@ -31,7 +31,7 @@
 /*
   get a DRSUAPI policy handle
 */
-static BOOL get_policy_handle(struct dcerpc_pipe *p,
+static bool get_policy_handle(struct dcerpc_pipe *p,
 			      TALLOC_CTX *mem_ctx, 
 			      struct policy_handle *handle)
 {
@@ -44,16 +44,16 @@ static BOOL get_policy_handle(struct dcerpc_pipe *p,
 	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("drsuapi_DsBind failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 #else
 /*
   get a SAMR handle
 */
-static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -66,10 +66,10 @@ static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_Connect(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("samr_Connect failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 #endif
 
@@ -130,7 +130,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *if
 		memcpy(stub_in.data, base_in->data, insert_ofs);
 		memcpy(stub_in.data+insert_ofs+n, base_in->data+insert_ofs, base_in->length-insert_ofs);
 
-		status = dcerpc_request(p, NULL, opnum, False, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
 
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
@@ -171,7 +171,7 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table 
 	/* work out which elements are pointers */
 	for (ofs=min_ofs;ofs<=max_ofs-4;ofs+=4) {
 		SIVAL(stub_in.data, ofs, 1);
-		status = dcerpc_request(p, NULL, opnum, False, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
@@ -213,7 +213,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 		data_blob_clear(&stub_in);
 
 
-		status = dcerpc_request(p, NULL, opnum, False, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
@@ -226,7 +226,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 
 		fill_blob_handle(&stub_in, mem_ctx, &handle);
 
-		status = dcerpc_request(p, NULL, opnum, False, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d (with handle)\n", 
@@ -258,7 +258,7 @@ static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 	test_scan_call(mem_ctx, iface, 2);
 }
 
-BOOL torture_rpc_autoidl(struct torture_context *torture)
+bool torture_rpc_autoidl(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	const struct ndr_interface_table *iface;
@@ -266,7 +266,7 @@ BOOL torture_rpc_autoidl(struct torture_context *torture)
 	iface = ndr_table_by_name("drsuapi");
 	if (!iface) {
 		printf("Unknown interface!\n");
-		return False;
+		return false;
 	}
 
 	mem_ctx = talloc_init("torture_rpc_autoidl");
@@ -276,5 +276,5 @@ BOOL torture_rpc_autoidl(struct torture_context *torture)
 	test_auto_scan(mem_ctx, iface);
 
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 }

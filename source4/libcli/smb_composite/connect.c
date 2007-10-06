@@ -116,12 +116,12 @@ static NTSTATUS connect_session_setup_anon(struct composite_context *c,
 	status = smb_composite_sesssetup_recv(state->creq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	io->out.anonymous_fallback_done = True;
+	io->out.anonymous_fallback_done = true;
 	
 	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, True);
+	io->out.tree = smbcli_tree_init(state->session, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
 
 	state->io_tcon = talloc(c, union smb_tcon);
@@ -203,7 +203,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, True);
+	io->out.tree = smbcli_tree_init(state->session, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
 
 	state->io_tcon = talloc(c, union smb_tcon);
@@ -251,7 +251,7 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
-	state->session = smbcli_session_init(state->transport, state, True);
+	state->session = smbcli_session_init(state->transport, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
 
 	state->io_setup = talloc(c, struct smb_composite_sesssetup);
@@ -307,7 +307,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* the socket is up - we can initialise the smbcli transport layer */
-	state->transport = smbcli_transport_init(state->sock, state, True);
+	state->transport = smbcli_transport_init(state->sock, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	if (is_ipaddress(state->sock->hostname) &&

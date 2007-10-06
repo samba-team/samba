@@ -39,7 +39,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 }
 
 
-static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static bool test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct epm_twr_t *twr)
 {
 	NTSTATUS status;
@@ -131,7 +131,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* FIXME: Extend to do other protocols as well (ncacn_unix_stream, ncalrpc) */
 	
-	return True;
+	return true;
 }
 
 static bool test_Lookup(struct torture_context *tctx, 
@@ -186,7 +186,7 @@ static bool test_Lookup(struct torture_context *tctx,
 	return true;
 }
 
-static BOOL test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_entry_t *entries)
+static bool test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_entry_t *entries)
 {
 	NTSTATUS status;
 	struct epm_Delete r;
@@ -197,15 +197,15 @@ static BOOL test_Delete(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct epm_e
 	status = dcerpc_epm_Delete(p, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("Delete failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	if (r.out.result != 0) {
 		printf("Delete failed - %d\n", r.out.result);
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool test_Insert(struct torture_context *tctx, 

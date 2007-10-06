@@ -144,8 +144,8 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 		}
 
 		if (transport->negotiate.capabilities & CAP_RAW_MODE) {
-			transport->negotiate.readbraw_supported = True;
-			transport->negotiate.writebraw_supported = True;
+			transport->negotiate.readbraw_supported = true;
+			transport->negotiate.writebraw_supported = true;
 		}
 	} else if (transport->negotiate.protocol >= PROTOCOL_LANMAN1) {
 		SMBCLI_CHECK_WCT(req, 13);

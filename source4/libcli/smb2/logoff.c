@@ -30,7 +30,7 @@ struct smb2_request *smb2_logoff_send(struct smb2_session *session)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init(session->transport, SMB2_OP_LOGOFF, 0x04, False, 0);
+	req = smb2_request_init(session->transport, SMB2_OP_LOGOFF, 0x04, false, 0);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
@@ -53,7 +53,7 @@ NTSTATUS smb2_logoff_recv(struct smb2_request *req)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x04, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
 	return smb2_request_destroy(req);
 }
 

@@ -8,7 +8,7 @@
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
 
 
-BOOL torture_rpc_join(struct torture_context *torture)
+bool torture_rpc_join(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct test_join *tj;
@@ -24,7 +24,7 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	if (!tj) {
 		DEBUG(0, ("%s failed to join domain as workstation\n",
 			  TORTURE_NETBIOS_NAME));
-		return False;
+		return false;
 	}
 
 	status = smbcli_full_connection(tj, &cli, host,
@@ -34,7 +34,7 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));
-		return False;	
+		return false;	
 	}
 	smbcli_tdis(cli);
         
@@ -48,7 +48,7 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	if (!tj) {
 		DEBUG(0, ("%s failed to join domain as domain controller\n",
 			  TORTURE_NETBIOS_NAME));
-		return False;
+		return false;
 	}
 
 	status = smbcli_full_connection(tj, &cli, host,
@@ -58,7 +58,7 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));
-		return False;	
+		return false;	
 	}
 
 	smbcli_tdis(cli);
@@ -66,6 +66,6 @@ BOOL torture_rpc_join(struct torture_context *torture)
 	/* Leave domain. */
 	torture_leave_domain(tj);
 
-	return True;
+	return true;
 }
 

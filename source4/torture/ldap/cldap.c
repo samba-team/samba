@@ -31,7 +31,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	} \
 } while (0)
@@ -39,7 +39,7 @@
 /*
   test netlogon operations
 */
-static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
+static bool test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 {
 	struct cldap_socket *cldap = cldap_socket_init(mem_ctx, NULL);
 	NTSTATUS status;
@@ -47,7 +47,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	union nbt_cldap_netlogon n1;
 	struct GUID guid;
 	int i;
-	BOOL ret = True;
+	bool ret = true;
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
@@ -203,12 +203,12 @@ static void cldap_dump_results(struct cldap_search *search)
 /*
   test generic cldap operations
 */
-static BOOL test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
+static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 {
 	struct cldap_socket *cldap = cldap_socket_init(mem_ctx, NULL);
 	NTSTATUS status;
 	struct cldap_search search;
-	BOOL ret = True;
+	bool ret = true;
 	const char *attrs1[] = { "currentTime", "highestCommittedUSN", NULL };
 	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
 	const char *attrs3[] = { "netlogon", NULL };

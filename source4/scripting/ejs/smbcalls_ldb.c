@@ -483,7 +483,7 @@ static int ejs_ldbClose(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	mprSetThisPtr(eid, "db", NULL);
-	mpr_Return(eid, mprCreateBoolVar(True));
+	mpr_Return(eid, mprCreateBoolVar(true));
 	return 0;
 }
 

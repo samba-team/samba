@@ -28,15 +28,15 @@
 #include "dynconfig.h"
 
 static int numops = 1000;
-static BOOL showall;
-static BOOL analyze;
-static BOOL hide_unlock_fails;
-static BOOL use_oplocks;
+static bool showall;
+static bool analyze;
+static bool hide_unlock_fails;
+static bool use_oplocks;
 static uint_t lock_range = 100;
 static uint_t lock_base = 0;
 static uint_t min_length = 0;
-static BOOL exact_error_codes;
-static BOOL zero_zero;
+static bool exact_error_codes;
+static bool zero_zero;
 
 #define FILENAME "\\locktest.dat"
 
@@ -203,7 +203,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 	uint64_t len = rec->len;
 	enum brl_type op = rec->lock_type;
 	int server;
-	BOOL ret[NSERVERS];
+	bool ret[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
 	switch (rec->lock_op) {
@@ -253,7 +253,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
-		if (!NT_STATUS_EQUAL(status[0],status[1])) return False;
+		if (!NT_STATUS_EQUAL(status[0],status[1])) return false;
 		break;
 		
 	case OP_UNLOCK:
@@ -295,7 +295,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			       nt_errstr(status[0]), nt_errstr(status[1]));
 		}
 		if (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1])) 
-			return False;
+			return false;
 		break;
 
 	case OP_REOPEN:
@@ -310,7 +310,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 							 DENY_NONE);
 			if (fnum[server][conn][f] == -1) {
 				printf("failed to reopen on share%d\n", server);
-				return False;
+				return false;
 			}
 		}
 		if (showall) {
@@ -320,7 +320,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 		break;
 	}
 
-	return True;
+	return true;
 }
 
 static void close_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
@@ -427,7 +427,7 @@ static void test_locks(char *share[NSERVERS])
 			} else {
 				recorded[n].lock_op = OP_REOPEN;
 			}
-			recorded[n].needed = True;
+			recorded[n].needed = true;
 			if (!zero_zero && recorded[n].start==0 && recorded[n].len==0) {
 				recorded[n].len = 1;
 			}
@@ -456,7 +456,7 @@ static void test_locks(char *share[NSERVERS])
 			int m, j;
 			printf("excluding %d-%d\n", i, i+skip-1);
 			for (j=i;j<i+skip;j++) {
-				recorded[j].needed = False;
+				recorded[j].needed = false;
 			}
 
 			close_files(cli, fnum);
@@ -465,7 +465,7 @@ static void test_locks(char *share[NSERVERS])
 			m = retest(cli, fnum, n);
 			if (m == n) {
 				for (j=i;j<i+skip;j++) {
-					recorded[j].needed = True;
+					recorded[j].needed = true;
 				}
 			} else {
 				if (i+(skip-1) < m) {
@@ -489,7 +489,7 @@ static void test_locks(char *share[NSERVERS])
 	close_files(cli, fnum);
 	reconnect(cli, fnum, share);
 	open_files(cli, fnum);
-	showall = True;
+	showall = true;
 	n1 = retest(cli, fnum, n);
 	if (n1 != n-1) {
 		printf("ERROR - inconsistent result (%u %u)\n", n1, n);
@@ -594,25 +594,25 @@ static void usage(void)
 			seed = atoi(optarg);
 			break;
 		case 'u':
-			hide_unlock_fails = True;
+			hide_unlock_fails = true;
 			break;
 		case 'o':
 			numops = atoi(optarg);
 			break;
 		case 'O':
-			use_oplocks = True;
+			use_oplocks = true;
 			break;
 		case 'a':
-			showall = True;
+			showall = true;
 			break;
 		case 'A':
-			analyze = True;
+			analyze = true;
 			break;
 		case 'Z':
-			zero_zero = True;
+			zero_zero = true;
 			break;
 		case 'E':
-			exact_error_codes = True;
+			exact_error_codes = true;
 			break;
 		case 'l':
 			lp_set_cmdline(global_loadparm, "torture:unclist", optarg);

@@ -341,7 +341,7 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	}
 	
 	libnet_r->in.acct_type = acct_flags;
-	libnet_r->in.recreate_account = True;
+	libnet_r->in.recreate_account = true;
 
 	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
 	if (!NT_STATUS_IS_OK(status)) {

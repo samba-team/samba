@@ -27,7 +27,7 @@
 #include "libcli/ldap/ldap.h"
 
 
-static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
+static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
 {
 	int i;
 
@@ -37,7 +37,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		asn1_push_tag(data, ASN1_CONTEXT(tree->operation==LDB_OP_AND?0:1));
 		for (i=0; i<tree->u.list.num_elements; i++) {
 			if (!ldap_push_filter(data, tree->u.list.elements[i])) {
-				return False;
+				return false;
 			}
 		}
 		asn1_pop_tag(data);
@@ -46,7 +46,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 	case LDB_OP_NOT:
 		asn1_push_tag(data, ASN1_CONTEXT(2));
 		if (!ldap_push_filter(data, tree->u.isnot.child)) {
-			return False;
+			return false;
 		}
 		asn1_pop_tag(data);
 		break;
@@ -166,7 +166,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		break;
 
 	default:
-		return False;
+		return false;
 	}
 	return !data->has_error;
 }
@@ -187,12 +187,12 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	}
 }
 
-BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
+bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int i, j;
 
-	if (!data) return False;
+	if (!data) return false;
 
 	asn1_push_tag(data, ASN1_SEQUENCE(0));
 	asn1_write_Integer(data, msg->messageid);
@@ -225,7 +225,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 			asn1_pop_tag(data);
 			break;
 		default:
-			return False;
+			return false;
 		}
 
 		asn1_pop_tag(data);
@@ -256,7 +256,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		asn1_write_BOOLEAN(data, r->attributesonly);
 
 		if (!ldap_push_filter(data, r->tree)) {
-			return False;
+			return false;
 		}
 
 		asn1_push_tag(data, ASN1_SEQUENCE(0));
@@ -467,7 +467,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		break;
 	}
 	default:
-		return False;
+		return false;
 	}
 
 	if (msg->controls != NULL) {
@@ -475,7 +475,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		
 		for (i = 0; msg->controls[i] != NULL; i++) {
 			if (!ldap_encode_control(mem_ctx, data, msg->controls[i])) {
-				return False;
+				return false;
 			}
 		}
 
@@ -486,12 +486,12 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 
 	if (data->has_error) {
 		asn1_free(data);
-		return False;
+		return false;
 	}
 
 	*result = data_blob_talloc(mem_ctx, data->data, data->length);
 	asn1_free(data);
-	return True;
+	return true;
 }
 
 static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
@@ -503,16 +503,16 @@ static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static BOOL asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
+static bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 					 struct asn1_data *data,
 					 const char **result)
 {
 	DATA_BLOB string;
 	if (!asn1_read_OctetString(data, mem_ctx, &string))
-		return False;
+		return false;
 	*result = blob2string_talloc(mem_ctx, string);
 	data_blob_free(&string);
-	return True;
+	return true;
 }
 
 static void ldap_decode_response(TALLOC_CTX *mem_ctx,

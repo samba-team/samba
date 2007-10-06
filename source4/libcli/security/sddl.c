@@ -32,7 +32,7 @@ struct flag_map {
 /*
   map a series of letter codes into a uint32_t
 */
-static BOOL sddl_map_flags(const struct flag_map *map, const char *str, 
+static bool sddl_map_flags(const struct flag_map *map, const char *str, 
 			   uint32_t *flags, size_t *len)
 {
 	const char *str0 = str;
@@ -51,10 +51,10 @@ static BOOL sddl_map_flags(const struct flag_map *map, const char *str,
 		}
 		if (map[i].name == NULL) {
 			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 /*
@@ -176,10 +176,10 @@ static const struct flag_map ace_access_mask[] = {
 
 /*
   decode an ACE
-  return True on success, False on failure
+  return true on success, false on failure
   note that this routine modifies the string
 */
-static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
+static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
 			    const struct dom_sid *domain_sid)
 {
 	const char *tok[6];
@@ -194,7 +194,7 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	tok[0] = str;
 	for (i=0;i<5;i++) {
 		char *ptr = strchr(str, ';');
-		if (ptr == NULL) return False;
+		if (ptr == NULL) return false;
 		*ptr = 0;
 		str = ptr+1;
 		tok[i+1] = str;
@@ -202,13 +202,13 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* parse ace type */
 	if (!sddl_map_flags(ace_types, tok[0], &v, NULL)) {
-		return False;
+		return false;
 	}
 	ace->type = v;
 
 	/* ace flags */
 	if (!sddl_map_flags(ace_flags, tok[1], &v, NULL)) {
-		return False;
+		return false;
 	}
 	ace->flags = v;
 	
@@ -217,7 +217,7 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 		ace->access_mask = strtol(tok[2], NULL, 16);
 	} else {
 		if (!sddl_map_flags(ace_access_mask, tok[2], &v, NULL)) {
-			return False;
+			return false;
 		}
 		ace->access_mask = v;
 	}
@@ -227,7 +227,7 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 		NTSTATUS status = GUID_from_string(tok[3], 
 						   &ace->object.object.type.type);
 		if (!NT_STATUS_IS_OK(status)) {
-			return False;
+			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_OBJECT_TYPE_PRESENT;
 	}
@@ -237,7 +237,7 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 		NTSTATUS status = GUID_from_string(tok[4], 
 						   &ace->object.object.inherited_type.inherited_type);
 		if (!NT_STATUS_IS_OK(status)) {
-			return False;
+			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT;
 	}
@@ -246,13 +246,13 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	s = tok[5];
 	sid = sddl_decode_sid(mem_ctx, &s, domain_sid);
 	if (sid == NULL) {
-		return False;
+		return false;
 	}
 	ace->trustee = *sid;
 	talloc_steal(mem_ctx, sid->sub_auths);
 	talloc_free(sid);
 
-	return True;
+	return true;
 }
 
 static const struct flag_map acl_flags[] = {
@@ -388,7 +388,7 @@ failed:
   turn a set of flags into a string
 */
 static char *sddl_flags_to_string(TALLOC_CTX *mem_ctx, const struct flag_map *map,
-				  uint32_t flags, BOOL check_all)
+				  uint32_t flags, bool check_all)
 {
 	int i;
 	char *s;
@@ -477,13 +477,13 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 		return NULL;
 	}
 
-	s_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, True);
+	s_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, true);
 	if (s_type == NULL) goto failed;
 
-	s_flags = sddl_flags_to_string(tmp_ctx, ace_flags, ace->flags, True);
+	s_flags = sddl_flags_to_string(tmp_ctx, ace_flags, ace->flags, true);
 	if (s_flags == NULL) goto failed;
 
-	s_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask, ace->access_mask, True);
+	s_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask, ace->access_mask, true);
 	if (s_mask == NULL) {
 		s_mask = talloc_asprintf(tmp_ctx, "0x%08x", ace->access_mask);
 		if (s_mask == NULL) goto failed;
@@ -525,7 +525,7 @@ static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl
 	int i;
 
 	/* add any ACL flags */
-	sddl = sddl_flags_to_string(mem_ctx, acl_flags, flags, False);
+	sddl = sddl_flags_to_string(mem_ctx, acl_flags, flags, false);
 	if (sddl == NULL) goto failed;
 
 	/* now the ACEs, encoded in braces */

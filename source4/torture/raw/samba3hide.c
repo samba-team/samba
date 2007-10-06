@@ -57,7 +57,7 @@ static void init_unixinfo_nochange(union smb_setfileinfo *info)
 
 struct list_state {
 	const char *fname;
-	BOOL visible;
+	bool visible;
 };
 
 static void set_visible(struct clilist_file_info *i, const char *mask,
@@ -66,43 +66,43 @@ static void set_visible(struct clilist_file_info *i, const char *mask,
 	struct list_state *state = (struct list_state *)priv;
 
 	if (strcasecmp_m(state->fname, i->name) == 0)
-		state->visible = True;
+		state->visible = true;
 }
 
-static BOOL is_visible(struct smbcli_tree *tree, const char *fname)
+static bool is_visible(struct smbcli_tree *tree, const char *fname)
 {
 	struct list_state state;
 
-	state.visible = False;
+	state.visible = false;
 	state.fname = fname;
 
 	if (smbcli_list(tree, "*.*", 0, set_visible, &state) < 0) {
-		return False;
+		return false;
 	}
 	return state.visible;
 }
 
-static BOOL is_readable(struct smbcli_tree *tree, const char *fname)
+static bool is_readable(struct smbcli_tree *tree, const char *fname)
 {
 	int fnum;
 	fnum = smbcli_open(tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum < 0) {
-		return False;
+		return false;
 	}
 	smbcli_close(tree, fnum);
-	return True;
+	return true;
 }
 
-static BOOL is_writeable(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
+static bool is_writeable(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 			 const char *fname)
 {
 	int fnum;
 	fnum = smbcli_open(tree, fname, O_WRONLY, DENY_NONE);
 	if (fnum < 0) {
-		return False;
+		return false;
 	}
 	smbcli_close(tree, fnum);
-	return True;
+	return true;
 }
 
 /*
@@ -110,7 +110,7 @@ static BOOL is_writeable(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
  * might fail. But for our purposes it's sufficient.
  */
 
-static BOOL smbcli_file_exists(struct smbcli_tree *tree, const char *fname)
+static bool smbcli_file_exists(struct smbcli_tree *tree, const char *fname)
 {
 	return NT_STATUS_IS_OK(smbcli_getatr(tree, fname, NULL, NULL, NULL));
 }
@@ -138,7 +138,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 		    torture, &cli, torture_setting_string(torture, "host", NULL),
 		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
-		return False;
+		return false;
 	}
 
 	status = torture_second_tcon(torture, cli->session, "hideunread",
@@ -146,7 +146,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("second_tcon(hideunread) failed: %s\n",
 			 nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = torture_second_tcon(torture, cli->session, "hideunwrite",
@@ -154,7 +154,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("second_tcon(hideunwrite) failed: %s\n",
 			 nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	status = smbcli_unlink(cli->tree, fname);
@@ -167,14 +167,14 @@ bool torture_samba3_hide(struct torture_context *torture)
 	if (fnum == -1) {
 		d_printf("Failed to create %s - %s\n", fname,
 			 smbcli_errstr(cli->tree));
-		return False;
+		return false;
 	}
 
 	smbcli_close(cli->tree, fnum);
 
 	if (!smbcli_file_exists(cli->tree, fname)) {
 		d_printf("%s does not exist\n", fname);
-		return False;
+		return false;
 	}
 
 	/* R/W file should be visible everywhere */
@@ -182,27 +182,27 @@ bool torture_samba3_hide(struct torture_context *torture)
 	status = smbcli_chmod(cli->tree, fname, UNIX_R_USR|UNIX_W_USR);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_chmod failed: %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	if (!is_writeable(torture, cli->tree, fname)) {
 		d_printf("File not writable\n");
-		return False;
+		return false;
 	}
 	if (!is_readable(cli->tree, fname)) {
 		d_printf("File not readable\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(cli->tree, fname)) {
 		d_printf("r/w file not visible via normal share\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(hideunread, fname)) {
 		d_printf("r/w file not visible via hide unreadable\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(hideunwrite, fname)) {
 		d_printf("r/w file not visible via hide unwriteable\n");
-		return False;
+		return false;
 	}
 
 	/* R/O file should not be visible via hide unwriteable files */
@@ -211,27 +211,27 @@ bool torture_samba3_hide(struct torture_context *torture)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_chmod failed: %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	if (is_writeable(torture, cli->tree, fname)) {
 		d_printf("r/o is writable\n");
-		return False;
+		return false;
 	}
 	if (!is_readable(cli->tree, fname)) {
 		d_printf("r/o not readable\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(cli->tree, fname)) {
 		d_printf("r/o file not visible via normal share\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(hideunread, fname)) {
 		d_printf("r/o file not visible via hide unreadable\n");
-		return False;
+		return false;
 	}
 	if (is_visible(hideunwrite, fname)) {
 		d_printf("r/o file visible via hide unwriteable\n");
-		return False;
+		return false;
 	}
 
 	/* inaccessible file should be only visible on normal share */
@@ -239,33 +239,33 @@ bool torture_samba3_hide(struct torture_context *torture)
 	status = smbcli_chmod(cli->tree, fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_chmod failed: %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 	if (is_writeable(torture, cli->tree, fname)) {
 		d_printf("inaccessible file is writable\n");
-		return False;
+		return false;
 	}
 	if (is_readable(cli->tree, fname)) {
 		d_printf("inaccessible file is readable\n");
-		return False;
+		return false;
 	}
 	if (!is_visible(cli->tree, fname)) {
 		d_printf("inaccessible file not visible via normal share\n");
-		return False;
+		return false;
 	}
 	if (is_visible(hideunread, fname)) {
 		d_printf("inaccessible file visible via hide unreadable\n");
-		return False;
+		return false;
 	}
 	if (is_visible(hideunwrite, fname)) {
 		d_printf("inaccessible file visible via hide unwriteable\n");
-		return False;
+		return false;
 	}
 
 	smbcli_chmod(cli->tree, fname, UNIX_R_USR|UNIX_W_USR);
 	smbcli_unlink(cli->tree, fname);
 	
-	return True;
+	return true;
 }
 
 /*
@@ -277,7 +277,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 bool torture_samba3_closeerr(struct torture_context *tctx)
 {
 	struct smbcli_state *cli = NULL;
-	BOOL result = False;
+	bool result = false;
 	NTSTATUS status;
 	const char *dname = "closeerr.dir";
 	const char *fname = "closeerr.dir\\closerr.txt";
@@ -311,7 +311,7 @@ bool torture_samba3_closeerr(struct torture_context *tctx)
 		       talloc_asprintf(tctx, "smbcli_open failed: %s\n",
 				       smbcli_errstr(cli->tree)));
 
-	status = smbcli_nt_delete_on_close(cli->tree, fnum, True);
+	status = smbcli_nt_delete_on_close(cli->tree, fnum, true);
 
 	torture_assert_ntstatus_ok(tctx, status, 
 				   "setting delete_on_close on file failed !");
@@ -329,7 +329,7 @@ bool torture_samba3_closeerr(struct torture_context *tctx)
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_ACCESS_DENIED,
 				      "smbcli_close");
 
-	result = True;
+	result = true;
 	
  fail:
 	if (cli) {

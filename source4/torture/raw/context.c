@@ -35,7 +35,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -43,7 +43,7 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, v, correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -51,7 +51,7 @@
 	if ((v) == (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should not be %d\n", \
 		       __location__, #v, v, correct); \
-		ret = False; \
+		ret = false; \
 		goto done; \
 	}} while (0)
 
@@ -59,10 +59,10 @@
 /*
   test session ops
 */
-static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct smbcli_session *session;
 	struct smbcli_session *session2;
 	struct smbcli_session *session3;
@@ -84,11 +84,11 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING SESSION HANDLING\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, mem_ctx, False);
+	session = smbcli_session_init(cli->transport, mem_ctx, false);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -102,7 +102,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session->vuid = setup.out.vuid;
 
 	printf("create a third security context on the same transport, with vuid set\n");
-	session2 = smbcli_session_init(cli->transport, mem_ctx, False);
+	session2 = smbcli_session_init(cli->transport, mem_ctx, false);
 
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -129,7 +129,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		printf("create a fourth security context on the same transport, without extended security\n");
-		session3 = smbcli_session_init(cli->transport, mem_ctx, False);
+		session3 = smbcli_session_init(cli->transport, mem_ctx, false);
 
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -143,7 +143,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
 		printf("create a fouth anonymous security context on the same transport, without extended security\n");
-		session4 = smbcli_session_init(cli->transport, mem_ctx, False);
+		session4 = smbcli_session_init(cli->transport, mem_ctx, false);
 
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -163,7 +163,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 		
 	printf("use the same tree as the existing connection\n");
-	tree = smbcli_tree_init(session, mem_ctx, False);
+	tree = smbcli_tree_init(session, mem_ctx, false);
 	tree->tid = cli->tree->tid;
 
 	printf("create a file using the new vuid\n");
@@ -229,7 +229,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		
 		setups[i].in.credentials = cmdline_credentials;
 
-		sessions[i] = smbcli_session_init(cli->transport, mem_ctx, False);
+		sessions[i] = smbcli_session_init(cli->transport, mem_ctx, false);
 		composite_contexts[i] = smb_composite_sesssetup_send(sessions[i], &setups[i]);
 
 	}
@@ -257,10 +257,10 @@ done:
 /*
   test tree ops
 */
-static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *share, *host;
 	struct smbcli_tree *tree;
 	union smb_tcon tcon;
@@ -274,14 +274,14 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING TREE HANDLING\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	
 	printf("create a second tree context on the same session\n");
-	tree = smbcli_tree_init(cli->session, mem_ctx, False);
+	tree = smbcli_tree_init(cli->session, mem_ctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
@@ -362,10 +362,10 @@ done:
   this demonstrates that a tcon isn't autoclosed by a ulogoff
   the tcon can be reused using any other valid session later
 */
-static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *share, *host;
 	struct smbcli_session *session1;
 	struct smbcli_session *session2;
@@ -382,14 +382,14 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING TREE with ulogoff\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
 
 	printf("create the first new sessions\n");
-	session1 = smbcli_session_init(cli->transport, mem_ctx, False);
+	session1 = smbcli_session_init(cli->transport, mem_ctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(global_loadparm);
@@ -400,7 +400,7 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("vuid1=%d\n", session1->vuid);
 
 	printf("create a tree context on the with vuid1\n");
-	tree = smbcli_tree_init(session1, mem_ctx, False);
+	tree = smbcli_tree_init(session1, mem_ctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
@@ -445,7 +445,7 @@ static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("create the second new sessions\n");
-	session2 = smbcli_session_init(cli->transport, mem_ctx, False);
+	session2 = smbcli_session_init(cli->transport, mem_ctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(global_loadparm);
@@ -512,10 +512,10 @@ done:
   this test demonstrates that exit() only sees the PID
   used for the open() calls
 */
-static BOOL test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_open io;
 	union smb_write wr;
 	union smb_close cl;
@@ -527,7 +527,7 @@ static BOOL test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *m
 	printf("TESTING PID HANDLING exit() only cares about open() PID\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	pid1 = cli->session->pid;
@@ -620,10 +620,10 @@ done:
 /*
   test pid ops with 2 sessions
 */
-static BOOL test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	struct smbcli_session *session;
 	struct smb_composite_sesssetup setup;
 	union smb_open io;
@@ -637,11 +637,11 @@ static BOOL test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING PID HANDLING WITH 2 SESSIONS\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, mem_ctx, False);
+	session = smbcli_session_init(cli->transport, mem_ctx, false);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -724,10 +724,10 @@ done:
 /*
   test pid ops with 2 tcons
 */
-static BOOL test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	const char *share, *host;
 	struct smbcli_tree *tree;
 	union smb_tcon tcon;
@@ -743,14 +743,14 @@ static BOOL test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING PID HANDLING WITH 2 TCONS\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
+		return false;
 	}
 
 	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
 	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
 	
 	printf("create a second tree context on the same session\n");
-	tree = smbcli_tree_init(cli->session, mem_ctx, False);
+	tree = smbcli_tree_init(cli->session, mem_ctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
@@ -869,7 +869,7 @@ done:
 static bool torture_raw_context_int(struct torture_context *tctx, 
 									struct smbcli_state *cli)
 {
-	BOOL ret = True;
+	bool ret = true;
 
 	ret &= test_session(cli, tctx);
 	ret &= test_tree(cli, tctx);

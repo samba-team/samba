@@ -29,13 +29,13 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 
-static BOOL try_failed_login(struct smbcli_state *cli)
+static bool try_failed_login(struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	struct smb_composite_sesssetup setup;
 	struct smbcli_session *session;
 
-	session = smbcli_session_init(cli->transport, cli, False);
+	session = smbcli_session_init(cli->transport, cli, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(global_loadparm);
@@ -50,23 +50,23 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	talloc_free(session);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("Allowed session setup with invalid credentials?!\n");
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-BOOL torture_sec_leak(struct torture_context *tctx, struct smbcli_state *cli)
+bool torture_sec_leak(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	time_t t1 = time(NULL);
 	int timelimit = torture_setting_int(tctx, "timelimit", 20);
 
 	while (time(NULL) < t1+timelimit) {
 		if (!try_failed_login(cli)) {
-			return False;
+			return false;
 		}
 		talloc_report(NULL, stdout);
 	}
 
-	return True;
+	return true;
 }
