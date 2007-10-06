@@ -51,17 +51,17 @@ _PUBLIC_ bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
 	int i;
 
 	if (strcasecmp(name, lp_netbios_name(lp_ctx)) == 0) {
-		return True;
+		return true;
 	}
 
 	aliases = lp_netbios_aliases(lp_ctx);
 	for (i=0; aliases && aliases[i]; i++) {
 		if (strcasecmp(name, aliases[i]) == 0) {
-			return True;
+			return true;
 		}
 	}
 
-	return False;
+	return false;
 }
 
 
