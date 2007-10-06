@@ -99,16 +99,16 @@ static int sldb_int_option(struct share_config *scfg, const char *opt_name, int 
 	return ret;
 }
 
-static BOOL sldb_bool_option(struct share_config *scfg, const char *opt_name, BOOL defval)
+static bool sldb_bool_option(struct share_config *scfg, const char *opt_name, bool defval)
 {
 	const char *val;
 
        	val = sldb_string_option(scfg, opt_name, NULL);
 	if (val == NULL) return defval;
 
-	if (strcasecmp(val, "true") == 0) return True;
+	if (strcasecmp(val, "true") == 0) return true;
 
-	return False;
+	return false;
 }
 
 static const char **sldb_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name)
@@ -355,9 +355,9 @@ NTSTATUS sldb_create(struct share_context *ctx, const char *name, struct share_i
 
 	/* TODO: Security Descriptor */
 
-	SHARE_ADD_STRING(SHARE_AVAILABLE, "True");
-	SHARE_ADD_STRING(SHARE_BROWSEABLE, "True");
-	SHARE_ADD_STRING(SHARE_READONLY, "False");
+	SHARE_ADD_STRING(SHARE_AVAILABLE, "true");
+	SHARE_ADD_STRING(SHARE_BROWSEABLE, "true");
+	SHARE_ADD_STRING(SHARE_READONLY, "false");
 	SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "unixuid");
 	SHARE_ADD_STRING(SHARE_NTVFS_HANDLER, "posix");
 
@@ -429,7 +429,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS ret;
-	bool do_rename = False;
+	bool do_rename = false;
 	char *newname;
 	int err, i;
 
@@ -463,7 +463,7 @@ NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct share_info
 	for (i = 0; i < count; i++) {
 		if (strcasecmp(info[i].name, SHARE_NAME) == 0) {
 			if (strcasecmp(name, (char *)info[i].value) != 0) {
-				do_rename = True;
+				do_rename = true;
 				newname = (char *)info[i].value;
 				SHARE_MOD_STRING("cn", (char *)info[i].value);
 			}

@@ -103,8 +103,8 @@ struct share_ops {
 #define SHARE_VOLUME_DEFAULT		NULL
 #define SHARE_TYPE_DEFAULT		"DISK"	
 #define SHARE_CSC_POLICY_DEFAULT	0
-#define SHARE_AVAILABLE_DEFAULT		True
-#define SHARE_BROWSEABLE_DEFAULT	True
+#define SHARE_AVAILABLE_DEFAULT		true
+#define SHARE_BROWSEABLE_DEFAULT	true
 #define SHARE_MAX_CONNECTIONS_DEFAULT	0
 
 #define SHARE_DIR_MASK_DEFAULT                   0755
@@ -116,14 +116,14 @@ struct share_ops {
 
 /* I'd like to see the following options go away
  * and always use EAs and SECDESCs */
-#define SHARE_READONLY_DEFAULT		True
-#define SHARE_MAP_SYSTEM_DEFAULT	False
-#define SHARE_MAP_HIDDEN_DEFAULT	False
-#define SHARE_MAP_ARCHIVE_DEFAULT	True
+#define SHARE_READONLY_DEFAULT		true
+#define SHARE_MAP_SYSTEM_DEFAULT	false
+#define SHARE_MAP_HIDDEN_DEFAULT	false
+#define SHARE_MAP_ARCHIVE_DEFAULT	true
 
-#define SHARE_STRICT_LOCKING_DEFAULT	True
-#define SHARE_STRICT_SYNC_DEFAULT	False
-#define SHARE_MSDFS_ROOT_DEFAULT	False
-#define SHARE_CI_FILESYSTEM_DEFAULT	False
+#define SHARE_STRICT_LOCKING_DEFAULT	true
+#define SHARE_STRICT_SYNC_DEFAULT	false
+#define SHARE_MSDFS_ROOT_DEFAULT	false
+#define SHARE_CI_FILESYSTEM_DEFAULT	false
 
 #endif /* _SHARE_H */

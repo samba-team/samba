@@ -202,7 +202,7 @@ static bool param_pfunc (const char *name, const char *value, void *_ctx)
 	if (!p) {
 		p = talloc_zero(ctx->sections, struct param_opt);
 		if (p == NULL)
-			return False;
+			return false;
 
 		p->key = talloc_strdup(p, name);
 		p->value = talloc_strdup(p, value);
@@ -212,7 +212,7 @@ static bool param_pfunc (const char *name, const char *value, void *_ctx)
 		p->value = talloc_strdup(p, value);
 	}
 
-	return True;
+	return true;
 }
 
 struct param_context *param_init(TALLOC_CTX *mem_ctx)

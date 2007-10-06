@@ -158,12 +158,12 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
 	char *parm, *val;
-	BOOL ret;
+	bool ret;
 
 	if (strchr(opt_name, ':')) {
 		parm = talloc_strdup(scfg, opt_name);
 		if(!parm) {
-			return False;
+			return false;
 		}
 		val = strchr(parm, ':');
 		*val = '\0';

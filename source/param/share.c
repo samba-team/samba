@@ -34,7 +34,7 @@ int share_int_option(struct share_config *scfg, const char *opt_name, int defval
 	return scfg->ctx->ops->int_option(scfg, opt_name, defval);
 }
 
-BOOL share_bool_option(struct share_config *scfg, const char *opt_name, BOOL defval)
+bool share_bool_option(struct share_config *scfg, const char *opt_name, bool defval)
 {
 	return scfg->ctx->ops->bool_option(scfg, opt_name, defval);
 }

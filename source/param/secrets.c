@@ -86,7 +86,7 @@ bool secrets_init(void)
 	/* Ensure that the reseed is done now, while we are root, etc */
 	generate_random_buffer(&dummy, sizeof(dummy));
 
-	return True;
+	return true;
 }
 
 /*
@@ -97,7 +97,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 	char *path;
 	const char *url;
 	struct ldb_context *ldb;
-	BOOL existed;
+	bool existed;
 	const char *init_ldif = 
 		"dn: @ATTRIBUTES\n" \
 		"computerName: CASE_INSENSITIVE\n" \

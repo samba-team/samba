@@ -188,7 +188,7 @@ static int Continuation(char *line, int pos )
 }
 
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *userdata )
+static bool Section( myFILE *InFile, bool (*sfunc)(const char *, void *), void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -196,8 +196,8 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *
    *          sfunc   - Pointer to the function to be called if the section
    *                    name is successfully read.
    *
-   *  Output: True if the section name was read and True was returned from
-   *          <sfunc>.  False if <sfunc> failed or if a lexical error was
+   *  Output: true if the section name was read and true was returned from
+   *          <sfunc>.  false if <sfunc> failed or if a lexical error was
    *          encountered.
    *
    * ------------------------------------------------------------------------ **
@@ -229,7 +229,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
+        return( false );
         }
       InFile->bufr = tb;
       InFile->bSize += BUFR_INC;
@@ -243,12 +243,12 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *
         if( 0 == end )                  /* Don't allow an empty name.       */
           {
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
-          return( False );
+          return( false );
           }
         if( !sfunc(InFile->bufr,userdata) )            /* Got a valid name.  Deal with it. */
-          return( False );
+          return( false );
         (void)EatComment( InFile );     /* Finish off the line.             */
-        return( True );
+        return( true );
 
       case '\n':                      /* Got newline before closing ']'.    */
         i = Continuation( InFile->bufr, i );    /* Check for line continuation.     */
@@ -257,7 +257,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *
           InFile->bufr[end] = '\0';
           DEBUG(0, ("%s Badly formed line in configuration file: %s\n",
                    func, InFile->bufr ));
-          return( False );
+          return( false );
           }
         end = ( (i > 0) && (' ' == InFile->bufr[i - 1]) ) ? (i - 1) : (i);
         c = mygetc( InFile );             /* Continue with next line.         */
@@ -281,10 +281,10 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *
 
   /* We arrive here if we've met the EOF before the closing bracket. */
   DEBUG(0, ("%s Unexpected EOF in the configuration file\n", func));
-  return( False );
+  return( false );
   } /* Section */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *, void *), int c, void *userdata )
+static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *, void *), int c, void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -296,8 +296,8 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
    *                    line or a section header, there is no lead-in
    *                    character that can be discarded.
    *
-   *  Output: True if the parameter name and value were scanned and processed
-   *          successfully, else False.
+   *  Output: true if the parameter name and value were scanned and processed
+   *          successfully, else false.
    *
    *  Notes:  This function is in two parts.  The first loop scans the
    *          parameter name.  Internal whitespace is compressed, and an
@@ -326,7 +326,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
+        return( false );
         }
       InFile->bufr = tb;
       InFile->bSize += BUFR_INC;
@@ -338,7 +338,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
         if( 0 == end )              /* Don't allow an empty name.      */
           {
           DEBUG(0, ("%s Invalid parameter name in config. file.\n", func ));
-          return( False );
+          return( false );
           }
         InFile->bufr[end++] = '\0';         /* Mark end of string & advance.   */
         i       = end;              /* New string starts here.         */
@@ -353,7 +353,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
           InFile->bufr[end] = '\0';
           DEBUG(1,("%s Ignoring badly formed line in configuration file: %s\n",
                    func, InFile->bufr ));
-          return( True );
+          return( true );
           }
         end = ( (i > 0) && (' ' == InFile->bufr[i - 1]) ) ? (i - 1) : (i);
         c = mygetc( InFile );       /* Read past eoln.                   */
@@ -363,7 +363,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
       case EOF:
         InFile->bufr[i] = '\0';
         DEBUG(1,("%s Unexpected end-of-file at: %s\n", func, InFile->bufr ));
-        return( True );
+        return( true );
 
       default:
         if( isspace( c ) )     /* One ' ' per whitespace region.       */
@@ -394,7 +394,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
+        return( false );
         }
       InFile->bufr = tb;
       InFile->bSize += BUFR_INC;
@@ -431,9 +431,9 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *,
   return( pfunc( InFile->bufr, &InFile->bufr[vstart], userdata ) );   /* Pass name & value to pfunc().  */
   } /* Parameter */
 
-static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(const char *, void *),
-                   BOOL (*pfunc)(const char *, const char *, void *),
+static bool Parse( myFILE *InFile,
+                   bool (*sfunc)(const char *, void *),
+                   bool (*pfunc)(const char *, const char *, void *),
 				   void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan & parse the input.
@@ -444,7 +444,7 @@ static BOOL Parse( myFILE *InFile,
    *          pfunc   - Function to be called when a parameter is scanned.
    *                    See Parameter().
    *
-   *  Output: True if the file was successfully scanned, else False.
+   *  Output: true if the file was successfully scanned, else false.
    *
    *  Notes:  The input can be viewed in terms of 'lines'.  There are four
    *          types of lines:
@@ -475,7 +475,7 @@ static BOOL Parse( myFILE *InFile,
 
       case '[':                         /* Section Header. */
         if( !Section( InFile, sfunc, userdata ) )
-          return( False );
+          return( false );
         c = EatWhitespace( InFile );
         break;
 
@@ -485,12 +485,12 @@ static BOOL Parse( myFILE *InFile,
 
       default:                          /* Parameter line. */
         if( !Parameter( InFile, pfunc, c, userdata ) )
-          return( False );
+          return( false );
         c = EatWhitespace( InFile );
         break;
       }
     }
-  return( True );
+  return( true );
   } /* Parse */
 
 static myFILE *OpenConfFile( const char *FileName )
@@ -526,9 +526,9 @@ static myFILE *OpenConfFile( const char *FileName )
   return( ret );
   } /* OpenConfFile */
 
-BOOL pm_process( const char *FileName,
-                 BOOL (*sfunc)(const char *, void *),
-                 BOOL (*pfunc)(const char *, const char *, void *),
+bool pm_process( const char *FileName,
+                 bool (*sfunc)(const char *, void *),
+                 bool (*pfunc)(const char *, const char *, void *),
 				 void *userdata)
   /* ------------------------------------------------------------------------ **
    * Process the named parameter file.
@@ -550,7 +550,7 @@ BOOL pm_process( const char *FileName,
 
   InFile = OpenConfFile( FileName );          /* Open the config file. */
   if( NULL == InFile )
-    return( False );
+    return( false );
 
   DEBUG( 3, ("%s Processing configuration file \"%s\"\n", func, FileName) );
 
@@ -566,7 +566,7 @@ BOOL pm_process( const char *FileName,
       {
       DEBUG(0,("%s memory allocation failure.\n", func));
       myfile_close(InFile);
-      return( False );
+      return( false );
       }
     result = Parse( InFile, sfunc, pfunc, userdata );
     InFile->bufr  = NULL;
@@ -578,10 +578,10 @@ BOOL pm_process( const char *FileName,
   if( !result )                               /* Generic failure. */
     {
     DEBUG(0,("%s Failed.  Error returned from params.c:parse().\n", func));
-    return( False );
+    return( false );
     }
 
-  return( True );                             /* Generic success. */
+  return( true );                             /* Generic success. */
   } /* pm_process */
 
 /* -------------------------------------------------------------------------- */
