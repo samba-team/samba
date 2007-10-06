@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Reading Registry.pol PReg registry files
-   
+
    Copyright (C) Wilco Baan Hofman 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -53,13 +53,16 @@ static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 	return WERR_OK;
 }
 
-static WERROR reg_preg_diff_set_value(void *_data, const char *key_name, const char *value_name, uint32_t value_type, DATA_BLOB value_data)
+static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
+				      const char *value_name,
+				      uint32_t value_type, DATA_BLOB value_data)
 {
 	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
 }
 
-static WERROR reg_preg_diff_del_value(void *_data, const char *key_name, const char *value_name)
+static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
+				      const char *value_name)
 {
 	struct preg_data *data = (struct preg_data *)_data;
 	return WERR_OK;
@@ -83,14 +86,16 @@ static WERROR reg_preg_diff_done(void *_data)
 /**
  * Save registry diff
  */
-_PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename, struct reg_diff_callbacks **callbacks, void **callback_data)
+_PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
+				   struct reg_diff_callbacks **callbacks,
+				   void **callback_data)
 {
 	struct preg_data *data;
 	struct {
 		char hdr[4];
 		uint32_t version;
 	} preg_header;
-		
+
 
 	data = talloc_zero(ctx, struct preg_data);
 	*callback_data = data;
@@ -106,23 +111,25 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename, struct
 	}
 	snprintf(preg_header.hdr, 4, "PReg");
 	SIVAL(&preg_header, 4, 1);
-	write(data->fd, (uint8_t *)&preg_header,8); 
+	write(data->fd, (uint8_t *)&preg_header,8);
 
 	*callbacks = talloc(ctx, struct reg_diff_callbacks);
-	
+
 	(*callbacks)->add_key = reg_preg_diff_add_key;
 	(*callbacks)->del_key = reg_preg_diff_del_key;
 	(*callbacks)->set_value = reg_preg_diff_set_value;
 	(*callbacks)->del_value = reg_preg_diff_del_value;
 	(*callbacks)->del_all_values = reg_preg_diff_del_all_values;
 	(*callbacks)->done = reg_preg_diff_done;
-	
+
 	return WERR_OK;
 }
 /**
  * Load diff file
  */
-_PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *callbacks, void *callback_data)
+_PUBLIC_ WERROR reg_preg_diff_load(int fd,
+				   const struct reg_diff_callbacks *callbacks,
+				   void *callback_data)
 {
 	struct {
 		char hdr[4];
@@ -132,7 +139,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 	char *buf_ptr = buf;
 	TALLOC_CTX *mem_ctx = talloc_init("reg_preg_diff_load");
 
-	
+
 	/* Read first 8 bytes (the header) */
 	if (read(fd, &preg_header, 8) != 8) {
 		DEBUG(0, ("Could not read PReg file: %s\n",
@@ -147,14 +154,14 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 	}
 	if (preg_header.version > 1) {
 		DEBUG(0, ("Warning: file format version is higher than expected.\n"));
-	}		
+	}
 
 	/* Read the entries */
 	while(1) {
 		char *key, *value_name;
 		uint32_t value_type, length;
 		DATA_BLOB data;
-		
+
 		if (!W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr))) {
 			break;
 		}
@@ -163,17 +170,19 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 			close(fd);
 			return WERR_GENERAL_FAILURE;
 		}
-	
+
 		/* Get the path */
 		buf_ptr = buf;
-		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) && *buf_ptr != ';' && buf_ptr-buf < sizeof(buf)) { 
+		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		       *buf_ptr != ';' && buf_ptr-buf < sizeof(buf)) {
 			buf_ptr++;
 		}
 		key = talloc_asprintf(mem_ctx, "\\%s", buf);
-	
+
 		/* Get the name */
 		buf_ptr = buf;
-		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) && *buf_ptr != ';' && buf_ptr-buf < sizeof(buf)) { 
+		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		       *buf_ptr != ';' && buf_ptr-buf < sizeof(buf)) {
 			buf_ptr++;
 		}
 		value_name = talloc_strdup(mem_ctx, buf);
@@ -186,7 +195,8 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 		}
 		/* Read past delimiter */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) && *buf_ptr == ';') && buf_ptr-buf < sizeof(buf)) {
+		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		    *buf_ptr == ';') && buf_ptr-buf < sizeof(buf)) {
 			DEBUG(0, ("Error in PReg file.\n"));
 			close(fd);
 			return WERR_GENERAL_FAILURE;
@@ -199,39 +209,43 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 		}
 		/* Read past delimiter */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) && *buf_ptr == ';') && buf_ptr-buf < sizeof(buf)) {
+		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		    *buf_ptr == ';') && buf_ptr-buf < sizeof(buf)) {
 			DEBUG(0, ("Error in PReg file.\n"));
 			close(fd);
 			return WERR_GENERAL_FAILURE;
-		}	
+		}
 		/* Get the data */
 		buf_ptr = buf;
-		if (length < sizeof(buf) && read(fd, buf_ptr, length) != length) {
+		if (length < sizeof(buf) &&
+		    read(fd, buf_ptr, length) != length) {
 			DEBUG(0, ("Error while reading PReg\n"));
 			close(fd);
 			return WERR_GENERAL_FAILURE;
 		}
 		data = data_blob_talloc(mem_ctx, buf, length);
-		
+
 		/* Check if delimiter is in place (whine if it isn't) */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) && *buf_ptr == ']') && buf_ptr-buf < sizeof(buf)) {
-			DEBUG(0, ("Warning: Missing ']' in PReg file, expected ']', got '%c' 0x%x.\n",*buf_ptr, *buf_ptr));
+		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		    *buf_ptr == ']') && buf_ptr-buf < sizeof(buf)) {
+			DEBUG(0, ("Warning: Missing ']' in PReg file, expected ']', got '%c' 0x%x.\n",
+				*buf_ptr, *buf_ptr));
 		}
 
 		if (strcasecmp(value_name, "**DelVals") == 0) {
 			callbacks->del_all_values(callback_data, key);
 		} else if (strncasecmp(value_name, "**Del.",6) == 0) {
 			char *p = value_name+6;
-			
+
 			callbacks->del_value(callback_data, key, p);
 		} else 	if (strcasecmp(value_name, "**DeleteValues") == 0) {
 			char *p, *q;
 
 			p = (char *) data.data;
-			
+
 			while ((q = strchr_m(p, ';'))) {
-				*q = '\0'; 
+				*q = '\0';
 				q++;
 
 				callbacks->del_value(callback_data, key, p);
@@ -243,28 +257,30 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *call
 			char *p, *q, *full_key;
 
 			p = (char *) data.data;
-			
+
 			while ((q = strchr_m(p, ';'))) {
 				*q = '\0';
 				q++;
-	
-				full_key = talloc_asprintf(mem_ctx, "%s\\%s", key, p);
+
+				full_key = talloc_asprintf(mem_ctx, "%s\\%s",
+							   key, p);
 				callbacks->del_key(callback_data, full_key);
 				talloc_free(full_key);
 
-				p = q; 
+				p = q;
 			}
 			full_key = talloc_asprintf(mem_ctx, "%s\\%s", key, p);
 			callbacks->del_key(callback_data, full_key);
 			talloc_free(full_key);
 		} else {
 			callbacks->add_key(callback_data, key);
-			callbacks->set_value(callback_data, key, value_name, value_type, data);
+			callbacks->set_value(callback_data, key, value_name,
+					     value_type, data);
  		}
 		talloc_free(key);
 		talloc_free(value_name);
 		talloc_free(data.data);
 	}
-	close(fd);	
+	close(fd);
 	return WERR_OK;
 }

@@ -1,7 +1,7 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Reading registry patch files
-   
+
    Copyright (C) Jelmer Vernooij 2004-2007
    Copyright (C) Wilco Baan Hofman 2006
 
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,18 +25,22 @@
 #include "system/filesys.h"
 
 
-_PUBLIC_ WERROR reg_preg_diff_load(int fd, const struct reg_diff_callbacks *callbacks, void *callback_data);
+_PUBLIC_ WERROR reg_preg_diff_load(int fd,
+				   const struct reg_diff_callbacks *callbacks,
+				   void *callback_data);
 
-_PUBLIC_ WERROR reg_dotreg_diff_load(int fd, const struct reg_diff_callbacks *callbacks, void *callback_data);
+_PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
+				     const struct reg_diff_callbacks *callbacks,
+				     void *callback_data);
 
 /*
  * Generate difference between two keys
  */
-WERROR reg_generate_diff_key(struct registry_key *oldkey, 
-							 struct registry_key *newkey,
-							 const char *path,
-							 const struct reg_diff_callbacks *callbacks,
-							 void *callback_data)
+WERROR reg_generate_diff_key(struct registry_key *oldkey,
+			     struct registry_key *newkey,
+			     const char *path,
+			     const struct reg_diff_callbacks *callbacks,
+			     void *callback_data)
 {
 	int i;
 	struct registry_key *t1, *t2;
@@ -48,11 +52,12 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			 new_num_subkeys, new_num_values;
 
 	if (oldkey != NULL) {
-		error = reg_key_get_info(mem_ctx, oldkey, NULL, &old_num_subkeys, &old_num_values,
-								 NULL);
+		error = reg_key_get_info(mem_ctx, oldkey, NULL,
+					 &old_num_subkeys, &old_num_values,
+					 NULL);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error occured while getting key info: %s\n", 
-					  win_errstr(error)));
+			DEBUG(0, ("Error occured while getting key info: %s\n",
+				win_errstr(error)));
 			return error;
 		}
 	} else {
@@ -62,11 +67,12 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 
 	/* Subkeys that were deleted */
 	for (i = 0; i < old_num_subkeys; i++) {
-		error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i, &keyname1,
-											 NULL, NULL);
+		error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i,
+						     &keyname1,
+						     NULL, NULL);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by index: %s\n", 
-					  win_errstr(error2)));
+			DEBUG(0, ("Error occured while getting subkey by index: %s\n",
+				win_errstr(error2)));
 			continue;
 		}
 
@@ -81,8 +87,8 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		}
 
 		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n", 
-					  win_errstr(error2)));
+			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
@@ -90,15 +96,16 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		/* newkey didn't have such a subkey, add del diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
 		callbacks->del_key(callback_data, tmppath);
-		talloc_free(tmppath);	
+		talloc_free(tmppath);
 	}
 
 	if (newkey != NULL) {
-		error = reg_key_get_info(mem_ctx, newkey, NULL, &new_num_subkeys, &new_num_values,
-								 NULL);
+		error = reg_key_get_info(mem_ctx, newkey, NULL,
+					 &new_num_subkeys, &new_num_values,
+					 NULL);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error occured while getting key info: %s\n", 
-					  win_errstr(error)));
+			DEBUG(0, ("Error occured while getting key info: %s\n",
+				win_errstr(error)));
 			return error;
 		}
 	} else {
@@ -108,28 +115,29 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 
 	/* Subkeys that were added */
 	for(i = 0; i < new_num_subkeys; i++) {
-		error1 = reg_key_get_subkey_by_index(mem_ctx, newkey, i, &keyname1, 
-											 NULL, NULL);
+		error1 = reg_key_get_subkey_by_index(mem_ctx, newkey,
+						     i, &keyname1,
+						     NULL, NULL);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error occured while getting subkey by index: %s\n", 
-					  win_errstr(error1)));
+			DEBUG(0, ("Error occured while getting subkey by index: %s\n",
+				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
 		}
 
 		if (oldkey != NULL) {
 			error2 = reg_open_key(mem_ctx, oldkey, keyname1, &t1);
-				
+
 			if (W_ERROR_IS_OK(error2))
 				continue;
 		} else {
 			t1 = NULL;
 			error2 = WERR_DEST_NOT_FOUND;
 		}
-			
+
 		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %s\n", 
-					  win_errstr(error2)));
+			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
+				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
@@ -141,7 +149,8 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		W_ERROR_NOT_OK_RETURN(
 				reg_open_key(mem_ctx, newkey, keyname1, &t2));
 
-		reg_generate_diff_key(t1, t2, tmppath, callbacks, callback_data);
+		reg_generate_diff_key(t1, t2, tmppath,
+				      callbacks, callback_data);
 		talloc_free(tmppath);
 	}
 
@@ -151,56 +160,59 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		uint32_t type1, type2;
 		DATA_BLOB contents1, contents2;
 
-		error1 = reg_key_get_value_by_index(mem_ctx, newkey, i, 
-											&name, &type1, &contents1);
+		error1 = reg_key_get_value_by_index(mem_ctx, newkey, i,
+						    &name, &type1, &contents1);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Unable to get key by index: %s\n", 
-					  win_errstr(error1)));
+			DEBUG(0, ("Unable to get key by index: %s\n",
+				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
 		}
 
 		if (oldkey != NULL) {
-			error2 = reg_key_get_value_by_name(mem_ctx, oldkey, name, 
-										   &type2, &contents2);
-		} else 
+			error2 = reg_key_get_value_by_name(mem_ctx, oldkey,
+							   name, &type2,
+							   &contents2);
+		} else
 			error2 = WERR_DEST_NOT_FOUND;
-	
-		if(!W_ERROR_IS_OK(error2) && 
+
+		if(!W_ERROR_IS_OK(error2) &&
 		   !W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting value by name: %s\n", 
-					  win_errstr(error2)));
+			DEBUG(0, ("Error occured while getting value by name: %s\n",
+				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
 
-		if (W_ERROR_IS_OK(error2) && data_blob_cmp(&contents1, &contents2) == 0)
+		if (W_ERROR_IS_OK(error2) &&
+		    data_blob_cmp(&contents1, &contents2) == 0)
 			continue;
 
-		callbacks->set_value(callback_data, path, name, type1, contents1);
+		callbacks->set_value(callback_data, path, name,
+				     type1, contents1);
 	}
 
 	/* Values that were deleted */
 	for (i = 0; i < old_num_values; i++) {
 		const char *name;
-		error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &name, 
-											NULL, NULL);
+		error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &name,
+						    NULL, NULL);
 		if (!W_ERROR_IS_OK(error1)) {
-			DEBUG(0, ("Error ocurred getting value by index: %s\n", 
-					  win_errstr(error1)));
+			DEBUG(0, ("Error ocurred getting value by index: %s\n",
+				win_errstr(error1)));
 			talloc_free(mem_ctx);
 			return error1;
 		}
 
-		error2 = reg_key_get_value_by_name(mem_ctx, newkey, name, NULL, 
-										   NULL);
+		error2 = reg_key_get_value_by_name(mem_ctx, newkey, name, NULL,
+						   NULL);
 
 		if (W_ERROR_IS_OK(error2))
 			continue;
 
 		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting value by name: %s\n", 
-					  win_errstr(error2)));
+			DEBUG(0, ("Error occured while getting value by name: %s\n",
+				win_errstr(error2)));
 			return error2;
 		}
 
@@ -212,10 +224,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 }
 
 /**
- * Generate diff between two registry contexts 
+ * Generate diff between two registry contexts
  */
-_PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1, 
-				  struct registry_context *ctx2, 
+_PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
+				  struct registry_context *ctx2,
 				  const struct reg_diff_callbacks *callbacks,
 				  void *callback_data)
 {
@@ -225,21 +237,27 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 	for(i = HKEY_FIRST; i <= HKEY_LAST; i++) {
 		struct registry_key *r1 = NULL, *r2 = NULL;
 		error = reg_get_predefined_key(ctx1, i, &r1);
-		if (!W_ERROR_IS_OK(error) && !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
-			DEBUG(0, ("Unable to open hive %s for backend 1\n", reg_get_predef_name(i)));
+		if (!W_ERROR_IS_OK(error) &&
+		    !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
+			DEBUG(0, ("Unable to open hive %s for backend 1\n",
+				reg_get_predef_name(i)));
 		}
-		
+
 		error = reg_get_predefined_key(ctx2, i, &r2);
-		if (!W_ERROR_IS_OK(error) && !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
-			DEBUG(0, ("Unable to open hive %s for backend 2\n", reg_get_predef_name(i)));
+		if (!W_ERROR_IS_OK(error) &&
+		    !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
+			DEBUG(0, ("Unable to open hive %s for backend 2\n",
+				reg_get_predef_name(i)));
 		}
 
 		if (r1 == NULL && r2 == NULL)
 			continue;
 
-		error = reg_generate_diff_key(r1, r2, reg_get_predef_name(i), callbacks, callback_data);
+		error = reg_generate_diff_key(r1, r2, reg_get_predef_name(i),
+					      callbacks, callback_data);
 		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Unable to determine diff: %s\n", win_errstr(error)));
+			DEBUG(0, ("Unable to determine diff: %s\n",
+				win_errstr(error)));
 			return error;
 		}
 	}
@@ -252,21 +270,23 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 /**
  * Load diff file
  */
-_PUBLIC_ WERROR reg_diff_load(const char *filename, 
-			      const struct reg_diff_callbacks *callbacks, 
+_PUBLIC_ WERROR reg_diff_load(const char *filename,
+			      const struct reg_diff_callbacks *callbacks,
 			      void *callback_data)
 {
 	int fd;
 	char hdr[4];
-	
+
 	fd = open(filename, O_RDONLY, 0);
 	if (fd == -1) {
-		DEBUG(0, ("Error opening registry patch file `%s'\n", filename));
+		DEBUG(0, ("Error opening registry patch file `%s'\n",
+			filename));
 		return WERR_GENERAL_FAILURE;
 	}
 
 	if (read(fd, &hdr, 4) != 4) {
-		DEBUG(0, ("Error reading registry patch file `%s'\n", filename));
+		DEBUG(0, ("Error reading registry patch file `%s'\n",
+			filename));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -279,8 +299,8 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 	} else if (strncmp(hdr, "regf", 4) == 0) {
 		/* Must be a REGF NTConfig.pol file */
 		return reg_regf_diff_load(diff, fd);
-	} else 
-#endif 
+	} else
+#endif
 	if (strncmp(hdr, "PReg", 4) == 0) {
 		/* Must be a GPO Registry.pol file */
 		return reg_preg_diff_load(fd, callbacks, callback_data);
@@ -293,7 +313,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 /**
  * The reg_diff_apply functions
  */
-static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name) 
+static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
@@ -301,14 +321,16 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 
 	error = reg_key_add_abs(ctx, ctx, key_name, 0, NULL, &tmp);
 
-	if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) && !W_ERROR_IS_OK(error)) {
-		DEBUG(0, ("Error adding new key '%s': %s\n", key_name, win_errstr(error)));
+	if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) &&
+	    !W_ERROR_IS_OK(error)) {
+		DEBUG(0, ("Error adding new key '%s': %s\n",
+			key_name, win_errstr(error)));
 		return error;
 	}
 	return WERR_OK;
 }
 
-static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name) 
+static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	WERROR error;
@@ -319,16 +341,18 @@ static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 		DEBUG(0, ("Unable to delete key '%s'\n", key_name));
 		return error;
 	}
-	
+
 	return WERR_OK;
 }
 
-static WERROR reg_diff_apply_set_value(void *_ctx, const char *path, const char *value_name, uint32_t value_type, DATA_BLOB value)
+static WERROR reg_diff_apply_set_value(void *_ctx, const char *path,
+				       const char *value_name,
+				       uint32_t value_type, DATA_BLOB value)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
 	WERROR error;
-	
+
 	/* Open key */
 	error = reg_open_key_abs(ctx, ctx, path, &tmp);
 
@@ -338,22 +362,23 @@ static WERROR reg_diff_apply_set_value(void *_ctx, const char *path, const char 
 	}
 
 	/* Set value */
-	error = reg_val_set(tmp, value_name, 
+	error = reg_val_set(tmp, value_name,
 				 value_type, value);
 	if (!W_ERROR_IS_OK(error)) {
 		DEBUG(0, ("Error setting value '%s'\n", value_name));
 		return error;
-	}	
-	
+	}
+
 	return WERR_OK;
 }
 
-static WERROR reg_diff_apply_del_value (void *_ctx, const char *key_name, const char *value_name)
+static WERROR reg_diff_apply_del_value(void *_ctx, const char *key_name,
+				       const char *value_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
 	WERROR error;
-	
+
 	/* Open key */
 	error = reg_open_key_abs(ctx, ctx, key_name, &tmp);
 
@@ -367,7 +392,7 @@ static WERROR reg_diff_apply_del_value (void *_ctx, const char *key_name, const 
 		DEBUG(0, ("Error deleting value '%s'\n", value_name));
 		return error;
 	}
-	
+
 
 	return WERR_OK;
 }
@@ -387,26 +412,28 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 		return error;
 	}
 
-	W_ERROR_NOT_OK_RETURN(reg_key_get_info(ctx, key, 
-										   NULL, 
-										   NULL,
-										   &num_values, 
-										   NULL));
+	W_ERROR_NOT_OK_RETURN(reg_key_get_info(ctx, key,
+					       NULL,
+					       NULL,
+					       &num_values,
+					       NULL));
 
 	for (i = 0; i < num_values; i++) {
 		const char *name;
-		W_ERROR_NOT_OK_RETURN(reg_key_get_value_by_index(ctx, key, i, &name, 
-														 NULL, NULL));
+		W_ERROR_NOT_OK_RETURN(reg_key_get_value_by_index(ctx, key, i,
+								 &name,
+								 NULL, NULL));
 		W_ERROR_NOT_OK_RETURN(reg_del_value(key, name));
 	}
 
 	return WERR_OK;
 }
 
-/** 
- * Apply diff to a registry context 
+/**
+ * Apply diff to a registry context
  */
-_PUBLIC_ WERROR reg_diff_apply (const char *filename, struct registry_context *ctx)
+_PUBLIC_ WERROR reg_diff_apply(const char *filename,
+			       struct registry_context *ctx)
 {
 	struct reg_diff_callbacks callbacks;
 
