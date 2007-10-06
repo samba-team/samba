@@ -54,7 +54,7 @@ struct gensec_krb5_state {
 	krb5_data enc_ticket;
 	krb5_keyblock *keyblock;
 	krb5_ticket *ticket;
-	BOOL gssapi;
+	bool gssapi;
 };
 
 static int gensec_krb5_destroy(struct gensec_krb5_state *gensec_krb5_state)
@@ -112,7 +112,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	gensec_krb5_state->keyblock = NULL;
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
 	gensec_krb5_state->pac = data_blob(NULL, 0);
-	gensec_krb5_state->gssapi = False;
+	gensec_krb5_state->gssapi = false;
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
@@ -205,7 +205,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gen
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;
 		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
-		gensec_krb5_state->gssapi = True;
+		gensec_krb5_state->gssapi = true;
 	}
 	return nt_status;
 }
@@ -329,7 +329,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gen
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;
 		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
-		gensec_krb5_state->gssapi = True;
+		gensec_krb5_state->gssapi = true;
 	}
 	return nt_status;
 }
@@ -723,19 +723,19 @@ static NTSTATUS gensec_krb5_unwrap(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
-static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,
+static bool gensec_krb5_have_feature(struct gensec_security *gensec_security,
 				     uint32_t feature)
 {
 	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		return True;
+		return true;
 	} 
 	if (!gensec_krb5_state->gssapi && 
 	    (feature & GENSEC_FEATURE_SEAL)) {
-		return True;
+		return true;
 	} 
 	
-	return False;
+	return false;
 }
 
 static const char *gensec_krb5_oids[] = { 
@@ -755,8 +755,8 @@ static const struct gensec_security_ops gensec_fake_gssapi_krb5_security_ops = {
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
 	.have_feature   = gensec_krb5_have_feature,
-	.enabled        = False,
-	.kerberos       = True,
+	.enabled        = false,
+	.kerberos       = true,
 	.priority       = GENSEC_KRB5
 };
 
@@ -770,8 +770,8 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.have_feature   = gensec_krb5_have_feature,
 	.wrap           = gensec_krb5_wrap,
 	.unwrap         = gensec_krb5_unwrap,
-	.enabled        = True,
-	.kerberos       = True,
+	.enabled        = true,
+	.kerberos       = true,
 	.priority       = GENSEC_KRB5
 };
 

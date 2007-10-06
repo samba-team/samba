@@ -85,13 +85,13 @@ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
 		}
 		switch (use_kerberos) {
 		case CRED_DONT_USE_KERBEROS:
-			if (old_gensec_list[i]->kerberos == False) {
+			if (old_gensec_list[i]->kerberos == false) {
 				new_gensec_list[j] = old_gensec_list[i];
 				j++;
 			}
 			break;
 		case CRED_MUST_USE_KERBEROS:
-			if (old_gensec_list[i]->kerberos == True) {
+			if (old_gensec_list[i]->kerberos == true) {
 				new_gensec_list[j] = old_gensec_list[i];
 				j++;
 			}
@@ -489,7 +489,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT((*gensec_security)->peer_addr);
 	ZERO_STRUCT((*gensec_security)->my_addr);
 
-	(*gensec_security)->subcontext = False;
+	(*gensec_security)->subcontext = false;
 	(*gensec_security)->want_features = 0;
 	
 	if (ev == NULL) {
@@ -525,7 +525,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->ops = NULL;
 	(*gensec_security)->private_data = NULL;
 
-	(*gensec_security)->subcontext = True;
+	(*gensec_security)->subcontext = true;
 	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->msg_ctx = parent->msg_ctx;
 
@@ -1030,11 +1030,11 @@ _PUBLIC_ void gensec_want_feature(struct gensec_security *gensec_security,
  *
  */
 
-_PUBLIC_ BOOL gensec_have_feature(struct gensec_security *gensec_security,
+_PUBLIC_ bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature) 
 {
 	if (!gensec_security->ops->have_feature) {
-		return False;
+		return false;
 	}
 	
 	/* We might 'have' features that we don't 'want', because the
@@ -1261,13 +1261,13 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 */
 NTSTATUS gensec_init(void)
 {
-	static BOOL initialized = False;
+	static bool initialized = false;
 
 	init_module_fn static_init[] = STATIC_gensec_MODULES;
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
-	initialized = True;
+	initialized = true;
 	
 	shared_init = load_samba_modules(NULL, global_loadparm, "gensec");
 

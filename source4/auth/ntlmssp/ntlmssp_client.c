@@ -339,7 +339,7 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	} else {
 		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
-		gensec_ntlmssp_state->use_ntlmv2 = False;
+		gensec_ntlmssp_state->use_ntlmv2 = false;
 	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {

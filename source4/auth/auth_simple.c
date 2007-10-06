@@ -61,7 +61,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_info->mapped_state = True;
+	user_info->mapped_state = true;
 	user_info->client.account_name = nt4_username;
 	user_info->mapped.account_name = nt4_username;
 	user_info->client.domain_name = nt4_domain;

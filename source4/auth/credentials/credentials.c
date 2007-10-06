@@ -41,7 +41,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	}
 
 	cred->netlogon_creds = NULL;
-	cred->machine_account_pending = False;
+	cred->machine_account_pending = false;
 	cred->workstation_obtained = CRED_UNINITIALISED;
 	cred->username_obtained = CRED_UNINITIALISED;
 	cred->password_obtained = CRED_UNINITIALISED;
@@ -59,12 +59,12 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->old_password = NULL;
 	cred->smb_krb5_context = NULL;
 	cred->salt_principal = NULL;
-	cred->machine_account = False;
+	cred->machine_account = false;
 
 	cred->bind_dn = NULL;
 
 	cred->tries = 3;
-	cred->callback_running = False;
+	cred->callback_running = false;
 	cred->ev = NULL;
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
@@ -124,9 +124,9 @@ const char *cli_credentials_get_username(struct cli_credentials *cred)
 
 	if (cred->username_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->username = cred->username_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->username_obtained = CRED_SPECIFIED;
 		cli_credentials_invalidate_ccache(cred, cred->username_obtained);
 	}
@@ -134,36 +134,36 @@ const char *cli_credentials_get_username(struct cli_credentials *cred)
 	return cred->username;
 }
 
-BOOL cli_credentials_set_username(struct cli_credentials *cred, 
+bool cli_credentials_set_username(struct cli_credentials *cred, 
 				  const char *val, enum credentials_obtained obtained)
 {
 	if (obtained >= cred->username_obtained) {
 		cred->username = talloc_strdup(cred, val);
 		cred->username_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->username_obtained);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_username_callback(struct cli_credentials *cred,
+bool cli_credentials_set_username_callback(struct cli_credentials *cred,
 				  const char *(*username_cb) (struct cli_credentials *))
 {
 	if (cred->username_obtained < CRED_CALLBACK) {
 		cred->username_cb = username_cb;
 		cred->username_obtained = CRED_CALLBACK;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_bind_dn(struct cli_credentials *cred, 
+bool cli_credentials_set_bind_dn(struct cli_credentials *cred, 
 				 const char *bind_dn)
 {
 	cred->bind_dn = talloc_strdup(cred, bind_dn);
-	return True;
+	return true;
 }
 
 /**
@@ -192,9 +192,9 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 
 	if (cred->principal_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->principal = cred->principal_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->principal_obtained = CRED_SPECIFIED;
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 	}
@@ -213,7 +213,7 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 	return talloc_reference(mem_ctx, cred->principal);
 }
 
-BOOL cli_credentials_set_principal(struct cli_credentials *cred, 
+bool cli_credentials_set_principal(struct cli_credentials *cred, 
 				   const char *val, 
 				   enum credentials_obtained obtained)
 {
@@ -221,53 +221,53 @@ BOOL cli_credentials_set_principal(struct cli_credentials *cred,
 		cred->principal = talloc_strdup(cred, val);
 		cred->principal_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /* Set a callback to get the principal.  This could be a popup dialog,
  * a terminal prompt or similar.  */
 
-BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
+bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
 				  const char *(*principal_cb) (struct cli_credentials *))
 {
 	if (cred->principal_obtained < CRED_CALLBACK) {
 		cred->principal_cb = principal_cb;
 		cred->principal_obtained = CRED_CALLBACK;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /* Some of our tools are 'anonymous by default'.  This is a single
  * function to determine if authentication has been explicitly
  * requested */
 
-BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
+bool cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
 	if (cred->bind_dn) {
-		return True;
+		return true;
 	}
 
 	if (cli_credentials_is_anonymous(cred)){
-		return False;
+		return false;
 	}
 
 	if (cred->principal_obtained >= CRED_SPECIFIED) {
-		return True;
+		return true;
 	}
 	if (cred->username_obtained >= CRED_SPECIFIED) {
-		return True;
+		return true;
 	}
 
 	if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -283,9 +283,9 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 
 	if (cred->password_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->password = cred->password_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->password_obtained = CRED_CALLBACK_RESULT;
 		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 	}
@@ -296,7 +296,7 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 /* Set a password on the credentials context, including an indication
  * of 'how' the password was obtained */
 
-BOOL cli_credentials_set_password(struct cli_credentials *cred, 
+bool cli_credentials_set_password(struct cli_credentials *cred, 
 				  const char *val, 
 				  enum credentials_obtained obtained)
 {
@@ -306,23 +306,23 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred,
 		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 
 		cred->nt_hash = NULL;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_password_callback(struct cli_credentials *cred,
+bool cli_credentials_set_password_callback(struct cli_credentials *cred,
 					   const char *(*password_cb) (struct cli_credentials *))
 {
 	if (cred->password_obtained < CRED_CALLBACK) {
 		cred->password_cb = password_cb;
 		cred->password_obtained = CRED_CALLBACK;
 		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -339,12 +339,12 @@ const char *cli_credentials_get_old_password(struct cli_credentials *cred)
 	return cred->old_password;
 }
 
-BOOL cli_credentials_set_old_password(struct cli_credentials *cred, 
+bool cli_credentials_set_old_password(struct cli_credentials *cred, 
 				      const char *val, 
 				      enum credentials_obtained obtained)
 {
 	cred->old_password = talloc_strdup(cred, val);
-	return True;
+	return true;
 }
 
 /**
@@ -375,7 +375,7 @@ const struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *
 	}
 }
 
-BOOL cli_credentials_set_nt_hash(struct cli_credentials *cred,
+bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained)
 {
@@ -387,10 +387,10 @@ BOOL cli_credentials_set_nt_hash(struct cli_credentials *cred,
 		} else {
 			cred->nt_hash = NULL;
 		}
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -407,9 +407,9 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 
 	if (cred->domain_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->domain = cred->domain_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->domain_obtained = CRED_SPECIFIED;
 		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
 	}
@@ -418,7 +418,7 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 }
 
 
-BOOL cli_credentials_set_domain(struct cli_credentials *cred, 
+bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
 				enum credentials_obtained obtained)
 {
@@ -429,22 +429,22 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred,
 		cred->domain = strupper_talloc(cred, val);
 		cred->domain_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_domain_callback(struct cli_credentials *cred,
+bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
 					 const char *(*domain_cb) (struct cli_credentials *))
 {
 	if (cred->domain_obtained < CRED_CALLBACK) {
 		cred->domain_cb = domain_cb;
 		cred->domain_obtained = CRED_CALLBACK;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -461,9 +461,9 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 
 	if (cred->realm_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->realm = cred->realm_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->realm_obtained = CRED_SPECIFIED;
 		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
 	}
@@ -475,7 +475,7 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
  * Set the realm for this credentials context, and force it to
  * uppercase for the sainity of our local kerberos libraries 
  */
-BOOL cli_credentials_set_realm(struct cli_credentials *cred, 
+bool cli_credentials_set_realm(struct cli_credentials *cred, 
 			       const char *val, 
 			       enum credentials_obtained obtained)
 {
@@ -483,22 +483,22 @@ BOOL cli_credentials_set_realm(struct cli_credentials *cred,
 		cred->realm = strupper_talloc(cred, val);
 		cred->realm_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_realm_callback(struct cli_credentials *cred,
+bool cli_credentials_set_realm_callback(struct cli_credentials *cred,
 					const char *(*realm_cb) (struct cli_credentials *))
 {
 	if (cred->realm_obtained < CRED_CALLBACK) {
 		cred->realm_cb = realm_cb;
 		cred->realm_obtained = CRED_CALLBACK;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -512,38 +512,38 @@ const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 {
 	if (cred->workstation_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = True;
+	    	cred->callback_running = true;
 		cred->workstation = cred->workstation_cb(cred);
-	    	cred->callback_running = False;
+	    	cred->callback_running = false;
 		cred->workstation_obtained = CRED_SPECIFIED;
 	}
 
 	return cred->workstation;
 }
 
-BOOL cli_credentials_set_workstation(struct cli_credentials *cred, 
+bool cli_credentials_set_workstation(struct cli_credentials *cred, 
 				     const char *val, 
 				     enum credentials_obtained obtained)
 {
 	if (obtained >= cred->workstation_obtained) {
 		cred->workstation = talloc_strdup(cred, val);
 		cred->workstation_obtained = obtained;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
-BOOL cli_credentials_set_workstation_callback(struct cli_credentials *cred,
+bool cli_credentials_set_workstation_callback(struct cli_credentials *cred,
 					      const char *(*workstation_cb) (struct cli_credentials *))
 {
 	if (cred->workstation_obtained < CRED_CALLBACK) {
 		cred->workstation_cb = workstation_cb;
 		cred->workstation_obtained = CRED_CALLBACK;
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -722,10 +722,10 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 
 /**
  * Describe a credentials context as anonymous or authenticated
- * @retval True if anonymous, False if a username is specified
+ * @retval true if anonymous, false if a username is specified
  */
 
-BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
+bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
 	const char *username;
 	
@@ -739,10 +739,10 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 	 * here - anonymous is "", not NULL, which is 'never specified,
 	 * never guessed', ie programmer bug */
 	if (!username[0]) {
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 }
 
 /**
@@ -753,10 +753,10 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
  *
  * @retval whether the credentials struct is finished
  */
-BOOL cli_credentials_wrong_password(struct cli_credentials *cred)
+bool cli_credentials_wrong_password(struct cli_credentials *cred)
 {
 	if (cred->password_obtained != CRED_CALLBACK_RESULT) {
-		return False;
+		return false;
 	}
 	
 	cred->password_obtained = CRED_CALLBACK;

@@ -29,7 +29,7 @@
  Core of smb password checking routine.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
+static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *nt_response,
 				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
@@ -41,19 +41,19 @@ static BOOL smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
 		/* No password set - always false ! */
-		return False;
+		return false;
 	}
 	
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
-		return False;
+		return false;
 	}
 	
 	if (nt_response->length != 24) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%lu)\n", 
 			  (unsigned long)nt_response->length));
-		return False;
+		return false;
 	}
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
@@ -73,9 +73,9 @@ static BOOL smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 			SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
 		}
-		return True;
+		return true;
 	} 
-	return False;
+	return false;
 }
 
 /****************************************************************************
@@ -83,12 +83,12 @@ static BOOL smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
  Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
+static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *ntv2_response,
 				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
-				 BOOL upper_case_domain, /* should the domain be transformed into upper case? */
+				 bool upper_case_domain, /* should the domain be transformed into upper case? */
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -98,14 +98,14 @@ static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
-		/* No password set - always False */
-		return False;
+		/* No password set - always false */
+		return false;
 	}
 
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
-		return False;
+		return false;
 	}
 	
 	if (ntv2_response->length < 24) {
@@ -114,7 +114,7 @@ static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 		   for LMv2, let alone NTLMv2. */
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%lu)\n", 
 			  (unsigned long)ntv2_response->length));
-		return False;
+		return false;
 	}
 
 	client_key_data = data_blob_talloc(mem_ctx, ntv2_response->data+16, ntv2_response->length-16);
@@ -124,7 +124,7 @@ static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	*/
 
 	if (!ntv2_owf_gen(part_passwd, user, domain, upper_case_domain, kr)) {
-		return False;
+		return false;
 	}
 
 	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
@@ -147,9 +147,9 @@ static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 			SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key->data);
 		}
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /****************************************************************************
@@ -157,12 +157,12 @@ static BOOL smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
  Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
 
-static BOOL smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
+static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *ntv2_response,
 				const uint8_t *part_passwd,
 				const DATA_BLOB *sec_blob,
 				const char *user, const char *domain,
-				BOOL upper_case_domain, /* should the domain be transformed into upper case? */
+				bool upper_case_domain, /* should the domain be transformed into upper case? */
 				DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -172,14 +172,14 @@ static BOOL smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
-		/* No password set - always False */
-		return False;
+		/* No password set - always false */
+		return false;
 	}
 
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_sess_key_ntlmv2: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
-		return False;
+		return false;
 	}
 	
 	if (ntv2_response->length < 24) {
@@ -188,19 +188,19 @@ static BOOL smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 		   for LMv2, let alone NTLMv2. */
 		DEBUG(0, ("smb_sess_key_ntlmv2: incorrect password length (%lu)\n", 
 			  (unsigned long)ntv2_response->length));
-		return False;
+		return false;
 	}
 
 	client_key_data = data_blob_talloc(mem_ctx, ntv2_response->data+16, ntv2_response->length-16);
 
 	if (!ntv2_owf_gen(part_passwd, user, domain, upper_case_domain, kr)) {
-		return False;
+		return false;
 	}
 
 	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
 	*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 	SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key->data);
-	return True;
+	return true;
 }
 
 /**
@@ -311,7 +311,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		struct samr_Password client_nt;
 		struct samr_Password client_lm;
 		char *unix_pw = NULL;
-		BOOL lm_ok;
+		bool lm_ok;
 
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
@@ -322,12 +322,12 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					  lm_response->data, lm_response->length, 
 					   (void **)&unix_pw) != -1)) {
 			if (E_deshash(unix_pw, client_lm.hash)) {
-				lm_ok = True;
+				lm_ok = true;
 			} else {
-				lm_ok = False;
+				lm_ok = false;
 			}
 		} else {
-			lm_ok = False;
+			lm_ok = false;
 		}
 		return hash_password_check(mem_ctx, 
 					   lm_ok ? &client_lm : NULL, 
@@ -351,7 +351,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 client_domain,
-					 False,
+					 false,
 					 user_sess_key)) {
 			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
@@ -366,7 +366,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 client_domain,
-					 True,
+					 true,
 					 user_sess_key)) {
 			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
@@ -381,7 +381,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 "",
-					 False,
+					 false,
 					 user_sess_key)) {
 			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
@@ -476,7 +476,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 client_domain,
-				 False,
+				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -488,7 +488,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    client_domain,
-					    False,
+					    false,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
@@ -507,7 +507,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 client_domain,
-				 True,
+				 true,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -519,7 +519,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    client_domain,
-					    True,
+					    true,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
@@ -538,7 +538,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 "",
-				 False,
+				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -550,7 +550,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    "",
-					    False,
+					    false,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */

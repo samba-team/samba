@@ -82,7 +82,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 	}
 	talloc_reference(*user_info_mapped, user_info);
 	**user_info_mapped = *user_info;
-	(*user_info_mapped)->mapped_state = True;
+	(*user_info_mapped)->mapped_state = true;
 	(*user_info_mapped)->mapped.domain_name = talloc_strdup(*user_info_mapped, domain);
 	(*user_info_mapped)->mapped.account_name = talloc_strdup(*user_info_mapped, account_name);
 	talloc_free(account_name);
@@ -342,7 +342,7 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	server_info->bad_password_count = base->bad_password_count;
 	server_info->acct_flags = base->acct_flags;
 
-	server_info->authenticated = True;
+	server_info->authenticated = true;
 
 	/* ensure we are never given NULL session keys */
 
@@ -428,7 +428,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversuppl
 
 	server_info->acct_flags = ACB_NORMAL;
 
-	server_info->authenticated = False;
+	server_info->authenticated = false;
 
 	*_server_info = server_info;
 
@@ -498,7 +498,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied
 
 	server_info->acct_flags = ACB_NORMAL;
 
-	server_info->authenticated = True;
+	server_info->authenticated = true;
 
 	*_server_info = server_info;
 
@@ -582,7 +582,7 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx)
 }
 
 static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx, 
-					  BOOL anonymous_credentials, 
+					  bool anonymous_credentials, 
 					  struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
@@ -650,7 +650,7 @@ _PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = _auth_system_session_info(mem_ctx, False, &session_info);
+	nt_status = _auth_system_session_info(mem_ctx, false, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}

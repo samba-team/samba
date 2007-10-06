@@ -65,7 +65,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 					      const uint8_t *data, size_t length, 
 					      const uint8_t *whole_pdu, size_t pdu_length, 
 					      enum ntlmssp_direction direction,
-					      DATA_BLOB *sig, BOOL encrypt_sig)
+					      DATA_BLOB *sig, bool encrypt_sig)
 {
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 
@@ -142,7 +142,7 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_secu
 	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 					     data, length, 
 					     whole_pdu, pdu_length, 
-					     NTLMSSP_SEND, sig, True);
+					     NTLMSSP_SEND, sig, true);
 }
 
 /**
@@ -169,7 +169,7 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 	nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 						  data, length, 
 						  whole_pdu, pdu_length, 
-						  NTLMSSP_RECEIVE, &local_sig, True);
+						  NTLMSSP_RECEIVE, &local_sig, true);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("NTLMSSP packet check failed with %s\n", nt_errstr(nt_status)));
@@ -236,7 +236,7 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 		nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 							  data, length, 
 							  whole_pdu, pdu_length, 
-							  NTLMSSP_SEND, sig, False);
+							  NTLMSSP_SEND, sig, false);
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, data, length);
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 			arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state, sig->data+4, 8);

@@ -65,7 +65,7 @@ struct gensec_gssapi_state {
 
 	gss_cred_id_t delegated_cred_handle;
 
-	BOOL sasl; /* We have two different mechs in this file: One
+	bool sasl; /* We have two different mechs in this file: One
 		    * for SASL wrapped GSSAPI and another for normal
 		    * GSSAPI */
 	enum gensec_gssapi_sasl_state sasl_state;
@@ -157,7 +157,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->max_wrap_buf_size
 		= lp_parm_int(global_loadparm, NULL, "gensec_gssapi", "max wrap buf size", 65536);
 		
-	gensec_gssapi_state->sasl = False;
+	gensec_gssapi_state->sasl = false;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
 
 	gensec_security->private_data = gensec_gssapi_state;
@@ -291,7 +291,7 @@ static NTSTATUS gensec_gssapi_sasl_server_start(struct gensec_security *gensec_s
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-		gensec_gssapi_state->sasl = True;
+		gensec_gssapi_state->sasl = true;
 	}
 	return nt_status;
 }
@@ -386,7 +386,7 @@ static NTSTATUS gensec_gssapi_sasl_client_start(struct gensec_security *gensec_s
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-		gensec_gssapi_state->sasl = True;
+		gensec_gssapi_state->sasl = true;
 	}
 	return nt_status;
 }
@@ -632,7 +632,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 
 			maj_stat = gss_wrap(&min_stat, 
 					    gensec_gssapi_state->gssapi_context, 
-					    False,
+					    false,
 					    GSS_C_QOP_DEFAULT,
 					    &input_token,
 					    &conf_state,
@@ -697,7 +697,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 
 			maj_stat = gss_wrap(&min_stat, 
 					    gensec_gssapi_state->gssapi_context, 
-					    False,
+					    false,
 					    GSS_C_QOP_DEFAULT,
 					    &input_token,
 					    &conf_state,
@@ -1110,7 +1110,7 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 }
 
 /* Try to figure out what features we actually got on the connection */
-static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security, 
+static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security, 
 				       uint32_t feature) 
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
@@ -1136,7 +1136,7 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSSAPI/Krb5 */
 		if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
-			return True;
+			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
@@ -1144,9 +1144,9 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /*
@@ -1414,8 +1414,8 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.enabled        = False,
-	.kerberos       = True,
+	.enabled        = false,
+	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
 };
 
@@ -1437,8 +1437,8 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.enabled        = True,
-	.kerberos       = True,
+	.enabled        = true,
+	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
 };
 
@@ -1456,8 +1456,8 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.wrap             = gensec_gssapi_wrap,
 	.unwrap           = gensec_gssapi_unwrap,
 	.have_feature     = gensec_gssapi_have_feature,
-	.enabled          = True,
-	.kerberos         = True,
+	.enabled          = true,
+	.kerberos         = true,
 	.priority         = GENSEC_GSSAPI
 };
 

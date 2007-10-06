@@ -76,7 +76,7 @@ const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName",
  bitmask.
 ****************************************************************************/
                                                                                                               
-static BOOL logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
+static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
 	const struct ldb_val *hours;
@@ -88,12 +88,12 @@ static BOOL logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 	hours = ldb_msg_find_ldb_val(msg, "logonHours");
 	if (!hours) {
 		DEBUG(5,("logon_hours_ok: No hours restrictions for user %s\n", name_for_logs));
-		return True;
+		return true;
 	}
 
 	if (hours->length != 168/8) {
 		DEBUG(5,("logon_hours_ok: malformed logon hours restrictions for user %s\n", name_for_logs));
-		return True;		
+		return true;		
 	}
 
 	lasttime = time(NULL);
@@ -101,7 +101,7 @@ static BOOL logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 	if (!utctime) {
 		DEBUG(1, ("logon_hours_ok: failed to get gmtime. Failing logon for user %s\n",
 			name_for_logs));
-		return False;
+		return false;
 	}
 
 	/* find the corresponding byte and bit */
@@ -122,14 +122,14 @@ static BOOL logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
 			  "logon at this time (%s).\n",
 			  name_for_logs, asct ));
-		return False;
+		return false;
 	}
 
 	asct = asctime(utctime);
 	DEBUG(5,("logon_hours_ok: user %s allowed to logon at this time (%s)\n",
 		name_for_logs, asct ? asct : "UNKNOWN TIME" ));
 
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -205,7 +205,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Test workstation. Workstation list is comma separated. */
 	if (logon_workstation && workstation_list && *workstation_list) {
-		BOOL invalid_ws = True;
+		bool invalid_ws = true;
 		int i;
 		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
 		
@@ -214,7 +214,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				  workstations[i], logon_workstation));
 
 			if (strequal(workstations[i], logon_workstation)) {
-				invalid_ws = False;
+				invalid_ws = false;
 				break;
 			}
 		}
@@ -371,7 +371,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->user_session_key = user_sess_key;
 	server_info->lm_session_key = lm_sess_key;
 
-	server_info->authenticated = True;
+	server_info->authenticated = true;
 
 	*_server_info = server_info;
 

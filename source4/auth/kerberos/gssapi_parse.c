@@ -64,14 +64,14 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2])
+bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2])
 {
-	BOOL ret;
+	bool ret;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int data_remaining;
 
 	if (!data) {
-		return False;
+		return false;
 	}
 
 	asn1_load(data, *blob);
@@ -81,7 +81,7 @@ BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 	data_remaining = asn1_tag_remaining(data);
 
 	if (data_remaining < 3) {
-		data->has_error = True;
+		data->has_error = true;
 	} else {
 		asn1_read(data, tok_id, 2);
 		data_remaining -= 2;
@@ -102,12 +102,12 @@ BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 /*
   check a GSS-API wrapper packet givin an expected OID
 */
-BOOL gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
+bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
-	BOOL ret;
+	bool ret;
 	struct asn1_data *data = asn1_init(NULL);
 
-	if (!data) return False;
+	if (!data) return false;
 
 	asn1_load(data, *blob);
 	asn1_start_tag(data, ASN1_APPLICATION(0));

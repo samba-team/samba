@@ -240,16 +240,16 @@ NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
 }
 
 void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
-			      uint32_t neg_flags, BOOL allow_lm)
+			      uint32_t neg_flags, bool allow_lm)
 {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
-		gensec_ntlmssp_state->unicode = True;
+		gensec_ntlmssp_state->unicode = true;
 	} else {
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-		gensec_ntlmssp_state->unicode = False;
+		gensec_ntlmssp_state->unicode = false;
 	}
 
 	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm && !gensec_ntlmssp_state->use_ntlmv2) {
@@ -341,40 +341,40 @@ DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 	return weakened_key;
 }
 
-static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
+static bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 					uint32_t feature)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 	if (feature & GENSEC_FEATURE_SIGN) {
 		if (!gensec_ntlmssp_state->session_key.length) {
-			return False;
+			return false;
 		}
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-			return True;
+			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		if (!gensec_ntlmssp_state->session_key.length) {
-			return False;
+			return false;
 		}
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-			return True;
+			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		if (gensec_ntlmssp_state->session_key.length) {
-			return True;
+			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return True;
+		return true;
 	}
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
 NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
@@ -418,7 +418,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.session_key	= gensec_ntlmssp_session_key,
 	.session_info   = gensec_ntlmssp_session_info,
 	.have_feature   = gensec_ntlmssp_have_feature,
-	.enabled        = True,
+	.enabled        = true,
 	.priority       = GENSEC_NTLMSSP
 };
 
