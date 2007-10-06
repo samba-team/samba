@@ -61,7 +61,7 @@ static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 	}
 #endif
 
-	call->wreplconn->assoc_ctx.stopped	= False;
+	call->wreplconn->assoc_ctx.stopped	= false;
 	call->wreplconn->assoc_ctx.our_ctx	= WREPLSRV_VALID_ASSOC_CTX;
 	call->wreplconn->assoc_ctx.peer_ctx	= start->assoc_ctx;
 
@@ -90,7 +90,7 @@ static NTSTATUS wreplsrv_in_stop_assoc_ctx(struct wreplsrv_in_call *call)
 {
 	struct wrepl_stop *stop_out		= &call->rep_packet.message.stop;
 
-	call->wreplconn->assoc_ctx.stopped	= True;
+	call->wreplconn->assoc_ctx.stopped	= true;
 
 	call->rep_packet.mess_type		= WREPL_STOP_ASSOCIATION;
 	stop_out->reason			= 4;
@@ -120,7 +120,7 @@ static NTSTATUS wreplsrv_in_stop_association(struct wreplsrv_in_call *call)
 	}
 
 	/* this will cause to not receive packets anymore and terminate the connection if the reply is send */
-	call->terminate_after_send = True;
+	call->terminate_after_send = true;
 	return wreplsrv_in_stop_assoc_ctx(call);
 }
 
@@ -133,7 +133,7 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	repl_out->command = WREPL_REPL_TABLE_REPLY;
 
 	return wreplsrv_fill_wrepl_table(service, call, table_out,
-					 service->wins_db->local_owner, True);
+					 service->wins_db->local_owner, true);
 }
 
 static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,

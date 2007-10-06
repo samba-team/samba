@@ -138,7 +138,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	struct wreplsrv_service *service = partner->service;
 	struct wreplsrv_out_connect_state *state = NULL;
 	struct wreplsrv_out_connection **wreplconnp = &wreplconn;
-	BOOL cached_connection = False;
+	bool cached_connection = false;
 
 	c = talloc_zero(partner, struct composite_context);
 	if (!c) goto failed;
@@ -153,11 +153,11 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	c->private_data	= state;
 
 	if (type == WINSREPL_PARTNER_PUSH) {
-		cached_connection	= True;
+		cached_connection	= true;
 		wreplconn		= partner->push.wreplconn;
 		wreplconnp		= &partner->push.wreplconn;
 	} else if (type == WINSREPL_PARTNER_PULL) {
-		cached_connection	= True;
+		cached_connection	= true;
 		wreplconn		= partner->pull.wreplconn;
 		wreplconnp		= &partner->pull.wreplconn;
 	}
@@ -572,7 +572,7 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycl
 	struct wreplsrv_owner *local_owner;
 	uint32_t i;
 	uint64_t old_max_version = 0;
-	BOOL do_pull = False;
+	bool do_pull = false;
 
 	for (i=state->current; i < state->table_io.out.num_owners; i++) {
 		current_owner = wreplsrv_find_owner(state->io->in.partner->service,
@@ -593,7 +593,7 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycl
 		 * so fetch them
 		 */
 		if (!local_owner) {
-			do_pull		= True;
+			do_pull		= true;
 			
 			break;
 		}
@@ -603,7 +603,7 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycl
 		 * fetch them
 		 */
 		if (current_owner->owner.max_version > local_owner->owner.max_version) {
-			do_pull		= True;
+			do_pull		= true;
 			old_max_version	= local_owner->owner.max_version;
 			break;
 		}
@@ -829,7 +829,7 @@ struct wreplsrv_push_notify_state {
 	struct composite_context *c;
 	struct wreplsrv_push_notify_io *io;
 	enum wrepl_replication_cmd command;
-	BOOL full_table;
+	bool full_table;
 	struct wrepl_send_ctrl ctrl;
 	struct wrepl_request *req;
 	struct wrepl_packet req_packet;
@@ -946,7 +946,7 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* we won't get a reply to a inform message */
-	state->ctrl.send_only		= True;
+	state->ctrl.send_only		= true;
 
 	state->req = wrepl_request_send(state->wreplconn->sock, req, &state->ctrl);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
@@ -968,16 +968,16 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 
 	switch (state->command) {
 	case WREPL_REPL_UPDATE:
-		state->full_table = True;
+		state->full_table = true;
 		return wreplsrv_push_notify_update(state);
 	case WREPL_REPL_UPDATE2:
-		state->full_table = False;
+		state->full_table = false;
 		return wreplsrv_push_notify_update(state);
 	case WREPL_REPL_INFORM:
-		state->full_table = True;
+		state->full_table = true;
 		return wreplsrv_push_notify_inform(state);
 	case WREPL_REPL_INFORM2:
-		state->full_table = False;
+		state->full_table = false;
 		return wreplsrv_push_notify_inform(state);
 	default:
 		return NT_STATUS_INTERNAL_ERROR;

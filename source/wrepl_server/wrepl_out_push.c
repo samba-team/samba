@@ -25,7 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
 
-static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL propagate);
+static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, bool propagate);
 
 static void wreplsrv_push_handler_creq(struct composite_context *creq)
 {
@@ -62,7 +62,7 @@ done:
 	talloc_free(old_notify_io);
 }
 
-static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL propagate)
+static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, bool propagate)
 {
 	/* a push for this partner is currently in progress, so we're done */
 	if (partner->push.creq) return;
@@ -137,7 +137,7 @@ NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 		/* if the configured change count isn't reached, go to the next partner */
 		if (change_count < partner->push.change_count) continue;
 
-		wreplsrv_out_partner_push(partner, False);
+		wreplsrv_out_partner_push(partner, false);
 	}
 
 	return NT_STATUS_OK;

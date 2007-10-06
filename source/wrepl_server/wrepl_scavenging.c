@@ -59,9 +59,9 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	const char *old_state=NULL;
 	const char *new_state=NULL;
 	uint32_t modify_flags;
-	BOOL modify_record;
-	BOOL delete_record;
-	BOOL delete_tombstones;
+	bool modify_record;
+	bool delete_record;
+	bool delete_tombstones;
 	struct timeval tombstone_extra_time;
 
 	now_timestr = ldb_timestring(tmp_mem, now);
@@ -94,8 +94,8 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		talloc_free(res->msgs[i]);
 
 		modify_flags	= 0;
-		modify_record	= False;
-		delete_record	= False;
+		modify_record	= false;
+		delete_record	= false;
 
 		switch (rec->state) {
 		case WREPL_STATE_ACTIVE:
@@ -107,7 +107,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 				rec->expire_time= service->config.tombstone_interval + now;
 			}
 			modify_flags	= 0;
-			modify_record	= True;
+			modify_record	= true;
 			break;
 
 		case WREPL_STATE_RELEASED:
@@ -116,7 +116,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 			rec->state	= WREPL_STATE_TOMBSTONE;
 			rec->expire_time= service->config.tombstone_timeout + now;
 			modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
-			modify_record	= True;
+			modify_record	= true;
 			break;
 
 		case WREPL_STATE_TOMBSTONE:
@@ -124,7 +124,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 			new_state	= "tombstone";
 			if (!delete_tombstones) break;
 			new_state	= "deleted";
-			delete_record = True;
+			delete_record = true;
 			break;
 
 		case WREPL_STATE_RESERVED:
@@ -173,9 +173,9 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	const char *old_state=NULL;
 	const char *new_state=NULL;
 	uint32_t modify_flags;
-	BOOL modify_record;
-	BOOL delete_record;
-	BOOL delete_tombstones;
+	bool modify_record;
+	bool delete_record;
+	bool delete_tombstones;
 	struct timeval tombstone_extra_time;
 
 	now_timestr = ldb_timestring(tmp_mem, now);
@@ -208,8 +208,8 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 		talloc_free(res->msgs[i]);
 
 		modify_flags	= 0;
-		modify_record	= False;
-		delete_record	= False;
+		modify_record	= false;
+		delete_record	= false;
 
 		switch (rec->state) {
 		case WREPL_STATE_ACTIVE:
@@ -223,7 +223,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 			rec->state	= WREPL_STATE_TOMBSTONE;
 			rec->expire_time= service->config.tombstone_timeout + now;
 			modify_flags	= 0;
-			modify_record	= True;
+			modify_record	= true;
 			break;
 
 		case WREPL_STATE_TOMBSTONE:
@@ -231,7 +231,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 			new_state	= "tombstone";
 			if (!delete_tombstones) break;
 			new_state	= "deleted";
-			delete_record = True;
+			delete_record = true;
 			break;
 
 		case WREPL_STATE_RESERVED:
@@ -282,9 +282,9 @@ static void verify_handler(struct irpc_request *ireq)
 	const char *new_state = "active";
 	const char *new_owner = "replica";
 	uint32_t modify_flags = 0;
-	BOOL modify_record = False;
-	BOOL delete_record = False;
-	BOOL different = False;
+	bool modify_record = false;
+	bool delete_record = false;
+	bool different = false;
 	int ret;
 	NTSTATUS status;
 	uint32_t i, j;
@@ -298,25 +298,25 @@ static void verify_handler(struct irpc_request *ireq)
 	 */
 	status = irpc_call_recv(ireq);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
-		delete_record = True;
+		delete_record = true;
 		new_state = "deleted";
 	} else if (NT_STATUS_IS_OK(status) && rec->type != WREPL_TYPE_GROUP) {
 		for (i=0; i < s->r.out.num_addrs; i++) {
-			BOOL found = False;
+			bool found = false;
 			for (j=0; rec->addresses[j]; j++) {
 				if (strcmp(s->r.out.addrs[i].addr, rec->addresses[j]->address) == 0) {
-					found = True;
+					found = true;
 					break;
 				}
 			}
 			if (!found) {
-				different = True;
+				different = true;
 				break;
 			}
 		}
 	} else if (NT_STATUS_IS_OK(status) && rec->type == WREPL_TYPE_GROUP) {
 		if (s->r.out.num_addrs != 1 || strcmp(s->r.out.addrs[0].addr, "255.255.255.255") != 0) {
-			different = True;
+			different = true;
 		}
 	}
 
@@ -336,7 +336,7 @@ static void verify_handler(struct irpc_request *ireq)
 		for (i=0; rec->addresses[i]; i++) {
 			rec->addresses[i]->expire_time = rec->expire_time;
 		}
-		modify_record	= True;
+		modify_record	= true;
 		modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
 		new_state	= "tombstone";
 		new_owner	= "owned";
@@ -346,7 +346,7 @@ static void verify_handler(struct irpc_request *ireq)
 		for (i=0; rec->addresses[i]; i++) {
 			rec->addresses[i]->expire_time = rec->expire_time;
 		}
-		modify_record	= True;
+		modify_record	= true;
 		modify_flags	= 0;
 		new_state	= "active";
 	}
@@ -468,14 +468,14 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_mem;
-	BOOL skip_first_run = False;
+	bool skip_first_run = false;
 
 	if (!timeval_expired(&service->scavenging.next_run)) {
 		return NT_STATUS_OK;
 	}
 
 	if (timeval_is_zero(&service->scavenging.next_run)) {
-		skip_first_run = True;
+		skip_first_run = true;
 	}
 
 	service->scavenging.next_run = timeval_current_ofs(service->config.scavenging_interval, 0);
@@ -498,25 +498,25 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 
 	tmp_mem = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
-	service->scavenging.processing = True;
+	service->scavenging.processing = true;
 	status = wreplsrv_scavenging_owned_records(service,tmp_mem);
-	service->scavenging.processing = False;
+	service->scavenging.processing = false;
 	talloc_free(tmp_mem);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	tmp_mem = talloc_new(service);	
 	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
-	service->scavenging.processing = True;
+	service->scavenging.processing = true;
 	status = wreplsrv_scavenging_replica_non_active_records(service, tmp_mem);
-	service->scavenging.processing = False;
+	service->scavenging.processing = false;
 	talloc_free(tmp_mem);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	tmp_mem = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
-	service->scavenging.processing = True;
+	service->scavenging.processing = true;
 	status = wreplsrv_scavenging_replica_active_records(service, tmp_mem);
-	service->scavenging.processing = False;
+	service->scavenging.processing = false;
 	talloc_free(tmp_mem);
 	NT_STATUS_NOT_OK_RETURN(status);
 

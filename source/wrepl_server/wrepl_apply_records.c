@@ -75,77 +75,77 @@ static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_
 	return R_DO_REPLACE;
 }
 
-static BOOL r_1_is_subset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
+static bool r_1_is_subset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, bool check_owners)
 {
 	uint32_t i,j;
 	size_t len = winsdb_addr_list_length(r1->addresses);
 
 	for (i=0; i < len; i++) {
-		BOOL found = False;
+		bool found = false;
 		for (j=0; j < r2->num_addresses; j++) {
 			if (strcmp(r1->addresses[i]->address, r2->addresses[j].address) != 0) {
 				continue;
 			}
 
 			if (check_owners && strcmp(r1->addresses[i]->wins_owner, r2->addresses[j].owner) != 0) {
-				return False;
+				return false;
 			}
-			found = True;
+			found = true;
 			break;
 		}
-		if (!found) return False;
+		if (!found) return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL r_1_is_superset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
+static bool r_1_is_superset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, bool check_owners)
 {
 	uint32_t i,j;
 	size_t len = winsdb_addr_list_length(r1->addresses);
 
 	for (i=0; i < r2->num_addresses; i++) {
-		BOOL found = False;
+		bool found = false;
 		for (j=0; j < len; j++) {
 			if (strcmp(r2->addresses[i].address, r1->addresses[j]->address) != 0) {
 				continue;
 			}
 
 			if (check_owners && strcmp(r2->addresses[i].owner, r1->addresses[j]->wins_owner) != 0) {
-				return False;
+				return false;
 			}
-			found = True;
+			found = true;
 			break;
 		}
-		if (!found) return False;
+		if (!found) return false;
 	}
 
-	return True;
+	return true;
 }
 
-static BOOL r_1_is_same_as_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
+static bool r_1_is_same_as_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, bool check_owners)
 {
 	size_t len = winsdb_addr_list_length(r1->addresses);
 
 	if (len != r2->num_addresses) {
-		return False;
+		return false;
 	}
 
 	return r_1_is_superset_of_2_address_list(r1, r2, check_owners);
 }
 
-static BOOL r_contains_addrs_from_owner(struct winsdb_record *r1, const char *owner)
+static bool r_contains_addrs_from_owner(struct winsdb_record *r1, const char *owner)
 {
 	uint32_t i;
 	size_t len = winsdb_addr_list_length(r1->addresses);
 
 	for (i=0; i < len; i++) {
 		if (strcmp(r1->addresses[i]->wins_owner, owner) == 0) {
-			return True;
+			return true;
 		}
 	}
 
-	return False;
+	return false;
 }
 
 /*
@@ -310,12 +310,12 @@ static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *
 		return R_NOT_REPLACE;
 	}
 
-	if (r_1_is_superset_of_2_address_list(r1, r2, True)) {
+	if (r_1_is_superset_of_2_address_list(r1, r2, true)) {
 		/* NOT REPLACE */
 		return R_NOT_REPLACE;
 	}
 
-	if (r_1_is_same_as_2_address_list(r1, r2, False)) {
+	if (r_1_is_same_as_2_address_list(r1, r2, false)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
 	}
@@ -433,7 +433,7 @@ static enum _R_ACTION replace_unique_owned_vs_X_replica(struct winsdb_record *r1
 	 * is unique,active,replica or mhomed,active,replica
 	 */
 
-	if (r_1_is_subset_of_2_address_list(r1, r2, False)) {
+	if (r_1_is_subset_of_2_address_list(r1, r2, false)) {
 		/* 
 		 * if r1 has a subset(or same) of the addresses of r2
 		 * <=>
@@ -559,7 +559,7 @@ static enum _R_ACTION replace_sgroup_owned_vs_X_replica(struct winsdb_record *r1
 		return R_DO_PROPAGATE;
 	}
 
-	if (r_1_is_same_as_2_address_list(r1, r2, True)) {
+	if (r_1_is_same_as_2_address_list(r1, r2, true)) {
 		/*
 		 * as we're the old owner and the addresses and their
 		 * owners are identical
@@ -645,7 +645,7 @@ static enum _R_ACTION replace_mhomed_owned_vs_X_replica(struct winsdb_record *r1
 	 * is unique,active,replica or mhomed,active,replica
 	 */
 
-	if (r_1_is_subset_of_2_address_list(r1, r2, False)) {
+	if (r_1_is_subset_of_2_address_list(r1, r2, false)) {
 		/* 
 		 * if r1 has a subset(or same) of the addresses of r2
 		 * <=>
@@ -695,7 +695,7 @@ static NTSTATUS r_do_add(struct wreplsrv_partner *partner,
 						      replica->addresses[i].address,
 						      replica->addresses[i].owner,
 						      rec->expire_time,
-						      False);
+						      false);
 		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
 	}
 
@@ -740,7 +740,7 @@ static NTSTATUS r_do_replace(struct wreplsrv_partner *partner,
 						      replica->addresses[i].address,
 						      replica->addresses[i].owner,
 						      rec->expire_time,
-						      False);
+						      false);
 		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
 	}
 
@@ -842,17 +842,17 @@ static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
 							replica->addresses[i].address,
 							replica->addresses[i].owner,
 							merge->expire_time,
-							False);
+							false);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
 	len = winsdb_addr_list_length(rec->addresses);
 
 	for (i=0; i < len; i++) {
-		BOOL found = False;
+		bool found = false;
 		for (j=0; j < replica->num_addresses; j++) {
 			if (strcmp(replica->addresses[j].address, rec->addresses[i]->address) == 0) {
-				found = True;
+				found = true;
 				break;
 			}
 		}
@@ -863,7 +863,7 @@ static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
 							rec->addresses[i]->address,
 							rec->addresses[i]->wins_owner,
 							rec->addresses[i]->expire_time,
-							False);
+							false);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
@@ -955,9 +955,9 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 	NTSTATUS status;
 	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
 							     struct r_do_challenge_state);
-	BOOL old_is_subset = False;
-	BOOL new_is_subset = False;
-	BOOL found = False;
+	bool old_is_subset = false;
+	bool new_is_subset = false;
+	bool found = false;
 	uint32_t i,j;
 	uint32_t num_rec_addrs;
 
@@ -974,17 +974,17 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 	}
 
 	for (i=0; i < state->replica.num_addresses; i++) {
-		found = False;
-		new_is_subset = True;
+		found = false;
+		new_is_subset = true;
 		for (j=0; j < state->r.out.num_addrs; j++) {
 			if (strcmp(state->replica.addresses[i].address, state->r.out.addrs[j].addr) == 0) {
-				found = True;
+				found = true;
 				break;
 			}
 		}
 		if (found) continue;
 
-		new_is_subset = False;
+		new_is_subset = false;
 		break;
 	}
 
@@ -996,17 +996,17 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 
 	num_rec_addrs = winsdb_addr_list_length(state->rec->addresses);
 	for (i=0; i < num_rec_addrs; i++) {
-		found = False;
-		old_is_subset = True;
+		found = false;
+		old_is_subset = true;
 		for (j=0; j < state->r.out.num_addrs; j++) {
 			if (strcmp(state->rec->addresses[i]->address, state->r.out.addrs[j].addr) == 0) {
-				found = True;
+				found = true;
 				break;
 			}
 		}
 		if (found) continue;
 
-		old_is_subset = False;
+		old_is_subset = false;
 		break;
 	}
 
@@ -1189,8 +1189,8 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	uint32_t i,j;
 	uint8_t ret;
 	size_t len;
-	BOOL changed_old_addrs = False;
-	BOOL become_owner = True;
+	bool changed_old_addrs = false;
+	bool become_owner = true;
 
 	merge = talloc(mem_ctx, struct winsdb_record);
 	NT_STATUS_HAVE_NO_MEMORY(merge);
@@ -1210,17 +1210,17 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	len = winsdb_addr_list_length(rec->addresses);
 
 	for (i=0; i < len; i++) {
-		BOOL found = False;
+		bool found = false;
 
 		for (j=0; j < replica->num_addresses; j++) {
 			if (strcmp(rec->addresses[i]->address, replica->addresses[j].address) != 0) {
 				continue;
 			}
 
-			found = True;
+			found = true;
 
 			if (strcmp(rec->addresses[i]->wins_owner, replica->addresses[j].owner) != 0) {
-				changed_old_addrs = True;
+				changed_old_addrs = true;
 				break;
 			}
 			break;
@@ -1231,7 +1231,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 		 * it won't be added to the merged record
 		 */
 		if (!found && strcmp(rec->addresses[i]->wins_owner, owner->address) == 0) {
-			changed_old_addrs = True;
+			changed_old_addrs = true;
 			continue;
 		}
 
@@ -1245,7 +1245,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 							rec->addresses[i]->address,
 							rec->addresses[i]->wins_owner,
 							rec->addresses[i]->expire_time,
-							False);
+							false);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
@@ -1255,18 +1255,18 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 							replica->addresses[i].address,
 							replica->addresses[i].owner,
 							merge->expire_time,
-							False);
+							false);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
 	/* we the old addresses change changed we don't become the owner */
 	if (changed_old_addrs) {
-		become_owner = False;
+		become_owner = false;
 	}
 
 	/* if we're the owner of the old record, we'll be the owner of the new one too */
 	if (strcmp(rec->wins_owner, partner->service->wins_db->local_owner)==0) {
-		become_owner = True;
+		become_owner = true;
 	}
 
 	/*
@@ -1274,7 +1274,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	 */
 	len = winsdb_addr_list_length(merge->addresses);
 	if (len == 0) {
-		become_owner = True;
+		become_owner = true;
 	}
 
 	/* 
@@ -1306,9 +1306,9 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	NTSTATUS status;
 	struct winsdb_record *rec = NULL;
 	enum _R_ACTION action = R_INVALID;
-	BOOL same_owner = False;
-	BOOL replica_vs_replica = False;
-	BOOL local_vs_replica = False;
+	bool same_owner = false;
+	bool replica_vs_replica = false;
+	bool local_vs_replica = false;
 
 	status = winsdb_lookup(partner->service->wins_db,
 			       &replica->name, mem_ctx, &rec);
@@ -1318,11 +1318,11 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (strcmp(rec->wins_owner, partner->service->wins_db->local_owner)==0) {
-		local_vs_replica = True;
+		local_vs_replica = true;
 	} else if (strcmp(rec->wins_owner, owner->address)==0) {
-		same_owner = True;
+		same_owner = true;
 	} else {
-		replica_vs_replica = True;
+		replica_vs_replica = true;
 	}
 
 	if (rec->is_static && !same_owner) {
