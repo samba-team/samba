@@ -53,7 +53,7 @@ static void smb2srv_getinfo_send(struct ntvfs_request *ntvfs)
 		SMB2SRV_CHECK(op->send_fn(op));
 	}
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, op->info->out.blob.length));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, op->info->out.blob.length));
 
 	/* TODO: this is maybe a o16s32_blob */
 	SMB2SRV_CHECK(smb2_push_o16s16_blob(&req->out, 0x02, op->info->out.blob));
@@ -205,7 +205,7 @@ void smb2srv_getinfo_recv(struct smb2srv_request *req)
 	struct smb2_getinfo *info;
 	struct smb2srv_getinfo_op *op;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x28, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x28, true);
 	SMB2SRV_TALLOC_IO_PTR(info, struct smb2_getinfo);
 	/* this overwrites req->io_ptr !*/
 	SMB2SRV_TALLOC_IO_PTR(op, struct smb2srv_getinfo_op);
@@ -247,7 +247,7 @@ static void smb2srv_setinfo_send(struct ntvfs_request *ntvfs)
 
 	SMB2SRV_CHECK_ASYNC_STATUS(op, struct smb2srv_setinfo_op);
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x02, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x02, false, 0));
 
 	smb2srv_send_reply(req);
 }
@@ -349,7 +349,7 @@ void smb2srv_setinfo_recv(struct smb2srv_request *req)
 	struct smb2_setinfo *info;
 	struct smb2srv_setinfo_op *op;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, true);
 	SMB2SRV_TALLOC_IO_PTR(info, struct smb2_setinfo);
 	/* this overwrites req->io_ptr !*/
 	SMB2SRV_TALLOC_IO_PTR(op, struct smb2srv_setinfo_op);

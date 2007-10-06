@@ -251,7 +251,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 	NTTIME nttime;
-	BOOL negotiate_spnego = False;
+	bool negotiate_spnego = false;
 	char *large_test_path;
 
 	unix_to_nt_time(&nttime, t);
@@ -269,7 +269,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	    (lp_security(global_loadparm) != SEC_SHARE) &&
 	    lp_use_spnego(global_loadparm) &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
-		negotiate_spnego = True; 
+		negotiate_spnego = true; 
 		capabilities |= CAP_EXTENDED_SECURITY;
 	}
 	
@@ -493,10 +493,10 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
 		return;
 	}
-	req->smb_conn->negotiate.done_negprot = True;
+	req->smb_conn->negotiate.done_negprot = true;
 
 	p = req->in.data;
-	while (True) {
+	while (true) {
 		size_t len;
 
 		protos = talloc_realloc(req, protos, char *, protos_count + 1);

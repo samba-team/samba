@@ -48,7 +48,7 @@ static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,
 					  NTSTATUS status)
 {
 	if (NT_STATUS_IS_OK(status)) {
-		req->smb_conn->negotiate.done_sesssetup = True;
+		req->smb_conn->negotiate.done_sesssetup = true;
 		/* we need to keep the session long term */
 		req->session = talloc_steal(req->smb_conn, req->session);
 	}
@@ -129,7 +129,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info = talloc(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 	
-	user_info->mapped_state = False;
+	user_info->mapped_state = false;
 	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->old.in.user;
@@ -266,7 +266,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info = talloc(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 
-	user_info->mapped_state = False;
+	user_info->mapped_state = false;
 	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->nt1.in.user;

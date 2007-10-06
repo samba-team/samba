@@ -122,7 +122,7 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x40, True, io->out.secblob.length);
+	status = smb2srv_setup_reply(req, 0x40, true, io->out.secblob.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);

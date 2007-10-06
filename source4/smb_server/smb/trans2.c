@@ -790,7 +790,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 }
 
 /* callback function for trans2 findfirst/findnext */
-static BOOL find_callback(void *private, const union smb_search_data *file)
+static bool find_callback(void *private, const union smb_search_data *file)
 {
 	struct find_state *state = talloc_get_type(private, struct find_state);
 	struct smb_trans2 *trans = state->op->trans;
@@ -802,11 +802,11 @@ static BOOL find_callback(void *private, const union smb_search_data *file)
 	    trans->out.data.length > trans->in.max_data) {
 		/* restore the old length and tell the backend to stop */
 		smbsrv_blob_grow_data(trans, &trans->out.data, old_length);
-		return False;
+		return false;
 	}
 
 	state->last_entry_offset = old_length;	
-	return True;
+	return true;
 }
 
 /*

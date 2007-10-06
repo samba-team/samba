@@ -824,9 +824,9 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
 	io->readx.in.remaining     = SVAL(req->in.vwv, VWV(9));
 	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
-		io->readx.in.read_for_execute = True;
+		io->readx.in.read_for_execute = true;
 	} else {
-		io->readx.in.read_for_execute = False;
+		io->readx.in.read_for_execute = false;
 	}
 
 	if (req->smb_conn->negotiate.client_caps & CAP_LARGE_READX) {
@@ -2272,7 +2272,7 @@ static NTSTATUS parse_session_request(struct smbsrv_request *req)
 				    req->smb_conn->negotiate.calling_name);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	req->smb_conn->negotiate.done_nbt_session = True;
+	req->smb_conn->negotiate.done_nbt_session = true;
 
 	return NT_STATUS_OK;
 }	

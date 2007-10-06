@@ -40,7 +40,7 @@ struct smb2srv_find_state {
 };
 
 /* callback function for SMB2 Find */
-static BOOL smb2srv_find_callback(void *private, const union smb_search_data *file)
+static bool smb2srv_find_callback(void *private, const union smb_search_data *file)
 {
 	struct smb2srv_find_state *state = talloc_get_type(private, struct smb2srv_find_state);
 	struct smb2_find *info = state->info;
@@ -54,12 +54,12 @@ static BOOL smb2srv_find_callback(void *private, const union smb_search_data *fi
 	    info->out.blob.length > info->in.max_response_size) {
 		/* restore the old length and tell the backend to stop */
 		smbsrv_blob_grow_data(state, &info->out.blob, old_length);
-		return False;
+		return false;
 	}
 
 	state->last_entry_offset = old_length;
 
-	return True;
+	return true;
 }
 
 static void smb2srv_find_send(struct ntvfs_request *ntvfs)
@@ -68,7 +68,7 @@ static void smb2srv_find_send(struct ntvfs_request *ntvfs)
 	struct smb2srv_find_state *state;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(state, struct smb2srv_find_state);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, state->info->out.blob.length));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, state->info->out.blob.length));
 
 	if (state->info->out.blob.length > 0) {
 		SIVAL(state->info->out.blob.data + state->last_entry_offset, 0, 0);
@@ -141,7 +141,7 @@ void smb2srv_find_recv(struct smb2srv_request *req)
 	struct smb2srv_find_state *state;
 	struct smb2_find *info;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, true);
 	SMB2SRV_TALLOC_IO_PTR(info, struct smb2_find);
 	/* this overwrites req->io_ptr !*/
 	SMB2SRV_TALLOC_IO_PTR(state, struct smb2srv_find_state);

@@ -42,7 +42,7 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sessse
 		return;
 	}
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, io->smb2.out.secblob.length));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, io->smb2.out.secblob.length));
 
 	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	unknown1);
 	SBVAL(req->out.hdr, SMB2_HDR_UID,	io->smb2.out.uid);
@@ -187,7 +187,7 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 {
 	union smb_sesssetup *io;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, True);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_sesssetup);
 
 	io->smb2.level		= RAW_SESSSETUP_SMB2;
@@ -215,7 +215,7 @@ static void smb2srv_logoff_send(struct smb2srv_request *req)
 		return;
 	}
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, false, 0));
 
 	SSVAL(req->out.body, 0x02, 0);
 
@@ -226,7 +226,7 @@ void smb2srv_logoff_recv(struct smb2srv_request *req)
 {
 	uint16_t _pad;
 
-	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, False);
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, false);
 
 	_pad	= SVAL(req->in.body, 0x02);
 
