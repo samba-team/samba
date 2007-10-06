@@ -1391,19 +1391,19 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 /*
   work out if we are the PDC for the domain of the current open ldb
 */
-BOOL samdb_is_pdc(struct ldb_context *ldb)
+bool samdb_is_pdc(struct ldb_context *ldb)
 {
 	const char *dom_attrs[] = { "fSMORoleOwner", NULL };
 	int ret;
 	struct ldb_result *dom_res;
 	TALLOC_CTX *tmp_ctx;
-	BOOL is_pdc;
+	bool is_pdc;
 	struct ldb_dn *pdc;
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) {
 		DEBUG(1, ("talloc_new failed in samdb_is_pdc"));
-		return False;
+		return false;
 	}
 
 	ret = ldb_search(ldb, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, NULL, dom_attrs, &dom_res);
@@ -1421,9 +1421,9 @@ BOOL samdb_is_pdc(struct ldb_context *ldb)
 	pdc = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, dom_res->msgs[0], "fSMORoleOwner");
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), pdc) == 0) {
-		is_pdc = True;
+		is_pdc = true;
 	} else {
-		is_pdc = False;
+		is_pdc = false;
 	}
 
 	talloc_free(tmp_ctx);
@@ -1433,7 +1433,7 @@ BOOL samdb_is_pdc(struct ldb_context *ldb)
 failed:
 	DEBUG(1,("Failed to find if we are the PDC for this ldb\n"));
 	talloc_free(tmp_ctx);
-	return False;
+	return false;
 }
 
 
@@ -1474,7 +1474,7 @@ struct ldb_dn *samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CT
 /*
   check that a password is sufficiently complex
 */
-static BOOL samdb_password_complexity_ok(const char *pass)
+static bool samdb_password_complexity_ok(const char *pass)
 {
 	return check_password_quality(pass);
 }
@@ -1500,7 +1500,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 			    const char *new_pass,
 			    struct samr_Password *lmNewHash, 
 			    struct samr_Password *ntNewHash,
-			    BOOL user_change,
+			    bool user_change,
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
@@ -1521,7 +1521,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
 	struct dom_sid *domain_sid;
 	struct ldb_message **res;
-	BOOL restrictions;
+	bool restrictions;
 	int count;
 	time_t now = time(NULL);
 	NTTIME now_nt;
@@ -1738,7 +1738,7 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 				const char *new_pass,
 				struct samr_Password *lmNewHash, 
 				struct samr_Password *ntNewHash,
-				BOOL user_change,
+				bool user_change,
 				enum samr_RejectReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
@@ -1811,7 +1811,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			       struct dom_sid *group_sid, 
 			       int n_groupSIDs,
 			       struct dom_sid **groupSIDs, 
-			       BOOL is_authenticated,
+			       bool is_authenticated,
 			       struct security_token **token)
 {
 	struct security_token *ptoken;

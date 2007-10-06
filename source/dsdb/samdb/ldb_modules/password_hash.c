@@ -92,7 +92,7 @@ struct ph_context {
 };
 
 struct domain_data {
-	BOOL store_cleartext;
+	bool store_cleartext;
 	uint_t pwdProperties;
 	uint_t pwdHistoryLength;
 	char *netbios_domain;

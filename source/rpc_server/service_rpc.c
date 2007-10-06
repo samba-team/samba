@@ -173,9 +173,9 @@ static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 
 	tmp_blob.length = nread;
 
-	dce_conn->processing = True;
+	dce_conn->processing = true;
 	status = dcesrv_input(dce_conn, &tmp_blob);
-	dce_conn->processing = False;
+	dce_conn->processing = false;
 	talloc_free(tmp_blob.data);
 
 	EVENT_FD_READABLE(conn->event.fde);

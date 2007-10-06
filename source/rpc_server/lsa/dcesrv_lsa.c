@@ -44,7 +44,7 @@ struct lsa_secret_state {
 	uint32_t access_mask;
 	struct ldb_dn *secret_dn;
 	struct ldb_context *sam_ldb;
-	BOOL global;
+	bool global;
 };
 
 /*
@@ -1674,7 +1674,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		const char *name2;
 		name = &r->in.name.string[2];
 		secret_state->sam_ldb = talloc_reference(secret_state, policy_state->sam_ldb);
-		secret_state->global = True;
+		secret_state->global = true;
 
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1704,7 +1704,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name2);
 	
 	} else {
-		secret_state->global = False;
+		secret_state->global = false;
 
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
@@ -1807,7 +1807,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
 		secret_state->sam_ldb = talloc_reference(secret_state, policy_state->sam_ldb);
-		secret_state->global = True;
+		secret_state->global = true;
 
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1831,7 +1831,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	} else {
 		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
 
-		secret_state->global = False;
+		secret_state->global = false;
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;

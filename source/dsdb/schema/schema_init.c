@@ -358,12 +358,12 @@ WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CT
 			d_printf("%s: %s == NULL\n", __location__, attr); \
 			return WERR_INVALID_PARAM; \
 		} else { \
-			(p)->elem = False; \
+			(p)->elem = false; \
 		} \
 	} else if (strcasecmp("TRUE", str) == 0) { \
-		(p)->elem = True; \
+		(p)->elem = true; \
 	} else if (strcasecmp("FALSE", str) == 0) { \
-		(p)->elem = False; \
+		(p)->elem = false; \
 	} else { \
 		d_printf("%s: %s == %s\n", __location__, attr, str); \
 		return WERR_INVALID_PARAM; \
@@ -396,9 +396,9 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, False);
-	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
-	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, True);
+	GET_STRING_LDB(msg, "cn", mem_ctx, attr, cn, false);
+	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
+	GET_STRING_LDB(msg, "attributeID", mem_ctx, attr, attributeID_oid, true);
 	if (schema->num_prefixes == 0) {
 		/* set an invalid value */
 		attr->attributeID_id = 0xFFFFFFFF;
@@ -418,10 +418,10 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 
 	GET_UINT32_LDB(msg, "searchFlags", attr, searchFlags);
 	GET_UINT32_LDB(msg, "systemFlags", attr, systemFlags);
-	GET_BOOL_LDB(msg, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, False);
+	GET_BOOL_LDB(msg, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
-	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, True);
+	GET_STRING_LDB(msg, "attributeSyntax", mem_ctx, attr, attributeSyntax_oid, true);
 	if (schema->num_prefixes == 0) {
 		/* set an invalid value */
 		attr->attributeSyntax_id = 0xFFFFFFFF;
@@ -437,21 +437,21 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 	GET_UINT32_LDB(msg, "oMSyntax", attr, oMSyntax);
 	GET_BLOB_LDB(msg, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
-	GET_BOOL_LDB(msg, "isSingleValued", attr, isSingleValued, True);
+	GET_BOOL_LDB(msg, "isSingleValued", attr, isSingleValued, true);
 	GET_UINT32_LDB(msg, "rangeLower", attr, rangeLower);
 	GET_UINT32_LDB(msg, "rangeUpper", attr, rangeUpper);
-	GET_BOOL_LDB(msg, "extendedCharsAllowed", attr, extendedCharsAllowed, False);
+	GET_BOOL_LDB(msg, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", attr, schemaFlagsEx);
 	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
 
-	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, False);
-	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, attr, adminDisplayName, False);
-	GET_STRING_LDB(msg, "adminDescription", mem_ctx, attr, adminDescription, False);
-	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, attr, classDisplayName, False);
-	GET_BOOL_LDB(msg, "isEphemeral", attr, isEphemeral, False);
-	GET_BOOL_LDB(msg, "isDefunct", attr, isDefunct, False);
-	GET_BOOL_LDB(msg, "systemOnly", attr, systemOnly, False);
+	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, false);
+	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, attr, adminDisplayName, false);
+	GET_STRING_LDB(msg, "adminDescription", mem_ctx, attr, adminDescription, false);
+	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, attr, classDisplayName, false);
+	GET_BOOL_LDB(msg, "isEphemeral", attr, isEphemeral, false);
+	GET_BOOL_LDB(msg, "isDefunct", attr, isDefunct, false);
+	GET_BOOL_LDB(msg, "systemOnly", attr, systemOnly, false);
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
@@ -468,9 +468,9 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, False);
-	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
-	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, True);
+	GET_STRING_LDB(msg, "cn", mem_ctx, obj, cn, false);
+	GET_STRING_LDB(msg, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
+	GET_STRING_LDB(msg, "governsID", mem_ctx, obj, governsID_oid, true);
 	if (schema->num_prefixes == 0) {
 		/* set an invalid value */
 		obj->governsID_id = 0xFFFFFFFF;
@@ -486,36 +486,36 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 	GET_GUID_LDB(msg, "schemaIDGUID", obj, schemaIDGUID);
 
 	GET_UINT32_LDB(msg, "objectClassCategory", obj, objectClassCategory);
-	GET_STRING_LDB(msg, "rDNAttID", mem_ctx, obj, rDNAttID, False);
-	GET_STRING_LDB(msg, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
+	GET_STRING_LDB(msg, "rDNAttID", mem_ctx, obj, rDNAttID, false);
+	GET_STRING_LDB(msg, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, true);
  
-	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, True);
+	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, true);
 
 	obj->systemAuxiliaryClass	= NULL;
 
 	obj->auxiliaryClass		= NULL;
 
-	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, False);
-	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, False);
-	GET_STRING_LIST_LDB(msg, "mustContain", mem_ctx, obj, mustContain, False);
-	GET_STRING_LIST_LDB(msg, "mayContain", mem_ctx, obj, mayContain, False);
+	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, false);
+	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, false);
+	GET_STRING_LIST_LDB(msg, "mustContain", mem_ctx, obj, mustContain, false);
+	GET_STRING_LIST_LDB(msg, "mayContain", mem_ctx, obj, mayContain, false);
 
-	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, False);
-	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, False);
-	GET_STRING_LIST_LDB(msg, "possibleInferiors", mem_ctx, obj, possibleInferiors, False);
+	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
+	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, false);
+	GET_STRING_LIST_LDB(msg, "possibleInferiors", mem_ctx, obj, possibleInferiors, false);
 
-	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
+	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", obj, schemaFlagsEx);
 	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
 
-	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, False);
-	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, obj, adminDisplayName, False);
-	GET_STRING_LDB(msg, "adminDescription", mem_ctx, obj, adminDescription, False);
-	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, obj, classDisplayName, False);
-	GET_BOOL_LDB(msg, "defaultHidingValue", obj, defaultHidingValue, False);
-	GET_BOOL_LDB(msg, "isDefunct", obj, isDefunct, False);
-	GET_BOOL_LDB(msg, "systemOnly", obj, systemOnly, False);
+	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, false);
+	GET_STRING_LDB(msg, "adminDisplayName", mem_ctx, obj, adminDisplayName, false);
+	GET_STRING_LDB(msg, "adminDescription", mem_ctx, obj, adminDescription, false);
+	GET_STRING_LDB(msg, "classDisplayName", mem_ctx, obj, classDisplayName, false);
+	GET_BOOL_LDB(msg, "defaultHidingValue", obj, defaultHidingValue, false);
+	GET_BOOL_LDB(msg, "isDefunct", obj, isDefunct, false);
+	GET_BOOL_LDB(msg, "systemOnly", obj, systemOnly, false);
 
 	return WERR_OK;
 }
@@ -689,9 +689,9 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	if (_a && _a->value_ctr.num_values >= 1 \
 	    && _a->value_ctr.values[0].blob \
 	    && _a->value_ctr.values[0].blob->length == 4) { \
-		(p)->elem = (IVAL(_a->value_ctr.values[0].blob->data,0)?True:False);\
+		(p)->elem = (IVAL(_a->value_ctr.values[0].blob->data,0)?true:false);\
 	} else { \
-		(p)->elem = False; \
+		(p)->elem = false; \
 	} \
 } while (0)
 
@@ -744,8 +744,8 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_DS(schema, r, "name", mem_ctx, attr, cn, True);
-	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, True);
+	GET_STRING_DS(schema, r, "name", mem_ctx, attr, cn, true);
+	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, attr, lDAPDisplayName, true);
 	GET_UINT32_DS(schema, r, "attributeID", attr, attributeID_id);
 	status = dsdb_map_int2oid(schema, attr->attributeID_id, mem_ctx, &attr->attributeID_oid);
 	if (!W_ERROR_IS_OK(status)) {
@@ -761,7 +761,7 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 
 	GET_UINT32_DS(schema, r, "searchFlags", attr, searchFlags);
 	GET_UINT32_DS(schema, r, "systemFlags", attr, systemFlags);
-	GET_BOOL_DS(schema, r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, False);
+	GET_BOOL_DS(schema, r, "isMemberOfPartialAttributeSet", attr, isMemberOfPartialAttributeSet, false);
 	GET_UINT32_DS(schema, r, "linkID", attr, linkID);
 
 	GET_UINT32_DS(schema, r, "attributeSyntax", attr, attributeSyntax_id);
@@ -775,21 +775,21 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 	GET_UINT32_DS(schema, r, "oMSyntax", attr, oMSyntax);
 	GET_BLOB_DS(schema, r, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
-	GET_BOOL_DS(schema, r, "isSingleValued", attr, isSingleValued, True);
+	GET_BOOL_DS(schema, r, "isSingleValued", attr, isSingleValued, true);
 	GET_UINT32_DS(schema, r, "rangeLower", attr, rangeLower);
 	GET_UINT32_DS(schema, r, "rangeUpper", attr, rangeUpper);
-	GET_BOOL_DS(schema, r, "extendedCharsAllowed", attr, extendedCharsAllowed, False);
+	GET_BOOL_DS(schema, r, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
 	GET_UINT32_DS(schema, r, "schemaFlagsEx", attr, schemaFlagsEx);
 	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, attr, msDs_Schema_Extensions);
 
-	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, False);
-	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, attr, adminDisplayName, False);
-	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, attr, adminDescription, False);
-	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, attr, classDisplayName, False);
-	GET_BOOL_DS(schema, r, "isEphemeral", attr, isEphemeral, False);
-	GET_BOOL_DS(schema, r, "isDefunct", attr, isDefunct, False);
-	GET_BOOL_DS(schema, r, "systemOnly", attr, systemOnly, False);
+	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", attr, showInAdvancedViewOnly, false);
+	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, attr, adminDisplayName, false);
+	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, attr, adminDescription, false);
+	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, attr, classDisplayName, false);
+	GET_BOOL_DS(schema, r, "isEphemeral", attr, isEphemeral, false);
+	GET_BOOL_DS(schema, r, "isDefunct", attr, isDefunct, false);
+	GET_BOOL_DS(schema, r, "systemOnly", attr, systemOnly, false);
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
@@ -806,8 +806,8 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 {
 	WERROR status;
 
-	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, True);
-	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, True);
+	GET_STRING_DS(schema, r, "name", mem_ctx, obj, cn, true);
+	GET_STRING_DS(schema, r, "lDAPDisplayName", mem_ctx, obj, lDAPDisplayName, true);
 	GET_UINT32_DS(schema, r, "governsID", obj, governsID_id);
 	status = dsdb_map_int2oid(schema, obj->governsID_id, mem_ctx, &obj->governsID_oid);
 	if (!W_ERROR_IS_OK(status)) {
@@ -819,10 +819,10 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	GET_GUID_DS(schema, r, "schemaIDGUID", mem_ctx, obj, schemaIDGUID);
 
 	GET_UINT32_DS(schema, r, "objectClassCategory", obj, objectClassCategory);
-	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, False);
-	GET_DN_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, True);
+	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, false);
+	GET_DN_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, true);
 
-	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, True);
+	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, true);
 
 	obj->systemAuxiliaryClass	= NULL;
 	obj->systemPossSuperiors	= NULL;
@@ -836,18 +836,18 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 
 	obj->possibleInferiors          = NULL;
 
-	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, False);
+	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
 	GET_UINT32_DS(schema, r, "schemaFlagsEx", obj, schemaFlagsEx);
 	GET_BLOB_DS(schema, r, "msDs-Schema-Extensions", mem_ctx, obj, msDs_Schema_Extensions);
 
-	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, False);
-	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, obj, adminDisplayName, False);
-	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, obj, adminDescription, False);
-	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, obj, classDisplayName, False);
-	GET_BOOL_DS(schema, r, "defaultHidingValue", obj, defaultHidingValue, False);
-	GET_BOOL_DS(schema, r, "isDefunct", obj, isDefunct, False);
-	GET_BOOL_DS(schema, r, "systemOnly", obj, systemOnly, False);
+	GET_BOOL_DS(schema, r, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, false);
+	GET_STRING_DS(schema, r, "adminDisplayName", mem_ctx, obj, adminDisplayName, false);
+	GET_STRING_DS(schema, r, "adminDescription", mem_ctx, obj, adminDescription, false);
+	GET_STRING_DS(schema, r, "classDisplayName", mem_ctx, obj, classDisplayName, false);
+	GET_BOOL_DS(schema, r, "defaultHidingValue", obj, defaultHidingValue, false);
+	GET_BOOL_DS(schema, r, "isDefunct", obj, isDefunct, false);
+	GET_BOOL_DS(schema, r, "systemOnly", obj, systemOnly, false);
 
 	return WERR_OK;
 }

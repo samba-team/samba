@@ -43,7 +43,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	const char *binding = lp_parm_string(global_loadparm, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
-	BOOL machine_account;
+	bool machine_account;
 
 	machine_account = lp_parm_bool(global_loadparm, NULL, "dcerpc_remote", "use_machine_account", false);
 
@@ -253,7 +253,7 @@ static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const stru
 	return NT_STATUS_OK;
 }
 
-static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct ndr_interface_table *if_tabl)
+static bool remote_fill_interface(struct dcesrv_interface *iface, const struct ndr_interface_table *if_tabl)
 {
 	iface->name = if_tabl->name;
 	iface->syntax_id = if_tabl->syntax_id;
@@ -268,10 +268,10 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct n
 
 	iface->private = if_tabl;
 
-	return True;
+	return true;
 }
 
-static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
+static bool remote_op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
 {
 	const struct ndr_interface_list *l;
 
@@ -282,17 +282,17 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const st
 		}
 	}
 
-	return False;	
+	return false;	
 }
 
-static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
+static bool remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
 	const struct ndr_interface_table *tbl = ndr_table_by_name(name);
 
 	if (tbl)
 		return remote_fill_interface(iface, tbl);
 
-	return False;	
+	return false;	
 }
 
 NTSTATUS dcerpc_server_remote_init(void)

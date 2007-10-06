@@ -589,7 +589,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 						return WERR_GENERAL_FAILURE;
 					}
 					if (res_domain->count == 1) {
-						ctr1->array[i].is_pdc = True;
+						ctr1->array[i].is_pdc = true;
 					}
 				}
 			}
@@ -603,7 +603,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			ctr1->array[i].server_dn = ldb_dn_get_linearized(res->msgs[i]->dn);
 
 
-			ctr1->array[i].is_enabled = True;
+			ctr1->array[i].is_enabled = true;
 
 		}
 		break;
@@ -681,7 +681,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
 					if (ret == LDB_SUCCESS && res_domain->count == 1) {
-						ctr2->array[i].is_pdc = True;
+						ctr2->array[i].is_pdc = true;
 					}
 					if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
 						DEBUG(5, ("warning: searching for domain DN %s failed: %s\n", 
@@ -700,7 +700,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			ctr2->array[i].server_guid 
 				= samdb_result_guid(res->msgs[i], "objectGUID");
 
-			ctr2->array[i].is_enabled = True;
+			ctr2->array[i].is_enabled = true;
 
 		}
 		break;

@@ -44,7 +44,7 @@
 int samldb_notice_sid(struct ldb_module *module, 
 		      TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
-static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
+static bool samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
 {
 	struct ldb_val v;
 	NTSTATUS status;

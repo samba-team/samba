@@ -319,7 +319,7 @@ static int schema_init_attrs(struct ldb_module *module, struct schema_private_da
 		data->attrs[i]->max = ldb_msg_find_attr_as_int(res->msgs[i], "rangeUpper", INT_MAX);
 		data->attrs[i]->systemflag = ldb_msg_find_attr_as_int(res->msgs[i], "systemFlag", 0);
 		data->attrs[i]->searchflag = ldb_msg_find_attr_as_int(res->msgs[i], "searchFlag", 0);
-		data->attrs[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", False);
+		data->attrs[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", false);
 	}
 
 done:
@@ -397,9 +397,9 @@ static int schema_init_classes(struct ldb_module *module, struct schema_private_
 */
 		/* the following attributes are all optional */
 
-		data->class[i]->systemOnly = ldb_msg_find_attr_as_bool(res->msgs[i], "systemOnly", False);
+		data->class[i]->systemOnly = ldb_msg_find_attr_as_bool(res->msgs[i], "systemOnly", false);
 		data->class[i]->systemflag = ldb_msg_find_attr_as_int(res->msgs[i], "systemFlag", 0);
-		data->class[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", False);
+		data->class[i]->isdefunct = ldb_msg_find_attr_as_bool(res->msgs[i], "isDefunct", false);
 
 		/* attributes are loaded first, so we can just go an query the attributes repo */
 		

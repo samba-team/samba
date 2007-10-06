@@ -41,16 +41,16 @@
 
 #include <time.h>
 
-static BOOL is_attr_in_list(const char * const * attrs, const char *attr)
+static bool is_attr_in_list(const char * const * attrs, const char *attr)
 {
 	int i;
 
 	for (i = 0; attrs[i]; i++) {
 		if (strcasecmp(attrs[i], attr) == 0)
-			return True;
+			return true;
 	}
 
-	return False;
+	return false;
 }
 
 static char **copy_attrs(void *mem_ctx, const char * const * attrs)
@@ -75,7 +75,7 @@ static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 	return new;
 }
 
-static BOOL add_attrs(void *mem_ctx, char ***attrs, const char *attr)
+static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 {
 	char **new;
 	int num;
@@ -83,23 +83,23 @@ static BOOL add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 	for (num = 0; (*attrs)[num]; num++);
 
 	new = talloc_realloc(mem_ctx, *attrs, char *, num + 2);
-	if (!new) return False;
+	if (!new) return false;
 
 	*attrs = new;
 
 	new[num] = talloc_strdup(new, attr);
-	if (!new[num]) return False;
+	if (!new[num]) return false;
 
 	new[num + 1] = NULL;
 
-	return True;
+	return true;
 }
 
-static BOOL inject_extended_dn(struct ldb_message *msg,
+static bool inject_extended_dn(struct ldb_message *msg,
 				struct ldb_context *ldb,
 				int type,
-				BOOL remove_guid,
-				BOOL remove_sid)
+				bool remove_guid,
+				bool remove_sid)
 {
 	const struct ldb_val *val;
 	struct GUID guid;
@@ -112,7 +112,7 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 	guid = samdb_result_guid(msg, "objectGUID");
 	object_guid = GUID_string(msg, &guid);
 	if (!object_guid)
-		return False;
+		return false;
 
 	if (remove_guid)
 		ldb_msg_remove_attr(msg, "objectGUID");
@@ -123,7 +123,7 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 	if (sid) {
 		object_sid = dom_sid_string(msg, sid);
 		if (!object_sid)
-			return False;
+			return false;
 
 		if (remove_sid)
 			ldb_msg_remove_attr(msg, "objectSID");
@@ -144,24 +144,24 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 			}
 			break;
 		default:
-			return False;
+			return false;
 	}
 
 	if (!new_dn)
-		return False;
+		return false;
 
 	msg->dn = ldb_dn_new(msg, ldb, new_dn);
 	if (! ldb_dn_validate(msg->dn))
-		return False;
+		return false;
 
 	val = ldb_msg_find_ldb_val(msg, "distinguishedName");
 	if (val) {
 		ldb_msg_remove_attr(msg, "distinguishedName");
 		if (ldb_msg_add_steal_string(msg, "distinguishedName", new_dn))
-			return False;
+			return false;
 	}
 
-	return True;
+	return true;
 }
 
 /* search */
@@ -172,8 +172,8 @@ struct extended_context {
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	const char * const *attrs;
-	BOOL remove_guid;
-	BOOL remove_sid;
+	bool remove_guid;
+	bool remove_sid;
 	int extended_type;
 };
 
@@ -229,8 +229,8 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	ac->up_context = req->context;
 	ac->up_callback = req->callback;
 	ac->attrs = req->op.search.attrs;
-	ac->remove_guid = False;
-	ac->remove_sid = False;
+	ac->remove_guid = false;
+	ac->remove_sid = false;
 	ac->extended_type = extended_ctrl->type;
 
 	down_req = talloc_zero(req, struct ldb_request);
@@ -246,10 +246,10 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	/* check if attrs only is specified, in that case check wether we need to modify them */
 	if (req->op.search.attrs) {
 		if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
-			ac->remove_guid = True;
+			ac->remove_guid = true;
 		}
 		if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
-			ac->remove_sid = True;
+			ac->remove_sid = true;
 		}
 		if (ac->remove_guid || ac->remove_sid) {
 			new_attrs = copy_attrs(down_req, req->op.search.attrs);

@@ -313,7 +313,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 					   creds->sid,
 					   NULL, /* Don't have plaintext */
 					   NULL, &r->in.new_password,
-					   False, /* This is not considered a password change */
+					   false, /* This is not considered a password change */
 					   NULL, NULL);
 	return nt_status;
 }
@@ -330,7 +330,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	NTSTATUS nt_status;
 	char new_pass[512];
 	uint32_t new_pass_len;
-	BOOL ret;
+	bool ret;
 
 	struct samr_CryptPassword password_buf;
 
@@ -360,7 +360,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 					   creds->sid,
 					   new_pass, /* we have plaintext */
 					   NULL, NULL,
-					   False, /* This is not considered a password change */
+					   false, /* This is not considered a password change */
 					   NULL, NULL);
 	return nt_status;
 }
@@ -410,7 +410,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
 	user_info->flags = 0;
-	user_info->mapped_state = False;
+	user_info->mapped_state = false;
 	user_info->remote_host = NULL;
 
 	switch (r->in.logon_level) {
@@ -836,7 +836,7 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 				       struct ldb_message *res,
 				       struct ldb_message *ref_res,
 				       struct netr_DomainTrustInfo *info, 
-				       BOOL is_local)
+				       bool is_local)
 {
 	ZERO_STRUCTP(info);
 
@@ -926,15 +926,15 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 				       info1->num_trusts);
 	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, True);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, true);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], False);
+		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], false);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], True);
+	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], true);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	r->out.info.info1 = info1;

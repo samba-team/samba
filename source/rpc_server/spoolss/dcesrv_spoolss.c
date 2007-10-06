@@ -149,7 +149,7 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 					TALLOC_CTX *mem_ctx,
 					const char *server_name)
 {
-	BOOL ret;
+	bool ret;
 	struct socket_address *myaddr;
 	const char **aliases;
 	int i;

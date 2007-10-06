@@ -43,7 +43,7 @@ struct update_kt_private {
 	struct dn_list *changed_dns;
 };
 
-static int add_modified(struct ldb_module *module, struct ldb_dn *dn, BOOL delete) {
+static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delete) {
 	struct update_kt_private *data = talloc_get_type(module->private_data, struct update_kt_private);
 	struct dn_list *item;
 	char *filter;
@@ -113,7 +113,7 @@ static int update_kt_add(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.add.message->dn, False);
+	return add_modified(module, req->op.add.message->dn, false);
 }
 
 /* modify */
@@ -124,7 +124,7 @@ static int update_kt_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.mod.message->dn, False);
+	return add_modified(module, req->op.mod.message->dn, false);
 }
 
 /* delete */
@@ -132,7 +132,7 @@ static int update_kt_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
 	/* Before we delete it, record the details */
-	ret = add_modified(module, req->op.del.dn, True);
+	ret = add_modified(module, req->op.del.dn, true);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -147,7 +147,7 @@ static int update_kt_rename(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	return add_modified(module, req->op.rename.newdn, False);
+	return add_modified(module, req->op.rename.newdn, false);
 }
 
 /* end a transaction */
