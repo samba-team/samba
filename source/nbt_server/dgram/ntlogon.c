@@ -35,7 +35,7 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 				   struct nbt_ntlogon_packet *ntlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
-	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
 	struct nbt_ntlogon_packet reply;
 	struct nbt_ntlogon_sam_logon_reply *logon;
 

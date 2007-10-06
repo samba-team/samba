@@ -39,7 +39,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 				struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
-	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc *pdc;
 	const char *ref_attrs[] = {"nETBIOSName", NULL};
@@ -102,7 +102,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 				 struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
-	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc2 *pdc;
 	struct ldb_context *samctx;

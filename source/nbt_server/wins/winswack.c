@@ -48,7 +48,7 @@ static void wins_challenge_handler(struct nbt_name_request *req)
 
 			state->query.in.dest_addr = state->io->in.addresses[state->current_address];
 			
-			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, True);
+			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, true);
 			if (!iface) {
 				composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 				return;
@@ -104,13 +104,13 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 	/* setup a name query to the first address */
 	state->query.in.name        = *state->io->in.name;
 	state->query.in.dest_addr   = state->io->in.addresses[state->current_address];
-	state->query.in.broadcast   = False;
-	state->query.in.wins_lookup = True;
+	state->query.in.broadcast   = false;
+	state->query.in.wins_lookup = true;
 	state->query.in.timeout     = 1;
 	state->query.in.retries     = 2;
 	ZERO_STRUCT(state->query.out);
 
-	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, True);
+	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, true);
 	if (!iface) {
 		goto failed;
 	}
@@ -164,7 +164,7 @@ static void wins_release_demand_handler(struct nbt_name_request *req)
 			state->release.in.timeout   = (state->addresses_left > 1 ? 2 : 1);
 			state->release.in.retries   = (state->addresses_left > 1 ? 0 : 2);
 
-			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, True);
+			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, true);
 			if (!iface) {
 				composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 				return;
@@ -220,12 +220,12 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	state->release.in.name        = *state->io->in.name;
 	state->release.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->release.in.address     = state->release.in.dest_addr;
-	state->release.in.broadcast   = False;
+	state->release.in.broadcast   = false;
 	state->release.in.timeout     = (state->addresses_left > 1 ? 2 : 1);
 	state->release.in.retries     = (state->addresses_left > 1 ? 0 : 2);
 	ZERO_STRUCT(state->release.out);
 
-	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, True);
+	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, true);
 	if (!iface) {
 		goto failed;
 	}
@@ -316,7 +316,7 @@ NTSTATUS nbtd_proxy_wins_challenge(struct irpc_message *msg,
 	s->c_req->async.fn		= proxy_wins_challenge_handler;
 	s->c_req->async.private_data	= s;
 
-	msg->defer_reply = True;
+	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }
 
@@ -375,6 +375,6 @@ NTSTATUS nbtd_proxy_wins_release_demand(struct irpc_message *msg,
 	s->c_req->async.fn		= proxy_wins_release_demand_handler;
 	s->c_req->async.private_data	= s;
 
-	msg->defer_reply = True;
+	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }

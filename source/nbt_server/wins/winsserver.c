@@ -44,7 +44,7 @@ uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
 	return ttl;
 }
 
-static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name, BOOL mhomed)
+static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name, bool mhomed)
 {
 	/* this copes with the nasty hack that is the type 0x1c name */
 	if (name->type == NBT_NAME_LOGON) {
@@ -86,7 +86,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.type		= type;
 	rec.state		= WREPL_STATE_ACTIVE;
 	rec.node		= node;
-	rec.is_static		= False;
+	rec.is_static		= false;
 	rec.expire_time		= time(NULL) + ttl;
 	rec.version		= 0; /* will be allocated later */
 	rec.wins_owner		= NULL; /* will be set later */
@@ -99,7 +99,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 						 address,
 						 winssrv->wins_db->local_owner,
 						 rec.expire_time,
-						 True);
+						 true);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
@@ -134,7 +134,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 						      winsdb_addr->address,
 						      winssrv->wins_db->local_owner,
 						      rec->expire_time,
-						      True);
+						      true);
 		if (rec->addresses == NULL) return NBT_RCODE_SVR;
 	}
 
@@ -170,7 +170,7 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 						  address,
 						  winssrv->wins_db->local_owner,
 						  rec->expire_time,
-						  True);
+						  true);
 	if (rec->addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(5,("WINS: sgroup merge of %s at %s\n",
@@ -249,11 +249,11 @@ static void wins_wack_allow(struct wack_state *s)
 	 * and update the time stamp and owner for the ownes that are still there
 	 */
 	for (i=0; rec->addresses[i]; i++) {
-		BOOL found = False;
+		bool found = false;
 		for (j=0; j < s->io.out.num_addresses; j++) {
 			if (strcmp(rec->addresses[i]->address, s->io.out.addresses[j]) != 0) continue;
 
-			found = True;
+			found = true;
 			break;
 		}
 		if (found) {
@@ -262,7 +262,7 @@ static void wins_wack_allow(struct wack_state *s)
 							      s->reg_address,
 							      s->winssrv->wins_db->local_owner,
 							      rec->expire_time,
-							      True);
+							      true);
 			if (rec->addresses == NULL) goto failed;
 			continue;
 		}
@@ -275,7 +275,7 @@ static void wins_wack_allow(struct wack_state *s)
 					      s->reg_address,
 					      s->winssrv->wins_db->local_owner,
 					      rec->expire_time,
-					      True);
+					      true);
 	if (rec->addresses == NULL) goto failed;
 
 	/* if we have more than one address, this becomes implicit a MHOMED record */
@@ -302,7 +302,7 @@ static void wack_wins_challenge_handler(struct composite_context *c_req)
 {
 	struct wack_state *s = talloc_get_type(c_req->async.private_data,
 					       struct wack_state);
-	BOOL found;
+	bool found;
 	uint32_t i;
 
 	s->status = wins_challenge_recv(c_req, s, &s->io);
@@ -328,11 +328,11 @@ static void wack_wins_challenge_handler(struct composite_context *c_req)
 	 * with the address trying to be registered, then deny
 	 * the registration
 	 */
-	found = False;
+	found = false;
 	for (i=0; i < s->io.out.num_addresses; i++) {
 		if (strcmp(s->reg_address, s->io.out.addresses[i]) != 0) continue;
 
-		found = True;
+		found = true;
 		break;
 	}
 	if (!found) {
@@ -421,7 +421,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	uint8_t rcode = NBT_RCODE_OK;
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	BOOL mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
+	bool mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
 	enum wrepl_name_type new_type = wrepl_type(nb_flags, name, mhomed);
 	struct winsdb_addr *winsdb_addr = NULL;
 
@@ -628,7 +628,7 @@ static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_addr
 	idx = sidx = r % num_addrs;
 
 	while (1) {
-		BOOL same;
+		bool same;
 
 		/* if the current one is in the same subnet, use it */
 		same = iface_same_net(addresses[idx], src->addr, mask);
