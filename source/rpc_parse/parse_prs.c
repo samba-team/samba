@@ -1486,12 +1486,6 @@ int tdb_prs_store(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps)
 	return tdb_trans_store(tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
-int tdb_prs_store_bystring(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
-{
-	TDB_DATA kbuf = string_term_tdb_data(keystr);
-	return tdb_prs_store(tdb, kbuf, ps);
-}
-
 /* useful function to fetch a structure into rpc wire format */
 int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *mem_ctx)
 {
@@ -1507,12 +1501,6 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *m
 
 	return 0;
 } 
-
-int tdb_prs_fetch_bystring(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx)
-{
-	TDB_DATA kbuf = string_term_tdb_data(keystr);
-	return tdb_prs_fetch(tdb, kbuf, ps, mem_ctx);
-}
 
 /*******************************************************************
  hash a stream.
