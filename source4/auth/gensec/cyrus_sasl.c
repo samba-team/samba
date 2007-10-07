@@ -248,6 +248,7 @@ static NTSTATUS gensec_sasl_unwrap_packets(struct gensec_security *gensec_securi
 	return sasl_nt_status(sasl_ret);
 
 }
+
 static NTSTATUS gensec_sasl_wrap_packets(struct gensec_security *gensec_security, 
 					TALLOC_CTX *out_mem_ctx, 
 					const DATA_BLOB *in, 
@@ -271,7 +272,7 @@ static NTSTATUS gensec_sasl_wrap_packets(struct gensec_security *gensec_security
 }
 
 /* Try to figure out what features we actually got on the connection */
-static BOOL gensec_sasl_have_feature(struct gensec_security *gensec_security, 
+static bool gensec_sasl_have_feature(struct gensec_security *gensec_security, 
 				     uint32_t feature) 
 {
 	struct gensec_sasl_state *gensec_sasl_state = talloc_get_type(gensec_security->private_data,
@@ -279,25 +280,25 @@ static BOOL gensec_sasl_have_feature(struct gensec_security *gensec_security,
 	sasl_ssf_t ssf;
 	int sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF, &ssf);
 	if (sasl_ret != SASL_OK) {
-		return False;
+		return false;
 	}
 	if (feature & GENSEC_FEATURE_SIGN) {
 		if (ssf == 0) {
-			return False;
+			return false;
 		}
 		if (ssf >= 1) {
-			return True;
+			return true;
 		}
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		if (ssf <= 1) {
-			return False;
+			return false;
 		}
 		if (ssf > 1) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
 /* This could in theory work with any SASL mech */
@@ -309,7 +310,7 @@ static const struct gensec_security_ops gensec_sasl_security_ops = {
 	.wrap_packets     = gensec_sasl_wrap_packets,
 	.unwrap_packets   = gensec_sasl_unwrap_packets,
 	.have_feature     = gensec_sasl_have_feature,
-	.enabled          = True,
+	.enabled          = true,
 	.priority         = GENSEC_SASL
 };
 
