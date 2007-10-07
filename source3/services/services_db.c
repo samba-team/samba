@@ -311,7 +311,8 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	REGVAL_CTR *values;
 	REGSUBKEY_CTR *svc_subkeys;
 	SEC_DESC *sd;
-	prs_struct ps;
+	DATA_BLOB sd_blob;
+	NTSTATUS status;
 
 	/* add to the list and create the subkey path */
 
@@ -379,20 +380,20 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 		TALLOC_FREE( key_secdesc );
 		return;
 	}
-	
-	/* stream the printer security descriptor */
-	
-	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key_secdesc, MARSHALL);
-	
-	if ( sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
-		uint32 offset = prs_offset( &ps );
-		regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&ps), offset );
-		store_reg_values( key_secdesc, values );
+
+	status = marshall_sec_desc(key_secdesc, sd, &sd_blob.data,
+				   &sd_blob.length);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("marshall_sec_desc failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(key_secdesc);
+		return;
 	}
 	
-	/* finally cleanup the Security key */
+	regval_ctr_addvalue(values, "Security", REG_BINARY,
+			    (const char *)sd_blob.data, sd_blob.length);
+	store_reg_values( key_secdesc, values );
 	
-	prs_mem_free( &ps );
 	TALLOC_FREE( key_secdesc );
 
 	return;
@@ -464,13 +465,12 @@ void svcctl_init_keys( void )
 SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	REGISTRY_KEY *key;
-	prs_struct ps;
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
-	SEC_DESC *sd = NULL;
 	SEC_DESC *ret_sd = NULL;
 	pstring path;
 	WERROR wresult;
+	NTSTATUS status;
 	
 	/* now add the security descriptor */
 
@@ -490,31 +490,24 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	}
 
 	fetch_reg_values( key, values );
+
+	TALLOC_FREE(key);
 	
 	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
 		DEBUG(6,("svcctl_get_secdesc: constructing default secdesc for service [%s]\n", 
 			name));
-		TALLOC_FREE( key );
 		return construct_service_sd( ctx );
 	}
 	
 
-	/* stream the printer security descriptor */
-	
-	prs_init( &ps, 0, key, UNMARSHALL);
-	prs_give_memory( &ps, (char *)regval_data_p(val), regval_size(val), False );
-	
-	if ( !sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
-		TALLOC_FREE( key );
+	/* stream the service security descriptor */
+
+	status = unmarshall_sec_desc(ctx, regval_data_p(val),
+				     regval_size(val), &ret_sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return construct_service_sd( ctx );
 	}
-	
-	ret_sd = dup_sec_desc( ctx, sd );
-	
-	/* finally cleanup the Security key */
-	
-	prs_mem_free( &ps );
-	TALLOC_FREE( key );
 
 	return ret_sd;
 }

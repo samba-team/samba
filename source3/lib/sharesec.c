@@ -110,33 +110,40 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 			      size_t *psize)
 {
-	prs_struct ps;
-	fstring key;
+	char *key;
 	SEC_DESC *psd = NULL;
+	TDB_DATA data;
+	NTSTATUS status;
 
 	if (!share_info_db_init()) {
 		return NULL;
 	}
 
-	*psize = 0;
+	if (!(key = talloc_asprintf(ctx, "SECDESC/%s", servicename))) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		return NULL;
+	}
 
-	/* Fetch security descriptor from tdb */
- 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", servicename);
- 
-	if (tdb_prs_fetch_bystring(share_tdb, key, &ps, ctx)!=0 ||
-		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
- 
-		DEBUG(4, ("get_share_security: using default secdesc for %s\n",
-			  servicename));
- 
-		return get_share_security_default(ctx, psize, GENERIC_ALL_ACCESS);
+	data = tdb_fetch_bystring(share_tdb, key);
+
+	TALLOC_FREE(key);
+
+	if (data.dptr == NULL) {
+		return get_share_security_default(ctx, psize,
+						  GENERIC_ALL_ACCESS);
+	}
+
+	status = unmarshall_sec_desc(ctx, data.dptr, data.dsize, &psd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
+			  nt_errstr(status)));
+		return NULL;
 	}
 
 	if (psd)
 		*psize = sec_desc_size(psd);
 
-	prs_mem_free(&ps);
 	return psd;
 }
 
@@ -146,39 +153,43 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 
 BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 {
-	prs_struct ps;
-	TALLOC_CTX *mem_ctx = NULL;
-	fstring key;
+	TALLOC_CTX *frame;
+	char *key;
 	BOOL ret = False;
+	TDB_DATA blob;
+	NTSTATUS status;
 
 	if (!share_info_db_init()) {
 		return False;
 	}
 
-	mem_ctx = talloc_init("set_share_security");
-	if (mem_ctx == NULL)
-		return False;
+	frame = talloc_stackframe();
 
-	prs_init(&ps, (uint32)sec_desc_size(psd), mem_ctx, MARSHALL);
- 
-	if (!sec_io_desc("share_security", &psd, &ps, 1))
+	status = marshall_sec_desc(frame, psd, &blob.dptr, &blob.dsize);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("marshall_sec_desc failed: %s\n",
+			  nt_errstr(status)));
 		goto out;
- 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", share_name);
- 
-	if (tdb_prs_store_bystring(share_tdb, key, &ps)==0) {
-		ret = True;
-		DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
-	} else {
-		DEBUG(1,("set_share_security: Failed to store secdesc for %s\n", share_name ));
-	} 
+	}
 
-	/* Free malloc'ed memory */
- 
-out:
- 
-	prs_mem_free(&ps);
-	TALLOC_FREE(mem_ctx);
+	if (!(key = talloc_asprintf(frame, "SECDESC/%s", share_name))) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		goto out;
+	}
+
+	if (tdb_trans_store_bystring(share_tdb, key, blob,
+				     TDB_REPLACE) == -1) {
+		DEBUG(1,("set_share_security: Failed to store secdesc for "
+			 "%s\n", share_name ));
+		goto out;
+	}
+
+	DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
+	ret = True;
+
+ out:
+	TALLOC_FREE(frame);
 	return ret;
 }
 
