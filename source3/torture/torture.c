@@ -4780,40 +4780,44 @@ static BOOL run_error_map_extract(int dummy) {
 	return True;
 }
 
-static BOOL run_local_substitute(int dummy)
+static bool subst_test(const char *str, const char *user, const char *domain,
+		       uid_t uid, gid_t gid, const char *expected)
 {
-	TALLOC_CTX *mem_ctx;
-	int diff = 0;
+	char *subst;
+	bool result = true;
 
-	if ((mem_ctx = talloc_init("run_local_subst")) == NULL) {
-		printf("talloc_init failed\n");
-		return False;
+	subst = talloc_sub_specified(talloc_tos(), str, user, domain, uid, gid);
+
+	if (strcmp(subst, expected) != 0) {
+		printf("sub_specified(%s, %s, %s, %d, %d) returned [%s], expected "
+		       "[%s]\n", str, user, domain, (int)uid, (int)gid, subst,
+		       expected);
+		result = false;
 	}
 
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%U", "bla", "", -1, -1),
-		       "bla");
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%u%U", "bla", "", -1, -1),
-		       "blabla");
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, -1),
-		       "NO_GROUP");
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, -1),
-		       "NO_GROUP");
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, 0),
-		       gidtoname(0));
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, 0),
-		       gidtoname(0));
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%D%u", "u", "dom", -1, 0),
-		       "domu");
-	diff |= strcmp(talloc_sub_specified(mem_ctx, "%i %I", "", "", -1, -1),
-		       "0.0.0.0 0.0.0.0");
+	TALLOC_FREE(subst);
+	return result;
+}
+
+static BOOL run_local_substitute(int dummy)
+{
+	bool ok = true;
+
+	ok &= subst_test("%U", "bla", "", -1, -1, "bla");
+	ok &= subst_test("%u%U", "bla", "", -1, -1, "blabla");
+	ok &= subst_test("%g", "", "", -1, -1, "NO_GROUP");
+	ok &= subst_test("%G", "", "", -1, -1, "NO_GROUP");
+	ok &= subst_test("%g", "", "", -1, 0, gidtoname(0));
+	ok &= subst_test("%G", "", "", -1, 0, gidtoname(0));
+	ok &= subst_test("%D%u", "u", "dom", -1, 0, "domu");
+	ok &= subst_test("%i %I", "", "", -1, -1, "0.0.0.0 0.0.0.0");
 
 	/* Different captialization rules in sub_basic... */
 
-	diff |= strcmp(talloc_sub_basic(mem_ctx, "BLA", "dom", "%U%D"),
-		       "blaDOM");
+	ok &=  (strcmp(talloc_sub_basic(talloc_tos(), "BLA", "dom", "%U%D"),
+		       "blaDOM") == 0);
 
-	TALLOC_FREE(mem_ctx);
-	return (diff == 0);
+	return ok;
 }
 
 static BOOL run_local_gencache(int dummy)
