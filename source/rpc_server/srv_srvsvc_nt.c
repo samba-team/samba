@@ -1994,7 +1994,7 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p, struct srvsvc_NetShareDel *r)
 	}
 
 	/* Delete the SD in the database. */
-	delete_share_security(params);
+	delete_share_security(lp_servicename(params->service));
 
 	lp_killservice(params->service);
 
