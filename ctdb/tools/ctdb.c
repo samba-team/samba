@@ -2,6 +2,7 @@
    ctdb control tool
 
    Copyright (C) Andrew Tridgell  2007
+   Copyright (C) Ronnie Sahlberg  2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -813,6 +814,37 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 }
 
 /*
+  check if the local node is recmaster or not
+  it will return 1 if this node is the recmaster and 0 if it is not
+  or if the local ctdb daemon could not be contacted
+ */
+static int control_isnotrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t mypnn, recmaster;
+	int ret;
+
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (mypnn == -1) {
+		printf("Failed to get pnn of node\n");
+		return 1;
+	}
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		printf("Failed to get the recmaster\n");
+		return 1;
+	}
+
+	if (recmaster != mypnn) {
+		printf("this node is not the recmaster\n");
+		return 1;
+	}
+
+	printf("this node is the recmaster\n");
+	return 0;
+}
+
+/*
   ping a node
  */
 static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1037,6 +1069,7 @@ static const struct {
 	{ "recover",         control_recover,           true,  "force recovery" },
 	{ "freeze",          control_freeze,            true,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
+	{ "isnotrecmaster",  control_isnotrecmaster,    false,  "check if the local node is recmaster or not" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this ip", "<ip>" },
