@@ -173,6 +173,8 @@ ret = getnameinfo(&sa, sizeof(sa),
 samba_cv_HAVE_GETADDRINFO=yes,samba_cv_HAVE_GETADDRINFO=no)])
 if test x"$samba_cv_HAVE_GETADDRINFO" = x"yes"; then
     AC_DEFINE(HAVE_GETADDRINFO,1,[Whether the system has getaddrinfo and getnameinfo])
+    AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
+    AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
 fi
 
 
