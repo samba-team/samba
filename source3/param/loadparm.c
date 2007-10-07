@@ -5517,7 +5517,7 @@ int load_usershare_shares(void)
 			/* Remove from the share ACL db. */
 			DEBUG(10,("load_usershare_shares: Removing deleted usershare %s\n",
 				lp_servicename(iService) ));
-			delete_share_security(snum2params_static(iService));
+			delete_share_security(lp_servicename(iService));
 			free_service_byindex(iService);
 		}
 	}
@@ -5749,7 +5749,7 @@ int lp_servicenumber(const char *pszServiceName)
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
-			delete_share_security(snum2params_static(iService));
+			delete_share_security(lp_servicename(iService));
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* Doesn't exist anymore. */

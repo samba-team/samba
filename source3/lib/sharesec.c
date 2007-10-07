@@ -197,18 +197,20 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
  Delete a security descriptor.
 ********************************************************************/
 
-BOOL delete_share_security(const struct share_params *params)
+BOOL delete_share_security(const char *servicename)
 {
 	TDB_DATA kbuf;
-	fstring key;
+	char *key;
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s",
-		 lp_servicename(params->service));
+	if (!(key = talloc_asprintf(talloc_tos(), "SECDESC/%s",
+				    servicename))) {
+		return False;
+	}
 	kbuf = string_term_tdb_data(key);
 
 	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
-		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
-			 lp_servicename(params->service) ));
+		DEBUG(0, ("delete_share_security: Failed to delete entry for "
+			  "share %s\n", servicename));
 		return False;
 	}
 
