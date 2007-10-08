@@ -24,10 +24,10 @@ static fstring password;
 static fstring username;
 static int got_pass;
 static int numops = 1000;
-static BOOL showall;
-static BOOL analyze;
-static BOOL hide_unlock_fails;
-static BOOL use_oplocks;
+static bool showall;
+static bool analyze;
+static bool hide_unlock_fails;
+static bool use_oplocks;
 
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
@@ -77,7 +77,7 @@ static int try_open(struct smbcli_state *c, char *nfs, int fstype, const char *f
 	return -1;
 }
 
-static BOOL try_close(struct smbcli_state *c, int fstype, int fd)
+static bool try_close(struct smbcli_state *c, int fstype, int fd)
 {
 	switch (fstype) {
 	case FSTYPE_SMB:
@@ -87,10 +87,10 @@ static BOOL try_close(struct smbcli_state *c, int fstype, int fd)
 		return close(fd) == 0;
 	}
 
-	return False;
+	return false;
 }
 
-static BOOL try_lock(struct smbcli_state *c, int fstype, 
+static bool try_lock(struct smbcli_state *c, int fstype, 
 		     int fd, uint_t start, uint_t len,
 		     enum brl_type op)
 {
@@ -109,10 +109,10 @@ static BOOL try_lock(struct smbcli_state *c, int fstype,
 		return fcntl(fd,F_SETLK,&lock) == 0;
 	}
 
-	return False;
+	return false;
 }
 
-static BOOL try_unlock(struct smbcli_state *c, int fstype, 
+static bool try_unlock(struct smbcli_state *c, int fstype, 
 		       int fd, uint_t start, uint_t len)
 {
 	struct flock lock;
@@ -130,7 +130,7 @@ static BOOL try_unlock(struct smbcli_state *c, int fstype,
 		return fcntl(fd,F_SETLK,&lock) == 0;
 	}
 
-	return False;
+	return false;
 }	
 
 /***************************************************** 
@@ -207,7 +207,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 
 
 
-static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
+static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		     char *nfs[NSERVERS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
@@ -221,7 +221,7 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 	uint_t r2 = rec->r2;
 	enum brl_type op;
 	int server;
-	BOOL ret[NSERVERS];
+	bool ret[NSERVERS];
 
 	if (r1 < READ_PCT) {
 		op = READ_LOCK; 
@@ -243,7 +243,7 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret[0], ret[1]);
 		}
-		if (ret[0] != ret[1]) return False;
+		if (ret[0] != ret[1]) return false;
 	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
@@ -257,7 +257,7 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			       start, start+len-1, len,
 			       ret[0], ret[1]);
 		}
-		if (!hide_unlock_fails && ret[0] != ret[1]) return False;
+		if (!hide_unlock_fails && ret[0] != ret[1]) return false;
 	} else {
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
@@ -266,7 +266,7 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 								 O_RDWR|O_CREAT);
 			if (fnum[server][fstype][conn][f] == -1) {
 				printf("failed to reopen on share1\n");
-				return False;
+				return false;
 			}
 		}
 		if (showall) {
@@ -274,7 +274,7 @@ static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			       conn, fstype, f);
 		}
 	}
-	return True;
+	return true;
 }
 
 static void close_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
@@ -369,7 +369,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		recorded[n].len *= RANGE_MULTIPLE;
 		recorded[n].r1 = random() % 100;
 		recorded[n].r2 = random() % 100;
-		recorded[n].needed = True;
+		recorded[n].needed = true;
 	}
 
 	reconnect(cli, nfs, fnum, share1, share2);
@@ -388,14 +388,14 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 
 		for (i=0;i<n-1;i++) {
 			int m;
-			recorded[i].needed = False;
+			recorded[i].needed = false;
 
 			close_files(cli, nfs, fnum);
 			open_files(cli, nfs, fnum);
 
 			m = retest(cli, nfs, fnum, n);
 			if (m == n) {
-				recorded[i].needed = True;
+				recorded[i].needed = true;
 			} else {
 				if (i < m) {
 					memmove(&recorded[i], &recorded[i+1],
@@ -412,7 +412,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 	close_files(cli, nfs, fnum);
 	reconnect(cli, nfs, fnum, share1, share2);
 	open_files(cli, nfs, fnum);
-	showall = True;
+	showall = true;
 	n1 = retest(cli, nfs, fnum, n);
 	if (n1 != n-1) {
 		printf("ERROR - inconsistent result (%u %u)\n", n1, n);
@@ -506,19 +506,19 @@ static void usage(void)
 			seed = atoi(optarg);
 			break;
 		case 'u':
-			hide_unlock_fails = True;
+			hide_unlock_fails = true;
 			break;
 		case 'o':
 			numops = atoi(optarg);
 			break;
 		case 'O':
-			use_oplocks = True;
+			use_oplocks = true;
 			break;
 		case 'a':
-			showall = True;
+			showall = true;
 			break;
 		case 'A':
-			analyze = True;
+			analyze = true;
 			break;
 		case 'h':
 			usage();

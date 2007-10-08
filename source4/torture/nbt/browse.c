@@ -33,7 +33,7 @@ bool torture_nbt_browse(struct torture_context *torture)
 	struct nbt_name name;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = true;
 	
 	name.name = lp_workgroup();
 	name.type = NBT_NAME_BROWSER;
@@ -45,7 +45,7 @@ bool torture_nbt_browse(struct torture_context *torture)
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	talloc_free(mem_ctx);
