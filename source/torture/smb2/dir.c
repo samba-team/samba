@@ -29,19 +29,19 @@
 /*
   test find continue
 */
-static BOOL torture_smb2_find_dir(struct smb2_tree *tree)
+static bool torture_smb2_find_dir(struct smb2_tree *tree)
 {
 	struct smb2_handle handle;
 	NTSTATUS status;
 	int i;
 	struct smb2_find f;
-	BOOL ret = True;
+	bool ret = true;
 	union smb_search_data *d;
 	uint_t count;
 
 	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	ZERO_STRUCT(f);
@@ -75,14 +75,14 @@ static BOOL torture_smb2_find_dir(struct smb2_tree *tree)
 /* 
    basic testing of directory listing with continue
 */
-BOOL torture_smb2_dir(struct torture_context *torture)
+bool torture_smb2_dir(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	BOOL ret = True;
+	bool ret = true;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	ret &= torture_smb2_find_dir(tree);

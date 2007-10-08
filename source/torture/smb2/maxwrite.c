@@ -111,7 +111,7 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 /* 
    basic testing of SMB2 connection calls
 */
-BOOL torture_smb2_maxwrite(struct torture_context *torture)
+bool torture_smb2_maxwrite(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -119,17 +119,17 @@ BOOL torture_smb2_maxwrite(struct torture_context *torture)
 	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		return False;
+		return false;
 	}
 
 	h1 = torture_smb2_create(tree, FNAME);
 	status = torture_smb2_write(mem_ctx, tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
-		return False;
+		return false;
 	}
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }
