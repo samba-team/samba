@@ -80,4 +80,5 @@ BASE-DEFER_OPEN
 BASE-SCAN-IOCTL
 ^ldb$
 ^samba3sam.js$
+blackbox.kinit			# Samba3 doesn't have a KDC
 member:WINBIND-.*		# Samba3 doesn't provide the member env yet
