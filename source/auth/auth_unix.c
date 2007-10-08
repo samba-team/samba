@@ -499,7 +499,7 @@ core of password checking routine
 static NTSTATUS password_check(const char *username, const char *password,
 					const char *crypted, const char *salt)
 {
-	BOOL ret;
+	bool ret;
 
 #ifdef WITH_AFS
 	if (afs_auth(username, password))
