@@ -134,6 +134,17 @@ struct winbindd_async_request;
 
 /* Async child */
 
+struct winbindd_domain;
+
+struct winbindd_child_dispatch_table {
+	enum winbindd_cmd cmd;
+	enum winbindd_result (*fn)(struct winbindd_domain *domain,
+				   struct winbindd_cli_state *state);
+	const char *winbindd_cmd_name;
+};
+
+extern const struct winbindd_child_dispatch_table domain_dispatch_table[];
+
 struct winbindd_child {
 	struct winbindd_child *next, *prev;
 
@@ -144,6 +155,8 @@ struct winbindd_child {
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
 	struct winbindd_async_request *requests;
+
+	const struct winbindd_child_dispatch_table *table;
 };
 
 /* Structures to hold per domain information */

@@ -325,7 +325,10 @@ static void trustdom_recv(void *private_data, bool success)
 						    &cache_methods,
 						    &sid);
 			if (domain) {
-				setup_domain_child(domain, &domain->child, NULL);
+				setup_domain_child(domain,
+						   &domain->child,
+						   domain_dispatch_table,
+						   NULL);
 			}
 		}
 		p=q;
@@ -694,7 +697,10 @@ bool init_domain_list(void)
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
 	if (domain) {
-		setup_domain_child(domain, &domain->child, NULL);
+		setup_domain_child(domain,
+				   &domain->child,
+				   domain_dispatch_table,
+				   NULL);
 	}
 
 	/* Local SAM */
@@ -705,7 +711,10 @@ bool init_domain_list(void)
 		if ( role != ROLE_DOMAIN_MEMBER ) {
 			domain->primary = True;
 		}
-		setup_domain_child(domain, &domain->child, NULL);
+		setup_domain_child(domain,
+				   &domain->child,
+				   domain_dispatch_table,
+				   NULL);
 	}
 
 	/* Add ourselves as the first entry. */
@@ -722,8 +731,11 @@ bool init_domain_list(void)
 					     &cache_methods, &our_sid);
 		if (domain) {
 			domain->primary = True;
-			setup_domain_child(domain, &domain->child, NULL);
-		
+			setup_domain_child(domain,
+					   &domain->child,
+					   domain_dispatch_table,
+					   NULL);
+
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can
 			   contact it. Theoretically this isn't neccessary
@@ -768,7 +780,10 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	domain->internal = False;
 	domain->online = True;	
 
-	setup_domain_child(domain, &domain->child, NULL);
+	setup_domain_child(domain,
+			   &domain->child,
+			   domain_dispatch_table,
+			   NULL);
 
 	wcache_tdc_add_domain( domain );
 
