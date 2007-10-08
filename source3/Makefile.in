@@ -881,6 +881,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_cred_cache.o \
 		winbindd/winbindd_ccache_access.o \
 		winbindd/winbindd_idmap.o \
+		winbindd/winbindd_locator.o \
 		auth/token_util.o
 
 WINBINDD_OBJ = \
