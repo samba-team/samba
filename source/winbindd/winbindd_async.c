@@ -57,12 +57,12 @@ static void do_async_recv(void *private_data, BOOL success)
 		    state->c, state->private_data);
 }
 
-static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
-		     const struct winbindd_request *request,
-		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
-				  struct winbindd_response *response,
-				  void *c, void *private_data),
-		     void *c, void *private_data)
+void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
+	      const struct winbindd_request *request,
+	      void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+			   struct winbindd_response *response,
+			   void *c, void *private_data),
+	      void *c, void *private_data)
 {
 	struct do_async_state *state;
 
