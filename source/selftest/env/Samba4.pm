@@ -104,6 +104,9 @@ sub check_or_start($$$)
 		if (defined($max_time)) {
 			$optarg = "--maximum-runtime=$max_time ";
 		}
+		if (defined($ENV{SMBD_OPTIONS})) {
+			$optarg.= " $ENV{SMBD_OPTIONS}";
+		}
 		my $ret = system("$valgrind $self->{bindir}/smbd $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
 		if ($? == -1) {
 			print "Unable to start smbd: $ret: $!\n";
