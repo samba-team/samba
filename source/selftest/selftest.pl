@@ -385,12 +385,12 @@ $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 
-my $tls_enabled = not $opt_quick;
 if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
 	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
 	$opt_format = "buildfarm";
 }
 
+my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LD_LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
 $ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
