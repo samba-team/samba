@@ -152,18 +152,6 @@ void winbindd_lookuprids(struct winbindd_cli_state *state)
 	sendto_domain(state, domain);
 }
 
-static struct winbindd_child static_idmap_child;
-
-void init_idmap_child(void)
-{
-	setup_domain_child(NULL, &static_idmap_child, "idmap");
-}
-
-struct winbindd_child *idmap_child(void)
-{
-	return &static_idmap_child;
-}
-
 /* Convert a sid to a uid.  We assume we only have one rid attached to the
    sid. */
 

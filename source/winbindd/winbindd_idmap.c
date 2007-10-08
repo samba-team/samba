@@ -37,6 +37,18 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static struct winbindd_child static_idmap_child;
+
+void init_idmap_child(void)
+{
+	setup_domain_child(NULL, &static_idmap_child, "idmap");
+}
+
+struct winbindd_child *idmap_child(void)
+{
+	return &static_idmap_child;
+}
+
 static void winbindd_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
