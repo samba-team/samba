@@ -586,6 +586,11 @@ foreach (@opt_testlists) {
 	push(@todo, read_testlist($_));
 }
 
+if ($#todo == -1) {
+	print STDERR "No tests to run\n";
+	exit(1);
+	}
+
 my $suitestotal = $#todo + 1;
 my $i = 0;
 $| = 1;
