@@ -26,11 +26,17 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+
+static const struct winbindd_child_dispatch_table locator_dispatch_table[];
+
 static struct winbindd_child static_locator_child;
 
 void init_locator_child(void)
 {
-	setup_domain_child(NULL, &static_locator_child, "locator");
+	setup_domain_child(NULL,
+			   &static_locator_child,
+			   locator_dispatch_table,
+			   "locator");
 }
 
 struct winbindd_child *locator_child(void)
@@ -49,8 +55,8 @@ void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 	sendto_child(state, locator_child());
 }
 
-enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
-					       struct winbindd_cli_state *state)
+static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
+					     struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
@@ -88,3 +94,9 @@ enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
 
 	return WINBINDD_OK;
 }
+
+static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
+	{ WINBINDD_DSGETDCNAME, dual_dsgetdcname, "DSGETDCNAME" },
+
+	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
+};
