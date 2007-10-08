@@ -993,8 +993,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	display_trust_dom_info(info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1031,8 +1030,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	display_trust_dom_info(info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1080,8 +1078,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	display_trust_dom_info(info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
