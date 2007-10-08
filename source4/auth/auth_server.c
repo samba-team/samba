@@ -31,13 +31,13 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	struct ipv4_addr dest_ip;
 	const char *p;
 	char *pserver;
-	BOOL connected_ok = False;
+	bool connected_ok = false;
 
 	if (!(cli = smbcli_initialise(cli)))
 		return NULL;
 
 	/* security = server just can't function with spnego */
-	cli->use_spnego = False;
+	cli->use_spnego = false;
 
         pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
@@ -66,7 +66,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 		if (smbcli_connect(cli, desthost, &dest_ip)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
-			connected_ok = True;
+			connected_ok = true;
 			break;
 		}
 	}
@@ -198,7 +198,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static bool tested_password_server = false;
 	static bool bad_password_server = false;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	BOOL locally_made_cli = False;
+	bool locally_made_cli = false;
 
 	/* 
 	 * Check that the requested domain is not our own machine name.
@@ -216,7 +216,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	if (cli) {
 	} else {
 		cli = server_cryptkey(mem_ctx);
-		locally_made_cli = True;
+		locally_made_cli = true;
 	}
 
 	if (!cli || !cli->initialised) {
@@ -273,7 +273,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 			 * We connected to the password server so we
 			 * can say we've tested it.
 			 */
-			tested_password_server = True;
+			tested_password_server = true;
 
 			if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
 				DEBUG(0,("server_validate: password server %s allows users as non-guest \
@@ -285,7 +285,7 @@ use this machine as the password server.\n"));
 				/*
 				 * Password server has the bug.
 				 */
-				bad_password_server = True;
+				bad_password_server = true;
 				return NT_STATUS_LOGON_FAILURE;
 			}
 			smbcli_ulogoff(cli);
