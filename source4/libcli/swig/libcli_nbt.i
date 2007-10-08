@@ -39,7 +39,7 @@
 
 %}
 
-%apply bool { BOOL };
+%apply bool { bool };
 %apply int { uint8_t };
 %apply int { int8_t };
 %apply unsigned int { uint16_t };
@@ -112,8 +112,8 @@ struct nbt_name_query {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
-		BOOL broadcast;
-		BOOL wins_lookup;
+		bool broadcast;
+		bool wins_lookup;
 		int timeout; /* in seconds */
 		int retries;
 	} in;
