@@ -25,7 +25,8 @@
 #include "includes.h"
 
 /*
- * Some useful sids
+ * Some useful sids, more well known sids can be found at
+ * http://support.microsoft.com/kb/243330/EN-US/
  */
 
 
@@ -43,6 +44,11 @@ const DOM_SID global_sid_NULL =            		/* NULL sid */
 { 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const DOM_SID global_sid_Authenticated_Users =	/* All authenticated rids */
 { 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+#if 0
+/* for documentation */
+const DOM_SID global_sid_Restriced =			/* Restriced Code */
+{ 1, 1, {0,0,0,0,0,5}, {12,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+#endif
 const DOM_SID global_sid_Network =			/* Network rids */
 { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
