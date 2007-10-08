@@ -141,6 +141,10 @@ dnl test for struct addrinfo
 AC_CACHE_CHECK([for struct addrinfo],samba_cv_HAVE_STRUCT_ADDRINFO,[
 AC_TRY_COMPILE([
 #include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
 #include <sys/socket.h>
 #include <netdb.h>],
 [
@@ -154,8 +158,12 @@ fi
 dnl test for getaddrinfo/getnameinfo
 AC_CACHE_CHECK([for getaddrinfo],samba_cv_HAVE_GETADDRINFO,[
 AC_TRY_COMPILE([
-#include <sys/socket.h>
 #include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>
 #include <netdb.h>],
 [
 struct sockaddr sa;
