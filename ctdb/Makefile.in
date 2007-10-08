@@ -54,7 +54,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/ctdb_persistent bin/rb_test \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify
+BINS = bin/ctdb @CTDB_SCSI_IO@ @CTDB_IPMUX@ bin/smnotify
 SBINS = bin/ctdbd
 
 DIRS = lib bin
@@ -83,6 +83,10 @@ bin/ctdbd: $(CTDB_SERVER_OBJ)
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+bin/ctdb_ipmux: $(CTDB_CLIENT_OBJ) utils/ipmux/ipmux.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ utils/ipmux/ipmux.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) -lipq
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@
@@ -156,6 +160,7 @@ install: all
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
@@ -169,6 +174,7 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/61.nfstickle $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/90.ipmux $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode.ssh $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode.rsh $(DESTDIR)$(bindir)

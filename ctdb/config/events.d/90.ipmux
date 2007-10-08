@@ -1,0 +1,64 @@
+#!/bin/sh
+# script to manage the ip multiplexer for a single public address cluster
+
+. /etc/ctdb/functions
+loadconfig ctdb
+
+[ -z "$CTDB_SINGLE_PUBLIC_IP" ] && exit 0
+[ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
+
+cmd="$1"
+shift
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
+case $cmd in 
+     startup)
+	modprobe ip_queue
+	ip addr add $CTDB_SINGLE_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+
+	# do not respond to ARPs that are for ip addresses with scope 'host'
+	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+	;;
+
+     shutdown)
+	;;
+
+     takeip)
+	;;
+
+     releaseip)
+	;;
+
+     recovered)
+	# remove any previous rule for queueing
+	iptables -D INPUT -d $CTDB_SINGLE_PUBLIC_IP -i $CTDB_PUBLIC_INTERFACE -j QUEUE >/dev/null 2>/dev/null
+
+	# kill off any ipmux processes
+	killall -9 ctdb_ipmux >/dev/null 2>/dev/null
+
+	# are we the recmaster ? 
+	ctdb isnotrecmaster >/dev/null 2>/dev/null || {
+	    # change the ip address to have scope host so we wont respond
+	    # to arps
+	    ip addr del $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	    ip addr add $CTDB_SINGLE_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+	    exit 0
+	}
+
+	# change the scope so we start responding to arps
+	ip addr del $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	ip addr add $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+
+	# mark all these for queueing
+	iptables -I INPUT 1 -d $CTDB_SINGLE_PUBLIC_IP -i $CTDB_PUBLIC_INTERFACE -j QUEUE >/dev/null 2>/dev/null
+
+	ctdb_ipmux &
+	;;
+
+      monitor)
+	;;
+
+esac
+
+exit 0
