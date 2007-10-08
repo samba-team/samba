@@ -47,13 +47,13 @@ static struct tdb_wrap *cache;
  *         false on failure
  **/
 
-BOOL gencache_init(void)
+bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 	
 	/* skip file open if it's already opened */
-	if (cache) return True;
+	if (cache) return true;
 
 	cache_fname = lock_path(mem_ctx, global_loadparm, "gencache.tdb");
 	if (cache_fname != NULL) {
@@ -69,9 +69,9 @@ BOOL gencache_init(void)
 	talloc_free(cache_fname);
 	if (!cache) {
 		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 
@@ -82,12 +82,12 @@ BOOL gencache_init(void)
  *         false on failure during cache shutdown
  **/
  
-BOOL gencache_shutdown(void)
+bool gencache_shutdown(void)
 {
-	if (!cache) return False;
+	if (!cache) return false;
 	DEBUG(5, ("Closing cache file\n"));
 	talloc_free(cache);
-	return True;
+	return true;
 }
 
 
@@ -103,7 +103,7 @@ BOOL gencache_shutdown(void)
  * @retval false on failure
  **/
  
-BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
+bool gencache_set(const char *keystr, const char *value, time_t timeout)
 {
 	int ret;
 	TDB_DATA keybuf, databuf;
@@ -112,11 +112,11 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr && value);
 
-	if (!gencache_init()) return False;
+	if (!gencache_init()) return false;
 	
 	asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value);
 	if (!valstr)
-		return False;
+		return false;
 
 	keybuf.dptr = (uint8_t *)strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
@@ -146,7 +146,7 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
  * @retval false on failure
  **/
 
-BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
+bool gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 {
 	int ret = -1;
 	TDB_DATA keybuf, databuf;
@@ -156,7 +156,7 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr && valstr);
 
-	if (!gencache_init()) return False;
+	if (!gencache_init()) return false;
 			
 	/* 
 	 * Check whether entry exists in the cache
@@ -164,7 +164,7 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 	 */	
 	gencache_get(keystr, &old_valstr, &old_timeout);
 	
-	if (!(old_valstr && old_timeout)) return False;
+	if (!(old_valstr && old_timeout)) return false;
 		
 	DEBUG(10, ("Setting cache entry with key = %s; old value = %s and old timeout \
 	           = %s\n", keystr, old_valstr, ctime(&old_timeout)));
@@ -199,7 +199,7 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
  * @retval false in case of failure
  **/
 
-BOOL gencache_del(const char *keystr)
+bool gencache_del(const char *keystr)
 {
 	int ret;
 	TDB_DATA keybuf;
@@ -207,7 +207,7 @@ BOOL gencache_del(const char *keystr)
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr);
 
-	if (!gencache_init()) return False;	
+	if (!gencache_init()) return false;	
 	
 	keybuf.dptr = (uint8_t *)strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
@@ -229,10 +229,10 @@ BOOL gencache_del(const char *keystr)
  *        timeout
  *
  * @retval true when entry is successfuly fetched
- * @retval False for failure
+ * @retval false for failure
  **/
 
-BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
+bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
 	TDB_DATA keybuf, databuf;
 
@@ -240,7 +240,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	SMB_ASSERT(keystr);
 
 	if (!gencache_init())
-		return False;
+		return false;
 	
 	keybuf.dptr = (uint8_t *)strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
@@ -286,7 +286,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", 
 			   keystr));
 
-		return False;
+		return false;
 	}
 }
 
