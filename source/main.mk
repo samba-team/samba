@@ -47,7 +47,7 @@ everything: all libraries headers
 # needed by samba3's 'make test' and the build-farm
 # scripts use that it as fallback in case
 # 'make everything' fails
-testsuite: bin/smbclient bin/cifsdd bin/smbtorture
+testsuite: bin/smbclient bin/cifsdd bin/smbtorture bin/nmblookup
 
 showlayout: 
 	@echo 'Samba will be installed into:'
