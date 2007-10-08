@@ -162,8 +162,13 @@ sub check_or_start($$$$) {
 
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 
+		my @optargs = ("-d0");
+		if (defined($ENV{NMBD_OPTIONS})) {
+			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
+		}
+
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
-		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "-d0", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start nmbd: $!");
+		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -177,8 +182,13 @@ sub check_or_start($$$$) {
 
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 
+		my @optargs = ("-d0");
+		if (defined($ENV{WINBINDD_OPTIONS})) {
+			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
+		}
+
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
-		exec($self->binpath("timelimit"), $winbindd_maxtime, $self->binpath("winbindd"), "-F", "-S", "-d0", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start winbindd: $!");
+		exec($self->binpath("timelimit"), $winbindd_maxtime, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
@@ -193,7 +203,11 @@ sub check_or_start($$$$) {
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
-		exec($self->binpath("timelimit"), $smbd_maxtime, $self->binpath("smbd"), "-F", "-S", "-d0" , "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}) or die("Unable to start smbd: $!");
+		my @optargs = ("-d0");
+		if (defined($ENV{SMBD_OPTIONS})) {
+			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
+		}
+		exec($self->binpath("timelimit"), $smbd_maxtime, $self->binpath("smbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
