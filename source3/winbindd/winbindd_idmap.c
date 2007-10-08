@@ -5,6 +5,7 @@
 
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Gerald Carter 2006
+   Copyright (C) Simo Sorce 2007
 
    The helpers always consist of three functions:
 
