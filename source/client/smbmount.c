@@ -34,18 +34,18 @@ static pstring service;
 static pstring options;
 
 static struct ipv4_addr dest_ip;
-static BOOL have_ip;
+static bool have_ip;
 static int smb_port = 0;
-static BOOL got_user;
-static BOOL got_pass;
+static bool got_user;
+static bool got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
 static uint_t mount_fmask;
 static uint_t mount_dmask;
-static BOOL use_kerberos;
+static bool use_kerberos;
 /* TODO: Add code to detect smbfs version in kernel */
-static BOOL status32_smbfs = False;
+static bool status32_smbfs = false;
 
 static void usage(void);
 
@@ -155,10 +155,10 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	/* SPNEGO doesn't work till we get NTSTATUS error support */
 	/* But it is REQUIRED for kerberos authentication */
-	if(!use_kerberos) c->use_spnego = False;
+	if(!use_kerberos) c->use_spnego = false;
 
 	/* The kernel doesn't yet know how to sign it's packets */
-	c->sign_info.allow_smb_signing = False;
+	c->sign_info.allow_smb_signing = false;
 
 	/* Use kerberos authentication if specified */
 	c->use_kerberos = use_kerberos;
@@ -204,7 +204,7 @@ static struct smbcli_state *do_connection(char *the_service)
 	    c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
 				 CAP_NT_FIND | CAP_STATUS32 |
 				 CAP_LEVEL_II_OPLOCKS);
-	    c->force_dos_errors = True;
+	    c->force_dos_errors = true;
 	}
 
 	if (!smbcli_session_setup(c, username, 
@@ -234,7 +234,7 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: tconx ok\n", sys_getpid()));
 
-	got_pass = True;
+	got_pass = true;
 
 	return c;
 }
@@ -539,7 +539,7 @@ static void get_password_file(void)
 {
 	int fd = -1;
 	char *p;
-	BOOL close_it = False;
+	bool close_it = false;
 	pstring spec;
 	char pass[128];
 
@@ -547,7 +547,7 @@ static void get_password_file(void)
 		pstrcpy(spec, "descriptor ");
 		pstrcat(spec, p);
 		sscanf(p, "%d", &fd);
-		close_it = False;
+		close_it = false;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
 		fd = open(p, O_RDONLY, 0);
 		pstrcpy(spec, p);
@@ -556,7 +556,7 @@ static void get_password_file(void)
 				spec, strerror(errno));
 			exit(1);
 		}
-		close_it = True;
+		close_it = true;
 	}
 
 	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
@@ -637,7 +637,7 @@ static void read_credentials_file(char *filename)
 		if (strwicmp("password", param) == 0)
 		{
 			pstrcpy(password, val);
-			got_pass = True;
+			got_pass = true;
 		}
 		else if (strwicmp("username", param) == 0) {
 			pstrcpy(username, val);
@@ -750,12 +750,12 @@ static void parse_mount_smb(int argc, char **argv)
                         if (!strcmp(opts, "username") || 
 			    !strcmp(opts, "logon")) {
 				char *lp;
-				got_user = True;
+				got_user = true;
 				pstrcpy(username,opteq+1);
 				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
 					pstrcpy(password,lp+1);
-					got_pass = True;
+					got_pass = true;
 					memset(strchr_m(opteq+1,'%')+1,'X',strlen(password));
 				}
 				if ((lp=strchr_m(username,'/'))) {
@@ -765,7 +765,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "passwd") ||
 				  !strcmp(opts, "password")) {
 				pstrcpy(password,opteq+1);
-				got_pass = True;
+				got_pass = true;
 				memset(opteq+1,'X',strlen(password));
 			} else if(!strcmp(opts, "credentials")) {
 				pstrcpy(credentials,opteq+1);
@@ -789,7 +789,7 @@ static void parse_mount_smb(int argc, char **argv)
 					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
 					exit(1);
 				}
-				have_ip = True;
+				have_ip = true;
 			} else if(!strcmp(opts, "workgroup")) {
 				pstrcpy(workgroup,opteq+1);
 			} else if(!strcmp(opts, "sockopt")) {
@@ -807,11 +807,11 @@ static void parse_mount_smb(int argc, char **argv)
 				exit(1);
 			} else if(!strcmp(opts, "guest")) {
 				*password = '\0';
-				got_pass = True;
+				got_pass = true;
 			} else if(!strcmp(opts, "krb")) {
 #ifdef HAVE_KRB5
 
-				use_kerberos = True;
+				use_kerberos = true;
 				if(!status32_smbfs)
 					fprintf(stderr, "Warning: kerberos support will only work for samba servers\n");
 #else
@@ -873,7 +873,7 @@ static void parse_mount_smb(int argc, char **argv)
 		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
 			pstrcpy(password,p+1);
-			got_pass = True;
+			got_pass = true;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
 		strupper(username);
@@ -881,12 +881,12 @@ static void parse_mount_smb(int argc, char **argv)
 
 	if (getenv("PASSWD")) {
 		pstrcpy(password,getenv("PASSWD"));
-		got_pass = True;
+		got_pass = true;
 	}
 
 	if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
 		get_password_file();
-		got_pass = True;
+		got_pass = true;
 	}
 
 	if (*username == 0 && getenv("LOGNAME")) {
@@ -901,7 +901,7 @@ static void parse_mount_smb(int argc, char **argv)
 	parse_mount_smb(argc, argv);
 
 	if (use_kerberos && !got_user) {
-		got_pass = True;
+		got_pass = true;
 	}
 
 	if (*credentials != 0) {
