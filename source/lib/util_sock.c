@@ -70,7 +70,12 @@ static char *get_socket_addr(int fd)
 	socklen_t length = sizeof(sa);
 	static char addr_buf[INET6_ADDRSTRLEN];
 
-	addr_buf[0] = '\0';
+	/* Ok, returning a hard coded IPv4 address
+ 	 * is bogus, but it's just as bogus as a
+ 	 * zero IPv6 address. No good choice here.
+ 	 */
+
+	safe_strcpy(addr_buf, "0.0.0.0", sizeof(addr_buf)-1);
 
 	if (fd == -1) {
 		return addr_buf;
