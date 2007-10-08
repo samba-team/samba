@@ -37,11 +37,16 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static const struct winbindd_child_dispatch_table idmap_dispatch_table[];
+
 static struct winbindd_child static_idmap_child;
 
 void init_idmap_child(void)
 {
-	setup_domain_child(NULL, &static_idmap_child, "idmap");
+	setup_domain_child(NULL,
+			   &static_idmap_child,
+			   idmap_dispatch_table,
+			   "idmap");
 }
 
 struct winbindd_child *idmap_child(void)
@@ -788,3 +793,26 @@ enum winbindd_result winbindd_dual_dump_maps(struct winbindd_domain *domain,
 
 	return WINBINDD_OK;
 }
+
+static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
+
+	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
+	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
+#if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
+	{ WINBINDD_DUAL_SIDS2XIDS,       winbindd_dual_sids2xids,             "DUAL_SIDS2XIDS" },
+#endif  /* end DISABLED */
+	{ WINBINDD_DUAL_UID2SID,         winbindd_dual_uid2sid,               "DUAL_UID2SID" },
+	{ WINBINDD_DUAL_GID2SID,         winbindd_dual_gid2sid,               "DUAL_GID2SID" },
+	{ WINBINDD_DUAL_UID2NAME,        winbindd_dual_uid2name,              "DUAL_UID2NAME" },
+	{ WINBINDD_DUAL_NAME2UID,        winbindd_dual_name2uid,              "DUAL_NAME2UID" },
+	{ WINBINDD_DUAL_GID2NAME,        winbindd_dual_gid2name,              "DUAL_GID2NAME" },
+	{ WINBINDD_DUAL_NAME2GID,        winbindd_dual_name2gid,              "DUAL_NAME2GID" },
+	{ WINBINDD_DUAL_SET_MAPPING,     winbindd_dual_set_mapping,           "DUAL_SET_MAPPING" },
+	{ WINBINDD_DUAL_SET_HWM,         winbindd_dual_set_hwm,               "DUAL_SET_HWMS" },
+	{ WINBINDD_DUAL_DUMP_MAPS,       winbindd_dual_dump_maps,             "DUAL_DUMP_MAPS" },
+	{ WINBINDD_ALLOCATE_UID,         winbindd_dual_allocate_uid,          "ALLOCATE_UID" },
+	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
+	/* End of list */
+
+	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
+};
