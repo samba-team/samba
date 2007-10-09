@@ -991,8 +991,8 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	DATA_BLOB blob;
 	struct security_descriptor sec_desc;
 
-	if (argc != 1) {
-		d_printf("Usage:    net rpc registry getsd <path>\n");
+	if (argc <1 || argc > 2) {
+		d_printf("Usage:    net rpc registry getsd <path> <secinfo>\n");
 		d_printf("Example:  net rpc registry getsd 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_OK;
 	}
@@ -1012,7 +1012,12 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	}
 
 	sd->size = 0x1000;
-	sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+
+	if (argc >= 2) {
+		sscanf(argv[1], "%x", &sec_info);
+	} else {
+		sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+	}
 
 	status = registry_getsd(mem_ctx, pipe_hnd, &pol_key, sec_info, sd);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1024,14 +1029,17 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	blob.data = sd->data;
 	blob.length = sd->size;
 
-	ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
-			     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	status = ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
+				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
 	display_sec_desc(&sec_desc);
 
  out:
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive);
 
 	return status;
 }
@@ -1040,7 +1048,7 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 static int rpc_registry_getsd(int argc, const char **argv)
 {
 	return run_rpc_command(NULL, PI_WINREG, 0,
-		rpc_registry_getsd_internal, argc, argv );
+		rpc_registry_getsd_internal, argc, argv);
 }
 
 /********************************************************************
