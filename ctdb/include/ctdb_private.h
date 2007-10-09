@@ -343,6 +343,7 @@ struct ctdb_context {
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
+	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */

@@ -1357,6 +1357,14 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		vnn = find_public_ip_vnn(ctdb, *src);
 	}
 	if (vnn == NULL) {
+		/* if it is not a public ip   it could be our 'single ip' */
+		if (ctdb->single_ip_vnn) {
+			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, dst)) {
+				vnn = ctdb->single_ip_vnn;
+			}
+		}
+	}
+	if (vnn == NULL) {
 		DEBUG(0,(__location__ " Could not killtcp, not a public address\n")); 
 		return -1;
 	}

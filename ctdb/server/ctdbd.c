@@ -48,6 +48,7 @@ static struct {
 	const char *db_dir;
 	const char *db_dir_persistent;
 	const char *public_interface;
+	const char *single_public_ip;
 	int         no_setsched;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
@@ -104,6 +105,7 @@ int main(int argc, const char *argv[])
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
+		{ "single-public-ip", 0, POPT_ARG_STRING, &options.single_public_ip, 0, "single public ip", "ip-address"},
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
@@ -213,6 +215,30 @@ int main(int argc, const char *argv[])
 	if (options.public_interface) {
 		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);
 		CTDB_NO_MEMORY(ctdb, ctdb->default_public_interface);
+	}
+
+	if (options.single_public_ip) {
+		struct ctdb_vnn *svnn;
+
+		if (options.public_interface == NULL) {
+			DEBUG(0,("--single_public_ip used but --public_interface is not specified. You must specify the public interface when using single public ip. Exiting\n"));
+			exit(10);
+		}
+
+		svnn = talloc_zero(ctdb, struct ctdb_vnn);
+		CTDB_NO_MEMORY(ctdb, svnn);
+
+		ctdb->single_ip_vnn = svnn;
+		svnn->iface = talloc_strdup(svnn, options.public_interface);
+		CTDB_NO_MEMORY(ctdb, svnn->iface);
+
+		if (inet_aton(options.single_public_ip, 
+				&svnn->public_address.sin_addr) == 0) {
+			DEBUG(0,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
+			exit(10);
+		}
+		svnn->public_address.sin_family = AF_INET;
+		svnn->public_address.sin_port   = 0;
 	}
 
 	if (options.public_address_list) {

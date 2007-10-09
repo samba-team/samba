@@ -21,6 +21,14 @@
 #
 # CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 
+# Should ctdb implement a single public ip address across the entire cluster
+# and multiplex incoming connections across the connected nodes
+# When using a single public ip you must also specify the public interface!
+# This makes all incoming traffic go through a single ctdb node which
+# will then forward the packets out acros the other nodes. This will 
+# impact performance.
+# CTDB_SINGLE_PUBLIC_IP=10.1.1.1
+
 # should ctdb manage starting/stopping the Samba service for you?
 # default is to not manage Samba
 # CTDB_MANAGES_SAMBA=yes
