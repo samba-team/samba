@@ -471,6 +471,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_ATTACH_PERSISTENT    = 61,
 		    CTDB_CONTROL_PERSISTENT_STORE        = 62,
 		    CTDB_CONTROL_UPDATE_RECORD           = 63,
+		    CTDB_CONTROL_SEND_GRATIOUS_ARP       = 64,
 };	
 
 /*
@@ -512,6 +513,15 @@ struct ctdb_control_tcp {
 struct ctdb_control_killtcp {
 	struct sockaddr_in src;
 	struct sockaddr_in dst;
+};
+
+/*
+  struct for send_gratious_arp
+ */
+struct ctdb_control_gratious_arp {
+	struct sockaddr_in sin;
+	uint32_t len;
+	char iface[1];
 };
 
 /*
@@ -1095,6 +1105,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
 
@@ -1143,6 +1154,12 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 		      struct timeval timeout, 
 		      uint32_t destnode,
 		      struct ctdb_control_killtcp *killtcp);
+
+int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct sockaddr_in *sin,
+		      const char *ifname);
 
 int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 

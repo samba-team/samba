@@ -980,7 +980,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	if (vnn == NULL) {
 		DEBUG(0,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n", 
 			 inet_ntoa(p->dest.sin_addr)));
-		return-1;
+		return -1;
 	}
 
 
@@ -1651,3 +1651,87 @@ void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb)
 			     timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0), 
 			     ctdb_update_tcp_tickles, ctdb);
 }
+
+
+
+
+struct control_gratious_arp {
+	struct ctdb_context *ctdb;
+	struct sockaddr_in sin;
+	const char *iface;
+	int count;
+};
+
+/*
+  send a control_gratuitous arp
+ */
+static void send_gratious_arp(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *private_data)
+{
+	int ret;
+	struct control_gratious_arp *arp = talloc_get_type(private_data, 
+							struct control_gratious_arp);
+
+DEBUG(0,("SENDING GRATIOUS ARP ip:%s iface:%s\n",inet_ntoa(arp->sin.sin_addr),arp->iface));
+
+	ret = ctdb_sys_send_arp(&arp->sin, arp->iface);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
+	}
+
+
+	arp->count++;
+	if (arp->count == CTDB_ARP_REPEAT) {
+		talloc_free(arp);
+		return;
+	}
+
+	event_add_timed(arp->ctdb->ev, arp, 
+			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
+			send_gratious_arp, arp);
+}
+
+
+/*
+  send a gratious arp 
+ */
+int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_gratious_arp *gratious_arp = (struct ctdb_control_gratious_arp *)indata.dptr;
+	struct control_gratious_arp *arp;
+
+
+	/* verify the size of indata */
+	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
+		DEBUG(0,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure\n"));
+		return -1;
+	}
+	if (indata.dsize != 
+		( offsetof(struct ctdb_control_gratious_arp, iface)
+		+ gratious_arp->len ) ){
+
+		DEBUG(0,(__location__ " Wrong size of indata. Was %d bytes "
+			"but should be %d bytes\n", 
+			indata.dsize, 
+			offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len));
+		return -1;
+	}
+
+
+	arp = talloc(ctdb, struct control_gratious_arp);
+	CTDB_NO_MEMORY(ctdb, arp);
+
+	arp->ctdb  = ctdb;
+	arp->sin   = gratious_arp->sin;
+	arp->iface = talloc_strdup(arp, gratious_arp->iface);
+	CTDB_NO_MEMORY(ctdb, arp->iface);
+	arp->count = 0;
+	
+	DEBUG(0,("GRATIOUS ARP for interface [%s] and ip:%s\n",arp->iface,inet_ntoa(arp->sin.sin_addr)));
+
+	event_add_timed(arp->ctdb->ev, arp, 
+			timeval_zero(), send_gratious_arp, arp);
+
+	return 0;
+}
+

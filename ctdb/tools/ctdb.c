@@ -380,6 +380,33 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 /*
+  send a gratious arp
+ */
+static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct sockaddr_in sin;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	sin.sin_family = AF_INET;
+	if (inet_aton(argv[0], &sin.sin_addr) == 0) {
+		DEBUG(0,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+	ret = ctdb_ctrl_gratious_arp(ctdb, TIMELIMIT(), options.pnn, &sin, argv[1]);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to send gratious_arp from node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
   register a server id
  */
 static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1071,6 +1098,7 @@ static const struct {
 	{ "thaw",            control_thaw,              true,  "thaw all databases" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,  "check if the local node is recmaster or not" },
 	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
+	{ "gratiousarp",     control_gratious_arp,      false, "send a gratious arp", "<ip> <interface>" },
 	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this ip", "<ip>" },
 
