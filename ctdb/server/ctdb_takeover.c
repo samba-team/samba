@@ -1672,8 +1672,6 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
 	struct control_gratious_arp *arp = talloc_get_type(private_data, 
 							struct control_gratious_arp);
 
-DEBUG(0,("SENDING GRATIOUS ARP ip:%s iface:%s\n",inet_ntoa(arp->sin.sin_addr),arp->iface));
-
 	ret = ctdb_sys_send_arp(&arp->sin, arp->iface);
 	if (ret != 0) {
 		DEBUG(0,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
@@ -1727,8 +1725,6 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 	CTDB_NO_MEMORY(ctdb, arp->iface);
 	arp->count = 0;
 	
-	DEBUG(0,("GRATIOUS ARP for interface [%s] and ip:%s\n",arp->iface,inet_ntoa(arp->sin.sin_addr)));
-
 	event_add_timed(arp->ctdb->ev, arp, 
 			timeval_zero(), send_gratious_arp, arp);
 
