@@ -897,6 +897,10 @@ void ndr_print_security_secinfo(struct ndr_print *ndr, const char *name, uint32_
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_GROUP", SECINFO_GROUP, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_DACL", SECINFO_DACL, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_SACL", SECINFO_SACL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_UNPROTECTED_SACL", SECINFO_UNPROTECTED_SACL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_UNPROTECTED_DACL", SECINFO_UNPROTECTED_DACL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_PROTECTED_SACL", SECINFO_PROTECTED_SACL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SECINFO_PROTECTED_DACL", SECINFO_PROTECTED_DACL, r);
 	ndr->depth--;
 }
 
