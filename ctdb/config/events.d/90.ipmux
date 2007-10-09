@@ -50,6 +50,9 @@ case $cmd in
 	ip addr del $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
 	ip addr add $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
 
+	# send out a gratious arp so our peers will update their arp tables
+	ctdb gratiousarp $CTDB_SINGLE_PUBLIC_IP $CTDB_PUBLIC_INTERFACE >/dev/null 2>/dev/null
+
 	# mark all these for queueing
 	iptables -I INPUT 1 -d $CTDB_SINGLE_PUBLIC_IP -i $CTDB_PUBLIC_INTERFACE -j QUEUE >/dev/null 2>/dev/null
 
