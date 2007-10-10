@@ -4,7 +4,6 @@
  *  Copyright (C) Andrew Tridgell 2001
  *  Copyright (C) Andrew Bartlett 2001
  *  Copyright (C) Tim Potter 2000
- *  Copyright (C) Jeremy Allison 2007
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1505,107 +1504,96 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 	return W_ERROR(NT_STATUS_V(error) & 0xffff);
 }
 
-#if defined(HAVE_GSSAPI)
-/*******************************************************************************
- Map between gssapi errors and NT status. I made these up :-(. JRA.
-*******************************************************************************/
+/* Mapping between Unix, DOS and NT error numbers */
 
-static const struct {
-		unsigned long gss_err;
-		NTSTATUS ntstatus;
-} gss_to_ntstatus_errormap[] = {
-#if defined(GSS_S_CALL_INACCESSIBLE_READ)
-		{GSS_S_CALL_INACCESSIBLE_READ, NT_STATUS_INVALID_PARAMETER},
+const struct unix_error_map unix_dos_nt_errmap[] = {
+	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
+	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
+	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+	{ ENOTDIR, ERRDOS, ERRbadpath,  NT_STATUS_NOT_A_DIRECTORY },
+	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
+	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
+	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
+	{ EEXIST, ERRDOS, ERRfilexists, NT_STATUS_OBJECT_NAME_COLLISION},
+	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ ENOMEM, ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY },
+	{ EISDIR, ERRDOS, ERRnoaccess, NT_STATUS_FILE_IS_A_DIRECTORY},
+	{ EMLINK, ERRDOS, ERRgeneral, NT_STATUS_TOO_MANY_LINKS },
+#ifdef ELOOP
+	{ ELOOP, ERRDOS, ERRbadpath, NT_STATUS_OBJECT_PATH_NOT_FOUND },
 #endif
-#if defined(GSS_S_CALL_INACCESSIBLE_WRITE)
-		{GSS_S_CALL_INACCESSIBLE_WRITE, NT_STATUS_INVALID_PARAMETER},
+#ifdef EDQUOT
+	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
 #endif
-#if defined(GSS_S_CALL_BAD_STRUCTURE)
-		{GSS_S_CALL_BAD_STRUCTURE, NT_STATUS_INVALID_PARAMETER},
+#ifdef ENOTEMPTY
+	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
 #endif
-#if defined(GSS_S_BAD_MECH)
-		{GSS_S_BAD_MECH, NT_STATUS_INVALID_PARAMETER},
+#ifdef EXDEV
+	{ EXDEV, ERRDOS, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
 #endif
-#if defined(GSS_S_BAD_NAME)
-		{GSS_S_BAD_NAME, NT_STATUS_INVALID_ACCOUNT_NAME},
+#ifdef EROFS
+	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
 #endif
-#if defined(GSS_S_BAD_NAMETYPE)
-		{GSS_S_BAD_NAMETYPE, NT_STATUS_INVALID_PARAMETER},
+#ifdef ENAMETOOLONG
+	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
 #endif
-#if defined(GSS_S_BAD_BINDINGS)
-		{GSS_S_BAD_BINDINGS, NT_STATUS_INVALID_PARAMETER},
+#ifdef EFBIG
+	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
 #endif
-#if defined(GSS_S_BAD_STATUS)
-		{GSS_S_BAD_STATUS, NT_STATUS_UNSUCCESSFUL},
+#ifdef ENOBUFS
+	{ ENOBUFS, ERRDOS, ERRnomem, NT_STATUS_INSUFFICIENT_RESOURCES },
 #endif
-#if defined(GSS_S_BAD_SIG)
-		{GSS_S_BAD_SIG, NT_STATUS_ACCESS_DENIED},
+	{ EAGAIN, ERRDOS, 111, NT_STATUS_NETWORK_BUSY },
+#ifdef EADDRINUSE
+	{ EADDRINUSE, ERRDOS, 52, NT_STATUS_ADDRESS_ALREADY_ASSOCIATED},
 #endif
-#if defined(GSS_S_NO_CRED)
-		{GSS_S_NO_CRED, NT_STATUS_ACCESS_DENIED},
+#ifdef ENETUNREACH
+	{ ENETUNREACH, ERRHRD, ERRgeneral, NT_STATUS_NETWORK_UNREACHABLE},
 #endif
-#if defined(GSS_S_NO_CONTEXT)
-		{GSS_S_NO_CONTEXT, NT_STATUS_ACCESS_DENIED},
+#ifdef EHOSTUNREACH
+	{ EHOSTUNREACH, ERRHRD, ERRgeneral, NT_STATUS_HOST_UNREACHABLE},
 #endif
-#if defined(GSS_S_DEFECTIVE_TOKEN)
-		{GSS_S_DEFECTIVE_TOKEN, NT_STATUS_ACCESS_DENIED},
+#ifdef ECONNREFUSED
+	{ ECONNREFUSED, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_REFUSED},
 #endif
-#if defined(GSS_S_DEFECTIVE_CREDENTIAL)
-		{GSS_S_DEFECTIVE_CREDENTIAL, NT_STATUS_ACCESS_DENIED},
+#ifdef ETIMEDOUT
+	{ ETIMEDOUT, ERRHRD, 121, NT_STATUS_IO_TIMEOUT},
 #endif
-#if defined(GSS_S_CREDENTIALS_EXPIRED)
-		{GSS_S_CREDENTIALS_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
+#ifdef ECONNABORTED
+	{ ECONNABORTED, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_ABORTED},
 #endif
-#if defined(GSS_S_CONTEXT_EXPIRED)
-		{GSS_S_CONTEXT_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
+#ifdef ENODEV
+	{ ENODEV, ERRDOS, 55, NT_STATUS_DEVICE_DOES_NOT_EXIST},
 #endif
-#if defined(GSS_S_BAD_QOP)
-		{GSS_S_BAD_QOP, NT_STATUS_ACCESS_DENIED},
+#ifdef EPIPE
+	{EPIPE, ERRDOS, 109, NT_STATUS_PIPE_BROKEN},
 #endif
-#if defined(GSS_S_UNAUTHORIZED)
-		{GSS_S_UNAUTHORIZED, NT_STATUS_ACCESS_DENIED},
+#ifdef EWOULDBLOCK
+	{ EWOULDBLOCK, ERRDOS, 111, NT_STATUS_NETWORK_BUSY },
 #endif
-#if defined(GSS_S_UNAVAILABLE)
-		{GSS_S_UNAVAILABLE, NT_STATUS_UNSUCCESSFUL},
-#endif
-#if defined(GSS_S_DUPLICATE_ELEMENT)
-		{GSS_S_DUPLICATE_ELEMENT, NT_STATUS_INVALID_PARAMETER},
-#endif
-#if defined(GSS_S_NAME_NOT_MN)
-		{GSS_S_NAME_NOT_MN, NT_STATUS_INVALID_PARAMETER},
-#endif
-		{ 0, NT_STATUS_OK }
+	{ 0, 0, 0, NT_STATUS_OK }
 };
 
 /*********************************************************************
- Map an NT error code from a gssapi error code.
+ Map an NT error code from a Unix error code.
 *********************************************************************/
 
-NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor)
+NTSTATUS map_nt_error_from_unix(int unix_error)
 {
 	int i = 0;
 
-	if (gss_maj == GSS_S_COMPLETE) {
+	if (unix_error == 0)
 		return NT_STATUS_OK;
-	}
 
-	if (gss_maj == GSS_S_CONTINUE_NEEDED) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
-	if (gss_maj == GSS_S_FAILURE) {
-		return map_nt_error_from_unix((int)minor);
-	}
-	
 	/* Look through list */
-	while(gss_to_ntstatus_errormap[i].gss_err != 0) {
-		if (gss_to_ntstatus_errormap[i].gss_err == gss_maj) {
-			return gss_to_ntstatus_errormap[i].ntstatus;
-		}
+	while(unix_dos_nt_errmap[i].unix_error != 0) {
+		if (unix_dos_nt_errmap[i].unix_error == unix_error)
+			return unix_dos_nt_errmap[i].nt_error;
 		i++;
 	}
 
 	/* Default return */
 	return NT_STATUS_ACCESS_DENIED;
 }
-#endif

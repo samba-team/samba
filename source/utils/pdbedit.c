@@ -758,7 +758,6 @@ int main (int argc, char **argv)
 	static char *pwd_time_format = NULL;
 	static BOOL pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
-	char *configfile = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -816,9 +815,6 @@ int main (int argc, char **argv)
 		case 'C':
 			account_policy_value_set = True;
 			break;
-		case 's':
-			configfile = optarg;
-			break;
 		}
 	}
 
@@ -827,13 +823,12 @@ int main (int argc, char **argv)
 	if (user_name == NULL)
 		user_name = poptGetArg(pc);
 
-	if (!lp_load(configfile?configfile:dyn_CONFIGFILE,
-		     True,False,False,True)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		exit(1);
 	}
 
-	if(!initialize_password_db(False, NULL))
+	if(!initialize_password_db(False))
 		exit(1);
 
 	if (!init_names())

@@ -10,12 +10,12 @@ EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 
-LDFLAGS = -L/usr/local/samba/lib
+LDFLAGS = -L/usr/local/samba/lib \
+	  -lldap -lkrb5 -lgssapi_krb5
 #LIBSMBCLIENT = /usr/local/samba/lib/libsmbclient.so
 LIBSMBCLIENT = ../../source/bin/libsmbclient.a -ldl -lresolv
 
 TESTS=	testsmbc \
-	tree \
 	testacl \
 	testacl2 \
 	testbrowse \
@@ -25,6 +25,8 @@ TESTS=	testsmbc \
 	testchmod \
 	testutime \
 	testread
+
+#	tree \
 
 all:	$(TESTS) smbsh
 
@@ -38,11 +40,11 @@ tree: tree.o
 
 testacl: testacl.o
 	@echo Linking testacl
-	$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ $< `gtk-config --libs` $(LIBSMBCLIENT) -lpopt
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testacl2: testacl2.o
 	@echo Linking testacl2
-	$(CC) `gtk-config --cflags` $(CFLAGS) $(LDFLAGS) -o $@ $< `gtk-config --libs` $(LIBSMBCLIENT) -lpopt
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testbrowse: testbrowse.o
 	@echo Linking testbrowse

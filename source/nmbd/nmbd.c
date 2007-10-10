@@ -33,33 +33,21 @@ extern BOOL global_in_nmbd;
 
 extern BOOL override_logfile;
 
+/* are we running as a daemon ? */
+static BOOL is_daemon;
+
+/* fork or run in foreground ? */
+static BOOL Fork = True;
+
+/* log to standard output ? */
+static BOOL log_stdout;
+
 /* have we found LanMan clients yet? */
 BOOL found_lm_clients = False;
 
 /* what server type are we currently */
 
 time_t StartupTime = 0;
-
-struct event_context *nmbd_event_context(void)
-{
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init nmbd event context");
-	}
-	return ctx;
-}
-
-struct messaging_context *nmbd_messaging_context(void)
-{
-	static struct messaging_context *ctx;
-
-	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
-					   nmbd_event_context()))) {
-		smb_panic("Could not init nmbd messaging context");
-	}
-	return ctx;
-}
 
 /**************************************************************************** **
  Handle a SIGTERM in band.
@@ -88,11 +76,8 @@ static void terminate(void)
  Handle a SHUTDOWN message from smbcontrol.
  **************************************************************************** */
 
-static void nmbd_terminate(struct messaging_context *msg,
-			   void *private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB *data)
+static void nmbd_terminate(int msg_type, struct process_id src,
+			   void *buf, size_t len, void *private_data)
 {
 	terminate();
 }
@@ -286,39 +271,33 @@ static BOOL reload_nmbd_services(BOOL test)
  * detects that there are no subnets.
  **************************************************************************** */
 
-static void msg_reload_nmbd_services(struct messaging_context *msg,
-				     void *private_data,
-				     uint32_t msg_type,
-				     struct server_id server_id,
-				     DATA_BLOB *data)
+static void msg_reload_nmbd_services(int msg_type, struct process_id src,
+				     void *buf, size_t len, void *private_data)
 {
 	write_browse_list( 0, True );
 	dump_all_namelists();
 	reload_nmbd_services( True );
 	reopen_logs();
 	
-	if (data->data) {
+	if(buf) {
 		/* We were called from process() */
 		/* If reload_interfaces() returned True */
 		/* we need to shutdown if there are no subnets... */
 		/* pass this info back to process() */
-		*((BOOL*)data->data) = reload_interfaces(0);  
+		*((BOOL*)buf) = reload_interfaces(0);  
 	}
 }
 
-static void msg_nmbd_send_packet(struct messaging_context *msg,
-				 void *private_data,
-				 uint32_t msg_type,
-				 struct server_id src,
-				 DATA_BLOB *data)
+static void msg_nmbd_send_packet(int msg_type, struct process_id src,
+				 void *buf, size_t len, void *private_data)
 {
-	struct packet_struct *p = (struct packet_struct *)data->data;
+	struct packet_struct *p = (struct packet_struct *)buf;
 	struct subnet_record *subrec;
 	struct in_addr *local_ip;
 
 	DEBUG(10, ("Received send_packet from %d\n", procid_to_pid(&src)));
 
-	if (data->length != sizeof(struct packet_struct)) {
+	if (len != sizeof(struct packet_struct)) {
 		DEBUG(2, ("Discarding invalid packet length from %d\n",
 			  procid_to_pid(&src)));
 		return;
@@ -376,7 +355,7 @@ static void process(void)
 
 		/* Check for internal messages */
 
-		message_dispatch(nmbd_messaging_context());
+		message_dispatch();
 
 		/*
 		 * Check all broadcast subnets to see if
@@ -577,13 +556,9 @@ static void process(void)
 		 */
 
 		if(reload_after_sighup) {
-			DATA_BLOB blob = data_blob_const(&no_subnets,
-							 sizeof(no_subnets));
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			msg_reload_nmbd_services(nmbd_messaging_context(),
-						 NULL, MSG_SMB_CONF_UPDATED,
-						 procid_self(), &blob);
-
+			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
+						 pid_to_procid(0), (void*) &no_subnets, 0, NULL);
 			if(no_subnets)
 				return;
 			reload_after_sighup = 0;
@@ -603,7 +578,7 @@ static void process(void)
  Open the socket communication.
  **************************************************************************** */
 
-static BOOL open_sockets(enum smb_server_mode server_mode, int port)
+static BOOL open_sockets(BOOL isdaemon, int port)
 {
 	/*
 	 * The sockets opened here will be used to receive broadcast
@@ -613,13 +588,12 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	 * now deprecated.
 	 */
 
-	if ( server_mode == SERVER_MODE_INETD ) {
-		ClientNMB = 0;
-	} else {
+	if ( isdaemon )
 		ClientNMB = open_socket_in(SOCK_DGRAM, port,
 					   0, interpret_addr(lp_socket_address()),
 					   True);
-	}
+	else
+		ClientNMB = 0;
   
 	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
 					   3, interpret_addr(lp_socket_address()),
@@ -648,20 +622,15 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
  int main(int argc, const char *argv[])
 {
 	pstring logfile;
+	static BOOL opt_interactive;
 	poptContext pc;
-	const char *p_lmhosts = dyn_LMHOSTSFILE;
-	BOOL no_process_group = False;
-	BOOL log_stdout = False;
-	enum smb_server_mode server_mode = SERVER_MODE_DAEMON;
-
+	static char *p_lmhosts = dyn_LMHOSTSFILE;
+	static BOOL no_process_group = False;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &server_mode, SERVER_MODE_DAEMON,
-		"Become a daemon(default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &server_mode,
-		SERVER_MODE_INTERACTIVE, "Run interactive (not a daemon)" },
-	{"foreground", 'F', POPT_ARG_VAL, &server_mode,
-		SERVER_MODE_FOREGROUND, "Run daemon in foreground (for daemontools & etc)" },
+	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
+	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
+	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
 	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
@@ -711,11 +680,12 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	BlockSignals(True, SIGUSR2);
 #endif
 
-	if (server_mode == SERVER_MODE_INTERACTIVE) {
+	if ( opt_interactive ) {
+		Fork = False;
 		log_stdout = True;
 	}
 
-	if (log_stdout && server_mode == SERVER_MODE_DAEMON) {
+	if ( log_stdout && Fork ) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
@@ -742,19 +712,14 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 
 	set_samba_nb_type();
 
-	if (is_a_socket(0)) {
-		if (server_mode == SERVER_MODE_DAEMON) {
-			DEBUG(0,("standard input is a socket, "
-				    "assuming -F option\n"));
-		}
-		server_mode = SERVER_MODE_INETD;
+	if (!is_daemon && !is_a_socket(0)) {
+		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		is_daemon = True;
 	}
-
-	if (server_mode == SERVER_MODE_DAEMON) {
+  
+	if (is_daemon && !opt_interactive) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(True, no_process_group);
-	} else if (server_mode == SERVER_MODE_FOREGROUND) {
-		become_daemon(False, no_process_group);
+		become_daemon(Fork, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -762,13 +727,9 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	 * If we're interactive we want to set our own process group for 
 	 * signal management.
 	 */
-	if (server_mode == SERVER_MODE_INTERACTIVE && !no_process_group)
+	if (opt_interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
-
-	if (nmbd_messaging_context() == NULL) {
-		return 1;
-	}
 
 #ifndef SYNC_DNS
 	/* Setup the async dns. We do it here so it doesn't have all the other
@@ -783,25 +744,21 @@ static BOOL open_sockets(enum smb_server_mode server_mode, int port)
 	}
 
 	pidfile_create("nmbd");
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_FORCE_ELECTION, nmbd_message_election);
+	message_init();
+	message_register(MSG_FORCE_ELECTION, nmbd_message_election, NULL);
 #if 0
 	/* Until winsrepl is done. */
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry, NULL);
 #endif
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SHUTDOWN, nmbd_terminate);
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SEND_PACKET, msg_nmbd_send_packet);
+	message_register(MSG_SHUTDOWN, nmbd_terminate, NULL);
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services, NULL);
+	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet, NULL);
 
 	TimeInit();
 
 	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-	if ( !open_sockets( server_mode, global_nmb_port ) ) {
+	if ( !open_sockets( is_daemon, global_nmb_port ) ) {
 		kill_async_dns_child();
 		return 1;
 	}

@@ -122,7 +122,7 @@ PyObject *srvsvc_netservergetinfo(PyObject *self, PyObject *args,
 
 	status = rpccli_srvsvc_net_srv_get_info(cli->pipe_list, mem_ctx, level, &ctr);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!W_ERROR_IS_OK(status)) {
 		PyErr_SetObject(srvsvc_error, py_werror_tuple(status));
 		goto done;
 	}

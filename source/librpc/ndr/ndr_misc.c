@@ -243,11 +243,7 @@ NTSTATUS ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct se
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->vnn));
-#endif
+					  (uint32_t)r->id.pid));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -260,10 +256,7 @@ NTSTATUS ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_i
 		uint32_t pid;
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->vnn));
-#endif
-		r->pid = (pid_t)pid;
+		r->id.pid = (pid_t)pid;
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -274,9 +267,6 @@ void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct s
 {
 	ndr_print_struct(ndr, name, "server_id");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "id", (uint32_t)r->pid);
-#ifdef CLUSTER_SUPPORT
-	ndr_print_uint32(ndr, "vnn", (uint32_t)r->vnn);
-#endif
+	ndr_print_uint32(ndr, "id", (uint32_t)r->id.pid);
 	ndr->depth--;
 }

@@ -31,7 +31,7 @@ static struct notify_queue {
 	struct notify_queue *next, *prev;
 	struct spoolss_notify_msg *msg;
 	struct timeval tv;
-	uint8 *buf;
+	char *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
 
@@ -75,7 +75,7 @@ BOOL print_notify_messages_pending(void)
 static BOOL flatten_message(struct notify_queue *q)
 {
 	struct spoolss_notify_msg *msg = q->msg;
-	uint8 *buf = NULL;
+	char *buf = NULL;
 	size_t buflen = 0, len;
 
 again:
@@ -99,7 +99,7 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = (uint8 *)TALLOC_REALLOC(send_ctx, buf, len);
+		buf = (char *)TALLOC_REALLOC(send_ctx, buf, len);
 		if (!buf)
 			return False;
 		buflen = len;
@@ -116,9 +116,7 @@ again:
  Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
-static void print_notify_send_messages_to_printer(struct messaging_context *msg_ctx,
-						  const char *printer,
-						  unsigned int timeout)
+static void print_notify_send_messages_to_printer(const char *printer, unsigned int timeout)
 {
 	char *buf;
 	struct notify_queue *pq, *pq_next;
@@ -126,7 +124,6 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	size_t num_pids = 0;
 	size_t i;
 	pid_t *pid_list = NULL;
-	struct timeval end_time = timeval_zero();
 
 	/* Count the space needed to send the messages. */
 	for (pq = notify_queue_head; pq; pq = pq->next) {
@@ -178,19 +175,16 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
 	if (!print_notify_pid_list(printer, send_ctx, &num_pids, &pid_list))
 		return;
 
-	if (timeout != 0) {
-		end_time = timeval_current_ofs(timeout, 0);
-	}
-
 	for (i = 0; i < num_pids; i++) {
-		messaging_send_buf(msg_ctx,
-				   pid_to_procid(pid_list[i]),
-				   MSG_PRINTER_NOTIFY2 | MSG_FLAG_LOWPRIORITY,
-				   (uint8 *)buf, offset);
-
-		if ((timeout != 0) && timeval_expired(&end_time)) {
-			break;
+		unsigned int q_len = messages_pending_for_pid(pid_to_procid(pid_list[i]));
+		if (q_len > 1000) {
+			DEBUG(5, ("print_notify_send_messages_to_printer: discarding notify to printer %s as queue length = %u\n",
+				printer, q_len ));
+			continue;
 		}
+		message_send_pid_with_timeout(pid_to_procid(pid_list[i]),
+					      MSG_PRINTER_NOTIFY2,
+					      buf, offset, True, timeout);
 	}
 }
 
@@ -198,8 +192,7 @@ static void print_notify_send_messages_to_printer(struct messaging_context *msg_
  Actually send the batched messages.
 *******************************************************************/
 
-void print_notify_send_messages(struct messaging_context *msg_ctx,
-				unsigned int timeout)
+void print_notify_send_messages(unsigned int timeout)
 {
 	if (!print_notify_messages_pending())
 		return;
@@ -208,8 +201,7 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
 		return;
 
 	while (print_notify_messages_pending())
-		print_notify_send_messages_to_printer(
-			msg_ctx, notify_queue_head->msg->printer, timeout);
+		print_notify_send_messages_to_printer(notify_queue_head->msg->printer, timeout);
 
 	talloc_free_children(send_ctx);
 	num_messages = 0;

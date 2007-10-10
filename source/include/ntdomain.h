@@ -234,9 +234,17 @@ typedef struct pipes_struct {
 	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
-	 * Credentials used for the pipe operations
+	 * Windows user info.
+	 */
+	fstring user_name;
+	fstring domain;
+	fstring wks;
+
+	/*
+	 * Unix user name and credentials used when a pipe is authenticated.
 	 */
 
+	fstring pipe_user_name;
 	struct current_user pipe_user;
 	DATA_BLOB session_key;
  
@@ -257,7 +265,7 @@ typedef struct pipes_struct {
 	 */
 
 	BOOL bad_handle_fault_state;
-
+	
 	/*
 	 * Set to true when the backend does not support a call.
 	 */

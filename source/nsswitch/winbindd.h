@@ -153,13 +153,10 @@ struct winbindd_child {
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
-	fstring name;                          /* Domain name (NetBIOS) */
-	fstring alt_name;                      /* alt Domain name, if any (FQDN for ADS) */
+	fstring name;                          /* Domain name */	
+	fstring alt_name;                      /* alt Domain name (if any) */
 	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
-	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */	
-	uint32 domain_type;                    /* Domain type from rpc_ds.h */	
-	uint32 domain_trust_attribs;           /* Trust attribs from rpc_ds.h */
 	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
@@ -168,14 +165,6 @@ struct winbindd_domain {
 	BOOL online;			       /* is this domain available ? */
 	time_t startup_time;		       /* When we set "startup" true. */
 	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
-
-	BOOL can_do_samlogon_ex; /* Due to the lack of finer control what type
-				  * of DC we have, let us try to do a
-				  * credential-chain less samlogon_ex call
-				  * with AD and schannel. If this fails with
-				  * DCERPC_FAULT_OP_RNG_ERROR, then set this
-				  * to False. This variable is around so that
-				  * we don't have to try _ex every time. */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -244,7 +233,6 @@ struct winbindd_methods {
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				enum winbindd_cmd orig_cmd,
 				const char *domain_name,
 				const char *name,
 				DOM_SID *sid,
@@ -344,26 +332,11 @@ struct winbindd_idmap_methods {
   void (*status)(void);
 };
 
-/* Data structures for dealing with the trusted domain cache */
-
-struct winbindd_tdc_domain {
-	const char *domain_name;
-	const char *dns_name;
-        DOM_SID sid;
-	uint32 trust_flags;
-	uint32 trust_attribs;
-	uint32 trust_type;
-};
-
-
 #include "nsswitch/winbindd_proto.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
-#define WINBINDD_RESCAN_FREQ lp_winbind_cache_time()
+#define WINBINDD_RESCAN_FREQ 300
 #define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
-#define IS_DOMAIN_OFFLINE(x) ( lp_winbind_offline_logon() && \
-			       ( get_global_winbindd_state_offline() \
-				 || !(x)->online ) )
 #endif /* _WINBINDD_H */

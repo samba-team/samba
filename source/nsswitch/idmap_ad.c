@@ -143,7 +143,6 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	/* Otherwise, set the schema model */
 
 	if ( (ad_map_type ==  WB_POSIX_MAP_SFU) ||
-	     (ad_map_type ==  WB_POSIX_MAP_SFU20) || 
 	     (ad_map_type ==  WB_POSIX_MAP_RFC2307) ) 
 	{
 		ADS_STATUS schema_status;
@@ -197,8 +196,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 	if ( schema_mode && schema_mode[0] ) {
 		if ( strequal(schema_mode, "sfu") )
 			ad_map_type = WB_POSIX_MAP_SFU;
-		else if ( strequal(schema_mode, "sfu20" ) )
-			ad_map_type = WB_POSIX_MAP_SFU20;
 		else if ( strequal(schema_mode, "rfc2307" ) )
 			ad_map_type = WB_POSIX_MAP_RFC2307;
 		else
@@ -676,11 +673,11 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
 }
 
 /*
- * nss_info_{sfu,sfu20,rfc2307}
+ * nss_info_{sfu,rfc2307}
  */
 
 /************************************************************************
- Initialize the {sfu,sfu20,rfc2307} state
+ Initialize the {sfu,rfc2307} state
  ***********************************************************************/
 
 static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
@@ -696,25 +693,7 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	
-	ad_map_type = WB_POSIX_MAP_SFU;	
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
-{
-	/* Sanity check if we have previously been called with a
-	   different schema model */
-
-	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ad_map_type != WB_POSIX_MAP_SFU20) )
-	{
-		DEBUG(0,("nss_sfu20_init: Posix Map type has already been set.  "
-			 "Mixed schema models not supported!\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-	
-	ad_map_type = WB_POSIX_MAP_SFU20;	
+	ad_map_type =  WB_POSIX_MAP_SFU;	
 
 	return NT_STATUS_OK;
 }
@@ -732,7 +711,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	
-	ad_map_type = WB_POSIX_MAP_RFC2307;
+	ad_map_type =  WB_POSIX_MAP_RFC2307;
 
 	return NT_STATUS_OK;
 }
@@ -774,7 +753,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
        
 	if ( gid ) {		
 		if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
-			*gid = 0;		
+			*gid = (uint32)-1;
 	}
 		
 	return NT_STATUS_OK;
@@ -816,13 +795,6 @@ static struct nss_info_methods nss_sfu_methods = {
 	.close_fn     = nss_ad_close
 };
 
-static struct nss_info_methods nss_sfu20_methods = {
-	.init         = nss_sfu20_init,
-	.get_nss_info =	nss_ad_get_info,
-	.close_fn     = nss_ad_close
-};
-
-
 
 /************************************************************************
  Initialize the plugins
@@ -833,7 +805,6 @@ NTSTATUS idmap_ad_init(void)
 	static NTSTATUS status_idmap_ad = NT_STATUS_UNSUCCESSFUL;
 	static NTSTATUS status_nss_rfc2307 = NT_STATUS_UNSUCCESSFUL;
 	static NTSTATUS status_nss_sfu = NT_STATUS_UNSUCCESSFUL;
-	static NTSTATUS status_nss_sfu20 = NT_STATUS_UNSUCCESSFUL;
 
 	/* Always register the AD method first in order to get the
 	   idmap_domain interface called */
@@ -857,13 +828,6 @@ NTSTATUS idmap_ad_init(void)
 							"sfu",  &nss_sfu_methods );		
 		if ( !NT_STATUS_IS_OK(status_nss_sfu) )
 			return status_nss_sfu;		
-	}
-
-	if ( !NT_STATUS_IS_OK( status_nss_sfu20 ) ) {
-		status_nss_sfu20 = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
-							"sfu20",  &nss_sfu20_methods );		
-		if ( !NT_STATUS_IS_OK(status_nss_sfu20) )
-			return status_nss_sfu20;		
 	}
 
 	return NT_STATUS_OK;	

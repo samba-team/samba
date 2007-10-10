@@ -42,7 +42,7 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 				       char **homedir,
 				       char **shell, 
 				       char **gecos,
-				       uint32 *gid )
+				       gid_t *gid )
 {     
 	if ( !homedir || !shell || !gecos )
 		return NT_STATUS_INVALID_PARAMETER;

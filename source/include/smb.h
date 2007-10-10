@@ -79,7 +79,6 @@
 #define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
 #define DO_NOT_DO_TDIS 6 /* cli_close_connection() check for this when smbfs wants to keep tree connected */
-#define READ_BAD_DECRYPT 7
 
 #define DIR_STRUCT_SIZE 43
 
@@ -187,10 +186,9 @@ typedef uint32 codepoint_t;
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
 #define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPMAPPER "\\PIPE\\epmapper"
+#define PIPE_EPM      "\\PIPE\\epmapper"
 #define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_EVENTLOG "\\PIPE\\eventlog"
-#define PIPE_UNIXINFO    "\\PIPE\\unixinfo"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -203,14 +201,12 @@ typedef uint32 codepoint_t;
 #define PI_WINREG		6
 #define PI_SPOOLSS		7
 #define PI_NETDFS		8
-#define PI_RPCECHO 		9
-#define PI_INITSHUTDOWN		10
+#define PI_ECHO 		9
+#define PI_SHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
-#define PI_UNIXINFO		13
-#define PI_NTSVCS		14
-#define PI_EPMAPPER		15
-#define PI_MAX_PIPES		16
+#define PI_NTSVCS		13
+#define PI_MAX_PIPES		14
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
@@ -247,15 +243,26 @@ typedef uint64_t NTTIME;
 
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
-#define LOOKUP_NAME_ISOLATED             0x00000001  /* Look up unqualified names */
-#define LOOKUP_NAME_REMOTE               0x00000002  /* Ask others */
-#define LOOKUP_NAME_GROUP                0x00000004  /* (unused) This is a NASTY hack for 
-							valid users = @foo where foo also
-							exists in as user. */
-#define LOOKUP_NAME_EXPLICIT             0x00000008  /* Only include
-							explicitly mapped names and not 
-							the Unix {User,Group} domain */
-#define LOOKUP_NAME_ALL                  (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
+/* SID Types */
+enum lsa_SidType {
+	SID_NAME_USE_NONE = 0,
+	SID_NAME_USER    = 1, /* user */
+	SID_NAME_DOM_GRP,     /* domain group */
+	SID_NAME_DOMAIN,      /* domain sid */
+	SID_NAME_ALIAS,       /* local group */
+	SID_NAME_WKN_GRP,     /* well-known group */
+	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID,     /* invalid account */
+	SID_NAME_UNKNOWN,     /* unknown sid type */
+	SID_NAME_COMPUTER     /* sid for a computer */
+};
+
+#define LOOKUP_NAME_ISOLATED 1	/* Look up unqualified names */
+#define LOOKUP_NAME_REMOTE   2  /* Ask others */
+#define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
+
+#define LOOKUP_NAME_GROUP    4  /* (unused) This is a NASTY hack for valid users = @foo
+				 * where foo also exists in as user. */
 
 /**
  * @brief Security Identifier
@@ -305,16 +312,7 @@ struct id_map {
 #include "librpc/ndr/misc.h"
 #include "librpc/ndr/security.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/gen_ndr/unixinfo.h"
-#include "librpc/gen_ndr/lsa.h"
-#include "librpc/gen_ndr/dfs.h"
-#include "librpc/gen_ndr/initshutdown.h"
-#include "librpc/gen_ndr/winreg.h"
-#include "librpc/gen_ndr/eventlog.h"
-#include "librpc/gen_ndr/srvsvc.h"
 #include "librpc/gen_ndr/wkssvc.h"
-#include "librpc/gen_ndr/echo.h"
-#include "librpc/gen_ndr/svcctl.h"
 
 struct lsa_dom_info {
 	BOOL valid;
@@ -427,9 +425,10 @@ struct fd_handle {
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
 				 */
-	unsigned long gen_id;
+	unsigned long file_id;
 };
 
+struct messaging_context;
 struct event_context;
 struct fd_event;
 struct timed_event;
@@ -491,7 +490,8 @@ typedef struct files_struct {
 	struct fd_handle *fh;
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
-	struct file_id file_id;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 file_pid;
@@ -520,6 +520,7 @@ typedef struct files_struct {
 	BOOL modified;
 	BOOL is_directory;
 	BOOL is_stat;
+	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	BOOL posix_open;
@@ -535,13 +536,11 @@ typedef struct files_struct {
 #include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
-typedef struct data_blob {
+typedef struct data_blob_ {
 	uint8 *data;
 	size_t length;
-	void (*free)(struct data_blob *data_blob);
+	void (*free)(struct data_blob_ *data_blob);
 } DATA_BLOB;
-
-extern const DATA_BLOB data_blob_null;
 
 /*
  * Structure used to keep directory state information around.
@@ -600,6 +599,8 @@ struct trans_state {
 };
 
 /* Include VFS stuff */
+
+struct security_descriptor_info;
 
 #include "smb_acls.h"
 #include "vfs.h"
@@ -670,6 +671,7 @@ typedef struct connection_struct {
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
+	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
 	struct notify_context *notify_ctx;
@@ -680,13 +682,6 @@ struct current_user {
 	uint16 vuid;
 	UNIX_USER_TOKEN ut;
 	NT_USER_TOKEN *nt_user_token;
-};
-
-struct smb_request {
-	uint16 flags2;
-	uint16 smbpid;
-	uint16 mid;
-	uint16 vuid;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -757,7 +752,7 @@ struct pending_message_list {
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
-	struct server_id pid;
+	struct process_id pid;
 	uint16 op_mid;
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
@@ -767,7 +762,8 @@ struct share_mode_entry {
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
 				 * smbstatus and swat */
 	struct timeval time;
-	struct file_id id;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 	unsigned long share_file_id;
 	uint32 uid;		/* uid of file opener. */
 	uint16 flags;		/* See SHARE_MODE_XX above. */
@@ -776,7 +772,7 @@ struct share_mode_entry {
 /* oplock break message definition - linearization of share_mode_entry.
 
 Offset  Data			length.
-0	struct server_id pid	4
+0	struct process_id pid	4
 4	uint16 op_mid		2
 6	uint16 op_type		2
 8	uint32 access_mask	4
@@ -792,23 +788,19 @@ Offset  Data			length.
 54
 
 */
-#ifdef CLUSTER_SUPPORT
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 58
-#else
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 54
-#endif
 
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
 	const char *filename;
-	struct file_id id;
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
 	UNIX_USER_TOKEN *delete_token;
 	BOOL delete_on_close;
 	BOOL fresh;
 	BOOL modified;
-	struct db_record *record;
 };
 
 /*
@@ -838,7 +830,7 @@ struct locking_data {
 /* Used to store pipe open records for NetFileEnum() */
 
 struct pipe_open_rec {
-	struct server_id pid;
+	struct process_id pid;
 	uid_t uid;
 	int pnum;
 	fstring name;
@@ -885,14 +877,14 @@ struct pipe_open_rec {
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
-	struct server_id pid;
+	struct process_id pid;
 	int cnum;
 	fstring name;
 };
 
 struct connections_data {
 	int magic;
-	struct server_id pid;
+	struct process_id pid;
 	int cnum;
 	uid_t uid;
 	gid_t gid;
@@ -1766,9 +1758,9 @@ typedef struct user_struct {
 	gid_t gid; /* gid of a validated user */
 
 	userdom_struct user;
-	const char *homedir;
-	const char *unix_homedir;
-	const char *logon_script;
+	char *homedir;
+	char *unix_homedir;
+	char *logon_script;
 	
 	BOOL guest;
 
@@ -1899,7 +1891,6 @@ struct ea_list {
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
 #define UUID_SIZE 16
-
 #define UUID_FLAT_SIZE 16
 typedef struct uuid_flat {
 	uint8 info[UUID_FLAT_SIZE];
@@ -1926,7 +1917,5 @@ enum usershare_err {
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
-
-#include "librpc/gen_ndr/epmapper.h"
 
 #endif /* _SMB_H */

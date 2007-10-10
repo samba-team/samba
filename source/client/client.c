@@ -194,6 +194,10 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
+		if ((total_len > 0) && (strlen(msg) == 0)) {
+			break;
+		}
+
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
@@ -1787,54 +1791,6 @@ static int cmd_open(void)
 /****************************************************************************
 ****************************************************************************/
 
-static int cmd_posix_encrypt(void)
-{
-	NTSTATUS status;
-
-	if (cli->use_kerberos) {
-		status = cli_gss_smb_encryption_start(cli);
-	} else {	
-		fstring buf;
-		fstring domain;
-		fstring user;
-		fstring password;
-
-		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-			d_printf("posix_encrypt domain user password\n");
-			return 1;
-		}
-		fstrcpy(domain,buf);
-
-		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-			d_printf("posix_encrypt domain user password\n");
-			return 1;
-		}
-		fstrcpy(user,buf);
-
-		if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-			d_printf("posix_encrypt domain user password\n");
-			return 1;
-		}
-		fstrcpy(password,buf);
-
-		status = cli_raw_ntlm_smb_encryption_start(cli,
-							user,
-							password,
-							domain);
-	}
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
-	} else {
-		d_printf("encryption on\n");
-	}
-
-	return 0;
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static int cmd_posix_open(void)
 {
 	pstring mask;
@@ -2697,7 +2653,8 @@ static int cmd_rename(void)
 	pstring src,dest;
 	pstring buf,buf2;
 	struct cli_state *targetcli;
-	pstring targetname;
+	pstring targetsrc;
+	pstring targetdest;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2711,13 +2668,21 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
-		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+	if ( !cli_resolve_path( "", cli, src, &targetcli, targetsrc ) ) {
+		d_printf("rename %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
 
-	if (!cli_rename(targetcli, targetname, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(targetcli));
+	if ( !cli_resolve_path( "", cli, dest, &targetcli, targetdest ) ) {
+		d_printf("rename %s: %s\n", dest, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_rename(targetcli, targetsrc, targetdest)) {
+		d_printf("%s renaming files %s -> %s \n",
+			cli_errstr(targetcli),
+			targetsrc,
+			targetdest);
 		return 1;
 	}
 	
@@ -3027,18 +2992,18 @@ static BOOL browse_host_rpc(BOOL sort)
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
-	uint32 enum_hnd = 0;
-	struct srvsvc_NetShareCtr1 ctr1;
-	union srvsvc_NetShareCtr ctr;
+	ENUM_HND enum_hnd;
+	WERROR werr;
+	SRV_SHARE_INFO_CTR ctr;
 	int i;
-	uint32 level;
-	uint32 numentries;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return False;
 	}
+
+	init_enum_hnd(&enum_hnd, 0);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
 
@@ -3049,23 +3014,23 @@ static BOOL browse_host_rpc(BOOL sort)
 		return False;
 	}
 
-	ZERO_STRUCT(ctr1);
-	level = 1;
-	ctr.ctr1 = &ctr1;
+	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, 1, &ctr,
+					    0xffffffff, &enum_hnd);
 
-	status = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, "", &level,
-					    &ctr, 0xffffffff, &numentries,
-					    &enum_hnd);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!W_ERROR_IS_OK(werr)) {
 		TALLOC_FREE(mem_ctx);
 		cli_rpc_pipe_close(pipe_hnd);
 		return False;
 	}
 
-	for (i=0; i<numentries; i++) {
-		struct srvsvc_NetShareInfo1 *info = &ctr.ctr1->array[i];
-		browse_fn(info->name, info->type, info->comment, NULL);
+	for (i=0; i<ctr.num_entries; i++) {
+		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
+		char *name, *comment;
+		name = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_netname);
+		comment = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_remark);
+		browse_fn(name, info->info_1.type, comment, NULL);
 	}
 
 	TALLOC_FREE(mem_ctx);
@@ -3275,7 +3240,6 @@ static struct
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
-  {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_open",cmd_posix_open,"<name> 0<mode> open_flags mode open a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_mkdir",cmd_posix_mkdir,"<name> 0<mode> creates a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_rmdir",cmd_posix_rmdir,"<name> removes a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
@@ -3671,12 +3635,12 @@ static void readline_callback(void)
 	timeout.tv_usec = 0;
 	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
       		
-	/* We deliberately use cli_receive_smb_return_keepalive instead of
+	/* We deliberately use receive_smb instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!cli_receive_smb_return_keepalive(cli)) {
+		if (!receive_smb(cli->fd,cli->inbuf,0)) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;

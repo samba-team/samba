@@ -220,10 +220,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					return False;
 
 				if (0 < len1) {
-					pull_string(
-						NULL, 0, p,
-						blob->data + ptr, sizeof(p),
-						len1, STR_UNICODE|STR_NOALIGN);
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_UNICODE|STR_NOALIGN);
 					(*ps) = smb_xstrdup(p);
 				} else {
 					(*ps) = smb_xstrdup("");
@@ -249,10 +248,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					return False;	
 
 				if (0 < len1) {
-					pull_string(
-						NULL, 0, p,
-						blob->data + ptr, sizeof(p),
-						len1, STR_ASCII|STR_NOALIGN);
+					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_ASCII|STR_NOALIGN);
 					(*ps) = smb_xstrdup(p);
 				} else {
 					(*ps) = smb_xstrdup("");
@@ -267,7 +265,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 			b = (DATA_BLOB *)va_arg(ap, void *);
 			if (len1 == 0 && len2 == 0) {
-				*b = data_blob_null;
+				*b = data_blob(NULL, 0);
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
@@ -302,10 +300,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
 				return False;	
 	
-			head_ofs += pull_string(
-				NULL, 0, p, blob->data+head_ofs, sizeof(p),
-				blob->length - head_ofs,
-				STR_ASCII|STR_TERMINATE);
+			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 
+						blob->length - head_ofs, 
+						STR_ASCII|STR_TERMINATE);
 			if (strcmp(s, p) != 0) {
 				return False;
 			}

@@ -5,17 +5,12 @@ LIBS=""
 libreplace_cv_dlfcn=no
 AC_SEARCH_LIBS(dlopen, dl)
 
-AC_CHECK_HEADERS(dlfcn.h)
-AC_CHECK_FUNCS([dlopen dlsym dlerror dlclose],[],[libreplace_cv_dlfcn=yes])
-
-AC_VERIFY_C_PROTOTYPE([void *dlopen(const char* filename, unsigned int flags)],
-	[
-	return 0;
-	],[
-	AC_DEFINE(DLOPEN_TAKES_UNSIGNED_FLAGS, 1, [Whether dlopen takes unsinged int flags])
-	],[],[
-	#include <dlfcn.h>
-	])
+if test x"${ac_cv_search_dlopen}" = x"no"; then
+	libreplace_cv_dlfcn=yes
+else
+	AC_CHECK_HEADERS(dlfcn.h)
+	AC_CHECK_FUNCS([dlopen dlsym dlerror dlclose],[],[libreplace_cv_dlfcn=yes])
+fi
 
 if test x"${libreplace_cv_dlfcn}" = x"yes";then
 	LIBREPLACEOBJ="${LIBREPLACEOBJ} dlfcn.o"

@@ -127,12 +127,13 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 {
 	DOM_SID *require_membership_of_sid;
 	size_t num_require_membership_of_sid;
-	fstring req_sid;
-	const char *p;
-	DOM_SID sid;
-	size_t i;
-	struct nt_user_token *token;
-	NTSTATUS status;
+	DOM_SID *all_sids;
+	size_t num_all_sids = (2 + info3->num_groups2 + info3->num_other_sids);
+	size_t i, j = 0, k;
+	size_t group_sid_length;
+	const char *search_location;
+	char *single_group_sid;
+	const char *comma;
 
 	/* Parse the 'required group' SID */
 	
@@ -141,59 +142,88 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!(token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token))) {
-		DEBUG(0, ("talloc failed\n"));
+	num_require_membership_of_sid = 1;
+	group_sid_length = strlen(group_sid);
+	for (i = 0; i < group_sid_length; i++) {
+		if (',' == group_sid[i]) {
+			num_require_membership_of_sid++;
+		}
+	}
+
+	require_membership_of_sid = TALLOC_ARRAY(mem_ctx, DOM_SID, num_require_membership_of_sid);
+	if (!require_membership_of_sid)
 		return NT_STATUS_NO_MEMORY;
-	}
 
-	num_require_membership_of_sid = 0;
-	require_membership_of_sid = NULL;
+	i = 0;
+	search_location = group_sid;
 
-	p = group_sid;
+	if (num_require_membership_of_sid > 1) {
 
-	while (next_token(&p, req_sid, ",", sizeof(req_sid))) {
-		if (!string_to_sid(&sid, req_sid)) {
-			DEBUG(0, ("check_info3_in_group: could not parse %s "
-				  "as a SID!", req_sid));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		if (!add_sid_to_array(mem_ctx, &sid,
-				      &require_membership_of_sid,
-				      &num_require_membership_of_sid)) {
-			DEBUG(0, ("add_sid_to_array failed\n"));
+		/* Allocate the maximum possible size */
+		single_group_sid = TALLOC(mem_ctx, group_sid_length);
+		if (!single_group_sid)
 			return NT_STATUS_NO_MEMORY;
+
+		while ( (comma = strstr(search_location, ",")) != NULL ) {
+
+			strncpy(single_group_sid, search_location, comma - search_location);
+			single_group_sid[comma - search_location] = 0;
+
+			if (!string_to_sid(&require_membership_of_sid[i++], single_group_sid)) {
+				DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
+					  single_group_sid));
+			
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			search_location = comma + 1;
 		}
 	}
 
-	if (!sid_compose(&sid, &(info3->dom_sid.sid),
-			 info3->user_rid)
-	    || !add_sid_to_array(mem_ctx, &sid,
-				 &token->user_sids, &token->num_sids)) {
-		DEBUG(3,("could not add user SID from rid 0x%x\n",
-			 info3->user_rid));			
+	if (!string_to_sid(&require_membership_of_sid[i++], search_location)) {
+		DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
+			  search_location));
+
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!sid_compose(&sid, &(info3->dom_sid.sid),
-			 info3->group_rid)
-	    || !add_sid_to_array(mem_ctx, &sid, 
-				 &token->user_sids, &token->num_sids)) {
+	all_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_all_sids);
+	if (!all_sids)
+		return NT_STATUS_NO_MEMORY;
+
+	/* and create (by appending rids) the 'domain' sids */
+	
+	sid_copy(&all_sids[0], &(info3->dom_sid.sid));
+	
+	if (!sid_append_rid(&all_sids[0], info3->user_rid)) {
+		DEBUG(3,("could not append user's primary RID 0x%x\n",
+			 info3->user_rid));			
+		
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	j++;
+
+	sid_copy(&all_sids[1], &(info3->dom_sid.sid));
+		
+	if (!sid_append_rid(&all_sids[1], info3->group_rid)) {
 		DEBUG(3,("could not append additional group rid 0x%x\n",
 			 info3->group_rid));			
 		
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	j++;	
 
 	for (i = 0; i < info3->num_groups2; i++) {
-		if (!sid_compose(&sid, &(info3->dom_sid.sid),
-				 info3->gids[i].g_rid)
-		    || !add_sid_to_array(mem_ctx, &sid,
-					 &token->user_sids, &token->num_sids)) {
+	
+		sid_copy(&all_sids[j], &(info3->dom_sid.sid));
+		
+		if (!sid_append_rid(&all_sids[j], info3->gids[i].g_rid)) {
 			DEBUG(3,("could not append additional group rid 0x%x\n",
-				 info3->gids[i].g_rid));	
+				info3->gids[i].g_rid));			
+				
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		j++;
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -203,32 +233,21 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->num_other_sids; i++) {
-		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
-				      &token->user_sids, &token->num_sids)) {
-			DEBUG(3, ("could not add SID to array: %s\n",
-				  sid_string_static(&info3->other_sids[i].sid)));
-			return NT_STATUS_NO_MEMORY;
-		}
+		sid_copy(&all_sids[info3->num_groups2 + i + 2],
+			 &info3->other_sids[i].sid);
+		j++;
 	}
 
-	if (!NT_STATUS_IS_OK(status = add_aliases(get_global_sam_sid(),
-						  token))
-	    || !NT_STATUS_IS_OK(status = add_aliases(&global_sid_Builtin,
-						     token))) {
-		DEBUG(3, ("could not add aliases: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
-	debug_nt_user_token(DBGC_CLASS, 10, token);
-
-	for (i=0; i<num_require_membership_of_sid; i++) {
-		DEBUG(10, ("Checking SID %s\n", sid_string_static(
-				   &require_membership_of_sid[i])));
-		if (nt_token_check_sid(&require_membership_of_sid[i],
-				       token)) {
-			DEBUG(10, ("Access ok\n"));
-			return NT_STATUS_OK;
+	for (i = 0; i < j; i++) {
+		fstring sid1, sid2;
+		DEBUG(10, ("User has SID: %s\n", 
+			   sid_to_string(sid1, &all_sids[i])));
+		for (k = 0; k < num_require_membership_of_sid; k++) {
+			if (sid_equal(&require_membership_of_sid[k], &all_sids[i])) {
+				DEBUG(10, ("SID %s matches %s - user permitted to authenticate!\n", 
+					   sid_to_string(sid1, &require_membership_of_sid[k]), sid_to_string(sid2, &all_sids[i])));
+				return NT_STATUS_OK;
+			}
 		}
 	}
 	
@@ -292,12 +311,6 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	SAM_UNK_INFO_1 password_policy;
-
-	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(5,("fillup_password_policy: No inbound trust to "
-			 "contact domain %s\n", domain->name));		
-		return NT_STATUS_NOT_SUPPORTED;
-	}	
 
 	methods = domain->methods;
 
@@ -551,12 +564,12 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					       cc, 
 					       True,
 					       True,
-					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-					       &result);
+					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 
 	if (krb5_ret) {
 		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 
 			principal_s, error_message(krb5_ret), krb5_ret));
+		result = krb5_to_nt_status(krb5_ret);
 		goto failed;
 	}
 
@@ -615,7 +628,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 				   &client_princ_out, 
 				   &pac_data, 
 				   &ap_rep, 
-				   &session_key, False);
+				   &session_key);	
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("winbindd_raw_kerberos_login: ads_verify_ticket failed: %s\n", 
 			nt_errstr(result)));
@@ -784,9 +797,6 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	NET_USER_INFO_3 *my_info3;
 	time_t kickoff_time, must_change_time;
 	BOOL password_good = False;
-#ifdef HAVE_KRB5
-	struct winbindd_tdc_domain *tdc_domain = NULL;
-#endif
 
 	*info3 = NULL;
 
@@ -829,10 +839,10 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	E_md4hash(state->request.data.auth.pass, new_nt_pass);
 
 #if DEBUG_PASSWORD
-	dump_data(100, new_nt_pass, NT_HASH_LEN);
-	dump_data(100, cached_nt_pass, NT_HASH_LEN);
+	dump_data(100, (const char *)new_nt_pass, NT_HASH_LEN);
+	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
 	if (cached_salt) {
-		dump_data(100, cached_salt, NT_HASH_LEN);
+		dump_data(100, (const char *)cached_salt, NT_HASH_LEN);
 	}
 #endif
 
@@ -897,9 +907,9 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 	
 #ifdef HAVE_KRB5
-		if ((state->request.flags & WBFLAG_PAM_KRB5) &&
-		    ((tdc_domain = wcache_tdc_fetch_domain(state->mem_ctx, name_domain)) != NULL) &&
-		    (tdc_domain->trust_type & DS_DOMAIN_TRUST_TYPE_UPLEVEL)) {
+		/* FIXME: what else points out that the remote domain is AD ? */
+		if (!strequal(domain->name, domain->alt_name) &&
+		    (state->request.flags & WBFLAG_PAM_KRB5)) {
 
 			uid_t uid = -1;
 			const char *cc = NULL;
@@ -1166,7 +1176,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 						   local_lm_response, 
 						   sizeof(local_lm_response));
 		} else {
-			lm_resp = data_blob_null;
+			lm_resp = data_blob(NULL, 0);
 		}
 		SMBNTencrypt(state->request.data.auth.pass, 
 			     chal,
@@ -1200,17 +1210,6 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	/* check authentication loop */
 
 	do {
-		NTSTATUS (*logon_fn)(struct rpc_pipe_client
-				     *cli, TALLOC_CTX *mem_ctx,
-				     uint32 logon_parameters,
-				     const char *server,
-				     const char *username,
-				     const char *domain,
-				     const char *workstation, 
-				     const uint8 chal[8], 
-				     DATA_BLOB lm_response,
-				     DATA_BLOB nt_response,
-				     NET_USER_INFO_3 *info3);
 
 		ZERO_STRUCTP(my_info3);
 		retry = False;
@@ -1222,11 +1221,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		logon_fn = contact_domain->can_do_samlogon_ex
-			? rpccli_netlogon_sam_network_logon_ex
-			: rpccli_netlogon_sam_network_logon;
-
-		result = logon_fn(netlogon_pipe,
+		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
 							   state->mem_ctx,
 							   0,
 							   contact_domain->dcname, /* server name */
@@ -1237,16 +1232,6 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 							   lm_resp,
 							   nt_resp,
 							   my_info3);
-
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = False;
-			retry = True;
-			continue;
-		}
-			
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
@@ -1343,7 +1328,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state) 
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
-	NTSTATUS krb5_result = NT_STATUS_OK;	
 	fstring name_domain, name_user;
 	NET_USER_INFO_3 *info3 = NULL;
 	
@@ -1383,9 +1367,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	if (domain->online && (state->request.flags & WBFLAG_PAM_KRB5)) {
 	
 		result = winbindd_dual_pam_auth_kerberos(domain, state, &info3);
-		/* save for later */
-		krb5_result = result;
-		
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
@@ -1398,8 +1379,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
-			set_domain_offline( domain );
-			goto cached_logon;			
+			domain->online = False;
 		}
 
 		/* there are quite some NT_STATUS errors where there is no
@@ -1434,29 +1414,15 @@ sam_logon:
 	
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon succeeded\n"));
-			/* add the Krb5 err if we have one */
-			if ( NT_STATUS_EQUAL(krb5_result, NT_STATUS_TIME_DIFFERENCE_AT_DC ) ) {
-				info3->user_flgs |= LOGON_KRB5_FAIL_CLOCK_SKEW;				
-			}
 			goto process_result;
-		} 
-
-       		DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", 
-			  nt_errstr(result)));
-
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS) ||
-		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
-		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) 
-		{
-			DEBUG(10,("winbindd_dual_pam_auth_samlogon setting domain to offline\n"));
-			set_domain_offline( domain );
-			goto cached_logon;			
-		}
-
+		} else {
+			DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", nt_errstr(result)));
 			if (domain->online) {
 				/* We're still online - fail. */
 				goto done;
 			}
+			/* Else drop through and see if we can check offline.... */
+		}
 	}
 
 cached_logon:
@@ -1491,16 +1457,9 @@ process_result:
 		netsamlogon_cache_store(name_user, info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
 
-		/* save name_to_sid info as early as possible (only if
-		   this is our primary domain so we don't invalidate
-		   the cache entry by storing the seq_num for the wrong
-		   domain). */
-		if ( domain->primary ) {			
-			sid_compose(&user_sid, &info3->dom_sid.sid, 
-				    info3->user_rid);
-			cache_name2sid(domain, name_domain, name_user, 
-				       SID_NAME_USER, &user_sid);
-		}
+		/* save name_to_sid info as early as possible */
+		sid_compose(&user_sid, &info3->dom_sid.sid, info3->user_rid);
+		cache_name2sid(domain, name_domain, name_user, SID_NAME_USER, &user_sid);
 		
 		/* Check if the user is in the right group */
 
@@ -1560,14 +1519,10 @@ process_result:
 
 		result = fillup_password_policy(domain, state);
 
-		if (!NT_STATUS_IS_OK(result) 
-		    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ) 
-		{
+		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
 			goto done;
 		}
-
-		result = NT_STATUS_OK;		
 
 		if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
 			/* We've been asked to return the unix username, per 
@@ -1832,18 +1787,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	}
 
 	do {
-		NTSTATUS (*logon_fn)(struct rpc_pipe_client
-				     *cli, TALLOC_CTX *mem_ctx,
-				     uint32 logon_parameters,
-				     const char *server,
-				     const char *username,
-				     const char *domain,
-				     const char *workstation, 
-				     const uint8 chal[8], 
-				     DATA_BLOB lm_response,
-				     DATA_BLOB nt_response,
-				     NET_USER_INFO_3 *info3);
-
 		ZERO_STRUCT(info3);
 		retry = False;
 
@@ -1856,11 +1799,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		logon_fn = contact_domain->can_do_samlogon_ex
-			? rpccli_netlogon_sam_network_logon_ex
-			: rpccli_netlogon_sam_network_logon;
-
-		result = logon_fn(netlogon_pipe,
+		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
 							   state->mem_ctx,
 							   state->request.data.auth_crap.logon_parameters,
 							   contact_domain->dcname,
@@ -1873,15 +1812,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 							   nt_resp,
 							   &info3);
 
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = False;
-			retry = True;
-			continue;
-		}
-			
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
@@ -1918,8 +1848,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
 							state->request.data.auth_crap.require_membership_of_sid))) {
-			DEBUG(3, ("User %s is not in the required group (%s), so "
-				  "crap authentication is rejected\n",
+			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request.data.auth_crap.user, 
 				  state->request.data.auth_crap.require_membership_of_sid));
 			goto done;
@@ -2009,8 +1938,6 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		state->request.data.chauthtok.user));
 
 	/* Setup crap */
-
-	ws_name_return( state->request.data.auth.user, WB_REPLACE_CHAR );
 
 	if (!canonicalize_username(state->request.data.chauthtok.user, domain, user)) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);

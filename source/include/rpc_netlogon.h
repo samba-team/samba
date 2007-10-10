@@ -32,7 +32,6 @@
 #define NET_AUTH		0x05
 #define NET_SRVPWSET		0x06
 #define NET_SAM_DELTAS		0x07
-#define NET_GETDCNAME		0x0b
 #define NET_LOGON_CTRL		0x0c
 #define NET_GETANYDCNAME	0x0d
 #define NET_AUTH2		0x0f
@@ -45,6 +44,11 @@
 #define NET_DSR_GETSITENAME	0x1c
 #define NET_DSR_GETDCNAMEEX2	0x22
 #define NET_SAMLOGON_EX		0x27
+
+/* Secure Channel types.  used in NetrServerAuthenticate negotiation */
+#define SEC_CHAN_WKSTA   2
+#define SEC_CHAN_DOMAIN  4
+#define SEC_CHAN_BDC     6
 
 /* Returned delta types */
 #define SAM_DELTA_DOMAIN_INFO    0x01
@@ -63,6 +67,11 @@
 #define SAM_DELTA_DELETE_GROUP   0x14
 #define SAM_DELTA_DELETE_USER    0x15
 #define SAM_DELTA_MODIFIED_COUNT 0x16
+
+/* SAM database types */
+#define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
+#define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
+#define SAM_DATABASE_PRIVS     0x02 /* Privileges */
 
 /* flags use when sending a NETLOGON_CONTROL request */
 
@@ -91,7 +100,6 @@
 #define LOGON_RESOURCE_GROUPS		0x00000200
 #define LOGON_PROFILE_PATH_RETURNED	0x00000400
 #define LOGON_GRACE_LOGON		0x01000000
-#define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
 #define SE_GROUP_MANDATORY		0x00000001
 #define SE_GROUP_ENABLED_BY_DEFAULT	0x00000002
@@ -427,23 +435,6 @@ typedef struct net_r_getanydcname {
 	UNISTR2 uni_dcname;
 	WERROR status;
 } NET_R_GETANYDCNAME;
-
-
-/* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_q_getdcname {
-	UNISTR2 uni_logon_server;
-	uint32  ptr_domainname;
-	UNISTR2 uni_domainname;
-} NET_Q_GETDCNAME;
-
-/* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_r_getdcname {
-	uint32  ptr_dcname;
-	UNISTR2 uni_dcname;
-	WERROR status;
-} NET_R_GETDCNAME;
 
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
 typedef struct net_q_trust_dom_info {

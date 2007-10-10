@@ -550,7 +550,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
+BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 			    enum lsa_SidType *type)
 {
 	GROUP_MAP map;
@@ -561,7 +561,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	   name "None" on Windows.  You will get an error that 
 	   the group already exists. */
 	   
-	if ( strequal( name, "None" ) ) {
+	if ( strequal( user, "None" ) ) {
 		*rid = DOMAIN_GROUP_RID_USERS;
 		*type = SID_NAME_DOM_GRP;
 		
@@ -581,7 +581,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 		}
 	
 		become_root();
-		ret =  pdb_getsampwnam(sam_account, name);
+		ret =  pdb_getsampwnam(sam_account, user);
 		unbecome_root();
 
 		if (ret) {
@@ -593,7 +593,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 		if (ret) {
 			if (!sid_check_is_in_our_domain(&user_sid)) {
 				DEBUG(0, ("User %s with invalid SID %s in passdb\n",
-					  name, sid_string_static(&user_sid)));
+					  user, sid_string_static(&user_sid)));
 				return False;
 			}
 
@@ -608,7 +608,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	 */
 
 	become_root();
-	ret = pdb_getgrnam(&map, name);
+	ret = pdb_getgrnam(&map, user);
 	unbecome_root();
 
  	if (!ret) {
@@ -618,7 +618,7 @@ BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	/* BUILTIN groups are looked up elsewhere */
 	if (!sid_check_is_in_our_domain(&map.sid)) {
 		DEBUG(10, ("Found group %s (%s) not in our domain -- "
-			   "ignoring.", name,
+			   "ignoring.", user,
 			   sid_string_static(&map.sid)));
 		return False;
 	}
@@ -873,7 +873,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 /* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING_V3,
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V3,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -1278,7 +1278,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING_V3,
+	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */
@@ -1439,11 +1439,10 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 		  pdb_get_username(sampass), (uint32)LastBadPassword, duration*60, (uint32)time(NULL)));
 
 	if (LastBadPassword == (time_t)0) {
-		DEBUG(1,("pdb_update_autolock_flag: Account %s "
-			 "administratively locked out with no bad password "
-			 "time. Leaving locked out.\n",
-			 pdb_get_username(sampass) ));
-		return True;
+		DEBUG(1,("pdb_update_autolock_flag: Account %s administratively locked out with no \
+bad password time. Leaving locked out.\n",
+			pdb_get_username(sampass) ));
+			return True;
 	}
 
 	if ((time(NULL) > (LastBadPassword + convert_uint32_to_time_t(duration) * 60))) {
@@ -1517,46 +1516,3 @@ BOOL pdb_increment_bad_password_count(struct samu *sampass)
 
 	return True;
 }
-
-
-/*******************************************************************
- Wrapper around retrieving the trust account password
-*******************************************************************/
-
-BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
-{
-	DOM_SID sid;
-	char *pwd;
-	time_t last_set_time;
-                                                                                                                     
-	/* if we are a DC and this is not our domain, then lookup an account
-		for the domain trust */
-                                                                                                                     
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) {
-		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &last_set_time)) {
-			DEBUG(0, ("get_trust_pw: could not fetch trust "
-				"account password for trusted domain %s\n",
-				domain));
-			return False;
-		}
-                                                                                                                     
-		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
-
-		return True;
-	}
-                                                                                                                     
-	/* Just get the account for the requested domain. In the future this
-	 * might also cover to be member of more than one domain. */
-                                                                                                                     
-	if (secrets_fetch_trust_account_password(domain, ret_pwd,
-						&last_set_time, channel))
-		return True;
-
-	DEBUG(5, ("get_trust_pw: could not fetch trust account "
-		"password for domain %s\n", domain));
-	return False;
-}
-
-/* END */

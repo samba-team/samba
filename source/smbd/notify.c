@@ -22,15 +22,12 @@
 
 #include "includes.h"
 
-/* Max size we can send to client in a notify response. */
-extern int max_send;
-
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
 	char request_buf[smb_size];
 	uint32 filter;
-	uint32 current_bufsize;
+	uint32 max_param;
 	struct notify_mid_map *mid_map;
 	void *backend_data;
 };
@@ -62,8 +59,9 @@ static BOOL notify_change_record_identical(struct notify_change *c1,
 }
 
 static BOOL notify_marshall_changes(int num_changes,
-				    struct notify_change *changes,
-				    prs_struct *ps)
+				uint32 max_offset,
+				struct notify_change *changes,
+				prs_struct *ps)
 {
 	int i;
 	UNISTR uni_name;
@@ -113,6 +111,11 @@ static BOOL notify_marshall_changes(int num_changes,
 		prs_set_offset(ps, prs_offset(ps)-2);
 
 		SAFE_FREE(uni_name.buffer);
+
+		if (prs_offset(ps) > max_offset) {
+			/* Too much data for client. */
+			return False;
+		}
 	}
 
 	return True;
@@ -129,7 +132,6 @@ static BOOL notify_marshall_changes(int num_changes,
 static void change_notify_reply_packet(const char *request_buf,
 				       NTSTATUS error_code)
 {
-	const char *inbuf = request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -141,7 +143,7 @@ static void change_notify_reply_packet(const char *request_buf,
 	 * Seems NT needs a transact command with an error code
 	 * in it. This is a longer packet than a simple error.
 	 */
-	set_message(inbuf,outbuf,18,0,False);
+	set_message(outbuf,18,0,False);
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
@@ -149,7 +151,7 @@ static void change_notify_reply_packet(const char *request_buf,
 				    "failed.");
 }
 
-void change_notify_reply(const char *request_buf,
+void change_notify_reply(const char *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	char *outbuf = NULL;
@@ -158,19 +160,14 @@ void change_notify_reply(const char *request_buf,
 
 	if (notify_buf->num_changes == -1) {
 		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		notify_buf->num_changes = 0;
 		return;
 	}
 
-	if (!prs_init(&ps, 0, NULL, False)
-	    || !notify_marshall_changes(notify_buf->num_changes,
+	prs_init(&ps, 0, NULL, MARSHALL);
+
+	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
 					notify_buf->changes, &ps)) {
-		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
-
-	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
-
-	if (buflen > max_send) {
 		/*
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
@@ -179,6 +176,8 @@ void change_notify_reply(const char *request_buf,
 		goto done;
 	}
 
+	buflen = smb_size+38+prs_offset(&ps) + 4 /* padding */;
+
 	if (!(outbuf = SMB_MALLOC_ARRAY(char, buflen))) {
 		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
@@ -186,7 +185,7 @@ void change_notify_reply(const char *request_buf,
 
 	construct_reply_common(request_buf, outbuf);
 
-	if (send_nt_replies(request_buf, outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
+	if (send_nt_replies(outbuf, buflen, NT_STATUS_OK, prs_data_p(&ps),
 			    prs_offset(&ps), NULL, 0) == -1) {
 		exit_server("change_notify_reply_packet: send_smb failed.");
 	}
@@ -239,7 +238,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const char *inbuf, 
+NTSTATUS change_notify_add_request(const char *inbuf, uint32 max_param,
 				   uint32 filter, BOOL recursive,
 				   struct files_struct *fsp)
 {
@@ -256,11 +255,11 @@ NTSTATUS change_notify_add_request(const char *inbuf,
 	map->req = request;
 
 	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
-	request->current_bufsize = 0;
+	request->max_param = max_param;
 	request->filter = filter;
 	request->fsp = fsp;
 	request->backend_data = NULL;
-	
+
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
 
@@ -293,7 +292,7 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 	}
 
 	if (req == NULL) {
-		smb_panic("notify_req not found in fsp's requests");
+		smb_panic("notify_req not found in fsp's requests\n");
 	}
 
 	DLIST_REMOVE(fsp->notify->requests, req);
@@ -360,7 +359,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 {
 	struct notify_change *change, *changes;
-	char *tmp;
+	pstring name2;
 
 	if (fsp->notify == NULL) {
 		/*
@@ -368,6 +367,9 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		 */
 		return;
 	}
+
+	pstrcpy(name2, name);
+	string_replace(name2, '/', '\\');
 
 	/*
 	 * Someone has triggered a notify previously, queue the change for
@@ -399,13 +401,10 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	change = &(fsp->notify->changes[fsp->notify->num_changes]);
 
-	if (!(tmp = talloc_strdup(changes, name))) {
+	if (!(change->name = talloc_strdup(changes, name2))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return;
 	}
-
-	string_replace(tmp, '/', '\\');
-	change->name = tmp;	
 
 	change->action = action;
 	fsp->notify->num_changes += 1;
@@ -432,6 +431,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 */
 
 	change_notify_reply(fsp->notify->requests->request_buf,
+			    fsp->notify->requests->max_param,
 			    fsp->notify);
 
 	change_notify_remove_request(fsp->notify->requests);

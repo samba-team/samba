@@ -49,7 +49,6 @@ struct GROUP_POLICY_OBJECT {
 	uint32 link_type; /* GPO_LINK_TYPE */
 	const char *user_extensions;
 	const char *machine_extensions;
-	SEC_DESC *security_descriptor;
 	struct GROUP_POLICY_OBJECT *next, *prev;
 };
 
@@ -94,10 +93,3 @@ struct GP_EXT {
 
 #define GPO_CACHE_DIR "gpo_cache"
 #define GPT_INI "GPT.INI"
-
-struct GPO_SID_TOKEN {
-	DOM_SID object_sid;
-	DOM_SID primary_group_sid;
-	size_t num_token_sids;
-	DOM_SID *token_sids;
-};

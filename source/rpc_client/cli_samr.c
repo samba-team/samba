@@ -52,6 +52,9 @@ NTSTATUS rpccli_samr_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.connect_pol;
+#ifdef __INSURE__
+		connect_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -85,6 +88,9 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*connect_pol = r.connect_pol;
+#ifdef __INSURE__
+		connect_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -119,6 +125,9 @@ NTSTATUS rpccli_samr_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
+#ifdef __INSURE__
+		SAFE_FREE(connect_pol->marker);
+#endif
 		*connect_pol = r.pol;
 	}
 
@@ -157,6 +166,9 @@ NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*domain_pol = r.domain_pol;
+#ifdef __INSURE__
+		domain_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -192,6 +204,9 @@ NTSTATUS rpccli_samr_open_user(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*user_pol = r.user_pol;
+#ifdef __INSURE__
+		user_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -229,6 +244,9 @@ NTSTATUS rpccli_samr_open_group(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*group_pol = r.pol;
+#ifdef __INSURE__
+		group_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -922,6 +940,9 @@ NTSTATUS rpccli_samr_open_alias(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*alias_pol = r.pol;
+#ifdef __INSURE__
+		alias_pol->marker = malloc(1);
+#endif
 	}
 
 	return result;
@@ -1197,6 +1218,11 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 				    const char *newpassword, 
 				    const char *oldpassword )
 {
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CHGPASSWD_USER q;
+	SAMR_R_CHGPASSWD_USER r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
 	uchar new_nt_password[516];
 	uchar new_lm_password[516];
 	uchar old_nt_hash[16];
@@ -1207,7 +1233,12 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	uchar new_nt_hash[16];
 	uchar new_lanman_hash[16];
 
+	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
+
 	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(oldpassword, old_nt_hash);
@@ -1235,35 +1266,50 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	SamOEMhash( new_nt_password, old_nt_hash, 516);
 	E_old_pw_hash( new_nt_hash, old_nt_hash, old_nt_hash_enc);
 
-	return rpccli_samr_chng_pswd_auth_crap(cli, mem_ctx, username,
-					       data_blob_const(new_nt_password,sizeof(new_nt_password)),
-					       data_blob_const(old_nt_hash_enc,sizeof(old_nt_hash_enc)),
-					       data_blob_const(new_lm_password,sizeof(new_lm_password)),
-					       data_blob_const(old_lanman_hash_enc,sizeof(old_lanman_hash_enc)));
+	/* Marshall data and send request */
+
+	init_samr_q_chgpasswd_user(&q, srv_name_slash, username, 
+				   new_nt_password, 
+				   old_nt_hash_enc, 
+				   new_lm_password,
+				   old_lanman_hash_enc);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_chgpasswd_user,
+		samr_io_r_chgpasswd_user,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
 }
 
-/* User change passwd with auth crap */
+/* User change password given blobs */
 
 NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx, 
-					 const char *username, 
-					 DATA_BLOB new_nt_password,
-					 DATA_BLOB old_nt_hash_enc,
-					 DATA_BLOB new_lm_password,
-					 DATA_BLOB old_lm_hash_enc)
+				    TALLOC_CTX *mem_ctx, 
+				    const char *username, 
+				    DATA_BLOB new_nt_password,
+				    DATA_BLOB old_nt_hash_enc,
+				    DATA_BLOB new_lm_password,
+				    DATA_BLOB old_lm_hash_enc)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CHGPASSWD_USER q;
 	SAMR_R_CHGPASSWD_USER r;
-	char *srv_name_slash;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!(srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s",
-					       cli->cli->desthost))) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
-	DEBUG(5,("rpccli_samr_chng_pswd_auth_crap on server: %s\n",
-		 srv_name_slash));
+	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -1273,18 +1319,27 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 	init_samr_q_chgpasswd_user(&q, srv_name_slash, username, 
 				   new_nt_password.data, 
 				   old_nt_hash_enc.data, 
-				   new_lm_password.data, 
+				   new_lm_password.data,
 				   old_lm_hash_enc.data);
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER,
-		   q, r,
-		   qbuf, rbuf,
-		   samr_io_q_chgpasswd_user,
-		   samr_io_r_chgpasswd_user,
-		   NT_STATUS_UNSUCCESSFUL);
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_chgpasswd_user,
+		samr_io_r_chgpasswd_user,
+		NT_STATUS_UNSUCCESSFUL); 
 
-	return r.status;
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
 }
+
 
 /* change password 3 */
 
@@ -1434,7 +1489,7 @@ NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	result = r.status;
+        result = r.status;
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
@@ -1447,194 +1502,6 @@ NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
  done:
 	return result;
 }
-
-
-/* Query display info2 */
-
-NTSTATUS rpccli_samr_query_dispinfo2(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx, 
-				     POLICY_HND *domain_pol, uint32 *start_idx,
-				     uint16 switch_value, uint32 *num_entries,
-				     uint32 max_entries, uint32 max_size,
-				     SAM_DISPINFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_DISPINFO q;
-	SAMR_R_QUERY_DISPINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_dispinfo2 for start_idx = %u\n", *start_idx));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	*num_entries = 0;
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
-				   *start_idx, max_entries, max_size);
-
-	r.ctr = ctr;
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DISPINFO2,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_dispinfo,
-		samr_io_r_query_dispinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result) &&
-	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
-		goto done;
-	}
-
-	*num_entries = r.num_entries;
-	*start_idx += r.num_entries;  /* No next_idx in this structure! */
-
- done:
-	return result;
-}
-
-/* Query display info */
-
-NTSTATUS rpccli_samr_query_dispinfo3(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx, 
-				     POLICY_HND *domain_pol, uint32 *start_idx,
-				     uint16 switch_value, uint32 *num_entries,
-				     uint32 max_entries, uint32 max_size,
-				     SAM_DISPINFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_DISPINFO q;
-	SAMR_R_QUERY_DISPINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_dispinfo3 for start_idx = %u\n", *start_idx));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	*num_entries = 0;
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
-				   *start_idx, max_entries, max_size);
-
-	r.ctr = ctr;
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DISPINFO3,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_dispinfo,
-		samr_io_r_query_dispinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result) &&
-	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
-		goto done;
-	}
-
-	*num_entries = r.num_entries;
-	*start_idx += r.num_entries;  /* No next_idx in this structure! */
-
- done:
-	return result;
-}
-
-/* Query display info index */
-
-NTSTATUS rpccli_samr_get_dispenum_index(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx, 
-					POLICY_HND *domain_pol,
-					uint16 switch_value,
-					const char *name,
-					uint32 *idx)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_GET_DISPENUM_INDEX q;
-	SAMR_R_GET_DISPENUM_INDEX r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_get_dispenum_index for name = %s\n", name));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_get_dispenum_index(&q, domain_pol, switch_value, name);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_DISPENUM_INDEX,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_get_dispenum_index,
-		samr_io_r_get_dispenum_index,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	*idx = 0;
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_ERR(result)) {
-		*idx = r.idx;
-	}
-
-	return result;
-}
-
-NTSTATUS rpccli_samr_get_dispenum_index2(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx, 
-					 POLICY_HND *domain_pol,
-					 uint16 switch_value,
-					 const char *name,
-					 uint32 *idx)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_GET_DISPENUM_INDEX q;
-	SAMR_R_GET_DISPENUM_INDEX r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_get_dispenum_index2 for name = %s\n", name));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_get_dispenum_index(&q, domain_pol, switch_value, name);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_DISPENUM_INDEX2,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_get_dispenum_index,
-		samr_io_r_get_dispenum_index,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	*idx = 0;
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_ERR(result)) {
-		*idx = r.idx;
-	}
-
-	return result;
-}
-
 
 /* Lookup rids.  Note that NT4 seems to crash if more than ~1000 rids are
    looked up in one packet. */

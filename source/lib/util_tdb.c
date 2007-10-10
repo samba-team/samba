@@ -43,22 +43,17 @@ static void gotalarm_sig(void)
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
 
-TDB_DATA make_tdb_data(const uint8 *dptr, size_t dsize)
+TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = CONST_DISCARD(uint8 *, dptr);
+	ret.dptr = CONST_DISCARD(char *, dptr);
 	ret.dsize = dsize;
 	return ret;
 }
 
 TDB_DATA string_tdb_data(const char *string)
 {
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) : 0 );
-}
-
-TDB_DATA string_term_tdb_data(const char *string)
-{
-	return make_tdb_data((const uint8 *)string, string ? strlen(string) + 1 : 0);
+	return make_tdb_data(string, strlen(string));
 }
 
 /****************************************************************************
@@ -113,7 +108,7 @@ int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int tim
 
 int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = string_term_tdb_data(keyval);
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	return tdb_chainlock(tdb, key);
 }
@@ -121,7 +116,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 				   int timeout)
 {
-	TDB_DATA key = string_term_tdb_data(keyval);
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	return tdb_chainlock_with_timeout(tdb, key, timeout);
 }
@@ -132,7 +127,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = string_term_tdb_data(keyval);
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 
 	tdb_chainunlock(tdb, key);
 }
@@ -143,7 +138,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
 {
-	TDB_DATA key = string_term_tdb_data(keyval);
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
@@ -154,7 +149,7 @@ int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, un
 
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 {
-	TDB_DATA key = string_term_tdb_data(keyval);
+	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
 	tdb_chainunlock_read(tdb, key);
 }
@@ -165,8 +160,9 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Output is int32 in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 {
+	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 	int32 ret;
 
@@ -188,9 +184,7 @@ int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
 
 int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_fetch_int32_byblob(tdb, key);
+	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
 }
 
 /****************************************************************************
@@ -198,13 +192,14 @@ int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
  Input is int32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32 v)
 {
+	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	int32 v_store;
 
 	SIVAL(&v_store,0,v);
-	data.dptr = (uint8 *)&v_store;
+	data.dptr = (char *)&v_store;
 	data.dsize = sizeof(int32);
 
 	return tdb_store(tdb, key, data, TDB_REPLACE);
@@ -217,9 +212,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
 
 int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store_int32_byblob(tdb, key, v);
+	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
 /****************************************************************************
@@ -227,8 +220,9 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32 *value)
 {
+	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
 
 	data = tdb_fetch(tdb, key);
@@ -249,9 +243,7 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
 
 BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_fetch_uint32_byblob(tdb, key, value);
+	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
 
 /****************************************************************************
@@ -259,14 +251,15 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32 value)
 {
+	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
 	uint32 v_store;
 	BOOL ret = True;
 
 	SIVAL(&v_store, 0, value);
-	data.dptr = (uint8 *)&v_store;
+	data.dptr = (char *)&v_store;
 	data.dsize = sizeof(uint32);
 
 	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
@@ -282,9 +275,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
 
 BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store_uint32_byblob(tdb, key, value);
+	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
 /****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -1
@@ -293,17 +284,9 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 
 int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
-
-	return tdb_store(tdb, key, data, flags);
-}
-
-int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
-			     TDB_DATA data, int flags)
-{
-	TDB_DATA key = string_term_tdb_data(keystr);
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 	
-	return tdb_trans_store(tdb, key, data, flags);
+	return tdb_store(tdb, key, data, flags);
 }
 
 /****************************************************************************
@@ -313,7 +296,7 @@ int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 
 TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
 	return tdb_fetch(tdb, key);
 }
@@ -324,7 +307,7 @@ TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 
 int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
-	TDB_DATA key = string_term_tdb_data(keystr);
+	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
 	return tdb_delete(tdb, key);
 }
@@ -417,7 +400,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
+size_t tdb_pack_va(char *buf, int bufsize, const char *fmt, va_list ap)
 {
 	uint8 bt;
 	uint16 w;
@@ -427,7 +410,7 @@ size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 	int len;
 	char *s;
 	char c;
-	uint8 *buf0 = buf;
+	char *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -501,7 +484,7 @@ size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 	return PTR_DIFF(buf, buf0);
 }
 
-size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...)
+size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	size_t result;
@@ -534,7 +517,7 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	}
 
 	va_start(ap, fmt);
-	len2 = tdb_pack_va((*buf)+(*len), len1, fmt, ap);
+	len2 = tdb_pack_va((char *)(*buf)+(*len), len1, fmt, ap);
 	va_end(ap);
 
 	if (len1 != len2) {
@@ -551,7 +534,7 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
+int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	uint8 *bt;
@@ -562,7 +545,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 	void **p;
 	char *s, **b;
 	char c;
-	const uint8 *buf0 = buf;
+	char *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -605,14 +588,14 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'P':
 			s = va_arg(ap,char *);
-			len = strlen((const char *)buf) + 1;
+			len = strlen(buf) + 1;
 			if (bufsize < len || len > sizeof(pstring))
 				goto no_space;
 			memcpy(s, buf, len);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
-			len = strlen((const char *)buf) + 1;
+			len = strlen(buf) + 1;
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
@@ -734,7 +717,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
-		char *key_str = SMB_STRNDUP((const char *)key.dptr, key.dsize);
+		char *key_str = (char*) SMB_STRNDUP(key.dptr, key.dsize);
 		if (!key_str) {
 			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
 			smb_panic("strndup failed!\n");
@@ -802,7 +785,7 @@ int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
 		DEBUG(10, ("tdb_store failed\n"));
 		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed");
+			smb_panic("Cancelling transaction failed\n");
 		}
 		return res;
 	}
@@ -831,7 +814,7 @@ int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
 	if ((res = tdb_delete(tdb, key)) != 0) {
 		DEBUG(10, ("tdb_delete failed\n"));
 		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed");
+			smb_panic("Cancelling transaction failed\n");
 		}
 		return res;
 	}
@@ -906,9 +889,6 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	struct tdb_logging_context log_ctx;
 	log_ctx.log_fn = tdb_wrap_log;
 
-	if (!lp_use_mmap())
-		tdb_flags |= TDB_NOMMAP;
-
 	for (w=tdb_list;w;w=w->next) {
 		if (strcmp(name, w->name) == 0) {
 			/*
@@ -942,223 +922,4 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	DLIST_ADD(tdb_list, w);
 
 	return w;
-}
-
-NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
-{
-	struct { enum TDB_ERROR err; NTSTATUS status; }	map[] =
-		{ { TDB_SUCCESS,	NT_STATUS_OK },
-		  { TDB_ERR_CORRUPT,	NT_STATUS_INTERNAL_DB_CORRUPTION },
-		  { TDB_ERR_IO,		NT_STATUS_UNEXPECTED_IO_ERROR },
-		  { TDB_ERR_OOM,	NT_STATUS_NO_MEMORY },
-		  { TDB_ERR_EXISTS,	NT_STATUS_OBJECT_NAME_COLLISION },
-
-		  /*
-		   * TDB_ERR_LOCK is very broad, we could for example
-		   * distinguish between fcntl locks and invalid lock
-		   * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
-		   * compromise.
-		   */
-		  { TDB_ERR_LOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
-		  /*
-		   * The next two ones in the enum are not actually used
-		   */
-		  { TDB_ERR_NOLOCK,	NT_STATUS_FILE_LOCK_CONFLICT },
-		  { TDB_ERR_LOCK_TIMEOUT, NT_STATUS_FILE_LOCK_CONFLICT },
-		  { TDB_ERR_NOEXIST,	NT_STATUS_NOT_FOUND },
-		  { TDB_ERR_EINVAL,	NT_STATUS_INVALID_PARAMETER },
-		  { TDB_ERR_RDONLY,	NT_STATUS_ACCESS_DENIED }
-		};
-
-	int i;
-
-	for (i=0; i < sizeof(map) / sizeof(map[0]); i++) {
-		if (err == map[i].err) {
-			return map[i].status;
-		}
-	}
-
-	return NT_STATUS_INTERNAL_ERROR;
-}
-
-
-/*********************************************************************
- * the following is a generic validation mechanism for tdbs.
- *********************************************************************/
-
-/* 
- * internal validation function, executed by the child.  
- */
-static int tdb_validate_child(const char *tdb_path,
-			      tdb_validate_data_func validate_fn,
-			      int pfd)
-{
-	int ret = -1;
-	int num_entries = 0;
-	TDB_CONTEXT *tdb = NULL;
-	struct tdb_validation_status v_status;
-
-	v_status.tdb_error = False;
-	v_status.bad_freelist = False;
-	v_status.bad_entry = False;
-	v_status.unknown_key = False;
-	v_status.success = True;
-
-	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0);
-	if (!tdb) {
-		v_status.tdb_error = True;
-		v_status.success = False;
-		goto out;
-	}
-
-	/* Check the cache freelist is good. */
-	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
-		DEBUG(0,("tdb_validate_child: bad freelist in cache %s\n",
-			tdb_path));
-		v_status.bad_freelist = True;
-		v_status.success = False;
-		goto out;
-	}
-
-	DEBUG(10,("tdb_validate_child: cache %s freelist has %d entries\n",
-		tdb_path, num_entries));
-
-	/* Now traverse the cache to validate it. */
-	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
-	if (num_entries == -1 || !(v_status.success)) {
-		DEBUG(0,("tdb_validate_child: cache %s traverse failed\n",
-			tdb_path));
-		if (!(v_status.success)) {
-			if (v_status.bad_entry) {
-				DEBUGADD(0, (" -> bad entry found\n"));
-			}
-			if (v_status.unknown_key) {
-				DEBUGADD(0, (" -> unknown key encountered\n"));
-			}
-		}
-		goto out;
-	}
-
-	DEBUG(10,("tdb_validate_child: cache %s is good "
-		"with %d entries\n", tdb_path, num_entries));
-	ret = 0; /* Cache is good. */
-
-out:
-	if (tdb) {
-		tdb_close(tdb);
-	}
-
-	DEBUG(10, ("tdb_validate_child: writing status to pipe\n"));
-	write (pfd, (const char *)&v_status, sizeof(v_status));
-	close(pfd);
-
-	return ret;
-}
-
-int tdb_validate(const char *tdb_path, tdb_validate_data_func validate_fn)
-{
-	pid_t child_pid = -1;
-	int child_status = 0;
-	int wait_pid = 0;
-	int ret = -1;
-	int pipe_fds[2];
-	struct tdb_validation_status v_status;
-	int bytes_read = 0;
-
-	/* fork and let the child do the validation.
-	 * benefit: no need to twist signal handlers and panic functions.
-	 * just let the child panic. we catch the signal.
-	 * communicate the extended status struct over a pipe. */
-
-	if (pipe(pipe_fds) != 0) {
-		DEBUG(0, ("tdb_validate: unable to create pipe, "
-			  "error %s", strerror(errno)));
-		smb_panic("winbind_validate_cache: unable to create pipe.");
-	}
-
-	DEBUG(10, ("tdb_validate: forking to let child do validation.\n"));
-	child_pid = sys_fork();
-	if (child_pid == 0) {
-		DEBUG(10, ("tdb_validate (validation child): created\n"));
-		close(pipe_fds[0]); /* close reading fd */
-		DEBUG(10, ("tdb_validate (validation child): "
-			   "calling tdb_validate_child\n"));
-		exit(tdb_validate_child(tdb_path, validate_fn, pipe_fds[1]));
-	}
-	else if (child_pid < 0) {
-		smb_panic("tdb_validate: fork for validation failed.");
-	}
-
-	/* parent */
-
-	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",
-		   child_pid));
-	close(pipe_fds[1]); /* close writing fd */
-
-	v_status.success = True;
-	v_status.bad_entry = False;
-	v_status.unknown_key = False;
-
-	DEBUG(10, ("tdb_validate: reading from pipe.\n"));
-	bytes_read = read(pipe_fds[0], (void *)&v_status, sizeof(v_status));
-	close(pipe_fds[0]);
-
-	if (bytes_read != sizeof(v_status)) {
-		DEBUG(10, ("tdb_validate: read %d bytes from pipe "
-			   "but expected %d", bytes_read, (int)sizeof(v_status)));
-		DEBUGADD(10, (" -> assuming child crashed\n"));
-		v_status.success = False;
-	}
-	else {
-		DEBUG(10,    ("tdb_validate: read status from child\n"));
-		DEBUGADD(10, (" *  tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
-		DEBUGADD(10, (" *  bad freelist: %s\n", v_status.bad_freelist ? "yes" : "no"));
-		DEBUGADD(10, (" *  bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
-		DEBUGADD(10, (" *  unknown key: %s\n", v_status.unknown_key ? "yes" : "no"));
-		DEBUGADD(10, (" => overall success: %s\n", v_status.success ? "yes" : "no"));
-	}
-
-	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
-	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
-		if (errno == EINTR) {
-			DEBUG(10, ("tdb_validate: got signal during "
-				   "waitpid, retrying\n"));
-			errno = 0;
-			continue;
-		}
-		DEBUG(0, ("tdb_validate: waitpid failed with "
-                          "errno %s\n", strerror(errno)));
-		smb_panic("tdb_validate: waitpid failed.");
-	}
-	if (wait_pid != child_pid) {
-		DEBUG(0, ("tdb_validate: waitpid returned pid %d, "
-			  "but %d was expexted\n", wait_pid, child_pid));
-		smb_panic("tdb_validate: waitpid returned "
-			     "unexpected PID.");
-	}
-
-	DEBUG(10, ("tdb_validate: validating child returned.\n"));
-	if (WIFEXITED(child_status)) {
-		DEBUG(10, ("tdb_validate: child exited, code %d.\n",
-			   WEXITSTATUS(child_status)));
-		ret = WEXITSTATUS(child_status);
-	}
-	if (WIFSIGNALED(child_status)) {
-		DEBUG(10, ("tdb_validate: child terminated "
-			   "by signal %d\n", WTERMSIG(child_status)));
-#ifdef WCOREDUMP
-		if (WCOREDUMP(child_status)) {
-			DEBUGADD(10, ("core dumped\n"));
-		}
-#endif
-		ret = WTERMSIG(child_status);
-	}
-	if (WIFSTOPPED(child_status)) {
-		DEBUG(10, ("tdb_validate: child was stopped "
-			   "by signal %d\n",
-			   WSTOPSIG(child_status)));
-		ret = WSTOPSIG(child_status);
-	}
-
-	return ret;
 }

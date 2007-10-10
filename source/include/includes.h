@@ -173,7 +173,7 @@
 
 #if HAVE_LBER_H
 #include <lber.h>
-#if defined(HPUX) && !defined(_LBER_TYPES_H)
+#ifdef HPUX
 /* Define ber_tag_t and ber_int_t for using
  * HP LDAP-UX Integration products' LDAP libraries.
 */
@@ -181,7 +181,7 @@
 typedef unsigned long ber_tag_t;
 typedef int ber_int_t;
 #endif
-#endif /* defined(HPUX) && !defined(_LBER_TYPES_H) */
+#endif /* HPUX */
 #ifndef LBER_USE_DER
 #define LBER_USE_DER 0x01
 #endif
@@ -223,6 +223,10 @@ typedef int ber_int_t;
 
 #if HAVE_SYS_ATTRIBUTES_H
 #include <sys/attributes.h>
+#endif
+
+#ifndef ENOATTR
+#define ENOATTR ENODATA
 #endif
 
 /* mutually exclusive (SuSE 8.2) */
@@ -635,6 +639,7 @@ typedef int BOOL;
 #include "dlinklist.h"
 #include "tdb.h"
 #include "util_tdb.h"
+#include "tdbback.h"
 
 #include "lib/talloc/talloc.h"
 /* And a little extension. Abort on type mismatch */
@@ -643,18 +648,19 @@ typedef int BOOL;
 
 #include "nt_status.h"
 #include "ads.h"
+#include "gpo.h"
 #include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "nterr.h"
 #include "ntioctl.h"
+#include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
 #include "util_getent.h"
 #include "debugparse.h"
 #include "version.h"
 #include "privileges.h"
-#include "messages.h"
 #include "locking.h"
 #include "smb.h"
 #include "ads_cldap.h"
@@ -667,7 +673,6 @@ typedef int BOOL;
 #include "mapping.h"
 #include "passdb.h"
 #include "rpc_secdes.h"
-#include "gpo.h"
 #include "authdata.h"
 #include "msdfs.h"
 #include "rap.h"
@@ -681,11 +686,15 @@ typedef int BOOL;
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "reg_objects.h"
-#include "reg_db.h"
+#include "rpc_reg.h"
 #include "rpc_samr.h"
+#include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
+#include "rpc_dfs.h"
 #include "rpc_ds.h"
+#include "rpc_echo.h"
+#include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
@@ -702,9 +711,6 @@ typedef int BOOL;
 #include "spnego.h"
 #include "rpc_client.h"
 #include "event.h"
-#include "dbwrap.h"
-#include "packet.h"
-#include "ctdbd_conn.h"
 
 /*
  * Type for wide character dirent structure.
@@ -778,12 +784,6 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
-
-/* generated rpc server implementation functions */
-#include "librpc/gen_ndr/srv_echo.h"
-#include "librpc/gen_ndr/srv_svcctl.h"
-#include "librpc/gen_ndr/srv_lsa.h"
-#include "librpc/gen_ndr/srv_eventlog.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
@@ -1108,7 +1108,9 @@ krb5_error_code smb_krb5_unparse_name(krb5_context context,
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
 
+#ifndef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
 krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
+#endif
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
 krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_context auth_context, krb5_keyblock *keyblock);
@@ -1200,15 +1202,6 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 					krb5_error_code error_code,
 					const krb5_principal server,
 					krb5_data *reply);
-krb5_enctype smb_get_enctype_from_kt_entry(const krb5_keytab_entry *kt_entry);
-krb5_error_code smb_krb5_enctype_to_string(krb5_context context, 
- 					    krb5_enctype enctype, 
-					    char **etype_s);
-krb5_error_code smb_krb5_open_keytab(krb5_context context, 
- 				      const char *keytab_name, 
-				      BOOL write_access, 
-				      krb5_keytab *keytab);
-
 #endif /* HAVE_KRB5 */
 
 
@@ -1219,9 +1212,6 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 
 #endif	/* HAVE_LDAP */
 
-#if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
-ssize_t readahead(int fd, off64_t offset, size_t count);
-#endif
 
 /* TRUE and FALSE are part of the C99 standard and gcc, but
    unfortunately many vendor compilers don't support them.  Use True

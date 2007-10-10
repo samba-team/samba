@@ -529,10 +529,7 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
 						(chflags) and lsattr */
 #define CIFS_UNIX_POSIX_PATHNAMES_CAP	   0x10 /* Use POSIX pathnames on the wire. */
 #define CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP	   0x20 /* We can cope with POSIX open/mkdir/unlink etc. */
-#define CIFS_UNIX_LARGE_READ_CAP           0x40 /* We can cope with 24 bit reads in readX. */
-#define CIFS_UNIX_LARGE_WRITE_CAP          0x80 /* We can cope with 24 bit writes in writeX. */
-#define CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP	0x100 /* We can do SPNEGO negotiations for encryption. */
-#define CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP	0x200 /* We *must* SPNEGO negotiations for encryption. */
+
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
@@ -553,21 +550,6 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
    (NB statfs field Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call) 
    (NB statfs field flags can come from FILE_SYSTEM_DEVICE_INFO call)  
 */
-
-#define SMB_QUERY_POSIX_WHO_AM_I  0x202 /* QFS Info */
-/* returns:
-        __u32 flags;  0 = Authenticated user 1 = GUEST 
-        __u32 mask;  which flags bits server understands ie 0x0001 
-        __u64 unix_user_id;
-        __u64 unix_user_gid;
-        __u32 number_of_supplementary_gids;  may be zero 
-        __u32 number_of_sids;  may be zero
-        __u32 length_of_sid_array;  in bytes - may be zero 
-        __u32 pad;  reserved - MBZ 
-        __u64 gid_array[0];  may be empty 
-        __u8 * psid_list  may be empty
-*/
-
 
 /* ... more as we think of them :-). */
 
@@ -654,27 +636,6 @@ enum smb_whoami_flags {
 	8 bytes unsigned[] -	list of GIDs (may be empty)
 	DOM_SID[] -		list of SIDs (may be empty)
 */
-
-/*
- * The following trans2 is done between client and server 
- * as a FSINFO call to set up the encryption state for transport
- * encryption.
- *
- * The request looks like :
- *
- * [data block] -> SPNEGO framed GSSAPI request.
- *
- * The reply looks like :
- *
- * [data block] -> SPNEGO framed GSSAPI reply - if error
- *                 is NT_STATUS_OK then we're done, if it's
- *                 NT_STATUS_MORE_PROCESSING_REQUIRED then the
- *                 client needs to keep going. If it's an
- *                 error it can be any NT_STATUS error.
- *
- */
-
-#define SMB_REQUEST_TRANSPORT_ENCRYPTION     0x203
 
 /* The query/set info levels for POSIX ACLs. */
 #define SMB_QUERY_POSIX_ACL  0x204

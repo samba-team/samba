@@ -1225,6 +1225,9 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
       D.dqb_curblocks  = user_quota.bused;
       D.dqb_bsoftlimit = user_quota.bsoft;
       D.dqb_bhardlimit = user_quota.bhard;
+      D.dqb_curfiles   = user_quota.iused;
+      D.dqb_fsoftlimit = user_quota.isoft;
+      D.dqb_fhardlimit = user_quota.ihard;
     }
     else if(statbuf.f_vfstype == MNT_JFS)
     {

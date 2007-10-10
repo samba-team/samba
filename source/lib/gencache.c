@@ -114,7 +114,7 @@ BOOL gencache_shutdown(void)
 BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 {
 	int ret;
-	TDB_DATA databuf;
+	TDB_DATA keybuf, databuf;
 	char* valstr = NULL;
 	
 	/* fail completely if get null pointers passed */
@@ -130,13 +130,16 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	if (!valstr)
 		return False;
 
-	databuf = string_term_tdb_data(valstr);
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
+	keybuf.dsize = strlen(keystr)+1;
+	databuf.dptr = valstr;
+	databuf.dsize = strlen(valstr)+1;
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
-	           " %s (%d seconds %s)\n", keystr, value,ctime(&timeout),
+	           " %s (%d seconds %s)\n", keybuf.dptr, value,ctime(&timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_store_bystring(cache, keystr, databuf, 0);
+	ret = tdb_store(cache, keybuf, databuf, 0);
 	SAFE_FREE(valstr);
 	
 	return ret == 0;
@@ -154,6 +157,7 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 BOOL gencache_del(const char *keystr)
 {
 	int ret;
+	TDB_DATA keybuf;
 	
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr);
@@ -164,8 +168,10 @@ BOOL gencache_del(const char *keystr)
 		return False;
 	}
 
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
+	keybuf.dsize = strlen(keystr)+1;
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
-	ret = tdb_delete_bystring(cache, keystr);
+	ret = tdb_delete(cache, keybuf);
 	
 	return ret == 0;
 }
@@ -186,7 +192,7 @@ BOOL gencache_del(const char *keystr)
 
 BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
-	TDB_DATA databuf;
+	TDB_DATA keybuf, databuf;
 	time_t t;
 	char *endptr;
 
@@ -196,8 +202,10 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	if (!gencache_init()) {
 		return False;
 	}
-
-	databuf = tdb_fetch_bystring(cache, keystr);
+	
+	keybuf.dptr = CONST_DISCARD(char *, keystr);
+	keybuf.dsize = strlen(keystr)+1;
+	databuf = tdb_fetch(cache, keybuf);
 
 	if (databuf.dptr == NULL) {
 		DEBUG(10, ("Cache entry with key = %s couldn't be found\n",
@@ -205,7 +213,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		return False;
 	}
 
-	t = strtol((const char *)databuf.dptr, &endptr, 10);
+	t = strtol(databuf.dptr, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
 		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
@@ -220,7 +228,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	if (t <= time(NULL)) {
 
 		/* We're expired, delete the entry */
-		tdb_delete_bystring(cache, keystr);
+		tdb_delete(cache, keybuf);
 
 		SAFE_FREE(databuf.dptr);
 		return False;
@@ -279,7 +287,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		char *fmt;
 
 		/* ensure null termination of the key string */
-		keystr = SMB_STRNDUP((const char *)node->node_key.dptr, node->node_key.dsize);
+		keystr = SMB_STRNDUP(node->node_key.dptr, node->node_key.dsize);
 		if (!keystr) {
 			break;
 		}
@@ -295,7 +303,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			node = node->next;
 			continue;
 		}
-		entry = SMB_STRNDUP((const char *)databuf.dptr, databuf.dsize);
+		entry = SMB_STRNDUP(databuf.dptr, databuf.dsize);
 		if (!entry) {
 			SAFE_FREE(databuf.dptr);
 			SAFE_FREE(keystr);

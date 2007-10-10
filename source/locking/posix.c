@@ -195,8 +195,8 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
 					(double)offset,(double)count));
-		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
@@ -240,8 +240,8 @@ static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 
 		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
 					(double)*poffset,(double)*pcount));
-		DEBUGADD(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUGADD(0,("on 32 bit NFS mounted file systems.\n"));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
@@ -318,20 +318,29 @@ BOOL is_posix_locked(files_struct *fsp,
 /* The key used in the in-memory POSIX databases. */
 
 struct lock_ref_count_key {
-	struct file_id id;
+	SMB_DEV_T device;
+	SMB_INO_T inode;
 	char r;
+}; 
+
+struct fd_key {
+	SMB_DEV_T device;
+	SMB_INO_T inode;
 }; 
 
 /*******************************************************************
  Form a static locking key for a dev/inode pair for the fd array.
 ******************************************************************/
 
-static TDB_DATA fd_array_key(struct file_id id)
+static TDB_DATA fd_array_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
-	static struct file_id key;
+	static struct fd_key key;
 	TDB_DATA kbuf;
-	key = id;
-	kbuf.dptr = (uint8 *)&key;
+
+	memset(&key, '\0', sizeof(key));
+	key.device = dev;
+	key.inode = inode;
+	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
@@ -340,15 +349,16 @@ static TDB_DATA fd_array_key(struct file_id id)
  Form a static locking key for a dev/inode pair for the lock ref count
 ******************************************************************/
 
-static TDB_DATA locking_ref_count_key(struct file_id id)
+static TDB_DATA locking_ref_count_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	static struct lock_ref_count_key key;
 	TDB_DATA kbuf;
 
 	memset(&key, '\0', sizeof(key));
-	key.id = id;
+	key.device = dev;
+	key.inode = inode;
 	key.r = 'r';
-	kbuf.dptr = (uint8 *)&key;
+	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
@@ -359,7 +369,7 @@ static TDB_DATA locking_ref_count_key(struct file_id id)
 
 static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 {
-	return fd_array_key(fsp->file_id);
+	return fd_array_key(fsp->dev, fsp->inode);
 }
 
 /*******************************************************************
@@ -368,7 +378,7 @@ static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 
 static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp)
 {
-	return locking_ref_count_key(fsp->file_id);
+	return locking_ref_count_key(fsp->dev, fsp->inode);
 }
 
 /*******************************************************************
@@ -432,9 +442,9 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 	if (dbuf.dptr == NULL) {
-		dbuf.dptr = (uint8 *)SMB_MALLOC_P(int);
+		dbuf.dptr = (char *)SMB_MALLOC_P(int);
 		if (!dbuf.dptr) {
-			smb_panic("increment_windows_lock_ref_count: malloc fail");
+			smb_panic("increment_windows_lock_ref_count: malloc fail.\n");
 		}
 		memset(dbuf.dptr, '\0', sizeof(int));
 		dbuf.dsize = sizeof(int);
@@ -445,7 +455,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 	
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("increment_windows_lock_ref_count: tdb_store_fail");
+		smb_panic("increment_windows_lock_ref_count: tdb_store_fail.\n");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -461,7 +471,7 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 	if (!dbuf.dptr) {
-		smb_panic("decrement_windows_lock_ref_count: logic error");
+		smb_panic("decrement_windows_lock_ref_count: logic error.\n");
 	}
 
 	memcpy(&lock_ref_count, dbuf.dptr, sizeof(int));
@@ -469,11 +479,11 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 
 	if (lock_ref_count < 0) {
-		smb_panic("decrement_windows_lock_ref_count: lock_count logic error");
+		smb_panic("decrement_windows_lock_ref_count: lock_count logic error.\n");
 	}
 
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("decrement_windows_lock_ref_count: tdb_store_fail");
+		smb_panic("decrement_windows_lock_ref_count: tdb_store_fail.\n");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -500,12 +510,12 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 	lock_ref_count -= dcount;
 
 	if (lock_ref_count < 0) {
-		smb_panic("reduce_windows_lock_ref_count: lock_count logic error");
+		smb_panic("reduce_windows_lock_ref_count: lock_count logic error.\n");
 	}
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 	
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("reduce_windows_lock_ref_count: tdb_store_fail");
+		smb_panic("reduce_windows_lock_ref_count: tdb_store_fail.\n");
 	}
 	SAFE_FREE(dbuf.dptr);
 
@@ -563,16 +573,16 @@ static void add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	dbuf.dptr = (uint8 *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
+	dbuf.dptr = (char *)SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!dbuf.dptr) {
-		smb_panic("add_fd_to_close_entry: SMB_REALLOC failed");
+		smb_panic("add_fd_to_close_entry: Realloc fail !\n");
 	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fh->fd, sizeof(int));
 	dbuf.dsize += sizeof(int);
 
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("add_fd_to_close_entry: tdb_store_fail");
+		smb_panic("add_fd_to_close_entry: tdb_store_fail.\n");
 	}
 
 	DEBUG(10,("add_fd_to_close_entry: added fd %d file %s\n",
@@ -590,7 +600,7 @@ static void delete_close_entries(files_struct *fsp)
 	TDB_DATA kbuf = fd_array_key_fsp(fsp);
 
 	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1) {
-		smb_panic("delete_close_entries: tdb_delete failed");
+		smb_panic("delete_close_entries: tdb_delete fail !\n");
 	}
 }
 
@@ -641,7 +651,10 @@ NTSTATUS fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		 */
 		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
 		fsp->fh->fd = -1;
-		return map_nt_error_from_unix(errno);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		return NT_STATUS_OK;
 	}
 
 	if (get_windows_lock_ref_count(fsp)) {
@@ -934,7 +947,7 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 				pstring msg;
 
 				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
-lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
+lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
 
 				smb_panic(msg);
 			}

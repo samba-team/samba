@@ -34,7 +34,7 @@
 
 /* The open brlock.tdb database. */
 
-static struct db_context *brlock_db;
+static TDB_CONTEXT *tdb;
 
 /****************************************************************************
  Debug info at level 10 for lock struct.
@@ -261,20 +261,21 @@ static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *loc
 
 void brl_init(int read_only)
 {
-	if (brlock_db) {
+	if (tdb) {
 		return;
 	}
-	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
-			    lp_open_files_db_hash_size(),
-			    TDB_DEFAULT
-			    |TDB_VOLATILE
-			    |(read_only?0x0:TDB_CLEAR_IF_FIRST),
-			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
-	if (!brlock_db) {
+	tdb = tdb_open_log(lock_path("brlock.tdb"),
+			lp_open_files_db_hash_size(),
+			TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
+			read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
+	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
 			lock_path("brlock.tdb")));
 		return;
 	}
+
+	/* Activate the per-hashchain freelist */
+	tdb_set_max_dead(tdb, 5);
 }
 
 /****************************************************************************
@@ -283,10 +284,10 @@ void brl_init(int read_only)
 
 void brl_shutdown(int read_only)
 {
-	if (!brlock_db) {
+	if (!tdb) {
 		return;
 	}
-	TALLOC_FREE(brlock_db);
+	tdb_close(tdb);
 }
 
 #if ZERO_ZERO
@@ -316,7 +317,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
-	struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
@@ -367,7 +368,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 
 	memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
 	br_lck->num_locks += 1;
-	br_lck->lock_data = locks;
+	br_lck->lock_data = (void *)locks;
 	br_lck->modified = True;
 
 	return NT_STATUS_OK;
@@ -577,9 +578,9 @@ OR
 	}
 
 	/* Never get here. */
-	smb_panic("brlock_posix_split_merge");
+	smb_panic("brlock_posix_split_merge\n");
 	/* Notreached. */
-
+	abort();
 	/* Keep some compilers happy. */
 	return 0;
 }
@@ -589,12 +590,11 @@ OR
  We must cope with range splits and merges.
 ****************************************************************************/
 
-static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
-			       struct byte_range_lock *br_lck,
-			       struct lock_struct *plock)
+static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
+			struct lock_struct *plock)
 {
 	unsigned int i, count;
-	struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
 	BOOL signal_pending_read = False;
@@ -700,7 +700,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	}
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
-	br_lck->lock_data = tp;
+	br_lck->lock_data = (void *)tp;
 	locks = tp;
 	br_lck->modified = True;
 
@@ -722,8 +722,9 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 				DEBUG(10,("brl_lock_posix: sending unlock message to pid %s\n",
 					procid_str_static(&pend_lock->context.pid )));
 
-				messaging_send(msg_ctx, pend_lock->context.pid,
-					       MSG_SMB_UNLOCK, &data_blob_null);
+				message_send_pid(pend_lock->context.pid,
+						MSG_SMB_UNLOCK,
+						NULL, 0, True);
 			}
 		}
 	}
@@ -735,10 +736,9 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
  Lock a range of bytes.
 ****************************************************************************/
 
-NTSTATUS brl_lock(struct messaging_context *msg_ctx,
-		struct byte_range_lock *br_lck,
+NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct server_id pid,
+		struct process_id pid,
 		br_off start,
 		br_off size, 
 		enum brl_type lock_type,
@@ -767,7 +767,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	if (lock_flav == WINDOWS_LOCK) {
 		ret = brl_lock_windows(br_lck, &lock, blocking_lock);
 	} else {
-		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
+		ret = brl_lock_posix(br_lck, &lock);
 	}
 
 #if ZERO_ZERO
@@ -786,12 +786,10 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
-static BOOL brl_unlock_windows(struct messaging_context *msg_ctx,
-			       struct byte_range_lock *br_lck,
-			       const struct lock_struct *plock)
+static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j;
-	struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
 
 #if ZERO_ZERO
@@ -877,8 +875,9 @@ static BOOL brl_unlock_windows(struct messaging_context *msg_ctx,
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			messaging_send(msg_ctx, pend_lock->context.pid,
-				       MSG_SMB_UNLOCK, &data_blob_null);
+			message_send_pid(pend_lock->context.pid,
+					MSG_SMB_UNLOCK,
+					NULL, 0, True);
 		}
 	}
 
@@ -889,13 +888,11 @@ static BOOL brl_unlock_windows(struct messaging_context *msg_ctx,
  Unlock a range of bytes - POSIX semantics.
 ****************************************************************************/
 
-static BOOL brl_unlock_posix(struct messaging_context *msg_ctx,
-			     struct byte_range_lock *br_lck,
-			     const struct lock_struct *plock)
+static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j, count;
 	struct lock_struct *tp;
-	struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	BOOL overlap_found = False;
 
 	/* No zero-zero locks for POSIX. */
@@ -1028,7 +1025,7 @@ static BOOL brl_unlock_posix(struct messaging_context *msg_ctx,
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	locks = tp;
-	br_lck->lock_data = tp;
+	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -1046,8 +1043,9 @@ static BOOL brl_unlock_posix(struct messaging_context *msg_ctx,
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
-			messaging_send(msg_ctx, pend_lock->context.pid,
-				       MSG_SMB_UNLOCK, &data_blob_null);
+			message_send_pid(pend_lock->context.pid,
+					MSG_SMB_UNLOCK,
+					NULL, 0, True);
 		}
 	}
 
@@ -1058,10 +1056,9 @@ static BOOL brl_unlock_posix(struct messaging_context *msg_ctx,
  Unlock a range of bytes.
 ****************************************************************************/
 
-BOOL brl_unlock(struct messaging_context *msg_ctx,
-		struct byte_range_lock *br_lck,
+BOOL brl_unlock(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct server_id pid,
+		struct process_id pid,
 		br_off start,
 		br_off size,
 		enum brl_flavour lock_flav)
@@ -1078,9 +1075,9 @@ BOOL brl_unlock(struct messaging_context *msg_ctx,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		return brl_unlock_windows(msg_ctx, br_lck, &lock);
+		return brl_unlock_windows(br_lck, &lock);
 	} else {
-		return brl_unlock_posix(msg_ctx, br_lck, &lock);
+		return brl_unlock_posix(br_lck, &lock);
 	}
 }
 
@@ -1091,7 +1088,7 @@ BOOL brl_unlock(struct messaging_context *msg_ctx,
 
 BOOL brl_locktest(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct server_id pid,
+		struct process_id pid,
 		br_off start,
 		br_off size, 
 		enum brl_type lock_type,
@@ -1100,7 +1097,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	BOOL ret = True;
 	unsigned int i;
 	struct lock_struct lock;
-	const struct lock_struct *locks = br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = smbpid;
@@ -1149,7 +1146,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		uint32 *psmbpid,
-		struct server_id pid,
+		struct process_id pid,
 		br_off *pstart,
 		br_off *psize, 
 		enum brl_type *plock_type,
@@ -1157,7 +1154,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	struct lock_struct lock;
-	const struct lock_struct *locks = br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = *psmbpid;
@@ -1217,13 +1214,13 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
 		uint32 smbpid,
-		struct server_id pid,
+		struct process_id pid,
 		br_off start,
 		br_off size,
 		enum brl_flavour lock_flav)
 {
 	unsigned int i;
-	struct lock_struct *locks = br_lck->lock_data;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_context context;
 
 	context.smbpid = smbpid;
@@ -1266,16 +1263,15 @@ BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
  fd and so we should not immediately close the fd.
 ****************************************************************************/
 
-void brl_close_fnum(struct messaging_context *msg_ctx,
-		    struct byte_range_lock *br_lck)
+void brl_close_fnum(struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
 	uint16 tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
 	unsigned int i, j, dcount=0;
 	int num_deleted_windows_locks = 0;
-	struct lock_struct *locks = br_lck->lock_data;
-	struct server_id pid = procid_self();
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct process_id pid = procid_self();
 	BOOL unlock_individually = False;
 
 	if(lp_posix_locking(fsp->conn->params)) {
@@ -1309,7 +1305,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 			if (br_lck->num_locks) {
 				locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 				if (!locks_copy) {
-					smb_panic("brl_close_fnum: talloc failed");
+					smb_panic("brl_close_fnum: talloc fail.\n");
 	 			}
 			} else {	
 				locks_copy = NULL;
@@ -1322,8 +1318,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 
 				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
 						(lock->fnum == fnum)) {
-					brl_unlock(msg_ctx,
-						br_lck,
+					brl_unlock(br_lck,
 						lock->context.smbpid,
 						pid,
 						lock->start,
@@ -1372,8 +1367,9 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 
 				/* We could send specific lock info here... */
 				if (brl_pending_overlap(lock, pend_lock)) {
-					messaging_send(msg_ctx, pend_lock->context.pid,
-						       MSG_SMB_UNLOCK, &data_blob_null);
+					message_send_pid(pend_lock->context.pid,
+							MSG_SMB_UNLOCK,
+							NULL, 0, True);
 				}
 			}
 
@@ -1447,40 +1443,31 @@ static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 	return True;
 }
 
-struct brl_forall_cb {
-	void (*fn)(struct file_id id, struct server_id pid,
-		   enum brl_type lock_type,
-		   enum brl_flavour lock_flav,
-		   br_off start, br_off size,
-		   void *private_data);
-	void *private_data;
-};
-
 /****************************************************************************
  Traverse the whole database with this function, calling traverse_callback
  on each lock.
 ****************************************************************************/
 
-static int traverse_fn(struct db_record *rec, void *state)
+static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
-	struct brl_forall_cb *cb = (struct brl_forall_cb *)state;
 	struct lock_struct *locks;
-	struct file_id *key;
+	struct lock_key *key;
 	unsigned int i;
 	unsigned int num_locks = 0;
 	unsigned int orig_num_locks = 0;
 
+	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
+
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)memdup(rec->value.dptr,
-					     rec->value.dsize);
+	locks = (struct lock_struct *)memdup(dbuf.dptr, dbuf.dsize);
 	if (!locks) {
 		return -1; /* Terminate traversal. */
 	}
 
-	key = (struct file_id *)rec->key.dptr;
-	orig_num_locks = num_locks = rec->value.dsize/sizeof(*locks);
+	key = (struct lock_key *)kbuf.dptr;
+	orig_num_locks = num_locks = dbuf.dsize/sizeof(*locks);
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
@@ -1490,24 +1477,24 @@ static int traverse_fn(struct db_record *rec, void *state)
 	}
 
 	if (orig_num_locks != num_locks) {
-		if (num_locks) {
-			TDB_DATA data;
-			data.dptr = (uint8_t *)locks;
-			data.dsize = num_locks*sizeof(struct lock_struct);
-			rec->store(rec, data, TDB_REPLACE);
+		dbuf.dptr = (char *)locks;
+		dbuf.dsize = num_locks * sizeof(*locks);
+
+		if (dbuf.dsize) {
+			tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
 		} else {
-			rec->delete_rec(rec);
+			tdb_delete(ttdb, kbuf);
 		}
 	}
 
 	for ( i=0; i<num_locks; i++) {
-		cb->fn(*key,
-		       locks[i].context.pid,
-		       locks[i].lock_type,
-		       locks[i].lock_flav,
-		       locks[i].start,
-		       locks[i].size,
-		       cb->private_data);
+		traverse_callback(key->device,
+				  key->inode,
+				  locks[i].context.pid,
+				  locks[i].lock_type,
+				  locks[i].lock_flav,
+				  locks[i].start,
+				  locks[i].size);
 	}
 
 	SAFE_FREE(locks);
@@ -1518,21 +1505,12 @@ static int traverse_fn(struct db_record *rec, void *state)
  Call the specified function on each lock in the database.
 ********************************************************************/
 
-int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
-			  enum brl_type lock_type,
-			  enum brl_flavour lock_flav,
-			  br_off start, br_off size,
-			  void *private_data),
-	       void *private_data)
+int brl_forall(BRLOCK_FN(fn))
 {
-	struct brl_forall_cb cb;
-
-	if (!brlock_db) {
+	if (!tdb) {
 		return 0;
 	}
-	cb.fn = fn;
-	cb.private_data = private_data;
-	return brlock_db->traverse(brlock_db, traverse_fn, &cb);
+	return tdb_traverse(tdb, traverse_fn, (void *)fn);
 }
 
 /*******************************************************************
@@ -1545,8 +1523,8 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
 	TDB_DATA key;
 
-	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct file_id);
+	key.dptr = (char *)&br_lck->key;
+	key.dsize = sizeof(struct lock_key);
 
 	if (br_lck->read_only) {
 		SMB_ASSERT(!br_lck->modified);
@@ -1558,31 +1536,25 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 
 	if (br_lck->num_locks == 0) {
 		/* No locks - delete this entry. */
-		NTSTATUS status = br_lck->record->delete_rec(br_lck->record);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("delete_rec returned %s\n",
-				  nt_errstr(status)));
-			smb_panic("Could not delete byte range lock entry");
+		if (tdb_delete(tdb, key) == -1) {
+			smb_panic("Could not delete byte range lock entry\n");
 		}
 	} else {
 		TDB_DATA data;
-		NTSTATUS status;
-
-		data.dptr = (uint8 *)br_lck->lock_data;
+		data.dptr = (char *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
-		status = br_lck->record->store(br_lck->record, data,
-					       TDB_REPLACE);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
-			smb_panic("Could not store byte range mode entry");
+		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
+			smb_panic("Could not store byte range mode entry\n");
 		}
 	}
 
  done:
 
+	if (!br_lck->read_only) {
+		tdb_chainunlock(tdb, key);
+	}
 	SAFE_FREE(br_lck->lock_data);
-	TALLOC_FREE(br_lck->record);
 	return 0;
 }
 
@@ -1595,7 +1567,8 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 					files_struct *fsp, BOOL read_only)
 {
-	TDB_DATA key, data;
+	TDB_DATA key;
+	TDB_DATA data;
 	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
 
 	if (br_lck == NULL) {
@@ -1605,11 +1578,12 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
 	br_lck->modified = False;
-	memset(&br_lck->key, '\0', sizeof(struct file_id));
-	br_lck->key = fsp->file_id;
+	memset(&br_lck->key, '\0', sizeof(struct lock_key));
+	br_lck->key.device = fsp->dev;
+	br_lck->key.inode = fsp->inode;
 
-	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct file_id);
+	key.dptr = (char *)&br_lck->key;
+	key.dsize = sizeof(struct lock_key);
 
 	if (!fsp->lockdb_clean) {
 		/* We must be read/write to clean
@@ -1618,39 +1592,22 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (read_only) {
-		if (brlock_db->fetch(brlock_db, br_lck, key, &data) == -1) {
-			DEBUG(3, ("Could not fetch byte range lock record\n"));
-			TALLOC_FREE(br_lck);
-			return NULL;
-		}
-		br_lck->record = NULL;
-	}
-	else {
-		br_lck->record = brlock_db->fetch_locked(brlock_db, br_lck, key);
-
-		if (br_lck->record == NULL) {
+		br_lck->read_only = True;
+	} else {
+		if (tdb_chainlock(tdb, key) != 0) {
 			DEBUG(3, ("Could not lock byte range lock entry\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
-
-		data = br_lck->record->value;
+		br_lck->read_only = False;
 	}
-
-	br_lck->read_only = read_only;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
+	data = tdb_fetch(tdb, key);
+	br_lck->lock_data = (void *)data.dptr;
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
-	br_lck->lock_data = SMB_MALLOC_ARRAY(struct lock_struct, br_lck->num_locks);
-	if ((br_lck->num_locks != 0) && (br_lck->lock_data == NULL)) {
-		DEBUG(0, ("malloc failed\n"));
-		TALLOC_FREE(br_lck);
-		return NULL;
-	}
 
-	memcpy(br_lck->lock_data, data.dptr, data.dsize);
-	
 	if (!fsp->lockdb_clean) {
 		int orig_num_locks = br_lck->num_locks;
 
@@ -1658,17 +1615,26 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		/* Go through and ensure all entries exist - remove any that don't. */
 		/* Makes the lockdb self cleaning at low cost. */
 
-		if (!validate_lock_entries(&br_lck->num_locks,
-					   &br_lck->lock_data)) {
+		struct lock_struct *locks =
+			(struct lock_struct *)br_lck->lock_data;
+
+		if (!validate_lock_entries(&br_lck->num_locks, &locks)) {
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
 
-		/* Ensure invalid locks are cleaned up in the destructor. */
+                /* Ensure invalid locks are cleaned up in the destructor. */
 		if (orig_num_locks != br_lck->num_locks) {
 			br_lck->modified = True;
 		}
+
+		/*
+		 * validate_lock_entries might have changed locks. We can't
+		 * use a direct pointer here because otherwise gcc warnes
+		 * about strict aliasing rules being violated.
+		 */
+		br_lck->lock_data = locks;
 
 		/* Mark the lockdb as "clean" as seen from this open file. */
 		fsp->lockdb_clean = True;
@@ -1676,10 +1642,10 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
-		struct lock_struct *locks = br_lck->lock_data;
-		DEBUG(10,("brl_get_locks_internal: %u current locks on file_id %s\n",
+		struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+		DEBUG(10,("brl_get_locks_internal: %u current locks on dev=%.0f, inode=%.0f\n",
 			br_lck->num_locks,
-			  file_id_static_string(&fsp->file_id)));
+			(double)fsp->dev, (double)fsp->inode ));
 		for( i = 0; i < br_lck->num_locks; i++) {
 			print_lock_struct(i, &locks[i]);
 		}
@@ -1697,110 +1663,4 @@ struct byte_range_lock *brl_get_locks_readonly(TALLOC_CTX *mem_ctx,
 					files_struct *fsp)
 {
 	return brl_get_locks_internal(mem_ctx, fsp, True);
-}
-
-struct brl_revalidate_state {
-	ssize_t array_size;
-	uint32 num_pids;
-	struct server_id *pids;
-};
-
-/*
- * Collect PIDs of all processes with pending entries
- */
-
-static void brl_revalidate_collect(struct file_id id, struct server_id pid,
-				   enum brl_type lock_type,
-				   enum brl_flavour lock_flav,
-				   br_off start, br_off size,
-				   void *private_data)
-{
-	struct brl_revalidate_state *state =
-		(struct brl_revalidate_state *)private_data;
-
-	if (!IS_PENDING_LOCK(lock_type)) {
-		return;
-	}
-
-	add_to_large_array(state, sizeof(pid), (void *)&pid,
-			   &state->pids, &state->num_pids,
-			   &state->array_size);
-}
-
-/*
- * qsort callback to sort the processes
- */
-
-static int compare_procids(const void *p1, const void *p2)
-{
-	const struct server_id *i1 = (struct server_id *)p1;
-	const struct server_id *i2 = (struct server_id *)p2;
-
-	if (i1->pid < i2->pid) return -1;
-	if (i2->pid > i2->pid) return 1;
-	return 0;
-}
-
-/*
- * Send a MSG_SMB_UNLOCK message to all processes with pending byte range
- * locks so that they retry. Mainly used in the cluster code after a node has
- * died.
- *
- * Done in two steps to avoid double-sends: First we collect all entries in an
- * array, then qsort that array and only send to non-dupes.
- */
-
-static void brl_revalidate(struct messaging_context *msg_ctx,
-			   void *private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB *data)
-{
-	struct brl_revalidate_state *state;
-	uint32 i;
-	struct server_id last_pid;
-
-	if (!(state = TALLOC_ZERO_P(NULL, struct brl_revalidate_state))) {
-		DEBUG(0, ("talloc failed\n"));
-		return;
-	}
-
-	brl_forall(brl_revalidate_collect, state);
-
-	if (state->array_size == -1) {
-		DEBUG(0, ("talloc failed\n"));
-		goto done;
-	}
-
-	if (state->num_pids == 0) {
-		goto done;
-	}
-
-	qsort(state->pids, state->num_pids, sizeof(state->pids[0]),
-	      compare_procids);
-
-	ZERO_STRUCT(last_pid);
-
-	for (i=0; i<state->num_pids; i++) {
-		if (procid_equal(&last_pid, &state->pids[i])) {
-			/*
-			 * We've seen that one already
-			 */
-			continue;
-		}
-
-		messaging_send(msg_ctx, state->pids[i], MSG_SMB_UNLOCK,
-			       &data_blob_null);
-		last_pid = state->pids[i];
-	}
-
- done:
-	TALLOC_FREE(state);
-	return;
-}
-
-void brl_register_msgs(struct messaging_context *msg_ctx)
-{
-	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
-			   brl_revalidate);
 }

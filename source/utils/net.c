@@ -85,7 +85,6 @@ int opt_attrs = 0;
 int opt_timestamps = 0;
 const char *opt_exclude = NULL;
 const char *opt_destination = NULL;
-BOOL opt_testmode = False;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -603,7 +602,7 @@ static int net_getlocalsid(int argc, const char **argv)
 		name = global_myname();
 	}
 
-	if(!initialize_password_db(False, NULL)) {
+	if(!initialize_password_db(False)) {
 		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
@@ -673,7 +672,7 @@ static int net_getdomainsid(int argc, const char **argv)
 	DOM_SID domain_sid;
 	fstring sid_str;
 
-	if(!initialize_password_db(False, NULL)) {
+	if(!initialize_password_db(False)) {
 		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
@@ -872,7 +871,6 @@ static struct functable net_func[] = {
 	{"STATUS", net_status},
 	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
-	{"CONF", net_conf},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},
 #endif
@@ -914,7 +912,6 @@ static struct functable net_func[] = {
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
 		{"verbose",	'v', POPT_ARG_NONE,   &opt_verbose},
-		{"test",	'T', POPT_ARG_NONE,   &opt_testmode},
 		/* Options for 'net groupmap set' */
 		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
 		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
@@ -1000,6 +997,10 @@ static struct functable net_func[] = {
 
 	if (!opt_user_name && getenv("LOGNAME")) {
 		opt_user_name = getenv("LOGNAME");
+	}
+
+	if (!opt_user_name) {
+		opt_user_name = "";
 	}
 
 	if (!opt_workgroup) {

@@ -305,7 +305,7 @@ static int process_root(int local_flags)
 	}
 
 	/* Ensure passdb startup(). */
-	if(!initialize_password_db(False, NULL)) {
+	if(!initialize_password_db(False)) {
 		DEBUG(0, ("Failed to open passdb!\n"));
 		exit(1);
 	}

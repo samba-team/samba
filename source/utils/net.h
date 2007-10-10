@@ -67,8 +67,6 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
-#include "libmsrpc.h"
-
  
 /* MACROS & DEFINES */
 
@@ -114,7 +112,6 @@ extern int opt_attrs;
 extern int opt_timestamps;
 extern const char *opt_exclude;
 extern const char *opt_destination;
-extern BOOL opt_testmode;
 
 extern BOOL opt_have_ip;
 extern struct in_addr opt_dest_ip;

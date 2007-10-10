@@ -1208,14 +1208,13 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 /* Query display info */
 
-static NTSTATUS cmd_samr_query_dispinfo_int(struct rpc_pipe_client *cli, 
-					    TALLOC_CTX *mem_ctx,
-					    int argc, const char **argv, 
-					    int opcode)
+static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli, 
+                                        TALLOC_CTX *mem_ctx,
+                                        int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, max_size = (uint32) -1, num_entries, i;
+	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 info_level = 1;
 	SAM_DISPINFO_CTR ctr;
@@ -1250,7 +1249,6 @@ static NTSTATUS cmd_samr_query_dispinfo_int(struct rpc_pipe_client *cli,
 	
 	if (argc >= 6)
                 sscanf(argv[5], "%x", &access_mask);
-
 
 	/* Get sam policy handle */
 
@@ -1303,31 +1301,11 @@ static NTSTATUS cmd_samr_query_dispinfo_int(struct rpc_pipe_client *cli,
 		if (!got_params)
 			get_query_dispinfo_params(
 				loop_count, &max_entries, &max_size);
-
-		switch (opcode) {
-		case SAMR_QUERY_DISPINFO:
-			result = rpccli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
-							    &start_idx, info_level,
-							    &num_entries, max_entries, 
-							    max_size, &ctr);
-			break;
-		case SAMR_QUERY_DISPINFO2:
-			result = rpccli_samr_query_dispinfo2(cli, mem_ctx, &domain_pol,
-							     &start_idx, info_level,
-							     &num_entries, max_entries, 
-							     max_size, &ctr);
-			break;
-		case SAMR_QUERY_DISPINFO3:
-			result = rpccli_samr_query_dispinfo3(cli, mem_ctx, &domain_pol,
-							     &start_idx, info_level,
-							     &num_entries, max_entries, 
-							     max_size, &ctr);
-			break;
-		default:
-			printf("unknown opcode: %d\n", opcode);
-			return NT_STATUS_INVALID_PARAMETER;
-			break;
-		}
+		
+		result = rpccli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+						 &start_idx, info_level,
+						 &num_entries, max_entries, 
+						 max_size, &ctr);
 
 		loop_count++;
 
@@ -1362,114 +1340,6 @@ static NTSTATUS cmd_samr_query_dispinfo_int(struct rpc_pipe_client *cli,
 	rpccli_samr_close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
-}
-
-static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli, 
-					TALLOC_CTX *mem_ctx,
-					int argc, const char **argv)
-{
-	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO);
-}
-
-static NTSTATUS cmd_samr_query_dispinfo2(struct rpc_pipe_client *cli, 
-					 TALLOC_CTX *mem_ctx,
-					 int argc, const char **argv) 
-{
-	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO2);
-}
-
-static NTSTATUS cmd_samr_query_dispinfo3(struct rpc_pipe_client *cli, 
-					 TALLOC_CTX *mem_ctx,
-					 int argc, const char **argv) 
-{
-	return cmd_samr_query_dispinfo_int(cli, mem_ctx, argc, argv, SAMR_QUERY_DISPINFO3);
-}
-
-/* Query display info index */
-
-static NTSTATUS cmd_samr_get_dispenum_index_int(struct rpc_pipe_client *cli, 
-						TALLOC_CTX *mem_ctx,
-						int argc, const char **argv,
-						int opcode)
-{
-	POLICY_HND connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	uint16 info_level = 1;
-	uint32 idx;
-
-	if (argc < 2 || argc > 3) {
-		printf("Usage: %s name [info level]\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	if (argc >= 3) {
-		sscanf(argv[2], "%hd", &info_level);
-	}
-
-	/* Get sam policy handle */
-
-	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				   &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Get domain policy handle */
-
-	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					 access_mask, 
-					 &domain_sid, &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Query display info index */
-
-	switch (opcode) {
-	case SAMR_GET_DISPENUM_INDEX:
-		result = rpccli_samr_get_dispenum_index(cli, mem_ctx, &domain_pol,
-							info_level, argv[1], &idx);
-		break;
-	case SAMR_GET_DISPENUM_INDEX2:
-		result = rpccli_samr_get_dispenum_index2(cli, mem_ctx, &domain_pol,
-							info_level, argv[1], &idx);
-		break;
-	default:
-		printf("unknown opcode\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
-	if (NT_STATUS_IS_ERR(result)) {
-		goto done;
-	};
-
-	printf("idx is: %d (0x%08x)\n", idx, idx);
-
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
- done:
-	return result;
-}
-
-/* Query display info index */
-
-static NTSTATUS cmd_samr_get_dispenum_index(struct rpc_pipe_client *cli, 
-					    TALLOC_CTX *mem_ctx,
-					    int argc, const char **argv)
-{
-	return cmd_samr_get_dispenum_index_int(cli, mem_ctx, argc, argv, SAMR_GET_DISPENUM_INDEX);
-}
-
-/* Query display info index2 */
-
-static NTSTATUS cmd_samr_get_dispenum_index2(struct rpc_pipe_client *cli, 
-					     TALLOC_CTX *mem_ctx,
-					     int argc, const char **argv)
-{
-	return cmd_samr_get_dispenum_index_int(cli, mem_ctx, argc, argv, SAMR_GET_DISPENUM_INDEX2);
 }
 
 /* Query domain info */
@@ -1906,78 +1776,6 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Delete domain group */
-
-static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli, 
-                                         TALLOC_CTX *mem_ctx,
-                                         int argc, const char **argv) 
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND connect_pol, domain_pol, group_pol;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-
-	if ((argc < 2) || (argc > 3)) {
-		printf("Usage: %s groupname\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-	
-	if (argc > 2)
-                sscanf(argv[2], "%x", &access_mask);
-
-	/* Get sam policy and domain handles */
-
-	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				   &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	/* Get handle on group */
-
-	{
-		uint32 *group_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
-
-		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-					       flags, 1, (const char **)&argv[1],
-					       &num_rids, &group_rids,
-					       &name_types);
-
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-
-		result = rpccli_samr_open_group(cli, mem_ctx, &domain_pol,
-						access_mask,
-						group_rids[0], &group_pol);
-
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-	}
-
-	/* Delete user */
-
-	result = rpccli_samr_delete_dom_group(cli, mem_ctx, &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	/* Display results */
-
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
-
- done:
-	return result;
-}
-
 /* Delete domain user */
 
 static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli, 
@@ -2128,7 +1926,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_sec_desc(sec_desc_buf->sd);
+	display_sec_desc(sec_desc_buf->sec);
 
 	rpccli_samr_close(cli, mem_ctx, &user_pol);
 	rpccli_samr_close(cli, mem_ctx, &domain_pol);
@@ -2409,10 +2207,6 @@ struct cmd_set samr_commands[] = {
 	{ "queryaliasmem", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_aliasmem, 	NULL, PI_SAMR, NULL,	"Query alias membership",  "" },
 	{ "deletealias", 	RPC_RTYPE_NTSTATUS, cmd_samr_delete_alias, 	NULL, PI_SAMR, NULL,	"Delete an alias",  "" },
 	{ "querydispinfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo, 	NULL, PI_SAMR, NULL,	"Query display info",      "" },
-	{ "querydispinfo2", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo2, 	NULL, PI_SAMR, NULL,	"Query display info 2",      "" },
-	{ "querydispinfo3", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo3, 	NULL, PI_SAMR, NULL,	"Query display info 3",      "" },
-	{ "getdispenumindex", 	RPC_RTYPE_NTSTATUS, cmd_samr_get_dispenum_index, 	NULL, PI_SAMR, NULL,	"Query display info index",      "" },
-	{ "getdispenumindex2", 	RPC_RTYPE_NTSTATUS, cmd_samr_get_dispenum_index2, 	NULL, PI_SAMR, NULL,	"Query display info index",      "" },
 	{ "querydominfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dominfo, 	NULL, PI_SAMR, NULL,	"Query domain info",       "" },
 	{ "enumdomusers",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_groups,       NULL, PI_SAMR, NULL,	"Enumerate domain groups", "" },
@@ -2423,7 +2217,6 @@ struct cmd_set samr_commands[] = {
 	{ "createdomalias",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_alias,      NULL, PI_SAMR, NULL,	"Create domain alias",     "" },
 	{ "samlookupnames",     RPC_RTYPE_NTSTATUS, cmd_samr_lookup_names,          NULL, PI_SAMR, NULL,	"Look up names",           "" },
 	{ "samlookuprids",      RPC_RTYPE_NTSTATUS, cmd_samr_lookup_rids,           NULL, PI_SAMR, NULL,	"Look up names",           "" },
-	{ "deletedomgroup",     RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_group,      NULL, PI_SAMR, NULL,	"Delete domain group",     "" },
 	{ "deletedomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_user,       NULL, PI_SAMR, NULL,	"Delete domain user",      "" },
 	{ "samquerysecobj",     RPC_RTYPE_NTSTATUS, cmd_samr_query_sec_obj,         NULL, PI_SAMR, NULL, "Query SAMR security object",   "" },
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, NULL, "Retrieve domain password info", "" },

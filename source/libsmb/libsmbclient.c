@@ -503,30 +503,8 @@ smbc_check_server(SMBCCTX * context,
         socklen_t size;
         struct sockaddr addr;
 
-        /*
-         * Although the use of port 139 is not a guarantee that we're using
-         * netbios, we assume so.  We don't want to send a keepalive packet if
-         * not netbios because it's not valid, and Vista, at least,
-         * disconnects the client on such a request.
-         */
-        if (server->cli->port == 139) {
-                /* Assuming netbios.  Send a keepalive packet */
-                if ( send_keepalive(server->cli->fd) == False ) {
-                        return 1;
-                }
-        } else {
-                /*
-                 * Assuming not netbios.  Try a different method to detect if
-                 * the connection is still alive.
-                 */
-                size = sizeof(addr);
-                if (getpeername(server->cli->fd, &addr, &size) == -1) {
-                        return 1;
-                }
-        }
-
-	/* connection is ok */
-	return 0;
+        size = sizeof(addr);
+        return (getpeername(server->cli->fd, &addr, &size) == -1);
 }
 
 /* 
@@ -564,7 +542,7 @@ smbc_remove_unused_server(SMBCCTX * context,
 
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
 
-	context->callbacks.remove_cached_srv_fn(context, srv);
+	(context->callbacks.remove_cached_srv_fn)(context, srv);
 
         SAFE_FREE(srv);
 	
@@ -584,19 +562,19 @@ find_server(SMBCCTX *context,
         
  check_server_cache:
 
-	srv = context->callbacks.get_cached_srv_fn(context, server, share, 
-						   workgroup, username);
+	srv = (context->callbacks.get_cached_srv_fn)(context, server, share, 
+                                                     workgroup, username);
 
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
                 if (context->internal->_auth_fn_with_context != NULL) {
-                         context->internal->_auth_fn_with_context(
+                        (context->internal->_auth_fn_with_context)(
                                 context,
                                 server, share,
                                 workgroup, sizeof(fstring),
                                 username, sizeof(fstring),
                                 password, sizeof(fstring));
                 } else {
-                        context->callbacks.auth_fn(
+                        (context->callbacks.auth_fn)(
                                 server, share,
                                 workgroup, sizeof(fstring),
                                 username, sizeof(fstring),
@@ -614,22 +592,22 @@ find_server(SMBCCTX *context,
 	}
 	
 	if (srv) {
-		if (context->callbacks.check_server_fn(context, srv)) {
+		if ((context->callbacks.check_server_fn)(context, srv)) {
 			/*
                          * This server is no good anymore 
                          * Try to remove it and check for more possible
                          * servers in the cache
                          */
-			if (context->callbacks.remove_unused_server_fn(context,
-                                                                       srv)) { 
+			if ((context->callbacks.remove_unused_server_fn)(context,
+                                                                         srv)) { 
                                 /*
                                  * We could not remove the server completely,
                                  * remove it from the cache so we will not get
                                  * it again. It will be removed when the last
                                  * file/dir is closed.
                                  */
-				context->callbacks.remove_cached_srv_fn(context,
-                                                                        srv);
+				(context->callbacks.remove_cached_srv_fn)(context,
+                                                                          srv);
 			}
 			
 			/*
@@ -706,14 +684,14 @@ smbc_server(SMBCCTX *context,
                 if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
                         if (context->internal->_auth_fn_with_context != NULL) {
-                                context->internal->_auth_fn_with_context(
+                                (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
                                         password, sizeof(fstring));
                         } else {
-                                context->callbacks.auth_fn(
+                                (context->callbacks.auth_fn)(
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
@@ -726,8 +704,8 @@ smbc_server(SMBCCTX *context,
                                 errno = smbc_errno(context, srv->cli);
                                 cli_shutdown(srv->cli);
 				srv->cli = NULL;
-                                context->callbacks.remove_cached_srv_fn(context,
-                                                                        srv);
+                                (context->callbacks.remove_cached_srv_fn)(context,
+                                                                          srv);
                                 srv = NULL;
                         }
 
@@ -904,7 +882,9 @@ smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
+	if ((context->callbacks.add_cached_srv_fn)(context, srv,
+                                                   server, share,
+                                                   workgroup, username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -963,14 +943,14 @@ smbc_attr_server(SMBCCTX *context,
                 if (*password == '\0') {
                         /* ... then retrieve it now. */
                         if (context->internal->_auth_fn_with_context != NULL) {
-                                context->internal->_auth_fn_with_context(
+                                (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
                                         password, sizeof(fstring));
                         } else {
-                                context->callbacks.auth_fn(
+                                (context->callbacks.auth_fn)(
                                         server, share,
                                         workgroup, sizeof(fstring),
                                         username, sizeof(fstring),
@@ -1042,11 +1022,11 @@ smbc_attr_server(SMBCCTX *context,
                 /* now add it to the cache (internal or external) */
 
                 errno = 0;      /* let cache function set errno if it likes */
-                if (context->callbacks.add_cached_srv_fn(context, ipc_srv,
-                                                         server,
-                                                         "*IPC$",
-                                                         workgroup,
-                                                         username)) {
+                if ((context->callbacks.add_cached_srv_fn)(context, ipc_srv,
+                                                           server,
+                                                           "*IPC$",
+                                                           workgroup,
+                                                           username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
                         if (errno == 0) {
                                 errno = ENOMEM;
@@ -1209,7 +1189,7 @@ smbc_open_ctx(SMBCCTX *context,
 		int eno = 0;
 
 		eno = smbc_errno(context, srv->cli);
-		file = context->opendir(context, fname);
+		file = (context->opendir)(context, fname);
 		if (!file) errno = eno;
 		return file;
 
@@ -1448,7 +1428,7 @@ smbc_close_ctx(SMBCCTX *context,
 	/* IS a dir ... */
 	if (!file->file) {
 		
-		return context->closedir(context, file);
+		return (context->closedir)(context, file);
 
 	}
 
@@ -1485,7 +1465,7 @@ smbc_close_ctx(SMBCCTX *context,
 		DLIST_REMOVE(context->internal->_files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
-		context->callbacks.remove_unused_server_fn(context, srv);
+		(context->callbacks.remove_unused_server_fn)(context, srv);
 
 		return -1;
 
@@ -2198,7 +2178,7 @@ smbc_fstat_ctx(SMBCCTX *context,
 
 	if (!file->file) {
 
-		return context->fstatdir(context, file, st);
+		return (context->fstatdir)(context, file, st);
 
 	}
 
@@ -2492,15 +2472,16 @@ net_share_enum_rpc(struct cli_state *cli,
                    void *state)
 {
         int i;
-	NTSTATUS result;
-	uint32 enum_hnd;
+	WERROR result;
+	ENUM_HND enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
-	struct srvsvc_NetShareCtr1 ctr1;
-	union srvsvc_NetShareCtr ctr;
+        uint32 type;
+	SRV_SHARE_INFO_CTR ctr;
+	fstring name = "";
+        fstring comment = "";
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
-	uint32 numentries;
         NTSTATUS nt_status;
 
         /* Open the server service pipe */
@@ -2518,28 +2499,37 @@ net_share_enum_rpc(struct cli_state *cli,
                 return -1; 
         }
 
-	ZERO_STRUCT(ctr1);
-	ctr.ctr1 = &ctr1;
-
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	enum_hnd = 0;
-	result = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
-					    &info_level, &ctr, preferred_len,
-					    &numentries, &enum_hnd);
+	init_enum_hnd(&enum_hnd, 0);
+	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+                                              mem_ctx,
+                                              info_level,
+                                              &ctr,
+                                              preferred_len,
+                                              &enum_hnd);
 
         /* Was it successful? */
-	if (!NT_STATUS_IS_OK(result) || numentries == 0) {
+	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
 
         /* For each returned entry... */
-        for (i = 0; i < numentries; i++) {
+        for (i = 0; i < ctr.num_entries; i++) {
+
+                /* pull out the share name */
+                rpcstr_pull_unistr2_fstring(
+                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+
+                /* pull out the share's comment */
+                rpcstr_pull_unistr2_fstring(
+                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+
+                /* Get the type value */
+                type = ctr.share.info1[i].info_1.type;
 
                 /* Add this share to the list */
-                (*fn)(ctr.ctr1->array[i].name, 
-					  ctr.ctr1->array[i].type, 
-					  ctr.ctr1->array[i].comment, state);
+                (*fn)(name, type, comment, state);
         }
 
 done:
@@ -2550,7 +2540,7 @@ done:
         TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
-        return NT_STATUS_IS_OK(result) ? 0 : -1;
+        return W_ERROR_IS_OK(result) ? 0 : -1;
 }
 
 
@@ -2957,20 +2947,22 @@ smbc_opendir_ctx(SMBCCTX *context,
                                  */
                                 cb = &context->callbacks;
                                 if (cli_is_error(targetcli) &&
-                                    cb->check_server_fn(context, srv)) {
+                                    (cb->check_server_fn)(context, srv)) {
 
-                                    /* ... then remove it. */
-                                    if (cb->remove_unused_server_fn(context,
-                                                                    srv)) { 
-                                        /*
-                                         * We could not remove the server
-                                         * completely, remove it from the
-                                         * cache so we will not get it
-                                         * again. It will be removed when the
-                                         * last file/dir is closed.
-                                         */
-                                        cb->remove_cached_srv_fn(context, srv);
-                                    }
+                                        /* ... then remove it. */
+                                        if ((cb->remove_unused_server_fn)(context,
+                                                                          srv)) { 
+                                                /*
+                                                 * We could not remove the
+                                                 * server completely, remove
+                                                 * it from the cache so we
+                                                 * will not get it again. It
+                                                 * will be removed when the
+                                                 * last file/dir is closed.
+                                                 */
+                                                (cb->remove_cached_srv_fn)(context,
+                                                                           srv);
+                                        }
                                 }
 
                                 errno = saved_errno;
@@ -3435,8 +3427,6 @@ static off_t
 smbc_telldir_ctx(SMBCCTX *context,
                  SMBCFILE *dir)
 {
-	off_t ret_val; /* Squash warnings about cast */
-
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
@@ -3459,12 +3449,16 @@ smbc_telldir_ctx(SMBCCTX *context,
 
 	}
 
+        /* See if we're already at the end. */
+        if (dir->dir_next == NULL) {
+                /* We are. */
+                return -1;
+        }
+
 	/*
 	 * We return the pointer here as the offset
 	 */
-	ret_val = (off_t)(long)dir->dir_next;
-	return ret_val;
-
+        return (off_t)(long)dir->dir_next->dirent;
 }
 
 /*
@@ -3534,6 +3528,11 @@ smbc_lseekdir_ctx(SMBCCTX *context,
 		return 0;
 
 	}
+
+        if (offset == -1) {     /* Seek to the end of the list */
+                dir->dir_next = NULL;
+                return 0;
+        }
 
 	/* Now, run down the list and make sure that the entry is OK       */
 	/* This may need to be changed if we change the format of the list */
@@ -3731,32 +3730,94 @@ smbc_utimes_ctx(SMBCCTX *context,
 }
 
 
-/* The MSDN is contradictory over the ordering of ACE entries in an ACL.
-   However NT4 gives a "The information may have been modified by a
-   computer running Windows NT 5.0" if denied ACEs do not appear before
-   allowed ACEs. */
+/*
+ * Sort ACEs according to the documentation at
+ * http://support.microsoft.com/kb/269175, at least as far as it defines the
+ * order.
+ */
 
 static int
 ace_compare(SEC_ACE *ace1,
             SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) 
+        BOOL b1;
+        BOOL b2;
+
+        /* If the ACEs are equal, we have nothing more to do. */
+        if (sec_ace_equal(ace1, ace2)) {
 		return 0;
+        }
 
-	if (ace1->type != ace2->type) 
+        /* Inherited follow non-inherited */
+        b1 = ((ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) != 0);
+        b2 = ((ace2->flags & SEC_ACE_FLAG_INHERITED_ACE) != 0);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * What shall we do with AUDITs and ALARMs?  It's undefined.  We'll
+         * sort them after DENY and ALLOW.
+         */
+        b1 = (ace1->type != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_DENIED &&
+              ace1->type != SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        b2 = (ace2->type != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_DENIED &&
+              ace2->type != SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /* Allowed ACEs follow denied ACEs */
+        b1 = (ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED ||
+              ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT);
+        b2 = (ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED ||
+              ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * ACEs applying to an entity's object follow those applying to the
+         * entity itself
+         */
+        b1 = (ace1->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+              ace1->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        b2 = (ace2->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+              ace2->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT);
+        if (b1 != b2) {
+                return (b1 ? 1 : -1);
+        }
+
+        /*
+         * If we get this far, the ACEs are similar as far as the
+         * characteristics we typically care about (those defined by the
+         * referenced MS document).  We'll now sort by characteristics that
+         * just seems reasonable.
+         */
+        
+	if (ace1->type != ace2->type) {
 		return ace2->type - ace1->type;
+        }
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+	if (sid_compare(&ace1->trustee, &ace2->trustee)) {
 		return sid_compare(&ace1->trustee, &ace2->trustee);
+        }
 
-	if (ace1->flags != ace2->flags) 
+	if (ace1->flags != ace2->flags) {
 		return ace1->flags - ace2->flags;
+        }
 
-	if (ace1->access_mask != ace2->access_mask) 
+	if (ace1->access_mask != ace2->access_mask) {
 		return ace1->access_mask - ace2->access_mask;
+        }
 
-	if (ace1->size != ace2->size) 
+	if (ace1->size != ace2->size) {
 		return ace1->size - ace2->size;
+        }
 
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
 }
@@ -3849,7 +3910,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
         }
 
 	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
-						  pol, 1, &str, NULL, 1, &sids, 
+						  pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;
@@ -4024,7 +4085,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	fstring tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL;
+	DOM_SID *group_sid=NULL;
         DOM_SID *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
@@ -4069,15 +4130,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4085,15 +4146,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4131,10 +4192,10 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	}
 
 	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
-			    owner_sid, grp_sid, NULL, dacl, &sd_size);
+			    owner_sid, group_sid, NULL, dacl, &sd_size);
 
   done:
-	SAFE_FREE(grp_sid);
+	SAFE_FREE(group_sid);
 	SAFE_FREE(owner_sid);
 
 	return ret;
@@ -4527,6 +4588,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_owner) {
@@ -4574,6 +4636,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_group) {
@@ -4619,6 +4682,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_nt_acl) {
@@ -4709,6 +4773,7 @@ cacl_get(SMBCCTX *context,
                                 buf += n;
                                 n_used += n;
                                 bufsize -= n;
+                                n = 0;
                         }
                 }
 
@@ -4783,6 +4848,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_size) {
@@ -4827,6 +4893,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_create_time &&
@@ -4869,6 +4936,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_access_time) {
@@ -4910,6 +4978,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_write_time) {
@@ -4951,6 +5020,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_change_time) {
@@ -4992,6 +5062,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 if (! exclude_dos_inode) {
@@ -5036,6 +5107,7 @@ cacl_get(SMBCCTX *context,
                         buf += n;
                         n_used += n;
                         bufsize -= n;
+                        n = 0;
                 }
 
                 /* Restore name pointer to its original value */
@@ -5069,7 +5141,7 @@ cacl_set(TALLOC_CTX *ctx,
 	SEC_DESC *sd = NULL, *old;
         SEC_ACL *dacl = NULL;
 	DOM_SID *owner_sid = NULL; 
-	DOM_SID *grp_sid = NULL;
+	DOM_SID *group_sid = NULL;
 	uint32 i, j;
 	size_t sd_size;
 	int ret = 0;
@@ -5130,9 +5202,6 @@ cacl_set(TALLOC_CTX *ctx,
 	switch (mode) {
 	case SMBC_XATTR_MODE_REMOVE_ALL:
                 old->dacl->num_aces = 0;
-                SAFE_FREE(old->dacl->aces);
-                SAFE_FREE(old->dacl);
-                old->dacl = NULL;
                 dacl = old->dacl;
                 break;
 
@@ -5149,11 +5218,6 @@ cacl_set(TALLOC_CTX *ctx,
                                                         old->dacl->aces[k+1];
 					}
 					old->dacl->num_aces--;
-					if (old->dacl->num_aces == 0) {
-						SAFE_FREE(old->dacl->aces);
-						SAFE_FREE(old->dacl);
-						old->dacl = NULL;
-					}
 					found = True;
                                         dacl = old->dacl;
 					break;
@@ -5202,7 +5266,7 @@ cacl_set(TALLOC_CTX *ctx,
 	case SMBC_XATTR_MODE_SET:
  		old = sd;
                 owner_sid = old->owner_sid;
-                grp_sid = old->group_sid;
+                group_sid = old->group_sid;
                 dacl = old->dacl;
 		break;
 
@@ -5211,7 +5275,7 @@ cacl_set(TALLOC_CTX *ctx,
                 break;
 
         case SMBC_XATTR_MODE_CHGRP:
-                grp_sid = sd->group_sid;
+                group_sid = sd->group_sid;
                 break;
 	}
 
@@ -5220,7 +5284,7 @@ cacl_set(TALLOC_CTX *ctx,
 
 	/* Create new security descriptor and set it */
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE, 
-			   owner_sid, grp_sid, NULL, dacl, &sd_size);
+			   owner_sid, group_sid, NULL, dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename,
                              WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);
@@ -5920,7 +5984,7 @@ smbc_open_print_job_ctx(SMBCCTX *context,
 
         /* What if the path is empty, or the file exists? */
 
-        return context->open(context, fname, O_WRONLY, 666);
+        return (context->open)(context, fname, O_WRONLY, 666);
 
 }
 
@@ -5961,7 +6025,7 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         /* Try to open the file for reading ... */
 
-        if ((long)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
+        if ((long)(fid1 = (c_file->open)(c_file, fname, O_RDONLY, 0666)) < 0) {
                 
                 DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
                 return -1;  /* smbc_open sets errno */
@@ -5970,24 +6034,24 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         /* Now, try to open the printer file for writing */
 
-        if ((long)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
+        if ((long)(fid2 = (c_print->open_print_job)(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
-                c_file->close_fn(c_file, fid1);
+                (c_file->close_fn)(c_file, fid1);
                 errno = saverr;
                 return -1;
 
         }
 
-        while ((bytes = c_file->read(c_file, fid1, buf, sizeof(buf))) > 0) {
+        while ((bytes = (c_file->read)(c_file, fid1, buf, sizeof(buf))) > 0) {
 
                 tot_bytes += bytes;
 
-                if ((c_print->write(c_print, fid2, buf, bytes)) < 0) {
+                if (((c_print->write)(c_print, fid2, buf, bytes)) < 0) {
 
                         saverr = errno;
-                        c_file->close_fn(c_file, fid1);
-                        c_print->close_fn(c_print, fid2);
+                        (c_file->close_fn)(c_file, fid1);
+                        (c_print->close_fn)(c_print, fid2);
                         errno = saverr;
 
                 }
@@ -5996,8 +6060,8 @@ smbc_print_file_ctx(SMBCCTX *c_file,
 
         saverr = errno;
 
-        c_file->close_fn(c_file, fid1);  /* We have to close these anyway */
-        c_print->close_fn(c_print, fid2);
+        (c_file->close_fn)(c_file, fid1);  /* We have to close these anyway */
+        (c_print->close_fn)(c_print, fid2);
 
         if (bytes < 0) {
 
@@ -6247,7 +6311,7 @@ smbc_free_context(SMBCCTX *context,
                 
                 f = context->internal->_files;
                 while (f) {
-                        context->close_fn(context, f);
+                        (context->close_fn)(context, f);
                         f = f->next;
                 }
                 context->internal->_files = NULL;
@@ -6263,8 +6327,8 @@ smbc_free_context(SMBCCTX *context,
                                 DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
                                           s, s->cli->fd));
                                 cli_shutdown(s->cli);
-                                context->callbacks.remove_cached_srv_fn(context,
-                                                                        s);
+                                (context->callbacks.remove_cached_srv_fn)(context,
+                                                                          s);
                                 next = s->next;
                                 DLIST_REMOVE(context->internal->_servers, s);
                                 SAFE_FREE(s);
@@ -6275,7 +6339,7 @@ smbc_free_context(SMBCCTX *context,
         }
         else {
                 /* This is the polite way */    
-                if (context->callbacks.purge_cached_fn(context)) {
+                if ((context->callbacks.purge_cached_fn)(context)) {
                         DEBUG(1, ("Could not purge all servers, "
                                   "free_context failed.\n"));
                         errno = EBUSY;

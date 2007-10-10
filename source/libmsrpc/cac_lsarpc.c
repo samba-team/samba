@@ -139,7 +139,7 @@ int cac_LsaClosePolicy( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_lsa_Close( pipe_hnd, mem_ctx, pol );
+	hnd->status = rpccli_lsa_close( pipe_hnd, mem_ctx, pol );
 
 	TALLOC_FREE( pol );
 
@@ -337,7 +337,7 @@ int cac_LsaGetSidsFromNames( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol,
 					 num_names,
 					 ( const char ** ) op->in.names, NULL,
-					 1, &sids, &types );
+					 &sids, &types );
 
 	if ( NT_STATUS_IS_OK( hnd->status ) ) {
 		/*this is the easy part, just make the out.sids array */
@@ -662,7 +662,7 @@ int cac_LsaEnumAccountRights( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;
@@ -928,7 +928,7 @@ int cac_LsaOpenAccount( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;
@@ -998,7 +998,7 @@ int cac_LsaAddPrivileges( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;
@@ -1060,7 +1060,7 @@ int cac_LsaRemovePrivileges( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;
@@ -1122,7 +1122,7 @@ int cac_LsaClearPrivileges( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;
@@ -1181,7 +1181,7 @@ int cac_LsaSetPrivileges( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 						 op->in.pol, 1,
 						 ( const char ** ) &( op->in.
 								      name ),
-						 NULL, 1, &user_sid, &type );
+						 NULL, &user_sid, &type );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			return CAC_FAILURE;

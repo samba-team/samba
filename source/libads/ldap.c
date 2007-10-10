@@ -570,11 +570,11 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 {
 	int rc, i, version;
 	char *utf8_expr, *utf8_path, **search_attrs;
-	LDAPControl PagedResults, NoReferrals, ExternalCtrl, *controls[4], **rcontrols;
+	LDAPControl PagedResults, NoReferrals, ExtendedDn, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
-	BerElement *ext_be = NULL;
-	struct berval *ext_bv= NULL;
+	BerElement *extdn_be = NULL;
+	struct berval *extdn_bv= NULL;
 
 	TALLOC_CTX *ctx;
 	ads_control *external_control = (ads_control *) args;
@@ -604,6 +604,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 		}
 	}
 		
+		
 	/* Paged results only available on ldap v3 or later */
 	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (version < LDAP_VERSION3) {
@@ -630,42 +631,40 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
 
-	if (external_control && 
-	    (strequal(external_control->control, ADS_EXTENDED_DN_OID) || 
-	     strequal(external_control->control, ADS_SD_FLAGS_OID))) {
+	if (external_control && strequal(external_control->control, ADS_EXTENDED_DN_OID)) {
 
-		ExternalCtrl.ldctl_oid = CONST_DISCARD(char *, external_control->control);
-		ExternalCtrl.ldctl_iscritical = (char) external_control->critical;
+		ExtendedDn.ldctl_oid = CONST_DISCARD(char *, external_control->control);
+		ExtendedDn.ldctl_iscritical = (char) external_control->critical;
 
 		/* win2k does not accept a ldctl_value beeing passed in */
 
 		if (external_control->val != 0) {
 
-			if ((ext_be = ber_alloc_t(LBER_USE_DER)) == NULL ) {
+			if ((extdn_be = ber_alloc_t(LBER_USE_DER)) == NULL ) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
 
-			if ((ber_printf(ext_be, "{i}", (ber_int_t) external_control->val)) == -1) {
+			if ((ber_printf(extdn_be, "{i}", (ber_int_t) external_control->val)) == -1) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
-			if ((ber_flatten(ext_be, &ext_bv)) == -1) {
+			if ((ber_flatten(extdn_be, &extdn_bv)) == -1) {
 				rc = LDAP_NO_MEMORY;
 				goto done;
 			}
 
-			ExternalCtrl.ldctl_value.bv_len = ext_bv->bv_len;
-			ExternalCtrl.ldctl_value.bv_val = ext_bv->bv_val;
+			ExtendedDn.ldctl_value.bv_len = extdn_bv->bv_len;
+			ExtendedDn.ldctl_value.bv_val = extdn_bv->bv_val;
 
 		} else {
-			ExternalCtrl.ldctl_value.bv_len = 0;
-			ExternalCtrl.ldctl_value.bv_val = NULL;
+			ExtendedDn.ldctl_value.bv_len = 0;
+			ExtendedDn.ldctl_value.bv_val = NULL;
 		}
 
 		controls[0] = &NoReferrals;
 		controls[1] = &PagedResults;
-		controls[2] = &ExternalCtrl;
+		controls[2] = &ExtendedDn;
 		controls[3] = NULL;
 
 	} else {
@@ -726,12 +725,12 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 done:
 	talloc_destroy(ctx);
 
-	if (ext_be) {
-		ber_free(ext_be, 1);
+	if (extdn_be) {
+		ber_free(extdn_be, 1);
 	}
 
-	if (ext_bv) {
-		ber_bvfree(ext_bv);
+	if (extdn_bv) {
+		ber_bvfree(extdn_bv);
 	}
  
 	/* if/when we decide to utf8-encode attrs, take out this next line */
@@ -810,21 +809,6 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 {
 	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, NULL, res);
 }
-
- ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
-				       int scope, const char *expr,
-				       const char **attrs, uint32 sd_flags, 
-				       LDAPMessage **res)
-{
-	ads_control args;
-
-	args.control = ADS_SD_FLAGS_OID;
-	args.val = sd_flags;
-	args.critical = True;
-
-	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, &args, res);
-}
-
 
 /**
  * Run a function on all results for a search.  Uses ads_do_paged_search() and
@@ -1702,77 +1686,6 @@ done:
 	talloc_destroy(ctx);
 	
 	return ret;
-}
-
-/**
- * move a machine account to another OU on the ADS server
- * @param ads - An intialized ADS_STRUCT
- * @param machine_name - the NetBIOS machine name of this account.
- * @param org_unit - The LDAP path in which to place this account
- * @param moved - whether we moved the machine account (optional)
- * @return 0 upon success, or non-zero otherwise
-**/
-
-ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
-                                 const char *org_unit, BOOL *moved)
-{
-	ADS_STATUS rc;
-	int ldap_status;
-	LDAPMessage *res = NULL;
-	char *filter = NULL;
-	char *computer_dn = NULL;
-	char *parent_dn;
-	char *computer_rdn = NULL;
-	BOOL need_move = False;
-
-	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
-		rc = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-
-	/* Find pre-existing machine */
-	rc = ads_search(ads, &res, filter, NULL);
-	if (!ADS_ERR_OK(rc)) {
-		goto done;
-	}
-
-	computer_dn = ads_get_dn(ads, res);
-	if (!computer_dn) {
-		rc = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-
-	parent_dn = ads_parent_dn(computer_dn);
-	if (strequal(parent_dn, org_unit)) {
-		goto done;
-	}
-
-	need_move = True;
-
-	if (asprintf(&computer_rdn, "CN=%s", machine_name) == -1) {
-		rc = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-
-	ldap_status = ldap_rename_s(ads->ld, computer_dn, computer_rdn, 
-				    org_unit, 1, NULL, NULL);
-	rc = ADS_ERROR(ldap_status);
-
-done:
-	ads_msgfree(ads, res);
-	SAFE_FREE(filter);
-	SAFE_FREE(computer_dn);
-	SAFE_FREE(computer_rdn);
-
-	if (!ADS_ERR_OK(rc)) {
-		need_move = False;
-	}
-
-	if (moved) {
-		*moved = need_move;
-	}
-
-	return rc;
 }
 
 /*
@@ -2705,7 +2618,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 	if (*site_dn == NULL) {
 		ads_msgfree(ads, res);
 		ads_memfree(ads, dn);
-		ADS_ERROR(LDAP_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	ads_memfree(ads, dn);
@@ -2771,26 +2684,21 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 /**
  * pull a DOM_SID from an extended dn string
  * @param mem_ctx TALLOC_CTX 
- * @param extended_dn string
  * @param flags string type of extended_dn
  * @param sid pointer to a DOM_SID
  * @return boolean inidicating success
  **/
 BOOL ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				  const char *extended_dn, 
+				  const char *dn, 
 				  enum ads_extended_dn_flags flags, 
 				  DOM_SID *sid)
 {
-	char *p, *q, *dn;
+	char *p, *q;
 
-	if (!extended_dn) {
+	if (!dn) {
 		return False;
 	}
 
-	/* otherwise extended_dn gets stripped off */
-	if ((dn = talloc_strdup(mem_ctx, extended_dn)) == NULL) {
-		return False;
-	}
 	/* 
 	 * ADS_EXTENDED_DN_HEX_STRING:
 	 * <GUID=238e1963cb390f4bb032ba0105525a29>;<SID=010500000000000515000000bb68c8fd6b61b427572eb04556040000>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
@@ -3168,168 +3076,4 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return status;
 }
 
-/**
- * pull all token-sids from an LDAP dn
- * @param ads connection to ads server
- * @param mem_ctx TALLOC_CTX for allocating sid array
- * @param dn of LDAP object
- * @param user_sid pointer to DOM_SID (objectSid)
- * @param primary_group_sid pointer to DOM_SID (self composed)
- * @param sids pointer to sid array to allocate
- * @param num_sids counter of SIDs pulled
- * @return status of token query
- **/
- ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
-			      TALLOC_CTX *mem_ctx,
-			      const char *dn,
-			      DOM_SID *user_sid,
-			      DOM_SID *primary_group_sid,
-			      DOM_SID **sids,
-			      size_t *num_sids)
-{
-	ADS_STATUS status;
-	LDAPMessage *res = NULL;
-	int count = 0;
-	size_t tmp_num_sids;
-	DOM_SID *tmp_sids;
-	DOM_SID tmp_user_sid;
-	DOM_SID tmp_primary_group_sid;
-	uint32 pgid;
-	const char *attrs[] = {
-		"objectSid",
-		"tokenGroups",
-		"primaryGroupID",
-		NULL
-	};
-
-	status = ads_search_retry_dn(ads, &res, dn, attrs);
-	if (!ADS_ERR_OK(status)) {
-		return status;
-	}
-
-	count = ads_count_replies(ads, res);
-	if (count != 1) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR_LDAP(LDAP_NO_SUCH_OBJECT);
-	}
-
-	if (!ads_pull_sid(ads, res, "objectSid", &tmp_user_sid)) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-	}
-
-	if (!ads_pull_uint32(ads, res, "primaryGroupID", &pgid)) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-	}
-
-	{
-		/* hack to compose the primary group sid without knowing the
-		 * domsid */
-
-		DOM_SID domsid;
-		uint32 dummy_rid;
-
-		sid_copy(&domsid, &tmp_user_sid);
-
-		if (!sid_split_rid(&domsid, &dummy_rid)) {
-			ads_msgfree(ads, res);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-		}
-
-		if (!sid_compose(&tmp_primary_group_sid, &domsid, pgid)) {
-			ads_msgfree(ads, res);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-		}
-	}
-
-	tmp_num_sids = ads_pull_sids(ads, mem_ctx, res, "tokenGroups", &tmp_sids);
-
-	if (tmp_num_sids == 0 || !tmp_sids) {
-		ads_msgfree(ads, res);
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-	}
-
-	if (num_sids) {
-		*num_sids = tmp_num_sids;
-	}
-
-	if (sids) {
-		*sids = tmp_sids;
-	}
-
-	if (user_sid) {
-		*user_sid = tmp_user_sid;
-	}
-
-	if (primary_group_sid) {
-		*primary_group_sid = tmp_primary_group_sid;
-	}
-
-	DEBUG(10,("ads_get_tokensids: returned %d sids\n", (int)tmp_num_sids + 2));
-
-	ads_msgfree(ads, res);
-	return ADS_ERROR_LDAP(LDAP_SUCCESS);
-}
-
-ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
-			       TALLOC_CTX *mem_ctx,
-			       const char *samaccountname,
-			       uint32 *uac_ret,
-			       const char **dn_ret)
-{
-	ADS_STATUS status;
-	const char *attrs[] = { "userAccountControl", NULL };
-	const char *filter;
-	LDAPMessage *res = NULL;
-	char *dn = NULL;
-	uint32 uac = 0;
-
-	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))",
-		samaccountname);
-	if (filter == NULL) {
-		goto out;
-	}
-
-	status = ads_do_search_all(ads, ads->config.bind_path,
-				   LDAP_SCOPE_SUBTREE,
-				   filter, attrs, &res);
-	
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	if (ads_count_replies(ads, res) != 1) {
-		printf("no result\n");
-		goto out;
-	}
-
-	dn = ads_get_dn(ads, res);
-	if (dn == NULL) {
-		status = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-
-	if (!ads_pull_uint32(ads, res, "userAccountControl", &uac)) {
-		status = ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
-		goto out;
-	}
-
-	if (uac_ret) {
-		*uac_ret = uac;
-	}
-
-	if (dn_ret) {
-		*dn_ret = talloc_strdup(mem_ctx, dn);
-		if (!*dn_ret) {
-			status = ADS_ERROR(LDAP_NO_MEMORY);
-			goto out;
-		}
-	}
- out:
-	ads_memfree(ads, dn);
-	ads_msgfree(ads, res);
-
-	return status;
-}
 #endif

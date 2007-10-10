@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison  1998-2005
    Copyright (C) Timur Bakeyev        2005
+   Copyright (C) Bjoern Jacke    2006-2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -642,25 +643,6 @@ int sys_chown(const char *fname,uid_t uid,gid_t gid)
 }
 
 /*******************************************************************
- Wrapper for lchown.
-********************************************************************/
-
-int sys_lchown(const char *fname,uid_t uid,gid_t gid)
-{
-#ifndef HAVE_LCHOWN
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no lchown!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(lchown(fname,uid,gid));
-#endif
-}
-
-/*******************************************************************
 os/2 also doesn't have chroot
 ********************************************************************/
 int sys_chroot(const char *dname)
@@ -889,13 +871,15 @@ int groups_max(void)
 }
 
 /**************************************************************************
- Wrap setgroups and getgroups for systems that declare getgroups() as
- returning an array of gid_t, but actuall return an array of int.
+ Wrapper for getgroups. Deals with broken (int) case.
 ****************************************************************************/
 
-#if defined(HAVE_BROKEN_GETGROUPS)
-static int sys_broken_getgroups(int setlen, gid_t *gidset)
+int sys_getgroups(int setlen, gid_t *gidset)
 {
+#if !defined(HAVE_BROKEN_GETGROUPS)
+	return getgroups(setlen, gidset);
+#else
+
 	GID_T gid;
 	GID_T *group_list;
 	int i, ngroups;
@@ -917,7 +901,7 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 	if (setlen == 0)
 		setlen = groups_max();
 
-	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
+	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
 		DEBUG(0,("sys_getgroups: Malloc fail.\n"));
 		return -1;
 	}
@@ -934,10 +918,26 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 
 	SAFE_FREE(group_list);
 	return ngroups;
+#endif /* HAVE_BROKEN_GETGROUPS */
 }
 
-static int sys_broken_setgroups(int setlen, gid_t *gidset)
+
+/**************************************************************************
+ Wrapper for setgroups. Deals with broken (int) case. Automatically used
+ if we have broken getgroups.
+****************************************************************************/
+
+int sys_setgroups(int setlen, gid_t *gidset)
 {
+#if !defined(HAVE_SETGROUPS)
+	errno = ENOSYS;
+	return -1;
+#endif /* HAVE_SETGROUPS */
+
+#if !defined(HAVE_BROKEN_GETGROUPS)
+	return setgroups(setlen, gidset);
+#else
+
 	GID_T *group_list;
 	int i ; 
 
@@ -954,7 +954,7 @@ static int sys_broken_setgroups(int setlen, gid_t *gidset)
 	 * GID_T array of size setlen.
 	 */
 
-	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
+	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
 		DEBUG(0,("sys_setgroups: Malloc fail.\n"));
 		return -1;    
 	}
@@ -971,105 +971,7 @@ static int sys_broken_setgroups(int setlen, gid_t *gidset)
  
 	SAFE_FREE(group_list);
 	return 0 ;
-}
-
 #endif /* HAVE_BROKEN_GETGROUPS */
-
-/* This is a list of systems that require the first GID passed to setgroups(2)
- * to be the effective GID. If your system is one of these, add it here.
- */
-#if defined (FREEBSD) || defined (DARWINOS)
-#define USE_BSD_SETGROUPS
-#endif
-
-#if defined(USE_BSD_SETGROUPS)
-/* Depending on the particular BSD implementation, the first GID that is
- * passed to setgroups(2) will either be ignored or will set the credential's
- * effective GID. In either case, the right thing to do is to guarantee that
- * gidset[0] is the effective GID.
- */
-static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
-{
-	gid_t *new_gidset = NULL;
-	int max;
-	int ret;
-
-	/* setgroups(2) will fail with EINVAL if we pass too many groups. */
-	max = groups_max();
-
-	/* No group list, just make sure we are setting the efective GID. */
-	if (setlen == 0) {
-		return setgroups(1, &primary_gid);
-	}
-
-	/* If the primary gid is not the first array element, grow the array
-	 * and insert it at the front.
-	 */
-	if (gidset[0] != primary_gid) {
-	        new_gidset = SMB_MALLOC_ARRAY(gid_t, setlen + 1);
-	        if (new_gidset == NULL) {
-			return -1;
-	        }
-
-		memcpy(new_gidset + 1, gidset, (setlen * sizeof(gid_t)));
-		new_gidset[0] = primary_gid;
-		setlen++;
-	}
-
-	if (setlen > max) {
-		DEBUG(3, ("forced to truncate group list from %d to %d\n",
-			setlen, max));
-		setlen = max;
-	}
-
-#if defined(HAVE_BROKEN_GETGROUPS)
-	ret = sys_broken_setgroups(setlen, new_gidset ? new_gidset : gidset);
-#else
-	ret = setgroups(setlen, new_gidset ? new_gidset : gidset);
-#endif
-
-	if (new_gidset) {
-		int errsav = errno;
-		SAFE_FREE(new_gidset);
-		errno = errsav;
-	}
-
-	return ret;
-}
-
-#endif /* USE_BSD_SETGROUPS */
-
-/**************************************************************************
- Wrapper for getgroups. Deals with broken (int) case.
-****************************************************************************/
-
-int sys_getgroups(int setlen, gid_t *gidset)
-{
-#if defined(HAVE_BROKEN_GETGROUPS)
-	return sys_broken_getgroups(setlen, gidset);
-#else
-	return getgroups(setlen, gidset);
-#endif
-}
-
-/**************************************************************************
- Wrapper for setgroups. Deals with broken (int) case and BSD case.
-****************************************************************************/
-
-int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset)
-{
-#if !defined(HAVE_SETGROUPS)
-	errno = ENOSYS;
-	return -1;
-#endif /* HAVE_SETGROUPS */
-
-#if defined(USE_BSD_SETGROUPS)
-	return sys_bsd_setgroups(primary_gid, setlen, gidset);
-#elif defined(HAVE_BROKEN_GETGROUPS)
-	return sys_broken_setgroups(setlen, gidset);
-#else
-	return setgroups(setlen, gidset);
-#endif
 }
 
 /**************************************************************************
@@ -1366,25 +1268,21 @@ SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
 #endif /* NOT CURRENTLY USED - JRA */
 
 /**************************************************************************
- Extract a command into an arg list.
+ Extract a command into an arg list. Uses a static pstring for storage.
+ Caller frees returned arg list (which contains pointers into the static pstring).
 ****************************************************************************/
 
-static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
+static char **extract_args(const char *command)
 {
-	char *trunc_cmd;
-	char *saveptr;
+	static pstring trunc_cmd;
 	char *ptr;
 	int argcl;
 	char **argl = NULL;
 	int i;
 
-	if (!(trunc_cmd = talloc_strdup(mem_ctx, command))) {
-		DEBUG(0, ("talloc failed\n"));
-		goto nomem;
-	}
+	pstrcpy(trunc_cmd, command);
 
-	if(!(ptr = strtok_r(trunc_cmd, " \t", &saveptr))) {
-		TALLOC_FREE(trunc_cmd);
+	if(!(ptr = strtok(trunc_cmd, " \t"))) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -1393,46 +1291,27 @@ static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 	 * Count the args.
 	 */
 
-	for( argcl = 1; ptr; ptr = strtok_r(NULL, " \t", &saveptr))
+	for( argcl = 1; ptr; ptr = strtok(NULL, " \t"))
 		argcl++;
 
-	TALLOC_FREE(trunc_cmd);
-
-	if (!(argl = TALLOC_ARRAY(mem_ctx, char *, argcl + 1))) {
-		goto nomem;
-	}
+	if((argl = (char **)SMB_MALLOC((argcl + 1) * sizeof(char *))) == NULL)
+		return NULL;
 
 	/*
 	 * Now do the extraction.
 	 */
 
-	if (!(trunc_cmd = talloc_strdup(mem_ctx, command))) {
-		goto nomem;
-	}
+	pstrcpy(trunc_cmd, command);
 
-	ptr = strtok_r(trunc_cmd, " \t", &saveptr);
+	ptr = strtok(trunc_cmd, " \t");
 	i = 0;
+	argl[i++] = ptr;
 
-	if (!(argl[i++] = talloc_strdup(argl, ptr))) {
-		goto nomem;
-	}
-
-	while((ptr = strtok_r(NULL, " \t", &saveptr)) != NULL) {
-
-		if (!(argl[i++] = talloc_strdup(argl, ptr))) {
-			goto nomem;
-		}
-	}
+	while((ptr = strtok(NULL, " \t")) != NULL)
+		argl[i++] = ptr;
 
 	argl[i++] = NULL;
 	return argl;
-
- nomem:
-	DEBUG(0, ("talloc failed\n"));
-	TALLOC_FREE(trunc_cmd);
-	TALLOC_FREE(argl);
-	errno = ENOMEM;
-	return NULL;
 }
 
 /**************************************************************************
@@ -1506,7 +1385,7 @@ int sys_popen(const char *command)
 	 * Extract the command and args into a NULL terminated array.
 	 */
 
-	if(!(argl = extract_args(NULL, command)))
+	if(!(argl = extract_args(command)))
 		goto err_exit;
 
 	entry->child_pid = sys_fork();
@@ -1548,7 +1427,7 @@ int sys_popen(const char *command)
 	 */
 
 	close (child_end);
-	TALLOC_FREE(argl);
+	SAFE_FREE(argl);
 
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
@@ -1683,6 +1562,17 @@ int sys_dup2(int oldfd, int newfd)
 	SAFE_FREE(msgbuf);
 }
 
+/******** Solaris EA helper function prototypes ********/
+#ifdef HAVE_ATTROPEN
+#define SOLARIS_ATTRMODE S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP
+static int solaris_write_xattr(int attrfd, const char *value, size_t size);
+static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size);
+static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size);
+static int solaris_unlinkat(int attrdirfd, const char *name);
+static int solaris_attropen(const char *path, const char *attrpath, int oflag, mode_t mode);
+static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
+#endif
+
 /**************************************************************************
  Wrappers for extented attribute calls. Based on the Linux package with
  support for IRIX and (Net|Free)BSD also. Expand as other systems have them.
@@ -1731,6 +1621,14 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
 
 	return retval ? retval : valuelength;
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrfd = solaris_attropen(path, name, O_RDONLY, 0);
+	if (attrfd >= 0) {
+		ret = solaris_read_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1774,6 +1672,14 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
 
 	return retval ? retval : valuelength;
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrfd = solaris_attropen(path, name, O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
+	if (attrfd >= 0) {
+		ret = solaris_read_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -1819,6 +1725,14 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	retval = attr_getf(filedes, attrname, (char *)value, &valuelength, flags);
 
 	return retval ? retval : valuelength;
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrfd = solaris_openat(filedes, name, O_RDONLY|O_XATTR, 0);
+	if (attrfd >= 0) {
+		ret = solaris_read_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2003,6 +1917,14 @@ ssize_t sys_listxattr (const char *path, char *list, size_t size)
 	return bsd_attr_list(0, arg, list, size);
 #elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
 	return irix_attr_list(path, 0, list, size, 0);
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrdirfd = solaris_attropen(path, ".", O_RDONLY, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_list_xattr(attrdirfd, list, size);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2024,6 +1946,14 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 	return bsd_attr_list(1, arg, list, size);
 #elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
 	return irix_attr_list(path, 0, list, size, ATTR_DONTFOLLOW);
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrdirfd = solaris_attropen(path, ".", O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_list_xattr(attrdirfd, list, size);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2047,6 +1977,14 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 	return bsd_attr_list(2, arg, list, size);
 #elif defined(HAVE_ATTR_LISTF)
 	return irix_attr_list(NULL, filedes, list, size, 0);
+#elif defined(HAVE_ATTROPEN)
+	ssize_t ret = -1;
+	int attrdirfd = solaris_openat(filedes, ".", O_RDONLY|O_XATTR, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_list_xattr(attrdirfd, list, size);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2078,6 +2016,14 @@ int sys_removexattr (const char *path, const char *name)
 	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
 
 	return attr_remove(path, attrname, flags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int attrdirfd = solaris_attropen(path, ".", O_RDONLY, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_unlinkat(attrdirfd, name);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2107,6 +2053,14 @@ int sys_lremovexattr (const char *path, const char *name)
 	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
 
 	return attr_remove(path, attrname, flags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int attrdirfd = solaris_attropen(path, ".", O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_unlinkat(attrdirfd, name);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2138,6 +2092,14 @@ int sys_fremovexattr (int filedes, const char *name)
 	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
 
 	return attr_removef(filedes, attrname, flags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int attrdirfd = solaris_openat(filedes, ".", O_RDONLY|O_XATTR, 0);
+	if (attrdirfd >= 0) {
+		ret = solaris_unlinkat(attrdirfd, name);
+		close(attrdirfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2196,6 +2158,17 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
 
 	return attr_set(path, attrname, (const char *)value, size, myflags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int myflags = O_RDWR;
+	if (flags & XATTR_CREATE) myflags |= O_EXCL;
+	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
+	int attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	if (attrfd >= 0) {
+		ret = solaris_write_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2248,6 +2221,17 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
 
 	return attr_set(path, attrname, (const char *)value, size, myflags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int myflags = O_RDWR | AT_SYMLINK_NOFOLLOW;
+	if (flags & XATTR_CREATE) myflags |= O_EXCL;
+	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
+	int attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	if (attrfd >= 0) {
+		ret = solaris_write_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
@@ -2301,11 +2285,146 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 	if (flags & XATTR_REPLACE) myflags |= ATTR_REPLACE;
 
 	return attr_setf(filedes, attrname, (const char *)value, size, myflags);
+#elif defined(HAVE_ATTROPEN)
+	int ret = -1;
+	int myflags = O_RDWR | O_XATTR;
+	if (flags & XATTR_CREATE) myflags |= O_EXCL;
+	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
+	int attrfd = solaris_openat(filedes, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	if (attrfd >= 0) {
+		ret = solaris_write_xattr(attrfd, value, size);
+		close(attrfd);
+	}
+	return ret;
 #else
 	errno = ENOSYS;
 	return -1;
 #endif
 }
+
+/**************************************************************************
+ helper functions for Solaris' EA support
+****************************************************************************/
+#ifdef HAVE_ATTROPEN
+static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size)
+{
+	struct stat sbuf;
+
+	if (fstat(attrfd, &sbuf) == -1) {
+		errno = ENOATTR;
+		return -1;
+	}
+
+	/* This is to return the current size of the named extended attribute */
+	if (size == 0) {
+		return sbuf.st_size;
+	}
+
+	/* check size and read xattr */
+	if (sbuf.st_size > size) {
+		errno = ERANGE;
+		return -1;
+	}
+
+	return read(attrfd, value, sbuf.st_size);
+}
+
+static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
+{
+	ssize_t len = 0;
+	int stop = 0;
+	DIR *dirp;
+	struct dirent *de;
+	int newfd = dup(attrdirfd);
+	/* CAUTION: The originating file descriptor should not be
+	            used again following the call to fdopendir().
+	            For that reason we dup() the file descriptor
+		    here to make things more clear. */
+	dirp = fdopendir(newfd);
+
+	while ((de = readdir(dirp))) {
+		size_t listlen = strlen(de->d_name);
+		if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
+			/* we don't want "." and ".." here: */
+			DEBUG(10,("skipped EA %s\n",de->d_name));
+			continue;
+		}
+
+		if (size == 0) {
+			/* return the current size of the list of extended attribute names*/
+			len += listlen + 1;
+		} else {
+			/* check size and copy entrieÑ + nul into list. */
+			if ((len + listlen + 1) > size) {
+				errno = ERANGE;
+				len = -1;
+				break;
+			} else {
+				safe_strcpy(list + len, de->d_name, listlen);
+				pstrcpy(list + len, de->d_name);
+				len += listlen;
+				list[len] = '\0';
+				++len;
+			}
+		}
+	}
+
+	if (closedir(dirp) == -1) {
+		DEBUG(0,("closedir dirp failed: %s\n",strerror(errno)));
+		return -1;
+	}
+	return len;
+}
+
+static int solaris_unlinkat(int attrdirfd, const char *name)
+{
+	if (unlinkat(attrdirfd, name, 0) == -1) {
+		if (errno == ENOENT) {
+			errno = ENOATTR;
+		}
+		return -1;
+	}
+	return 0;
+}
+
+static int solaris_attropen(const char *path, const char *attrpath, int oflag, mode_t mode)
+{
+	int filedes = attropen(path, attrpath, oflag, mode);
+	if (filedes == -1) {
+		DEBUG(10,("attropen FAILED: path: %s, name: %s, errno: %s\n",path,attrpath,strerror(errno)));
+		if (errno == EINVAL) {
+			errno = ENOTSUP;
+		} else {
+			errno = ENOATTR;
+		}
+	}
+	return filedes;
+}
+
+static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode)
+{
+	int filedes = openat(fildes, path, oflag, mode);
+	if (filedes == -1) {
+		DEBUG(10,("openat FAILED: fd: %s, path: %s, errno: %s\n",filedes,path,strerror(errno)));
+		if (errno == EINVAL) {
+			errno = ENOTSUP;
+		} else {
+			errno = ENOATTR;
+		}
+	}
+	return filedes;
+}
+
+static int solaris_write_xattr(int attrfd, const char *value, size_t size)
+{
+	if ((ftruncate(attrfd, 0) == 0) && (write(attrfd, value, size) == size)) {
+		return 0;
+	} else {
+		DEBUG(10,("solaris_write_xattr FAILED!\n"));
+		return -1;
+	}
+}
+#endif /*HAVE_ATTROPEN*/
 
 /****************************************************************************
  Return the major devicenumber for UNIX extensions.

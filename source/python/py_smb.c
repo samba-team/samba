@@ -48,7 +48,7 @@ static PyObject *py_smb_connect(PyObject *self, PyObject *args, PyObject *kw)
 
 	ZERO_STRUCT(ip);
 
-	if (!cli_connect(cli, server, &ip))
+	if (!NT_STATUS_IS_OK(cli_connect(cli, server, &ip)))
 		return NULL;
 
 	return new_cli_state_object(cli);

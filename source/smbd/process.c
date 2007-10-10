@@ -22,6 +22,7 @@
 #include "includes.h"
 
 uint16 global_smbpid;
+extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
@@ -48,16 +49,13 @@ SIG_ATOMIC_T got_sig_term = 0;
 extern BOOL global_machine_password_needs_changing;
 extern int max_send;
 
-/*
- * Initialize a struct smb_request from an inbuf
- */
+/****************************************************************************
+ Function to return the current request mid from Inbuffer.
+****************************************************************************/
 
-void init_smb_request(struct smb_request *req, const uint8 *inbuf)
+uint16 get_current_mid(void)
 {
-	req->flags2 = SVAL(inbuf, smb_flg2);
-	req->smbpid = SVAL(inbuf, smb_pid);
-	req->mid    = SVAL(inbuf, smb_mid);
-	req->vuid   = SVAL(inbuf, smb_uid);
+	return SVAL(InBuffer,smb_mid);
 }
 
 /****************************************************************************
@@ -68,8 +66,8 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
- Function to push a message onto the tail of a linked list of smb messages
- ready for processing.
+ Function to push a message onto the tail of a linked list of smb messages ready
+ for processing.
 ****************************************************************************/
 
 static BOOL push_queued_message(char *buf, int msg_len,
@@ -124,7 +122,7 @@ void remove_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
-			DEBUG(10,("remove_deferred_open_smb_message: "
+			DEBUG(10,("remove_sharing_violation_open_smb_message: "
 				  "deleting mid %u len %u\n",
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
@@ -147,11 +145,11 @@ void schedule_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
-		DEBUG(10, ("schedule_deferred_open_smb_message: [%d] "
-			   "msg_mid = %u\n", i++, (unsigned int)msg_mid ));
+		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
+			(unsigned int)msg_mid ));
 		if (mid == msg_mid) {
-			DEBUG(10, ("schedule_deferred_open_smb_message: "
-				   "scheduling mid %u\n", mid));
+			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
+				mid ));
 			pml->end_time.tv_sec = 0;
 			pml->end_time.tv_usec = 0;
 			DLIST_PROMOTE(deferred_open_queue, pml);
@@ -159,8 +157,8 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		}
 	}
 
-	DEBUG(10, ("schedule_deferred_open_smb_message: failed to find "
-		   "message mid %u\n", mid ));
+	DEBUG(10,("schedule_deferred_open_smb_message: failed to find message mid %u\n",
+		mid ));
 }
 
 /****************************************************************************
@@ -223,7 +221,6 @@ BOOL push_deferred_smb_message(uint16 mid,
 struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
-	char *name;
 	BOOL (*handler)(const struct timeval *now, void *private_data);
 	void *private_data;
 };
@@ -244,19 +241,17 @@ static void idle_event_handler(struct event_context *ctx,
 		return;
 	}
 
-	event->te = event_add_timed(ctx, event,
+	event->te = event_add_timed(smbd_event_context(), event,
 				    timeval_sum(now, &event->interval),
-				    event->name,
+				    "idle_event_handler",
 				    idle_event_handler, event);
 
 	/* We can't do much but fail here. */
 	SMB_ASSERT(event->te != NULL);
 }
 
-struct idle_event *event_add_idle(struct event_context *event_ctx,
-				  TALLOC_CTX *mem_ctx,
+struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 				  struct timeval interval,
-				  const char *name,
 				  BOOL (*handler)(const struct timeval *now,
 						  void *private_data),
 				  void *private_data)
@@ -274,15 +269,9 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 	result->handler = handler;
 	result->private_data = private_data;
 
-	if (!(result->name = talloc_asprintf(result, "idle_evt(%s)", name))) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	result->te = event_add_timed(event_ctx, result,
+	result->te = event_add_timed(smbd_event_context(), result,
 				     timeval_sum(&now, &interval),
-				     result->name,
+				     "idle_event_handler",
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("event_add_timed failed\n"));
@@ -304,7 +293,7 @@ static void async_processing(fd_set *pfds)
 
 	process_aio_queue();
 
-	process_kernel_oplocks(smbd_messaging_context(), pfds);
+	process_kernel_oplocks(pfds);
 
 	/* Do the aio check again after receive_local_message as it does a
 	   select and may have eaten our signal. */
@@ -383,7 +372,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * messages as we need to synchronously process any messages
 	 * we may have sent to ourselves from the previous SMB.
 	 */
-	message_dispatch(smbd_messaging_context());
+	message_dispatch();
 
 	/*
 	 * Check to see if we already have a message on the deferred open queue
@@ -577,7 +566,7 @@ void respond_to_all_remaining_local_messages(void)
 		return;
 	}
 
-	process_kernel_oplocks(smbd_messaging_context(), NULL);
+	process_kernel_oplocks(NULL);
 
 	return;
 }
@@ -1042,9 +1031,8 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
 	outsize += chain_size;
 
-	if(outsize > 4) {
-		smb_setlen(inbuf,outbuf,outsize - 4);
-	}
+	if(outsize > 4)
+		smb_setlen(outbuf,outsize - 4);
 	return(outsize);
 }
 
@@ -1132,7 +1120,7 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(const char *inbuf, char *outbuf)
 {
-	set_message(inbuf,outbuf,0,0,False);
+	set_message(outbuf,0,0,False);
 	
 	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 	SIVAL(outbuf,smb_rcls,0);
@@ -1214,15 +1202,16 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	/* work out the new size for the in buffer. */
 	new_size = size - (inbuf2 - inbuf);
 	if (new_size < 0) {
-		DEBUG(0,("chain_reply: chain packet size incorrect "
-			 "(orig size = %d, offset = %d)\n",
-			 size, (int)(inbuf2 - inbuf) ));
+		DEBUG(0,("chain_reply: chain packet size incorrect (orig size = %d, "
+			"offset = %d)\n",
+			size,
+			(inbuf2 - inbuf) ));
 		exit_server_cleanly("Bad chained packet");
 		return(-1);
 	}
 
 	/* And set it in the header. */
-	smb_setlen(inbuf, inbuf2, new_size);
+	smb_setlen(inbuf2, new_size);
 
 	/* create the out buffer */
 	construct_reply_common(inbuf2, outbuf2);
@@ -1262,7 +1251,7 @@ static int setup_select_timeout(void)
 {
 	int select_timeout;
 
-	select_timeout = SMBD_SELECT_TIMEOUT*1000;
+	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
 
 	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
@@ -1328,10 +1317,12 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int *select_timeout,
-			       time_t *last_timeout_processing_time)
+static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
+	static time_t last_keepalive_sent_time = 0;
+	static time_t last_idle_closed_check = 0;
 	time_t t;
+	BOOL allidle = True;
 
 	if (smb_read_error == READ_EOF) {
 		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
@@ -1351,11 +1342,55 @@ static BOOL timeout_processing(int *select_timeout,
 
 	*last_timeout_processing_time = t = time(NULL);
 
+	if(last_keepalive_sent_time == 0)
+		last_keepalive_sent_time = t;
+
+	if(last_idle_closed_check == 0)
+		last_idle_closed_check = t;
+
 	/* become root again if waiting */
 	change_to_root_user();
 
+	/* run all registered idle events */
+	smb_run_idle_events(t);
+
 	/* check if we need to reload services */
 	check_reload(t);
+
+	/* automatic timeout if all connections are closed */      
+	if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) {
+		DEBUG( 2, ( "Closing idle connection\n" ) );
+		return False;
+	} else {
+		last_idle_closed_check = t;
+	}
+
+	if (keepalive && (t - last_keepalive_sent_time)>keepalive) {
+		if (!send_keepalive(smbd_server_fd())) {
+			DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+			return False;
+		}
+
+		/* send a keepalive for a password server or the like.
+			This is attached to the auth_info created in the
+		negprot */
+		if (negprot_global_auth_context && negprot_global_auth_context->challenge_set_method 
+				&& negprot_global_auth_context->challenge_set_method->send_keepalive) {
+
+			negprot_global_auth_context->challenge_set_method->send_keepalive
+			(&negprot_global_auth_context->challenge_set_method->private_data);
+		}
+
+		last_keepalive_sent_time = t;
+	}
+
+	/* check for connection timeouts */
+	allidle = conn_idle_all(t, deadtime);
+
+	if (allidle && conn_num_open()>0) {
+		DEBUG(2,("Closing idle connection 2.\n"));
+		return False;
+	}
 
 	if(global_machine_password_needs_changing && 
 			/* for ADS we need to do a regular ADS password change, not a domain
@@ -1405,6 +1440,12 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		secrets_lock_trust_account_password(lp_workgroup(), False);
 	}
 
+	/*
+	 * Check to see if we have any blocking locks
+	 * outstanding on the queue.
+	 */
+	process_blocking_lock_queue();
+
 	/* update printer queue caches if necessary */
   
 	update_monitored_printq_cache();
@@ -1418,7 +1459,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 	/* Send any queued printer notify message to interested smbd's. */
 
-	print_notify_send_messages(smbd_messaging_context(), 0);
+	print_notify_send_messages(0);
 
 	/*
 	 * Modify the select timeout depending upon
@@ -1503,8 +1544,12 @@ void smbd_process(void)
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	while (True) {
+		int deadtime = lp_deadtime()*60;
 		int select_timeout = setup_select_timeout();
 		int num_echos;
+
+		if (deadtime <= 0)
+			deadtime = DEFAULT_SMBD_TIMEOUT;
 
 		errno = 0;      
 		
@@ -1514,8 +1559,7 @@ void smbd_process(void)
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1527,8 +1571,7 @@ void smbd_process(void)
 #endif
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1549,7 +1592,7 @@ void smbd_process(void)
 		process_smb(InBuffer, OutBuffer);
 
 		if (smb_echo_count != num_echos) {
-			if(!timeout_processing( &select_timeout, &last_timeout_processing_time))
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -1566,9 +1609,7 @@ void smbd_process(void)
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
 			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				if(!timeout_processing(
-					   &select_timeout,
-					   &last_timeout_processing_time))
+				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */
 				last_timeout_processing_time = new_check_time; /* Reset time. */

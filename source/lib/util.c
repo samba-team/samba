@@ -199,6 +199,7 @@ void gfree_all( void )
 	gfree_case_tables();
 	gfree_debugsyms();
 	gfree_charcnv();
+	gfree_messages();
 	gfree_interfaces();
 
 	/* release the talloc null_context memory last */
@@ -512,54 +513,35 @@ void show_msg(char *buf)
 	if (DEBUGLEVEL < 50)
 		bcc = MIN(bcc, 512);
 
-	dump_data(10, (uint8 *)smb_buf(buf), bcc);	
-}
-
-/*******************************************************************
- Set the length and marker of an encrypted smb packet.
-********************************************************************/
-
-void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
-{
-	_smb_setlen(buf,len);
-
-	SCVAL(buf,4,0xFF);
-	SCVAL(buf,5,'E');
-	SSVAL(buf,6,enc_ctx_num);
+	dump_data(10, smb_buf(buf), bcc);	
 }
 
 /*******************************************************************
  Set the length and marker of an smb packet.
 ********************************************************************/
 
-void smb_setlen(const char *frombuf, char *buf, int len)
+void smb_setlen(char *buf,int len)
 {
 	_smb_setlen(buf,len);
 
-	if (frombuf) {
-		if (buf != frombuf) {
-			memcpy(buf+4, frombuf+4, 4);
-		}
-	} else {
-		SCVAL(buf,4,0xFF);
-		SCVAL(buf,5,'S');
-		SCVAL(buf,6,'M');
-		SCVAL(buf,7,'B');
-	}
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'S');
+	SCVAL(buf,6,'M');
+	SCVAL(buf,7,'B');
 }
 
 /*******************************************************************
  Setup the word count and byte count for a smb message.
 ********************************************************************/
 
-int set_message(const char *frombuf, char *buf,int num_words,int num_bytes,BOOL zero)
+int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
 	if (zero && (num_words || num_bytes)) {
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
 	}
 	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(frombuf, buf,smb_size + num_words*2 + num_bytes - 4);
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
 }
 
@@ -567,11 +549,11 @@ int set_message(const char *frombuf, char *buf,int num_words,int num_bytes,BOOL 
  Setup only the byte count for a smb message.
 ********************************************************************/
 
-int set_message_bcc(const char *frombuf, char *buf,int num_bytes)
+int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(frombuf, buf,smb_size + num_words*2 + num_bytes - 4);
+	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
 }
 
@@ -580,11 +562,9 @@ int set_message_bcc(const char *frombuf, char *buf,int num_bytes)
  message as a marker.
 ********************************************************************/
 
-int set_message_end(const char *frombuf, void *outbuf,void *end_ptr)
+int set_message_end(void *outbuf,void *end_ptr)
 {
-	return set_message_bcc(frombuf,
-			(char *)outbuf,
-			PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
+	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
@@ -1257,6 +1237,7 @@ BOOL get_mydnsdomname(fstring my_domname)
 	if (p) {
 		p++;
 		fstrcpy(my_domname, p);
+		return True;
 	}
 
 	return False;
@@ -1526,30 +1507,26 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
  Check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(const struct server_id pid)
+BOOL process_exists(const struct process_id pid)
 {
 	if (procid_is_me(&pid)) {
 		return True;
 	}
 
-	if (procid_is_local(&pid)) {
-		return (kill(pid.pid,0) == 0 || errno != ESRCH);
+	if (!procid_is_local(&pid)) {
+		/* This *SEVERELY* needs fixing. */
+		return True;
 	}
 
-#ifdef CLUSTER_SUPPORT
-	return ctdbd_process_exists(messaging_ctdbd_connection(), pid.vnn,
-				    pid.pid);
-#else
-	return False;
-#endif
+	/* Doing kill with a non-positive pid causes messages to be
+	 * sent to places we don't want. */
+	SMB_ASSERT(pid.pid > 0);
+	return(kill(pid.pid,0) == 0 || errno != ESRCH);
 }
 
 BOOL process_exists_by_pid(pid_t pid)
 {
-	/* Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want. */
-	SMB_ASSERT(pid > 0);
-	return(kill(pid,0) == 0 || errno != ESRCH);
+	return process_exists(pid_to_procid(pid));
 }
 
 /*******************************************************************
@@ -1857,8 +1834,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 
 BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensitive)
 {
-	pstring last_component;
-	char *p;
+	const char *last_component;
 
 	/* if we have no list it's obviously not in the path */
 	if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) {
@@ -1868,8 +1844,12 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 	DEBUG(8, ("is_in_path: %s\n", name));
 
 	/* Get the last component of the unix name. */
-	p = strrchr_m(name, '/');
-	pstrcpy(last_component, p ? ++p : name);
+	last_component = strrchr_m(name, '/');
+	if (!last_component) {
+		last_component = name;
+	} else {
+		last_component++; /* Go past '/' */
+	}
 
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {
@@ -1886,7 +1866,6 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 		}
 	}
 	DEBUG(8,("is_in_path: match not found\n"));
- 
 	return False;
 }
 
@@ -2276,8 +2255,9 @@ void print_asc(int level, const unsigned char *buf,int len)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const unsigned char *buf,int len)
+void dump_data(int level, const char *buf1,int len)
 {
+	const unsigned char *buf = (const unsigned char *)buf1;
 	int i=0;
 	if (len<=0) return;
 
@@ -2314,7 +2294,7 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 	DEBUG(11, ("%s", msg));
 	if (data != NULL && len > 0)
 	{
-		dump_data(11, data, len);
+		dump_data(11, (const char *)data, len);
 	}
 #endif
 }
@@ -2469,16 +2449,15 @@ int smb_mkstemp(char *name_template)
 void *smb_xmalloc_array(size_t size, unsigned int count)
 {
 	void *p;
-	if (size == 0) {
-		smb_panic("smb_xmalloc_array: called with zero size");
-	}
+	if (size == 0)
+		smb_panic("smb_xmalloc_array: called with zero size.\n");
         if (count >= MAX_ALLOC_SIZE/size) {
-                smb_panic("smb_xmalloc_array: alloc size too large");
+                smb_panic("smb_xmalloc: alloc size too large.\n");
         }
 	if ((p = SMB_MALLOC(size*count)) == NULL) {
 		DEBUG(0, ("smb_xmalloc_array failed to allocate %lu * %lu bytes\n",
 			(unsigned long)size, (unsigned long)count));
-		smb_panic("smb_xmalloc_array: malloc failed");
+		smb_panic("smb_xmalloc_array: malloc fail.\n");
 	}
 	return p;
 }
@@ -2518,9 +2497,8 @@ char *smb_xstrdup(const char *s)
 #endif
 #define strdup(s) __ERROR_DONT_USE_STRDUP_DIRECTLY
 #endif
-	if (!s1) {
-		smb_panic("smb_xstrdup: malloc failed");
-	}
+	if (!s1)
+		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
 
 }
@@ -2549,9 +2527,8 @@ char *smb_xstrndup(const char *s, size_t n)
 #endif
 #define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
 #endif
-	if (!s1) {
-		smb_panic("smb_xstrndup: malloc failed");
-	}
+	if (!s1)
+		smb_panic("smb_xstrndup: malloc fail\n");
 	return s1;
 }
 
@@ -2567,9 +2544,8 @@ char *smb_xstrndup(const char *s, size_t n)
 	VA_COPY(ap2, ap);
 
 	n = vasprintf(ptr, format, ap2);
-	if (n == -1 || ! *ptr) {
+	if (n == -1 || ! *ptr)
 		smb_panic("smb_xvasprintf: out of memory");
-	}
 	return n;
 }
 
@@ -2775,7 +2751,7 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
  of the ".." name.
 *******************************************************************/
 
-BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match(const char *string, const char *pattern, BOOL is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";
@@ -2791,7 +2767,7 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
  pattern translation.
 *******************************************************************/
 
-BOOL mask_match_search(const char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match_search(const char *string, const char *pattern, BOOL is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";
@@ -3002,7 +2978,7 @@ void *talloc_check_name_abort(const void *ptr, const char *name)
 
 	DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
 		  name, talloc_get_name(ptr)));
-	smb_panic("talloc type mismatch");
+	smb_panic("aborting");
 	/* Keep the compiler happy */
 	return NULL;
 }
@@ -3068,128 +3044,71 @@ uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 	return (uint32)-1;
 }
 
-pid_t procid_to_pid(const struct server_id *proc)
+pid_t procid_to_pid(const struct process_id *proc)
 {
 	return proc->pid;
 }
 
-static uint32 my_vnn = NONCLUSTER_VNN;
-
-void set_my_vnn(uint32 vnn)
+struct process_id pid_to_procid(pid_t pid)
 {
-	DEBUG(10, ("vnn pid %d = %u\n", (int)sys_getpid(), (unsigned int)vnn));
-	my_vnn = vnn;
-}
-
-uint32 get_my_vnn(void)
-{
-	return my_vnn;
-}
-
-struct server_id pid_to_procid(pid_t pid)
-{
-	struct server_id result;
+	struct process_id result;
 	result.pid = pid;
-#ifdef CLUSTER_SUPPORT
-	result.vnn = my_vnn;
-#endif
 	return result;
 }
 
-struct server_id procid_self(void)
+struct process_id procid_self(void)
 {
 	return pid_to_procid(sys_getpid());
 }
 
 struct server_id server_id_self(void)
 {
-	return procid_self();
+	struct server_id id;
+	id.id = procid_self();
+	return id;
 }
 
-BOOL procid_equal(const struct server_id *p1, const struct server_id *p2)
+BOOL procid_equal(const struct process_id *p1, const struct process_id *p2)
 {
-	if (p1->pid != p2->pid)
-		return False;
-#ifdef CLUSTER_SUPPORT
-	if (p1->vnn != p2->vnn)
-		return False;
-#endif
-	return True;
+	return (p1->pid == p2->pid);
 }
 
 BOOL cluster_id_equal(const struct server_id *id1,
 		      const struct server_id *id2)
 {
-	return procid_equal(id1, id2);
+	return procid_equal(&id1->id, &id2->id);
 }
 
-BOOL procid_is_me(const struct server_id *pid)
+BOOL procid_is_me(const struct process_id *pid)
 {
-	if (pid->pid != sys_getpid())
-		return False;
-#ifdef CLUSTER_SUPPORT
-	if (pid->vnn != my_vnn)
-		return False;
-#endif
-	return True;
+	return (pid->pid == sys_getpid());
 }
 
-struct server_id interpret_pid(const char *pid_string)
+struct process_id interpret_pid(const char *pid_string)
 {
-#ifdef CLUSTER_SUPPORT
-	unsigned int vnn, pid;
-	struct server_id result;
-	if (sscanf(pid_string, "%u:%u", &vnn, &pid) == 2) {
-		result.vnn = vnn;
-		result.pid = pid;
-	}
-	else if (sscanf(pid_string, "%u", &pid) == 1) {
-		result.vnn = NONCLUSTER_VNN;
-		result.pid = pid;
-	}
-	else {
-		result.vnn = NONCLUSTER_VNN;
-		result.pid = -1;
-	}
-	return result;
-#else
 	return pid_to_procid(atoi(pid_string));
-#endif
 }
 
-char *procid_str_static(const struct server_id *pid)
+char *procid_str_static(const struct process_id *pid)
 {
 	static fstring str;
-#ifdef CLUSTER_SUPPORT
-	if (pid->vnn == NONCLUSTER_VNN) {
-		fstr_sprintf(str, "%d", (int)pid->pid);
-	}
-	else {
-		fstr_sprintf(str, "%u:%d", (unsigned)pid->vnn, (int)pid->pid);
-	}
-#else
-	fstr_sprintf(str, "%d", (int)pid->pid);
-#endif
+	fstr_sprintf(str, "%d", pid->pid);
 	return str;
 }
 
-char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
+char *procid_str(TALLOC_CTX *mem_ctx, const struct process_id *pid)
 {
 	return talloc_strdup(mem_ctx, procid_str_static(pid));
 }
 
-BOOL procid_valid(const struct server_id *pid)
+BOOL procid_valid(const struct process_id *pid)
 {
 	return (pid->pid != -1);
 }
 
-BOOL procid_is_local(const struct server_id *pid)
+BOOL procid_is_local(const struct process_id *pid)
 {
-#ifdef CLUSTER_SUPPORT
-	return pid->vnn == my_vnn;
-#else
 	return True;
-#endif
 }
 
 int this_is_smp(void)

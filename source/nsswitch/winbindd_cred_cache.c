@@ -111,8 +111,7 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 						  entry->ccname,
 						  False, /* no PAC required anymore */
 						  True,
-						  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-						  NULL);
+						  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 		gain_root_privilege();
 
 		if (ret) {
@@ -225,8 +224,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 						entry->ccname,
 						False, /* no PAC required anymore */
 						True,
-						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-						NULL);
+						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 		gain_root_privilege();
 
 		if (ret) {

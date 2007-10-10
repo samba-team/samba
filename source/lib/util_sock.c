@@ -658,12 +658,10 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
  BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds. 
  This function will return on receipt of a session keepalive packet.
- maxlen is the max number of bytes to return, not including the 4 byte
- length. If zero it means BUFFER_SIZE+SAFETY_MARGIN limit.
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxlen)
+BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 {
 	ssize_t len,ret;
 
@@ -681,7 +679,7 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 
 		if (smb_read_error == 0)
 			smb_read_error = READ_ERROR;
-		return -1;
+		return False;
 	}
 
 	/*
@@ -701,15 +699,11 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 
 			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
-			return -1;
+			return False;
 		}
 	}
 
 	if(len > 0) {
-		if (maxlen) {
-			len = MIN(len,maxlen);
-		}
-
 		if (timeout > 0) {
 			ret = read_socket_with_timeout(fd,buffer+4,len,len,timeout);
 		} else {
@@ -720,7 +714,7 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 			if (smb_read_error == 0) {
 				smb_read_error = READ_ERROR;
 			}
-			return -1;
+			return False;
 		}
 		
 		/* not all of samba3 properly checks for packet-termination of strings. This
@@ -728,7 +722,7 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 		SSVAL(buffer+4,len, 0);
 	}
 
-	return len;
+	return True;
 }
 
 /****************************************************************************
@@ -738,32 +732,19 @@ ssize_t receive_smb_raw(int fd, char *buffer, unsigned int timeout, size_t maxle
 
 BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 {
-	if (receive_smb_raw(fd, buffer, timeout, 0) < 0) {
+	if (!receive_smb_raw(fd, buffer, timeout)) {
 		return False;
-	}
-
-	if (srv_encryption_on()) {
-		NTSTATUS status = srv_decrypt_buffer(buffer);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("receive_smb: SMB decryption failed on incoming packet! Error %s\n",
-				nt_errstr(status) ));
-			if (smb_read_error == 0) {
-				smb_read_error = READ_BAD_DECRYPT;
-			}
-			return False;
-		}
 	}
 
 	/* Check the incoming SMB signature. */
 	if (!srv_check_sign_mac(buffer, True)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on incoming packet!\n"));
-		if (smb_read_error == 0) {
+		if (smb_read_error == 0)
 			smb_read_error = READ_BAD_SIG;
-		}
 		return False;
-	}
+	};
 
-	return True;
+	return(True);
 }
 
 /****************************************************************************
@@ -775,34 +756,22 @@ BOOL send_smb(int fd, char *buffer)
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	char *buf_out = buffer;
 
 	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buf_out);
+	srv_calculate_sign_mac(buffer);
 
-	if (srv_encryption_on()) {
-		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("send_smb: SMB encryption failed on outgoing packet! Error %s\n",
-				nt_errstr(status) ));
-			return False;
-		}
-	}
-
-	len = smb_len(buf_out) + 4;
+	len = smb_len(buffer) + 4;
 
 	while (nwritten < len) {
-		ret = write_data(fd,buf_out+nwritten,len - nwritten);
+		ret = write_data(fd,buffer+nwritten,len - nwritten);
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
-			srv_free_enc_buffer(buf_out);
 			return False;
 		}
 		nwritten += ret;
 	}
 
-	srv_free_enc_buffer(buf_out);
 	return True;
 }
 

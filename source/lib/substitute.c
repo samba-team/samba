@@ -453,7 +453,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 		      const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
-	fstring pidstr, vnnstr;
+	fstring pidstr;
 	struct passwd *pass;
 	const char *local_machine_name = get_local_machine_name();
 
@@ -551,10 +551,6 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case '(':
 			a_string = realloc_expand_longvar( a_string, p );
-			break;
-		case 'V' :
-			slprintf(vnnstr,sizeof(vnnstr)-1, "%u", get_my_vnn());
-			a_string = realloc_string_sub(a_string, "%V", vnnstr);
 			break;
 		default: 
 			break;
@@ -773,3 +769,21 @@ void standard_sub_advanced(const char *servicename, const char *user,
 		SAFE_FREE( s );
 	}
 }
+
+/****************************************************************************
+ *  Do some standard substitutions in a string.
+ *  ****************************************************************************/
+
+void standard_sub_conn(connection_struct *conn, char *str, size_t len)
+{
+	char *s;
+
+	s = alloc_sub_advanced(lp_servicename(SNUM(conn)), conn->user, conn->connectpath,
+			       conn->gid, smb_user_name, "", str);
+
+	if ( s ) {
+		strncpy( str, s, len );
+		SAFE_FREE( s );
+	}
+}
+

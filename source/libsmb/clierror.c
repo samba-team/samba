@@ -84,7 +84,6 @@ static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
 		case WRITE_ERROR:
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	        case READ_BAD_SIG:
-	        case READ_BAD_DECRYPT:
 			return NT_STATUS_INVALID_PARAMETER;
 	        default:
 			break;
@@ -133,10 +132,6 @@ const char *cli_errstr(struct cli_state *cli)
 		        case READ_BAD_SIG:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Server packet had invalid SMB signature!");
-				break;
-		        case READ_BAD_DECRYPT:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Server packet could not be decrypted !");
 				break;
 		        default:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
@@ -336,9 +331,7 @@ static const struct {
 #ifdef ECOMM
 	{NT_STATUS_NET_WRITE_FAULT, ECOMM},
 #endif
-#ifdef EXDEV
-	{NT_STATUS_NOT_SAME_DEVICE, EXDEV},
-#endif
+
 	{NT_STATUS(0), 0}
 };
 
@@ -392,7 +385,7 @@ int cli_errno(struct cli_state *cli)
          * byte isn't 0xc0, it doesn't match cli_is_nt_error() above.
          */
         status = cli_nt_error(cli);
-        if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
+        if (NT_STATUS_V(status) == NT_STATUS_V(STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
             return EACCES;
         }
 

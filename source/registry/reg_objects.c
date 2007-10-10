@@ -41,41 +41,39 @@
  Add a new key to the array
  **********************************************************************/
 
-WERROR regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
+int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 {
-	char **newkeys;
-
-	if ( !keyname ) {
-		return WERR_OK;
-	}
+	if ( !keyname )
+		return ctr->num_subkeys;
 
 	/* make sure the keyname is not already there */
 
-	if ( regsubkey_ctr_key_exists( ctr, keyname ) ) {
-		return WERR_OK;
+	if ( regsubkey_ctr_key_exists( ctr, keyname ) )
+		return ctr->num_subkeys;
+		
+	/* allocate a space for the char* in the array */
+		
+	if (ctr->subkeys == NULL) {
+		ctr->subkeys = TALLOC_P(ctr, char *);
+	} else {
+		ctr->subkeys = TALLOC_REALLOC_ARRAY(ctr, ctr->subkeys, char *, ctr->num_subkeys+1);
 	}
 
-	if (!(newkeys = TALLOC_REALLOC_ARRAY(ctr, ctr->subkeys, char *,
-					     ctr->num_subkeys+1))) {
-		return WERR_NOMEM;
+	if (!ctr->subkeys) {
+		ctr->num_subkeys = 0;
+		return 0;
 	}
 
-	ctr->subkeys = newkeys;
-
-	if (!(ctr->subkeys[ctr->num_subkeys] = talloc_strdup(ctr->subkeys,
-							     keyname ))) {
-		/*
-		 * Don't shrink the new array again, this wastes a pointer
-		 */
-		return WERR_NOMEM;
-	}
+	/* allocate the string and save it in the array */
+	
+	ctr->subkeys[ctr->num_subkeys] = talloc_strdup( ctr, keyname );
 	ctr->num_subkeys++;
-
-	return WERR_OK;
+	
+	return ctr->num_subkeys;
 }
  
  /***********************************************************************
- Delete a key from the array
+ Add a new key to the array
  **********************************************************************/
 
 int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )

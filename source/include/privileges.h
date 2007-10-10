@@ -61,9 +61,7 @@ typedef struct {
 #define SE_RESTORE			{ { 0x00000400, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_TAKE_OWNERSHIP		{ { 0x00000800, 0x00000000, 0x00000000, 0x00000000 } }
 
-/* defined in lib/privilegs_basic.c */
-
-extern const SE_PRIV se_priv_all;
+/* defined in lib/privilegs.c */
 
 extern const SE_PRIV se_priv_none;
 extern const SE_PRIV se_machine_account;

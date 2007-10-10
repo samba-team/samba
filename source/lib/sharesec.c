@@ -125,7 +125,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
  
 	slprintf(key, sizeof(key)-1, "SECDESC/%s", servicename);
  
-	if (tdb_prs_fetch_bystring(share_tdb, key, &ps, ctx)!=0 ||
+	if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
 		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
  
 		DEBUG(4, ("get_share_security: using default secdesc for %s\n",
@@ -167,7 +167,7 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
  
 	slprintf(key, sizeof(key)-1, "SECDESC/%s", share_name);
  
-	if (tdb_prs_store_bystring(share_tdb, key, &ps)==0) {
+	if (tdb_prs_store(share_tdb, key, &ps)==0) {
 		ret = True;
 		DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
 	} else {
@@ -179,7 +179,8 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
 out:
  
 	prs_mem_free(&ps);
-	TALLOC_FREE(mem_ctx);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 	return ret;
 }
 
@@ -194,7 +195,8 @@ BOOL delete_share_security(const struct share_params *params)
 
 	slprintf(key, sizeof(key)-1, "SECDESC/%s",
 		 lp_servicename(params->service));
-	kbuf = string_term_tdb_data(key);
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
 
 	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
 		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",

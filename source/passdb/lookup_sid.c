@@ -102,7 +102,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 	}
 
-	if (!(flags & LOOKUP_NAME_EXPLICIT) && strequal(domain, unix_users_domain_name())) {
+	if (strequal(domain, unix_users_domain_name())) {
 		if (lookup_unix_user_name(name, &sid)) {
 			type = SID_NAME_USER;
 			goto ok;
@@ -111,7 +111,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!(flags & LOOKUP_NAME_EXPLICIT) && strequal(domain, unix_groups_domain_name())) {
+	if (strequal(domain, unix_groups_domain_name())) {
 		if (lookup_unix_group_name(name, &sid)) {
 			type = SID_NAME_DOM_GRP;
 			goto ok;
@@ -178,7 +178,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 5. Trusted domains as such, to me it looks as if members don't do
               this, tested an XP workstation in a NT domain -- vl */
 
-	if (IS_DC && (pdb_get_trusteddom_pw(name, NULL, &sid, NULL))) {
+	if (IS_DC && (secrets_fetch_trusted_domain_password(name, NULL,
+							    &sid, NULL))) {
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
 		type = SID_NAME_DOMAIN;
@@ -262,13 +263,13 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 11. Ok, windows would end here. Samba has two more options:
                Unmapped users and unmapped groups */
 
-	if (!(flags & LOOKUP_NAME_EXPLICIT) && lookup_unix_user_name(name, &sid)) {
+	if (lookup_unix_user_name(name, &sid)) {
 		domain = talloc_strdup(tmp_ctx, unix_users_domain_name());
 		type = SID_NAME_USER;
 		goto ok;
 	}
 
-	if (!(flags & LOOKUP_NAME_EXPLICIT) && lookup_unix_group_name(name, &sid)) {
+	if (lookup_unix_group_name(name, &sid)) {
 		domain = talloc_strdup(tmp_ctx, unix_groups_domain_name());
 		type = SID_NAME_DOM_GRP;
 		goto ok;
@@ -591,9 +592,9 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 		 * and for SIDs that have 4 sub-authorities and thus look like
 		 * domains */
 
-		if (!NT_STATUS_IS_OK(pdb_enum_trusteddoms(mem_ctx,
-						          &num_domains,
-						          &domains))) {
+		if (!NT_STATUS_IS_OK(secrets_trusted_domains(mem_ctx,
+							     &num_domains,
+							     &domains))) {
 			return False;
 		}
 
@@ -631,7 +632,7 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
  * Level 2: Ask domain and trusted domains, no builtin and wkn
  * Level 3: Only ask domain
  * Level 4: W2k3ad: Only ask AD trusts
- * Level 5: Only ask transitive forest trusts
+ * Level 5: Don't lookup anything
  * Level 6: Like 4
  */
 
@@ -1228,7 +1229,7 @@ static BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		}
 
 		/* This was ours, but it was not mapped.  Fail */
-	}
+		}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
 	return False;
@@ -1287,12 +1288,12 @@ static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-	
+
 		/* This was ours, but it was not mapped.  Fail */
 	}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
-	return False;
+		return False;
 	
  done:
 	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_static(psid),
@@ -1324,7 +1325,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 			uid));
 		return;
 	}
-
+	
 	DEBUG(10,("uid %u -> sid %s\n",
 		  (unsigned int)uid, sid_string_static(psid)));
 
@@ -1339,7 +1340,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	ZERO_STRUCTP(psid);
-
+		
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return;
 
@@ -1398,7 +1399,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 			  sid_string_static(psid)));
 		return False;
 	}
-
+	
 	/* TODO: Here would be the place to allocate both a gid and a uid for
 	 * the SID in question */
 

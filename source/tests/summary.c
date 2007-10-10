@@ -1,9 +1,7 @@
-#include <stdlib.h>
 #include <stdio.h>
 
 main()
 {
-    exit (0);
 #if !(defined(HAVE_FCNTL_LOCK) || defined(HAVE_STRUCT_FLOCK64))
 	printf("ERROR: No locking available. Running Samba would be unsafe\n");
 	exit(1);

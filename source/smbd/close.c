@@ -135,10 +135,8 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 
 			share_mode_entry_to_message(msg, e);
 
- 			messaging_send_buf(smbd_messaging_context(),
-					   e->pid, MSG_SMB_OPEN_RETRY,
-					   (uint8 *)msg,
-					   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+ 			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
+ 					 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
  		}
  	}
 }
@@ -155,7 +153,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
-	struct file_id id;
+	int ret;
 
 	/*
 	 * Lock the share entries, and determine if we should delete
@@ -163,7 +161,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
@@ -248,8 +246,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	/* We can only delete the file if the name we have is still valid and
 	   hasn't been renamed. */
-	
-	if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
+
+	if (fsp->posix_open) {
+		ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+	} else {
+		ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+	}
+
+	if (ret != 0) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and stat failed with error %s\n",
 			 fsp->fsp_name, strerror(errno) ));
@@ -259,17 +263,15 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		goto done;
 	}
 
-	id = file_id_sbuf(&sbuf);
-
-	if (!file_id_equal(&fsp->file_id, &id)) {
+	if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and dev and/or inode does not match\n",
 			 fsp->fsp_name ));
-		DEBUG(5,("close_remove_share_mode: file %s. stored file_id %s, "
-			 "stat file_id %s\n",
+		DEBUG(5,("close_remove_share_mode: file %s. stored dev = %x, "
+			 "inode = %.0f stat dev = %x, inode = %.0f\n",
 			 fsp->fsp_name,
-			 file_id_static_string(&fsp->file_id),
-			 file_id_static_string2(&id)));
+			 (unsigned int)fsp->dev, (double)fsp->inode,
+			 (unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
@@ -327,16 +329,28 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS saved_status1 = NT_STATUS_OK;
 	NTSTATUS saved_status2 = NT_STATUS_OK;
+	NTSTATUS saved_status3 = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
 
-	cancel_aio_by_fsp(fsp);
+	if (fsp->aio_write_behind) {
+		/*
+	 	 * If we're finishing write behind on a close we can get a write
+		 * error here, we must remember this.
+		 */
+		int ret = wait_for_aio_completion(fsp);
+		if (ret) {
+			saved_status1 = map_nt_error_from_unix(ret);
+		}
+	} else {
+		cancel_aio_by_fsp(fsp);
+	}
  
 	/*
 	 * If we're flushing on a close we can get a write
 	 * error here, we must remember this.
 	 */
 
-	saved_status1 = close_filestruct(fsp);
+	saved_status2 = close_filestruct(fsp);
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, close_type);
@@ -350,14 +364,14 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	if (fsp->fh->ref_count == 1) {
 		/* Should we return on error here... ? */
-		saved_status2 = close_remove_share_mode(fsp, close_type);
+		saved_status3 = close_remove_share_mode(fsp, close_type);
 	}
 
 	if(fsp->oplock_type) {
 		release_file_oplock(fsp);
 	}
 
-	locking_close_file(smbd_messaging_context(), fsp);
+	locking_close_file(fsp);
 
 	status = fd_close(conn, fsp);
 
@@ -381,6 +395,8 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 			status = saved_status1;
 		} else if (!NT_STATUS_IS_OK(saved_status2)) {
 			status = saved_status2;
+		} else if (!NT_STATUS_IS_OK(saved_status3)) {
+			status = saved_status3;
 		}
 	}
 
@@ -408,7 +424,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));

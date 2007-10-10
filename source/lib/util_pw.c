@@ -49,7 +49,7 @@ static void init_pwnam_cache(void)
 	pwnam_cache = TALLOC_ZERO_ARRAY(NULL, struct passwd *,
 					PWNAMCACHE_SIZE);
 	if (pwnam_cache == NULL) {
-		smb_panic("Could not init pwnam_cache");
+		smb_panic("Could not init pwnam_cache\n");
 	}
 
 	return;
@@ -74,7 +74,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		if ((pwnam_cache[i] != NULL) && 
 		    (strcmp(name, pwnam_cache[i]->pw_name) == 0)) {
 			DEBUG(10, ("Got %s from pwnam_cache\n", name));
-			return tcopy_passwd(mem_ctx, pwnam_cache[i]);
+			return (struct passwd *)talloc_reference(mem_ctx, pwnam_cache[i]);
 		}
 	}
 
@@ -98,15 +98,15 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		i = rand() % PWNAMCACHE_SIZE;
 
 	if (pwnam_cache[i] != NULL) {
-		/* Remove this old cache entry, from the cache.  We
-		 * use talloc_unlink here because we want to be very
-		 * clear which referece we are removing */
-		talloc_unlink(pwnam_cache, pwnam_cache[i]);
+		TALLOC_FREE(pwnam_cache[i]);
 	}
 
 	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
+	if (pwnam_cache[i]!= NULL && mem_ctx != NULL) {
+		return (struct passwd *)talloc_reference(mem_ctx, pwnam_cache[i]);
+	}
 
-	return tcopy_passwd(mem_ctx, temp);
+	return tcopy_passwd(NULL, pwnam_cache[i]);
 }
 
 struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 

@@ -471,16 +471,13 @@ BOOL debug_parse_levels(const char *params_str)
  Receive a "set debug level" message.
 ****************************************************************************/
 
-static void debug_message(struct messaging_context *msg_ctx,
-			  void *private_data, 
-			  uint32_t msg_type, 
-			  struct server_id src,
-			  DATA_BLOB *data)
+static void debug_message(int msg_type, struct process_id src,
+			  void *buf, size_t len, void *private_data)
 {
-	const char *params_str = (const char *)data->data;
+	const char *params_str = (const char *)buf;
 
 	/* Check, it's a proper string! */
-	if (params_str[(data->length)-1] != '\0') {
+	if (params_str[len-1] != '\0') {
 		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
 			  (unsigned int)procid_to_pid(&src),
 			  (unsigned int)getpid()));
@@ -495,14 +492,24 @@ static void debug_message(struct messaging_context *msg_ctx,
 }
 
 /****************************************************************************
+ Send a "set debug level" message.
+****************************************************************************/
+
+void debug_message_send(pid_t pid, const char *params_str)
+{
+	if (!params_str)
+		return;
+	message_send_pid(pid_to_procid(pid), MSG_DEBUG,
+			 params_str, strlen(params_str) + 1,
+			 False);
+}
+
+/****************************************************************************
  Return current debug level.
 ****************************************************************************/
 
-static void debuglevel_message(struct messaging_context *msg_ctx,
-			       void *private_data, 
-			       uint32_t msg_type, 
-			       struct server_id src,
-			       DATA_BLOB *data)
+static void debuglevel_message(int msg_type, struct process_id src,
+			       void *buf, size_t len, void *private_data)
 {
 	char *message = debug_list_class_names_and_levels();
 
@@ -511,10 +518,9 @@ static void debuglevel_message(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
-		 procid_str_static(&src)));
-	messaging_send_buf(msg_ctx, src, MSG_DEBUGLEVEL,
-			   (uint8 *)message, strlen(message) + 1);
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",
+		 (unsigned int)procid_to_pid(&src)));
+	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
 
 	SAFE_FREE(message);
 }
@@ -533,16 +539,12 @@ void debug_init(void)
 
 	initialised = True;
 
+	message_register(MSG_DEBUG, debug_message, NULL);
+	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message, NULL);
+
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
 	}
-}
-
-void debug_register_msgs(struct messaging_context *msg_ctx)
-{
-	messaging_register(msg_ctx, NULL, MSG_DEBUG, debug_message);
-	messaging_register(msg_ctx, NULL, MSG_REQ_DEBUGLEVEL,
-			   debuglevel_message);
 }
 
 /***************************************************************************
@@ -979,7 +981,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
   
 		/* Print it all out at once to prevent split syslog output. */
 		if( lp_debug_prefix_timestamp() ) {
-		    (void)Debug1( "[%s, %2d%s] ",
+		    (void)Debug1( "[%s, %d%s] ",
 			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str);
 		} else {

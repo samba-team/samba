@@ -254,104 +254,6 @@ int add_home_service(const char *service, const char *username, const char *home
 
 }
 
-static int load_registry_service(const char *servicename)
-{
-	struct registry_key *key;
-	char *path;
-	WERROR err;
-
-	uint32 i;
-	char *value_name;
-	struct registry_value *value;
-
-	int res = -1;
-
-	if (!lp_registry_shares()) {
-		return -1;
-	}
-
-	if (asprintf(&path, "%s\\%s", KEY_SMBCONF, servicename) == -1) {
-		return -1;
-	}
-
-	err = reg_open_path(NULL, path, REG_KEY_READ, get_root_nt_token(),
-			    &key);
-	SAFE_FREE(path);
-
-	if (!W_ERROR_IS_OK(err)) {
-		return -1;
-	}
-
-	res = lp_add_service(servicename, -1);
-	if (res == -1) {
-		goto error;
-	}
-
-	for (i=0;
-	     W_ERROR_IS_OK(reg_enumvalue(key, key, i, &value_name, &value));
-	     i++) {
-		switch (value->type) {
-		case REG_DWORD: { 
-			char *tmp;
-			if (asprintf(&tmp, "%d", value->v.dword) == -1) {
-				continue;
-			}
-			lp_do_parameter(res, value_name, tmp);
-			SAFE_FREE(tmp);
-			break;
-		}
-		case REG_SZ: {
-			lp_do_parameter(res, value_name, value->v.sz.str);
-			break;
-		}
-		default:
-			/* Ignore all the rest */
-			break;
-		}
-
-		TALLOC_FREE(value_name);
-		TALLOC_FREE(value);
-	}
-
-	if (!service_ok(res)) {
-		/* this is actually never reached, since 
-		 * service_ok only returns False if the service
-		 * entry does not have a service name, and we _know_
-		 * we do have a service name here... */
-		res = -1;
-	}
-
- error:
-
-	TALLOC_FREE(key);
-	return res;
-}
-
-void load_registry_shares(void)
-{
-	struct registry_key *key;
-	char *name;
-	WERROR err;
-	int i;
-
-	if (!lp_registry_shares()) {
-		return;
-	}
-
-	err = reg_open_path(NULL, KEY_SMBCONF, REG_KEY_READ,
-			    get_root_nt_token(), &key);
-	if (!(W_ERROR_IS_OK(err))) {
-		return;
-	}
-
-	for (i=0; W_ERROR_IS_OK(reg_enumkey(key, key, i, &name, NULL)); i++) {
-		load_registry_service(name);
-		TALLOC_FREE(name);
-	}
-
-	TALLOC_FREE(key);
-	return;
-}
 
 /**
  * Find a service entry.
@@ -443,10 +345,6 @@ int find_service(fstring service)
 				iService = lp_add_service(service, iService);
 			}
 		}
-	}
-
-	if (iService < 0) {
-		iService = load_registry_service(service);
 	}
 
 	if (iService >= 0) {
@@ -790,6 +688,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
+	conn->aio_write_behind_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 
@@ -989,28 +888,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 /* ROOT Activities: */	
-	/*
-	 * Enforce the max connections parameter.
-	 */
-
-	if ((lp_max_connections(snum) > 0)
-	    && (count_current_connections(lp_servicename(SNUM(conn)), True) >=
-		lp_max_connections(snum))) {
-
-		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
-			  lp_max_connections(snum), lp_servicename(snum)));
+	/* check number of connections */
+	if (!claim_connection(conn,
+			      lp_servicename(snum),
+			      lp_max_connections(snum),
+			      False,0)) {
+		DEBUG(1,("too many connections - rejected\n"));
 		conn_free(conn);
 		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
-		return NULL;
-	}  
-
-	/*
-	 * Get us an entry in the connections db
-	 */
-	if (!claim_connection(conn, lp_servicename(snum), 0)) {
-		DEBUG(1, ("Could not store connections entry\n"));
-		conn_free(conn);
-		*status = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
 
@@ -1244,7 +1129,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 	if (strequal(service_in,HOMES_NAME)) {
 		if(lp_security() != SEC_SHARE) {
-			DATA_BLOB no_pw = data_blob_null;
+			DATA_BLOB no_pw = data_blob(NULL, 0);
 			if (vuser->homes_snum == -1) {
 				DEBUG(2, ("[homes] share not available for "
 					  "this user because it was not found "
@@ -1280,7 +1165,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	} else if ((lp_security() != SEC_SHARE) && (vuser->homes_snum != -1)
 		   && strequal(service_in,
 			       lp_servicename(vuser->homes_snum))) {
-		DATA_BLOB no_pw = data_blob_null;
+		DATA_BLOB no_pw = data_blob(NULL, 0);
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
 		return make_connection_snum(vuser->homes_snum,

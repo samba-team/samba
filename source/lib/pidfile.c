@@ -34,15 +34,12 @@ pid_t pidfile_pid(const char *name)
 	char pidstr[20];
 	pid_t pid;
 	unsigned int ret;
-	char * pidFile;
+	pstring pidFile;
 
-	if (asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name) == -1) {
-		return 0;
-	}
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
 
 	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 	if (fd == -1) {
-		SAFE_FREE(pidFile);
 		return 0;
 	}
 
@@ -71,14 +68,12 @@ pid_t pidfile_pid(const char *name)
 		goto noproc;
 	}
 
-	SAFE_FREE(pidFile);
 	close(fd);
 	return (pid_t)ret;
 
  noproc:
 	close(fd);
 	unlink(pidFile);
-	SAFE_FREE(pidFile);
 	return 0;
 }
 
@@ -88,14 +83,14 @@ void pidfile_create(const char *program_name)
 	int     fd;
 	char    buf[20];
 	char    *short_configfile;
-	char *name;
-	char *pidFile;
+	pstring name;
+	pstring pidFile;
 	pid_t pid;
 
 	/* Add a suffix to the program name if this is a process with a
 	 * none default configuration file name. */
 	if (strcmp( CONFIGFILE, dyn_CONFIGFILE) == 0) {
-		name = SMB_STRDUP(program_name);
+		strncpy( name, program_name, sizeof( name)-1);
 	} else {
 		short_configfile = strrchr( dyn_CONFIGFILE, '/');
 		if (short_configfile == NULL) {
@@ -105,15 +100,11 @@ void pidfile_create(const char *program_name)
 			/* full/relative path provided */
 			short_configfile++;
 		}
-		if (asprintf(&name, "%s-%s", program_name,
-			     short_configfile+1) == -1) {
-			smb_panic("asprintf failed");
-		}
+		slprintf( name, sizeof( name)-1, "%s-%s", program_name,
+			  short_configfile );
 	}
 
-	if (asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name) == -1) {
-		smb_panic("asprintf failed");
-	}
+	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {
@@ -143,6 +134,4 @@ void pidfile_create(const char *program_name)
 		exit(1);
 	}
 	/* Leave pid file open & locked for the duration... */
-	SAFE_FREE(name);
-	SAFE_FREE(pidFile);
 }

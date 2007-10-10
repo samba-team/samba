@@ -557,7 +557,7 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 
 	u_2->seq_num = seq_num;
 
-
+	
 	u_2->unknown_4 = 0x00000001;
 	u_2->server_role = server_role;
 	u_2->unknown_6 = 0x00000001;
@@ -2171,76 +2171,6 @@ BOOL samr_io_r_query_dispinfo(const char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 
 	return True;
 }
-
-/*******************************************************************
-inits a SAMR_Q_GET_DISPENUM_INDEX structure.
-********************************************************************/
-
-void init_samr_q_get_dispenum_index(SAMR_Q_GET_DISPENUM_INDEX * q_e, POLICY_HND *pol,
-				    uint16 switch_level, const char *name)
-{
-	DEBUG(5, ("init_samr_q_get_dispenum_index\n"));
-
-	q_e->domain_pol = *pol;
-
-	q_e->switch_level = switch_level;
-
-	init_lsa_string(&q_e->name, name);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-BOOL samr_io_q_get_dispenum_index(const char *desc, SAMR_Q_GET_DISPENUM_INDEX * q_e,
-				  prs_struct *ps, int depth)
-{
-	if (q_e == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_get_dispenum_index");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("domain_pol", &q_e->domain_pol, ps, depth))
-		return False;
-
-	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
-		return False;
-
-	if (!smb_io_lsa_string("name", &q_e->name, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-BOOL samr_io_r_get_dispenum_index(const char *desc, SAMR_R_GET_DISPENUM_INDEX * r_u,
-				  prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_get_dispenum_index");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("idx", ps, depth, &r_u->idx))
-		return False;
-	
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
 
 /*******************************************************************
 inits a SAMR_Q_OPEN_GROUP structure.
@@ -5940,25 +5870,6 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	}
 }
 
-
-/*************************************************************************
- init_samr_user_info25P
- fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET | ACCT_FLAGS
-*************************************************************************/
-
-void init_sam_user_info25P(SAM_USER_INFO_25 * usr,
-			   uint32 fields_present, uint32 acb_info,
-			   char newpass[532])
-{
-	usr->fields_present = fields_present;
-	ZERO_STRUCT(usr->padding1);
-	ZERO_STRUCT(usr->padding2);
-
-	usr->acb_info = acb_info;
-	memcpy(usr->pass, newpass, sizeof(usr->pass));
-}
-
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -6353,7 +6264,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	if (munged_dial) {
 		munged_dial_blob = base64_decode_data_blob(munged_dial);
 	} else {
-		munged_dial_blob = data_blob_null;
+		munged_dial_blob = data_blob(NULL, 0);
 	}
 
 	/* Create NTTIME structs */
@@ -6607,7 +6518,7 @@ void init_sam_user_info20A(SAM_USER_INFO_20 *usr, struct samu *pw)
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
 	} else {
-		blob = data_blob_null;
+		blob = data_blob(NULL, 0);
 	}
 
 	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
@@ -6723,13 +6634,13 @@ static void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, DATA_BLOB *sess_key,
 	switch (switch_value) {
 	case 0x18:
 		SamOEMhashBlob(ctr->info.id24->pass, 516, sess_key);
-		dump_data(100, sess_key->data, sess_key->length);
-		dump_data(100, ctr->info.id24->pass, 516);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
+		dump_data(100, (char *)ctr->info.id24->pass, 516);
 		break;
 	case 0x17:
 		SamOEMhashBlob(ctr->info.id23->pass, 516, sess_key);
-		dump_data(100, sess_key->data, sess_key->length);
-		dump_data(100, ctr->info.id23->pass, 516);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
+		dump_data(100, (char *)ctr->info.id23->pass, 516);
 		break;
 	case 0x07:
 		break;
@@ -7032,9 +6943,9 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 	case 18:
 		SamOEMhashBlob(ctr->info.id18->lm_pwd, 16, sess_key);
 		SamOEMhashBlob(ctr->info.id18->nt_pwd, 16, sess_key);
-		dump_data(100, sess_key->data, sess_key->length);
-		dump_data(100, ctr->info.id18->lm_pwd, 16);
-		dump_data(100, ctr->info.id18->nt_pwd, 16);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
+		dump_data(100, (char *)ctr->info.id18->lm_pwd, 16);
+		dump_data(100, (char *)ctr->info.id18->nt_pwd, 16);
 		break;
 	}
 }
@@ -7850,7 +7761,7 @@ BOOL samr_io_r_chgpasswd_user3(const char *desc, SAMR_R_CHGPASSWD_USER3 *r_u,
 	if ( NT_STATUS_EQUAL( NT_STATUS_NOT_SUPPORTED, NT_STATUS(r_u->ptr_info)) ) {
 		r_u->status = NT_STATUS_NOT_SUPPORTED;
 		return True;
-	}	
+	}
 
 	if (r_u->ptr_info && r_u->info != NULL) {
 		/* SAM_UNK_INFO_1 */

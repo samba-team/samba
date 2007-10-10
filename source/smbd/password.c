@@ -92,7 +92,14 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 	
+	SAFE_FREE(vuser->homedir);
+	SAFE_FREE(vuser->unix_homedir);
+	SAFE_FREE(vuser->logon_script);
+	
 	session_yield(vuser);
+	SAFE_FREE(vuser->session_keystr);
+
+	TALLOC_FREE(vuser->server_info);
 
 	data_blob_free(&vuser->session_key);
 
@@ -102,7 +109,10 @@ void invalidate_vuid(uint16 vuid)
 	   from the vuid 'owner' of connections */
 	conn_clear_vuid_cache(vuid);
 
-	TALLOC_FREE(vuser);
+	SAFE_FREE(vuser->groups);
+	TALLOC_FREE(vuser->nt_user_token);
+
+	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
 
@@ -143,11 +153,11 @@ int register_vuid(auth_serversupplied_info *server_info,
 		  DATA_BLOB session_key, DATA_BLOB response_blob,
 		  const char *smb_name)
 {
-	user_struct *vuser;
+	user_struct *vuser = NULL;
 
 	/* Paranoia check. */
 	if(lp_security() == SEC_SHARE) {
-		smb_panic("Tried to register uid in security=share");
+		smb_panic("Tried to register uid in security=share\n");
 	}
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
@@ -156,11 +166,13 @@ int register_vuid(auth_serversupplied_info *server_info,
 		return UID_FIELD_INVALID;
 	}
 
-	if((vuser = TALLOC_ZERO_P(NULL, user_struct)) == NULL) {
-		DEBUG(0,("Failed to talloc users struct!\n"));
+	if((vuser = SMB_MALLOC_P(user_struct)) == NULL) {
+		DEBUG(0,("Failed to malloc users struct!\n"));
 		data_blob_free(&session_key);
 		return UID_FIELD_INVALID;
 	}
+
+	ZERO_STRUCTP(vuser);
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
 	while( get_valid_user_struct(next_vuid) != NULL ) {
@@ -191,11 +203,6 @@ int register_vuid(auth_serversupplied_info *server_info,
 		return vuser->vuid;
 	}
 
-	/* use this to keep tabs on all our info from the authentication */
-	vuser->server_info = server_info;
-	/* Ensure that the server_info will dissapear with the vuser it is now attached to */
-	talloc_steal(vuser, vuser->server_info);
-
 	/* the next functions should be done by a SID mapping system (SMS) as
 	 * the new real sam db won't have reference to unix uids or gids
 	 */
@@ -205,13 +212,14 @@ int register_vuid(auth_serversupplied_info *server_info,
 	
 	vuser->n_groups = server_info->n_groups;
 	if (vuser->n_groups) {
-		if (!(vuser->groups = (gid_t *)talloc_memdup(vuser, server_info->groups,
-							     sizeof(gid_t) *
-							     vuser->n_groups))) {
-			DEBUG(0,("register_vuid: failed to talloc_memdup "
+		if (!(vuser->groups = (gid_t *)memdup(server_info->groups,
+						      sizeof(gid_t) *
+						      vuser->n_groups))) {
+			DEBUG(0,("register_vuid: failed to memdup "
 				 "vuser->groups\n"));
 			data_blob_free(&session_key);
-			TALLOC_FREE(vuser);
+			free(vuser);
+			TALLOC_FREE(server_info);
 			return UID_FIELD_INVALID;
 		}
 	}
@@ -239,26 +247,24 @@ int register_vuid(auth_serversupplied_info *server_info,
 			const char *unix_homedir =
 				pdb_get_unix_homedir(server_info->sam_account);
 			if (unix_homedir) {
-				vuser->unix_homedir = unix_homedir;
+				vuser->unix_homedir =
+					smb_xstrdup(unix_homedir);
 			}
 		} else {
 			struct passwd *passwd =
-				getpwnam_alloc(vuser, vuser->user.unix_name);
+				getpwnam_alloc(NULL, vuser->user.unix_name);
 			if (passwd) {
-				vuser->unix_homedir = passwd->pw_dir;
-				/* Ensure that the unix_homedir now
-				 * belongs to vuser, so it goes away
-				 * with it, not with passwd below: */
-				talloc_steal(vuser, vuser->unix_homedir);
+				vuser->unix_homedir =
+					smb_xstrdup(passwd->pw_dir);
 				TALLOC_FREE(passwd);
 			}
 		}
 		
 		if (homedir) {
-			vuser->homedir = homedir;
+			vuser->homedir = smb_xstrdup(homedir);
 		}
 		if (logon_script) {
-			vuser->logon_script = logon_script;
+			vuser->logon_script = smb_xstrdup(logon_script);
 		}
 	}
 
@@ -274,14 +280,22 @@ int register_vuid(auth_serversupplied_info *server_info,
 		  vuser->user.full_name));	
 
  	if (server_info->ptok) {
-		vuser->nt_user_token = dup_nt_token(vuser, server_info->ptok);
+		vuser->nt_user_token = dup_nt_token(NULL, server_info->ptok);
 	} else {
 		DEBUG(1, ("server_info does not contain a user_token - "
 			  "cannot continue\n"));
-		TALLOC_FREE(vuser);
+		TALLOC_FREE(server_info);
 		data_blob_free(&session_key);
+		SAFE_FREE(vuser->homedir);
+		SAFE_FREE(vuser->unix_homedir);
+		SAFE_FREE(vuser->logon_script);
+
+		SAFE_FREE(vuser);
 		return UID_FIELD_INVALID;
 	}
+
+	/* use this to keep tabs on all our info from the authentication */
+	vuser->server_info = server_info;
 
 	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",
 		 (int)vuser->uid,vuser->user.unix_name, vuser->vuid));

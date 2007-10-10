@@ -31,10 +31,20 @@
 #define EVENTLOG_READEVENTLOG		0x0a
 
 /* Eventlog read flags */
-/* defined in librpc/gen_ndr/eventlog.h */
+
+#define EVENTLOG_SEQUENTIAL_READ      0x0001
+#define EVENTLOG_SEEK_READ            0x0002
+#define EVENTLOG_FORWARDS_READ        0x0004
+#define EVENTLOG_BACKWARDS_READ       0x0008
 
 /* Event types */
-/* defined in librpc/gen_ndr/eventlog.h */
+
+#define EVENTLOG_SUCCESS              0x0000
+#define EVENTLOG_ERROR_TYPE           0x0001
+#define EVENTLOG_WARNING_TYPE         0x0002
+#define EVENTLOG_INFORMATION_TYPE     0x0004
+#define EVENTLOG_AUDIT_SUCCESS        0x0008
+#define EVENTLOG_AUDIT_FAILURE        0x0010
 
 /* Defines for TDB keys */
 #define  EVT_OLDEST_ENTRY  "INFO/oldest_entry"
@@ -78,6 +88,18 @@ typedef struct {
 	POLICY_HND handle;
 	NTSTATUS status;
 } EVENTLOG_R_OPEN_EVENTLOG;
+
+
+/***********************************/
+
+typedef struct {
+	POLICY_HND handle;
+} EVENTLOG_Q_CLOSE_EVENTLOG;
+
+typedef struct {
+	POLICY_HND handle;
+	NTSTATUS status;
+} EVENTLOG_R_CLOSE_EVENTLOG;
 
 
 /***********************************/

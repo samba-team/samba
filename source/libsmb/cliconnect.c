@@ -61,8 +61,8 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 					  const char *pass, size_t passlen,
 					  const char *workgroup)
 {
-	DATA_BLOB session_key = data_blob_null;
-	DATA_BLOB lm_response = data_blob_null;
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_response = data_blob(NULL, 0);
 	fstring pword;
 	char *p;
 
@@ -99,7 +99,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(NULL,cli->outbuf,10, 0, True);
+	set_message(cli->outbuf,10, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 	
@@ -169,7 +169,7 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(NULL,cli->outbuf,13,0,True);
+	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -229,7 +229,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(NULL,cli->outbuf,13,0,True);
+	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -299,9 +299,9 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 				      const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	DATA_BLOB lm_response = data_blob_null;
-	DATA_BLOB nt_response = data_blob_null;
-	DATA_BLOB session_key = data_blob_null;
+	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB nt_response = data_blob(NULL, 0);
+	DATA_BLOB session_key = data_blob(NULL, 0);
 	NTSTATUS result;
 	char *p;
 
@@ -334,7 +334,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			E_md4hash(pass, nt_hash);
 
 #ifdef LANMAN_ONLY
-			nt_response = data_blob_null;
+			nt_response = data_blob(NULL, 0);
 #else
 			nt_response = data_blob(NULL, 24);
 			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
@@ -378,7 +378,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(NULL,cli->outbuf,13,0,True);
+	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -458,7 +458,7 @@ static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(NULL,cli->outbuf,12,0,True);
+	set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 
 	cli_setup_packet(cli);
@@ -485,7 +485,7 @@ static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 
 static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 {
-	DATA_BLOB blob2 = data_blob_null;
+	DATA_BLOB blob2 = data_blob(NULL, 0);
 	char *p;
 	size_t len;
 
@@ -534,9 +534,9 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 {
 	int32 remaining = blob.length;
 	int32 cur = 0;
-	DATA_BLOB send_blob = data_blob_null;
+	DATA_BLOB send_blob = data_blob(NULL, 0);
 	int32 max_blob_size = 0;
-	DATA_BLOB receive_blob = data_blob_null;
+	DATA_BLOB receive_blob = data_blob(NULL, 0);
 
 	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
 		DEBUG(0,("cli_session_setup_blob: cli->max_xmit too small "
@@ -554,7 +554,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 			send_blob.length = max_blob_size;
 			remaining -= max_blob_size;
 		} else {
-			DATA_BLOB null_blob = data_blob_null;
+			DATA_BLOB null_blob = data_blob(NULL, 0);
 
 			send_blob.length = remaining; 
                         remaining = 0;
@@ -584,6 +584,7 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
 				nt_errstr(cli_get_nt_error(cli)) ));
+			cli->vuid = 0;
 			return False;
 		}
 	}
@@ -656,9 +657,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 	NTSTATUS nt_status;
 	int turn = 1;
 	DATA_BLOB msg1;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB blob_in = data_blob_null;
-	DATA_BLOB blob_out = data_blob_null;
+	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out = data_blob(NULL, 0);
 
 	cli_temp_set_signing(cli);
 
@@ -715,7 +716,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			}
 		} else if ((turn == 1) && 
 			   NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DATA_BLOB tmp_blob = data_blob_null;
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
 			/* the server might give us back two challenges */
 			if (!spnego_parse_challenge(blob, &blob_in, 
 						    &tmp_blob)) {
@@ -724,7 +725,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			}
 			data_blob_free(&tmp_blob);
 		} else {
-			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
+			if (!spnego_parse_auth_response(blob, nt_status, 
 							&blob_in)) {
 				DEBUG(3,("Failed to parse auth response\n"));
 				if (NT_STATUS_IS_OK(nt_status) 
@@ -743,7 +744,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 		DATA_BLOB key = data_blob(ntlmssp_state->session_key.data,
 					  ntlmssp_state->session_key.length);
-		DATA_BLOB null_blob = data_blob_null;
+		DATA_BLOB null_blob = data_blob(NULL, 0);
 		BOOL res;
 
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
@@ -765,11 +766,14 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		}
 	}
 
-	/* we have a reference counter on ntlmssp_state, if we are signing
+	/* we have a reference conter on ntlmssp_state, if we are signing
 	   then the state will be kept by the signing engine */
 
 	ntlmssp_end(&ntlmssp_state);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli->vuid = 0;
+	}
 	return nt_status;
 }
 
@@ -975,6 +979,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	}
 
 	return NT_STATUS_OK;
+
 }
 
 /****************************************************************************
@@ -984,7 +989,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 BOOL cli_ulogoff(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(NULL,cli->outbuf,2,0,True);
+	set_message(cli->outbuf,2,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
 	cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -1061,7 +1066,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
 
-	set_message(NULL,cli->outbuf,4, 0, True);
+	set_message(cli->outbuf,4, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtconX);
 	cli_setup_packet(cli);
 
@@ -1112,7 +1117,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(NULL,cli->outbuf,0,0,True);
+	set_message(cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -1144,7 +1149,7 @@ void cli_negprot_send(struct cli_state *cli)
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
-	set_message(NULL,cli->outbuf,0,0,True);
+	set_message(cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1184,7 +1189,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
     
-	set_message(NULL,cli->outbuf,0,plength,True);
+	set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1717,7 +1722,7 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(NULL,cli->outbuf, 0, 0, True);
+	set_message(cli->outbuf, 0, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtcon);
 	cli_setup_packet(cli);
 

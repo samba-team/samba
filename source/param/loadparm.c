@@ -72,17 +72,6 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
-/* the special value for the include parameter
- * to be interpreted not as a file name but to
- * trigger loading of the global smb.conf options
- * from registry. */
-#ifndef INCLUDE_REGISTRY_NAME
-#define INCLUDE_REGISTRY_NAME "registry"
-#endif
-
-static int regdb_last_seqnum = 0;
-static BOOL include_registry_globals = False;
-
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
@@ -90,6 +79,7 @@ static BOOL include_registry_globals = False;
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
 
+int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
 
 extern int extra_time_offset;
@@ -188,11 +178,9 @@ typedef struct {
 	BOOL bWinbindUseDefaultDomain;
 	BOOL bWinbindTrustedDomainsOnly;
 	BOOL bWinbindNestedGroups;
-	int  winbind_expand_groups;	
 	BOOL bWinbindRefreshTickets;
 	BOOL bWinbindOfflineLogon;
 	BOOL bWinbindNormalizeNames;
-	BOOL bWinbindRpcOnly;
 	char **szIdmapDomains;
 	char **szIdmapBackend; /* deprecated */
 	char *szIdmapAllocBackend;
@@ -252,8 +240,6 @@ typedef struct {
 	int iAclCompat;
 	char *szCupsServer;
 	char *szIPrintServer;
-	char *ctdbdSocket;
-	BOOL clustering;
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
@@ -319,7 +305,6 @@ typedef struct {
 	BOOL bASUSupport;
 	BOOL bUsershareOwnerOnly;
 	BOOL bUsershareAllowGuests;
-	BOOL bRegistryShares;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -329,7 +314,6 @@ typedef struct {
 	int iIdmapNegativeCacheTime;
 
 	BOOL bResetOnZeroVC;
-	int iKeepalive;
 	param_opt_struct *param_opt;
 } global;
 
@@ -384,6 +368,7 @@ typedef struct {
 	char *fstype;
 	char **szVfsObjects;
 	char *szMSDfsProxy;
+	char *szAioWriteBehind;
 	char *szDfree;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
@@ -471,6 +456,7 @@ typedef struct {
 	int iAioReadSize;
 	int iAioWriteSize;
 	int iMap_readonly;
+	int iDirectoryNameCacheSize;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -524,6 +510,7 @@ static service sDefault = {
 	NULL,			/* fstype */
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
+	NULL,			/* szAioWriteBehind */
 	NULL,			/* szDfree */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
@@ -611,7 +598,11 @@ static service sDefault = {
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
 	MAP_READONLY_YES,	/* iMap_readonly */
-	
+#ifdef BROKEN_DIRECTORY_HANDLING
+	0,			/* iDirectoryNameCacheSize */
+#else
+	100,			/* iDirectoryNameCacheSize */
+#endif
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -978,6 +969,7 @@ static struct parm_struct parm_table[] = {
 	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
 	{"aio read size", P_INTEGER, P_LOCAL, &sDefault.iAioReadSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"aio write size", P_INTEGER, P_LOCAL, &sDefault.iAioWriteSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write behind", P_STRING, P_LOCAL, &sDefault.szAioWriteBehind, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -1023,8 +1015,9 @@ static struct parm_struct parm_table[] = {
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
-	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED}, 
+	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
+	{"directory name cache size", P_INTEGER, P_LOCAL, &sDefault.iDirectoryNameCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"kernel change notify", P_BOOL, P_LOCAL, &sDefault.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, FLAG_ADVANCED}, 
@@ -1046,8 +1039,6 @@ static struct parm_struct parm_table[] = {
 	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED}, 
-	{"ctdbd socket", P_STRING, P_GLOBAL, &Globals.ctdbdSocket, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
-	{"clustering", P_BOOL, P_GLOBAL, &Globals.clustering, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
 
 	{N_("Printing Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1247,7 +1238,6 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
-	{"registry shares", P_BOOL, P_GLOBAL, &Globals.bRegistryShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare allow guests", P_BOOL, P_GLOBAL, &Globals.bUsershareAllowGuests, NULL, NULL, FLAG_ADVANCED},
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare owner only", P_BOOL, P_GLOBAL, &Globals.bUsershareOwnerOnly, NULL, NULL, FLAG_ADVANCED}, 
@@ -1302,12 +1292,10 @@ static struct parm_struct parm_table[] = {
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
-	{"winbind expand groups", P_INTEGER, P_GLOBAL, &Globals.winbind_expand_groups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind refresh tickets", P_BOOL, P_GLOBAL, &Globals.bWinbindRefreshTickets, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind offline logon", P_BOOL, P_GLOBAL, &Globals.bWinbindOfflineLogon, NULL, NULL, FLAG_ADVANCED},
 	{"winbind normalize names", P_BOOL, P_GLOBAL, &Globals.bWinbindNormalizeNames, NULL, NULL, FLAG_ADVANCED},
-	{"winbind rpc only", P_BOOL, P_GLOBAL, &Globals.bWinbindRpcOnly, NULL, NULL, FLAG_ADVANCED},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1645,16 +1633,12 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
 
-	string_set(&Globals.ctdbdSocket, "");
-	Globals.clustering = False;
-
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnumUsers = False;
 	Globals.bWinbindEnumGroups = False;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
-	Globals.winbind_expand_groups = 1;	
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
@@ -1689,11 +1673,6 @@ static void init_globals(BOOL first_time_only)
 	Globals.bUsershareOwnerOnly = True;
 	/* By default disallow guest access to usershares. */
 	Globals.bUsershareAllowGuests = False;
-
-	Globals.iKeepalive = DEFAULT_KEEPALIVE;
-
-	/* By default no shares out of the registry */
-	Globals.bRegistryShares = False;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1717,7 +1696,7 @@ TALLOC_CTX *tmp_talloc_ctx(void)
 	}
 
 	if (lp_talloc == NULL) {
-		smb_panic("Could not create temporary talloc context");
+		smb_panic("Could not create temporary talloc context\n");
 	}
 
 	return lp_talloc;
@@ -1920,18 +1899,15 @@ FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_BOOL(lp_winbind_trusted_domains_only, &Globals.bWinbindTrustedDomainsOnly)
 FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
-FN_GLOBAL_INTEGER(lp_winbind_expand_groups, &Globals.winbind_expand_groups)
 FN_GLOBAL_BOOL(lp_winbind_refresh_tickets, &Globals.bWinbindRefreshTickets)
 FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_BOOL(lp_winbind_normalize_names, &Globals.bWinbindNormalizeNames)
-FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
 
 FN_GLOBAL_LIST(lp_idmap_domains, &Globals.szIdmapDomains)
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend) /* deprecated */
 FN_GLOBAL_STRING(lp_idmap_alloc_backend, &Globals.szIdmapAllocBackend)
 FN_GLOBAL_INTEGER(lp_idmap_cache_time, &Globals.iIdmapCacheTime)
 FN_GLOBAL_INTEGER(lp_idmap_negative_cache_time, &Globals.iIdmapNegativeCacheTime)
-FN_GLOBAL_INTEGER(lp_keepalive, &Globals.iKeepalive)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
@@ -1951,7 +1927,6 @@ FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
-FN_GLOBAL_BOOL(lp_registry_shares, &Globals.bRegistryShares)
 FN_GLOBAL_BOOL(lp_usershare_allow_guests, &Globals.bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
@@ -2061,8 +2036,6 @@ FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
-FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
-FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering);
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
@@ -2091,6 +2064,7 @@ FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
+FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
 FN_LOCAL_STRING(lp_dfree_command, szDfree)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
@@ -2172,6 +2146,7 @@ FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
+FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
@@ -2188,6 +2163,7 @@ static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, BOOL *pcopymapDest);
+static BOOL service_ok(int iService);
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
 static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
@@ -2605,7 +2581,7 @@ static int add_a_service(const service *pservice, const char *name)
 }
 
 /***************************************************************************
-  Canonicalize by converting to lowercase.
+  Convert a string to uppercase and remove whitespaces.
 ***************************************************************************/
 
 static char *canonicalize_servicename(const char *src)
@@ -2699,10 +2675,6 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 
 int lp_add_service(const char *pszService, int iDefaultService)
 {
-	if (iDefaultService < 0) {
-		return add_a_service(&sDefault, pszService);
-	}
-
 	return (add_a_service(ServicePtrs[iDefaultService], pszService));
 }
 
@@ -2774,36 +2746,6 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	return (True);
-}
-
-
-/***************************************************************************
- Check whether the given parameter name is valid.
- Parametric options (names containing a colon) are considered valid.
-***************************************************************************/
-
-BOOL lp_parameter_is_valid(const char *pszParmName)
-{
-	return ((map_parameter(pszParmName) != -1) ||
-		(strchr(pszParmName, ':') != NULL));
-}
-
-/***************************************************************************
- Check whether the given name is the name of a global parameter.
- Returns True for strings belonging to parameters of class
- P_GLOBAL, False for all other strings, also for parametric options
- and strings not belonging to any option.
-***************************************************************************/
-
-BOOL lp_parameter_is_global(const char *pszParmName)
-{
-	int num = map_parameter(pszParmName);
-
-	if (num >= 0) {
-		return (parm_table[num].p_class == P_GLOBAL);
-	}
-
-	return False;
 }
 
 /***************************************************************************
@@ -3037,7 +2979,7 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-BOOL service_ok(int iService)
+static BOOL service_ok(int iService)
 {
 	BOOL bRetval;
 
@@ -3070,251 +3012,13 @@ BOOL service_ok(int iService)
 		ServicePtrs[iService]->bAvailable = False;
 	}
 
-	/* If a service is flagged unavailable, log the fact at level 1. */
+	/* If a service is flagged unavailable, log the fact at level 0. */
 	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
 			  ServicePtrs[iService]->szService));
 
 	return (bRetval);
 }
-
-/*
- * lp_regdb_open - regdb helper function 
- *
- * this should be considered an interim solution that becomes
- * superfluous once the registry code has been rewritten
- * do allow use of the tdb portion of the registry alone.
- *
- * in the meanwhile this provides a lean access
- * to the registry globals.
- */
-
-static struct tdb_wrap *lp_regdb_open(void)
-{
-	struct tdb_wrap *reg_tdb = NULL;
-	const char *vstring = "INFO/version";
-	uint32 vers_id;
-
-	become_root();
-	reg_tdb = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, 
-				REG_TDB_FLAGS, O_RDWR, 0600);
-	if (!reg_tdb) {
-		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
-			 lock_path("registry.tdb"), strerror(errno)));
-		goto done;
-	}
-	else {
-		DEBUG(10, ("lp_regdb_open: reg tdb opened.\n"));
-	}
-	unbecome_root();
-
-	vers_id = tdb_fetch_int32(reg_tdb->tdb, vstring);
-	if (vers_id != REGVER_V1) {
-		DEBUG(10, ("lp_regdb_open: INFO: registry tdb %s has wrong "
-			  "INFO/version (got %d, expected %d)\n",
-			  lock_path("registry.tdb"), vers_id, REGVER_V1));
-		/* this is apparently not implemented in the tdb */
-	}
-
-done:
-	return reg_tdb;
-}
-
-/*
- * process_registry_globals
- *
- * this is the interim version of process_registry globals
- *
- * until we can do it as we would like using the api and only
- * using the tdb portion of the registry (see below),
- * this just provides the needed functionality of regdb_fetch_values
- * and regdb_unpack_values, circumventing any fancy stuff, to
- * give us access to the registry globals.
- */
-static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
-{
-	BOOL ret = False;
-	struct tdb_wrap *reg_tdb = NULL;
-	WERROR err;
-	char *keystr;
-	TDB_DATA data;
-	/* vars for the tdb unpack loop */
-	int len = 0;
-	int i;
-	int buflen;
-	uint8 *buf;
-	uint32 type;
-	uint32 size;
-	uint32 num_values = 0;
-	uint8 *data_p;
-	pstring valname;
-	char * valstr;
-	struct registry_value *value = NULL;
-
-	include_registry_globals = True;
-
-	ZERO_STRUCT(data);
-
-	reg_tdb = lp_regdb_open();
-	if (!reg_tdb) {
-		DEBUG(1, ("Error opening the registry!\n"));
-		goto done;
-	}
-
-	/* reg_tdb is from now on used as talloc ctx.
-	 * freeing it closes the tdb (if refcount is 0) */
-
-	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX, 
-				 KEY_SMBCONF, GLOBAL_NAME);
-	normalize_dbkey(keystr);
-
-	DEBUG(10, ("process_registry_globals: fetching key '%s'\n",
-		   keystr));
-
-	data = tdb_fetch_bystring(reg_tdb->tdb, keystr);
-	if (!data.dptr) {
-		ret = True;
-		goto done;
-	}
-
-	buf = data.dptr;
-	buflen = data.dsize;
-
-	/* unpack number of values */
-	len = tdb_unpack(buf, buflen, "d", &num_values);
-	DEBUG(10, ("process_registry_globals: got %d values from tdb\n",
-		   num_values));
-
-	/* unpack the values */
-	for (i=0; i < num_values; i++) {
-		type = REG_NONE;
-		size = 0;
-		data_p = NULL;
-		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  valname,
-				  &type,
-				  &size,
-				  &data_p);
-		if (registry_smbconf_valname_forbidden(valname)) {
-			DEBUG(10, ("process_registry_globals: Ignoring "
-				   "parameter '%s' in registry.\n", valname));
-			continue;
-		}
-		DEBUG(10, ("process_registry_globals: got value '%s'\n",
-			   valname));
-		if (size && data_p) {
-			err = registry_pull_value(reg_tdb, 
-						  &value,
-						  type,
-						  data_p,
-						  size,
-						  size);
-			SAFE_FREE(data_p);
-			if (!W_ERROR_IS_OK(err)) {
-				goto done;
-			}
-			switch(type) {
-			case REG_DWORD:
-				valstr = talloc_asprintf(reg_tdb, "%d", 
-							 value->v.dword);
-				pfunc(valname, valstr);
-				break;
-			case REG_SZ:
-				pfunc(valname, value->v.sz.str);
-				break;
-			default:
-				/* ignore other types */
-				break;
-			}
-		}
-	}
-
-	ret = pfunc("registry shares", "yes");
-	regdb_last_seqnum = tdb_get_seqnum(reg_tdb->tdb);
-
-done:
-	TALLOC_FREE(reg_tdb);
-	SAFE_FREE(data.dptr);
-	return ret;
-}
-
-#if 0
-/*
- * this is process_registry_globals as it _should_ be (roughly)
- * using the reg_api functions...
- * 
- */
-static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
-{
-	BOOL ret = False;
-	TALLOC_CTX *ctx = NULL;
-	char *regpath = NULL;
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-	char *valname = NULL;
-	char *valstr = NULL;
-	uint32 idx = 0;
-	NT_USER_TOKEN *token;
-
-	ctx = talloc_init("process_registry_globals");
-	if (!ctx) {
-		smb_panic("Failed to create talloc context!");
-	}
-
-	include_registry_globals = True;
-
-	if (!registry_init_regdb()) {
-		DEBUG(1, ("Error initializing the registry.\n"));
-		goto done;
-	}
-
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
-
-	regpath = talloc_asprintf(ctx,"%s\\%s", KEY_SMBCONF, GLOBAL_NAME);
-	werr = reg_open_path(ctx, regpath, REG_KEY_READ, token, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Registry smbconf global section does not exist.\n"));
-		DEBUGADD(1, ("Error opening registry path '%s\\%s: %s\n",
-			     KEY_SMBCONF, GLOBAL_NAME, dos_errstr(werr)));
-		goto done;
-	}
-
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
-			     			&value));
-	     idx++)
-	{
-		DEBUG(5, ("got global registry parameter '%s'\n", valname));
-		switch(value->type) {
-		case REG_DWORD:
-			valstr = talloc_asprintf(ctx, "%d", value->v.dword);
-			pfunc(valname, valstr);
-			TALLOC_FREE(valstr);
-			break;
-		case REG_SZ:
-			pfunc(valname, value->v.sz.str);
-			break;
-		default:
-			/* ignore other types */
-			break;
-		}
-		TALLOC_FREE(value);
-		TALLOC_FREE(valstr);
-	}
-
-	ret = pfunc("registry shares", "yes");
-
-	regdb_last_seqnum = regdb_get_seqnum();
-
-done:
-	talloc_destroy(ctx);
-	return ret;
-}
-#endif /* if 0 */
 
 static struct file_lists {
 	struct file_lists *next;
@@ -3369,20 +3073,8 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	struct tdb_wrap *reg_tdb = NULL;
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
-
-	if (include_registry_globals) {
-		reg_tdb = lp_regdb_open();
-		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
-		{
-			DEBUGADD(6, ("regdb seqnum changed: old = %d, new = %d\n",
-				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
-			TALLOC_FREE(reg_tdb);
-			return True;
-		}
-	}
 
 	while (f) {
 		pstring n2;
@@ -3483,17 +3175,6 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
-
-	if (strequal(fname, INCLUDE_REGISTRY_NAME)) {
-		if (bInGlobalSection) {
-			return process_registry_globals(do_parameter);
-		}
-		else {
-			DEBUG(1, ("\"include = registry\" only effective "
-				  "in %s section\n", GLOBAL_NAME));
-			return False;
-		}
-	}
 
 	standard_sub_basic(get_current_username(), current_user_info.domain,
 			   fname,sizeof(fname));
@@ -3843,7 +3524,9 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		parm_ptr =
 			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
+	}
 
+	if (snum >= 0) {
 		if (!ServicePtrs[snum]->copymap)
 			init_copymap(ServicePtrs[snum]);
 
@@ -4314,8 +3997,7 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 }
 
 /***************************************************************************
- Return info about the next parameter in a service.
- snum==GLOBAL_SECTION_SNUM gives the globals.
+ Return info about the next service  in a service. snum==GLOBAL_SECTION_SNUM gives the globals.
  Return NULL when out of parameters.
 ***************************************************************************/
 
@@ -4334,9 +4016,6 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			if ((*i) > 0
 			    && (parm_table[*i].ptr ==
 				parm_table[(*i) - 1].ptr))
-				continue;
-			
-			if (is_default(*i) && !allparameters)
 				continue;
 
 			return &parm_table[(*i)++];

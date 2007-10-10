@@ -57,24 +57,24 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 	TDB_DATA key2;
 	BOOL *failed = (BOOL *)state;
 
-	DEBUG(10,("Converting %s\n", (const char *)key.dptr));
+	DEBUG(10,("Converting %s\n", key.dptr));
 
-	p = strchr((const char *)key.dptr, '/');
+	p = strchr(key.dptr, '/');
 	if (!p)
 		return 0;
 
 	*p = 0;
-	fstrcpy(dom_name, (const char *)key.dptr);
+	fstrcpy(dom_name, key.dptr);
 	*p++ = '/';
 
 	domain = find_domain_from_name(dom_name);
 	if (domain == NULL) {
 		/* We must delete the old record. */
 		DEBUG(0,("Unable to find domain %s\n", dom_name ));
-		DEBUG(0,("deleting record %s\n", (const char *)key.dptr ));
+		DEBUG(0,("deleting record %s\n", key.dptr ));
 
 		if (tdb_delete(tdb, key) != 0) {
-			DEBUG(0, ("Unable to delete record %s\n", (const char *)key.dptr));
+			DEBUG(0, ("Unable to delete record %s\n", key.dptr));
 			*failed = True;
 			return -1;
 		}
@@ -88,22 +88,23 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 	sid_append_rid(&sid, rid);
 
 	sid_to_string(keystr, &sid);
-	key2 = string_term_tdb_data(keystr);
+	key2.dptr = keystr;
+	key2.dsize = strlen(keystr) + 1;
 
 	if (tdb_store(tdb, key2, data, TDB_INSERT) != 0) {
-		DEBUG(0,("Unable to add record %s\n", (const char *)key2.dptr ));
+		DEBUG(0,("Unable to add record %s\n", key2.dptr ));
 		*failed = True;
 		return -1;
 	}
 
 	if (tdb_store(tdb, data, key2, TDB_REPLACE) != 0) {
-		DEBUG(0,("Unable to update record %s\n", (const char *)data.dptr ));
+		DEBUG(0,("Unable to update record %s\n", data.dptr ));
 		*failed = True;
 		return -1;
 	}
 
 	if (tdb_delete(tdb, key) != 0) {
-		DEBUG(0,("Unable to delete record %s\n", (const char *)key.dptr ));
+		DEBUG(0,("Unable to delete record %s\n", key.dptr ));
 		*failed = True;
 		return -1;
 	}
@@ -115,14 +116,12 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
  Convert the idmap database from an older version.
 *****************************************************************************/
 
-static BOOL idmap_tdb_upgrade(const char *idmap_name)
+static BOOL idmap_tdb_convert(const char *idmap_name)
 {
 	int32 vers;
 	BOOL bigendianheader;
 	BOOL failed = False;
 	TDB_CONTEXT *idmap_tdb;
-
-	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
 	if (!(idmap_tdb = tdb_open_log(idmap_name, 0,
 					TDB_DEFAULT, O_RDWR,
@@ -189,6 +188,32 @@ static BOOL idmap_tdb_upgrade(const char *idmap_name)
 
 	tdb_close(idmap_tdb);
 	return True;
+}
+
+/*****************************************************************************
+ Convert the idmap database from an older version if necessary
+*****************************************************************************/
+
+BOOL idmap_tdb_upgrade(TALLOC_CTX *ctx, const char *tdbfile)
+{
+	char *backup_name;
+
+	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
+
+	backup_name = talloc_asprintf(ctx, "%s.bak", tdbfile);
+	if ( ! backup_name) {
+		DEBUG(0, ("Out of memory!\n"));
+		return False;
+	}
+
+	if (backup_tdb(tdbfile, backup_name, 0) != 0) {
+		DEBUG(0, ("Could not backup idmap database\n"));
+		talloc_free(backup_name);
+		return False;
+	}
+
+	talloc_free(backup_name);
+	return idmap_tdb_convert(tdbfile);
 }
 
 /* WARNING: We can't open a tdb twice inthe same process, for that reason
@@ -258,7 +283,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx, TDB_CONTEXT **tdbctx)
 		/* backup_tdb expects the tdb not to be open */
 		tdb_close(idmap_tdb_common_ctx);
 
-		if ( ! idmap_tdb_upgrade(tdbfile)) {
+		if ( ! idmap_tdb_upgrade(ctx, tdbfile)) {
 		
 			DEBUG(0, ("Unable to open idmap database, it's in an old formati, and upgrade failed!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
@@ -637,8 +662,7 @@ failed:
 static NTSTATUS idmap_tdb_id_to_sid(struct idmap_tdb_context *ctx, struct id_map *map)
 {
 	NTSTATUS ret;
-	TDB_DATA data;
-	char *keystr;
+	TDB_DATA key, data;
 
 	if (!ctx || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -655,11 +679,11 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_tdb_context *ctx, struct id_map
 	switch (map->xid.type) {
 
 	case ID_TYPE_UID:
-		keystr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		key.dptr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
 		
 	case ID_TYPE_GID:
-		keystr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		key.dptr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
 
 	default:
@@ -670,36 +694,38 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_tdb_context *ctx, struct id_map
 	/* final SAFE_FREE safe */
 	data.dptr = NULL;
 
-	if (keystr == NULL) {
+	if (key.dptr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	DEBUG(10,("Fetching record %s\n", keystr));
+	key.dsize = strlen(key.dptr) + 1;
+
+	DEBUG(10,("Fetching record %s\n", key.dptr));
 
 	/* Check if the mapping exists */
-	data = tdb_fetch_bystring(ctx->tdb, keystr);
+	data = tdb_fetch(ctx->tdb, key);
 
 	if (!data.dptr) {
-		DEBUG(10,("Record %s not found\n", keystr));
+		DEBUG(10,("Record %s not found\n", key.dptr));
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
 		
-	if (!string_to_sid(map->sid, (const char *)data.dptr)) {
+	if (!string_to_sid(map->sid, data.dptr)) {
 		DEBUG(10,("INVALID SID (%s) in record %s\n",
-			(const char *)data.dptr, keystr));
+				data.dptr, key.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}
 
-	DEBUG(10,("Found record %s -> %s\n", keystr, (const char *)data.dptr));
+	DEBUG(10,("Found record %s -> %s\n", key.dptr, data.dptr));
 	ret = NT_STATUS_OK;
 
 done:
 	SAFE_FREE(data.dptr);
-	talloc_free(keystr);
+	talloc_free(key.dptr);
 	return ret;
 }
 
@@ -710,41 +736,42 @@ done:
 static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map *map)
 {
 	NTSTATUS ret;
-	TDB_DATA data;
-	char *keystr;
+	TDB_DATA key, data;
 	unsigned long rec_id = 0;
 
-	if ((keystr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((key.dptr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	DEBUG(10,("Fetching record %s\n", keystr));
+	key.dsize = strlen(key.dptr) + 1;
+
+	DEBUG(10,("Fetching record %s\n", key.dptr));
 
 	/* Check if sid is present in database */
-	data = tdb_fetch_bystring(ctx->tdb, keystr);
+	data = tdb_fetch(ctx->tdb, key);
 	if (!data.dptr) {
-		DEBUG(10,("Record %s not found\n", keystr));
+		DEBUG(10,("Record %s not found\n", key.dptr));
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
 
 	/* What type of record is this ? */
-	if (sscanf((const char *)data.dptr, "UID %lu", &rec_id) == 1) { /* Try a UID record. */
+	if (sscanf(data.dptr, "UID %lu", &rec_id) == 1) { /* Try a UID record. */
 		map->xid.id = rec_id;
 		map->xid.type = ID_TYPE_UID;
-		DEBUG(10,("Found uid record %s -> %s \n", keystr, (const char *)data.dptr ));
+		DEBUG(10,("Found uid record %s -> %s \n", key.dptr, data.dptr ));
 		ret = NT_STATUS_OK;
 
-	} else if (sscanf((const char *)data.dptr, "GID %lu", &rec_id) == 1) { /* Try a GID record. */
+	} else if (sscanf(data.dptr, "GID %lu", &rec_id) == 1) { /* Try a GID record. */
 		map->xid.id = rec_id;
 		map->xid.type = ID_TYPE_GID;
-		DEBUG(10,("Found gid record %s -> %s \n", keystr, (const char *)data.dptr ));
+		DEBUG(10,("Found gid record %s -> %s \n", key.dptr, data.dptr ));
 		ret = NT_STATUS_OK;
 
 	} else { /* Unknown record type ! */
-		DEBUG(2, ("Found INVALID record %s -> %s\n", keystr, (const char *)data.dptr));
+		DEBUG(2, ("Found INVALID record %s -> %s\n", key.dptr, data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 	}
 	
@@ -759,7 +786,7 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	}
 
 done:
-	talloc_free(keystr);
+	talloc_free(key.dptr);
 	return ret;
 }
 
@@ -864,7 +891,6 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
 	TDB_DATA ksid, kid, data;
-	char *ksidstr, *kidstr;
 
 	/* make sure we initialized */
 	if ( ! dom->initialized) {
@@ -878,8 +904,7 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ksidstr = kidstr = NULL;
-	data.dptr = NULL;
+	ksid.dptr = kid.dptr = data.dptr = NULL;
 
 	/* TODO: should we filter a set_mapping using low/high filters ? */
 	
@@ -888,11 +913,11 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	switch (map->xid.type) {
 
 	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		kid.dptr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
 		
 	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		kid.dptr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
 
 	default:
@@ -900,21 +925,21 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (kidstr == NULL) {
+	if (kid.dptr == NULL) {
 		DEBUG(0, ("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	kid.dsize = strlen(kid.dptr) + 1;
 
-	if ((ksidstr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((ksid.dptr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	ksid.dsize = strlen(ksid.dptr) + 1;
 
-	DEBUG(10, ("Storing %s <-> %s map\n", ksidstr, kidstr));
-	kid = string_term_tdb_data(kidstr);
-	ksid = string_term_tdb_data(ksidstr);
+	DEBUG(10, ("Storing %s <-> %s map\n", ksid.dptr, kid.dptr));
 
 	/* *DELETE* previous mappings if any.
 	 * This is done both SID and [U|G]ID passed in */
@@ -922,13 +947,13 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
 		DEBUG(10,("Failed to lock record %s. Error %s\n",
-				ksidstr, tdb_errorstr(ctx->tdb) ));
+				ksid.dptr, tdb_errorstr(ctx->tdb) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	data = tdb_fetch(ctx->tdb, ksid);
 	if (data.dptr) {
-		DEBUG(10, ("Deleting existing mapping %s <-> %s\n", (const char *)data.dptr, ksidstr ));
+		DEBUG(10, ("Deleting existing mapping %s <-> %s\n", data.dptr, ksid.dptr ));
 		tdb_delete(ctx->tdb, data);
 		tdb_delete(ctx->tdb, ksid);
 		SAFE_FREE(data.dptr);
@@ -936,7 +961,7 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 
 	data = tdb_fetch(ctx->tdb, kid);
 	if (data.dptr) {
-		DEBUG(10,("Deleting existing mapping %s <-> %s\n", (const char *)data.dptr, kidstr ));
+		DEBUG(10,("Deleting existing mapping %s <-> %s\n", data.dptr, kid.dptr ));
 		tdb_delete(ctx->tdb, data);
 		tdb_delete(ctx->tdb, kid);
 		SAFE_FREE(data.dptr);
@@ -958,12 +983,12 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	}
 
 	tdb_chainunlock(ctx->tdb, ksid);
-	DEBUG(10,("Stored %s <-> %s\n", ksidstr, kidstr));
+	DEBUG(10,("Stored %s <-> %s\n", ksid.dptr, kid.dptr));
 	ret = NT_STATUS_OK;
 
 done:
-	talloc_free(ksidstr);
-	talloc_free(kidstr);
+	talloc_free(ksid.dptr);
+	talloc_free(kid.dptr);
 	SAFE_FREE(data.dptr);
 	return ret;
 }
@@ -977,7 +1002,6 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
 	TDB_DATA ksid, kid, data;
-	char *ksidstr, *kidstr;
 
 	/* make sure we initialized */
 	if ( ! dom->initialized) {
@@ -991,8 +1015,7 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ksidstr = kidstr = NULL;
-	data.dptr = NULL;
+	ksid.dptr = kid.dptr = data.dptr = NULL;
 
 	/* TODO: should we filter a remove_mapping using low/high filters ? */
 	
@@ -1001,11 +1024,11 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	switch (map->xid.type) {
 
 	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		kid.dptr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
 		
 	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		kid.dptr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
 
 	default:
@@ -1013,33 +1036,33 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (kidstr == NULL) {
+	if (kid.dptr == NULL) {
 		DEBUG(0, ("ERROR: Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	kid.dsize = strlen(kid.dptr) + 1;
 
-	if ((ksidstr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((ksid.dptr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	ksid.dsize = strlen(ksid.dptr) + 1;
 
-	DEBUG(10, ("Checking %s <-> %s map\n", ksidstr, kidstr));
-	ksid = string_term_tdb_data(ksidstr);
-	kid = string_term_tdb_data(kidstr);
+	DEBUG(10, ("Checking %s <-> %s map\n", ksid.dptr, kid.dptr));
 
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
 		DEBUG(10,("Failed to lock record %s. Error %s\n",
-				ksidstr, tdb_errorstr(ctx->tdb) ));
+				ksid.dptr, tdb_errorstr(ctx->tdb) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Check if sid is present in database */
 	data = tdb_fetch(ctx->tdb, ksid);
 	if (!data.dptr) {
-		DEBUG(10,("Record %s not found\n", ksidstr));
+		DEBUG(10,("Record %s not found\n", ksid.dptr));
 		tdb_chainunlock(ctx->tdb, ksid);
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
@@ -1049,28 +1072,28 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	if ((data.dsize != kid.dsize) ||
 	    (memcmp(data.dptr, kid.dptr, data.dsize) != 0)) {
 		DEBUG(10,("Specified SID does not map to specified ID\n"));
-		DEBUGADD(10,("Actual mapping is %s -> %s\n", ksidstr, (const char *)data.dptr));
+		DEBUGADD(10,("Actual mapping is %s -> %s\n", ksid.dptr, data.dptr));
 		tdb_chainunlock(ctx->tdb, ksid);
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
 	
-	DEBUG(10, ("Removing %s <-> %s map\n", ksidstr, kidstr));
+	DEBUG(10, ("Removing %s <-> %s map\n", ksid.dptr, kid.dptr));
 
 	/* Delete previous mappings. */
 	
-	DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksidstr, kidstr ));
+	DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksid.dptr, kid.dptr ));
 	tdb_delete(ctx->tdb, ksid);
 
-	DEBUG(10,("Deleting existing mapping %s -> %s\n", kidstr, ksidstr ));
+	DEBUG(10,("Deleting existing mapping %s -> %s\n", kid.dptr, ksid.dptr ));
 	tdb_delete(ctx->tdb, kid);
 
 	tdb_chainunlock(ctx->tdb, ksid);
 	ret = NT_STATUS_OK;
 
 done:
-	talloc_free(ksidstr);
-	talloc_free(kidstr);
+	talloc_free(ksid.dptr);
+	talloc_free(kid.dptr);
 	SAFE_FREE(data.dptr);
 	return ret;
 }
@@ -1109,7 +1132,7 @@ static int idmap_tdb_dump_one_entry(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA val
 	int num_maps = *data->num_maps;
 
 	/* ignore any record but the ones with a SID as key */
-	if (strncmp((const char *)key.dptr, "S-", 2) == 0) {
+	if (strncmp(key.dptr, "S-", 2) == 0) {
 
 		maps = talloc_realloc(NULL, *data->maps, struct id_map, num_maps+1);
 		if ( ! maps) {
@@ -1125,21 +1148,21 @@ static int idmap_tdb_dump_one_entry(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA val
 			return -1;
 		}
 
-		if (!string_to_sid(maps[num_maps].sid, (const char *)key.dptr)) {
-			DEBUG(10,("INVALID record %s\n", (const char *)key.dptr));
+		if (!string_to_sid(maps[num_maps].sid, key.dptr)) {
+			DEBUG(10,("INVALID record %s\n", key.dptr));
 			/* continue even with errors */
 			return 0;
 		}
 
 		/* Try a UID record. */
-		if (sscanf((const char *)value.dptr, "UID %u", &(maps[num_maps].xid.id)) == 1) {
+		if (sscanf(value.dptr, "UID %u", &(maps[num_maps].xid.id)) == 1) {
 			maps[num_maps].xid.type = ID_TYPE_UID;
 			maps[num_maps].status = ID_MAPPED;
 			*data->num_maps = num_maps + 1;
 
 		/* Try a GID record. */
 		} else
-		if (sscanf((const char *)value.dptr, "GID %u", &(maps[num_maps].xid.id)) == 1) {
+		if (sscanf(value.dptr, "GID %u", &(maps[num_maps].xid.id)) == 1) {
 			maps[num_maps].xid.type = ID_TYPE_GID;
 			maps[num_maps].status = ID_MAPPED;
 			*data->num_maps = num_maps + 1;
@@ -1147,8 +1170,7 @@ static int idmap_tdb_dump_one_entry(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA val
 		/* Unknown record type ! */
 		} else {
 			maps[num_maps].status = ID_UNKNOWN;
-			DEBUG(2, ("Found INVALID record %s -> %s\n",
-				(const char *)key.dptr, (const char *)value.dptr));
+			DEBUG(2, ("Found INVALID record %s -> %s\n", key.dptr, value.dptr));
 			/* do not increment num_maps */
 		}
 	}

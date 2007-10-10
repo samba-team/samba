@@ -20,31 +20,64 @@
 
 #include "includes.h"
 
+static TDB_CONTEXT *tdb;
+
+/****************************************************************************
+ Return the connection tdb context (used for message send all).
+****************************************************************************/
+
+TDB_CONTEXT *conn_tdb_ctx(void)
+{
+	if (!tdb)
+		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			       O_RDWR | O_CREAT, 0644);
+
+	return tdb;
+}
+
+static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
+{
+	ZERO_STRUCTP(pkey);
+	pkey->pid = procid_self();
+	pkey->cnum = conn?conn->cnum:-1;
+	fstrcpy(pkey->name, name);
+#ifdef DEVELOPER
+	/* valgrind fixer... */
+	{
+		size_t sl = strlen(pkey->name);
+		if (sizeof(fstring)-sl)
+			memset(&pkey->name[sl], '\0', sizeof(fstring)-sl);
+	}
+#endif
+
+	pkbuf->dptr = (char *)pkey;
+	pkbuf->dsize = sizeof(*pkey);
+}
+
 /****************************************************************************
  Delete a connection record.
 ****************************************************************************/
 
 BOOL yield_connection(connection_struct *conn, const char *name)
 {
-	struct db_record *rec;
-	NTSTATUS status;
+	struct connections_key key;
+	TDB_DATA kbuf;
+
+	if (!tdb)
+		return False;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	if (!(rec = connections_fetch_entry(NULL, conn, name))) {
-		DEBUG(0, ("connections_fetch_entry failed\n"));
-		return False;
+	make_conn_key(conn, name, &kbuf, &key);
+
+	if (tdb_delete(tdb, kbuf) != 0) {
+		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
+		DEBUG(dbg_lvl,("yield_connection: tdb_delete for name %s failed with error %s.\n",
+			name, tdb_errorstr(tdb) ));
+		return (False);
 	}
 
-	status = rec->delete_rec(rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG( NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ? 3 : 0,
-		       ("deleting connection record returned %s\n",
-			nt_errstr(status)));
-	}
-
-	TALLOC_FREE(rec);
-	return NT_STATUS_IS_OK(status);
+	return(True);
 }
 
 struct count_stat {
@@ -58,45 +91,31 @@ struct count_stat {
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
 
-static int count_fn(struct db_record *rec,
-		    const struct connections_key *ckey,
-		    const struct connections_data *crec,
-		    void *udp)
+static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *udp)
 {
+	struct connections_data crec;
 	struct count_stat *cs = (struct count_stat *)udp;
  
-	if (crec->cnum == -1) {
+	if (dbuf.dsize != sizeof(crec))
 		return 0;
-	}
+
+	memcpy(&crec, dbuf.dptr, sizeof(crec));
+ 
+	if (crec.cnum == -1)
+		return 0;
 
 	/* If the pid was not found delete the entry from connections.tdb */
 
-	if (cs->Clear && !process_exists(crec->pid) && (errno == ESRCH)) {
-		NTSTATUS status;
+	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-			 procid_str_static(&crec->pid), crec->cnum,
-			 crec->servicename));
-
-		status = rec->delete_rec(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("count_fn: tdb_delete failed with error %s\n",
-				 nt_errstr(status)));
-		}
+			procid_str_static(&crec.pid), crec.cnum, crec.servicename));
+		if (tdb_delete(the_tdb, kbuf) != 0)
+			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
 	}
- 
-	if (cs->name) {
-		/* We are counting all the connections to a given share. */
-		if (strequal(crec->servicename, cs->name)) {
-			cs->curr_connections++;
-		}
-	} else {
-		/* We are counting all the connections. Static registrations
-		 * like the lpq backgroud process and the smbd daemon process
-		 * have a cnum of -1, so won't be counted here.
-		 */
+
+	if (strequal(crec.servicename, cs->name))
 		cs->curr_connections++;
-	}
 
 	return 0;
 }
@@ -119,49 +138,50 @@ int count_current_connections( const char *sharename, BOOL clear  )
 	 * as it leads to deadlock.
 	 */
 
-	if (connections_forall(count_fn, &cs) == -1) {
-		DEBUG(0,("count_current_connections: traverse of "
-			 "connections.tdb failed\n"));
-		DEBUGADD(0, ("count_current_connections: connection count of %d might not be accurate",
-			    cs.curr_connections));
+	if (tdb_traverse(tdb, count_fn, &cs) == -1) {
+		DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
+			tdb_errorstr(tdb) ));
+		return False;
 	}
-
-	/* If the traverse failed part-way through, we at least return
-	 * as many connections as we had already counted. If it failed
-	 * right at the start, we will return 0, which is about all we
-	 * can do anywway.
-	 */
-
+	
 	return cs.curr_connections;
-}
-
-/****************************************************************************
- Count the number of connections open across all shares.
-****************************************************************************/
-
-int count_all_current_connections(void)
-{
-	return count_current_connections(NULL, True /* clear stale entries */);
 }
 
 /****************************************************************************
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn, const char *name,
-		      uint32 msg_flags)
+BOOL claim_connection(connection_struct *conn, const char *name,int max_connections,BOOL Clear, uint32 msg_flags)
 {
-	struct db_record *rec;
+	struct connections_key key;
 	struct connections_data crec;
-	TDB_DATA dbuf;
-	NTSTATUS status;
+	TDB_DATA kbuf, dbuf;
 
-	DEBUG(5,("claiming [%s]\n", name));
-
-	if (!(rec = connections_fetch_entry(NULL, conn, name))) {
-		DEBUG(0, ("connections_fetch_entry failed\n"));
-		return False;
+	if (!tdb) {
+		if ( (tdb =conn_tdb_ctx()) == NULL ) {
+			return False;
+		}
 	}
+	
+	/*
+	 * Enforce the max connections parameter.
+	 */
+
+	if (max_connections > 0) {
+		int curr_connections;
+		
+		curr_connections = count_current_connections( lp_servicename(SNUM(conn)), True );
+
+		if (curr_connections >= max_connections) {
+			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
+				max_connections, name ));
+			return False;
+		}
+	}
+
+	DEBUG(5,("claiming %s %d\n",name,max_connections));
+
+	make_conn_key(conn, name, &kbuf, &key);
 
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
@@ -171,26 +191,21 @@ BOOL claim_connection(connection_struct *conn, const char *name,
 	if (conn) {
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
-		strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
-			sizeof(crec.servicename));
+		safe_strcpy(crec.servicename,
+			    lp_servicename(SNUM(conn)),sizeof(crec.servicename)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
 	
-	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr,conn?conn->client_address:client_addr(),
-		sizeof(crec.addr));
+	safe_strcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine)-1);
+	safe_strcpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
-	dbuf.dptr = (uint8 *)&crec;
+	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);
 
-	status = rec->store(rec, dbuf, TDB_REPLACE);
-
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
 		DEBUG(0,("claim_connection: tdb_store failed with error %s.\n",
-			 nt_errstr(status)));
+			tdb_errorstr(tdb) ));
 		return False;
 	}
 
@@ -199,44 +214,43 @@ BOOL claim_connection(connection_struct *conn, const char *name,
 
 BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 {
-	struct db_record *rec;
+	struct connections_key key;
 	struct connections_data *pcrec;
-	NTSTATUS status;
+	TDB_DATA kbuf, dbuf;
+
+	if (!tdb)
+		return False;
 
 	DEBUG(10,("register_message_flags: %s flags 0x%x\n",
 		doreg ? "adding" : "removing",
 		(unsigned int)msg_flags ));
 
-	if (!(rec = connections_fetch_entry(NULL, NULL, NULL))) {
-		DEBUG(0, ("connections_fetch_entry failed\n"));
+	make_conn_key(NULL, "", &kbuf, &key);
+
+        dbuf = tdb_fetch(tdb, kbuf);
+        if (!dbuf.dptr) {
+		DEBUG(0,("register_message_flags: tdb_fetch failed: %s\n",
+			tdb_errorstr(tdb)));
 		return False;
 	}
 
-	if (rec->value.dsize != sizeof(struct connections_data)) {
-		DEBUG(0,("register_message_flags: Got wrong record size\n"));
-		TALLOC_FREE(rec);
-		return False;
-	}
-
-	pcrec = (struct connections_data *)rec->value.dptr;
+	pcrec = (struct connections_data *)dbuf.dptr;
 	if (doreg)
 		pcrec->bcast_msg_flags |= msg_flags;
 	else
 		pcrec->bcast_msg_flags &= ~msg_flags;
 
-	status = rec->store(rec, rec->value, TDB_REPLACE);
-
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
 		DEBUG(0,("register_message_flags: tdb_store failed: %s.\n",
-			 nt_errstr(status)));
+			tdb_errorstr(tdb) ));
+		SAFE_FREE(dbuf.dptr);
 		return False;
 	}
 
 	DEBUG(10,("register_message_flags: new flags 0x%x\n",
 		(unsigned int)pcrec->bcast_msg_flags ));
 
+	SAFE_FREE(dbuf.dptr);
 	return True;
 }
 
@@ -258,10 +272,11 @@ static TDB_DATA* make_pipe_rec_key( struct pipe_open_rec *prec )
 	snprintf( key_string, sizeof(key_string), "%s/%d/%d",
 		prec->name, procid_to_pid(&prec->pid), prec->pnum );
 		
-	*kbuf = string_term_tdb_data(talloc_strdup(prec, key_string));
-	if (kbuf->dptr == NULL )
+	if ( (kbuf->dptr = talloc_strdup(prec, key_string)) == NULL )
 		return NULL;
-
+		
+	kbuf->dsize = strlen(key_string)+1;
+	
 	return kbuf;
 }
 
@@ -283,10 +298,10 @@ static void fill_pipe_open_rec( struct pipe_open_rec *prec, smb_np_struct *p )
 
 BOOL store_pipe_opendb( smb_np_struct *p )
 {
-	struct db_record *dbrec;
 	struct pipe_open_rec *prec;
 	TDB_DATA *key;
 	TDB_DATA data;
+	TDB_CONTEXT *pipe_tdb;
 	BOOL ret = False;
 	
 	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
@@ -299,15 +314,14 @@ BOOL store_pipe_opendb( smb_np_struct *p )
 		goto done;
 	}
 	
-	data.dptr = (uint8 *)prec;
+	data.dptr = (char*)prec;
 	data.dsize = sizeof(struct pipe_open_rec);
-
-	if (!(dbrec = connections_fetch_record(prec, *key))) {
-		DEBUG(0, ("connections_fetch_record failed\n"));
+	
+	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
 		goto done;
 	}
-
-	ret = NT_STATUS_IS_OK(dbrec->store(dbrec, data, TDB_REPLACE));
+	
+	ret = (tdb_store( pipe_tdb, *key, data, TDB_REPLACE ) != -1);
 	
 done:
 	TALLOC_FREE( prec );	
@@ -319,9 +333,9 @@ done:
 
 BOOL delete_pipe_opendb( smb_np_struct *p )
 {
-	struct db_record *dbrec;
 	struct pipe_open_rec *prec;
 	TDB_DATA *key;
+	TDB_CONTEXT *pipe_tdb;
 	BOOL ret = False;
 	
 	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
@@ -334,12 +348,11 @@ BOOL delete_pipe_opendb( smb_np_struct *p )
 		goto done;
 	}
 	
-	if (!(dbrec = connections_fetch_record(prec, *key))) {
-		DEBUG(0, ("connections_fetch_record failed\n"));
+	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
 		goto done;
 	}
 
-	ret = NT_STATUS_IS_OK(dbrec->delete_rec(dbrec));
+	ret = (tdb_delete( pipe_tdb, *key ) != -1 );
 	
 done:
 	TALLOC_FREE( prec );

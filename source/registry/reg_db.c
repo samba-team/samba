@@ -25,8 +25,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static struct tdb_wrap *tdb_reg = NULL;
+static TDB_CONTEXT *tdb_reg;
 static int tdb_refcount;
+
+#define VALUE_PREFIX	"SAMBA_REGVAL"
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -44,7 +46,6 @@ static const char *builtin_registry_paths[] = {
 	KEY_PRINTING,
 	KEY_SHARES,
 	KEY_EVENTLOG,
-	KEY_SMBCONF,
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib",
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
@@ -80,6 +81,8 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 	{ NULL, NULL, 0, { NULL } }
 };
 
+#define REGVER_V1	1	/* first db version with write support */
+	
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
@@ -102,7 +105,7 @@ static BOOL init_registry_data( void )
 	 * transaction behaviour.
 	 */
 
-	if ( tdb_transaction_start( tdb_reg->tdb ) == -1 ) {
+	if ( tdb_transaction_start( tdb_reg ) == -1 ) {
 		DEBUG(0, ("init_registry_data: tdb_transaction_start "
 			  "failed\n"));
 		return False;
@@ -201,7 +204,7 @@ static BOOL init_registry_data( void )
 		TALLOC_FREE( values );
 	}
 	
-	if (tdb_transaction_commit( tdb_reg->tdb ) == -1) {
+	if (tdb_transaction_commit( tdb_reg ) == -1) {
 		DEBUG(0, ("init_registry_data: Could not commit "
 			  "transaction\n"));
 		return False;
@@ -211,7 +214,7 @@ static BOOL init_registry_data( void )
 
  fail:
 
-	if (tdb_transaction_cancel( tdb_reg->tdb ) == -1) {
+	if (tdb_transaction_cancel( tdb_reg ) == -1) {
 		smb_panic("init_registry_data: tdb_transaction_cancel "
 			  "failed\n");
 	}
@@ -231,9 +234,9 @@ BOOL regdb_init( void )
 	if ( tdb_reg )
 		return True;
 
-	if ( !(tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
+	if ( !(tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600)) )
 	{
-		tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
+		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 		if ( !tdb_reg ) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				lock_path("registry.tdb"), strerror(errno) ));
@@ -244,13 +247,12 @@ BOOL regdb_init( void )
 	}
 
 	tdb_refcount = 1;
+		
 
-	vers_id = tdb_fetch_int32(tdb_reg->tdb, vstring);
+	vers_id = tdb_fetch_int32(tdb_reg, vstring);
 
 	if ( vers_id != REGVER_V1 ) {
 		/* any upgrade code here if needed */
-		DEBUG(10, ("regdb_init: got INFO/version = %d != %d\n",
-			   vers_id, REGVER_V1));
 	}
 
 	/* always setup the necessary keys and values */
@@ -279,7 +281,7 @@ WERROR regdb_open( void )
 	
 	become_root();
 
-	tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
+	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
 	if ( !tdb_reg ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
 		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
@@ -299,6 +301,8 @@ WERROR regdb_open( void )
 
 int regdb_close( void )
 {
+	int ret;
+
 	tdb_refcount--;
 
 	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", tdb_refcount));
@@ -308,18 +312,10 @@ int regdb_close( void )
 
 	SMB_ASSERT( tdb_refcount >= 0 );
 
-	TALLOC_FREE(tdb_reg);
-	return 0;
-}
+	ret = tdb_close( tdb_reg );
+	tdb_reg = NULL;
 
-/***********************************************************************
- return the tdb sequence number of the registry tdb.
- this is an indicator for the content of the registry
- having changed. it will change upon regdb_init, too, though.
- ***********************************************************************/
-int regdb_get_seqnum(void)
-{
-	return tdb_get_seqnum(tdb_reg->tdb);
+	return ret;
 }
 
 /***********************************************************************
@@ -330,8 +326,8 @@ int regdb_get_seqnum(void)
  
 static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
-	TDB_DATA dbuf;
-	uint8 *buffer;
+	TDB_DATA kbuf, dbuf;
+	char *buffer;
 	int i = 0;
 	uint32 len, buflen;
 	BOOL ret = True;
@@ -346,7 +342,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 
 	/* allocate some initial memory */
 		
-	if (!(buffer = (uint8 *)SMB_MALLOC(sizeof(pstring)))) {
+	if (!(buffer = (char *)SMB_MALLOC(sizeof(pstring)))) {
 		return False;
 	}
 	buflen = sizeof(pstring);
@@ -362,7 +358,7 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((buffer = (uint8 *)SMB_REALLOC( buffer, len*2 )) == NULL) {
+			if ((buffer = (char *)SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;
@@ -375,9 +371,11 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 	
 	/* finally write out the data */
 	
+	kbuf.dptr = keyname;
+	kbuf.dsize = strlen(keyname)+1;
 	dbuf.dptr = buffer;
 	dbuf.dsize = len;
-	if ( tdb_store_bystring( tdb_reg->tdb, keyname, dbuf, TDB_REPLACE ) == -1) {
+	if ( tdb_store( tdb_reg, kbuf, dbuf, TDB_REPLACE ) == -1) {
 		ret = False;
 		goto done;
 	}
@@ -397,20 +395,14 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
-	REGSUBKEY_CTR *subkeys = NULL, *old_subkeys = NULL;
+	REGSUBKEY_CTR *subkeys, *old_subkeys;
 	char *oldkeyname;
 	
-	if ( tdb_transaction_start( tdb_reg->tdb ) == -1 ) {
-		DEBUG(0, ("regdb_store_keys: tdb_transaction_start failed\n"));
-		return False;
-	}
-
-	/* fetch a list of the old subkeys so we can determine if any were
-	 * deleted */
+	/* fetch a list of the old subkeys so we can determine if any were deleted */
 	
 	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-		goto fail;
+		return False;
 	}
 
 	regdb_fetch_keys( key, old_subkeys );
@@ -418,9 +410,8 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	/* store the subkey list for the parent */
 	
 	if ( !regdb_store_keys_internal( key, ctr ) ) {
-		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
-			 "for parent [%s]\n", key ));
-		goto fail;
+		DEBUG(0,("regdb_store_keys: Failed to store new subkey list for parent [%s}\n", key ));
+		return False;
 	}
 	
 	/* now delete removed keys */
@@ -428,30 +419,11 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	num_subkeys = regsubkey_ctr_numkeys( old_subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
 		oldkeyname = regsubkey_ctr_specific_key( old_subkeys, i );
-
-		if ( regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
-			/*
-			 * It's still around, don't delete
-			 */
-
-			continue;
+		if ( !regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
+			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
+			normalize_reg_path( path );
+			tdb_delete_bystring( tdb_reg, path );
 		}
-
-		pstr_sprintf( path, "%s/%s", key, oldkeyname );
-		normalize_reg_path( path );
-		if (tdb_delete_bystring( tdb_reg->tdb, path ) == -1) {
-			DEBUG(1, ("Deleting %s failed\n", path));
-			goto fail;
-		}
-		
-		pstr_sprintf( path, "%s/%s/%s", REG_VALUE_PREFIX, key,
-			      oldkeyname );
-		normalize_reg_path( path );
-
-		/*
-		 * Ignore errors here, we might have no values around
-		 */
-		tdb_delete_bystring( tdb_reg->tdb, path );
 	}
 
 	TALLOC_FREE( old_subkeys );
@@ -460,42 +432,26 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	
 	num_subkeys = regsubkey_ctr_numkeys( ctr );
 	for ( i=0; i<num_subkeys; i++ ) {
-		pstr_sprintf( path, "%s/%s", key,
-			      regsubkey_ctr_specific_key( ctr, i ) );
+		pstr_sprintf( path, "%s%c%s", key, '/', regsubkey_ctr_specific_key( ctr, i ) );
 
 		if ( !(subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			goto fail;
+			return False;
 		}
 
 		if ( regdb_fetch_keys( path, subkeys ) == -1 ) {
 			/* create a record with 0 subkeys */
 			if ( !regdb_store_keys_internal( path, subkeys ) ) {
-				DEBUG(0,("regdb_store_keys: Failed to store "
-					 "new record for key [%s]\n", path ));
-				goto fail;
+				DEBUG(0,("regdb_store_keys: Failed to store new record for key [%s}\n", path ));
+				TALLOC_FREE( subkeys );
+				return False;
 			}
 		}
 
 		TALLOC_FREE( subkeys );
 	}
-
-	if (tdb_transaction_commit( tdb_reg->tdb ) == -1) {
-		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
-		return False;
-	}
-
+	
 	return True;
-
- fail:
-	TALLOC_FREE( old_subkeys );
-	TALLOC_FREE( subkeys );
-
-	if (tdb_transaction_cancel( tdb_reg->tdb ) == -1) {
-		smb_panic("regdb_store_keys: tdb_transaction_cancel failed\n");
-	}
-
-	return False;
 }
 
 
@@ -509,7 +465,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 	pstring path;
 	uint32 num_items;
 	TDB_DATA dbuf;
-	uint8 *buf;
+	char *buf;
 	uint32 buflen, len;
 	int i;
 	fstring subkeyname;
@@ -522,7 +478,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 	pstring_sub( path, "\\", "/" ); 
 	strupper_m( path );
 	
-	dbuf = tdb_fetch_bystring( tdb_reg->tdb, path );
+	dbuf = tdb_fetch_bystring( tdb_reg, path );
 	
 	buf = dbuf.dptr;
 	buflen = dbuf.dsize;
@@ -550,7 +506,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
  
-static int regdb_unpack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
+static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
 {
 	int 		len = 0;
 	uint32		type;
@@ -595,7 +551,7 @@ static int regdb_unpack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
  Pack all values in all printer keys
  ***************************************************************************/
  
-static int regdb_pack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
+static int regdb_pack_values(REGVAL_CTR *values, char *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i;
@@ -637,10 +593,10 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 	
-	pstr_sprintf( keystr, "%s/%s", REG_VALUE_PREFIX, key );
+	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
-	data = tdb_fetch_bystring( tdb_reg->tdb, keystr );
+	data = tdb_fetch_bystring( tdb_reg, keystr );
 	
 	if ( !data.dptr ) {
 		/* all keys have zero values by default */
@@ -675,98 +631,23 @@ BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 		return False;
 	}
 	
-	data.dptr = SMB_MALLOC_ARRAY( uint8, len );
+	data.dptr = SMB_MALLOC_ARRAY( char, len );
 	data.dsize = len;
 	
 	len = regdb_pack_values( values, data.dptr, data.dsize );
 	
 	SMB_ASSERT( len == data.dsize );
 	
-	pstr_sprintf( keystr, "%s/%s", REG_VALUE_PREFIX, key );
+	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
 	
-	ret = tdb_trans_store_bystring(tdb_reg->tdb, keystr, data, TDB_REPLACE);
+	ret = tdb_store_bystring(tdb_reg, keystr, data, TDB_REPLACE);
 	
 	SAFE_FREE( data.dptr );
 	
 	return ret != -1 ;
 }
 
-static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
-				struct security_descriptor **psecdesc)
-{
-	char *tdbkey;
-	TDB_DATA data;
-	NTSTATUS status;
-
-	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
-
-	if (asprintf(&tdbkey, "%s/%s", REG_SECDESC_PREFIX, key) == -1) {
-		return WERR_NOMEM;
-	}
-	normalize_dbkey(tdbkey);
-
-        data = tdb_fetch_bystring(tdb_reg->tdb, tdbkey);
-	SAFE_FREE(tdbkey);
-
-	if (data.dptr == NULL) {
-		return WERR_BADFILE;
-	}
-
-	status = unmarshall_sec_desc(mem_ctx, (uint8 *)data.dptr, data.dsize,
-				     psecdesc);
-
-	SAFE_FREE(data.dptr);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-		return WERR_NOMEM;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return WERR_REG_CORRUPT;
-	}
-
-	return WERR_OK;
-}
-
-static WERROR regdb_set_secdesc(const char *key,
-				struct security_descriptor *secdesc)
-{
-	prs_struct ps;
-	TALLOC_CTX *mem_ctx;
-	char *tdbkey;
-	WERROR err = WERR_NOMEM;
-	TDB_DATA tdbdata;
-
-	if (!(mem_ctx = talloc_init("regdb_set_secdesc"))) {
-		return WERR_NOMEM;
-	}
-
-	ZERO_STRUCT(ps);
-
-	if (!(tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX,
-				       key))) {
-		goto done;
-	}
-	normalize_dbkey(tdbkey);
-
-	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
-						   &tdbdata.dptr,
-						   &tdbdata.dsize));
-	if (!W_ERROR_IS_OK(err)) {
-		goto done;
-	}
-
-	if (tdb_trans_store_bystring(tdb_reg->tdb, tdbkey, tdbdata, 0) == -1) {
-		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
-		goto done;
-	}
-
- done:
-	prs_mem_free(&ps);
-	TALLOC_FREE(mem_ctx);
-	return err;
-}
 
 /* 
  * Table of function pointers for default access
@@ -777,7 +658,7 @@ REGISTRY_OPS regdb_ops = {
 	regdb_fetch_values,
 	regdb_store_keys,
 	regdb_store_values,
-	NULL,
-	regdb_get_secdesc,
-	regdb_set_secdesc
+	NULL
 };
+
+

@@ -131,13 +131,11 @@ int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return(ERROR_DOS(ERRSRV,ERRmsgoff));
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgfrom, p,
-			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgto, p,
-			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
 	msg = p;
 
@@ -172,16 +170,14 @@ int reply_sendstrt(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 		return(ERROR_DOS(ERRSRV,ERRmsgoff));
 	}
 
-	outsize = set_message(inbuf,outbuf,1,0,True);
+	outsize = set_message(outbuf,1,0,True);
 
 	memset(msgbuf,'\0',sizeof(msgbuf));
 	msgpos = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgfrom, p,
-			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf(inbuf, SVAL(inbuf, smb_flg2), msgto, p,
-			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
 	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
@@ -206,7 +202,7 @@ int reply_sendtxt(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 		return(ERROR_DOS(ERRSRV,ERRmsgoff));
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
 	msg = smb_buf(inbuf) + 1;
 
@@ -237,7 +233,7 @@ int reply_sendend(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 		return(ERROR_DOS(ERRSRV,ERRmsgoff));
 	}
 
-	outsize = set_message(inbuf,outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
 	DEBUG(3,("SMBsendend\n"));
 

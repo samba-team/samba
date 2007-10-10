@@ -242,10 +242,9 @@ struct pdb_search {
  * the pdb module. Remove the latter, this might happen more often. VL.
  * changed to version 14 to move lookup_rids and lookup_names to return
  * enum lsa_SidType rather than uint32.
- * Changed to 16 for access to the trusted domain passwords (obnox).
  */
 
-#define PASSDB_INTERFACE_VERSION 16
+#define PASSDB_INTERFACE_VERSION 15
 
 struct pdb_methods 
 {
@@ -329,6 +328,9 @@ struct pdb_methods
 				 TALLOC_CTX *mem_ctx,
 				 uint32 group_rid, uint32 member_rid);
 
+	NTSTATUS (*find_alias)(struct pdb_methods *methods,
+			       const char *name, DOM_SID *sid);
+
 	NTSTATUS (*create_alias)(struct pdb_methods *methods,
 				 const char *name, uint32 *rid);
 
@@ -400,19 +402,6 @@ struct pdb_methods
 
 	BOOL (*rid_algorithm)(struct pdb_methods *methods);
 	BOOL (*new_rid)(struct pdb_methods *methods, uint32 *rid);
-
-
-	BOOL (*get_trusteddom_pw)(struct pdb_methods *methods,
-				  const char *domain, char** pwd, 
-				  DOM_SID *sid, time_t *pass_last_set_time);
-	BOOL (*set_trusteddom_pw)(struct pdb_methods *methods, 
-				  const char* domain, const char* pwd,
-	        	  	  const DOM_SID *sid);
-	BOOL (*del_trusteddom_pw)(struct pdb_methods *methods, 
-				  const char *domain);
-	NTSTATUS (*enum_trusteddoms)(struct pdb_methods *methods,
-				     TALLOC_CTX *mem_ctx, uint32 *num_domains,
-				     struct trustdom_info ***domains);
 
 	void *private_data;  /* Private data of some kind */
 	

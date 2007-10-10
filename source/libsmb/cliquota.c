@@ -54,9 +54,8 @@ static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 
 	ZERO_STRUCT(qt);
 
-	if (!rdata||!offset||!pqt) {
-		smb_panic("parse_quota_record: called with NULL POINTER!");
-	}
+	if (!rdata||!offset||!pqt)
+		smb_panic("parse_quota_record: called with NULL POINTER!\n");
 
 	if (rdata_count < 40) {
 		return False;
@@ -139,9 +138,8 @@ BOOL cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	unsigned int sid_len;
 	unsigned int offset;
 
-	if (!cli||!pqt) {
+	if (!cli||!pqt)
 		smb_panic("cli_get_user_quota() called with NULL Pointer!");
-	}
 
 	setup = NT_TRANSACT_GET_USER_QUOTA;
 
@@ -206,9 +204,8 @@ BOOL cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	unsigned int sid_len;	
 	memset(data,'\0',112);
 	
-	if (!cli||!pqt) {
+	if (!cli||!pqt)
 		smb_panic("cli_set_user_quota() called with NULL Pointer!");
-	}
 
 	setup = NT_TRANSACT_SET_USER_QUOTA;
 
@@ -268,9 +265,8 @@ BOOL cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 	SMB_NTQUOTA_STRUCT qt;
 	SMB_NTQUOTA_LIST *tmp_list_ent;
 
-	if (!cli||!pqt_list) {
+	if (!cli||!pqt_list)
 		smb_panic("cli_list_user_quota() called with NULL Pointer!");
-	}
 
 	setup = NT_TRANSACT_GET_USER_QUOTA;
 
@@ -423,9 +419,8 @@ BOOL cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 	SMB_NTQUOTA_STRUCT qt;
 	ZERO_STRUCT(qt);
 
-	if (!cli||!pqt) {
+	if (!cli||!pqt)
 		smb_panic("cli_get_fs_quota_info() called with NULL Pointer!");
-	}
 
 	setup = TRANSACT2_QFSINFO;
 	
@@ -512,9 +507,8 @@ BOOL cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 	ZERO_STRUCT(qt);
 	memset(data,'\0',48);
 
-	if (!cli||!pqt) {
+	if (!cli||!pqt)
 		smb_panic("cli_set_fs_quota_info() called with NULL Pointer!");
-	}
 
 	setup = TRANSACT2_SETFSINFO;
 
@@ -583,9 +577,8 @@ static char *quota_str_static(SMB_BIG_UINT val, BOOL special, BOOL _numeric)
 
 void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, BOOL _verbose, BOOL _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, BOOL _numeric))
 {
-	if (!qt) {
+	if (!qt)
 		smb_panic("dump_ntquota() called with NULL pointer");
-	}
 
 	switch (qt->qtype) {
 		case SMB_USER_FS_QUOTA_TYPE:

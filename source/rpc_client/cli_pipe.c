@@ -915,8 +915,8 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 #ifdef HAVE_KRB5
 	int ret;
 	struct kerberos_auth_struct *a = cli->auth.a_u.kerberos_auth;
-	DATA_BLOB tkt = data_blob_null;
-	DATA_BLOB tkt_wrapped = data_blob_null;
+	DATA_BLOB tkt = data_blob(NULL, 0);
+	DATA_BLOB tkt_wrapped = data_blob(NULL, 0);
 
 	/* We may change the pad length before marshalling. */
 	init_rpc_hdr_auth(pauth_out, RPC_KRB5_AUTH_TYPE, (int)auth_level, 0, 1);
@@ -953,7 +953,7 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	}
 
 	DEBUG(5, ("create_krb5_auth_bind_req: Created krb5 GSS blob :\n"));
-	dump_data(5, tkt_wrapped.data, tkt_wrapped.length);
+	dump_data(5, (const char *)tkt_wrapped.data, tkt_wrapped.length);
 
 	data_blob_free(&tkt_wrapped);
 	return NT_STATUS_OK;
@@ -972,9 +972,9 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 						prs_struct *auth_data)
 {
 	NTSTATUS nt_status;
-	DATA_BLOB null_blob = data_blob_null;
-	DATA_BLOB request = data_blob_null;
-	DATA_BLOB spnego_msg = data_blob_null;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB request = data_blob(NULL, 0);
+	DATA_BLOB spnego_msg = data_blob(NULL, 0);
 
 	/* We may change the pad length before marshalling. */
 	init_rpc_hdr_auth(pauth_out, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
@@ -1003,7 +1003,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 	}
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, spnego_msg.data, spnego_msg.length);
+	dump_data(5, (const char *)spnego_msg.data, spnego_msg.length);
 
 	data_blob_free(&spnego_msg);
 	return NT_STATUS_OK;
@@ -1019,8 +1019,8 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 						prs_struct *auth_data)
 {
 	NTSTATUS nt_status;
-	DATA_BLOB null_blob = data_blob_null;
-	DATA_BLOB request = data_blob_null;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB request = data_blob(NULL, 0);
 
 	/* We may change the pad length before marshalling. */
 	init_rpc_hdr_auth(pauth_out, RPC_NTLMSSP_AUTH_TYPE, (int)auth_level, 0, 1);
@@ -1044,7 +1044,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	}
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, request.data, request.length);
+	dump_data(5, (const char *)request.data, request.length);
 
 	data_blob_free(&request);
 	return NT_STATUS_OK;
@@ -1250,7 +1250,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 {
 	RPC_HDR_AUTH auth_info;
 	NTSTATUS status;
-	DATA_BLOB auth_blob = data_blob_null;
+	DATA_BLOB auth_blob = data_blob(NULL, 0);
 	uint16 data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 
 	if (!cli->auth.a_u.ntlmssp_state) {
@@ -1645,10 +1645,10 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 	}
 
 	DEBUG(5,("Bind Abstract Syntax: "));	
-	dump_data(5, (uint8 *)&pipe_names[pipe_idx].abstr_syntax, 
+	dump_data(5, (char*)&pipe_names[pipe_idx].abstr_syntax, 
 	          sizeof(pipe_names[pipe_idx].abstr_syntax));
 	DEBUG(5,("Bind Transfer Syntax: "));
-	dump_data(5, (uint8 *)&pipe_names[pipe_idx].trans_syntax,
+	dump_data(5, (char*)&pipe_names[pipe_idx].trans_syntax,
 	          sizeof(pipe_names[pipe_idx].trans_syntax));
 
 	/* copy the required syntaxes out so we can do the right bind */
@@ -1775,8 +1775,8 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 				enum pipe_auth_type auth_type,
 				enum pipe_auth_level auth_level)
 {
-	DATA_BLOB server_response = data_blob_null;
-	DATA_BLOB client_reply = data_blob_null;
+	DATA_BLOB server_response = data_blob(NULL,0);
+	DATA_BLOB client_reply = data_blob(NULL,0);
 	RPC_HDR_AUTH hdr_auth;
 	NTSTATUS nt_status;
 	prs_struct rpc_out;
@@ -1900,10 +1900,10 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
                                 enum pipe_auth_type auth_type,
                                 enum pipe_auth_level auth_level)
 {
-	DATA_BLOB server_spnego_response = data_blob_null;
-	DATA_BLOB server_ntlm_response = data_blob_null;
-	DATA_BLOB client_reply = data_blob_null;
-	DATA_BLOB tmp_blob = data_blob_null;
+	DATA_BLOB server_spnego_response = data_blob(NULL,0);
+	DATA_BLOB server_ntlm_response = data_blob(NULL,0);
+	DATA_BLOB client_reply = data_blob(NULL,0);
+	DATA_BLOB tmp_blob = data_blob(NULL, 0);
 	RPC_HDR_AUTH hdr_auth;
 	NTSTATUS nt_status;
 	prs_struct rpc_out;
@@ -1953,7 +1953,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	tmp_blob = spnego_gen_auth(client_reply);
 	data_blob_free(&client_reply);
 	client_reply = tmp_blob;
-	tmp_blob = data_blob_null; /* Ensure it's safe to free this just in case. */
+	tmp_blob = data_blob(NULL,0); /* Ensure it's safe to free this just in case. */
 
 	/* Now prepare the alter context pdu. */
 	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
@@ -2002,7 +2002,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	prs_copy_data_out((char *)server_spnego_response.data, rbuf, phdr->auth_len);
 
 	/* Check we got a valid auth response. */
-	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK, OID_NTLMSSP, &tmp_blob)) {
+	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK, &tmp_blob)) {
 		data_blob_free(&server_spnego_response);
 		data_blob_free(&tmp_blob);
 		return NT_STATUS_INVALID_PARAMETER;

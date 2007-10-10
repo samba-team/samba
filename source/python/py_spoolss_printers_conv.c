@@ -103,7 +103,6 @@ struct pyconv py_PRINTER_INFO_2[] = {
 };	
 
 struct pyconv py_PRINTER_INFO_3[] = {
-	{ "flags", PY_UINT32, offsetof(PRINTER_INFO_3, flags) },
 	{ NULL }
 };	
 

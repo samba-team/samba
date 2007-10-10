@@ -49,13 +49,12 @@
 /* assert macros */
 #ifdef DEVELOPER
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-		 __FILE__, __LINE__, #b)), smb_panic("assert failed: " #b)))
+        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
+		 __FILE__, __LINE__)), smb_panic("assert failed")))
 #else
 /* redefine the assert macro for non-developer builds */
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-	    __FILE__, __LINE__, #b))))
+        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__))))
 #endif
 
 #define SMB_WARN(condition, message) \
@@ -163,15 +162,16 @@
 #define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
                 (fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__,__FILE__)
+#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
-#define ERROR_DOS(class,code) error_packet(inbuf,outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(inbuf,outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(inbuf,outbuf,class,code,status,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_OPEN(status) error_open(outbuf,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
@@ -190,10 +190,6 @@
 
 #define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
 #define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = (len&0x10000)>>16; \
-        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF; } while (0)
-
-#define smb_len_large(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
-#define _smb_setlen_large(buf,len) do { buf[0] = 0; buf[1] = (len&0xFF0000)>>16; \
         buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF; } while (0)
 
 /*******************************************************************
@@ -361,5 +357,13 @@ do { \
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
+
+#ifndef ISDOT
+#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
+#endif /* ISDOT */
+
+#ifndef ISDOTDOT
+#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
+#endif /* ISDOTDOT */
 
 #endif /* _SMB_MACROS_H */

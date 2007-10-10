@@ -22,8 +22,8 @@
 #include "libmsrpc.h"
 #include "libmsrpc_internal.h"
 
-NTSTATUS cac_delete_subkeys_recursive(struct rpc_pipe_client * pipe_hnd,
-				      TALLOC_CTX * mem_ctx, POLICY_HND * key);
+WERROR cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
+				     TALLOC_CTX * mem_ctx, POLICY_HND * key );
 
 int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		    struct RegConnect *op )
@@ -31,6 +31,7 @@ int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	SMBCSRV *srv = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND *key = NULL;
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -56,7 +57,7 @@ int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		if ( !
 		     ( pipe_hnd =
 		       cli_rpc_pipe_open_noauth( srv->cli, PI_WINREG,
-						 &hnd->status ) ) ) {
+						 &( hnd->status ) ) ) ) {
 			return CAC_FAILURE;
 		}
 
@@ -75,9 +76,9 @@ int cac_RegConnect( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status =
-		rpccli_winreg_Connect( pipe_hnd, mem_ctx, op->in.root,
-				       op->in.access, key );
+	err = rpccli_reg_connect( pipe_hnd, mem_ctx, op->in.root,
+				  op->in.access, key );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -92,6 +93,7 @@ int cac_RegClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		  POLICY_HND * key )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -112,7 +114,8 @@ int cac_RegClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_winreg_CloseKey( pipe_hnd, mem_ctx, key );
+	err = rpccli_reg_close( pipe_hnd, mem_ctx, key );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -125,7 +128,7 @@ int cac_RegOpenKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		    struct RegOpenKey *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct winreg_String key_string;
+	WERROR err;
 
 	POLICY_HND *key_out;
 	POLICY_HND *parent_key;
@@ -190,11 +193,9 @@ int cac_RegOpenKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	key_string.name = key_name;
-	hnd->status =
-		rpccli_winreg_OpenKey( pipe_hnd, mem_ctx, parent_key,
-				       key_string, 0, op->in.access,
-				       key_out );
+	err = rpccli_reg_open_entry( pipe_hnd, mem_ctx, parent_key, key_name,
+				     op->in.access, key_out );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -202,9 +203,8 @@ int cac_RegOpenKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	if ( !op->in.parent_key ) {
 		/*then close the one that we opened above */
-		hnd->status =
-			rpccli_winreg_CloseKey( pipe_hnd, mem_ctx,
-						parent_key );
+		err = rpccli_reg_close( pipe_hnd, mem_ctx, parent_key );
+		hnd->status = werror_to_ntstatus( err );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 			return CAC_FAILURE;
@@ -220,6 +220,7 @@ int cac_RegEnumKeys( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		     struct RegEnumKeys *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
 
 	/*buffers for rpccli_reg_enum_key call */
 	fstring key_name_in;
@@ -235,10 +236,7 @@ int cac_RegEnumKeys( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	if ( !hnd )
 		return CAC_FAILURE;
 
-	/* This is to avoid useless rpc calls, if the last call 
-	   exhausted all the keys, then we don't need to go 
-	   through everything again */
-
+	/*this is to avoid useless rpc calls, if the last call exhausted all the keys, then we don't need to go through everything again */
 	if ( NT_STATUS_V( hnd->status ) ==
 	     NT_STATUS_V( NT_STATUS_GUIDS_EXHAUSTED ) )
 		return CAC_FAILURE;
@@ -259,41 +257,43 @@ int cac_RegEnumKeys( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	/* The only way to know how many keys to expect is to 
-	   assume max_keys keys will be found */
+   /**the only way to know how many keys to expect is to assume max_keys keys will be found*/
+	if (op->in.max_keys) {
+		key_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
+		if ( !key_names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	key_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
-	if ( !key_names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
+		class_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
+		if ( !class_names_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( key_names_out );
+			return CAC_FAILURE;
+		}
 
-	class_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_keys );
-	if ( !class_names_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( key_names_out );
-		return CAC_FAILURE;
-	}
+		mod_times_out = TALLOC_ARRAY( mem_ctx, time_t, op->in.max_keys );
+		if ( !mod_times_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE( key_names_out );
+			TALLOC_FREE( class_names_out );
 
-	mod_times_out = TALLOC_ARRAY( mem_ctx, time_t, op->in.max_keys );
-	if ( !mod_times_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE( key_names_out );
-		TALLOC_FREE( class_names_out );
-
-		return CAC_FAILURE;
+			return CAC_FAILURE;
+		}
+	} else {
+		key_names_out = NULL;
+		class_names_out = NULL;
+		mod_times_out = NULL;
 	}
 
 	resume_idx = op->out.resume_idx;
 
 	do {
-#if 0
-		hnd->status =
-			rpccli_winreg_EnumKey( pipe_hnd, mem_ctx, op->in.key,
-						resume_idx, key_name_in,
-						class_name_in,
-						&mod_times_out );
-#endif
+		err = rpccli_reg_enum_key( pipe_hnd, mem_ctx, op->in.key,
+					   resume_idx, key_name_in,
+					   class_name_in,
+					   &mod_times_out[num_keys_out] );
+		hnd->status = werror_to_ntstatus( err );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 			/*don't increment any values */
@@ -334,10 +334,11 @@ int cac_RegCreateKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		      struct RegCreateKey *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
+
 	POLICY_HND *key_out;
+
 	struct RegOpenKey rok;
-	struct winreg_String key_string, class_string;
-	enum winreg_CreateAction action = 0;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -378,13 +379,10 @@ int cac_RegCreateKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	key_string.name = op->in.key_name;
-	class_string.name = op->in.class_name;
-	hnd->status =
-		rpccli_winreg_CreateKey( pipe_hnd, mem_ctx, op->in.parent_key,
-					 key_string, class_string, 0,
-					 op->in.access, NULL, key_out,
-					 &action );
+	err = rpccli_reg_create_key_ex( pipe_hnd, mem_ctx, op->in.parent_key,
+					op->in.key_name, op->in.class_name,
+					op->in.access, key_out );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -396,97 +394,60 @@ int cac_RegCreateKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 }
 
-NTSTATUS cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
+WERROR cac_delete_subkeys_recursive( struct rpc_pipe_client * pipe_hnd,
 				     TALLOC_CTX * mem_ctx, POLICY_HND * key )
 {
+	/*NOTE: using cac functions might result in a big(ger) memory bloat, and would probably be far less efficient 
+	 * so we use the cli_reg functions directly*/
+
+	WERROR err = WERR_OK;
+
 	POLICY_HND subkey;
 	fstring subkey_name;
+	fstring class_buf;
+	time_t mod_time_buf;
+
 	int cur_key = 0;
-	NTSTATUS status;
-	uint32 num_subkeys, max_subkeylen, max_classlen;
-	uint32 num_values, max_valnamelen, maxvalbufsize;
-	char *name_buffer; 
-	struct winreg_String class_string;
 
-	NTTIME modtime;
-	uint32 secdescsize;
+	while ( W_ERROR_IS_OK( err ) ) {
+		err = rpccli_reg_enum_key( pipe_hnd, mem_ctx, key, cur_key,
+					   subkey_name, class_buf,
+					   &mod_time_buf );
 
-	/* First get the max subkey name length */
-
-	class_string.name = NULL;
-	status = rpccli_winreg_QueryInfoKey( pipe_hnd, mem_ctx, key, 
-					     &class_string, &num_subkeys, 
-					     &max_subkeylen, &max_classlen,
-					     &num_values, &max_valnamelen,
-					     &maxvalbufsize, &secdescsize, 
-					     &modtime );
-
-
-	if ( !NT_STATUS_IS_OK( status ) ) {
-		return status;
-	}
-
-	if ( (name_buffer = TALLOC_ARRAY( mem_ctx, char, max_subkeylen )) == NULL ) {
-		d_fprintf(stderr, "Memory allocation error.\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-
-	while ( NT_STATUS_IS_OK( status ) ) {
-		struct winreg_String key_string;
-		struct winreg_StringBuf subkey_string;
-		fstring subkeyname;
-
-		memset( name_buffer, 0x0, max_subkeylen );
-		subkey_string.name = name_buffer;
-		subkey_string.length = 0;
-		subkey_string.size = max_subkeylen;
-
-		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, key, cur_key, 
-			&subkey_string, NULL, NULL);
-
-		if ( !NT_STATUS_IS_OK( status ) )
+		if ( !W_ERROR_IS_OK( err ) )
 			break;
-
-		/* copy the keyname and add the terminating NULL */
-
-		StrnCpy( subkeyname, subkey_string.name, 
-			 MIN(subkey_string.length, sizeof(subkeyname)-1) );
-		subkeyname[MIN(subkey_string.length, sizeof(subkeyname)-1)] = '\0';
 
 		/*try to open the key with full access */
+		err = rpccli_reg_open_entry( pipe_hnd, mem_ctx, key,
+					     subkey_name, REG_KEY_ALL,
+					     &subkey );
 
-		key_string.name = subkeyname;
-		status = rpccli_winreg_OpenKey( pipe_hnd, mem_ctx, key,
-						key_string, 0, REG_KEY_ALL,
-						&subkey );
-
-		if ( !NT_STATUS_IS_OK( status ) )
+		if ( !W_ERROR_IS_OK( err ) )
 			break;
 
-		status = cac_delete_subkeys_recursive( pipe_hnd, mem_ctx,
+		err = cac_delete_subkeys_recursive( pipe_hnd, mem_ctx,
 						    &subkey );
 
-		if ( !W_ERROR_EQUAL( ntstatus_to_werror(status), WERR_NO_MORE_ITEMS )
-		     && !NT_STATUS_IS_OK( status ) )
+		if ( !W_ERROR_EQUAL( err, WERR_NO_MORE_ITEMS )
+		     && !W_ERROR_IS_OK( err ) )
 			break;
 
 		/*flush the key just to be safe */
-		rpccli_winreg_FlushKey( pipe_hnd, mem_ctx, key );
+		rpccli_reg_flush_key( pipe_hnd, mem_ctx, key );
 
 		/*close the key that we opened */
-		rpccli_winreg_CloseKey( pipe_hnd, mem_ctx, &subkey );
+		rpccli_reg_close( pipe_hnd, mem_ctx, &subkey );
 
 		/*now we delete the subkey */
-		key_string.name = subkey_name;
-		status = rpccli_winreg_DeleteKey( pipe_hnd, mem_ctx, key,
-						  key_string );
+		err = rpccli_reg_delete_key( pipe_hnd, mem_ctx, key,
+					     subkey_name );
+
 
 		cur_key++;
 	}
 
 
-	return status;
+	return err;
 }
 
 
@@ -495,7 +456,7 @@ int cac_RegDeleteKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		      struct RegDeleteKey *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct winreg_String key_string;
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -517,10 +478,7 @@ int cac_RegDeleteKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	if ( op->in.recursive ) {
-
-		/* first open the key, and then delete all of 
-		   it's subkeys recursively */
-
+		/*first open the key, and then delete all of it's subkeys recursively */
 		struct RegOpenKey rok;
 
 		ZERO_STRUCT( rok );
@@ -532,11 +490,13 @@ int cac_RegDeleteKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		if ( !cac_RegOpenKey( hnd, mem_ctx, &rok ) )
 			return CAC_FAILURE;
 
-		hnd->status = cac_delete_subkeys_recursive( pipe_hnd, mem_ctx,
+		err = cac_delete_subkeys_recursive( pipe_hnd, mem_ctx,
 						    rok.out.key );
 
 		/*close the key that we opened */
 		cac_RegClose( hnd, mem_ctx, rok.out.key );
+
+		hnd->status = werror_to_ntstatus( err );
 
 		if ( NT_STATUS_V( hnd->status ) !=
 		     NT_STATUS_V( NT_STATUS_GUIDS_EXHAUSTED )
@@ -546,10 +506,9 @@ int cac_RegDeleteKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		/*now go on to actually delete the key */
 	}
 
-	key_string.name = op->in.name;
-	hnd->status =
-		rpccli_winreg_DeleteKey( pipe_hnd, mem_ctx, op->in.parent_key,
-					 key_string );
+	err = rpccli_reg_delete_key( pipe_hnd, mem_ctx, op->in.parent_key,
+				     op->in.name );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -562,7 +521,7 @@ int cac_RegDeleteValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			struct RegDeleteValue *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct winreg_String value_string;
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -583,10 +542,9 @@ int cac_RegDeleteValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	value_string.name = op->in.name;
-	hnd->status =
-		rpccli_winreg_DeleteValue( pipe_hnd, mem_ctx,
-					   op->in.parent_key, value_string );
+	err = rpccli_reg_delete_val( pipe_hnd, mem_ctx, op->in.parent_key,
+				     op->in.name );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -595,10 +553,21 @@ int cac_RegDeleteValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	return CAC_SUCCESS;
 }
 
+#if 0
+
+/* JRA - disabled until fix. */
+
+/* This code is currently broken so disable it - it needs to handle the ERROR_MORE_DATA
+   cleanly and resubmit the query. */
+
 int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			 struct RegQueryKeyInfo *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
+
+	char *class_name_out = NULL;
+	uint32 class_len = 0;
 	uint32 num_subkeys_out = 0;
 	uint32 long_subkey_out = 0;
 	uint32 long_class_out = 0;
@@ -607,7 +576,6 @@ int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	uint32 long_data_out = 0;
 	uint32 secdesc_size = 0;
 	NTTIME mod_time;
-	struct winreg_String class_string;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -628,24 +596,35 @@ int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_winreg_QueryInfoKey( pipe_hnd, mem_ctx, 
-						  op->in.key,
-						  &class_string,
-						  &num_subkeys_out,
-						  &long_subkey_out,
-						  &long_class_out,
-						  &num_values_out,
-						  &long_value_out,
-						  &long_data_out,
-						  &secdesc_size, &mod_time );
+	err = rpccli_reg_query_key( pipe_hnd, mem_ctx, op->in.key,
+				    class_name_out,
+				    &class_len,
+				    &num_subkeys_out,
+				    &long_subkey_out,
+				    &long_class_out,
+				    &num_values_out,
+				    &long_value_out,
+				    &long_data_out,
+				    &secdesc_size, &mod_time );
+
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
 
-	if ( !class_string.name ) {
+	if ( !class_name_out ) {
 		op->out.class_name = talloc_strdup( mem_ctx, "" );
-	} else {
-		op->out.class_name = talloc_strdup( mem_ctx, class_string.name );
+	} else if ( class_len != 0 && class_name_out[class_len - 1] != '\0' ) {
+		/*then we need to add a '\0' */
+		op->out.class_name =
+			TALLOC_SIZE( mem_ctx,
+				     sizeof( char ) * ( class_len + 1 ) );
+
+		memcpy( op->out.class_name, class_name_out, class_len );
+
+		op->out.class_name[class_len] = '\0';
+	} else {		/*then everything worked out fine in the function */
+		op->out.class_name = talloc_strdup( mem_ctx, class_name_out );
 	}
 
 	if ( !op->out.class_name ) {
@@ -660,22 +639,21 @@ int cac_RegQueryKeyInfo( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	op->out.longest_value_name = long_value_out;
 	op->out.longest_value_data = long_data_out;
 	op->out.security_desc_size = secdesc_size;
-	op->out.last_write_time = nt_time_to_unix( mod_time );
+	op->out.last_write_time = nt_time_to_unix( &mod_time );
 
 	return CAC_FAILURE;
 }
+#endif
 
 int cac_RegQueryValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		       struct RegQueryValue *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct winreg_String value_string;
+	WERROR err;
+
+	uint32 val_type;
 	REGVAL_BUFFER buffer;
 	REG_VALUE_DATA *data_out = NULL;
-	enum winreg_Type val_type;
-	uint8 *buf;
-	uint32 buf_size = 4096;
-	uint32 length = 0;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -696,21 +674,12 @@ int cac_RegQueryValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	value_string.name = op->in.val_name;
-
-	if ( ( buf = TALLOC_ARRAY( mem_ctx, uint8, buf_size ) ) == NULL ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
-
-	hnd->status = rpccli_winreg_QueryValue( pipe_hnd, mem_ctx, op->in.key,
-						value_string, &val_type, buf,
-						&buf_size, &length );
+	err = rpccli_reg_query_value( pipe_hnd, mem_ctx, op->in.key,
+				      op->in.val_name, &val_type, &buffer );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
-
-	init_regval_buffer( &buffer, buf, length );
 
 	data_out = cac_MakeRegValueData( mem_ctx, val_type, buffer );
 	if ( !data_out ) {
@@ -733,27 +702,23 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		       struct RegEnumValues *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	char *name_buffer;
+	WERROR err;
+
+	/*buffers for rpccli_reg_enum_key call */
+	fstring val_name_buf;
 	REGVAL_BUFFER val_buf;
+
+	/*output buffers */
 	uint32 *types_out = NULL;
 	REG_VALUE_DATA **values_out = NULL;
 	char **val_names_out = NULL;
 	uint32 num_values_out = 0;
 	uint32 resume_idx = 0;
-	uint32 num_subkeys, max_subkeylen, max_classlen;
-	uint32 num_values, max_valnamelen, maxvalbufsize;
-	struct winreg_String class_string;
-	NTTIME modtime;
-	uint32 secdescsize;
-	uint8 *buffer;
 
 	if ( !hnd )
 		return CAC_FAILURE;
 
-	/* This is to avoid useless rpc calls, if the last 
-	   call exhausted all the keys, then we don't need 
-	   to go through everything again */
-
+	/*this is to avoid useless rpc calls, if the last call exhausted all the keys, then we don't need to go through everything again */
 	if ( NT_STATUS_V( hnd->status ) ==
 	     NT_STATUS_V( NT_STATUS_GUIDS_EXHAUSTED ) )
 		return CAC_FAILURE;
@@ -775,101 +740,60 @@ int cac_RegEnumValues( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	/*we need to assume that the max number of values will be enumerated */
-	types_out = TALLOC_ARRAY( mem_ctx, uint32, op->in.max_values );
+	if (op->in.max_values) {
+		types_out =
+			( uint32 * ) TALLOC_ARRAY( mem_ctx, int, op->in.max_values );
+		if ( !types_out ) {
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	if ( !types_out ) {
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
+		values_out =
+			TALLOC_ARRAY( mem_ctx, REG_VALUE_DATA *, op->in.max_values );
+		if ( !values_out ) {
+			TALLOC_FREE( types_out );
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
 
-	values_out = TALLOC_ARRAY( mem_ctx, REG_VALUE_DATA *, 
-				   op->in.max_values );
-
-	if ( !values_out ) {
-		TALLOC_FREE( types_out );
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
-	}
-
-	val_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_values );
-
-	if ( !val_names_out ) {
-		TALLOC_FREE( types_out );
-		TALLOC_FREE( values_out );
-		hnd->status = NT_STATUS_NO_MEMORY;
-		return CAC_FAILURE;
+		val_names_out = TALLOC_ARRAY( mem_ctx, char *, op->in.max_values );
+		if ( !val_names_out ) {
+			TALLOC_FREE( types_out );
+			TALLOC_FREE( values_out );
+			hnd->status = NT_STATUS_NO_MEMORY;
+			return CAC_FAILURE;
+		}
+	} else {
+		types_out = NULL;
+		values_out = NULL;
+		val_names_out = NULL;
 	}
 
 	resume_idx = op->out.resume_idx;
-
-	class_string.name = NULL;
-	hnd->status = rpccli_winreg_QueryInfoKey( pipe_hnd, mem_ctx, op->in.key, 
-					     &class_string, &num_subkeys, 
-					     &max_subkeylen, &max_classlen,
-					     &num_values, &max_valnamelen,
-					     &maxvalbufsize, &secdescsize, 
-					     &modtime );
-
-	if ( !NT_STATUS_IS_OK(hnd->status) ) {
-		TALLOC_FREE( types_out );
-		TALLOC_FREE( values_out );
-
-		return CAC_FAILURE;
-	}
-
-	if ( (buffer = TALLOC_ARRAY( mem_ctx, uint8, maxvalbufsize )) == NULL ) {
-		TALLOC_FREE( types_out );
-		TALLOC_FREE( values_out );
-		hnd->status = NT_STATUS_NO_MEMORY;
-
-		return CAC_FAILURE;
-	}
-
-	if ( (name_buffer = TALLOC_ARRAY(mem_ctx, char, max_valnamelen)) == NULL ) {
-		TALLOC_FREE( types_out );
-		TALLOC_FREE( values_out );
-		TALLOC_FREE( buffer );
-		hnd->status = NT_STATUS_NO_MEMORY;
-
-		return CAC_FAILURE;
-	}
-		
 	do {
-		uint32 data_size = maxvalbufsize;
-		uint32 data_length = 0;
-		struct winreg_ValNameBuf name_buf;
+		ZERO_STRUCT( val_buf );
 
-		memset( name_buffer, 0x0, max_valnamelen );
-		name_buf.name = name_buffer;
-		name_buf.size = max_valnamelen;
-		name_buf.length = 0;
-		
-		hnd->status = rpccli_winreg_EnumValue( pipe_hnd, mem_ctx, 
-						       op->in.key,
-						       resume_idx, &name_buf,
-						       &types_out[num_values_out], buffer,
-						       &data_size,
-						       &data_length );
+		err = rpccli_reg_enum_val( pipe_hnd, mem_ctx, op->in.key,
+					   resume_idx, val_name_buf,
+					   &types_out[num_values_out],
+					   &val_buf );
+		hnd->status = werror_to_ntstatus( err );
 
 		if ( !NT_STATUS_IS_OK( hnd->status ) )
 			break;
 
-		ZERO_STRUCT( val_buf );
-		init_regval_buffer(  &val_buf, buffer, data_length );
-
-		values_out[num_values_out] = cac_MakeRegValueData( mem_ctx,
-								   types_out[num_values_out],
-								   val_buf );
-		val_names_out[num_values_out] = TALLOC_ARRAY( mem_ctx, char, name_buf.length+1 );
+		values_out[num_values_out] =
+			cac_MakeRegValueData( mem_ctx,
+					      types_out[num_values_out],
+					      val_buf );
+		val_names_out[num_values_out] =
+			talloc_strdup( mem_ctx, val_name_buf );
 
 		if ( !val_names_out[num_values_out]
 		     || !values_out[num_values_out] ) {
 			hnd->status = NT_STATUS_NO_MEMORY;
 			break;
 		}
-
-		StrnCpy( val_names_out[num_values_out], name_buf.name, name_buf.length );
-		(val_names_out[num_values_out])[name_buf.length] = '\0';
 
 		num_values_out++;
 		resume_idx++;
@@ -891,7 +815,7 @@ int cac_RegSetValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		     struct RegSetValue *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct winreg_String value_string;
+	WERROR err;
 
 	RPC_DATA_BLOB *buffer;
 
@@ -925,17 +849,16 @@ int cac_RegSetValue( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	value_string.name = op->in.val_name;
-	hnd->status =
-		rpccli_winreg_SetValue( pipe_hnd, mem_ctx, op->in.key,
-					value_string, op->in.type,
-					buffer->buffer, buffer->buf_len );
+	err = rpccli_reg_set_val( pipe_hnd, mem_ctx, op->in.key,
+				  op->in.val_name, op->in.type, buffer );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
 
 	/*flush */
-	hnd->status = rpccli_winreg_FlushKey( pipe_hnd, mem_ctx, op->in.key );
+	err = rpccli_reg_flush_key( pipe_hnd, mem_ctx, op->in.key );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
@@ -949,6 +872,8 @@ int cac_RegGetVersion( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		       struct RegGetVersion *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
+
 	uint32 version_out;
 
 	if ( !hnd )
@@ -970,9 +895,9 @@ int cac_RegGetVersion( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status =
-		rpccli_winreg_GetVersion( pipe_hnd, mem_ctx, op->in.key,
-					  &version_out );
+	err = rpccli_reg_getversion( pipe_hnd, mem_ctx, op->in.key,
+				     &version_out );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;
@@ -986,9 +911,12 @@ int cac_RegGetKeySecurity( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			   struct RegGetKeySecurity *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct KeySecurityData keysec;
+	WERROR err;
 
-	ZERO_STRUCT( keysec );
+	uint32 buf_size;
+	SEC_DESC_BUF buf;
+
+	ZERO_STRUCT( buf );
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -1009,18 +937,17 @@ int cac_RegGetKeySecurity( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status =
-		rpccli_winreg_GetKeySecurity( pipe_hnd, mem_ctx, op->in.key,
-					      op->in.info_type, &keysec );
+	err = rpccli_reg_get_key_sec( pipe_hnd, mem_ctx, op->in.key,
+				      op->in.info_type, &buf_size, &buf );
+	hnd->status = werror_to_ntstatus( err );
+
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
 	}
 
-#if 0	/* FIX ME!!!!  unmarshall the security descriptor */
-	op->out.size = buf.sd_size;
-	op->out.descriptor = dup_sec_desc( mem_ctx, buf.sd );
-#endif
+	op->out.size = buf.len;
+	op->out.descriptor = dup_sec_desc( mem_ctx, buf.sec );
 
 	if ( op->out.descriptor == NULL ) {
 		return CAC_FAILURE;
@@ -1033,9 +960,7 @@ int cac_RegSetKeySecurity( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 			   struct RegSetKeySecurity *op )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct KeySecurityData keysec;
-
-	ZERO_STRUCT( keysec );
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -1057,10 +982,48 @@ int cac_RegSetKeySecurity( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	/* FIXME!!! Marshall in the input sec_desc to struct KeySecurityData */
-	hnd->status =
-		rpccli_winreg_SetKeySecurity( pipe_hnd, mem_ctx, op->in.key,
-					      op->in.info_type, &keysec );
+	err = rpccli_reg_set_key_sec( pipe_hnd, mem_ctx, op->in.key,
+				      op->in.info_type, op->in.size,
+				      op->in.descriptor );
+	hnd->status = werror_to_ntstatus( err );
+
+
+	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
+		return CAC_FAILURE;
+	}
+
+	return CAC_SUCCESS;
+}
+
+int cac_RegSaveKey( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
+		    struct RegSaveKey *op )
+{
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
+
+	if ( !hnd )
+		return CAC_FAILURE;
+
+	if ( !hnd->_internal.ctx || !hnd->_internal.pipes[PI_WINREG] ) {
+		hnd->status = NT_STATUS_INVALID_HANDLE;
+		return CAC_FAILURE;
+	}
+
+	if ( !op || !op->in.key || !op->in.filename || !mem_ctx ) {
+		hnd->status = NT_STATUS_INVALID_PARAMETER;
+		return CAC_FAILURE;
+	}
+
+	pipe_hnd = cac_GetPipe( hnd, PI_WINREG );
+	if ( !pipe_hnd ) {
+		hnd->status = NT_STATUS_INVALID_HANDLE;
+		return CAC_FAILURE;
+	}
+
+	err = rpccli_reg_save_key( pipe_hnd, mem_ctx, op->in.key,
+				   op->in.filename );
+	hnd->status = werror_to_ntstatus( err );
+
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) ) {
 		return CAC_FAILURE;
@@ -1074,8 +1037,6 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 {
 	SMBCSRV *srv = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
 
 	char *msg;
 
@@ -1099,18 +1060,18 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 	}
 
 	/*initialize for winreg pipe if we have to */
-	if ( !hnd->_internal.pipes[PI_INITSHUTDOWN] ) {
+	if ( !hnd->_internal.pipes[PI_SHUTDOWN] ) {
 		if ( !
 		     ( pipe_hnd =
-		       cli_rpc_pipe_open_noauth( srv->cli, PI_INITSHUTDOWN,
+		       cli_rpc_pipe_open_noauth( srv->cli, PI_SHUTDOWN,
 						 &( hnd->status ) ) ) ) {
 			return CAC_FAILURE;
 		}
 
-		hnd->_internal.pipes[PI_INITSHUTDOWN] = True;
+		hnd->_internal.pipes[PI_SHUTDOWN] = True;
 	}
 
-	pipe_hnd = cac_GetPipe( hnd, PI_INITSHUTDOWN );
+	pipe_hnd = cac_GetPipe( hnd, PI_SHUTDOWN );
 	if ( !pipe_hnd ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
@@ -1118,28 +1079,23 @@ int cac_Shutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	msg = ( op->in.message !=
 		NULL ) ? op->in.message : talloc_strdup( mem_ctx, "" );
-	msg_string.name = &s;
-	msg_string.name->name = msg;
 
 	hnd->status = NT_STATUS_OK;
 
 	if ( hnd->_internal.srv_level > SRV_WIN_NT4 ) {
 		hnd->status =
-			rpccli_initshutdown_InitEx( pipe_hnd, mem_ctx, NULL,
-						    &msg_string,
-						    op->in.timeout,
-						    op->in.reboot,
-						    op->in.force,
-						    op->in.reason );
+			rpccli_shutdown_init_ex( pipe_hnd, mem_ctx, msg,
+						 op->in.timeout,
+						 op->in.reboot, op->in.force,
+						 op->in.reason );
 	}
 
 	if ( hnd->_internal.srv_level < SRV_WIN_2K
 	     || !NT_STATUS_IS_OK( hnd->status ) ) {
 		hnd->status =
-			rpccli_initshutdown_Init( pipe_hnd, mem_ctx, NULL,
-						  &msg_string, op->in.timeout,
-						  op->in.reboot,
-						  op->in.force );
+			rpccli_shutdown_init( pipe_hnd, mem_ctx, msg,
+					      op->in.timeout, op->in.reboot,
+					      op->in.force );
 
 		hnd->_internal.srv_level = SRV_WIN_NT4;
 	}
@@ -1158,18 +1114,18 @@ int cac_AbortShutdown( CacServerHandle * hnd, TALLOC_CTX * mem_ctx )
 	if ( !hnd )
 		return CAC_FAILURE;
 
-	if ( !hnd->_internal.ctx || !hnd->_internal.pipes[PI_INITSHUTDOWN] ) {
+	if ( !hnd->_internal.ctx || !hnd->_internal.pipes[PI_SHUTDOWN] ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
 	}
 
-	pipe_hnd = cac_GetPipe( hnd, PI_INITSHUTDOWN );
+	pipe_hnd = cac_GetPipe( hnd, PI_SHUTDOWN );
 	if ( !pipe_hnd ) {
 		hnd->status = NT_STATUS_INVALID_HANDLE;
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_initshutdown_Abort( pipe_hnd, mem_ctx, NULL );
+	hnd->status = rpccli_shutdown_abort( pipe_hnd, mem_ctx );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;

@@ -5,7 +5,6 @@ includedir=@includedir@
 
 Name: talloc 
 Description: A hierarchical pool based memory system with destructors
-Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ltalloc
-Cflags: -I${includedir} 
-URL: http://talloc.samba.org/
+Version: 4.0
+Libs: @LIBS@ -L${libdir} -ltalloc
+Cflags: -I${includedir} @CFLAGS@

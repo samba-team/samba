@@ -99,15 +99,23 @@ static BOOL ads_dc_name(const char *domain,
 		}
 
 #ifdef HAVE_KRB5
-		if (is_our_primary_domain(domain) && (ads->config.flags & ADS_KDC) && ads_closest_dc(ads)) {
-			/* We're going to use this KDC for this realm/domain.
-			   If we are using sites, then force the krb5 libs
-			   to use this KDC. */
+		if (is_our_primary_domain(domain) && (ads->config.flags & ADS_KDC)) {
+			if (ads_closest_dc(ads)) {
+				/* We're going to use this KDC for this realm/domain.
+				   If we are using sites, then force the krb5 libs
+				   to use this KDC. */
 
-			create_local_private_krb5_conf_for_domain(realm,
-								domain,
-								sitename,
-								ads->ldap_ip);
+				create_local_private_krb5_conf_for_domain(realm,
+									domain,
+									sitename,
+									ads->ldap_ip);
+			} else {
+				/* use an off site KDC */
+				create_local_private_krb5_conf_for_domain(realm,
+									domain,
+									NULL,
+									ads->ldap_ip);
+			}
 		}
 #endif
 		break;

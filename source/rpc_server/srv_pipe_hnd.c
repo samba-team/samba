@@ -351,6 +351,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	/* Store the session key and NT_TOKEN */
 	if (vuser) {
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
+		p->pipe_user.nt_user_token = dup_nt_token(
+			NULL, vuser->nt_user_token);
 	}
 
 	/*
@@ -937,7 +939,7 @@ ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n)
 	DEBUG(6,(" name: %s open: %s len: %d\n",
 		 p->name, BOOLSTR(p->open), (int)n));
 
-	dump_data(50, (uint8 *)data, n);
+	dump_data(50, data, n);
 
 	return p->namedpipe_write(p->np_state, data, n);
 }
@@ -1168,7 +1170,7 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 
 	DLIST_REMOVE(Pipes, p);
 	
-	/* TODO: Remove from pipe open db */
+	/* Remove from pipe open db */
 	
 	if ( !delete_pipe_opendb( p ) ) {
 		DEBUG(3,("close_rpc_pipe_hnd: failed to delete %s "

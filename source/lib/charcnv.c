@@ -168,7 +168,7 @@ void init_iconv(void)
 				conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 				if (!conv_handles[c1][c2]) {
 					DEBUG(0,("init_iconv: Conversion from %s to %s failed", n1, n2));
-					smb_panic("init_iconv: conv_handle initialization failed");
+					smb_panic("init_iconv: conv_handle initialization failed.");
 				}
 			}
 		}
@@ -1376,24 +1376,16 @@ size_t push_string_fn(const char *function, unsigned int line, const void *base_
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_string_fn(const char *function, unsigned int line,
-		      const void *base_ptr, uint16 smb_flags2, char *dest,
-		      const void *src, size_t dest_len, size_t src_len,
-		      int flags)
+size_t pull_string_fn(const char *function, unsigned int line, const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 #ifdef DEVELOPER
 	if (dest_len != (size_t)-1)
 		clobber_region(function, line, dest, dest_len);
 #endif
 
-	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {
-		smb_panic("No base ptr to get flg2 and neither ASCII nor "
-			  "UNICODE defined");
-	}
-
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
-	      (smb_flags2 & FLAGS2_UNICODE_STRINGS)))) {
+	      (SVAL(base_ptr, smb_flg2) & FLAGS2_UNICODE_STRINGS)))) {
 		return pull_ucs2(base_ptr, dest, src, dest_len, src_len, flags);
 	}
 	return pull_ascii(dest, src, dest_len, src_len, flags);

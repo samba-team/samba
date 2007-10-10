@@ -687,40 +687,6 @@ static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 #endif	/* not used */
 
-struct lookupsid_state {
-	DOM_SID sid;	
-	void *caller_private_data;
-};
-
-
-static void lookupsid_recv2(TALLOC_CTX *mem_ctx, BOOL success,
-			   struct winbindd_response *response,
-			   void *c, void *private_data)
-{
-	void (*cont)(void *priv, BOOL succ, const char *dom_name,
-		     const char *name, enum lsa_SidType type) =
-		(void (*)(void *, BOOL, const char *, const char *,
-			  enum lsa_SidType))c;
-	struct lookupsid_state *s = talloc_get_type_abort(private_data, 
-							  struct lookupsid_state);
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger lookupsid\n"));
-		cont(s->caller_private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("lookupsid (forest root) returned an error\n"));		
-		cont(s->caller_private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return;
-	}
-
-	cont(s->caller_private_data, True, response->data.name.dom_name,
-	     response->data.name.name,
-	     (enum lsa_SidType)response->data.name.type);
-}
-
 static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			   struct winbindd_response *response,
 			   void *c, void *private_data)
@@ -729,37 +695,20 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		     const char *name, enum lsa_SidType type) =
 		(void (*)(void *, BOOL, const char *, const char *,
 			  enum lsa_SidType))c;
-	struct lookupsid_state *s = talloc_get_type_abort(private_data, 
-							  struct lookupsid_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookupsid\n"));
-		cont(s->caller_private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
 	if (response->result != WINBINDD_OK) {
-		/* Try again using the forest root */
-		struct winbindd_domain *root_domain = find_root_domain();
-		struct winbindd_request request;
-		
-		if ( !root_domain ) {
-			DEBUG(5,("lookupsid_recv: unable to determine forest root\n"));
-			cont(s->caller_private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
-			return;
-		}
-
-		ZERO_STRUCT(request);
-		request.cmd = WINBINDD_LOOKUPSID;
-		fstrcpy(request.data.sid, sid_string_static(&s->sid));
-
-		do_async_domain(mem_ctx, root_domain, &request, lookupsid_recv2,
-				(void *)cont, s);
-
+		DEBUG(5, ("lookupsid returned an error\n"));
+		cont(private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
-	cont(s->caller_private_data, True, response->data.name.dom_name,
+	cont(private_data, True, response->data.name.dom_name,
 	     response->data.name.name,
 	     (enum lsa_SidType)response->data.name.type);
 }
@@ -773,7 +722,6 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 {
 	struct winbindd_domain *domain;
 	struct winbindd_request request;
-	struct lookupsid_state *s;	
 
 	domain = find_lookup_domain_from_sid(sid);
 	if (domain == NULL) {
@@ -787,17 +735,8 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	request.cmd = WINBINDD_LOOKUPSID;
 	fstrcpy(request.data.sid, sid_string_static(sid));
 
-	if ( (s = TALLOC_ZERO_P(mem_ctx, struct lookupsid_state)) == NULL ) {
-		DEBUG(0, ("winbindd_lookupsid_async: talloc failed\n"));
-		cont(private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return;
-	}
-
-	sid_copy( &s->sid, sid );	
-	s->caller_private_data = private_data;	
-
 	do_async_domain(mem_ctx, domain, &request, lookupsid_recv,
-			(void *)cont, s);
+			(void *)cont, private_data);
 }
 
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
@@ -823,9 +762,8 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 
 	/* Lookup the sid */
 
-	if (!winbindd_lookup_name_by_sid(state->mem_ctx, domain, &sid, 
-					 &dom_name, &name, &type)) 
-	{
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, &dom_name, &name,
+					 &type)) {
 		TALLOC_FREE(dom_name);
 		TALLOC_FREE(name);
 		return WINBINDD_ERROR;
@@ -844,13 +782,6 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
  This is the second callback after contacting the forest root
 ********************************************************************/
 
-struct lookupname_state {
-	char *dom_name;
-	char *name;
-	void *caller_private_data;
-};
-
-
 static void lookupname_recv2(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
 			    void *c, void *private_data)
@@ -859,30 +790,27 @@ static void lookupname_recv2(TALLOC_CTX *mem_ctx, BOOL success,
 		     enum lsa_SidType type) =
 		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
-	struct lookupname_state *s = talloc_get_type_abort( private_data, 
-							    struct lookupname_state );
-	
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookup_name\n"));
-		cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
 	if (response->result != WINBINDD_OK) {
 		DEBUG(5, ("lookup_name returned an error\n"));
-		cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
 	if (!string_to_sid(&sid, response->data.sid.sid)) {
 		DEBUG(0, ("Could not convert string %s to sid\n",
 			  response->data.sid.sid));
-		cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
-	cont(s->caller_private_data, True, &sid,
+	cont(private_data, True, &sid,
 	     (enum lsa_SidType)response->data.sid.type);
 }
 
@@ -898,34 +826,36 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		     enum lsa_SidType type) =
 		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
-	struct lookupname_state *s = talloc_get_type_abort( private_data, 
-							    struct lookupname_state );	
 
 	if (!success) {
 		DEBUG(5, ("lookupname_recv: lookup_name() failed!\n"));
-		cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
 	if (response->result != WINBINDD_OK) {
 		/* Try again using the forest root */
 		struct winbindd_domain *root_domain = find_root_domain();
+		struct winbindd_cli_state *state = (struct winbindd_cli_state*)private_data;		
 		struct winbindd_request request;		
+		char *name_domain, *name_account;
 		
 		if ( !root_domain ) {
 			DEBUG(5,("lookupname_recv: unable to determine forest root\n"));
-			cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+			cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 			return;
 		}
 
+		name_domain  = state->request.data.name.dom_name;
+		name_account = state->request.data.name.name;	
+
 		ZERO_STRUCT(request);
 		request.cmd = WINBINDD_LOOKUPNAME;
-
-		fstrcpy( request.data.name.dom_name, s->dom_name );
-		fstrcpy( request.data.name.name, s->name );		
+		fstrcpy(request.data.name.dom_name, name_domain);
+		fstrcpy(request.data.name.name, name_account);
 
 		do_async_domain(mem_ctx, root_domain, &request, lookupname_recv2,
-				(void *)cont, s);
+				(void *)cont, private_data);
 
 		return;
 	}
@@ -933,11 +863,11 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	if (!string_to_sid(&sid, response->data.sid.sid)) {
 		DEBUG(0, ("Could not convert string %s to sid\n",
 			  response->data.sid.sid));
-		cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
 
-	cont(s->caller_private_data, True, &sid,
+	cont(private_data, True, &sid,
 	     (enum lsa_SidType)response->data.sid.type);
 }
 
@@ -952,12 +882,10 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 			       void (*cont)(void *private_data, BOOL success,
 					    const DOM_SID *sid,
 					    enum lsa_SidType type),
-			       enum winbindd_cmd orig_cmd,
 			       void *private_data)
 {
 	struct winbindd_request request;
 	struct winbindd_domain *domain;
-	struct lookupname_state *s;	
 
 	if ( (domain = find_lookup_domain_from_name(dom_name)) == NULL ) {
 		DEBUG(5, ("Could not find domain for name %s\n", dom_name));
@@ -967,22 +895,11 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPNAME;
-	request.original_cmd = orig_cmd;
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
 
-	if ( (s = TALLOC_ZERO_P(mem_ctx, struct lookupname_state)) == NULL ) {
-		DEBUG(0, ("winbindd_lookupname_async: talloc failed\n"));
-		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
-		return;
-	}
-
-	s->dom_name = talloc_strdup( s, dom_name );
-	s->name     = talloc_strdup( s, name );
-	s->caller_private_data = private_data;
-
 	do_async_domain(mem_ctx, domain, &request, lookupname_recv,
-			(void *)cont, s);
+			(void *)cont, private_data);
 }
 
 enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
@@ -1014,7 +931,7 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 		  name_domain, lp_winbind_separator(), name_user));
 
 	/* Lookup name from DC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, state->request.original_cmd, domain, name_domain,
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
 					 name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
@@ -1492,12 +1409,6 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger query_user\n"));
-		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-                DEBUG(5, ("query_user returned an error\n"));
 		cont(private_data, False, NULL, NULL, NULL, NULL, -1, -1);
 		return;
 	}

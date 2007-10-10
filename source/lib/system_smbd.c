@@ -104,10 +104,12 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 
 	restore_re_gid();
 
-	if (sys_setgroups(gid, ngrp_saved, gids_saved) != 0) {
+	if (sys_setgroups(ngrp_saved, gids_saved) != 0) {
 		/* yikes! */
 		DEBUG(0,("ERROR: getgrouplist: failed to reset group list!\n"));
-		smb_panic("getgrouplist: failed to reset group list!");
+		smb_panic("getgrouplist: failed to reset group list!\n");
+		free(gids_saved);
+		return -1;
 	}
 
 	free(gids_saved);
@@ -154,7 +156,7 @@ BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 	gid_t *groups;
 	int i;
 
-	max_grp = MIN(32, groups_max());
+	max_grp = groups_max();
 	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
 	if (! temp_groups) {
 		return False;

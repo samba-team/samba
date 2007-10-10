@@ -392,20 +392,25 @@ NTSTATUS unix_convert(connection_struct *conn,
 					 * these two errors.
 					 */
 
-					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
-					   in the filename walk. */
+					/* ENOENT, ENOTDIR and ELOOP all map to
+					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+					 * in the filename walk. */
 
-					if (errno == ENOENT || errno == ENOTDIR) {
+					if (errno == ENOENT ||
+							errno == ENOTDIR ||
+							errno == ELOOP) {
 						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					return map_nt_error_from_unix(errno);
 				}
-	      
+
 				/* ENOENT is the only valid error here. */
 				if (errno != ENOENT) {
-					/* ENOENT and ENOTDIR both map to NT_STATUS_OBJECT_PATH_NOT_FOUND
-					   in the filename walk. */
-					if (errno == ENOTDIR) {
+					/* ENOTDIR and ELOOP both map to
+					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+					 * in the filename walk. */
+					if (errno == ENOTDIR ||
+							errno == ELOOP) {
 						return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 					return map_nt_error_from_unix(errno);
@@ -463,7 +468,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 		} /* end else */
 
 #ifdef DEVELOPER
-		if (VALID_STAT(st) && get_delete_on_close_flag(file_id_sbuf(&st))) {
+		if (VALID_STAT(st) && get_delete_on_close_flag(st.st_dev, st.st_ino)) {
 			return NT_STATUS_DELETE_PENDING;
 		}
 #endif
@@ -512,7 +517,7 @@ NTSTATUS unix_convert(connection_struct *conn,
 }
 
 /****************************************************************************
- Check a filename - possibly calling check_reduced_name.
+ Check a filename - possibly caling reducename.
  This is called by every routine before it allows an operation on a filename.
  It does any final confirmation necessary to ensure that the filename is
  a valid one for the user to access.
@@ -529,7 +534,7 @@ NTSTATUS check_name(connection_struct *conn, const pstring name)
 	}
 
 	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
-		NTSTATUS status = check_reduced_name(conn,name);
+		NTSTATUS status = reduce_name(conn,name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5,("check_name: name %s failed with %s\n",name, nt_errstr(status)));
 			return status;

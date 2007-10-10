@@ -103,8 +103,7 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 		  name_domain, lp_winbind_separator(), name_user));
 
 	winbindd_lookupname_async(state->mem_ctx, name_domain, name_user,
-				  lookupname_recv, WINBINDD_LOOKUPNAME, 
-				  state);
+				  lookupname_recv, state);
 }
 
 static void lookupname_recv(void *private_data, BOOL success,
@@ -271,7 +270,7 @@ static void sid2gid_lookupsid_recv( void *private_data, BOOL success,
 	DOM_SID sid;
 
 	if (!success) {
-		DEBUG(5, ("sid2gid_lookupsid_recv: Could not get sid type for %s\n",
+		DEBUG(5, ("sid2gid_lookupsid_recv: Could not convert get sid type for %s\n",
 			  state->request.data.sid));
 		request_error(state);
 		return;

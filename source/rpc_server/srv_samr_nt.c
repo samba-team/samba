@@ -56,8 +56,8 @@ typedef struct disp_info {
 	uint16 enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
 
-	struct timed_event *cache_timeout_event; /* cache idle timeout
-						  * handler. */
+
+	smb_event_id_t di_cache_timeout_event; /* cache idle timeout handler. */
 } DISP_INFO;
 
 /* We keep a static list of these by SID as modern clients close down
@@ -345,10 +345,9 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
  Function to free the per SID data.
  ********************************************************************/
 
-static void free_samr_cache(DISP_INFO *disp_info)
+static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
 {
-	DEBUG(10, ("free_samr_cache: deleting cache for SID %s\n",
-		   sid_string_static(&disp_info->sid)));
+	DEBUG(10,("free_samr_cache: deleting cache for SID %s\n", sid_str));
 
 	/* We need to become root here because the paged search might have to
 	 * tell the LDAP server we're not interested in the rest anymore. */
@@ -396,8 +395,10 @@ static void free_samr_info(void *ptr)
 	/* Only free the dispinfo cache if no one bothered to set up
 	   a timeout. */
 
-	if (info->disp_info && info->disp_info->cache_timeout_event == NULL) {
-		free_samr_cache(info->disp_info);
+	if (info->disp_info && info->disp_info->di_cache_timeout_event == (smb_event_id_t)0) {
+		fstring sid_str;
+		sid_to_string(sid_str, &info->disp_info->sid);
+		free_samr_cache(info->disp_info, sid_str);
 	}
 
 	talloc_destroy(info->mem_ctx);
@@ -407,18 +408,23 @@ static void free_samr_info(void *ptr)
  Idle event handler. Throw away the disp info cache.
  ********************************************************************/
 
-static void disp_info_cache_idle_timeout_handler(struct event_context *ev_ctx,
-						 struct timed_event *te,
-						 const struct timeval *now,
-						 void *private_data)
+static void disp_info_cache_idle_timeout_handler(void **private_data,
+					time_t *ev_interval,
+					time_t ev_now)
 {
-	DISP_INFO *disp_info = (DISP_INFO *)private_data;
+	fstring sid_str;
+	DISP_INFO *disp_info = (DISP_INFO *)(*private_data);
 
-	TALLOC_FREE(disp_info->cache_timeout_event);
+	sid_to_string(sid_str, &disp_info->sid);
 
-	DEBUG(10, ("disp_info_cache_idle_timeout_handler: caching timed "
-		   "out\n"));
-	free_samr_cache(disp_info);
+	free_samr_cache(disp_info, sid_str);
+
+	/* Remove the event. */
+	smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+	disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+
+	DEBUG(10,("disp_info_cache_idle_timeout_handler: caching timed out for SID %s at %u\n",
+		sid_str, (unsigned int)ev_now));
 }
 
 /*******************************************************************
@@ -427,20 +433,24 @@ static void disp_info_cache_idle_timeout_handler(struct event_context *ev_ctx,
 
 static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromnow)
 {
+	fstring sid_str;
+
+	sid_to_string(sid_str, &disp_info->sid);
+
 	/* Remove any pending timeout and update. */
 
-	TALLOC_FREE(disp_info->cache_timeout_event);
+	if (disp_info->di_cache_timeout_event) {
+		smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+		disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+	}
 
-	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for "
-		  "SID %s for %u seconds\n",
-		  sid_string_static(&disp_info->sid),
-		  (unsigned int)secs_fromnow ));
+	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for SID %s for %u seconds\n",
+		sid_str, (unsigned int)secs_fromnow ));
 
-	disp_info->cache_timeout_event = event_add_timed(
-		smbd_event_context(), NULL,
-		timeval_current_ofs(secs_fromnow, 0),
-		"disp_info_cache_idle_timeout_handler",
-		disp_info_cache_idle_timeout_handler, (void *)disp_info);
+	disp_info->di_cache_timeout_event =
+		smb_register_idle_event(disp_info_cache_idle_timeout_handler,
+					disp_info,
+					secs_fromnow);
 }
 
 /*******************************************************************
@@ -450,13 +460,18 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 
 static void force_flush_samr_cache(DISP_INFO *disp_info)
 {
-	if ((disp_info == NULL) || (disp_info->cache_timeout_event == NULL)) {
-		return;
-	}
+	if (disp_info) {
+		fstring sid_str;
 
-	DEBUG(10,("force_flush_samr_cache: clearing idle event\n"));
-	TALLOC_FREE(disp_info->cache_timeout_event);
-	free_samr_cache(disp_info);
+		sid_to_string(sid_str, &disp_info->sid);
+		if (disp_info->di_cache_timeout_event) {
+			smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+			disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+			DEBUG(10,("force_flush_samr_cache: clearing idle event for SID %s\n",
+				sid_str));
+		}
+		free_samr_cache(disp_info, sid_str);
+	}
 }
 
 /*******************************************************************
@@ -708,7 +723,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	dacl = q_u->buf->sd->dacl;
+	dacl = q_u->buf->sec->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
 		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass, 
@@ -1354,7 +1369,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	DOM_SID   sid;
 	struct acct_info info;
 	uint32    acc_granted;
-	NTSTATUS status;
+	BOOL ret;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1368,11 +1383,11 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	}
 
 	become_root();
-	status = pdb_get_aliasinfo(&sid, &info);
+	ret = pdb_get_aliasinfo(&sid, &info);
 	unbecome_root();
 	
-	if ( !NT_STATUS_IS_OK(status))
-		return status;
+	if ( !ret )
+		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ( !(r_u->ctr = TALLOC_ZERO_P( p->mem_ctx, ALIAS_INFO_CTR )) ) 
 		return NT_STATUS_NO_MEMORY;
@@ -1712,7 +1727,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	int num_rids = (int)q_u->num_rids1;
 	uint32 acc_granted;
 	int i;
-
+	
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
@@ -3409,7 +3424,7 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 	}
  
 	ZERO_STRUCT(plaintext_buf);
- 
+
 	/* restore last set time as this is an admin change, not a user pw change */
 	pdb_set_pass_last_set_time (pwd, last_set_time, last_set_state);
  
@@ -3455,7 +3470,7 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 	 * the delete explicit / add explicit, which would then fail to find
 	 * the previous primaryGroupSid value.
 	 */
-
+ 
 	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
 		status = pdb_set_unix_primary_group(mem_ctx, pwd);
 		if ( !NT_STATUS_IS_OK(status) ) {
@@ -3574,7 +3589,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			SamOEMhashBlob(ctr->info.id24->pass, 516, &p->session_key);
 
-			dump_data(100, ctr->info.id24->pass, 516);
+			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -3586,7 +3601,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id25->pass, &p->session_key);
 
-			dump_data(100, ctr->info.id25->pass, 532);
+			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
 			r_u->status = set_user_info_25(p->mem_ctx,
 						       ctr->info.id25, pwd);
@@ -3603,7 +3618,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
 
-			dump_data(100, ctr->info.id26->pass, 516);
+			dump_data(100, (char *)ctr->info.id26->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -3615,7 +3630,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			}
 			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
-			dump_data(100, ctr->info.id23->pass, 516);
+			dump_data(100, (char *)ctr->info.id23->pass, 516);
 
 			r_u->status = set_user_info_23(p->mem_ctx,
 						       ctr->info.id23, pwd);
@@ -3749,7 +3764,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			}
 			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
-			dump_data(100, ctr->info.id23->pass, 516);
+			dump_data(100, (char *)ctr->info.id23->pass, 516);
 
 			r_u->status = set_user_info_23(p->mem_ctx,
 						       ctr->info.id23, pwd);
@@ -3760,7 +3775,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			}
 			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
 
-			dump_data(100, ctr->info.id26->pass, 516);
+			dump_data(100, (char *)ctr->info.id26->pass, 516);
 
 			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
@@ -4310,7 +4325,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	NTSTATUS status;
+	BOOL ret;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
@@ -4349,15 +4364,15 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 		become_root();
 
 	/* Have passdb delete the alias */
-	status = pdb_delete_alias(&alias_sid);
+	ret = pdb_delete_alias(&alias_sid);
 	
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 
-	if ( !NT_STATUS_IS_OK(status))
-		return status;
+	if ( !ret )
+		return NT_STATUS_ACCESS_DENIED;
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -4702,8 +4717,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	struct acct_info info;
 	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
+	BOOL ret;
 	BOOL can_mod_accounts;
-	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted, &disp_info))
@@ -4718,16 +4733,18 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	/* get the current group information */
 
 	become_root();
-	status = pdb_get_aliasinfo( &group_sid, &info );
+	ret = pdb_get_aliasinfo( &group_sid, &info );
 	unbecome_root();
 
-	if ( !NT_STATUS_IS_OK(status))
-		return status;
+	if ( !ret ) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
 
 	switch (ctr->level) {
 		case 2:
 		{
 			fstring group_name, acct_name;
+			NTSTATUS status;
 
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand 
@@ -4762,7 +4779,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			if ( !NT_STATUS_IS_OK( status ) ) 
 				return status;
 			break;
-		}
+			}
 		case 3:
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 
@@ -4783,17 +4800,18 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
         if ( can_mod_accounts )
                 become_root();
 
-        status = pdb_set_aliasinfo( &group_sid, &info );
+        ret = pdb_set_aliasinfo( &group_sid, &info );
 
         if ( can_mod_accounts )
                 unbecome_root();
 
         /******** End SeAddUsers BLOCK *********/
 
-	if (NT_STATUS_IS_OK(status))
+	if (ret) {
 		force_flush_samr_cache(disp_info);
+	}
 
-	return status;
+	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /*********************************************************************

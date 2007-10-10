@@ -52,9 +52,6 @@ static blocking_lock_record *blocking_lock_queue;
 /* dlink list we move cancelled lock records onto. */
 static blocking_lock_record *blocking_lock_cancelled_queue;
 
-/* The event that makes us process our blocking lock queue */
-static struct timed_event *brl_timeout;
-
 /****************************************************************************
  Destructor for the above structure.
 ****************************************************************************/
@@ -74,78 +71,9 @@ static BOOL in_chained_smb(void)
 	return (chain_size != 0);
 }
 
-static void received_unlock_msg(struct messaging_context *msg,
-				void *private_data,
-				uint32_t msg_type,
-				struct server_id server_id,
-				DATA_BLOB *data);
-static void process_blocking_lock_queue(void);
-
-static void brl_timeout_fn(struct event_context *event_ctx,
-			   struct timed_event *te,
-			   const struct timeval *now,
-			   void *private_data)
-{
-	SMB_ASSERT(brl_timeout == te);
-	TALLOC_FREE(brl_timeout);
-
-	change_to_root_user();	/* TODO: Possibly run all timed events as
-				 * root */
-
-	process_blocking_lock_queue();
-}
-
-/****************************************************************************
- After a change to blocking_lock_queue, recalculate the timed_event for the
- next processing.
-****************************************************************************/
-
-static BOOL recalc_brl_timeout(void)
-{
-	blocking_lock_record *brl;
-	struct timeval next_timeout;
-
-	TALLOC_FREE(brl_timeout);
-
-	next_timeout = timeval_zero();	
-
-	for (brl = blocking_lock_queue; brl; brl = brl->next) {
-		if (timeval_is_zero(&brl->expire_time)) {
-			/*
-			 * If we're blocked on pid 0xFFFFFFFF this is
-			 * a POSIX lock, so calculate a timeout of
-			 * 10 seconds into the future.
-			 */
-                        if (brl->blocking_pid == 0xFFFFFFFF) {
-				struct timeval psx_to = timeval_current_ofs(10, 0);
-				next_timeout = timeval_min(&next_timeout, &psx_to);
-                        }
-
-			continue;
-		}
-
-		if (timeval_is_zero(&next_timeout)) {
-			next_timeout = brl->expire_time;
-		}
-		else {
-			next_timeout = timeval_min(&next_timeout,
-						   &brl->expire_time);
-		}
-	}
-
-	if (timeval_is_zero(&next_timeout)) {
-		return True;
-	}
-
-	if (!(brl_timeout = event_add_timed(smbd_event_context(), NULL,
-					    next_timeout, "brl_timeout",
-					    brl_timeout_fn, NULL))) {
-		return False;
-	}
-
-	return True;
-}
-
+static void received_unlock_msg(int msg_type, struct process_id src,
+				void *buf, size_t len,
+				void *private_data);
 
 /****************************************************************************
  Function to push a blocking lock request onto the lock queue.
@@ -211,7 +139,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->length = length;
 
 	/* Add a pending lock record for this. */
-	status = brl_lock(smbd_messaging_context(), br_lck,
+	status = brl_lock(br_lck,
 			lock_pid,
 			procid_self(),
 			offset,
@@ -229,12 +157,11 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 	}
 
 	DLIST_ADD_END(blocking_lock_queue, blr, blocking_lock_record *);
-	recalc_brl_timeout();
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!set_lock_msg) {
-		messaging_register(smbd_messaging_context(), NULL,
-				   MSG_SMB_UNLOCK, received_unlock_msg);
+		message_register(MSG_SMB_UNLOCK, received_unlock_msg,
+				 NULL);
 		set_lock_msg = True;
 	}
 
@@ -254,15 +181,13 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
  Return a smd with a given size.
 *****************************************************************************/
 
-static void send_blocking_reply(char *outbuf, int outsize, const char *inbuf)
+static void send_blocking_reply(char *outbuf, int outsize)
 {
-	if(outsize > 4) {
-		smb_setlen(inbuf, outbuf,outsize - 4);
-	}
+	if(outsize > 4)
+		smb_setlen(outbuf,outsize - 4);
 
-	if (!send_smb(smbd_server_fd(),outbuf)) {
+	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server_cleanly("send_blocking_reply: send_smb failed.");
-	}
 }
 
 /****************************************************************************
@@ -277,7 +202,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	int outsize = 0;
 
 	construct_reply_common(inbuf, outbuf);
-	set_message(inbuf,outbuf,2,0,True);
+	set_message(outbuf,2,0,True);
 
 	/*
 	 * As this message is a lockingX call we must handle
@@ -291,7 +216,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 
 	outsize += chain_size;
 
-	send_blocking_reply(outbuf,outsize,inbuf);
+	send_blocking_reply(outbuf,outsize);
 }
 
 /****************************************************************************
@@ -372,8 +297,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 		 * request would never have been queued. JRA.
 		 */
 		
-		do_unlock(smbd_messaging_context(),
-			fsp,
+		do_unlock(fsp,
 			lock_pid,
 			count,
 			offset,
@@ -453,8 +377,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		 * request would never have been queued. JRA.
 		 */
 		errno = 0;
-		br_lck = do_lock(smbd_messaging_context(),
-				fsp,
+		br_lck = do_lock(fsp,
 				lock_pid,
 				count,
 				offset, 
@@ -516,8 +439,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	char *outbuf;
 	char params[2];
 	NTSTATUS status;
-	struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
-						blr->fsp,
+	struct byte_range_lock *br_lck = do_lock(blr->fsp,
 						blr->lock_pid,
 						blr->count,
 						blr->offset,
@@ -547,7 +469,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
 	SCVAL(outbuf,smb_com,SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
-	send_trans2_replies(inbuf, outbuf, max_send, params, 2, NULL, 0, 0xffff);
+	send_trans2_replies(outbuf, max_send, params, 2, NULL, 0, 0xffff);
 	return True;
 }
 
@@ -667,25 +589,75 @@ BOOL blocking_lock_was_deferred(int mid)
   Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
 
-static void received_unlock_msg(struct messaging_context *msg,
-				void *private_data,
-				uint32_t msg_type,
-				struct server_id server_id,
-				DATA_BLOB *data)
+static void received_unlock_msg(int msg_type, struct process_id src,
+				void *buf, size_t len,
+				void *private_data)
 {
 	DEBUG(10,("received_unlock_msg\n"));
 	process_blocking_lock_queue();
 }
 
 /****************************************************************************
+ Return the number of milliseconds to the next blocking locks timeout, or default_timeout
+*****************************************************************************/
+
+unsigned int blocking_locks_timeout_ms(unsigned int default_timeout_ms)
+{
+	unsigned int timeout_ms = default_timeout_ms;
+	struct timeval tv_curr;
+	SMB_BIG_INT min_tv_dif_us = default_timeout_ms * 1000;
+	blocking_lock_record *blr = blocking_lock_queue;
+
+	/* note that we avoid the GetTimeOfDay() syscall if there are no blocking locks */
+	if (!blr) {
+		return timeout_ms;
+	}
+
+	tv_curr = timeval_current();
+
+	for (; blr; blr = blr->next) {
+		SMB_BIG_INT tv_dif_us;
+
+		if (timeval_is_zero(&blr->expire_time)) {
+			/*
+			 * If we're blocked on pid 0xFFFFFFFF this is
+			 * a POSIX lock, so calculate a timeout of
+			 * 10 seconds.
+			 */
+			if (blr->blocking_pid == 0xFFFFFFFF) {
+				tv_dif_us = 10 * 1000 * 1000;
+				min_tv_dif_us = MIN(min_tv_dif_us, tv_dif_us);
+			}
+			continue; /* Never timeout. */
+		}
+
+		tv_dif_us = usec_time_diff(&blr->expire_time, &tv_curr);
+		min_tv_dif_us = MIN(min_tv_dif_us, tv_dif_us);
+	}
+
+	if (min_tv_dif_us < 0) {
+		min_tv_dif_us = 0;
+	}
+
+	timeout_ms = (unsigned int)(min_tv_dif_us / (SMB_BIG_INT)1000);
+
+	if (timeout_ms < 1) {
+		timeout_ms = 1;
+	}
+
+	DEBUG(10,("blocking_locks_timeout_ms: returning %u\n", timeout_ms));
+
+	return timeout_ms;
+}
+
+/****************************************************************************
  Process the blocking lock queue. Note that this is only called as root.
 *****************************************************************************/
 
-static void process_blocking_lock_queue(void)
+void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
 	blocking_lock_record *blr, *next = NULL;
-	BOOL recalc_timeout = False;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
@@ -713,34 +685,6 @@ static void process_blocking_lock_queue(void)
 		DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
 			fsp->fnum, fsp->fsp_name ));
 
-		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
-
-			/*
-			 * Lock expired - throw away all previously
-			 * obtained locks and return lock error.
-			 */
-
-			if (br_lck) {
-				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
-					fsp->fnum, fsp->fsp_name ));
-
-				brl_lock_cancel(br_lck,
-					blr->lock_pid,
-					procid_self(),
-					blr->offset,
-					blr->count,
-					blr->lock_flav);
-				TALLOC_FREE(br_lck);
-			}
-
-			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
-			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
-			recalc_timeout = True;
-			continue;
-		}
-
 		if(!change_to_user(conn,vuid)) {
 			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
@@ -763,7 +707,6 @@ static void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 			continue;
 		}
 
@@ -788,7 +731,6 @@ static void process_blocking_lock_queue(void)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
 			change_to_root_user();
 			continue;
 		}
@@ -814,13 +756,44 @@ static void process_blocking_lock_queue(void)
 
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			free_blocking_lock_record(blr);
-			recalc_timeout = True;
+			change_to_root_user();
+			continue;
 		}
-		change_to_root_user();
-	}
 
-	if (recalc_timeout) {
-		recalc_brl_timeout();
+		change_to_root_user();
+
+		/*
+		 * We couldn't get the locks for this record on the list.
+		 * If the time has expired, return a lock error.
+		 */
+
+		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+
+			/*
+			 * Lock expired - throw away all previously
+			 * obtained locks and return lock error.
+			 */
+
+			if (br_lck) {
+				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
+					fsp->fnum, fsp->fsp_name ));
+
+				brl_lock_cancel(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					blr->lock_flav);
+				TALLOC_FREE(br_lck);
+			}
+
+			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
+			DLIST_REMOVE(blocking_lock_queue, blr);
+			free_blocking_lock_record(blr);
+			continue;
+		}
+
 	}
 }
 
@@ -830,24 +803,23 @@ static void process_blocking_lock_queue(void)
 
 #define MSG_BLOCKING_LOCK_CANCEL_SIZE (sizeof(blocking_lock_record *) + sizeof(NTSTATUS))
 
-static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
-						 void *private_data,
-						 uint32_t msg_type,
-						 struct server_id server_id,
-						 DATA_BLOB *data)
+static void process_blocking_lock_cancel_message(int msg_type,
+						 struct process_id src,
+						 void *buf, size_t len,
+						 void *private_data)
 {
 	NTSTATUS err;
-	const char *msg = (const char *)data->data;
+	const char *msg = (const char *)buf;
 	blocking_lock_record *blr;
 
-	if (data->data == NULL) {
-		smb_panic("process_blocking_lock_cancel_message: null msg");
+	if (buf == NULL) {
+		smb_panic("process_blocking_lock_cancel_message: null msg\n");
 	}
 
-	if (data->length != MSG_BLOCKING_LOCK_CANCEL_SIZE) {
+	if (len != MSG_BLOCKING_LOCK_CANCEL_SIZE) {
 		DEBUG(0, ("process_blocking_lock_cancel_message: "
-			  "Got invalid msg len %d\n", (int)data->length));
-		smb_panic("process_blocking_lock_cancel_message: bad msg");
+			"Got invalid msg len %d\n", (int)len));
+		smb_panic("process_blocking_lock_cancel_message: bad msg\n");
         }
 
 	memcpy(&blr, msg, sizeof(blr));
@@ -879,9 +851,9 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 
 	if (!initialized) {
 		/* Register our message. */
-		messaging_register(smbd_messaging_context(), NULL,
-				   MSG_SMB_BLOCKING_LOCK_CANCEL,
-				   process_blocking_lock_cancel_message);
+		message_register(MSG_SMB_BLOCKING_LOCK_CANCEL,
+				 process_blocking_lock_cancel_message,
+				 NULL);
 
 		initialized = True;
 	}
@@ -915,9 +887,9 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 	memcpy(msg, &blr, sizeof(blr));
 	memcpy(&msg[sizeof(blr)], &err, sizeof(NTSTATUS));
 
-	messaging_send_buf(smbd_messaging_context(), procid_self(),
-			   MSG_SMB_BLOCKING_LOCK_CANCEL,
-			   (uint8 *)&msg, sizeof(msg));
+	message_send_pid(pid_to_procid(sys_getpid()),
+			MSG_SMB_BLOCKING_LOCK_CANCEL,
+			&msg, sizeof(msg), True);
 
 	return True;
 }

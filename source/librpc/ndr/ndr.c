@@ -169,7 +169,7 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 	if (size < ndr->offset) {
 		/* extra_size overflowed the offset */
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand to %u",
-				      size);
+					size);
 	}
 
 	if (ndr->alloc_size > size) {
@@ -709,8 +709,8 @@ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, vo
 	}
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
-	if (ndr->offset < ndr->data_size) {
-		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
+	if (ndr->offset != ndr->data_size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 	return status;
 }
@@ -755,8 +755,6 @@ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *
 	}
 
 	*blob = ndr_push_blob(ndr);
-	talloc_steal(mem_ctx, blob->data);
-	talloc_free(ndr);
 
 	return NT_STATUS_OK;
 }
@@ -780,8 +778,6 @@ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	}
 
 	*blob = ndr_push_blob(ndr);
-	talloc_steal(mem_ctx, blob->data);
-	talloc_free(ndr);
 
 	return NT_STATUS_OK;
 }

@@ -6,12 +6,6 @@ AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
-case "$PATH" in
-    */usr/ucb*)
-	AC_MSG_WARN([\$PATH contains /usr/ucb - build errors may follow])
-	;;
-esac 
-
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
@@ -169,20 +163,6 @@ AC_ARG_WITH(logfilebase,
     ;;
   esac])
 
-
-#################################################
-# set ctdb source directory location
-AC_ARG_WITH(ctdb,
-[  --with-ctdb=DIR  Where to find ctdb sources],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-ctdb called without argument])
-  ;;
-  * )
-    ctdbdir="$withval"
-    ;;
-  esac])
-
 #################################################
 # set lib directory location
 AC_ARG_WITH(libdir,
@@ -253,7 +233,7 @@ done
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/talloc"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/tdb/include"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
@@ -268,7 +248,6 @@ AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
 AC_SUBST(logfilebase)
-AC_SUBST(ctdbdir)
 AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)
@@ -280,10 +259,8 @@ dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SAMBA_CPPFLAGS)
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
-AC_SUBST(MODULE_EXPORTS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
-AC_SUBST(DSO_EXPORTS)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAG)
 AC_SUBST(PIE_CFLAGS)
@@ -354,21 +331,6 @@ AC_LIBREPLACE_CC_CHECKS
 
 m4_include(lib/socket_wrapper/config.m4)
 
-
-AC_ARG_ENABLE(swat,
-[  --enable-swat           Build the SWAT tool (default=yes)],
-[
-    case "$enable_swat" in
-	no) ;;
-	*)
-	    SWAT_SBIN_TARGETS='bin/swat$(EXEEXT)'
-	    SWAT_INSTALL_TARGETS=installswat
-	    ;;
-    esac
-    AC_SUBST(SWAT_SBIN_TARGETS)
-    AC_SUBST(SWAT_INSTALL_TARGETS)
-])
-
 #################################################
 # set prefix for 'make test'
 selftest_prefix="./"
@@ -384,35 +346,6 @@ AC_ARG_WITH(selftest-prefix,
     ;;
   esac
 ])
-
-AC_ARG_ENABLE(launchd,
-[  --enable-launchd        Support running under launchd (default=auto)])
-
-if test x"$enable_launchd" != x"no" ; then
-    AC_CACHE_CHECK([whether to include launchd support],
-	samba_cv_launchd_support,
-	[
-	    AC_TRY_COMPILE(
-	    [
-#include <launch.h>
-	    ],
-	    [
-		launchd_msg(NULL);
-		launchd_data_get_fd(NULL);
-	    ],
-	    samba_cv_launchd_support=yes,
-	    samba_cv_launchd_support=no)
-	])
-
-    if test x"$samba_cv_launchd_support" = x"yes" ; then
-	AC_DEFINE(WITH_LAUNCHD_SUPPORT, 1,
-		    [Whether launchd support should be enabled])
-    else
-	if test x"$enable_launchd" = x"yes" ; then
-	    AC_ERROR(launchd support is not available)
-	fi
-    fi
-fi
 
 #################################################
 # set path of samba4's smbtorture
@@ -436,19 +369,7 @@ AC_ARG_WITH(smbtorture4_path,
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
-    fi])
-
-AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
-    [if eval "test x$enable_krb5developer = xyes"; then
-        developer=yes
-	krb5_developer=yes
-    fi])
-
-# Probe the gcc version for extra CFLAGS. We always stash these in
-# DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
-# Makefile edit, avoiding the need to re-run configure.
-if test x"$ac_cv_prog_gcc" = x"yes" ; then
-    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
@@ -462,34 +383,16 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
 	    samba_cv_HAVE_Wdeclaration_after_statement=no,
 	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
        ])
-
-	if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
-	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Wdeclaration-after-statement"
-	fi
-
-	#-Werror-implicit-function-declaration
-	AC_CACHE_CHECK(
-          [that the C compiler understands -Werror-implicit-function-declaration],
-          samba_cv_HAVE_Werror_implicit_function_declaration, [
-	  AC_TRY_RUN_STRICT([
-	    int main(void)
-	    {
-	    	return 0;
-	    }],[-Werror-implicit-function-declaration],[$CPPFLAGS],[$LDFLAGS],
-	    samba_cv_HAVE_Werror_implicit_function_declaration=yes,
-	    samba_cv_HAVE_Werror_implicit_function_declaration=no,
-	    samba_cv_HAVE_Werror_implicit_function_declaration=cross)
-       ])
-       if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes"; then
-	    DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -Werror-implicit-function-declaration"
+       if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
+	    CFLAGS="${CFLAGS} -Wdeclaration-after-statement"
        fi
+    fi])
 
-	# krb5developer is like developer, except we don't get
-	# -Wstrict-prototypes.
-       if test x"$krb5_developer" != x"$yes" ; then
-	    DEVELOPER_CFLAGS="$DEVELOPER_CFLAGS -Wstrict-prototypes"
-       fi
-fi
+AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
+    [if eval "test x$enable_krb5developer = xyes"; then
+        developer=yes
+	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
 
 AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
 
@@ -546,9 +449,6 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
  	if test "$ac_cv_gnu_ld_date" -lt 20030217; then
  		ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
  	fi
-	if test "$ac_cv_gnu_ld_date" -gt 20030101; then
-		ac_cv_gnu_ld_version_script=yes
-	fi
         else
            AC_MSG_CHECKING(GNU ld release version)
            changequote(,)dnl
@@ -563,9 +463,6 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
            AC_MSG_RESULT(${ac_cv_gnu_ld_vernr_minor})
            if test "$ac_cv_gnu_ld_vernr_major" -lt 2 || test "$ac_cv_gnu_ld_vernr_minor" -lt 14; then
              ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
-           fi
-           if test "$ac_cv_gnu_ld_vernr_major" -gt 2 || test "$ac_cv_gnu_l= d_vernr_major"=2 && test "$ac_cv_gnu_ld_vernr_minor" -ge 12; then
-             ac_cv_gnu_ld_version_script=yes
            fi
         fi
 fi
@@ -646,41 +543,7 @@ if test x"$SMB_BUILD_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
 	PIDL_ARGS="$PIDL_ARGS --uint-enums"
 fi
 
-############################################
-# Check whether we can do automatic dependency tracking
-
-m4_include(m4/substnot.m4)
-m4_include(m4/cond.m4)
-m4_include(m4/make.m4)
-m4_include(m4/depout.m4)
-m4_include(m4/lead-dot.m4)
-m4_include(m4/check_gnu_make.m4)
-m4_include(m4/depend.m4)
-
-# Using the dependency files requires GNU make until someone adds support
-# for Makefile includes for other make implementations. Note that
-# CHECK_GNU_MAKE() can find a non-default make.
-CHECK_GNU_MAKE()
-if test "x$_cv_gnu_make_command" != "x" -a \
-    x`which make` = x`which "$_cv_gnu_make_command"` ; then
-    AC_SUBST(MAKE, $_cv_gnu_make_command)
-else
-    # If GNU make is not the default, don't enable GNU-isms because we can't
-    # guarantee that GNU make will actually be the make that is invoked.
-    ifGNUmake='#'
-fi
-
-AM_DEP_TRACK()
-_AM_DEPENDENCIES(CC)
-
-# As per vl, disable dependency tracking by default until we don't need
-# to use "make proto' -- jpeach
-if test "x$enable_dependency_tracking" != xyes; then
-    ifGNUmake='#'
-fi
-
-############################################
-# Figure out the flags to support named structure initializers
+dnl Figure out the flags to support named structure initializers
 
 LIBREPLACE_C99_STRUCT_INIT([],[AC_MSG_ERROR([c99 structure initializer are not supported])])
 
@@ -726,7 +589,7 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_winreg rpc_initshutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl2 rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog2 rpc_unixinfo rpc_epmapper auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_shutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog rpc_echo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script vfs_readahead"
@@ -869,11 +732,11 @@ case "$host_os" in
         CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
         AC_TRY_RUN([
 #include <unistd.h>
-int main () {
+main () {
 #if _LFS64_LARGEFILE == 1
-return 0;
+exit(0);
 #else
-return 1;
+exit(1);
 #endif
 }], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no], [SINIX_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
@@ -888,15 +751,6 @@ return 1;
       fi
     ;;
 
-# Systems with LFS support.
-#
-    gnu* | k*bsd*-gnu)
-	CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-	AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-	AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
-	AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
-	;;
-
 # Tests for linux LFS support. Need kernel 2.4 and glibc2.2 or greater support.
 #
     *linux*)
@@ -908,7 +762,7 @@ return 1;
 #include <sys/utsname.h>
 #include <string.h>
 #include <stdlib.h>
-int main() {
+main() {
 #if _LFS64_LARGEFILE == 1
        struct utsname uts;
        char *release;
@@ -920,9 +774,9 @@ int main() {
        int libc_minor = __GLIBC_MINOR__;
 
        if (libc_major < 2)
-              return 1;
+              exit(1);
        if (libc_minor < 2)
-              return 1;
+              exit(1);
 #endif
 
        /* Ensure this is kernel 2.4 or higher */
@@ -933,10 +787,10 @@ int main() {
        minor = atoi(strsep(&release, "."));
 
        if (major > 2 || (major == 2 && minor > 3))
-               return 0;
-       return 1;
+               exit(0);
+       exit(1);
 #else
-       return 1;
+       exit(1);
 #endif
 }
 ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
@@ -957,7 +811,7 @@ int main() {
     *darwin*)
 	AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
 
-	# Add a system specific charset module.
+# Add a system specific charset module.
 	default_shared_modules="$default_shared_modules charset_macosxfs"
 
 	;;
@@ -969,9 +823,9 @@ int main() {
 #include <unistd.h>
 main () {
 #if _LFS64_LARGEFILE == 1
-return 0;
+exit(0);
 #else
-return 1;
+exit(1);
 #endif
 }], [GLIBC_LFS_SUPPORT=yes], [GLIBC_LFS_SUPPORT=no], [GLIBC_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
@@ -1223,7 +1077,7 @@ AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 # nothing until kernel 2.1.44! very dumb.
 AC_CACHE_CHECK([for real setresuid],samba_cv_have_setresuid,[
     AC_TRY_RUN([#include <errno.h>
-int main() { setresuid(1,1,1); setresuid(2,2,2); return errno==EPERM?0:1;}],
+main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
 	samba_cv_have_setresuid=yes,samba_cv_have_setresuid=no,samba_cv_have_setresuid=cross)])
 if test x"$samba_cv_have_setresuid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESUID,1,[Whether the system has setresuid])
@@ -1234,7 +1088,7 @@ fi
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
     AC_TRY_RUN([#include <unistd.h>
 #include <errno.h>
-int main() { errno = 0; setresgid(1,1,1); return errno != 0 ? (errno==EPERM ? 0 : 1) : 0;}],
+main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
 	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID,1,[Whether the system has setresgid])
@@ -1365,7 +1219,7 @@ if test x"$ac_cv_func_execl" = x"no"; then
     EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun\$(EXEEXT)"
 fi
 
-AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown lchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
 AC_CHECK_FUNCS(fstat strchr utime utimes chflags)
 AC_CHECK_FUNCS(getrlimit fsync memset strlcpy strlcat setpgid)
@@ -1387,7 +1241,6 @@ AC_CHECK_FUNCS(memalign posix_memalign)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open)
-AC_CHECK_FUNCS(makecontext getcontext setcontext swapcontext)
 
 # Find a method of generating a stack trace
 AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
@@ -1520,35 +1373,25 @@ AC_DEFINE(HAVE_PRCTL, 1, [Whether prctl is available]),[])
 #
 #
 case "$host_os" in
-    linux*-gnu* | gnu* | k*bsd*-gnu)
+    *linux*)
        # glibc <= 2.3.2 has a broken getgrouplist
-    AC_CACHE_CHECK([for a broken Linux getgrouplist API],
-	    linux_getgrouplist_ok,
-	    [
-		AC_TRY_RUN([
+       AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
-
-		    int main() {
-			   /* glibc up to 2.3 has a broken getgrouplist */
+main() {
+       /* glibc up to 2.3 has a broken getgrouplist */
 #if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
-			   int libc_major = __GLIBC__;
-			   int libc_minor = __GLIBC_MINOR__;
+       int libc_major = __GLIBC__;
+       int libc_minor = __GLIBC_MINOR__;
 
-			   if (libc_major < 2)
-				  return 1;
-			   if ((libc_major == 2) && (libc_minor <= 3))
-				  return 1;
+       if (libc_major < 2)
+              exit(1);
+       if ((libc_major == 2) && (libc_minor <= 3))
+              exit(1);
 #endif
-			   return 0;
-		    }
-
-		],
-		[linux_getgrouplist_ok=yes],
-		[linux_getgrouplist_ok=no],
-		[linux_getgrouplist_ok=cross])
-       ])
-
+       exit(0);
+}
+], [linux_getgrouplist_ok=yes], [linux_getgrouplist_ok=no])
        if test x"$linux_getgrouplist_ok" = x"yes"; then
           AC_DEFINE(HAVE_GETGROUPLIST, 1, [Have good getgrouplist])
        fi
@@ -1569,7 +1412,7 @@ if test x$ac_cv_func_stat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; return stat64(".",&st64);], [ac_cv_func_stat64=yes])
+], [struct stat64 st64; exit(stat64(".",&st64));], [ac_cv_func_stat64=yes])
   AC_MSG_RESULT([$ac_cv_func_stat64])
   if test x$ac_cv_func_stat64 = xyes ; then
     AC_DEFINE(HAVE_STAT64,1,[Whether stat64() is available])
@@ -1583,7 +1426,7 @@ if test x$ac_cv_func_lstat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; return lstat64(".",&st64);], [ac_cv_func_lstat64=yes])
+], [struct stat64 st64; exit(lstat64(".",&st64));], [ac_cv_func_lstat64=yes])
   AC_MSG_RESULT([$ac_cv_func_lstat64])
   if test x$ac_cv_func_lstat64 = xyes ; then
     AC_DEFINE(HAVE_LSTAT64,[Whether lstat64() is available])
@@ -1597,7 +1440,7 @@ if test x$ac_cv_func_fstat64 = xno ; then
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
-], [struct stat64 st64; return fstat64(0,&st64);], [ac_cv_func_fstat64=yes])
+], [struct stat64 st64; exit(fstat64(0,&st64));], [ac_cv_func_fstat64=yes])
   AC_MSG_RESULT([$ac_cv_func_fstat64])
   if test x$ac_cv_func_fstat64 = xyes ; then
     AC_DEFINE(HAVE_FSTAT64,1,[Whether fstat64() is available])
@@ -1748,6 +1591,14 @@ case "$host_os" in
 esac
 
 ########################################################
+# Check if attropen() is present if this is Solaris
+case "$host_os" in
+  *solaris*)
+	AC_CHECK_FUNCS(attropen)
+  ;;
+esac
+
+########################################################
 # Do xattr functions take additional options like on Darwin?
 if test x"$ac_cv_func_getxattr" = x"yes" ; then
 	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
@@ -1812,54 +1663,26 @@ EOF
 	fi
 fi
 
-#Check if we can enable relro as well
-if test x"${samba_cv_fpie}" = x"yes"
-then
-	AC_CACHE_CHECK(for relro, samba_cv_fpie_relro,
-	[
-		cat > conftest.c <<EOF
-int foo;
-main () { return 0;}
-EOF
-                if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -pie -fPIE -Wl,-z,relro -o conftest conftest.c 1>&AS_MESSAGE_LOG_FD])
-		then
-			samba_cv_fpie_relro=yes
-		else
-			samba_cv_fpie_relro=no
-		fi
-		rm -f conftest*
-	])
-	if test x"${samba_cv_fpie_relro}" = x"yes"
-	then
-		PIE_LDFLAGS="-pie -Wl,-z,relro"
-	fi
-fi
-
 # Assume non-shared by default and override below
 BLDSHARED="false"
 
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
-MODULE_EXPORTS=""
 SONAMEFLAG="#"
 SHLD="\${CC} \${CFLAGS}"
 PICFLAG="${PIE_CFLAGS}"
 SHLIBEXT="so"
-DSO_EXPORTS=""
 
 # this bit needs to be modified for each OS that supports share libs
 # You need to specify how to create a shared library and
-# how to compile C code to produce PIC object files
+  # how to compile C code to produce PIC object files
 
-AC_MSG_CHECKING([ability to build shared libraries])
+  AC_MSG_CHECKING([ability to build shared libraries])
 
-# and these are for particular systems
-case "$host_os" in
- 		linux*-gnu* | gnu* | k*bsd*-gnu)
-			case "$host_os" in 
-				linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux]) ;;
-			esac
+  # and these are for particular systems
+  case "$host_os" in
+		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
 			if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
 				LDSHFLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined"
@@ -1957,11 +1780,10 @@ case "$host_os" in
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 			else
-				PICFLAG="+z +ESnolit"
+				PICFLAG="+z"
 			fi
 			if test "$host_cpu" = "ia64"; then
 				SHLIBEXT="so"
-			      PICFLAG="+z"
 				DYNEXP="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 			else
 				SHLIBEXT="sl"
@@ -2025,30 +1847,20 @@ case "$host_os" in
 		*darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
 			BLDSHARED="true"
 			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
-			MODULE_EXPORTS="-exported_symbols_list \$(srcdir)/modules/exports.darwin"
 			SHLIBEXT="dylib"
-			# Since gcc doesn't fail on unrecognised options, the
-			# PIE test incorrectly succeeds. Darwin gcc does not
-			# actually support the PIE stuff.
-			PIE_LDFLAGS=
-			PIE_CFLAGS=
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 
 		*)
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
-esac
+  esac
 
 if test "$enable_shared" != "yes"; then
 	BLDSHARED=false
 fi
 
-if test "$enable_shared" = yes -a "${ac_cv_gnu_ld_version_script}" = yes; then
-	DSO_EXPORTS=\$\(DSO_EXPORTS_CMD\)
-fi
-
-AC_MSG_RESULT($BLDSHARED)
+  AC_MSG_RESULT($BLDSHARED)
 
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
@@ -2111,7 +1923,7 @@ AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>
-int main() { long long x = 1000000; x *= x; return ((x/1000000) == 1000000)? 0: 1; }],
+main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
 samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
 if test x"$samba_cv_have_longlong" = x"yes"; then
     AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long's])
@@ -2143,7 +1955,7 @@ fi
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
-int main() { return (sizeof(off_t) == 8) ? 0 : 1; }],
+main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_OFF_T=yes,samba_cv_SIZEOF_OFF_T=no,samba_cv_SIZEOF_OFF_T=cross)])
 if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
     AC_DEFINE(SIZEOF_OFF_T,8,[The size of the 'off_t' type])
@@ -2156,7 +1968,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-int main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
+main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
 samba_cv_HAVE_OFF64_T=yes,samba_cv_HAVE_OFF64_T=no,samba_cv_HAVE_OFF64_T=cross)])
 if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
     AC_DEFINE(HAVE_OFF64_T,1,[Whether off64_t is available])
@@ -2169,7 +1981,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-int main() { return (sizeof(ino_t) == 8) ? 0 : 1; }],
+main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_INO_T=yes,samba_cv_SIZEOF_INO_T=no,samba_cv_SIZEOF_INO_T=cross)])
 if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
     AC_DEFINE(SIZEOF_INO_T,8,[The size of the 'ino_t' type])
@@ -2182,7 +1994,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-int main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
+main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
     AC_DEFINE(HAVE_INO64_T,1,[Whether the 'ino64_t' type is available])
@@ -2195,7 +2007,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-int main() { return (sizeof(dev_t) == 8) ? 0 : 1; }],
+main() { exit((sizeof(dev_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_DEV_T=yes,samba_cv_SIZEOF_DEV_T=no,samba_cv_SIZEOF_DEV_T=cross)])
 if test x"$samba_cv_SIZEOF_DEV_T" = x"yes"; then
     AC_DEFINE(SIZEOF_DEV_T,8,[The size of the 'dev_t' type])
@@ -2208,7 +2020,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-int main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) return 1; return (lstat64("/dev/null", &st)==0)?0:1; }],
+main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
 samba_cv_HAVE_DEV64_T=yes,samba_cv_HAVE_DEV64_T=no,samba_cv_HAVE_DEV64_T=cross)])
 if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
     AC_DEFINE(HAVE_DEV64_T,1,[Whether the 'dev64_t' type is available])
@@ -2246,7 +2058,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-int main() { dev_t dev; int i = major(dev); return 0; }],
+main() { dev_t dev; int i = major(dev); return 0; }],
 samba_cv_HAVE_DEVICE_MAJOR_FN=yes,samba_cv_HAVE_DEVICE_MAJOR_FN=no,samba_cv_HAVE_DEVICE_MAJOR_FN=cross)])
 if test x"$samba_cv_HAVE_DEVICE_MAJOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MAJOR_FN,1,[Whether the major macro for dev_t is available])
@@ -2258,7 +2070,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-int main() { dev_t dev; int i = minor(dev); return 0; }],
+main() { dev_t dev; int i = minor(dev); return 0; }],
 samba_cv_HAVE_DEVICE_MINOR_FN=yes,samba_cv_HAVE_DEVICE_MINOR_FN=no,samba_cv_HAVE_DEVICE_MINOR_FN=cross)])
 if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MINOR_FN,1,[Whether the minor macro for dev_t is available])
@@ -2270,7 +2082,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-int main() { dev_t dev = makedev(1,2); return 0; }],
+main() { dev_t dev = makedev(1,2); return 0; }],
 samba_cv_HAVE_MAKEDEV=yes,samba_cv_HAVE_MAKEDEV=no,samba_cv_HAVE_MAKEDEV=cross)])
 if test x"$samba_cv_HAVE_MAKEDEV" = x"yes"; then
     AC_DEFINE(HAVE_MAKEDEV,1,[Whether the macro for makedev is available])
@@ -2278,7 +2090,7 @@ fi
 
 AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
 AC_TRY_RUN([#include <stdio.h>
-int main() { char c; c=250; return (c > 0)?0:1; }],
+main() { char c; c=250; exit((c > 0)?0:1); }],
 samba_cv_HAVE_UNSIGNED_CHAR=yes,samba_cv_HAVE_UNSIGNED_CHAR=no,samba_cv_HAVE_UNSIGNED_CHAR=cross)])
 if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
     AC_DEFINE(HAVE_UNSIGNED_CHAR,1,[Whether the 'unsigned char' type is available])
@@ -2329,12 +2141,12 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 
     AC_LIBTESTFUNC(rt, clock_gettime,
 	    [
-		AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
-		    [Whether clock_gettime is available])
-		SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
-		SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
-		SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
-	    ])
+			    AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+				[Whether clock_gettime is available])
+			    SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
+			    SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
+			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
+			])
 
 fi
 
@@ -2368,18 +2180,18 @@ void foo(const char *format, ...) {
        va_start(ap, format);
        len = vsnprintf(buf, 0, format, ap);
        va_end(ap);
-       if (len != 5) return 1;
+       if (len != 5) exit(1);
 
        va_start(ap, format);
        len = vsnprintf(0, 0, format, ap);
        va_end(ap);
-       if (len != 5) return 1;
+       if (len != 5) exit(1);
 
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) return 1;
+       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
 
-       return 0;
+       exit(0);
 }
-int main() { foo("hello"); }
+main() { foo("hello"); }
 ],
 samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
 if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
@@ -2389,9 +2201,9 @@ fi
 AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
 AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
-int main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
+main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
-di->d_name[0] == 0) return 0; return 1;} ],
+di->d_name[0] == 0) exit(0); exit(1);} ],
 samba_cv_HAVE_BROKEN_READDIR_NAME=yes,samba_cv_HAVE_BROKEN_READDIR_NAME=no,samba_cv_HAVE_BROKEN_READDIR_NAME=cross)])
 if test x"$samba_cv_HAVE_BROKEN_READDIR_NAME" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_READDIR_NAME,1,[Whether readdir() returns the wrong name offset])
@@ -2400,7 +2212,7 @@ fi
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <utime.h>],
-[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; return utime("foo.c",&tbuf);],
+[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
 samba_cv_HAVE_UTIMBUF=yes,samba_cv_HAVE_UTIMBUF=no,samba_cv_HAVE_UTIMBUF=cross)])
 if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF,1,[Whether struct utimbuf is available])
@@ -2530,7 +2342,8 @@ fi
 # end utmp details
 
 
-ICONV_LOOK_DIRS="/usr /usr/local /sw /opt"
+ICONV_LOCATION=standard
+LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [
@@ -2539,69 +2352,62 @@ AC_ARG_WITH(libiconv,
   else
      if test "$withval" != "yes" ; then
 	ICONV_PATH_SPEC=yes
-        ICONV_LOOK_DIRS="$withval"
+        LOOK_DIRS="$withval"
      fi
   fi
 ])
 
-for i in $ICONV_LOOK_DIRS ; do
-
-    save_LIBS="$LIBS"
-    save_LDFLAGS="$LDFLAGS"
-    save_CPPFLAGS="$CPPFLAGS"
-
-    iconv_current_LIBS=""
-    iconv_current_LDFLAGS=""
-    iconv_current_CPPFLAGS=""
-
+for i in $LOOK_DIRS ; do
+    save_LIBS=$LIBS
+    save_LDFLAGS=$LDFLAGS
+    save_CPPFLAGS=$CPPFLAGS
     ICONV_FOUND="no"
     unset libext
+    CPPFLAGS="$CPPFLAGS -I$i/include"
+dnl This is here to handle -withval stuff for --with-libiconv
+dnl Perhaps we should always add a -L
 
-    #  This is here to handle -withval stuff for --with-libiconv
-    #  Perhaps we should always add a -L
-    CPPFLAGS="$save_CPPFLAGS -I$i/include"
-
-    # Check lib and lib32 library variants to cater for IRIX ABI-specific
-    # installation paths. This gets a little tricky since we might have iconv
-    # in both libiconv and in libc. In this case the jm_ICONV test will always
-    # succeed when the header is found. To counter this, make sure the
-    # library directory is there and check the ABI directory first (which
-    # should be harmless on other systems.
-    # For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
+dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
+dnl installation paths. This gets a little tricky since we might have iconv
+dnl in both libiconv and in libc. In this case the jm_ICONV test will always
+dnl succeed when the header is found. To counter this, make sure the
+dnl library directory is there and check the ABI directory first (which
+dnl should be harmless on other systems.
+dnl For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
     for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
-		LIBS=
-		export LDFLAGS LIBS CPPFLAGS
-		# Try to find iconv(3)
+        LIBS=
+        export LDFLAGS LIBS CPPFLAGS
+dnl Try to find iconv(3)
                 jm_ICONV($i/$l)
                 if test x"$ICONV_FOUND" = "xyes" ; then
-		    libext="$l"
-		    break
-		fi
+            libext="$l"
+            break;
+        fi
         fi
     done
 
     if test x"$ICONV_FOUND" = "xyes" ; then
-	iconv_current_LDFLAGS="-L$i/$libext"
-	iconv_current_CPPFLAGS="-I$i/include"
-
-        if test x"$jm_cv_lib_iconv" != x; then
-	    iconv_current_LIBS="$LIBS -l$jm_cv_lib_iconv"
-	else
-	    # We found iconv in libc.
-	    iconv_current_LIBS=""
-        fi
-
-    fi
-
-    if test x"$ICONV_FOUND" = "xyes" ; then
-
-        LDFLAGS="$save_LDFLAGS $iconv_current_LDFLAGS"
-        CPPFLAGS="$save_CPPFLAGS $iconv_current_CPPFLAGS"
-	LIBS="$save_LIBS $iconv_current_LIBS"
+	LDFLAGS=$save_LDFLAGS
+        LIB_ADD_DIR(LDFLAGS, "$i/$libext")
+        CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	LIBS="$save_LIBS"
+        ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
+dnl Now, check for a working iconv ... we want to do it here because
+dnl there might be a working iconv further down the list of LOOK_DIRS
 
+        ############
+        # check for iconv in libc
+        ic_save_LIBS="$LIBS"
+        if test x"$ICONV_PATH_SPEC" = "xyes" ; then
+           LIBS="$LIBS -L$ICONV_LOCATION/$libext"
+        fi
+        if test x"$jm_cv_lib_iconv" != x; then
+           LIBS="$LIBS -l$jm_cv_lib_iconv"
+        fi
+dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
 	default_display_charset=no
 	default_unix_charset=no
@@ -2609,30 +2415,28 @@ for i in $ICONV_LOOK_DIRS ; do
 	# check for default dos charset name
 	for j in CP850 IBM850 ; do
 	    rjs_CHARSET($j)
-	    default_dos_charset="$ICONV_CHARSET"
-	    if test x"$default_dos_charset" = x"$j"; then
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_dos_charset="\"$j\""
 		break
 	    fi
 	done
-
 	# check for default display charset name
 	for j in ASCII 646 ; do
 	    rjs_CHARSET($j)
-	    default_display_charset="$ICONV_CHARSET"
-	    if test x"$default_display_charset" = x"$j"; then
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_display_charset="\"$j\""
 		break
 	    fi
 	done
-
 	# check for default unix charset name
 	for j in UTF-8 UTF8 ; do
 	    rjs_CHARSET($j)
-	    default_unix_charset="$ICONV_CHARSET"
-	    if test x"$default_unix_charset" = x"$j"; then
+	    if test x"$ICONV_CHARSET" = x"$j"; then
+		default_unix_charset="\"$j\""
 		break
 	    fi
 	done
-
+	
 	if test "$default_dos_charset" != "no" -a \
 		"$default_dos_charset" != "cross" -a \
 		"$default_display_charset" != "no" -a \
@@ -2641,63 +2445,38 @@ for i in $ICONV_LOOK_DIRS ; do
 		"$default_unix_charset" != "cross"
 	then
 		samba_cv_HAVE_NATIVE_ICONV=yes
-	else
-	    if test "$default_dos_charset" = "cross" -o \
+	else if test "$default_dos_charset" = "cross" -o \
 		     "$default_display_charset" = "cross" -o \
 		     "$default_unix_charset" = "cross"
-	    then
-		    samba_cv_HAVE_NATIVE_ICONV=cross
-	    else
-		    samba_cv_HAVE_NATIVE_ICONV=no
-	    fi
+	then
+		samba_cv_HAVE_NATIVE_ICONV=cross
+	else
+		samba_cv_HAVE_NATIVE_ICONV=no
 	fi
-
-	# At this point, we have a libiconv candidate. We know that
-	# we have the right headers and libraries, but we don't know
-	# whether it does the conversions we want. We can't test this
-	# because we are cross-compiling. This is not necessarily a big
-	# deal, since we can't guarantee that the results we get now will
-	# match the results we get at runtime anyway.
-	if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"cross" ; then
-	    default_dos_charset="CP850"
-	    default_display_charset="ASCII"
-	    default_unix_charset="UTF-8"
-	    samba_cv_HAVE_NATIVE_ICONV=yes
-	    AC_MSG_WARN(assuming the libiconv in $iconv_current_LDFLAGS can convert)
-	    AC_MSG_WARN([$default_dos_charset, $default_display_charset and $default_unix_charset to UCS-16LE])
 	fi
+dnl ])
 
-        if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes" ; then
-
-	    CPPFLAGS=$save_CPPFLAGS
-	    LDFLAGS=$save_LDFLAGS
-	    LIBS=$save_LIBS
-
-	    if test x"$iconv_current_LIBS" != x; then
-		LIBS="$LIBS $iconv_current_LIBS"
-	    fi
-
-	    # Add the flags we need to CPPFLAGS and LDFLAGS
-	    CPPFLAGS="$CPPFLAGS $iconv_current_CPPFLAGS"
-	    LDFLAGS="$LDFLAGS $iconv_current_LDFLAGS"
-
-	    # Turn the #defines into string literals
-	    default_dos_charset="\"$default_dos_charset\""
-	    default_display_charset="\"$default_display_charset\""
-	    default_unix_charset="\"$default_unix_charset\""
-
-	    AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
-	    AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
-	    AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
-	    AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
-
+        LIBS="$ic_save_LIBS"
+        if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
+  	   CPPFLAGS=$save_CPPFLAGS
+	   LDFLAGS=$save_LDFLAGS
+	   LIBS=$save_LIBS
+           if test x"$jm_cv_lib_iconv" != x; then
+              LIBS="$LIBS -l$jm_cv_lib_iconv"
+           fi
+	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
+	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   LIB_ADD_DIR(LDFLAGS, "$i/$libext")
+	   export CPPFLAGS
+           AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
+	   AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
            break
         fi
-
-    # We didn't find a working iconv, so keep going
+dnl We didn't find a working iconv, so keep going
     fi
-
-    #  We only need to clean these up here for the next pass through the loop
+dnl We only need to clean these up here for the next pass through the loop
     CPPFLAGS=$save_CPPFLAGS
     LDFLAGS=$save_LDFLAGS
     LIBS=$save_LIBS
@@ -2722,7 +2501,7 @@ AC_TRY_RUN([
 #ifndef F_GETLEASE
 #define F_GETLEASE	1025
 #endif
-int main() {
+main() {
        int fd = open("/dev/null", O_RDONLY);
        return fcntl(fd, F_GETLEASE, 0) == -1;
 }
@@ -2740,8 +2519,8 @@ AC_TRY_RUN([
 #ifndef F_NOTIFY
 #define F_NOTIFY 1026
 #endif
-int main() {
-       	return fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0;
+main() {
+       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
@@ -2818,8 +2597,8 @@ AC_TRY_RUN([
 #define LOCK_MAND	32
 #define LOCK_READ	64
 #endif
-int main() {
-       	return flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0;
+main() {
+       	exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
 }
 ],
 samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_cv_HAVE_KERNEL_SHARE_MODES=cross)])
@@ -2855,15 +2634,15 @@ if test x"$samba_cv_HAVE_SYS_CAPABILITY_H" = x"yes"; then
 		AC_TRY_RUN([
 #include <sys/types.h>
 #include <sys/capability.h>
-int main() {
+main() {
  cap_t cap;
  cap_value_t vals[1];
  if (!(cap = cap_get_proc()))
-   return 1;
+   exit(1);
  vals[0] = CAP_CHOWN;
  cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
- return 0;
+ exit(0);
 }],
 		samba_cv_HAVE_POSIX_CAPABILITIES=yes,
 		samba_cv_HAVE_POSIX_CAPABILITIES=no,
@@ -2985,15 +2764,15 @@ AC_TRY_RUN([#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-int main() {
+main() {
   struct stat st;
   char tpl[20]="/tmp/test.XXXXXX";
   int fd = mkstemp(tpl);
-  if (fd == -1) return 1;
+  if (fd == -1) exit(1);
   unlink(tpl);
-  if (fstat(fd, &st) != 0) return 1;
-  if ((st.st_mode & 0777) != 0600) return 1;
-  return 0;
+  if (fstat(fd, &st) != 0) exit(1);
+  if ((st.st_mode & 0777) != 0600) exit(1);
+  exit(0);
 }],
 samba_cv_HAVE_SECURE_MKSTEMP=yes,
 samba_cv_HAVE_SECURE_MKSTEMP=no,
@@ -3003,12 +2782,7 @@ if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
-	AC_TRY_RUN([
-#include "${srcdir-.}/lib/replace/test/os2_delete.c"
-int main(void) {
-    return test_readdir_os2_delete();
-}
-],
+	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
 		[samba_cv_HAVE_BROKEN_READDIR=no],
 			[samba_cv_HAVE_BROKEN_READDIR=yes],
 			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
@@ -3017,10 +2791,7 @@ if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
 AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
 	AC_TRY_RUN([
 #include "${srcdir-.}/lib/repdir.c"
-#include "${srcdir-.}/lib/replace/test/os2_delete.c"
-int main(void) {
-    return test_readdir_os2_delete();
-],
+#include "${srcdir-.}/tests/os2_delete.c"],
 	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
 fi
 
@@ -3138,21 +2909,6 @@ if test x"$samba_cv_USE_SETUIDX" = x"yes"; then
 fi
 fi
 
-AC_CACHE_CHECK([for the Darwin initgroups system call],
-	samba_cv_DARWIN_INITGROUPS,
-	AC_TRY_LINK([
-#include <sys/syscall.h>
-#include <unistd.h>
-	],
-	[ syscall(SYS_initgroups, 16, NULL, NULL, 0); ],
-	samba_cv_DARWIN_INITGROUPS=yes,
-	samba_cv_DARWIN_INITGROUPS=no)
-)
-
-if test x"$samba_cv_DARWIN_INITGROUPS" = x"yes" ; then
-    AC_DEFINE(HAVE_DARWIN_INITGROUPS, 1,
-	[Whether to use the Darwin-specific initgroups system call])
-fi
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
@@ -3196,11 +2952,11 @@ dnl
 #ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
-int main() { struct flock64 fl64;
+main() { struct flock64 fl64;
 #if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
-return 0;
+exit(0);
 #else
-return 1;
+exit(1);
 #endif
 }],
        samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
@@ -3281,11 +3037,10 @@ fi
 AC_CACHE_CHECK([if the realpath function allows a NULL argument],samba_cv_REALPATH_TAKES_NULL,[
 AC_TRY_RUN([
 #include <stdio.h>
-#include <stdlib.h>
 #include <limits.h>
-int main() {
+main() {
 	char *newpath = realpath("/tmp", NULL);
-	return (newpath != NULL) ? 0 : 1;
+	exit ((newpath != NULL) ? 0 : 1);
 }
 ],
 samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
@@ -3508,12 +3263,6 @@ if test x"$with_ldap_support" != x"no"; then
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
-    if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
-      AC_MSG_WARN(Disabling ldb_ldap support (requires ldap_initialize))
-    else
-      AC_DEFINE(HAVE_LDB_LDAP,1,[Whether ldb_ldap is available])
-      LDBLDAP="lib/ldb/ldb_ldap/ldb_ldap.o"
-    fi
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
@@ -3807,8 +3556,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(initialize_krb5_error_table, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_alloc, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_free, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_get_error, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_enctype_to_string, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -4129,7 +3876,7 @@ if test x"$with_ads_support" != x"no"; then
                 samba_cv_HAVE_WRFILE_KEYTAB,[
     AC_TRY_RUN([
 #include<krb5.h>
-  int main()
+  main()
   {
     krb5_context context;
     krb5_keytab keytab;
@@ -4185,45 +3932,6 @@ if test x"$with_ads_support" != x"no"; then
               [whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal])
   fi
 
-  if test x"$ac_cv_func_ext_krb5_enctype_to_string" = x"yes"; then
-    AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_context context, krb5_enctype enctype, char **str)],
-        smb_krb5_enctype_to_string_takes_krb5_context_arg,[
-	AC_TRY_RUN_STRICT([
-		#include <krb5.h>
-		int main(void) {
-			krb5_context context = NULL;
-			char *str = NULL;
-			krb5_enctype_to_string(context, 1, &str);
-			if (str) free (str); 
-			return 0;
-		}
-		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
-		smb_krb5_enctype_to_string_takes_krb5_context_arg=yes,
-		smb_krb5_enctype_to_string_takes_krb5_context_arg=no)])
-
-    if test x"$smb_krb5_enctype_to_string_takes_krb5_context_arg" = x"yes"; then
-      AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG,1,
-                [whether krb5_enctype_to_string takes krb5_context argument])
-    fi
-
-    AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_enctype enctype, char *str, size_t len)],
-        smb_krb5_enctype_to_string_takes_size_t_arg,[
-	AC_TRY_RUN_STRICT([
-		#include <krb5.h>
-		int main(void) {
-			char buf[256];
-			krb5_enctype_to_string(1, buf, 256);
-			return 0;
-		}
-		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
-		smb_krb5_enctype_to_string_takes_size_t_arg=yes,
-		smb_krb5_enctype_to_string_takes_size_t_arg=no)])
-
-    if test x"$smb_krb5_enctype_to_string_takes_size_t_arg" = x"yes"; then
-      AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG,1,
-                [whether krb5_enctype_to_string takes size_t argument])
-    fi
-  fi
 
   #
   #
@@ -4467,11 +4175,7 @@ AC_ARG_WITH(cifsmount,
 
 
 #################################################
-# Check for a PAM clear-text auth, accounts, password
-# and session support. Most PAM implementations keep their
-# headers in /usr/include/security. Darwin keeps its in
-# /usr/include/pam.
-
+# check for a PAM clear-text auth, accounts, password and session support
 with_pam_for_crypt=no
 try_pam=no
 AC_MSG_CHECKING(whether to try PAM support)
@@ -4491,13 +4195,10 @@ if test x"${try_pam}" != x"no";then
 	use_pam=yes
 	create_pam_modules=yes
 
-	# Most systems have PAM headers in /usr/include/security, but Darwin
-	# has them in /usr/include/pam.
-	AC_CHECK_HEADERS(security/pam_appl.h pam/pam_appl.h)
-	if test x"$ac_cv_header_security_pam_appl_h" != x"yes" -a \
-		x"$ac_cv_header_pam_pam_appl_h" != x"yes"; then
+	AC_CHECK_HEADERS(security/pam_appl.h)
+	if test x"$ac_cv_header_security_pam_appl_h" != x"yes"; then
 		if test x"${try_pam}" = x"yes";then
-			AC_MSG_ERROR([--with-pam=yes but pam_appl.h not found])
+			AC_MSG_ERROR([--with-pam=yes but security/pam_appl.h not found])
 		fi
 		use_pam=no
 		create_pam_modules=no
@@ -4512,34 +4213,29 @@ if test x"${try_pam}" != x"no";then
 		create_pam_modules=no
 	fi
 
-	AC_CHECK_HEADERS(security/pam_modules.h pam/pam_modules.h,,,[[
+	AC_CHECK_HEADERS(security/pam_modules.h,,,[[
 		#if HAVE_SECURITY_PAM_APPL_H
 		#include <security/pam_appl.h>
 		#endif
-		#if HAVE_PAM_PAM_APPL_H
-		#include <pam/pam_appl.h>
-		#endif
 	]])
-	if test x"$ac_cv_header_security_pam_modules_h" = x"no" -a \
-		x"$ac_cv_header_pam_pam_modules_h" = x"no" ; then
+       if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
 		if test x"${try_pam}" = x"yes";then
-			AC_MSG_ERROR([--with-pam=yes but pam_modules.h not found])
-		fi
+			AC_MSG_ERROR([--with-pam=yes but security/pam_modules.h not found])
+       fi
 		create_pam_modules=no
-	fi
+    fi
 
 	if test x"$use_pam" = x"yes"; then
-		AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
+    AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
 		AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is available])
 		AUTH_LIBS="$AUTH_LIBS $PAM_LIBS"
-		with_pam_for_crypt=yes
+    with_pam_for_crypt=yes
 
 		if test x"$create_pam_modules" = x"yes"; then
 			AC_DEFINE(WITH_PAM_MODULES,1,[Whether to include PAM MODULES support])
 			# this checks are optional,
 			# we don't care about the results here
 			AC_CHECK_HEADERS(security/pam_ext.h security/_pam_macros.h)
-			AC_CHECK_HEADERS(pam/pam_ext.h pam/_pam_macros.h)
 			AC_CHECK_FUNC_EXT(pam_vsyslog,$PAM_LIBS)
 		else
 			AC_MSG_WARN([PAM support detected but PAM MODULES support is missing])		
@@ -5012,12 +4708,12 @@ LIBMSRPC_SHARED=
 LIBMSRPC=
 AC_MSG_CHECKING(whether to build the libmsrpc shared library)
 AC_ARG_WITH(libmsrpc,
-[  --with-libmsrpc         Build the libmsrpc shared library (default=no unmaintained)],
+[  --with-libmsrpc         Build the libmsrpc shared library (default=yes if shared libs supported)],
 [ case "$withval" in
-  *)
+  no)
      AC_MSG_RESULT(no)
      ;;
-  yes)
+  *)
      if test $BLDSHARED = true; then
         LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
         LIBMSRPC=libmsrpc
@@ -5032,7 +4728,22 @@ AC_ARG_WITH(libmsrpc,
      INSTALL_LIBMSRPC=installlibmsrpc
      UNINSTALL_LIBMSRPC=uninstalllibmsrpc
      ;;
-  esac ]
+  esac ],
+[
+# if unspecified, default is to built it if possible.
+  if test $BLDSHARED = true; then
+     LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
+     LIBMSRPC=libmsrpc
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     LIBMSRPC=libmsrpc
+  fi]
+  INSTALL_LIBMSRPC=installlibmsrpc
+  UNINSTALL_LIBMSRPC=uninstalllibmsrpc
 )
 
 
@@ -5044,12 +4755,12 @@ LIBADDNS_SHARED=
 LIBADDNS=
 AC_MSG_CHECKING(whether to build the libaddns shared library)
 AC_ARG_WITH(libaddns,
-[  --with-libaddns         Build the libaddns shared library (default=no undefined API)],
+[  --with-libaddns         Build the libaddns shared library (default=yes if shared libs supported)],
 [ case "$withval" in
-  *)
+  no)
      AC_MSG_RESULT(no)
      ;;
-  yes)
+  *)
      if test $BLDSHARED = true; then
         LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
         LIBADDNS=libaddns
@@ -5064,7 +4775,22 @@ AC_ARG_WITH(libaddns,
      INSTALL_LIBADDNS=installlibaddns
      UNINSTALL_LIBADDNS=uninstalllibaddns
      ;;
-  esac ]
+  esac ],
+[
+# if unspecified, default is to built it if possible.
+  if test $BLDSHARED = true; then
+     LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
+     LIBADDNS=libaddns
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     LIBADDNS=libaddns
+  fi]
+  INSTALL_LIBADDNS=installlibaddns
+  UNINSTALL_LIBADDNS=uninstalllibaddns
 )
 
 #################################################
@@ -5173,7 +4899,7 @@ if test $space = no; then
   main ()
   {
     struct statvfs64 fsd;
-    return statvfs64 (".", &fsd);
+    exit (statvfs64 (".", &fsd));
   }],
   fu_cv_sys_stat_statvfs64=yes,
   fu_cv_sys_stat_statvfs64=no,
@@ -5226,7 +4952,7 @@ if test $space = no; then
   {
     struct statfs fsd;
     fsd.f_fsize = 0;
-    return statfs (".", &fsd, sizeof (struct statfs));
+    exit (statfs (".", &fsd, sizeof (struct statfs)));
   }],
   fu_cv_sys_stat_statfs3_osf1=yes,
   fu_cv_sys_stat_statfs3_osf1=no,
@@ -5257,7 +4983,7 @@ member (AIX, 4.3BSD)])
   {
   struct statfs fsd;
   fsd.f_bsize = 0;
-  return statfs (".", &fsd);
+  exit (statfs (".", &fsd));
   }],
   fu_cv_sys_stat_statfs2_bsize=yes,
   fu_cv_sys_stat_statfs2_bsize=no,
@@ -5278,7 +5004,7 @@ if test $space = no; then
   main ()
   {
   struct statfs fsd;
-  return statfs (".", &fsd, sizeof fsd, 0);
+  exit (statfs (".", &fsd, sizeof fsd, 0));
   }],
     fu_cv_sys_stat_statfs4=yes,
     fu_cv_sys_stat_statfs4=no,
@@ -5306,7 +5032,7 @@ member (4.4BSD and NetBSD)])
   {
   struct statfs fsd;
   fsd.f_fsize = 0;
-  return statfs (".", &fsd);
+  exit (statfs (".", &fsd));
   }],
   fu_cv_sys_stat_statfs2_fsize=yes,
   fu_cv_sys_stat_statfs2_fsize=no,
@@ -5337,7 +5063,7 @@ if test $space = no; then
   struct fs_data fsd;
   /* Ultrix's statfs returns 1 for success,
      0 for not mounted, -1 for failure.  */
-  return statfs (".", &fsd) != 1;
+  exit (statfs (".", &fsd) != 1);
   }],
   fu_cv_sys_stat_fs_data=yes,
   fu_cv_sys_stat_fs_data=no,
@@ -5391,71 +5117,55 @@ fi
 
 AC_MSG_CHECKING(whether to support ACLs)
 AC_ARG_WITH(acl-support,
-[  --with-acl-support      Include ACL support (default=auto)],
+[  --with-acl-support      Include ACL support (default=no)],
 [ case "$withval" in
-	yes|no)
-		with_acl_support="$withval"
-		;;
-  esac ])
+  yes)
 
-if test x"$with_acl_support" = x ; then
-	with_acl_support="auto"
-fi
-
-AC_MSG_RESULT($with_acl_support)
-
-if test x"$with_acl_support" = x"no"; then
-	AC_MSG_RESULT(Disabling ACL support)
-	AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
-else
-	AC_MSG_NOTICE(checking whether ACL support is available:)
 	case "$host_os" in
 	*sysv5*)
-		AC_MSG_NOTICE(Using UnixWare ACLs)
+		AC_MSG_RESULT(Using UnixWare ACLs)
 		AC_DEFINE(HAVE_UNIXWARE_ACLS,1,[Whether UnixWare ACLs are available])
 		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*solaris*)
-		AC_MSG_NOTICE(Using solaris ACLs)
+		AC_MSG_RESULT(Using solaris ACLs)
 		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lsec"
 		default_static_modules="$default_static_modules vfs_solarisacl"
 		;;
 	*hpux*)
-		AC_MSG_NOTICE(Using HPUX ACLs)
+		AC_MSG_RESULT(Using HPUX ACLs)
 		AC_DEFINE(HAVE_HPUX_ACLS,1,[Whether HPUX ACLs are available])
 		default_static_modules="$default_static_modules vfs_hpuxacl"
 		;;
 	*irix*)
-		AC_MSG_NOTICE(Using IRIX ACLs)
+		AC_MSG_RESULT(Using IRIX ACLs)
 		AC_DEFINE(HAVE_IRIX_ACLS,1,[Whether IRIX ACLs are available])
 		default_static_modules="$default_static_modules vfs_irixacl"
 		;;
 	*aix*)
-		AC_MSG_NOTICE(Using AIX ACLs)
+		AC_MSG_RESULT(Using AIX ACLs)
 		AC_DEFINE(HAVE_AIX_ACLS,1,[Whether AIX ACLs are available])
 		default_static_modules="$default_static_modules vfs_aixacl"
 		;;
 	*osf*)
-		AC_MSG_NOTICE(Using Tru64 ACLs)
+		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lpacl"
 		default_static_modules="$default_static_modules vfs_tru64acl"
 		;;
-	*darwin*)
-		AC_MSG_NOTICE(ACLs on Darwin currently not supported)
-		AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
+	*freebsd[[5-9]]*)
+		AC_MSG_RESULT(Using FreeBSD posix ACLs)
+		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
+		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+		default_static_modules="$default_static_modules vfs_posixacl"
 		;;
-	*)
-		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
-		case "$host_os" in
-		*linux*)
-			AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
-			;;
-		esac
-		AC_CACHE_CHECK([for POSIX ACL support],samba_cv_HAVE_POSIX_ACLS,[
+	*linux*)
+		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
+		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 			acl_LIBS=$LIBS
-			LIBS="$LIBS $ACL_LIBS"
+			LIBS="$LIBS -lacl"
 			AC_TRY_LINK([
 				#include <sys/types.h>
 				#include <sys/acl.h>
@@ -5470,11 +5180,11 @@ else
 			LIBS=$acl_LIBS
 		])
 		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
-			AC_MSG_NOTICE(Using posix ACLs)
+			AC_MSG_RESULT(Using posix ACLs)
 			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
 			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
 				acl_LIBS=$LIBS
-				LIBS="$LIBS $ACL_LIBS"
+				LIBS="$LIBS -lacl"
 				AC_TRY_LINK([
 					#include <sys/types.h>
 					#include <sys/acl.h>
@@ -5490,16 +5200,63 @@ else
 			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
 				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 			fi
-   			default_static_modules="$default_static_modules vfs_posixacl"
-		else
-			AC_MSG_NOTICE(ACL support is not avaliable)
-			AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
 		fi
-		;;
+            ;;
+         *)
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
+		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+			acl_LIBS=$LIBS
+			LIBS="$LIBS -lacl"
+			AC_TRY_LINK([
+				#include <sys/types.h>
+				#include <sys/acl.h>
+			],[
+				acl_t acl;
+				int entry_id;
+				acl_entry_t *entry_p;
+				return acl_get_entry( acl, entry_id, entry_p);
+			],
+			[samba_cv_HAVE_POSIX_ACLS=yes],
+			[samba_cv_HAVE_POSIX_ACLS=no])
+			LIBS=$acl_LIBS
+		])
+		if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+			AC_MSG_RESULT(Using posix ACLs)
+			AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+			AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+				acl_LIBS=$LIBS
+				LIBS="$LIBS -lacl"
+				AC_TRY_LINK([
+					#include <sys/types.h>
+					#include <sys/acl.h>
+				],[
+					acl_permset_t permset_d;
+					acl_perm_t perm;
+					return acl_get_perm_np( permset_d, perm);
+				],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=yes],
+				[samba_cv_HAVE_ACL_GET_PERM_NP=no])
+				LIBS=$acl_LIBS
+			])
+			if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+				AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+			fi
+		fi
+            ;;
         esac
-fi # with_acl_support
+        ;;
+  *)
+    AC_MSG_RESULT(no)
+    AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
+    ;;
+  esac ],
+  AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
+  AC_MSG_RESULT(no)
+)
 
-
+if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+   default_static_modules="$default_static_modules vfs_posixacl"
+fi
 
 #################################################
 # check for AIO support
@@ -5653,7 +5410,7 @@ AC_ARG_WITH(sendfile-support,
 	AC_MSG_RESULT(yes);
 
 	case "$host_os" in
-	linux*-gnu* | gnu* | k*bsd*-gnu)
+	*linux*)
 		AC_CACHE_CHECK([for linux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
 		AC_TRY_LINK([#include <sys/sendfile.h>],
 [\
@@ -5902,7 +5659,6 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
 AC_CACHE_CHECK([for Linux readahead],
                 samba_cv_HAVE_LINUX_READAHEAD,[
-
     AC_TRY_LINK([
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
@@ -5916,8 +5672,6 @@ if test x"$samba_cv_HAVE_LINUX_READAHEAD" = x"yes"; then
   AC_DEFINE(HAVE_LINUX_READAHEAD,1,
              [Whether Linux readahead is available])
 fi
-
-AC_HAVE_DECL(readahead, [#include <fcntl.h>])
 
 ############################################
 # See if we have the posix_fadvise syscall.
@@ -5961,11 +5715,11 @@ NSSSONAMEVERSIONSUFFIX=""
 SMB_KRB5_LOCATOR="bin/smb_krb5_locator.$SHLIBEXT"
 
 case "$host_os" in
-	linux*-gnu* | gnu* | k*bsd*-gnu)
+	*linux*)
 		NSSSONAMEVERSIONSUFFIX=".2"
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
-	freebsd5*|*freebsd[[6-9]]*)
+	*freebsd[[5-9]]*)
 		# FreeBSD winbind client is implemented as a wrapper around
 		# the Linux version.
 		NSSSONAMEVERSIONSUFFIX=".1"
@@ -6117,6 +5871,7 @@ if test x"$samba_cv_HAVE_PEERCRED" = x"yes"; then
     AC_DEFINE(HAVE_PEERCRED,1,[Whether we can use SO_PEERCRED to get socket credentials])
 fi
 
+
 #################################################
 # Check to see if we should use the included popt
 
@@ -6145,7 +5900,7 @@ if test x"$INCLUDED_POPT" = x"yes"; then
     FLAGS1="-I\$(srcdir)/popt"
 else
     AC_MSG_RESULT(no)
-    BUILD_POPT=""
+	BUILD_POPT=""
     POPTLIBS="-lpopt"
 fi
 AC_SUBST(BUILD_POPT)
@@ -6234,7 +5989,7 @@ done
 
 dnl Always built these modules static
 MODULE_rpc_spoolss=STATIC
-MODULE_rpc_srvsvc=STATIC
+MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
 MODULE_idmap_passdb=STATIC
 MODULE_idmap_nss=STATIC
@@ -6267,21 +6022,18 @@ SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_winreg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_initshutdown, \$(RPC_INITSHUTDOWN_OBJ), "bin/librpc_initshutdown.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_reg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wkssvc, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_svcctl2, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl2.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_netdfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_srvsvc, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_svc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_eventlog2, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog2.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_rpcecho, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_unixinfo, \$(RPC_UNIXINFO_OBJ), "bin/librpc_unixinfo.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_epmapper, \$(RPC_EPMAPPER_OBJ), "bin/librpc_epmapper.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, nsswitch/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
@@ -6335,7 +6087,6 @@ SMB_MODULE(vfs_cacheprime, \$(VFS_CACHEPRIME_OBJ), "bin/cacheprime.$SHLIBEXT", V
 SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
@@ -6466,12 +6217,6 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
 	   AC_MSG_WARN([cannot run when cross-compiling]))
 
-dnl Merge in developer cflags from now on
-AC_SUBST(DEVELOPER_CFLAGS)
-if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes"; then
-    CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS)"
-fi
-
 builddir=`pwd`
 AC_SUBST(builddir)
 
@@ -6480,7 +6225,7 @@ AC_SUBST(builddir)
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
-AC_OUTPUT(Makefile library-versions script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
 
 #################################################
 # Print very concise instructions on building/use

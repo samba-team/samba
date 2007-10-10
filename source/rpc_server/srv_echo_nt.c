@@ -1,9 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines for rpcecho
- *  Copyright (C) Tim Potter                   2003
- *  Copyright (C) Jelmer Vernooij              2006
- *  Copyright (C) Gerald (Jerry) Carter        2007
+ *  Copyright (C) Tim Potter                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,123 +30,59 @@
 
 /* Add one to the input and return it */
 
-void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
+void _echo_add_one(pipes_struct *p, ECHO_Q_ADD_ONE *q_u, ECHO_R_ADD_ONE *r_u)
 {
-	DEBUG(10, ("_echo_AddOne\n"));
+	DEBUG(10, ("_echo_add_one\n"));
 
-	*r->out.out_data = r->in.in_data + 1;
+	r_u->response = q_u->request + 1;
 }
 
 /* Echo back an array of data */
 
-void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
+void _echo_data(pipes_struct *p, ECHO_Q_ECHO_DATA *q_u, 
+		ECHO_R_ECHO_DATA *r_u)
 {
-	DEBUG(10, ("_echo_EchoData\n"));
+	DEBUG(10, ("_echo_data\n"));
 
-	if ( r->in.len == 0 ) {		
-		r->out.out_data = NULL;
+	if (q_u->size == 0) {
+		r_u->data = NULL;
+		r_u->size = 0;
 		return;
 	}
-
-	r->out.out_data = TALLOC_ARRAY(p->mem_ctx, uint8, r->in.len);
-	memcpy( r->out.out_data, r->in.in_data, r->in.len );
-	return;	
+	r_u->data = TALLOC(p->mem_ctx, q_u->size);
+	r_u->size = q_u->size;
+	memcpy(r_u->data, q_u->data, q_u->size);
 }
 
 /* Sink an array of data */
 
-void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
+void _sink_data(pipes_struct *p, ECHO_Q_SINK_DATA *q_u, 
+		ECHO_R_SINK_DATA *r_u)
 {
-	DEBUG(10, ("_echo_SinkData\n"));
+	DEBUG(10, ("_sink_data\n"));
 
 	/* My that was some yummy data! */
-	return;	
 }
 
 /* Source an array of data */
 
-void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
+void _source_data(pipes_struct *p, ECHO_Q_SOURCE_DATA *q_u, 
+		  ECHO_R_SOURCE_DATA *r_u)
 {
 	uint32 i;
 
-	DEBUG(10, ("_echo_SourceData\n"));
+	DEBUG(10, ("_source_data\n"));
 
-	if ( r->in.len == 0 ) {
-		r->out.data = NULL;		
+	if (q_u->size == 0) {
+		r_u->data = NULL;
+		r_u->size = 0;
 		return;
 	}
+	r_u->data = TALLOC(p->mem_ctx, q_u->size);
+	r_u->size = q_u->size;
 
-	r->out.data = TALLOC_ARRAY(p->mem_ctx, uint8, r->in.len );
-
-	for (i = 0; i < r->in.len; i++ ) {		
-		r->out.data[i] = i & 0xff;
-	}
-	
-	return;	
-}
-
-void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
-{
-	*r->out.s2 = talloc_strdup(p->mem_ctx, r->in.s1);
-}
-
-NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r)
-{
-	switch (r->in.level) {
-	case 1:
-		r->out.info->info1.v = 10;
-		break;
-	case 2:
-		r->out.info->info2.v = 20;
-		break;
-	case 3:
-		r->out.info->info3.v = 30;
-		break;
-	case 4:
-		r->out.info->info4.v = 40;
-		break;
-	case 5:
-		r->out.info->info5.v1 = 50;
-		r->out.info->info5.v2 = 60;
-		break;
-	case 6:
-		r->out.info->info6.v1 = 70;
-		r->out.info->info6.info1.v= 80;
-		break;
-	case 7:
-		r->out.info->info7.v1 = 80;
-		r->out.info->info7.info4.v = 90;
-		break;
-	default:
-		return NT_STATUS_INVALID_LEVEL;
-	}
-
-	return NT_STATUS_OK;
-}
-
-uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r)
-{
-	sleep(r->in.seconds);
-	return r->in.seconds;
-}
-
-void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
-{
-}
-
-void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
-{
-	r->out.data->x *= 2;
-	r->out.data->surrounding = TALLOC_ZERO_ARRAY(p->mem_ctx, uint16_t, r->in.data->x);
-}
-
-uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)
-{
-	if (!*r->in.data) 
-		return 0;
-	if (!**r->in.data)
-		return 0;
-	return ***r->in.data;
+	for (i = 0; i < r_u->size; i++)
+		r_u->data[i] = i & 0xff;
 }
 
 #endif /* DEVELOPER */

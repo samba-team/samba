@@ -24,19 +24,11 @@
 #ifndef LINUX
 
 /* This is only used in the Sun implementation. */
-#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h>
-#elif defined(HAVE_PAM_PAM_APPL_H)
-#include <pam/pam_appl.h>
-#endif
 
 #endif  /* LINUX */
 
-#if defined(HAVE_SECURITY_PAM_MODULES_H)
 #include <security/pam_modules.h>
-#elif defined(HAVE_PAM_PAM_MODULES_H)
-#include <pam/pam_modules.h>
-#endif
 
 #include "general.h"
 
@@ -109,7 +101,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		_log_err( LOG_DEBUG, "username [%s] obtained", name );
 	}
 
-	if (!initialize_password_db(True, NULL)) {
+	if (!initialize_password_db(True)) {
 		_log_err( LOG_ALERT, "Cannot access samba password database" );
 		retval = PAM_AUTHINFO_UNAVAIL;
 		AUTH_RETURN;

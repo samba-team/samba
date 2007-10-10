@@ -169,16 +169,6 @@ static int catia_chown(vfs_handle_struct *handle,
         return SMB_VFS_NEXT_CHOWN(handle, name, uid, gid);
 }
 
-static int catia_lchown(vfs_handle_struct *handle,
-		       const char *path, uid_t uid, gid_t gid)
-{
-        pstring name;
-        pstrcpy(name, path);
-        to_unix(name);
-
-        return SMB_VFS_NEXT_LCHOWN(handle, name, uid, gid);
-}
-
 static int catia_chdir(vfs_handle_struct *handle,
 		       const char *path)
 {
@@ -232,15 +222,15 @@ static char *catia_realpath(vfs_handle_struct *handle,
 
 static size_t catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
-			       struct  security_descriptor **ppdesc)
+			       struct  security_descriptor_info **ppdesc)
 {
         return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info,
 				       ppdesc);
 }
 
-static NTSTATUS catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
+static BOOL catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
 			     const char *name, uint32 security_info_sent,
-			     struct security_descriptor *psd)
+			     struct security_descriptor_info *psd)
 {
         return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent,
 				       psd);
@@ -283,8 +273,6 @@ SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(catia_chmod),                       SMB_VFS_OP_CHMOD,  
 SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(catia_chown),                       SMB_VFS_OP_CHOWN,  
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_lchown),                      SMB_VFS_OP_LCHOWN,  
 SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(catia_chdir),                       SMB_VFS_OP_CHDIR,  
 SMB_VFS_LAYER_TRANSPARENT},

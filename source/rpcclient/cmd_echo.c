@@ -36,7 +36,7 @@ static NTSTATUS cmd_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	if (argc == 2)
 		request = atoi(argv[1]);
 
-	result = rpccli_echo_AddOne(cli, mem_ctx, request, &response);
+	result = rpccli_echo_add_one(cli, mem_ctx, request, &response);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -52,7 +52,7 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8_t *in_data = NULL, *out_data = NULL;
+	char *in_data = NULL, *out_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -60,23 +60,12 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	size = atoi(argv[1]);
-	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
-		printf("Failure to allocate buff of %d bytes\n",
-		       size);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
-		printf("Failure to allocate buff of %d bytes\n",
-		       size);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	in_data = SMB_MALLOC(size);
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
 
-	result = rpccli_echo_EchoData(cli, mem_ctx, size, in_data, out_data);
+	result = rpccli_echo_data(cli, mem_ctx, size, in_data, &out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -91,7 +80,6 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 done:
 	SAFE_FREE(in_data);
-	SAFE_FREE(out_data);
 
 	return result;
 }
@@ -102,7 +90,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8_t *out_data = NULL;
+	char *out_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -110,15 +98,8 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	}
 
 	size = atoi(argv[1]);
-	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
-		printf("Failure to allocate buff of %d bytes\n",
-		       size);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;		
-	}
-	
 
-	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
+	result = rpccli_echo_source_data(cli, mem_ctx, size, &out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -140,7 +121,7 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 {
 	uint32 size, i;
 	NTSTATUS result;
-	uint8_t *in_data = NULL;
+	char *in_data = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s num\n", argv[0]);
@@ -148,17 +129,12 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 
 	size = atoi(argv[1]);
-	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
-		printf("Failure to allocate buff of %d bytes\n",
-		       size);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;		
-	}
+	in_data = SMB_MALLOC(size);
 
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
 
-	result = rpccli_echo_SinkData(cli, mem_ctx, size, in_data);
+	result = rpccli_echo_sink_data(cli, mem_ctx, size, in_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -175,9 +151,9 @@ struct cmd_set echo_commands[] = {
 
 	{ "ECHO" },
 
-	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, PI_RPCECHO, NULL, "Add one to a number", "" },
-	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, PI_RPCECHO, NULL, "Echo data",           "" },
-	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, PI_RPCECHO, NULL, "Sink data",           "" },
-	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, PI_RPCECHO, NULL, "Source data",         "" },
+	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, PI_ECHO, NULL, "Add one to a number", "" },
+	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, PI_ECHO, NULL, "Echo data",           "" },
+	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, PI_ECHO, NULL, "Sink data",           "" },
+	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, PI_ECHO, NULL, "Source data",         "" },
 	{ NULL }
 };

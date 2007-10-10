@@ -11,10 +11,9 @@ srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
 
-.PHONY: test all showflags install installcheck clean distclean realdistclean
+.PHONY: test
 
-CFLAGS=-I. @CFLAGS@
-LDFLAGS=@LDFLAGS@
+CFLAGS=-I. -I@libreplacedir@ @CFLAGS@
 
 OBJS = @LIBREPLACEOBJ@
 
@@ -24,7 +23,7 @@ showflags:
 	@echo 'libreplace will be compiled with flags:'
 	@echo '  CC     = $(CC)'
 	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LDFLAGS= $(LDFLAGS)'
+	@echo '  LIBS   = $(LIBS)'
 
 install: all
 	mkdir -p $(libdir)
@@ -41,7 +40,7 @@ installcheck: install test
 TEST_OBJS = test/testsuite.o test/os2_delete.o test/strptime.o
 
 testsuite: libreplace.a $(TEST_OBJS)
-	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace $(LDFLAGS)
+	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace
 
 .c.o:
 	@echo Compiling $*.c

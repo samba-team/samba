@@ -91,6 +91,7 @@ int cac_SvcClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		  POLICY_HND * scm_hnd )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	WERROR err;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -111,7 +112,8 @@ int cac_SvcClose( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
-	hnd->status = rpccli_svcctl_CloseServiceHandle( pipe_hnd, mem_ctx, scm_hnd );
+	err = rpccli_svcctl_close_service( pipe_hnd, mem_ctx, scm_hnd );
+	hnd->status = werror_to_ntstatus( err );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )
 		return CAC_FAILURE;

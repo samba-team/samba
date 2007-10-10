@@ -160,7 +160,7 @@ static int readahead_connect(struct vfs_handle_struct *handle,
 
 	handle->data = (void *)rhd;
 	handle->free_data = free_readahead_data;
-	return 0;
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
 /*******************************************************************

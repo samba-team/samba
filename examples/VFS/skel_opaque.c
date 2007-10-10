@@ -206,11 +206,6 @@ static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid
 	return vfswrap_fchown(NULL, fsp, fd, uid, gid);
 }
 
-static int skel_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
-{
-	return vfswrap_lchown(NULL,  path, uid, gid);
-}
-
 static int skel_chdir(vfs_handle_struct *handle,  const char *path)
 {
 	return vfswrap_chdir(NULL,  path);
@@ -295,18 +290,18 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
+static BOOL skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
 	fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return False;
 }
 
-static NTSTATUS skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
+static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
 	char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return False;
 }
 
 static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
@@ -605,7 +600,6 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fchmod),			SMB_VFS_OP_FCHMOD,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_fchown),			SMB_VFS_OP_FCHOWN,		SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(skel_lchown),			SMB_VFS_OP_LCHOWN,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_getwd),			SMB_VFS_OP_GETWD,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_OPAQUE},

@@ -192,7 +192,7 @@ BOOL push_sec_ctx(void)
 
 	if (sec_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
 		DEBUG(0, ("Security context stack overflow!\n"));
-		smb_panic("Security context stack overflow!");
+		smb_panic("Security context stack overflow!\n");
 	}
 
 	/* Store previous user context */
@@ -228,70 +228,6 @@ BOOL push_sec_ctx(void)
 }
 
 /****************************************************************************
- Change UNIX security context. Calls panic if not successful so no return value.
-****************************************************************************/
-
-#ifndef HAVE_DARWIN_INITGROUPS
-
-/* Normal credential switch path. */
-
-static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
-{
-	/* Start context switch */
-	gain_root();
-#ifdef HAVE_SETGROUPS
-	sys_setgroups(gid, ngroups, groups);
-#endif
-	become_id(uid, gid);
-	/* end context switch */
-}
-
-#else /* HAVE_DARWIN_INITGROUPS */
-
-/* The Darwin groups implementation is a little unusual. The list of
-* groups in the kernel credential is not exhaustive, but more like
-* a cache. The full group list is held in userspace and checked
-* dynamically.
-*
-* This is an optional mechanism, and setgroups(2) opts out
-* of it. That is, if you call setgroups, then the list of groups you
-* set are the only groups that are ever checked. This is not what we
-* want. We want to opt in to the dynamic resolution mechanism, so we
-* need to specify the uid of the user whose group list (cache) we are
-* setting.
-*
-* The Darwin rules are:
-*  1. Thou shalt setegid, initgroups and seteuid IN THAT ORDER
-*  2. Thou shalt not pass more that NGROUPS_MAX to initgroups
-*  3. Thou shalt leave the first entry in the groups list well alone
-*/
-
-#include <sys/syscall.h>
-
-static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
-{
-	int max = groups_max();
-
-	/* Start context switch */
-	gain_root();
-
-	become_gid(gid);
-
-
-	if (syscall(SYS_initgroups, (ngroups > max) ? max : ngroups,
-			groups, uid) == 1) {
-		DEBUG(0, ("WARNING: failed to set group list "
-			"(%d groups) for UID %ld: %s\n",
-			ngroups, uid, strerror(errno)));
-	}
-
-	become_uid(uid);
-	/* end context switch */
-}
-
-#endif /* HAVE_DARWIN_INITGROUPS */
-
-/****************************************************************************
  Set the current security context to a given user.
 ****************************************************************************/
 
@@ -307,8 +243,11 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	debug_nt_user_token(DBGC_CLASS, 5, token);
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, ngroups, groups);
 
-	/* Change uid, gid and supplementary group list. */
-	set_unix_security_ctx(uid, gid, ngroups, groups);
+	gain_root();
+
+#ifdef HAVE_SETGROUPS
+	sys_setgroups(ngroups, groups);
+#endif
 
 	ctx_p->ut.ngroups = ngroups;
 
@@ -337,6 +276,8 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	} else {
 		ctx_p->token = NULL;
 	}
+
+	become_id(uid, gid);
 
 	ctx_p->ut.uid = uid;
 	ctx_p->ut.gid = gid;
@@ -374,7 +315,7 @@ BOOL pop_sec_ctx(void)
 
 	if (sec_ctx_stack_ndx == 0) {
 		DEBUG(0, ("Security context stack underflow!\n"));
-		smb_panic("Security context stack underflow!");
+		smb_panic("Security context stack underflow!\n");
 	}
 
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
@@ -393,13 +334,15 @@ BOOL pop_sec_ctx(void)
 
 	sec_ctx_stack_ndx--;
 
+	gain_root();
+
 	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
-	/* Change uid, gid and supplementary group list. */
-	set_unix_security_ctx(prev_ctx_p->ut.uid,
-			prev_ctx_p->ut.gid,
-			prev_ctx_p->ut.ngroups,
-			prev_ctx_p->ut.groups);
+#ifdef HAVE_SETGROUPS
+	sys_setgroups(prev_ctx_p->ut.ngroups, prev_ctx_p->ut.groups);
+#endif
+
+	become_id(prev_ctx_p->ut.uid, prev_ctx_p->ut.gid);
 
 	/* Update current_user stuff */
 

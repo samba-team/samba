@@ -75,9 +75,22 @@ Send a message to smbd to do a sam synchronisation
 
 static void send_sync_message(void)
 {
+        TDB_CONTEXT *tdb;
+
+        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
+                           TDB_DEFAULT, O_RDONLY, 0);
+
+        if (!tdb) {
+                DEBUG(3, ("send_sync_message(): failed to open connections "
+                          "database\n"));
+                return;
+        }
+
         DEBUG(3, ("sending sam synchronisation message\n"));
-        message_send_all(smbd_messaging_context(), MSG_SMB_SAM_SYNC, NULL, 0,
-			 NULL);
+        
+        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False, NULL);
+
+        tdb_close(tdb);
 }
 
 /*************************************************************************
@@ -283,7 +296,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	}
 
 	memcpy(md4pw, pass, 16);
-	dump_data(5, (uint8 *)md4pw, 16);
+	dump_data(5, md4pw, 16);
 
 	TALLOC_FREE(sampass);
 	

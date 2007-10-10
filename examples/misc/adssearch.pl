@@ -408,7 +408,6 @@ my %ads_gtype = (
 	"GTYPE_SECURITY_BUILTIN_LOCAL_GROUP"	=> 0x80000005,
 	"GTYPE_SECURITY_DOMAIN_LOCAL_GROUP"	=> 0x80000004,
 	"GTYPE_SECURITY_GLOBAL_GROUP"		=> 0x80000002,
-	"GTYPE_SECURITY_UNIVERSAL_GROUP"	=> 0x80000008,
 	"GTYPE_DISTRIBUTION_GLOBAL_GROUP"	=> 0x00000002,
 	"GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP"	=> 0x00000004,
 	"GTYPE_DISTRIBUTION_UNIVERSAL_GROUP"	=> 0x00000008,
@@ -1782,9 +1781,8 @@ sub main () {
 		if (!$opt_notify && ($async_search->code == LDAP_REFERRAL)) {
 			foreach my $ref ($async_search->referrals) {
 				print "\ngot Referral: [$ref]\n";
-				my ($prot, $host, $base) = split(/\/+/, $ref);
 				$async_ldap_hd->unbind();
-				$async_ldap_hd = get_ldap_hd($host, 1);
+				$async_ldap_hd = get_ldap_hd($ref, 1);
 				if (do_bind($async_ldap_hd, $sasl_bind) == -1) {
 					$async_ldap_hd->unbind();
 					next;

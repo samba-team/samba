@@ -35,17 +35,17 @@ static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
 				    TDB_DATA data,
 				    void *unused)
 {
-	if (strcmp((char *)key.dptr, "USER HWM") == 0) {
+	if (strcmp(key.dptr, "USER HWM") == 0) {
 		printf("USER HWM %d\n", IVAL(data.dptr,0));
 		return 0;
 	}
 
-	if (strcmp((char *)key.dptr, "GROUP HWM") == 0) {
+	if (strcmp(key.dptr, "GROUP HWM") == 0) {
 		printf("GROUP HWM %d\n", IVAL(data.dptr,0));
 		return 0;
 	}
 
-	if (strncmp((char *)key.dptr, "S-", 2) != 0)
+	if (strncmp(key.dptr, "S-", 2) != 0)
 		return 0;
 
 	printf("%s %s\n", data.dptr, key.dptr);

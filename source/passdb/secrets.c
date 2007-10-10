@@ -105,7 +105,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	if (!tdb)
 		return False;
 	return tdb_trans_store(tdb, string_tdb_data(key),
-			       make_tdb_data((uint8 *)data, size),
+			       make_tdb_data((const char *)data, size),
 			       TDB_REPLACE) == 0;
 }
 
@@ -117,7 +117,7 @@ BOOL secrets_delete(const char *key)
 	secrets_init();
 	if (!tdb)
 		return False;
-	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
+	return tdb_delete(tdb, string_tdb_data(key)) == 0;
 }
 
 BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
@@ -330,7 +330,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
  *
  * @return length of the packed representation of the whole structure
  **/
-static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
+static size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx;
 	size_t len = 0;
@@ -362,7 +362,7 @@ static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return size of structure unpacked from buffer
  **/
-static size_t tdb_sid_unpack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
+static size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx, len = 0;
 	
@@ -393,7 +393,7 @@ static size_t tdb_sid_unpack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return length of the packed representation of the whole structure
  **/
-static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
+static size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize,
 					TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
@@ -427,7 +427,7 @@ static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
  *
  * @return size of structure unpacked from buffer
  **/
-static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
+static size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize,
 					  TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
@@ -462,13 +462,13 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	size_t size = 0;
 	
 	/* unpacking structures */
-	uint8 *pass_buf;
+	char* pass_buf;
 	int pass_len = 0;
 
 	ZERO_STRUCT(pass);
 
 	/* fetching trusted domain password structure */
-	if (!(pass_buf = (uint8 *)secrets_fetch(trustdom_keystr(domain),
+	if (!(pass_buf = (char *)secrets_fetch(trustdom_keystr(domain),
 					       &size))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
@@ -498,6 +498,20 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	if (sid != NULL) sid_copy(sid, &pass.domain_sid);
 		
 	return True;
+}
+
+/************************************************************************
+ Routine to set the trust account password for a domain.
+************************************************************************/
+
+BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
+{
+	struct machine_acct_pass pass;
+
+	pass.mod_time = time(NULL);
+	memcpy(pass.hash, new_pwd, 16);
+
+	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
 }
 
 /**
@@ -543,7 +557,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	/* domain sid */
 	sid_copy(&pass.domain_sid, sid);
 	
-	pass_len = tdb_trusted_dom_pass_pack((uint8 *)pass_buf, pass_buf_len, &pass);
+	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_buf_len, &pass);
 
 	return secrets_store(trustdom_keystr(domain), (void *)&pass_buf, pass_len);
 }
@@ -556,78 +570,40 @@ the password is assumed to be a null terminated ascii string
 BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
 	char *key = NULL;
-	BOOL ret = False;
+	BOOL ret;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
 
-	if (tdb_transaction_start(tdb) == -1) {
-		DEBUG(5, ("tdb_transaction_start failed: %s\n",
-			  tdb_errorstr(tdb)));
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
+	if (!key) 
 		return False;
-	}
-
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
 	strupper_m(key);
 
 	ret = secrets_store(key, pass, strlen(pass)+1);
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
+	if (!ret)
+		return ret;
 	
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME,
-		     domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+	if (!key) 
+		return False;
 	strupper_m(key);
 
 	SIVAL(&last_change_time, 0, time(NULL));
 	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
-	
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE,
-		     domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+	if (!key) 
+		return False;
 	strupper_m(key);
 
 	SIVAL(&sec_channel_type, 0, sec_channel);
 	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
-
-	if (tdb_transaction_commit(tdb) != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
-			  tdb_errorstr(tdb)));
-		return False;
-	}
-
-	return True;
-
- fail:
-	if (tdb_transaction_cancel(tdb) != 0) {
-		smb_panic("tdb_transaction_cancel failed!\n");
-	}
-	return False;
+	return ret;
 }
 
 /************************************************************************
@@ -677,6 +653,56 @@ char *secrets_fetch_machine_password(const char *domain,
 	}
 	
 	return ret;
+}
+
+/*******************************************************************
+ Wrapper around retrieving the trust account password
+*******************************************************************/
+                                                                                                                     
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+	time_t last_set_time;
+                                                                                                                     
+	/* if we are a DC and this is not our domain, then lookup an account
+		for the domain trust */
+                                                                                                                     
+	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) {
+		if (!secrets_fetch_trusted_domain_password(domain, &pwd, &sid,
+							&last_set_time)) {
+			DEBUG(0, ("get_trust_pw: could not fetch trust "
+				"account password for trusted domain %s\n",
+				domain));
+			return False;
+		}
+                                                                                                                     
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+
+		return True;
+	}
+                                                                                                                     
+	/* Just get the account for the requested domain. In the future this
+	 * might also cover to be member of more than one domain. */
+                                                                                                                     
+	if (secrets_fetch_trust_account_password(domain, ret_pwd,
+						&last_set_time, channel))
+		return True;
+
+	DEBUG(5, ("get_trust_pw: could not fetch trust account "
+		"password for domain %s\n", domain));
+	return False;
+}
+
+/************************************************************************
+ Routine to delete the machine trust account password file for a domain.
+************************************************************************/
+
+BOOL trust_password_delete(const char *domain)
+{
+	return secrets_delete(trust_keystr(domain));
 }
 
 /************************************************************************
@@ -813,7 +839,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 
 	/* searching for keys in secrets db -- way to go ... */
 	for (k = keys; k; k = k->next) {
-		uint8 *packed_pass;
+		char *packed_pass;
 		size_t size = 0, packed_size = 0;
 		struct trusted_dom_pass pass;
 		char *secrets_key;
@@ -821,7 +847,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		
 		/* important: ensure null-termination of the key string */
 		secrets_key = talloc_strndup(tmp_ctx,
-					     (const char *)k->node_key.dptr,
+					     k->node_key.dptr,
 					     k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
@@ -830,7 +856,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		packed_pass = (uint8 *)secrets_fetch(secrets_key, &size);
+		packed_pass = (char *)secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size,
 							  &pass);
 		/* packed representation isn't needed anymore */
@@ -1033,7 +1059,7 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 	if (vers.dptr == NULL) {
 		/* First opener, no version. */
 		SIVAL(&ver,0,1);
-		vers.dptr = (uint8 *)&ver;
+		vers.dptr = (char *)&ver;
 		vers.dsize = 4;
 		tdb_store_bystring(tdb_sc, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
 		vers.dptr = NULL;
@@ -1090,7 +1116,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 				pdc->remote_machine,
 				pdc->domain);
 
-	value.dptr = TALLOC_ARRAY(mem_ctx, uint8, value.dsize);
+	value.dptr = (char *)TALLOC(mem_ctx, value.dsize);
 	if (!value.dptr) {
 		TALLOC_FREE(keystr);
 		return False;

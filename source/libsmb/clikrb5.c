@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   Copyright (C) Guenther Deschner 2005-2007
+   Copyright (C) Guenther Deschner 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,11 +28,11 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
-#define KRB5_KEY_TYPE(k)	((k)->keytype) 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
 #define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
 #define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
-#else /* MIT */
+#else
 #define	KRB5_KEY_TYPE(k)	((k)->enctype)
 #define KRB5_KEY_LENGTH(k)	((k)->length)
 #define KRB5_KEY_DATA(k)	((k)->contents)
@@ -271,45 +271,6 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 	return krb5_auth_con_setkey(context, auth_context, keyblock);
 }
 #endif
-
-BOOL unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx, 
-			   DATA_BLOB *edata, 
-			   DATA_BLOB *edata_out)
-{
-	DATA_BLOB edata_contents;
-	ASN1_DATA data;
-	int edata_type;
-
-	if (!edata->length) {
-		return False;
-	}
-
-	asn1_load(&data, *edata);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_read_Integer(&data, &edata_type);
-
-	if (edata_type != KRB5_PADATA_PW_SALT) {
-		DEBUG(0,("edata is not of required type %d but of type %d\n", 
-			KRB5_PADATA_PW_SALT, edata_type));
-		asn1_free(&data);
-		return False;
-	}
-	
-	asn1_start_tag(&data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(&data, &edata_contents);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_free(&data);
-
-	*edata_out = data_blob_talloc(mem_ctx, edata_contents.data, edata_contents.length);
-
-	data_blob_free(&edata_contents);
-
-	return True;
-}
-
 
 BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
 {
@@ -951,9 +912,9 @@ get_key_from_keytab(krb5_context context,
 	   may be in the middle of a keytab enumeration when this is
 	   called. JRA. */
 
-	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
+	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
-		DEBUG(1,("get_key_from_keytab: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		DEBUG(0,("get_key_from_keytab: failed to open keytab: %s\n", error_message(ret)));
 		return ret;
 	}
 
@@ -1140,10 +1101,6 @@ out:
 	krb5_context context = NULL;
 	krb5_ccache ccache = NULL;
 	krb5_principal client = NULL;
-	krb5_creds creds, creds_in, *creds_out = NULL;
-
-	ZERO_STRUCT(creds);
-	ZERO_STRUCT(creds_in);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -1155,11 +1112,6 @@ out:
 		ccache_string = krb5_cc_default_name(context);
 	}
 
-	if (!ccache_string) {
-		ret = EINVAL;
-		goto done;
-	}
-
 	DEBUG(10,("smb_krb5_renew_ticket: using %s as ccache\n", ccache_string));
 
 	/* FIXME: we should not fall back to defaults */
@@ -1168,34 +1120,61 @@ out:
 		goto done;
 	}
 
-	if (client_string) {
-		ret = smb_krb5_parse_name(context, client_string, &client);
-		if (ret) {
-			goto done;
-		}
-	} else {
-		ret = krb5_cc_get_principal(context, ccache, &client);
-		if (ret) {
-			goto done;
-		}
-	}
-
 #ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
 	{
+		krb5_creds creds;
+	
+		if (client_string) {
+			ret = smb_krb5_parse_name(context, client_string, &client);
+			if (ret) {
+				goto done;
+			}
+		} else {
+			ret = krb5_cc_get_principal(context, ccache, &client);
+			if (ret) {
+				goto done;
+			}
+		}
+	
 		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
 			goto done;
 		}
+
+		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
+		ret = krb5_cc_initialize(context, ccache, client);
+		if (ret) {
+			goto done;
+		}
+	
+		ret = krb5_cc_store_cred(context, ccache, &creds);
+
+		if (expire_time) {
+			*expire_time = (time_t) creds.times.endtime;
+		}
+
+		krb5_free_cred_contents(context, &creds);
 	}
 #elif defined(HAVE_KRB5_GET_KDC_CRED)	/* Heimdal */
 	{
 		krb5_kdc_flags flags;
-		krb5_realm *client_realm = NULL;
+		krb5_creds creds_in;
+		krb5_realm *client_realm;
+		krb5_creds *creds;
 
-		ret = krb5_copy_principal(context, client, &creds_in.client);
-		if (ret) {
-			goto done;
+		memset(&creds_in, 0, sizeof(creds_in));
+
+		if (client_string) {
+			ret = smb_krb5_parse_name(context, client_string, &creds_in.client);
+			if (ret) {
+				goto done;
+			}
+		} else {
+			ret = krb5_cc_get_principal(context, ccache, &creds_in.client);
+			if (ret) {
+				goto done;
+			}
 		}
 
 		if (service_string) {
@@ -1219,50 +1198,45 @@ out:
 		flags.i = 0;
 		flags.b.renewable = flags.b.renew = True;
 
-		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds_out);
+		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds);
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
 			goto done;
 		}
+		
+		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
+		ret = krb5_cc_initialize(context, ccache, creds_in.client);
+		if (ret) {
+			goto done;
+		}
+	
+		ret = krb5_cc_store_cred(context, ccache, creds);
 
-		creds = *creds_out;
+		if (expire_time) {
+			*expire_time = (time_t) creds->times.endtime;
+		}
+						
+		krb5_free_cred_contents(context, &creds_in);
+		krb5_free_creds(context, creds);
 	}
 #else
-#error NO_SUITABLE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
+#error No suitable krb5 ticket renew function available
 #endif
 
-	/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
-	ret = krb5_cc_initialize(context, ccache, client);
-	if (ret) {
-		goto done;
-	}
-	
-	ret = krb5_cc_store_cred(context, ccache, &creds);
-
-	if (expire_time) {
-		*expire_time = (time_t) creds.times.endtime;
-	}
 
 done:
-	krb5_free_cred_contents(context, &creds_in);
-
-	if (creds_out) {
-		krb5_free_creds(context, creds_out);
-	} else {
-		krb5_free_cred_contents(context, &creds);
-	}
-
 	if (client) {
 		krb5_free_principal(context, client);
-	}
-	if (ccache) {
-		krb5_cc_close(context, ccache);
 	}
 	if (context) {
 		krb5_free_context(context);
 	}
+	if (ccache) {
+		krb5_cc_close(context, ccache);
+	}
 
 	return ret;
+    
 }
 
  krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
@@ -1441,7 +1415,7 @@ done:
 
 	*opt = NULL;
 
-	if ((my_opt = SMB_MALLOC_P(krb5_get_init_creds_opt)) == NULL) {
+	if ((my_opt = SMB_MALLOC(sizeof(krb5_get_init_creds_opt))) == NULL) {
 		return ENOMEM;
 	}
 
@@ -1458,53 +1432,18 @@ done:
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_FREE
 
 #ifdef KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT
-	/* Modern MIT or Heimdal version */
+	/* Modern MIT version */
 	krb5_get_init_creds_opt_free(context, opt);
 #else
 	/* Heimdal version */
 	krb5_get_init_creds_opt_free(opt);
-#endif /* KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT */
+#endif
 
 #else /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
 	/* Historical MIT version */
 	SAFE_FREE(opt);
 	opt = NULL;
 #endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
-}
-
- krb5_enctype smb_get_enctype_from_kt_entry(const krb5_keytab_entry *kt_entry)
-{
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY		/* MIT */
-	return kt_entry->key.enctype;
-#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)	/* Heimdal */
-	return kt_entry->keyblock.keytype;
-#else
-#error UNKNOWN_KRB5_KEYTAB_ENTRY_KEYBLOCK_FORMAT
-#endif
-}
-
-
-/* caller needs to free etype_s */
- krb5_error_code smb_krb5_enctype_to_string(krb5_context context, 
- 					    krb5_enctype enctype, 
-					    char **etype_s)
-{
-#ifdef HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG
-	return krb5_enctype_to_string(context, enctype, etype_s); /* Heimdal */
-#elif defined(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG)
-	char buf[256];
-	krb5_error_code ret = krb5_enctype_to_string(enctype, buf, 256); /* MIT */
-	if (ret) {
-		return ret;
-	}
-	*etype_s = SMB_STRDUP(buf);
-	if (!*etype_s) {
-		return ENOMEM;
-	}
-	return ret;
-#else
-#error UNKNOWN_KRB5_ENCTYPE_TO_STRING_FUNCTION
-#endif
 }
 
  krb5_error_code smb_krb5_mk_error(krb5_context context,
@@ -1542,142 +1481,6 @@ done:
 				NULL,
 				reply);
 #endif
-}
-
-/**********************************************************************
- * Open a krb5 keytab with flags, handles readonly or readwrite access and
- * allows to process non-default keytab names.
- * @param context krb5_context 
- * @param keytab_name_req string
- * @param write_access BOOL if writable keytab is required
- * @param krb5_keytab pointer to krb5_keytab (close with krb5_kt_close())
- * @return krb5_error_code
-**********************************************************************/
-
-/* This MAX_NAME_LEN is a constant defined in krb5.h */
-#ifndef MAX_KEYTAB_NAME_LEN
-#define MAX_KEYTAB_NAME_LEN 1100
-#endif
-
- krb5_error_code smb_krb5_open_keytab(krb5_context context,
-				      const char *keytab_name_req,
-				      BOOL write_access,
-				      krb5_keytab *keytab)
-{
-	krb5_error_code ret = 0;
-	TALLOC_CTX *mem_ctx;
-	char keytab_string[MAX_KEYTAB_NAME_LEN];
-	BOOL found_valid_name = False;
-	const char *pragma = "FILE";
-	const char *tmp = NULL;
-
-	if (!write_access && !keytab_name_req) {
-		/* caller just wants to read the default keytab readonly, so be it */
-		return krb5_kt_default(context, keytab);
-	}
-
-	mem_ctx = talloc_init("smb_krb5_open_keytab");
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
-#ifdef HAVE_WRFILE_KEYTAB 
-	if (write_access) {
-		pragma = "WRFILE";
-	}
-#endif
-
-	if (keytab_name_req) {
-
-		if (strlen(keytab_name_req) > MAX_KEYTAB_NAME_LEN) {
-			ret = KRB5_CONFIG_NOTENUFSPACE;
-			goto out;
-		}
-
-		if ((strncmp(keytab_name_req, "WRFILE:/", 8) == 0) || 
-		    (strncmp(keytab_name_req, "FILE:/", 6) == 0)) {
-		    	tmp = keytab_name_req;
-			goto resolve;
-		}
-
-		if (keytab_name_req[0] != '/') {
-			ret = KRB5_KT_BADNAME;
-			goto out;
-		}
-
-		tmp = talloc_asprintf(mem_ctx, "%s:%s", pragma, keytab_name_req);
-		if (!tmp) {
-			ret = ENOMEM;
-			goto out;
-		}
-
-		goto resolve;
-	}
-
-	/* we need to handle more complex keytab_strings, like:
-	 * "ANY:FILE:/etc/krb5.keytab,krb4:/etc/srvtab" */
-
-	ret = krb5_kt_default_name(context, &keytab_string[0], MAX_KEYTAB_NAME_LEN - 2);
-	if (ret) {
-		goto out;
-	}
-
-	DEBUG(10,("smb_krb5_open_keytab: krb5_kt_default_name returned %s\n", keytab_string));
-
-	tmp = talloc_strdup(mem_ctx, keytab_string);
-	if (!tmp) {
-		ret = ENOMEM;
-		goto out;
-	}
-		
-	if (strncmp(tmp, "ANY:", 4) == 0) {
-		tmp += 4;
-	}
-
-	memset(&keytab_string, '\0', sizeof(keytab_string));
-
-	while (next_token(&tmp, keytab_string, ",", sizeof(keytab_string))) {
-
-		if (strncmp(keytab_string, "WRFILE:", 7) == 0) {
-			found_valid_name = True;
-			tmp = keytab_string;
-			tmp += 7;
-		}
-
-		if (strncmp(keytab_string, "FILE:", 5) == 0) {
-			found_valid_name = True;
-			tmp = keytab_string;
-			tmp += 5;
-		}
-
-		if (found_valid_name) {
-
-			if (tmp[0] != '/') {
-				ret = KRB5_KT_BADNAME;
-				goto out;
-			}
-
-			tmp = talloc_asprintf(mem_ctx, "%s:%s", pragma, tmp);
-			if (!tmp) {
-				ret = ENOMEM;
-				goto out;
-			}
-			break;
-		}
-	}
-		
-	if (!found_valid_name) {
-		ret = KRB5_KT_UNKNOWN_TYPE;
-		goto out;
-	}
-
- resolve:
- 	DEBUG(10,("smb_krb5_open_keytab: resolving: %s\n", tmp));
-	ret = krb5_kt_resolve(context, tmp, keytab);
-
- out:
- 	TALLOC_FREE(mem_ctx);
- 	return ret;
 }
 
 #else /* HAVE_KRB5 */

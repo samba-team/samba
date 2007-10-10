@@ -116,13 +116,13 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(struct file_id id,
-			struct server_id pid, 
+static void print_brl(SMB_DEV_T dev,
+			SMB_INO_T ino,
+			struct process_id pid, 
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			br_off start,
-			br_off size,
-			void *private_data)
+			br_off size)
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
@@ -138,8 +138,8 @@ static void print_brl(struct file_id id,
 	}
 #endif
 
-	printf("%s   %s    %s  %.0f:%.0f(%.0f)\n", 
-	       procid_str_static(&pid), file_id_static_string(&id),
+	printf("%s   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
+	       procid_str_static(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 
@@ -148,7 +148,7 @@ static void print_brl(struct file_id id,
 
 static void show_locks(void)
 {
-	brl_forall(print_brl, NULL);
+	brl_forall(print_brl);
 	/* system("cat /proc/locks"); */
 }
 

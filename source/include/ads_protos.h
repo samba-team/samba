@@ -76,15 +76,6 @@ ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, LDAPMessage **res,
 					const char *dn, 
 					const char **attrs,
 					enum ads_extended_dn_flags flags);
-ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
-						const char *dn, 
-						const char **attrs,
-						enum ads_extended_dn_flags flags,
-						char ***strings,
-						size_t *num_strings);
-BOOL ads_get_dn_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				 const char *extended_dn,
-				 char **dn);
 ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
 				const DOM_SID *sid,
 				const char **attrs);
@@ -102,18 +93,3 @@ ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
 			 LDAPMessage *res,
 			 const char *gpo_dn,
 			 struct GROUP_POLICY_OBJECT *gpo);
-ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
-					 uint32 sd_flags,
-					 const char *dn, 
-					 const char **attrs);
-ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
-				       int scope, const char *expr,
-				       const char **attrs, uint32 sd_flags, 
-				       LDAPMessage **res);
-ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
-			      TALLOC_CTX *mem_ctx,
-			      const char *dn,
-			      DOM_SID *user_sid,
-			      DOM_SID *primary_group_sid,
-			      DOM_SID **sids,
-			      size_t *num_sids);

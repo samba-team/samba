@@ -95,6 +95,8 @@ cat >$COMMONCONFFILE<<EOF
 	log file = $LOGDIR/log.%m
 	log level = 0
 
+	passdb backend = tdbsam
+
 	name resolve order = bcast
 EOF
 
@@ -106,8 +108,6 @@ cat >$CONFFILE<<EOF
 	interfaces = $TORTURE_INTERFACES
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
-
-	passdb backend = tdbsam
 EOF
 
 cat >$SAMBA4CONFFILE<<EOF
@@ -126,14 +126,11 @@ cat >$SERVERCONFFILE<<EOF
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
 
-	passdb backend = tdbsam
-
 	; Necessary to add the build farm hacks
 	add user script = /bin/false
 	add machine script = /bin/false
 
 	kernel oplocks = no
-	kernel change notify = no
 
 	syslog = no
 	printing = bsd
@@ -215,7 +212,7 @@ START=`date`
 (
  # give time for nbt server to register its names
  echo "delaying for nbt name registration"
- sleep 10
+ sleep 4
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
  bin/nmblookup $CONFIGURATION -U $SERVER_IP __SAMBA__
  bin/nmblookup $CONFIGURATION __SAMBA__

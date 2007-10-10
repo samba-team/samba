@@ -449,11 +449,8 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 		
 	/* stream the printer security descriptor */
 	
-	if ( info2->secdesc_buf &&
-	     info2->secdesc_buf->sd &&
-	     info2->secdesc_buf->sd_size )  
-	{
-		if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sd, &prs, 0 ) ) {
+	if ( info2->secdesc_buf && info2->secdesc_buf->len )  {
+		if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sec, &prs, 0 ) ) {
 			offset = prs_offset( &prs );
 			regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&prs), offset );
 		}
@@ -481,7 +478,7 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 	/* top level key values stored in the registry has no values */
 	
 	if ( !printers_key ) {
-		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' key */
+		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' ket */
 		return regdb_fetch_values( KEY_WINNT_PRINTERS, values );
 	}
 	
@@ -1242,7 +1239,7 @@ REGISTRY_OPS printing_ops = {
 	regprint_fetch_reg_values,
 	regprint_store_reg_keys,
 	regprint_store_reg_values,
-	NULL, NULL, NULL
+	NULL
 };
 
 

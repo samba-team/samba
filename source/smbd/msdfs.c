@@ -144,16 +144,14 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 
 	*ppath_contains_wcard = False;
 
-	pstrcpy(pdp->reqpath, p);
-
 	/* Rest is reqpath. */
 	if (pdp->posix_path) {
-		status = check_path_syntax_posix(pdp->reqpath);
+		status = check_path_syntax_posix(pdp->reqpath, p);
 	} else {
 		if (allow_wcards) {
-			status = check_path_syntax_wcard(pdp->reqpath, ppath_contains_wcard);
+			status = check_path_syntax_wcard(pdp->reqpath, p, ppath_contains_wcard);
 		} else {
-			status = check_path_syntax(pdp->reqpath);
+			status = check_path_syntax(pdp->reqpath, p);
 		}
 	}
 
@@ -390,7 +388,8 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 
 	pstrcpy(localpath, pdp->reqpath);
 	status = unix_convert(conn, localpath, search_flag, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		return status;
 	}
 
@@ -420,6 +419,14 @@ static NTSTATUS dfs_path_lookup(connection_struct *conn,
 	if (!pdp->posix_path) {
 		string_replace(canon_dfspath, '\\', '/');
 	}
+
+	/*
+	 * localpath comes out of unix_convert, so it has
+	 * no trailing backslash. Make sure that canon_dfspath hasn't either.
+	 * Fix for bug #4860 from Jan Martin <Jan.Martin@rwedea.com>.
+	 */
+
+	trim_char(canon_dfspath,0,'/');
 
 	/*
 	 * Redirect if any component in the path is a link.
@@ -722,7 +729,7 @@ static int setup_ver2_dfs_referral(const char *pathname,
 				       STR_TERMINATE);
 
 	if (DEBUGLVL(10)) {
-	    dump_data(0, uni_requestedpath,requestedpathlen);
+	    dump_data(0, (const char *) uni_requestedpath,requestedpathlen);
 	}
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
@@ -822,7 +829,7 @@ static int setup_ver3_dfs_referral(const char *pathname,
 	reqpathlen = rpcstr_push(uni_reqpath, pathname, sizeof(pstring), STR_TERMINATE);
 	
 	if (DEBUGLVL(10)) {
-	    dump_data(0, uni_reqpath,reqpathlen);
+	    dump_data(0, (char *) uni_reqpath,reqpathlen);
 	}
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
@@ -979,7 +986,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
       
 	if (DEBUGLVL(10)) {
 		DEBUGADD(0,("DFS Referral pdata:\n"));
-		dump_data(0,(uint8 *)*ppdata,reply_size);
+		dump_data(0,*ppdata,reply_size);
 	}
 
 	talloc_destroy(ctx);
@@ -1247,7 +1254,6 @@ int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	load_registry_shares();
 	sharecount = load_usershare_shares();
 	unbecome_root();
 

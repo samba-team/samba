@@ -1,3 +1,52 @@
+samba (3.0.25c-1) stable; urgency=low
+
+  * samba 3.0.25c bugfix release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 3  Sep 2007 11:18:30 -0400
+
+samba (3.0.25b-1) stable; urgency=low
+
+  * samba 3.0.25b bugfix release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 2  Jul 2007 12:16:30 -0400
+
+samba (3.0.25a-2) stable; urgency=low
+
+  * Fix bug in fhs.patch
+
+ -- Simo Sorce <idra@samba.org>  Wed, 6  Jun 2007 11:33:30 -0400
+
+samba (3.0.25a-1) stable; urgency=high
+
+  * samba 3.0.25a Stabilizing release
+  * Includes Security fixes release with 3.0.24a and 3.0.25
+
+ -- Simo Sorce <idra@samba.org>  Mon, 28 May 2007 20:45:30 -0400
+
+samba (3.0.24-1) stable; urgency=high
+
+  * samba 3.0.24 Security Release
+
+ -- Simo Sorce <idra@samba.org>  Mon, 19 Feb 2007 15:53:30 -0500
+
+samba (3.0.23d-1) stable; urgency=low
+
+  * samba 3.0.23d Samba Team Release
+
+ -- Simo Sorce <idra@samba.org>  Fri, 17 Nov 2006 15:39:30 -0500
+
+samba (3.0.23c-1) stable; urgency=low
+
+  * samba 3.0.23c Samba Team Release
+
+ -- Simo Sorce <idra@samba.org>  Fri, 8  Sep 2006 14:12:30 -0400
+
+samba (3.0.23a-1) stable; urgency=low
+
+  * samba 3.0.23a Samba Team Release
+
+ -- Simo Sorce <idra@samba.org>  Tue, 1  Aug 2006 22:01:30 -0400
+
 samba (3.0.23-1) stable; urgency=low
 
   * samba 3.0.23 Samba Team Release

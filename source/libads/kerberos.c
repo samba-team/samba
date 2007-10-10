@@ -55,127 +55,6 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-static BOOL smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx, 
-				    DATA_BLOB *edata_blob, 
-				    KRB5_EDATA_NTSTATUS *edata)
-{
-	BOOL ret = False;
-	prs_struct ps;
-
-	if (!mem_ctx || !edata_blob || !edata) 
-		return False;
-
-	if (!prs_init(&ps, edata_blob->length, mem_ctx, UNMARSHALL))
-		return False;
-
-	if (!prs_copy_data_in(&ps, (char *)edata_blob->data, edata_blob->length))
-		goto out;
-
-	prs_set_offset(&ps, 0);
-
-	if (!prs_ntstatus("ntstatus", &ps, 1, &edata->ntstatus))
-		goto out;
-
-	if (!prs_uint32("unknown1", &ps, 1, &edata->unknown1))
-		goto out;
-
-	if (!prs_uint32("unknown2", &ps, 1, &edata->unknown2)) /* only seen 00000001 here */
-		goto out;
-
-	ret = True;
- out:
-	prs_mem_free(&ps);
-
-	return ret;
-}
-
- static BOOL smb_krb5_get_ntstatus_from_krb5_error(krb5_error *error,
-						   NTSTATUS *nt_status)
-{
-	DATA_BLOB edata;
-	DATA_BLOB unwrapped_edata;
-	TALLOC_CTX *mem_ctx;
-	KRB5_EDATA_NTSTATUS parsed_edata;
-
-#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
-	edata = data_blob(error->e_data->data, error->e_data->length);
-#else
-	edata = data_blob(error->e_data.data, error->e_data.length);
-#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
-
-#ifdef DEVELOPER
-	dump_data(10, edata.data, edata.length);
-#endif /* DEVELOPER */
-
-	mem_ctx = talloc_init("smb_krb5_get_ntstatus_from_krb5_error");
-	if (mem_ctx == NULL) {
-		data_blob_free(&edata);
-		return False;
-	}
-
-	if (!unwrap_edata_ntstatus(mem_ctx, &edata, &unwrapped_edata)) {
-		data_blob_free(&edata);
-		TALLOC_FREE(mem_ctx);
-		return False;
-	}
-
-	data_blob_free(&edata);
-
-	if (!smb_krb5_err_io_nstatus(mem_ctx, &unwrapped_edata, &parsed_edata)) {
-		data_blob_free(&unwrapped_edata);
-		TALLOC_FREE(mem_ctx);
-		return False;
-	}
-
-	data_blob_free(&unwrapped_edata);
-
-	if (nt_status) {
-		*nt_status = parsed_edata.ntstatus;
-	}
-
-	TALLOC_FREE(mem_ctx);
-
-	return True;
-}
-
- static BOOL smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(krb5_context ctx, 
- 								  krb5_get_init_creds_opt *opt, 
-								  NTSTATUS *nt_status)
-{
-	BOOL ret = False;
-	krb5_error *error = NULL;
-
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR
-	ret = krb5_get_init_creds_opt_get_error(ctx, opt, &error);
-	if (ret) {
-		DEBUG(1,("krb5_get_init_creds_opt_get_error gave: %s\n", 
-			error_message(ret)));
-		return False;
-	}
-#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR */
-
-	if (!error) {
-		DEBUG(1,("no krb5_error\n"));
-		return False;
-	}
-
-#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
-	if (!error->e_data) {
-#else
-	if (error->e_data.data == NULL) {
-#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
-		DEBUG(1,("no edata in krb5_error\n")); 
-		krb5_free_error(ctx, error);
-		return False;
-	}
-
-	ret = smb_krb5_get_ntstatus_from_krb5_error(error, nt_status);
-
-	krb5_free_error(ctx, error);
-
-	return ret;
-}
-
 /*
   simulate a kinit, putting the tgt in the given cache location. If cache_name == NULL
   place in default cache location.
@@ -189,22 +68,19 @@ int kerberos_kinit_password_ext(const char *principal,
 				const char *cache_name,
 				BOOL request_pac,
 				BOOL add_netbios_addr,
-				time_t renewable_time,
-				NTSTATUS *ntstatus)
+				time_t renewable_time)
 {
 	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
 	krb5_ccache cc = NULL;
-	krb5_principal me = NULL;
+	krb5_principal me;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt *opt = NULL;
 	smb_krb5_addresses *addr = NULL;
 
-	ZERO_STRUCT(my_creds);
-
 	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
-		goto out;
+		return code;
 
 	if (time_offset != 0) {
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
@@ -215,15 +91,21 @@ int kerberos_kinit_password_ext(const char *principal,
 			getenv("KRB5_CONFIG")));
 
 	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
-		goto out;
+		krb5_free_context(ctx);
+		return code;
 	}
 	
 	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
-		goto out;
+		krb5_cc_close(ctx, cc);
+		krb5_free_context(ctx);	
+		return code;
 	}
 
-	if ((code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt))) {
-		goto out;
+	code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt);
+	if (code) {
+		krb5_cc_close(ctx, cc);
+		krb5_free_context(ctx);	
+		return code;
 	}
 
 	krb5_get_init_creds_opt_set_renew_life(opt, renewable_time);
@@ -235,30 +117,56 @@ int kerberos_kinit_password_ext(const char *principal,
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
 	if (request_pac) {
-		if ((code = krb5_get_init_creds_opt_set_pac_request(ctx, opt, (krb5_boolean)request_pac))) {
-			goto out;
+		code = krb5_get_init_creds_opt_set_pac_request(ctx, opt, (krb5_boolean)request_pac);
+		if (code) {
+			krb5_cc_close(ctx, cc);
+			krb5_free_principal(ctx, me);
+			krb5_free_context(ctx);
+			return code;
 		}
 	}
 #endif
 	if (add_netbios_addr) {
-		if ((code = smb_krb5_gen_netbios_krb5_address(&addr))) {
-			goto out;
+		code = smb_krb5_gen_netbios_krb5_address(&addr);
+		if (code) {
+			krb5_cc_close(ctx, cc);
+			krb5_free_principal(ctx, me);
+			krb5_free_context(ctx);		
+			return code;	
 		}
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
 						 kerb_prompter, CONST_DISCARD(char *,password),
-						 0, NULL, opt))) {
-		goto out;
+						 0, NULL, opt)))
+	{
+		smb_krb5_get_init_creds_opt_free(ctx, opt);
+		smb_krb5_free_addresses(ctx, addr);
+		krb5_cc_close(ctx, cc);
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);
+		return code;
 	}
 
+	smb_krb5_get_init_creds_opt_free(ctx, opt);
+
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
-		goto out;
+		smb_krb5_free_addresses(ctx, addr);
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_cc_close(ctx, cc);
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);		
+		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		goto out;
+		krb5_cc_close(ctx, cc);
+		smb_krb5_free_addresses(ctx, addr);
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);		
+		return code;
 	}
 
 	if (expire_time) {
@@ -268,47 +176,14 @@ int kerberos_kinit_password_ext(const char *principal,
 	if (renew_till_time) {
 		*renew_till_time = (time_t) my_creds.times.renew_till;
 	}
- out:
-	if (ntstatus) {
 
-		NTSTATUS status;
-
-		/* fast path */
-		if (code == 0) {
-			*ntstatus = NT_STATUS_OK;
-			goto cleanup;
-		}
-
-		/* try to get ntstatus code out of krb5_error when we have it
-		 * inside the krb5_get_init_creds_opt - gd */
-
-		if (opt && smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(ctx, opt, &status)) {
-			*ntstatus = status;
-			goto cleanup;
-		}
-
-		/* fall back to self-made-mapping */
-		*ntstatus = krb5_to_nt_status(code);
-	}
-
- cleanup:
+	krb5_cc_close(ctx, cc);
+	smb_krb5_free_addresses(ctx, addr);
 	krb5_free_cred_contents(ctx, &my_creds);
-	if (me) {
-		krb5_free_principal(ctx, me);
-	}
-	if (addr) {
-		smb_krb5_free_addresses(ctx, addr);
-	}
- 	if (opt) {
-		smb_krb5_get_init_creds_opt_free(ctx, opt);
-	}
-	if (cc) {
-		krb5_cc_close(ctx, cc);
-	}
-	if (ctx) {
-		krb5_free_context(ctx);
-	}
-	return code;
+	krb5_free_principal(ctx, me);
+	krb5_free_context(ctx);		
+	
+	return 0;
 }
 
 
@@ -346,8 +221,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	
 	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable, 
-			NULL);
+			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
@@ -606,8 +480,7 @@ int kerberos_kinit_password(const char *principal,
 					   cache_name,
 					   False,
 					   False,
-					   0,
-					   NULL);
+					   0);
 }
 
 /************************************************************************
@@ -617,9 +490,11 @@ int kerberos_kinit_password(const char *principal,
 
 static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sitename, struct in_addr primary_ip)
 {
-	struct ip_service *ip_srv_site;
+	int i;
+	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite;
-	int count_site, count_nonsite, i;
+	int count_site = 0;
+	int count_nonsite;
 	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
 					inet_ntoa(primary_ip));
 

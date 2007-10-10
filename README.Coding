@@ -76,8 +76,7 @@ displaying trailing whitespace:
 	endf
 	autocmd BufNewFile,BufRead * call ActivateInvisibleCharIndicator()
   endif
-  " Show tabs, trailing whitespace, and continued lines visually
-  set list listchars=tab:»·,trail:·,extends:…
+
 
 =========================
 FAQ & Statement Reference

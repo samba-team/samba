@@ -1720,7 +1720,6 @@ static BOOL api_RNetShareEnum( connection_struct *conn, uint16 vuid,
   
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	load_registry_shares();
 	count = load_usershare_shares();
 	unbecome_root();
 
@@ -1894,8 +1893,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 			goto error_exit;
 		} else {
 			SAFE_FREE(command);
-			message_send_all(smbd_messaging_context(),
-					 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 		}
 	} else {
 		return False;
@@ -4191,7 +4189,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	struct pack_desc desc;
-	struct sessionid *session_list;
+	struct sessionid *session_list = NULL;
 	int i, num_sessions;
 
 	if (!str1 || !str2 || !p) {
@@ -4214,11 +4212,12 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	num_sessions = list_sessions(tmp_talloc_ctx(), &session_list);
+	num_sessions = list_sessions(&session_list);
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
 		if (!*rdata) {
+			SAFE_FREE(session_list);
 			return False;
 		}
 	}
@@ -4227,6 +4226,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	desc.buflen = mdrcnt;
 	desc.format = str2;
 	if (!init_package(&desc,num_sessions,0)) {
+		SAFE_FREE(session_list);
 		return False;
 	}
 
@@ -4247,6 +4247,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 	if (!*rparam) {
+		SAFE_FREE(session_list);
 		return False;
 	}
 	SSVALS(*rparam,0,desc.errcode);
@@ -4255,6 +4256,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
 
 	DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
 
+	SAFE_FREE(session_list);
 	return True;
 }
 
@@ -4361,19 +4363,11 @@ static const struct {
 
 
 /****************************************************************************
- Handle remote api calls.
-****************************************************************************/
+ Handle remote api calls
+ ****************************************************************************/
 
-int api_reply(connection_struct *conn,
-		uint16 vuid,
-		const char *inbuf,
-		char *outbuf,
-		char *data,
-		char *params,
-		int tdscnt,
-		int tpscnt,
-		int mdrcnt,
-		int mprcnt)
+int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
+		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
 	int api_command;
 	char *rdata = NULL;
@@ -4466,13 +4460,7 @@ int api_reply(connection_struct *conn,
 
 	/* If api_Unsupported returns false we can't return anything. */
 	if (reply) {
-		send_trans_reply(inbuf,
-				outbuf,
-				rparam,
-				rparam_len,
-				rdata,
-				rdata_len,
-				False);
+		send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 	}
 
 	SAFE_FREE(rdata);

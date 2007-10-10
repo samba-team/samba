@@ -23,11 +23,7 @@
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
-#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h> 
-#elif defined(HAVE_PAM_PAM_APPL_H)
-#include <pam/pam_appl.h>
-#endif
 
 #ifndef PAM_AUTHTOK_RECOVER_ERR
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
@@ -35,16 +31,12 @@
 
 #endif /* defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX) */
 
-#if defined(HAVE_SECURITY_PAM_MODULES_H)
+#ifdef HAVE_SECURITY_PAM_MODULES_H
 #include <security/pam_modules.h>
-#elif defined(HAVE_PAM_PAM_MODULES_H)
-#include <pam/pam_modules.h>
 #endif
 
-#if defined(HAVE_SECURITY__PAM_MACROS_H)
+#ifdef HAVE_SECURITY__PAM_MACROS_H
 #include <security/_pam_macros.h>
-#elif defined(HAVE_PAM__PAM_MACROS_H)
-#include <pam/_pam_macros.h>
 #else
 /* Define required macros from (Linux PAM 0.68) security/_pam_macros.h */
 #define _pam_drop_reply(/* struct pam_response * */ reply, /* int */ replies) \
@@ -95,7 +87,6 @@ do {                             \
 #define WINBIND_CONFIG_FILE (1<<10)
 #define WINBIND_SILENT (1<<11)
 #define WINBIND_DEBUG_STATE (1<<12)
-#define WINBIND_WARN_PWD_EXPIRE (1<<13)
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -117,7 +108,7 @@ do {                             \
 
 #define SECONDS_PER_DAY 86400
 
-#define DEFAULT_DAYS_TO_WARN_BEFORE_PWD_EXPIRES 14
+#define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
 
 #include "winbind_client.h"
 
@@ -193,8 +184,6 @@ do {                             \
 /* from include/rpc_netlogon.h */
 #define LOGON_CACHED_ACCOUNT		0x00000004
 #define LOGON_GRACE_LOGON		0x01000000
-#define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
 #define PAM_WB_CACHED_LOGON(x) (x & LOGON_CACHED_ACCOUNT)
-#define PAM_WB_KRB5_CLOCK_SKEW(x) (x & LOGON_KRB5_FAIL_CLOCK_SKEW)
 #define PAM_WB_GRACE_LOGON(x)  ((LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON) == ( x & (LOGON_CACHED_ACCOUNT|LOGON_GRACE_LOGON)))

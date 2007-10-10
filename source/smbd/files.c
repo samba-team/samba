@@ -38,7 +38,8 @@ static int files_used;
 /* A singleton cache to speed up searching by dev/inode. */
 static struct fsp_singleton_cache {
 	files_struct *fsp;
-	struct file_id id;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 } fsp_fi_cache;
 
 /****************************************************************************
@@ -103,7 +104,7 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 	fsp->fh->fd = -1;
 
 	fsp->conn = conn;
-	fsp->fh->gen_id = get_gen_count();
+	fsp->fh->file_id = get_gen_count();
 	GetTimeOfDay(&fsp->open_time);
 
 	first_file = (i+1) % real_max_open_files;
@@ -232,9 +233,9 @@ void file_dump_open_table(void)
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, gen = %lu, fileid=%s\n",
-			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->fh->gen_id,
-			  file_id_static_string(&fsp->file_id)));
+		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
+			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->fh->file_id,
+			(unsigned int)fsp->dev, (double)fsp->inode ));
 	}
 }
 
@@ -263,15 +264,16 @@ files_struct *file_find_fd(int fd)
  Find a fsp given a device, inode and file_id.
 ****************************************************************************/
 
-files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
+files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id)
 {
 	int count=0;
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
-		if (file_id_equal(&fsp->file_id, &id) &&
-		    fsp->fh->gen_id == gen_id ) {
+		if (fsp->dev == dev && 
+		    fsp->inode == inode &&
+		    fsp->fh->file_id == file_id ) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
@@ -279,12 +281,11 @@ files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
 			if ((fsp->fh->fd == -1) &&
 			    (fsp->oplock_type != NO_OPLOCK) &&
 			    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
-				DEBUG(0,("file_find_dif: file %s file_id = %s, gen = %u \
-oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, 
-					 file_id_static_string(&fsp->file_id),
-					 (unsigned int)fsp->fh->gen_id,
-					 (unsigned int)fsp->oplock_type ));
-				smb_panic("file_find_dif");
+				DEBUG(0,("file_find_dif: file %s dev = %x, inode = %.0f, file_id = %u \
+oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, (unsigned int)fsp->dev,
+						(double)fsp->inode, (unsigned int)fsp->fh->file_id,
+						(unsigned int)fsp->oplock_type ));
+				smb_panic("file_find_dif\n");
 			}
 			return fsp;
 		}
@@ -315,20 +316,22 @@ files_struct *file_find_fsp(files_struct *orig_fsp)
  calls.
 ****************************************************************************/
 
-files_struct *file_find_di_first(struct file_id id)
+files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	files_struct *fsp;
 
-	if (file_id_equal(&fsp_fi_cache.id, &id)) {
+	if (fsp_fi_cache.dev == dev && fsp_fi_cache.inode == inode) {
 		/* Positive or negative cache hit. */
 		return fsp_fi_cache.fsp;
 	}
 
-	fsp_fi_cache.id = id;
+	fsp_fi_cache.dev = dev;
+	fsp_fi_cache.inode = inode;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
 		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &id)) {
+				fsp->dev == dev &&
+				fsp->inode == inode ) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
 			return fsp;
@@ -350,9 +353,9 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
 		if ( fsp->fh->fd != -1 &&
-		     file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
+				fsp->dev == start_fsp->dev &&
+				fsp->inode == start_fsp->inode )
 			return fsp;
-		}
 	}
 
 	return NULL;
@@ -389,7 +392,9 @@ void fsp_set_pending_modtime(files_struct *tfsp, const struct timespec mod)
 	}
 
 	for (fsp = Files;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 && file_id_equal(&fsp->file_id, &tfsp->file_id)) {
+		if ( fsp->fh->fd != -1 &&
+				fsp->dev == tfsp->dev &&
+				fsp->inode == tfsp->inode ) {
 			fsp->pending_modtime = mod;
 			fsp->pending_modtime_owner = False;
 		}
@@ -540,7 +545,8 @@ NTSTATUS dup_file_fsp(files_struct *fsp,
 	dup_fsp->fh = fsp->fh;
 	dup_fsp->fh->ref_count++;
 
-	dup_fsp->file_id = fsp->file_id;
+	dup_fsp->dev = fsp->dev;
+	dup_fsp->inode = fsp->inode;
 	dup_fsp->initial_allocation_size = fsp->initial_allocation_size;
 	dup_fsp->mode = fsp->mode;
 	dup_fsp->file_pid = fsp->file_pid;
@@ -563,6 +569,7 @@ NTSTATUS dup_file_fsp(files_struct *fsp,
 	dup_fsp->modified = fsp->modified;
 	dup_fsp->is_directory = fsp->is_directory;
 	dup_fsp->is_stat = fsp->is_stat;
+	dup_fsp->aio_write_behind = fsp->aio_write_behind;
         string_set(&dup_fsp->fsp_name,fsp->fsp_name);
 
 	*result = dup_fsp;

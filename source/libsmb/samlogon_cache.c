@@ -155,7 +155,7 @@ BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 	if ( net_io_user_info3("", user, &ps, 0, 3, 0) ) 
 	{
 		data.dsize = prs_offset( &ps );
-		data.dptr = (uint8 *)prs_data_p( &ps );
+		data.dptr = prs_data_p( &ps );
 
 		if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1)
 			result = True;
@@ -176,7 +176,7 @@ BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
 {
 	NET_USER_INFO_3	*user = NULL;
-	TDB_DATA 	data;
+	TDB_DATA 	data, key;
 	prs_struct	ps;
         fstring 	keystr;
 	uint32		t;
@@ -189,7 +189,9 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_string_static(user_sid));
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
-	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
+	key.dptr = keystr;
+	key.dsize = strlen(keystr)+1;
+	data = tdb_fetch( netsamlogon_tdb, key );
 	
 	if ( data.dptr ) {
 
@@ -199,7 +201,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 		}
 
 		prs_init( &ps, 0, mem_ctx, UNMARSHALL );
-		prs_give_memory( &ps, (char *)data.dptr, data.dsize, True );
+		prs_give_memory( &ps, data.dptr, data.dsize, True );
 		
 		if ( !prs_uint32( "timestamp", &ps, 0, &t ) ) {
 			prs_mem_free( &ps );

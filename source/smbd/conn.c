@@ -187,18 +187,14 @@ void conn_close_all(void)
  Idle inactive connections.
 ****************************************************************************/
 
-BOOL conn_idle_all(time_t t)
+BOOL conn_idle_all(time_t t, int deadtime)
 {
-	int deadtime = lp_deadtime()*60;
 	pipes_struct *plist = NULL;
-	connection_struct *conn;
+	BOOL allidle = True;
+	connection_struct *conn, *next;
 
-	if (deadtime <= 0)
-		deadtime = DEFAULT_SMBD_TIMEOUT;
-
-	for (conn=Connections;conn;conn=conn->next) {
-
-		time_t age = t - conn->lastused;
+	for (conn=Connections;conn;conn=next) {
+		next=conn->next;
 
 		/* Update if connection wasn't idle. */
 		if (conn->lastused != conn->lastused_count) {
@@ -207,12 +203,12 @@ BOOL conn_idle_all(time_t t)
 		}
 
 		/* close dirptrs on connections that are idle */
-		if (age > DPTR_IDLE_TIMEOUT) {
+		if ((t-conn->lastused) > DPTR_IDLE_TIMEOUT) {
 			dptr_idlecnum(conn);
 		}
 
-		if (conn->num_files_open > 0 || age < deadtime) {
-			return False;
+		if (conn->num_files_open > 0 || (t-conn->lastused)<deadtime) {
+			allidle = False;
 		}
 	}
 
@@ -221,14 +217,11 @@ BOOL conn_idle_all(time_t t)
 	 * idle with a handle open.
 	 */
 
-	for (plist = get_first_internal_pipe(); plist;
-	     plist = get_next_internal_pipe(plist)) {
-		if (plist->pipe_handles && plist->pipe_handles->count) {
-			return False;
-		}
-	}
+	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist))
+		if (plist->pipe_handles && plist->pipe_handles->count)
+			allidle = False;
 	
-	return True;
+	return allidle;
 }
 
 /****************************************************************************
@@ -286,6 +279,7 @@ void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
+	free_namearray(conn->aio_write_behind_list);
 	
 	string_free(&conn->user);
 	string_free(&conn->dirpath);
@@ -306,8 +300,6 @@ void conn_free(connection_struct *conn)
 	DLIST_REMOVE(Connections, conn);
 
 	bitmap_clear(bmap, conn->cnum);
-
-	SMB_ASSERT(num_open > 0);
 	num_open--;
 
 	conn_free_internal(conn);
@@ -319,16 +311,13 @@ the message contains just a share name and all instances of that
 share are unmounted
 the special sharename '*' forces unmount of all shares
 ****************************************************************************/
-void msg_force_tdis(struct messaging_context *msg,
-		    void *private_data,
-		    uint32_t msg_type,
-		    struct server_id server_id,
-		    DATA_BLOB *data)
+void msg_force_tdis(int msg_type, struct process_id pid, void *buf, size_t len,
+		    void *private_data)
 {
 	connection_struct *conn, *next;
 	fstring sharename;
 
-	fstrcpy(sharename, (const char *)data->data);
+	fstrcpy(sharename, (const char *)buf);
 
 	if (strcmp(sharename, "*") == 0) {
 		DEBUG(1,("Forcing close of all shares\n"));

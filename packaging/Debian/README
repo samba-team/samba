@@ -1,3 +1,6 @@
+NOTE: the debian-unstable and debian-woody are not updated anymore,
+they are left only as a reference for now. --SSS
+
 Building Samba Packages for Debian GNU/Linux
 --------------------------------------------
 

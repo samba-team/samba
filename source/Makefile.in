@@ -20,37 +20,18 @@ smbtorture4_path=@smbtorture4_path@
 LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
-
-## Dynamic shared libraries build settings
-DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
-DSO_EXPORTS=@DSO_EXPORTS@
-SONAME_VER=`grep ^$@ $(builddir)/library-versions | cut -d: -f2`
-SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
-
-# Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
-# (GCC) warnings. This is done automtically for --enable-developer
-# and --enable-krb5developer.
-DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
 CFLAGS=@CFLAGS@
 CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
-
 EXEEXT=@EXEEXT@
-LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
-
-# The MODULE_EXPORTS variable conatins the platform-specific linker flags
-# needed to restrict the exports for VFS, IDMAP, RPC and PASSDB modules.
-MODULE_EXPORTS=@MODULE_EXPORTS@
-
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
+LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
 PERL=@PERL@
-
-PIDL_ARGS=@PIDL_ARGS@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -103,9 +84,8 @@ VARDIR = @localstatedir@
 MANDIR = @mandir@
 DATADIR = @datadir@
 
-# The permissions to give the executables and other data
-INSTALLPERMS_BIN = 0755
-INSTALLPERMS_DATA = 0644
+# The permissions to give the executables
+INSTALLPERMS = 0755
 
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
@@ -113,7 +93,6 @@ INSTALLPERMS_DATA = 0644
 LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
-CTDBDIR = @ctdbdir@
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
@@ -131,35 +110,41 @@ LOCKDIR = @lockdir@
 PIDDIR = @piddir@
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
+LIBSMBCLIENT_MAJOR=0
+LIBSMBCLIENT_MINOR=1
+
 LIBMSRPC=bin/libmsrpc.a @LIBMSRPC_SHARED@
+LIBMSRPC_MAJOR=0
+LIBMSRPC_MINOR=1
+
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
+LIBSMBSHAREMODES_MAJOR=0
+LIBSMBSHAREMODES_MINOR=2
+
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
+LIBADDNS_MAJOR=0
+LIBADDNS_MINOR=1
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 =
-FLAGS4 = -I$(CTDBDIR)/include
+FLAGS4 =
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
 FLAGS  = $(ISA) $(FLAGS5) -I$(srcdir)/lib -D_SAMBA_BUILD_=3
 
-PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
-	-DPRIVATE_DIR=\"$(PRIVATE_DIR)\" \
-	-DCONFIGFILE=\"$(CONFIGFILE)\" \
-	-DSBINDIR=\"$(SBINDIR)\" \
-	-DBINDIR=\"$(BINDIR)\" \
-	-DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
-	-DSWATDIR=\"$(SWATDIR)\" \
-	-DLOCKDIR=\"$(LOCKDIR)\" \
-	-DPIDDIR=\"$(PIDDIR)\" \
-	-DLIBDIR=\"$(LIBDIR)\" \
-	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
-	-DSHLIBEXT=\"@SHLIBEXT@\" \
-	-DCTDBDIR=\"$(CTDBDIR)\" \
-	-DCONFIGDIR=\"$(CONFIGDIR)\"
+PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
+PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
+PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\"
+PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"
+PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
+PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
+	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
+PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\"
+PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
+SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
 
 ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
@@ -171,21 +156,18 @@ BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@
-BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
-	bin/ldbdel@EXEEXT@ bin/ldbmodify@EXEEXT@
 
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
-	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/tdbtorture@EXEEXT@
+	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@
 
-BIN_PROGS = @EXTRA_BIN_PROGS@ @SMBMOUNT_PROGS@ \
-	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
+BIN_PROGS = @SMBMOUNT_PROGS@ @EXTRA_BIN_PROGS@ \
+	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3)
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@
+	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@
 
 SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ @LIBADDNS@
 
@@ -209,14 +191,11 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 # object file lists
 ######################################################################
 
-TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o \
-	lib/tdb/common/freelist.o lib/tdb/common/freelistcheck.o \
-	lib/tdb/common/io.o lib/tdb/common/lock.o \
-	lib/tdb/common/open.o lib/tdb/common/transaction.o \
-	lib/tdb/common/traverse.o
+TDBBASE_OBJ = tdb/common/tdb.o tdb/common/dump.o tdb/common/error.o \
+	tdb/common/freelist.o tdb/common/freelistcheck.o tdb/common/io.o tdb/common/lock.o \
+	tdb/common/open.o tdb/common/transaction.o tdb/common/traverse.o
 
-TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o\
-	lib/dbwrap.o lib/dbwrap_tdb.o lib/dbwrap_ctdb.o
+TDB_OBJ = $(TDBBASE_OBJ) lib/util_tdb.o tdb/common/tdbback.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
@@ -236,19 +215,11 @@ ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
-
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+	     rpc_client/ndr.o
 
-RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
-
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_unixinfo.o librpc/gen_ndr/ndr_lsa.o \
-		 librpc/gen_ndr/ndr_dfs.o librpc/gen_ndr/ndr_echo.o \
-		 librpc/gen_ndr/ndr_winreg.o librpc/gen_ndr/ndr_initshutdown.o \
-		 librpc/gen_ndr/ndr_srvsvc.o librpc/gen_ndr/ndr_svcctl.o \
-		 librpc/gen_ndr/ndr_eventlog.o librpc/gen_ndr/ndr_wkssvc.o \
-		 librpc/gen_ndr/ndr_notify.o \
-		 librpc/gen_ndr/ndr_epmapper.o
+LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_notify.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -256,7 +227,7 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 # that requires knowledge of security contexts
 RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o
+RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o rpc_parse/parse_srv.o
 
 LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 
@@ -264,10 +235,7 @@ SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
-
-LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
-	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
-	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o
+LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ)
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -276,21 +244,20 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/dprintf.o \
-	  lib/xfile.o lib/wins_srv.o $(UTIL_REG_OBJ) \
+	  lib/xfile.o lib/wins_srv.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
+	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
-	  lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
+	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
-	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
-	  lib/file_id.o
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
 
 LIB_OBJ = $(LIB_WITHOUT_PROTO_OBJ) $(LIB_WITH_PROTO_OBJ)
 
@@ -303,9 +270,7 @@ READLINE_OBJ = lib/readline.o
 # Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o
 
-PARAM_WITHOUT_REG_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o
-PARAM_REG_ADD_OBJ = $(UTIL_REG_API_OBJ)
-PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
@@ -314,7 +279,7 @@ LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_parse.o libgpo/gpo_util.o \
-	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
+	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o
 LIBGPO_OBJ = $(LIBGPO_OBJ0)
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
@@ -343,74 +308,60 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
-	     libsmb/smb_seal.o $(DOSERR_OBJ) \
+	     $(DOSERR_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
-RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
+RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o
+	       rpc_client/cli_ds.o rpc_client/cli_svcctl.o \
+	       rpc_client/cli_shutdown.o rpc_client/cli_dfs.o rpc_client/cli_echo.o
 
-LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_unixinfo.o librpc/gen_ndr/cli_lsa.o \
-		   librpc/gen_ndr/cli_dfs.o librpc/gen_ndr/cli_echo.o \
-		   librpc/gen_ndr/cli_srvsvc.o librpc/gen_ndr/cli_svcctl.o \
-		   librpc/gen_ndr/cli_winreg.o librpc/gen_ndr/cli_initshutdown.o \
-		   librpc/gen_ndr/cli_eventlog.o librpc/gen_ndr/cli_epmapper.o \
-		   $(LIBNDR_GEN_OBJ) $(RPCCLIENT_NDR_OBJ)
+LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_wkssvc.o \
+		   $(LIBNDR_GEN_OBJ) $(LIBNDR_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
-               registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o \
-	       registry/reg_smbconf.o registry/reg_api.o \
-	       registry/reg_frontend_hilvl.o \
-	       $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
+               registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o
 
-RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
+RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
 
 RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 
 RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
 
-RPC_UNIXINFO_OBJ = librpc/gen_ndr/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o
 REGFIO_OBJ = registry/regfio.o
 
-RPC_EPMAPPER_OBJ = librpc/gen_ndr/srv_epmapper.o rpc_server/srv_epmapper_nt.o
+RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o $(REGFIO_OBJ)
 
-RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
-
-RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
-	       librpc/gen_ndr/srv_winreg.o \
-	       $(REGFIO_OBJ)
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
-RPC_SVC_OBJ = librpc/gen_ndr/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
+RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
-		  librpc/gen_ndr/srv_svcctl.o \
                   services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
                   services/svc_netlogon.o services/svc_winreg.o \
                   services/svc_wins.o
 
 RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 
-RPC_DFS_OBJ =  librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
+RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
-RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog.o rpc_server/srv_eventlog_nt.o \
-		   rpc_server/srv_eventlog_lib.o librpc/gen_ndr/srv_eventlog.o
+RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog.o rpc_server/srv_eventlog_nt.o rpc_server/srv_eventlog_lib.o
 
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
-RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
+RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
 
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
@@ -418,7 +369,10 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o $(RPC_PARSE_OBJ2) \
                 rpc_parse/parse_samr.o \
                 rpc_parse/parse_ds.o rpc_parse/parse_spoolss.o \
 	        rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
-                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ)
+                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ) \
+		rpc_parse/parse_dfs.o \
+		rpc_parse/parse_reg.o rpc_parse/parse_echo.o \
+		rpc_parse/parse_shutdown.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -430,15 +384,14 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_wellknown.o passdb/util_builtin.o passdb/pdb_compat.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
-		lib/account_pol.o lib/privileges.o lib/privileges_basic.o \
-		lib/util_nscd.o
+		lib/account_pol.o lib/privileges.o lib/util_nscd.o
 
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
 CHARSET_MACOSXFS_OBJ = modules/charset_macosxfs.o
 
-GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_tdb.o groupdb/mapping_ldb.o
+GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_tdb.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o \
@@ -468,7 +421,6 @@ VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
 VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
-VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o modules/nfs4_acls.o
 VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_IRIXACL_OBJ = modules/vfs_irixacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
@@ -494,9 +446,8 @@ AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
 
-AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
-	   lib/util_nttoken.o \
-	   auth/auth_compat.o auth/auth_ntlmssp.o \
+AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
+	   auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
@@ -514,7 +465,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
+	       smbd/vfs.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
@@ -522,10 +473,9 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
-	       smbd/dmapi.o lib/launchd.o smbd/sockinit.o \
-	       $(MANGLE_OBJ) @VFS_STATIC@
+	       smbd/dmapi.o $(MANGLE_OBJ) @VFS_STATIC@
 
-SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
+SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
 		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) \
@@ -533,7 +483,7 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) \
 		$(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-		$(BUILDOPT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
+		$(BUILDOPT_OBJ) $(SMBLDAP_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
@@ -567,7 +517,7 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(LIBSMB_OBJ) \
 	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	   $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) \
-           $(PASSCHANGE_OBJ) $(LDB_OBJ)
+           $(PASSCHANGE_OBJ)
 
 STATUS_OBJ = utils/status.o utils/status_profile.o \
 	     $(LOCKING_OBJ) $(PARAM_OBJ) \
@@ -585,7 +535,6 @@ SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
 	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
              rpc_client/cli_pipe.o $(RPC_PARSE_OBJ2) \
              $(RPC_CLIENT_OBJ1) \
-	     $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ) $(GROUPDB_OBJ) \
 	     $(LIBMSRPC_GEN_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
@@ -597,12 +546,12 @@ PASSWD_UTIL_OBJ = utils/passwd_util.o
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 		$(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(GROUPDB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) $(LDB_OBJ)
+		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
 		$(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o \
-		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LDB_OBJ) $(ERRORMAP_OBJ)
+		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) libsmb/errormap.o
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
 
@@ -614,7 +563,6 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_dfs.o \
 		 rpcclient/cmd_ds.o rpcclient/cmd_echo.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
-		 rpcclient/cmd_unixinfo.o \
 		 $(DISPLAY_SEC_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
@@ -622,7 +570,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) \
              $(READLINE_OBJ) $(GROUPDB_OBJ) $(KRBCLIENT_OBJ) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
-	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ)
+	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) @BUILD_INIPARSER@
@@ -632,7 +580,7 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
-		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
+		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
 CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
 			 libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
@@ -649,7 +597,7 @@ LIBBIGBALLOFMUD_MAJOR = 0
 
 LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
+	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
 	      $(RPC_CLIENT_OBJ1) \
@@ -658,35 +606,12 @@ CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(LIBMSRPC_GEN_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
-             $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
 
 TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
-
-UTIL_REG_OBJ = lib/util_reg.o
-UTIL_REG_API_OBJ = lib/util_reg_api.o
-UTIL_REG_SMBCONF_OBJ = lib/util_reg_smbconf.o 
-
-# objects to be used when not all of the registry code should be
-# loaded but only the portion needed by reg_api, typically for
-# using smbconf (registry) - full access
-REG_API_OBJ = registry/reg_api.o \
-	      registry/reg_frontend_hilvl.o \
-	      registry/reg_smbconf.o \
-	      registry/reg_db.o \
-	      registry/reg_util.o \
-	      \
-	      registry/reg_cachehook.o \
-	      registry/reg_eventlog.o \
-	      registry/reg_perfcount.o \
-	      registry/reg_dynamic.o \
-	      \
-	      lib/util_nttoken.o \
-	      $(UTIL_REG_API_OBJ) \
-	      $(UTIL_REG_SMBCONF_OBJ)
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
@@ -696,18 +621,16 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
-	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
-	   utils/net_conf.o
+	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o
 
-NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
+NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
-	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
-	  $(REG_API_OBJ)
+	  $(LIBGPO_OBJ) $(INIPARSER_OBJ) $(DISPLAY_SEC_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -746,7 +669,7 @@ NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 
 PDBTEST_OBJ = torture/pdbtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(SMBLDAP_OBJ) $(POPT_LIB_OBJ) $(LDB_OBJ)
+		$(SMBLDAP_OBJ) $(POPT_LIB_OBJ)
 
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
@@ -761,13 +684,13 @@ LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 			   $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
 			   $(PASSDB_OBJ) $(GROUPDB_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(SECRETS_OBJ) \
-			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
+			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ) $(SMBLDAP_OBJ)
 
 SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
-		$(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
+		$(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
 EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
@@ -790,16 +713,11 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 		lib/replace/test/strptime.o \
 		$(LIBREPLACE_OBJ)
 
-NDRDUMP_OBJ = librpc/tools/ndrdump.o \
-			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
-			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ)
-
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
              rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_samr.o \
+	     rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
@@ -811,7 +729,6 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
-	    $(RPCCLIENT_NDR_OBJ) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) \
@@ -826,9 +743,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
-	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
-	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
-	    $(RPC_EPMAPPER_OBJ) 
+            $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) utils/passwd_util.o \
+	    $(LIBGPO_OBJ) $(NSS_INFO_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -837,17 +753,16 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
-		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LDB_OBJ) $(ERRORMAP_OBJ)
+		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(ERRORMAP_OBJ)
 
 IDMAP_OBJ     = nsswitch/idmap.o nsswitch/idmap_cache.o nsswitch/idmap_util.o @IDMAP_STATIC@
 
 NSS_INFO_OBJ = nsswitch/nss_info.o @NSS_INFO_STATIC@
 
-IDMAP_NSS_OBJ = sam/idmap_nss.o @IDMAP_NSS_STATIC@
+IDMAP_NSS_OBJ = sam/idmap_nss.o
 
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
-		nsswitch/winbindd_sockinit.o \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_util.o  \
@@ -865,8 +780,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_async.o \
 		nsswitch/winbindd_creds.o \
 		nsswitch/winbindd_cred_cache.o \
-		nsswitch/winbindd_ccache_access.o \
-		auth/token_util.o
+		nsswitch/winbindd_ccache_access.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -875,48 +789,13 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
-		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) lib/launchd.o \
-		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ)
+		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
+		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
 WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) @WINBIND_NSS_EXTRA_OBJS@
-
-LDB_COMMON_OBJ=lib/ldb/common/ldb.o lib/ldb/common/ldb_ldif.o \
-          lib/ldb/common/ldb_parse.o lib/ldb/common/ldb_msg.o lib/ldb/common/ldb_utf8.o \
-          lib/ldb/common/ldb_debug.o lib/ldb/common/ldb_modules.o \
-          lib/ldb/common/ldb_dn.o lib/ldb/common/ldb_match.o lib/ldb/common/ldb_attributes.o \
-          lib/ldb/common/attrib_handlers.o lib/ldb/common/ldb_controls.o lib/ldb/common/qsort.o
-
-LDB_TDB_OBJ=lib/ldb/ldb_tdb/ldb_tdb.o \
-       lib/ldb/ldb_tdb/ldb_pack.o lib/ldb/ldb_tdb/ldb_search.o lib/ldb/ldb_tdb/ldb_index.o \
-       lib/ldb/ldb_tdb/ldb_cache.o lib/ldb/ldb_tdb/ldb_tdb_wrap.o
-
-LDB_MODULES_OBJ=lib/ldb/modules/operational.o lib/ldb/modules/rdn_name.o \
-          lib/ldb/modules/objectclass.o \
-          lib/ldb/modules/paged_results.o lib/ldb/modules/sort.o lib/ldb/modules/asq.o
-
-# enabled in configure.in
-LDB_LDAP_OBJ=@LDBLDAP@
-
-LDB_OBJ = ${LDB_COMMON_OBJ} ${LDB_TDB_OBJ} ${LDB_LDAP_OBJ} ${LDB_MODULES_OBJ}
-
-LDB_CMDLINE_OBJ = $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
-	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
-	  $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
-	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
-	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
-	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
-	  $(LDB_OBJ) lib/ldb/tools/cmdline.o
-
-
-LDBEDIT_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbedit.o
-LDBSEARCH_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbsearch.o
-LDBADD_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbadd.o
-LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
-LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
 SMB_KRB5_LOCATOR_OBJ1 = libads/smb_krb5_locator.o
 SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -925,21 +804,17 @@ SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) 
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
-INIPARSER_OBJ = iniparser_build/iniparser.o iniparser_build/dictionary.o \
-		iniparser_build/strlib.o
+INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
+		iniparser/src/strlib.o
 
-TDBBACKUP_OBJ = lib/tdb/tools/tdbbackup.o $(LIBREPLACE_OBJ) \
+TDBBACKUP_OBJ = tdb/tools/tdbbackup.o tdb/common/tdbback.o $(LIBREPLACE_OBJ) \
 	$(TDBBASE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-TDBTOOL_OBJ = lib/tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+TDBTOOL_OBJ = tdb/tools/tdbtool.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
-TDBDUMP_OBJ = lib/tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
+TDBDUMP_OBJ = tdb/tools/tdbdump.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
-
-TDBTORTURE_OBJ = lib/tdb/tools/tdbtorture.o $(TDBBASE_OBJ) $(LIBREPLACE_OBJ) \
-	$(SOCKET_WRAPPER_OBJ)
-
 
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
@@ -948,7 +823,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(DOSERR_OBJ) rpc_parse/parse_net.o $(LIBNMB_OBJ) \
-		$(LDB_OBJ) $(ERRORMAP_OBJ)
+		$(LDB_OBJ) libsmb/errormap.o
 
 ######################################################################
 # now the rules...
@@ -1008,20 +883,6 @@ modules: SHOWFLAGS $(MODULES)
 cac: SHOWFLAGS $(LIBMSRPC)
 
 
-#####################################################################
-## Perl IDL Compiler
-IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
-	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl
-
-idl:
-	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
-	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
-
-
-#####################################################################
-
-
 everything: all libsmbclient debug2html smbfilter talloctort replacetort modules torture \
 	$(EVERYTHING_PROGS)
 
@@ -1046,60 +907,25 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
-# Run a static checker.
-CHECK_CC = $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
-# Compile a source file.
-COMPILE_CC = $(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@
-# Compile a source file with the installation paths defined.
-COMPILE_CC_PATH = $(CC) -I. -I$(srcdir) $(PATH_FLAGS) $(FLAGS) $(PICFLAG) -c $< -o $@
-
-COMPILE = $(COMPILE_CC)
-
-# BEGIN GNU make specific
-# Rewrite the COMPILE rule to generate dependencies as a side-effect.
-# This is is actually toolchain-independent, but making use of the dependency
-# files requires GNU make, so it's pointless to have them otherwise.
-@ifGNUmake@DEPDIR=.
-@ifGNUmake@COMPILE_DEPENDS = source=$< object=$@ libtool=no \
-@ifGNUmake@	tmpdepfile=$(DEPDIR)/$*.TPo depfile=$(DEPDIR)/$*.d \
-@ifGNUmake@	DEPDIR=$(DEPDIR) @CCDEPMODE@ \
-@ifGNUmake@	$(srcdir)/depcomp $(COMPILE_CC)
-@ifGNUmake@COMPILE = $(COMPILE_DEPENDS)
-# END GNU make specific
-
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@if test -n "$(CC_CHECKER)"; then \
 	  echo "Checking  $*.c with '$(CC_CHECKER)'";\
-	  $(CHECK_CC); \
+	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@;\
 	 fi
 	@echo Compiling $*.c
-	@$(COMPILE) && exit 0;\
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC)" 1>&2;\
-		$(COMPILE_CC) >/dev/null 2>&1
+		echo "$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@" 1>&2;\
+		$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $< -o $@ >/dev/null 2>&1
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
-# BEGIN GNU make specific
-# Include all the generated dependency files. The sort is done to
-# remove duplicates.
-@ifGNUmake@DEPENDS_OBJ = $(SMBD_SRV_OBJ) $(NET_OBJ) $(WINBINDD_OBJ)
-@ifGNUmake@-include $(patsubst %.o, %.d, $(sort $(DEPENDS_OBJ)))
-# END GNU make specific
-
-PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build.
 pch: proto_exists
-	rm -f $(PRECOMPILED_HEADER)
-	$(MAKE) $(PRECOMPILED_HEADER)
-
-$(PRECOMPILED_HEADER): $(srcdir)/include/includes.h
-	$(COMPILE)
-
-BINARY_PREREQS = proto_exists bin/.dummy
+	rm -f $(builddir)/include/includes.h.gch
+	$(CC) -I. -I$(srcdir) $(FLAGS) $(PICFLAG) -c $(srcdir)/include/includes.h -o $(builddir)/include/includes.h.gch
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
@@ -1109,31 +935,22 @@ BINARY_PREREQS = proto_exists bin/.dummy
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
+	@$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@ && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
+		echo "$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@" 1>&2;\
+		$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/dynconfig.c -o $@ >/dev/null 2>&1
 
 lib/pidfile.o: lib/pidfile.c
 	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/pidfile.c -o $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c $(srcdir)/lib/version.c -o $@
 
 smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
+	@$(CC) $(FLAGS) $(PATH_FLAGS) $(PICFLAG) -c smbd/build_options.c -o $@
 
 smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
@@ -1144,253 +961,228 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd@EXEEXT@: $(BINARY_PREREQS) $(SMBD_OBJ) @BUILD_POPT@
+bin/smbd@EXEEXT@: proto_exists $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LDAP_LIBS) \
 		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
 		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@ @SMBD_LIBS@
 
-bin/nmbd@EXEEXT@: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@
+bin/nmbd@EXEEXT@: proto_exists $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/swat@EXEEXT@: $(BINARY_PREREQS) $(SWAT_OBJ) @BUILD_POPT@
+bin/swat@EXEEXT@: proto_exists $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) \
 	  $(AUTH_LIBS) $(LIBS) $(PASSDB_LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/rpcclient@EXEEXT@: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@
+bin/rpcclient@EXEEXT@: proto_exists $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(PASSDB_LIBS) $(RPCCLIENT_OBJ) \
 		$(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
 		$(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@
+bin/smbclient@EXEEXT@: proto_exists $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbctool@EXEEXT@: $(BINARY_PREREQS) $(TOOL_OBJ) @BUILD_POPT@
+bin/smbctool@EXEEXT@: proto_exists $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TOOL_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) -Lbin -lsmbclient
 
-bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@
+bin/net@EXEEXT@: proto_exists $(NET_OBJ) @BUILD_POPT@ @BUILD_INIPARSER@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) @INIPARSERLIBS@
 
-bin/profiles@EXEEXT@: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@
+bin/profiles@EXEEXT@: proto_exists $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/smbspool@EXEEXT@: $(BINARY_PREREQS) $(CUPS_OBJ)
+bin/smbspool@EXEEXT@: proto_exists $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbmount@EXEEXT@: $(BINARY_PREREQS) $(MOUNT_OBJ)
+bin/smbmount@EXEEXT@: proto_exists $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbmnt@EXEEXT@: $(BINARY_PREREQS) $(MNT_OBJ)
+bin/smbmnt@EXEEXT@: proto_exists $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/smbumount@EXEEXT@: $(BINARY_PREREQS) $(UMOUNT_OBJ)
+bin/smbumount@EXEEXT@: proto_exists $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ)
+bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/umount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UMOUNT_OBJ)
+bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
-bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@
+bin/testparm@EXEEXT@: proto_exists $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/smbstatus@EXEEXT@: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@
+bin/smbstatus@EXEEXT@: proto_exists $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(LDAP_LIBS) \
 	@POPTLIBS@
 
-bin/smbcontrol@EXEEXT@: $(BINARY_PREREQS) $(SMBCONTROL_OBJ) @BUILD_POPT@
+bin/smbcontrol@EXEEXT@: proto_exists $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ \
 	$(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) \
 	$(LIBS) $(LDAP_LIBS) @LIBUNWIND_PTRACE@ @POPTLIBS@
 
-bin/smbtree@EXEEXT@: $(BINARY_PREREQS) $(SMBTREE_OBJ) @BUILD_POPT@
+bin/smbtree@EXEEXT@: proto_exists $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbpasswd@EXEEXT@: $(BINARY_PREREQS) $(SMBPASSWD_OBJ) @BUILD_POPT@
+bin/smbpasswd@EXEEXT@: proto_exists $(SMBPASSWD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(PASSDB_LIBS) \
 		$(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/pdbedit@EXEEXT@: $(BINARY_PREREQS) $(PDBEDIT_OBJ) @BUILD_POPT@
+bin/pdbedit@EXEEXT@: proto_exists $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(LDAP_LIBS)
 
-bin/smbget@EXEEXT@: $(BINARY_PREREQS) $(SMBGET_OBJ) @BUILD_POPT@
+bin/smbget@EXEEXT@: proto_exists $(SMBGET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBGET_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@  $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@
+bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDB_LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/nmblookup@EXEEXT@: $(BINARY_PREREQS) $(NMBLOOKUP_OBJ) @BUILD_POPT@
+bin/nmblookup@EXEEXT@: proto_exists $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(LDAP_LIBS)
 
-bin/smbtorture@EXEEXT@: $(BINARY_PREREQS) $(SMBTORTURE_OBJ)
+bin/smbtorture@EXEEXT@: proto_exists $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/talloctort@EXEEXT@: $(BINARY_PREREQS) $(TALLOCTORT_OBJ)
+bin/talloctort@EXEEXT@: proto_exists $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS)
 
-bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ)
+bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(REPLACETORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS)
 
-bin/masktest@EXEEXT@: $(BINARY_PREREQS) $(MASKTEST_OBJ)
+bin/masktest@EXEEXT@: proto_exists $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/msgtest@EXEEXT@: $(BINARY_PREREQS) $(MSGTEST_OBJ)
+bin/msgtest@EXEEXT@: proto_exists $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/smbcacls@EXEEXT@: $(BINARY_PREREQS) $(SMBCACLS_OBJ) @BUILD_POPT@
+bin/smbcacls@EXEEXT@: proto_exists $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ \
 	$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/smbcquotas@EXEEXT@: $(BINARY_PREREQS) $(SMBCQUOTAS_OBJ) @BUILD_POPT@
+bin/smbcquotas@EXEEXT@: proto_exists $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ \
 	$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/eventlogadm@EXEEXT@: $(BINARY_PREREQS) $(EVTLOGADM_OBJ) @BUILD_POPT@
+bin/eventlogadm@EXEEXT@: proto_exists $(EVTLOGADM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(EVTLOGADM_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/sharesec@EXEEXT@: $(BINARY_PREREQS) $(SHARESEC_OBJ) @BUILD_POPT@
+bin/sharesec@EXEEXT@: proto_exists $(SHARESEC_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SHARESEC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/locktest@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST_OBJ)
+bin/locktest@EXEEXT@: proto_exists $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/nsstest@EXEEXT@: $(BINARY_PREREQS) $(NSSTEST_OBJ)
+bin/nsstest@EXEEXT@: proto_exists $(NSSTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)  $(LDAP_LIBS)
 
-bin/pdbtest@EXEEXT@: $(BINARY_PREREQS) $(PDBTEST_OBJ)
+bin/pdbtest@EXEEXT@: proto_exists $(PDBTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@
 
-bin/vfstest@EXEEXT@: $(BINARY_PREREQS) $(VFSTEST_OBJ) @BUILD_POPT@
+bin/vfstest@EXEEXT@: proto_exists $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) $(ACL_LIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) @SMBD_LIBS@ $(NSCD_LIBS)
 
-bin/smbiconv@EXEEXT@: $(BINARY_PREREQS) $(SMBICONV_OBJ) @BUILD_POPT@
+bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBICONV_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
-bin/log2pcap@EXEEXT@: $(BINARY_PREREQS) $(LOG2PCAP_OBJ) @BUILD_POPT@
+bin/log2pcap@EXEEXT@: proto_exists $(LOG2PCAP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOG2PCAP_OBJ) $(LDFLAGS) $(DYNEXP) @POPTLIBS@ $(LIBS)
 
-bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ)
+bin/locktest2@EXEEXT@: proto_exists $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/rpctorture@EXEEXT@: $(BINARY_PREREQS) $(RPCTORTURE_OBJ)
+bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/ndrdump@EXEEXT@: $(BINARY_PREREQS) $(NDRDUMP_OBJ)
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
-		@POPTLIBS@ @LDAP_LIBS@
-
-bin/debug2html@EXEEXT@: $(BINARY_PREREQS) $(DEBUG2HTML_OBJ)
+bin/debug2html@EXEEXT@: proto_exists $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
-bin/smbfilter@EXEEXT@: $(BINARY_PREREQS) $(SMBFILTER_OBJ)
+bin/smbfilter@EXEEXT@: proto_exists $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/ldbedit: $(BINARY_PREREQS) $(LDBEDIT_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDBEDIT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
-
-bin/ldbsearch: $(BINARY_PREREQS) $(LDBSEARCH_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDBSEARCH_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
-
-bin/ldbadd: $(BINARY_PREREQS) $(LDBADD_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDBADD_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
-
-bin/ldbmodify: $(BINARY_PREREQS) $(LDBMODIFY_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDBMODIFY_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
-
-bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDBDEL_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS)
-
-bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
+bin/libaddns.@SHLIBEXT@: proto_exists $(LIBADDNS_OBJ)
 	@echo Linking libaddns shared library $@
-	@$(SHLD_DSO) $(LIBADDNS_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBADDNS_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS)\
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+		@SONAMEFLAG@`basename $@`.$(LIBADDNS_MAJOR)
 
-bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
+bin/libaddns.a: proto_exists $(LIBADDNS_OBJ)
 	@echo Linking libaddns non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
-bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
+bin/libsmbclient.@SHLIBEXT@: proto_exists $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
-bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
+bin/libsmbclient.a: proto_exists $(LIBSMBCLIENT_OBJ)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ)
 
-bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
+bin/libsmbsharemodes.@SHLIBEXT@: proto_exists $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD_DSO) $(LIBSMBSHAREMODES_OBJ) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
 
-bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
+bin/libsmbsharemodes.a: proto_exists $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking libsmbsharemodes non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
 
-bin/libmsrpc.@SHLIBEXT@: $(BINARY_PREREQS) $(CAC_OBJ)
+bin/libmsrpc.@SHLIBEXT@: proto_exists $(CAC_OBJ)
 	@echo Linking libmsrpc shared library $@
-	@$(SHLD_DSO) $(CAC_OBJ) $(LDFLAGS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ) $(LIBS) \
+	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
 
-bin/libmsrpc.a: $(BINARY_PREREQS) $(CAC_OBJ)
+bin/libmsrpc.a: proto_exists $(CAC_OBJ)
 	@echo Linking libmsrpc non-shared library $@
 	@-$(AR) -rc $@ $(CAC_OBJ)
 
 # This is probably wrong for anything other than the GNU linker.
-bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ)
+bin/libbigballofmud.@SHLIBEXT@: proto_exists $(LIBBIGBALLOFMUD_OBJ)
 	@echo Linking bigballofmud shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_OBJ) $(LIBS) \
 		$(PASSDB_LIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAP_LIBS) \
@@ -1407,279 +1199,318 @@ libsmbsharemodes: $(LIBSMBSHAREMODES)
 libmsrpc: $(LIBMSRPC)
 libaddns: $(LIBADDNS)
 
-# Linker command to link a RPC, VFS, AUTH, CHARSET or PASSDB module.
-SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
-	      -o $@ @SONAMEFLAG@`basename $@`
-
-bin/librpc_lsarpc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_OBJ)
+bin/librpc_lsarpc.@SHLIBEXT@: proto_exists $(RPC_LSA_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_LSA_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_samr.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SAMR_OBJ)
+bin/librpc_samr.@SHLIBEXT@: proto_exists $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SAMR_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_unixinfo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_UNIXINFO_OBJ)
+bin/librpc_unixinfo.@SHLIBEXT@: proto_exists $(RPC_UNIXINFO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_UNIXINFO_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_UNIXINFO_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_epmapper.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EPMAPPER_OBJ)
+bin/librpc_srvsvc.@SHLIBEXT@: proto_exists $(RPC_SVC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVC_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
+bin/librpc_svcctl.@SHLIBEXT@: proto_exists $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVC_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVCCTL_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_svcctl.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVCCTL_OBJ)
+bin/librpc_ntsvcs.@SHLIBEXT@: proto_exists $(RPC_NTSVCS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SVCCTL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NTSVCS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_ntsvcs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NTSVCS_OBJ)
+bin/librpc_wkssvc.@SHLIBEXT@: proto_exists $(RPC_WKS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_NTSVCS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_WKS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_wkssvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_WKS_OBJ)
+bin/librpc_NETLOGON.@SHLIBEXT@: proto_exists $(RPC_NETLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_WKS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_NETLOGON.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETLOG_OBJ)
+bin/librpc_reg.@SHLIBEXT@: proto_exists $(RPC_REG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_NETLOG_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_winreg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_REG_OBJ)
+bin/librpc_initshutdown.@SHLIBEXT@: proto_exists $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_REG_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_INITSHUTDOWN_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_initshutdown.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_INITSHUTDOWN_OBJ)
+bin/librpc_lsa_ds.@SHLIBEXT@: proto_exists $(RPC_LSA_DS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_INITSHUTDOWN_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_DS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_lsa_ds.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_DS_OBJ)
+bin/librpc_spoolss.@SHLIBEXT@: proto_exists $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_LSA_DS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_spoolss.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
+bin/librpc_eventlog.@SHLIBEXT@: proto_exists $(RPC_EVENTLOG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_SPOOLSS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EVENTLOG_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_eventlog.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EVENTLOG_OBJ)
+bin/librpc_netdfs.@SHLIBEXT@: proto_exists $(RPC_DFS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_EVENTLOG_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_netdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DFS_OBJ)
+bin/librpc_echo.@SHLIBEXT@: proto_exists $(RPC_ECHO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_DFS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
 
-bin/librpc_echo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_ECHO_OBJ)
-	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_ECHO_OBJ)
-
-bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@
+bin/winbindd@EXEEXT@: proto_exists $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
 	@$(CC) $(FLAGS) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
 
-@WINBIND_NSS@: $(BINARY_PREREQS) $(WINBIND_NSS_OBJ)
+@WINBIND_NSS@: $(WINBIND_NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_OBJ) \
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-@WINBIND_WINS_NSS@: $(BINARY_PREREQS) $(WINBIND_WINS_NSS_OBJ)
+@WINBIND_WINS_NSS@: proto_exists $(WINBIND_WINS_NSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_OBJ) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-@SMB_KRB5_LOCATOR@: $(BINARY_PREREQS) $(SMB_KRB5_LOCATOR_OBJ)
+@SMB_KRB5_LOCATOR@: proto_exists $(SMB_KRB5_LOCATOR_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(SMB_KRB5_LOCATOR_OBJ) \
 		$(LDAP_LIBS) $(LIBS) -lcom_err \
 		@SONAMEFLAG@`basename $@`
 
-bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ)
+bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) -lpam @INIPARSERLIBS@ $(GPLIBS) \
 		@SONAMEFLAG@`basename $@`
 
-bin/builtin.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_BUILTIN_OBJ)
+bin/builtin.@SHLIBEXT@: proto_exists $(AUTH_BUILTIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_BUILTIN_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_BUILTIN_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/domain.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_DOMAIN_OBJ)
+bin/domain.@SHLIBEXT@: proto_exists $(AUTH_DOMAIN_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_DOMAIN_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/script.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SCRIPT_OBJ)
+bin/script.@SHLIBEXT@: proto_exists $(AUTH_SCRIPT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_SCRIPT_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SCRIPT_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
+bin/smbserver.@SHLIBEXT@: proto_exists $(AUTH_SERVER_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_SERVER_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SERVER_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WINBIND_OBJ)
+bin/winbind.@SHLIBEXT@: proto_exists $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_WINBIND_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_WINBIND_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/unix.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_UNIX_OBJ)
+bin/unix.@SHLIBEXT@: proto_exists $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_UNIX_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_UNIX_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/sam.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SAM_OBJ)
+bin/sam.@SHLIBEXT@: proto_exists $(AUTH_SAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_SAM_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ) @SONAMEFLAG@`basename $@`
 
-bin/ldapsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ldap.o passdb/pdb_nds.o
+bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o $(LDAP_LIBS)
+	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/tdbsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_tdb.o
+bin/tdbsam.@SHLIBEXT@: proto_exists passdb/pdb_tdb.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) passdb/pdb_tdb.o
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_tdb.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/smbpasswd.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_smbpasswd.o
+bin/smbpasswd.@SHLIBEXT@: proto_exists passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) passdb/pdb_smbpasswd.o
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/rid.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_rid.o
+bin/rid.@SHLIBEXT@: proto_exists nsswitch/idmap_rid.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) nsswitch/idmap_rid.o
+	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_rid.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_ad.o
+bin/ad.@SHLIBEXT@: proto_exists nsswitch/idmap_ad.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) nsswitch/idmap_ad.o
+	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ad.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) nsswitch/idmap_ldap.o
+bin/ldap.@SHLIBEXT@: proto_exists nsswitch/idmap_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) nsswitch/idmap_ldap.o
+	@$(SHLD) $(LDSHFLAGS) -o $@ nsswitch/idmap_ldap.o \
+		@SONAMEFLAG@`basename $@`
 
-bin/weird.@SHLIBEXT@: $(BINARY_PREREQS) $(DEVEL_HELP_WEIRD_OBJ)
+bin/weird.@SHLIBEXT@: proto_exists $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/CP850.@SHLIBEXT@: $(BINARY_PREREQS) $(CP850_OBJ)
+bin/CP850.@SHLIBEXT@: proto_exists $(CP850_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CP850_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP850_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/CP437.@SHLIBEXT@: $(BINARY_PREREQS) $(CP437_OBJ)
+bin/CP437.@SHLIBEXT@: proto_exists $(CP437_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CP437_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) $(CHARSET_MACOSXFS_OBJ)
+bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CHARSET_MACOSXFS_OBJ) -framework CoreFoundation
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ) \
+		-framework CoreFoundation @SONAMEFLAG@`basename $@`
 
 # NOTE, there is no build rule for a dynamic default VFS module because
 # this one MUST MUST MUST be built statically.
 
-bin/audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AUDIT_OBJ)
+bin/audit.@SHLIBEXT@: proto_exists $(VFS_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_AUDIT_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/extd_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXTD_AUDIT_OBJ)
+bin/extd_audit.@SHLIBEXT@: proto_exists $(VFS_EXTD_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_EXTD_AUDIT_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/full_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FULL_AUDIT_OBJ)
+bin/full_audit.@SHLIBEXT@: proto_exists $(VFS_FULL_AUDIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_FULL_AUDIT_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FULL_AUDIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/recycle.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_RECYCLE_OBJ)
+bin/recycle.@SHLIBEXT@: proto_exists $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_RECYCLE_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/netatalk.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NETATALK_OBJ)
+bin/netatalk.@SHLIBEXT@: proto_exists $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_NETATALK_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/fake_perms.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FAKE_PERMS_OBJ)
+bin/fake_perms.@SHLIBEXT@: proto_exists $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_FAKE_PERMS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/default_quota.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DEFAULT_QUOTA_OBJ)
+bin/default_quota.@SHLIBEXT@: proto_exists $(VFS_DEFAULT_QUOTA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_DEFAULT_QUOTA_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/readonly.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READONLY_OBJ)
+bin/readonly.@SHLIBEXT@: proto_exists $(VFS_READONLY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_READONLY_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY_OBJ)
+bin/shadow_copy.@SHLIBEXT@: proto_exists $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_SHADOW_COPY_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SHADOW_COPY_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/cap.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CAP_OBJ)
+bin/cap.@SHLIBEXT@: proto_exists $(VFS_CAP_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_CAP_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/expand_msdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXPAND_MSDFS_OBJ)
+bin/expand_msdfs.@SHLIBEXT@: proto_exists $(VFS_EXPAND_MSDFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_EXPAND_MSDFS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXPAND_MSDFS_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/afsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AFSACL_OBJ)
+bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AFSACL_OBJ:.o=.po) \
+		@SONAMEFLAG@`basename $@`
 
-bin/posixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_POSIXACL_OBJ)
+bin/posixacl.@SHLIBEXT@: $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_POSIXACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_POSIXACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/aixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIXACL_OBJ)
+bin/aixacl.@SHLIBEXT@: $(VFS_AIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_AIXACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AIXACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/aixacl2.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIXACL2_OBJ)
+bin/aixacl2.@SHLIBEXT@: $(VFS_AIXACL2_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_AIXACL2_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AIXACL2_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/solarisacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SOLARISACL_OBJ)
+bin/solarisacl.@SHLIBEXT@: $(VFS_SOLARISACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_SOLARISACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SOLARISACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/zfsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ZFSACL_OBJ)
+bin/irixacl.@SHLIBEXT@: proto_exists $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_ZFSACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_IRIXACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/irixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_IRIXACL_OBJ)
+bin/hpuxacl.@SHLIBEXT@: proto_exists $(VFS_HPUXACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_IRIXACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_HPUXACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/hpuxacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_HPUXACL_OBJ)
+bin/tru64acl.@SHLIBEXT@: $(VFS_TRU64ACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_HPUXACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_TRU64ACL_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/tru64acl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TRU64ACL_OBJ)
+bin/catia.@SHLIBEXT@: proto_exists $(VFS_CATIA_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_TRU64ACL_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CATIA_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/catia.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CATIA_OBJ)
+bin/cacheprime.@SHLIBEXT@: proto_exists $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_CATIA_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CACHEPRIME_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/cacheprime.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CACHEPRIME_OBJ)
+bin/prealloc.@SHLIBEXT@: proto_exists $(VFS_PREALLOC_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_CACHEPRIME_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_PREALLOC_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/prealloc.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREALLOC_OBJ)
+bin/commit.@SHLIBEXT@: proto_exists $(VFS_COMMIT_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_PREALLOC_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_COMMIT_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/commit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_COMMIT_OBJ)
+bin/gpfs.@SHLIBEXT@: $(VFS_GPFS_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_COMMIT_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_GPFS_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
-bin/gpfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_GPFS_OBJ)
+bin/notify_fam.@SHLIBEXT@: $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_GPFS_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NOTIFY_FAM_OBJ) \
+		@SONAMEFLAG@`basename $@` @SMB_FAM_LIBS@
 
-bin/notify_fam.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NOTIFY_FAM_OBJ)
+bin/readahead.@SHLIBEXT@: $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_NOTIFY_FAM_OBJ) @SMB_FAM_LIBS@
-
-bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_READAHEAD_OBJ)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READAHEAD_OBJ) \
+		@SONAMEFLAG@`basename $@`
 
 #########################################################
 ## IdMap NSS plugins
@@ -1687,59 +1518,55 @@ bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 ## None here right now
 #########################################################
 
-bin/wbinfo@EXEEXT@: $(BINARY_PREREQS) $(WBINFO_OBJ) @BUILD_POPT@
+bin/wbinfo@EXEEXT@: proto_exists $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(WBINFO_OBJ) $(DYNEXP) $(LIBS) $(LDAP_LIBS) @POPTLIBS@
 
-bin/ntlm_auth@EXEEXT@: $(BINARY_PREREQS) $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		@BUILD_POPT@
+bin/ntlm_auth@EXEEXT@: proto_exists $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		@BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(NTLM_AUTH_OBJ) \
 		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBS) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ)
+bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
-bin/tdbbackup@EXEEXT@: $(BINARY_PREREQS) $(TDBBACKUP_OBJ)
+bin/tdbbackup@EXEEXT@: proto_exists $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ)
 
-bin/tdbtool@EXEEXT@: $(BINARY_PREREQS) $(TDBTOOL_OBJ)
+bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBTOOL_OBJ)
 
-bin/tdbdump@EXEEXT@: $(BINARY_PREREQS) $(TDBDUMP_OBJ)
+bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ)
 
-bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ)
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBTORTURE_OBJ)
-
-bin/t_strcmp@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
+bin/t_strcmp@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
 
-bin/t_strstr@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
+bin/t_strstr@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
 
-bin/t_strappend@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
+bin/t_strappend@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strappend.o -L ./bin -lbigballofmud
 
-bin/t_stringoverflow@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
+bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
 
-bin/t_doschar@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
+bin/t_doschar@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_doschar.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_doschar.o -L ./bin -lbigballofmud
-bin/t_push_ucs2@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
+bin/t_push_ucs2@EXEEXT@: proto_exists bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_push_ucs2.o -L ./bin -lbigballofmud
 
 bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
+install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
 
 
 install-everything: install installmodules
@@ -1753,39 +1580,37 @@ install-everything: install installmodules
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
 
 installservers: all installdirs
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
 
 installbin: all installdirs
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
 
 installcifsmount: @CIFSMOUNT_PROGS@
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
-	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR)
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
 installmodules: modules installdirs
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(NSSINFOLIBDIR) $(NSS_INFO_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam.@SHLIBEXT@
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam_compat.@SHLIBEXT@
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(NSSINFOLIBDIR) $(NSS_INFO_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) rhosts.@SHLIBEXT@ hostsequiv.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) sam.@SHLIBEXT@ sam_ignoredomain.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) domain.@SHLIBEXT@ trustdomain.@SHLIBEXT@ ntdomain.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) builtin.@SHLIBEXT@ guest.@SHLIBEXT@ fixed_challenge.@SHLIBEXT@ name_to_ntstatus.@SHLIBEXT@
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/ad.@SHLIBEXT@ rfc2307.@SHLIBEXT@ sfu.@SHLIBEXT@ sfu20.@SHLIBEXT@
+	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/ad.@SHLIBEXT@ rfc2307.@SHLIBEXT@ sfu.@SHLIBEXT@
 
 installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR) $(LIBDIR) $(srcdir)
@@ -1797,35 +1622,34 @@ installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
 installclientlib: installdirs libsmbclient
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
 
 installlibmsrpc: installdirs libmsrpc
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libmsrpc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libmsrpc.a $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes: installdirs libsmbsharemodes
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
 
 installlibaddns: installdirs libaddns
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
 
 installpammodules: $(PAM_MODULES)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
 		echo "Installing module $${module} as $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
-		$(INSTALLCMD) -m $(INSTALLPERMS_BIN) bin/$${module}.@SHLIBEXT@ \
+		$(INSTALLCMD) -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
 			"$(DESTDIR)/$(PAMMODULESDIR)"; \
 	done
 
@@ -1833,7 +1657,7 @@ installpammodules: $(PAM_MODULES)
 
 PYTHON_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
 	$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
+	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ)
 
 python_ext: $(PYTHON_OBJ)
 	@if test -z "$(PYTHON)"; then \
@@ -1857,7 +1681,6 @@ python_install: $(PYTHON_OBJ)
 
 python_clean:
 	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
-	@-rm -rf build/
 
 # revert to the previously installed version
 revert:
@@ -1891,24 +1714,24 @@ uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
 
 uninstallservers:
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
+	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
 
 uninstallbin:
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
+	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
 
 uninstallcifsmount:
-	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
+	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 uninstallmodules:
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 
 uninstallscripts:
-	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 uninstalldat:
 	@$(SHELL) $(srcdir)/script/uninstalldat.sh $(DESTDIR) $(LIBDIR) $(srcdir)
@@ -1947,10 +1770,7 @@ uninstallpammodules:
 TOPFILES=dynconfig.o
 
 clean: delheaders python_clean
-	-rm -f $(PRECOMPILED_HEADER)
-	-rm -f core */*~ *~ \
-		*/*.o */*/*.o */*/*/*.o \
-	        */*.d */*/*.d */*/*/*.d \
+	-rm -f core */*~ *~ */*.o */*/*.o */*/*/*.o \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
@@ -2048,7 +1868,7 @@ realclean: clean delheaders
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
 distclean: realclean
-	-rm -f smbadduser
+	-rm -f include/stamp-h
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS

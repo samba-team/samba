@@ -94,23 +94,6 @@ struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	return NULL;
 }
 
-/*
- * The event context for the passdb backend. I know this is a bad hack and yet
- * another static variable, but our pdb API is a global thing per
- * definition. The first use for this is the LDAP idle function, more might be
- * added later.
- *
- * I don't feel too bad about this static variable, it replaces the
- * smb_idle_event_list that used to exist in lib/module.c.  -- VL
- */
-
-static struct event_context *pdb_event_ctx;
-
-struct event_context *pdb_get_event_context(void)
-{
-	return pdb_event_ctx;
-}
-
 /******************************************************************
   Make a pdb_methods from scratch
  *******************************************************************/
@@ -904,28 +887,35 @@ NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 	return pdb->del_groupmem(pdb, mem_ctx, group_rid, member_rid);
 }
 
+BOOL pdb_find_alias(const char *name, DOM_SID *sid)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return NT_STATUS_IS_OK(pdb->find_alias(pdb, name, sid));
+}
+
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->create_alias(pdb, name, rid);
 }
 
-NTSTATUS pdb_delete_alias(const DOM_SID *sid)
+BOOL pdb_delete_alias(const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->delete_alias(pdb, sid);
+	return NT_STATUS_IS_OK(pdb->delete_alias(pdb, sid));
+							    
 }
 
-NTSTATUS pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->get_aliasinfo(pdb, sid, info);
+	return NT_STATUS_IS_OK(pdb->get_aliasinfo(pdb, sid, info));
 }
 
-NTSTATUS pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
+BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->set_aliasinfo(pdb, sid, info);
+	return NT_STATUS_IS_OK(pdb->set_aliasinfo(pdb, sid, info));
 }
 
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
@@ -1126,9 +1116,8 @@ BOOL pdb_new_rid(uint32 *rid)
   If uninitialised, context will auto-init on first use.
  ***************************************************************/
 
-BOOL initialize_password_db(BOOL reload, struct event_context *event_ctx)
-{
-	pdb_event_ctx = event_ctx;
+BOOL initialize_password_db(BOOL reload)
+{	
 	return (pdb_get_methods_reload(reload) != NULL);
 }
 
@@ -1307,7 +1296,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;		
 	}
 	
-	/* check for "Unix Group" */
+	/* check for "Unix User" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
 		id->gid = rid;
@@ -1316,10 +1305,10 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;		
 	}
 	
+
 	/* BUILTIN */
 
-	if (sid_check_is_in_builtin(sid) ||
-	    sid_check_is_in_wellknown_domain(sid)) {
+	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
 		/* Here we only have aliases */
 		GROUP_MAP map;
 		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
@@ -1426,10 +1415,10 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 }
 
 static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
-					       TALLOC_CTX *mem_ctx,
-					       const DOM_SID *group,
-					       uint32 **pp_member_rids,
-					       size_t *p_num_members)
+					TALLOC_CTX *mem_ctx,
+					const DOM_SID *group,
+					uint32 **pp_member_rids,
+					size_t *p_num_members)
 {
 	gid_t gid;
 	uid_t *uids;
@@ -1468,11 +1457,11 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 }
 
 static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
-						   TALLOC_CTX *mem_ctx,
-						   struct samu *user,
-						   DOM_SID **pp_sids,
-						   gid_t **pp_gids,
-						   size_t *p_num_groups)
+					    TALLOC_CTX *mem_ctx,
+					    struct samu *user,
+					    DOM_SID **pp_sids,
+					    gid_t **pp_gids,
+					    size_t *p_num_groups)
 {
 	size_t i;
 	gid_t gid;
@@ -1607,11 +1596,11 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 }
 
 static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
-					const DOM_SID *domain_sid,
-					int num_rids,
-					uint32 *rids,
-					const char **names,
-					enum lsa_SidType *attrs)
+				 const DOM_SID *domain_sid,
+				 int num_rids,
+				 uint32 *rids,
+				 const char **names,
+				 enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -1671,11 +1660,11 @@ static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 
 #if 0
 static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
-					 const DOM_SID *domain_sid,
-					 int num_names,
-					 const char **names,
-					 uint32 *rids,
-					 enum lsa_SidType *attrs)
+				  const DOM_SID *domain_sid,
+				  int num_names,
+				  const char **names,
+				  uint32 *rids,
+				  enum lsa_SidType *attrs)
 {
 	int i;
 	NTSTATUS result;
@@ -2041,77 +2030,6 @@ void pdb_search_destroy(struct pdb_search *search)
 }
 
 /*******************************************************************
- trustodm methods
- *******************************************************************/
-
-BOOL pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
-			   time_t *pass_last_set_time)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->get_trusteddom_pw(pdb, domain, pwd, sid, 
-			pass_last_set_time);
-}
-
-BOOL pdb_set_trusteddom_pw(const char* domain, const char* pwd,
-			   const DOM_SID *sid)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->set_trusteddom_pw(pdb, domain, pwd, sid);
-}
-
-BOOL pdb_del_trusteddom_pw(const char *domain)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->del_trusteddom_pw(pdb, domain);
-}
-
-NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32 *num_domains,
-			      struct trustdom_info ***domains)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->enum_trusteddoms(pdb, mem_ctx, num_domains, domains);
-}
-
-/*******************************************************************
- the defaults for trustdom methods: 
- these simply call the original passdb/secrets.c actions,
- to be replaced by pdb_ldap.
- *******************************************************************/
-
-static BOOL pdb_default_get_trusteddom_pw(struct pdb_methods *methods,
-					  const char *domain, 
-					  char** pwd, 
-					  DOM_SID *sid, 
-	        	 		  time_t *pass_last_set_time)
-{
-	return secrets_fetch_trusted_domain_password(domain, pwd,
-				sid, pass_last_set_time);
-
-}
-
-static BOOL pdb_default_set_trusteddom_pw(struct pdb_methods *methods, 
-					  const char* domain, 
-					  const char* pwd,
-	        	  		  const DOM_SID *sid)
-{
-	return secrets_store_trusted_domain_password(domain, pwd, sid);
-}
-
-static BOOL pdb_default_del_trusteddom_pw(struct pdb_methods *methods, 
-					  const char *domain)
-{
-	return trusted_domain_password_delete(domain);
-}
-
-static NTSTATUS pdb_default_enum_trusteddoms(struct pdb_methods *methods,
-					     TALLOC_CTX *mem_ctx, 
-					     uint32 *num_domains,
-					     struct trustdom_info ***domains)
-{
-	return secrets_trusted_domains(mem_ctx, num_domains, domains);
-}
-
-/*******************************************************************
  Create a pdb_methods structure and initialize it with the default
  operations.  In this way a passdb module can simply implement
  the functionality it cares about.  However, normally this is done 
@@ -2153,6 +2071,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_unix_primary_group = pdb_default_set_unix_primary_group;
 	(*methods)->add_groupmem = pdb_default_add_groupmem;
 	(*methods)->del_groupmem = pdb_default_del_groupmem;
+	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
 	(*methods)->get_aliasinfo = pdb_default_get_aliasinfo;
@@ -2173,11 +2092,6 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;
 	(*methods)->search_aliases = pdb_default_search_aliases;
-
-	(*methods)->get_trusteddom_pw = pdb_default_get_trusteddom_pw;
-	(*methods)->set_trusteddom_pw = pdb_default_set_trusteddom_pw;
-	(*methods)->del_trusteddom_pw = pdb_default_del_trusteddom_pw;
-	(*methods)->enum_trusteddoms  = pdb_default_enum_trusteddoms;
 
 	return NT_STATUS_OK;
 }

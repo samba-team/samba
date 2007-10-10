@@ -136,14 +136,13 @@ static BOOL try_unlock(struct cli_state *c, int fstype,
 	return False;
 }	
 
-static void print_brl(struct file_id id, struct server_id pid, 
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
 		      enum brl_type lock_type,
 		      enum brl_flavour lock_flav,
-		      br_off start, br_off size,
-		      void *private_data)
+		      br_off start, br_off size)
 {
-	printf("%6d   %s    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)procid_to_pid(&pid), file_id_static_string(&id),
+	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
+	       (int)procid_to_pid(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 
@@ -260,7 +259,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret[0], ret[1]);
 		}
-		if (showall) brl_forall(print_brl, NULL);
+		if (showall) brl_forall(print_brl);
 		if (ret[0] != ret[1]) return False;
 	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 		/* unset a lock */
@@ -275,7 +274,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 			       start, start+len-1, len,
 			       ret[0], ret[1]);
 		}
-		if (showall) brl_forall(print_brl, NULL);
+		if (showall) brl_forall(print_brl);
 		if (!hide_unlock_fails && ret[0] != ret[1]) return False;
 	} else {
 		/* reopen the file */
@@ -291,7 +290,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		if (showall) {
 			printf("reopen conn=%u fstype=%u f=%u\n",
 			       conn, fstype, f);
-			brl_forall(print_brl, NULL);
+			brl_forall(print_brl);
 		}
 	}
 	return True;

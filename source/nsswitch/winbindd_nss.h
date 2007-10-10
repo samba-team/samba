@@ -28,14 +28,7 @@
 #define _WINBINDD_NTDOM_H
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
-
-/* Let the build environment override the public winbindd socket location. This
- * is needed for launchd support -- jpeach.
- */
-#ifndef WINBINDD_SOCKET_DIR
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
-#endif
-
 #define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privileged" /* name of subdirectory of lp_lockdir() to hold the 'privileged' pipe */
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
@@ -195,25 +188,25 @@ typedef struct winbindd_gr {
 } WINBINDD_GR;
 
 
-#define WBFLAG_PAM_INFO3_NDR		0x00000001
-#define WBFLAG_PAM_INFO3_TEXT		0x00000002
-#define WBFLAG_PAM_USER_SESSION_KEY	0x00000004
-#define WBFLAG_PAM_LMKEY		0x00000008
-#define WBFLAG_PAM_CONTACT_TRUSTDOM	0x00000010
-#define WBFLAG_QUERY_ONLY		0x00000020
-#define WBFLAG_PAM_UNIX_NAME		0x00000080
-#define WBFLAG_PAM_AFS_TOKEN		0x00000100
-#define WBFLAG_PAM_NT_STATUS_SQUASH	0x00000200
+#define WBFLAG_PAM_INFO3_NDR  		0x0001
+#define WBFLAG_PAM_INFO3_TEXT 		0x0002
+#define WBFLAG_PAM_USER_SESSION_KEY     0x0004
+#define WBFLAG_PAM_LMKEY      		0x0008
+#define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
+#define WBFLAG_QUERY_ONLY		0x0020
+#define WBFLAG_PAM_UNIX_NAME            0x0080
+#define WBFLAG_PAM_AFS_TOKEN            0x0100
+#define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
 /* This is a flag that can only be sent from parent to child */
-#define WBFLAG_IS_PRIVILEGED		0x00000400
+#define WBFLAG_IS_PRIVILEGED            0x0400
 /* Flag to say this is a winbindd internal send - don't recurse. */
-#define WBFLAG_RECURSE			0x00000800
+#define WBFLAG_RECURSE			0x0800
 
-#define WBFLAG_PAM_KRB5			0x00001000
-#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x00002000
-#define WBFLAG_PAM_CACHED_LOGIN		0x00004000
-#define WBFLAG_PAM_GET_PWD_POLICY	0x00008000	/* not used */
+#define WBFLAG_PAM_KRB5			0x1000
+#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
+#define WBFLAG_PAM_CACHED_LOGIN		0x4000
+#define WBFLAG_PAM_GET_PWD_POLICY	0x8000	/* not used */
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
@@ -230,8 +223,6 @@ typedef struct winbindd_gr {
 struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
-	enum winbindd_cmd original_cmd;   /* Original Winbindd command
-					     issued to parent process */
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */

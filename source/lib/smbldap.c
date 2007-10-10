@@ -409,8 +409,9 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods == NULL) {
 		mods = SMB_MALLOC_P(LDAPMod *);
 		if (mods == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!");
+			smb_panic("smbldap_set_mod: out of memory!\n");
 			/* notreached. */
+			abort();
 		}
 		mods[0] = NULL;
 	}
@@ -423,13 +424,15 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods[i] == NULL) {
 		mods = SMB_REALLOC_ARRAY (mods, LDAPMod *, i + 2);
 		if (mods == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!");
+			smb_panic("smbldap_set_mod: out of memory!\n");
 			/* notreached. */
+			abort();
 		}
 		mods[i] = SMB_MALLOC_P(LDAPMod);
 		if (mods[i] == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!");
+			smb_panic("smbldap_set_mod: out of memory!\n");
 			/* notreached. */
+			abort();
 		}
 		mods[i]->mod_op = modop;
 		mods[i]->mod_values = NULL;
@@ -447,13 +450,15 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		mods[i]->mod_values = SMB_REALLOC_ARRAY(mods[i]->mod_values, char *, j + 2);
 					       
 		if (mods[i]->mod_values == NULL) {
-			smb_panic("smbldap_set_mod: out of memory!");
+			smb_panic("smbldap_set_mod: out of memory!\n");
 			/* notreached. */
+			abort();
 		}
 
 		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
-			smb_panic("smbldap_set_mod: String conversion failure!");
+			smb_panic("smbldap_set_mod: String conversion failure!\n");
 			/* notreached. */
+			abort();
 		}
 
 		mods[i]->mod_values[j] = utf8_value;
@@ -995,11 +1000,6 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	return rc;
 }
 
-static void smbldap_idle_fn(struct event_context *event_ctx,
-			    struct timed_event *te,
-			    const struct timeval *now,
-			    void *private_data);
-
 /**********************************************************************
  Connect to LDAP server (called before every ldap operation)
 *********************************************************************/
@@ -1062,16 +1062,6 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	ldap_state->last_ping = time(NULL);
 	ldap_state->pid = sys_getpid();
-
-	TALLOC_FREE(ldap_state->idle_event);
-
-	if (ldap_state->event_context != NULL) {
-		ldap_state->idle_event = event_add_timed(
-			ldap_state->event_context, NULL,
-			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
-			"smbldap_idle_fn", smbldap_idle_fn, ldap_state);
-	}
-
 	DEBUG(4,("The LDAP server is succesfully connected\n"));
 
 	return LDAP_SUCCESS;
@@ -1556,28 +1546,17 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			      filter, search_attr, 0, result);
 }
 
-static void smbldap_idle_fn(struct event_context *event_ctx,
-			    struct timed_event *te,
-			    const struct timeval *now,
-			    void *private_data)
+static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
 {
-	struct smbldap_state *state = (struct smbldap_state *)private_data;
-
-	TALLOC_FREE(state->idle_event);
+	struct smbldap_state *state = (struct smbldap_state *)(*data);
 
 	if (state->ldap_struct == NULL) {
 		DEBUG(10,("ldap connection not connected...\n"));
 		return;
 	}
 		
-	if ((state->last_use+SMBLDAP_IDLE_TIME) > now->tv_sec) {
+	if ((state->last_use+SMBLDAP_IDLE_TIME) > now) {
 		DEBUG(10,("ldap connection not idle...\n"));
-
-		state->idle_event = event_add_timed(
-			event_ctx, NULL,
-			timeval_add(now, SMBLDAP_IDLE_TIME, 0),
-			"smbldap_idle_fn", smbldap_idle_fn,
-			private_data);
 		return;
 	}
 		
@@ -1600,7 +1579,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
 
-	TALLOC_FREE((*ldap_state)->idle_event);
+	smb_unregister_idle_event((*ldap_state)->event_id);
 
 	*ldap_state = NULL;
 
@@ -1612,9 +1591,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
  Intitalise the 'general' ldap structures, on which ldap operations may be conducted
  *********************************************************************/
 
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
-		      const char *location,
-		      struct smbldap_state **smbldap_state)
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_state **smbldap_state) 
 {
 	*smbldap_state = TALLOC_ZERO_P(mem_ctx, struct smbldap_state);
 	if (!*smbldap_state) {
@@ -1628,7 +1605,14 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
 
-	(*smbldap_state)->event_context = event_ctx;
+	(*smbldap_state)->event_id =
+		smb_register_idle_event(smbldap_idle_fn, (void *)(*smbldap_state),
+					SMBLDAP_IDLE_TIME);
+
+	if ((*smbldap_state)->event_id == SMB_EVENT_ID_INVALID) {
+		DEBUG(0,("Failed to register LDAP idle event!\n"));
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	return NT_STATUS_OK;
 }

@@ -37,6 +37,10 @@ void add_key_raw(TDB_CONTEXT *db, char *keystring, void *databuf, size_t datasiz
   key.dsize = strlen(keystring);
   data.dptr = databuf;
   data.dsize = datasize;
+  fprintf(stderr, "doing insert of [%x] with key [%s] into [%s]\n", 
+	  data.dptr, 
+	  keystring, 
+	  db->name);
 
   tdb_store(db, key, data, flags);
 }
@@ -49,6 +53,10 @@ void add_key(TDB_CONTEXT *db, char *keystring, char *datastring, int flags)
   key.dsize = strlen(keystring);
   data.dptr = datastring;
   data.dsize = strlen(datastring);
+  /*  fprintf(stderr, "doing insert of [%s] with key [%s] into [%s]\n", 
+	  data.dptr, 
+	  keystring, 
+	  db->name);*/
 
   tdb_store(db, key, data, flags);
 }

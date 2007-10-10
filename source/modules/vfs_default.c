@@ -568,7 +568,7 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 	return result;
 }
 
-static int vfswrap_chown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+static int vfswrap_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
 {
 	int result;
 
@@ -591,16 +591,6 @@ static int vfswrap_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 	errno = ENOSYS;
 	return -1;
 #endif
-}
-
-static int vfswrap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
-{
-	int result;
-
-	START_PROFILE(syscall_lchown);
-	result = sys_lchown(path, uid, gid);
-	END_PROFILE(syscall_lchown);
-	return result;
 }
 
 static int vfswrap_chdir(vfs_handle_struct *handle,  const char *path)
@@ -792,10 +782,6 @@ static BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, i
 	BOOL result;
 
 	START_PROFILE(syscall_fcntl_lock);
-
-	/* SMB_VFS_GETLOCK should be used to query lock status. */
-	SMB_ASSERT(op != SMB_F_GETLK);
-
 	result =  fcntl_lock(fd, op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
 	return result;
@@ -947,9 +933,9 @@ static size_t vfswrap_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, c
 	return result;
 }
 
-static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
-	NTSTATUS result;
+	BOOL result;
 
 	START_PROFILE(fset_nt_acl);
 	result = set_nt_acl(fsp, security_info_sent, psd);
@@ -957,9 +943,9 @@ static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 	return result;
 }
 
-static NTSTATUS vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
-	NTSTATUS result;
+	BOOL result;
 
 	START_PROFILE(set_nt_acl);
 	result = set_nt_acl(fsp, security_info_sent, psd);
@@ -1281,8 +1267,6 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_chown),	SMB_VFS_OP_CHOWN,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_fchown),	SMB_VFS_OP_FCHOWN,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_lchown),	SMB_VFS_OP_LCHOWN,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_chdir),	SMB_VFS_OP_CHDIR,
 	 SMB_VFS_LAYER_OPAQUE},

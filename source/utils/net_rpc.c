@@ -5,7 +5,6 @@
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2004 Guenther Deschner (gd@samba.org)
    Copyright (C) 2005 Jeremy Allison (jra@samba.org)
-   Copyright (C) 2006 Jelmer Vernooij (jelmer@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,7 +81,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
+	rpccli_lsa_close(lsa_pipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsa_pipe);
 
 	return NT_STATUS_OK;
@@ -2030,14 +2029,14 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	}
 
 	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &lsa_pol, 1,
-				      &name, NULL, 1, &sids, &types);
+				      &name, NULL, &sids, &types);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_copy(sid, &sids[0]);
 		*type = types[0];
 	}
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
 
  done:
 	if (pipe_hnd) {
@@ -3014,16 +3013,13 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 					TALLOC_CTX *mem_ctx,int argc,
 					const char **argv)
 {
-	NTSTATUS result;
+	WERROR result;
 	char *sharename;
 	char *path;
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
 	uint32 level = 2;
-	uint32 parm_error;
-	union srvsvc_NetShareInfo info;
-	struct srvsvc_NetShareInfo2 info2;
 
 	if ((sharename = talloc_strdup(mem_ctx, argv[0])) == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3034,20 +3030,11 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	*path++ = '\0';
 
-	info.info2 = &info2;
-
-	info2.type = type;
-	info2.comment = opt_comment;
-	info2.permissions = perms;
-	info2.max_users = opt_maxusers;
-	info2.current_users = num_users;
-	info2.path = path;
-	info2.password = password;
-	info2.name = sharename;
-
-	result = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx, NULL, level, 
-					   info, &parm_error);
-	return result;
+	result = rpccli_srvsvc_net_share_add(pipe_hnd, mem_ctx, sharename, type,
+					  opt_comment, perms, opt_maxusers,
+					  num_users, path, password, 
+					  level, NULL);
+	return werror_to_ntstatus(result);
 }
 
 static int rpc_share_add(int argc, const char **argv)
@@ -3084,7 +3071,10 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
+	WERROR result;
+
+	result = rpccli_srvsvc_net_share_del(pipe_hnd, mem_ctx, argv[0]);
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 
@@ -3111,83 +3101,169 @@ static int rpc_share_delete(int argc, const char **argv)
 /**
  * Formatted print of share info
  *
- * @param info1  pointer to struct srvsvc_NetShareInfo1 to format
+ * @param info1  pointer to SRV_SHARE_INFO_1 to format
  **/
  
-static void display_share_info_1(struct srvsvc_NetShareInfo1 *info1)
+static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 {
+	fstring netname = "", remark = "";
+
+	rpcstr_pull_unistr2_fstring(netname, &info1->info_1_str.uni_netname);
+	rpcstr_pull_unistr2_fstring(remark, &info1->info_1_str.uni_remark);
+
 	if (opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
-			 info1->name, share_type[info1->type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
-			 info1->comment ? info1->comment : "");
+			 netname, share_type[info1->info_1.type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)], remark);
 	} else {
-		d_printf("%s\n", info1->name);
+		d_printf("%s\n", netname);
 	}
 
 }
 
-static NTSTATUS get_share_info(struct rpc_pipe_client *pipe_hnd,
+static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx, 
 				uint32 level,
 				int argc,
 				const char **argv, 
-				union srvsvc_NetShareCtr *ctr, 
-				uint32 *numentries)
+				SRV_SHARE_INFO_CTR *ctr)
 {
-	union srvsvc_NetShareInfo info;
-	NTSTATUS status;
-
-	switch(level) {
-	case 1:
-		if (!(ctr->ctr1 = TALLOC_ZERO_P(
-			      mem_ctx, struct srvsvc_NetShareCtr1))) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		break;
-	case 502:
-		if (!(ctr->ctr502 = TALLOC_ZERO_P(
-			      mem_ctx, struct srvsvc_NetShareCtr502))) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		break;
-	default:
-		return NT_STATUS_INVALID_LEVEL;
-		break;
-	}
+	WERROR result;
+	SRV_SHARE_INFO info;
 
 	/* no specific share requested, enumerate all */
 	if (argc == 0) {
-		uint32 hnd = 0;
 
-		return rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
-						  &level, ctr, 0xffffffff,
-						  numentries, &hnd);
+		ENUM_HND hnd;
+		uint32 preferred_len = 0xffffffff;
+
+		init_enum_hnd(&hnd, 0);
+
+		return rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, level, ctr, 
+						 preferred_len, &hnd);
 	}
 
 	/* request just one share */
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx, NULL,
-					       argv[0], level, &info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	result = rpccli_srvsvc_net_share_get_info(pipe_hnd, mem_ctx, argv[0], level, &info);
 
-	*numentries = 1;
+	if (!W_ERROR_IS_OK(result))
+		goto done;
 
-	switch(level) {
+	/* construct ctr */
+	ZERO_STRUCTP(ctr);
+
+	ctr->info_level = ctr->switch_value = level;
+	ctr->ptr_share_info = ctr->ptr_entries = 1;
+	ctr->num_entries = ctr->num_entries2 = 1;
+
+	switch (level) {
 	case 1:
-		ctr->ctr1->count = 1;
-		ctr->ctr1->array = info.info1;
-		break;
+	{
+		char *s;
+		SRV_SHARE_INFO_1 *info1;
+		
+		ctr->share.info1 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_1, 1);
+		if (ctr->share.info1 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		info1 = ctr->share.info1;
+				
+		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
+
+		/* Copy pointer crap */
+
+		memcpy(&info1->info_1, &info.share.info1.info_1, sizeof(SH_INFO_1));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_netname);
+		if (s)
+			init_unistr2(&info1->info_1_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_remark);
+		if (s)
+			init_unistr2(&info1->info_1_str.uni_remark, s, UNI_STR_TERMINATE);
+	}
+	case 2:
+	{
+		char *s;
+		SRV_SHARE_INFO_2 *info2;
+		
+		ctr->share.info2 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_2, 1);
+		if (ctr->share.info2 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		info2 = ctr->share.info2;
+				
+		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
+
+		/* Copy pointer crap */
+
+		memcpy(&info2->info_2, &info.share.info2.info_2, sizeof(SH_INFO_2));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_netname);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_remark);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_remark, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_path);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_path, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_passwd);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_passwd, s, UNI_STR_TERMINATE);
+	}
 	case 502:
-		ctr->ctr501->count = 1;
-		ctr->ctr502->array = info.info502;
-		break;
-	default:
-		return NT_STATUS_INTERNAL_ERROR;
-		break;
+	{
+		char *s;
+		SRV_SHARE_INFO_502 *info502;
+
+		ctr->share.info502 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_502, 1);
+		if (ctr->share.info502 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		info502 = ctr->share.info502;
+
+		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
+
+		/* Copy pointer crap */
+
+		memcpy(&info502->info_502, &info.share.info502.info_502, sizeof(SH_INFO_502));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_netname);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_remark);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_remark, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_path);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_path, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_passwd);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_passwd, s, UNI_STR_TERMINATE);
+
+		info502->info_502_str.sd = dup_sec_desc(mem_ctx, info.share.info502.info_502_str.sd);
+				
 	}
 
-	return NT_STATUS_OK;
+	} /* switch */
+
+done:
+	return result;
 }
 
 /** 
@@ -3214,14 +3290,12 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	union srvsvc_NetShareCtr ctr;
-	NTSTATUS result;
+	SRV_SHARE_INFO_CTR ctr;
+	WERROR result;
 	uint32 i, level = 1;
-	uint32 numentries;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr, 
-							&numentries);
-	if (!NT_STATUS_IS_OK(result))
+	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr);
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -3232,10 +3306,10 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 	"\nShare name   Type     Description\n"\
 	"----------   ----     -----------\n");
 	}
-	for (i = 0; i < numentries; i++)
-		display_share_info_1(&ctr.ctr1->array[i]);
+	for (i = 0; i < ctr.num_entries; i++)
+		display_share_info_1(&ctr.share.info1[i]);
  done:
-	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /*** 
@@ -3262,7 +3336,7 @@ static BOOL check_share_availability(struct cli_state *cli, const char *netname)
 	return True;
 }
 
-static BOOL check_share_sanity(struct cli_state *cli, const char *netname, uint32 type)
+static BOOL check_share_sanity(struct cli_state *cli, fstring netname, uint32 type)
 {
 	/* only support disk shares */
 	if (! ( type == STYPE_DISKTREE || type == (STYPE_DISKTREE | STYPE_HIDDEN)) ) {
@@ -3308,18 +3382,18 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	NTSTATUS result;
+	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	union srvsvc_NetShareCtr ctr_src;
+	SRV_SHARE_INFO_CTR ctr_src;
+	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
+	char *password = NULL; /* don't allow a share password */
 	uint32 i;
 	struct rpc_pipe_client *srvsvc_pipe = NULL;
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
-	uint32 numentries;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src, 
-							&numentries);
-	if (!NT_STATUS_IS_OK(result))
+	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
@@ -3328,37 +3402,41 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
                 return nt_status;
 
 
-	for (i = 0; i < numentries; i++) {
-		uint32 parm_error = 0;
-		union srvsvc_NetShareInfo info;
+	for (i = 0; i < ctr_src.num_entries; i++) {
 
+		fstring netname = "", remark = "", path = "";
 		/* reset error-code */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 
-		if (!check_share_sanity(cli, ctr_src.ctr502->array[i].name, 
-								ctr_src.ctr502->array[i].type))
-								
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
+		rpcstr_pull_unistr2_fstring(
+			remark, &ctr_src.share.info502[i].info_502_str.uni_remark);
+		rpcstr_pull_unistr2_fstring(
+			path, &ctr_src.share.info502[i].info_502_str.uni_path);
+
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
 			continue;
 
 		/* finally add the share on the dst server */ 
 
 		printf("migrating: [%s], path: %s, comment: %s, without share-ACLs\n", 
-			ctr_src.ctr502->array[i].name, 
-			ctr_src.ctr502->array[i].path, 
-			ctr_src.ctr502->array[i].comment);
+			netname, path, remark);
 
-		info.info502 = &ctr_src.ctr502->array[i];
-
-		result = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx, NULL, 
-						   502, info, &parm_error);
+		result = rpccli_srvsvc_net_share_add(srvsvc_pipe, mem_ctx, netname, type, remark,
+						  ctr_src.share.info502[i].info_502.perms,
+						  ctr_src.share.info502[i].info_502.max_uses,
+						  ctr_src.share.info502[i].info_502.num_uses,
+						  path, password, level, 
+						  NULL);
 	
-                if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			printf("           [%s] does already exist\n", ctr_src.ctr502->array[i].name);
+                if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
+			printf("           [%s] does already exist\n", netname);
 			continue;
 		}
 
-		if (!NT_STATUS_IS_OK(result)) {
-			printf("cannot add share: %s\n", nt_errstr(result));
+		if (!W_ERROR_IS_OK(result)) {
+			printf("cannot add share: %s\n", dos_errstr(result));
 			goto done;
 		}
 
@@ -3588,9 +3666,9 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	NTSTATUS result;
+	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	union srvsvc_NetShareCtr ctr_src;
+	SRV_SHARE_INFO_CTR ctr_src;
 	uint32 i;
 	uint32 level = 502;
 	struct copy_clistate cp_clistate;
@@ -3598,24 +3676,27 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	BOOL got_dst_share = False;
 	pstring mask = "\\*";
 	char *dst = NULL;
-	uint32 numentries;
 
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src, 
-							&numentries);
+	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	for (i = 0; i < numentries; i++) {
-		if (!check_share_sanity(cli, ctr_src.ctr502->array[i].name,
-							ctr_src.ctr502->array[i].type))
+	for (i = 0; i < ctr_src.num_entries; i++) {
+
+		fstring netname = "";
+
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
+
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
 			continue;
 
 		/* one might not want to mirror whole discs :) */
-		if (strequal(ctr_src.ctr502->array[i].name, "print$") || ctr_src.ctr502->array[i].name[1] == '$') {
-			d_printf("skipping   [%s]: builtin/hidden share\n", ctr_src.ctr502->array[i].name);
+		if (strequal(netname, "print$") || netname[1] == '$') {
+			d_printf("skipping   [%s]: builtin/hidden share\n", netname);
 			continue;
 		}
 
@@ -3629,7 +3710,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
-			ctr_src.ctr502->array[i].name, 
+			netname, 
 			opt_acls ? "including" : "without", 
 			opt_attrs ? "including" : "without",
 			opt_timestamps ? "(preserving timestamps)" : "");
@@ -3643,7 +3724,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	        /* open share source */
 		nt_status = connect_to_service(&cp_clistate.cli_share_src,
 					       &cli->dest_ip, cli->desthost,
-						   ctr_src.ctr502->array[i].name, "A:");
+					       netname, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
 
@@ -3652,22 +3733,21 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 		if (net_mode_share == NET_MODE_SHARE_MIGRATE) {
 			/* open share destination */
 			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
-						       NULL, dst, ctr_src.ctr502->array[i].name, "A:");
+						       NULL, dst, netname, "A:");
 			if (!NT_STATUS_IS_OK(nt_status))
 				goto done;
 
 			got_dst_share = True;
 		}
 
-		if (!copy_top_level_perms(&cp_clistate, ctr_src.ctr502->array[i].name)) {
-			d_fprintf(stderr, "Could not handle the top level directory permissions for the share: %s\n", ctr_src.ctr502->array[i].name);
+		if (!copy_top_level_perms(&cp_clistate, netname)) {
+			d_fprintf(stderr, "Could not handle the top level directory permissions for the share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 
 		if (!sync_files(&cp_clistate, mask)) {
-			d_fprintf(stderr, "could not handle files for share: %s\n", 
-					  ctr_src.ctr502->array[i].name);
+			d_fprintf(stderr, "could not handle files for share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -3724,21 +3804,18 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv)
 {
-	NTSTATUS result;
+	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	union srvsvc_NetShareCtr ctr_src;
-	union srvsvc_NetShareInfo info;
+	SRV_SHARE_INFO_CTR ctr_src;
+	SRV_SHARE_INFO info;
 	uint32 i;
 	struct rpc_pipe_client *srvsvc_pipe = NULL;
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
-	uint32 numentries;
-	uint32 parm_error = 0;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src,
-							&numentries);
+	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
@@ -3747,31 +3824,42 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
                 return nt_status;
 
 
-	for (i = 0; i < numentries; i++) {
+	for (i = 0; i < ctr_src.num_entries; i++) {
+
+		fstring netname = "", remark = "", path = "";
 		/* reset error-code */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 
-		if (!check_share_sanity(cli, ctr_src.ctr502->array[i].name, ctr_src.ctr502->array[i].type))
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
+		rpcstr_pull_unistr2_fstring(
+			remark, &ctr_src.share.info502[i].info_502_str.uni_remark);
+		rpcstr_pull_unistr2_fstring(
+			path, &ctr_src.share.info502[i].info_502_str.uni_path);
+
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
 			continue;
 
 		printf("migrating: [%s], path: %s, comment: %s, including share-ACLs\n", 
-			ctr_src.ctr502->array[i].name, 
-			ctr_src.ctr502->array[i].path, 
-			ctr_src.ctr502->array[i].comment);
+			netname, path, remark);
 
 		if (opt_verbose)
-			display_sec_desc(ctr_src.ctr502->array[i].sd);
+			display_sec_desc(ctr_src.share.info502[i].info_502_str.sd);
 
 		/* init info */
 		ZERO_STRUCT(info);
 
+		info.switch_value = level;
+		info.ptr_share_ctr = 1;
+
+		/* FIXME: shouldn't we be able to just set the security descriptor ? */
+		info.share.info502 = ctr_src.share.info502[i];
+
 		/* finally modify the share on the dst server */
-		result = rpccli_srvsvc_NetShareSetInfo(
-			srvsvc_pipe, mem_ctx, NULL, argv[0], level, info,
-			&parm_error);
+		result = rpccli_srvsvc_net_share_set_info(srvsvc_pipe, mem_ctx, netname, level, &info);
 	
-		if (!NT_STATUS_IS_OK(result)) {
-			printf("cannot set share-acl: %s\n", nt_errstr(result));
+		if (!W_ERROR_IS_OK(result)) {
+			printf("cannot set share-acl: %s\n", dos_errstr(result));
 			goto done;
 		}
 
@@ -3995,7 +4083,7 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
 	for (i=0; i<num_server_aliases; i++) {
 		char **names;
 		char **domains;
-		enum lsa_SidType *types;
+		uint32 *types;
 		int j;
 
 		struct full_alias *alias = &server_aliases[i];
@@ -4029,7 +4117,7 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
 		DEBUG(1, ("\n"));
 	}
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
 
 	return NT_STATUS_OK;
 }
@@ -4074,11 +4162,7 @@ static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 {
 	token->num_sids = 4;
 
-	if (!(token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4))) {
-		d_fprintf(stderr, "malloc failed\n");
-		token->num_sids = 0;
-		return;
-	}
+	token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4);
 
 	token->user_sids[0] = *user_sid;
 	sid_copy(&token->user_sids[1], &global_sid_World);
@@ -4405,20 +4489,20 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	SEC_DESC *root_sd = NULL;
 	struct cli_state *cli = pipe_hnd->cli;
 	int i;
-	union srvsvc_NetShareInfo info;
-	NTSTATUS result;
+	SRV_SHARE_INFO info;
+	WERROR result;
 	uint16 cnum;
 
-	result = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx, NULL, netname,
+	result = rpccli_srvsvc_net_share_get_info(pipe_hnd, mem_ctx, netname,
 					       502, &info);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(1, ("Coult not query secdesc for share %s\n",
 			  netname));
 		return;
 	}
 
-	share_sd = info.info502->sd;
+	share_sd = info.share.info502.info_502_str.sd;
 	if (share_sd == NULL) {
 		DEBUG(1, ("Got no secdesc for share %s\n",
 			  netname));
@@ -4532,7 +4616,7 @@ static NTSTATUS rpc_share_allowedusers_internals(const DOM_SID *domain_sid,
 {
 	int ret;
 	BOOL r;
-	uint32 hnd;
+	ENUM_HND hnd;
 	uint32 i;
 	FILE *f;
 
@@ -4570,7 +4654,8 @@ static NTSTATUS rpc_share_allowedusers_internals(const DOM_SID *domain_sid,
 	for (i=0; i<num_tokens; i++)
 		collect_alias_memberships(&tokens[i].token);
 
-	hnd = 0;
+	init_enum_hnd(&hnd, 0);
+
 	share_list.num_shares = 0;
 	share_list.shares = NULL;
 
@@ -4701,10 +4786,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	union srvsvc_NetShareInfo info;
-	struct srvsvc_NetShareInfo2 info2;
-	NTSTATUS result;
-	uint32 parm_error = 0;
+	WERROR result;
 
 	if ((argc < 2) || (argc > 3)) {
 		d_fprintf(stderr, "usage: %s <share> <path> [comment]\n",
@@ -4712,15 +4794,12 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	info.info2 = &info2;
-	info2.name = argv[0];
-	info2.type = STYPE_DISKTREE;
-	info2.comment = (argc == 3) ? argv[2] : "";
-
-	result = rpccli_srvsvc_NetShareAdd(
-		pipe_hnd, mem_ctx, NULL, 2, info, &parm_error); 
+	result = rpccli_srvsvc_net_share_add(
+		pipe_hnd, mem_ctx, argv[0], STYPE_DISKTREE,
+		(argc == 3) ? argv[2] : "",
+		0, 0, 0, argv[1], NULL, 2, NULL);
 					     
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
@@ -4728,15 +4807,15 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 				    struct rpc_pipe_client *pipe_hnd,
 				    int argc, const char **argv)
 {
-	NTSTATUS result;
+	WERROR result;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx, NULL, argv[0], 0);
-	return result;
+	result = rpccli_srvsvc_net_share_del(pipe_hnd, mem_ctx, argv[0]);
+	return werror_to_ntstatus(result);
 }
 
 static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
@@ -4744,27 +4823,37 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  int argc, const char **argv)
 {
-	union srvsvc_NetShareInfo info;
-	NTSTATUS result;
+	SRV_SHARE_INFO info;
+	SRV_SHARE_INFO_2 *info2 = &info.share.info2;
+	WERROR result;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_srvsvc_NetShareGetInfo(
-		pipe_hnd, mem_ctx, NULL, argv[0], 2, &info);
-	if (!NT_STATUS_IS_OK(result)) {
+	result = rpccli_srvsvc_net_share_get_info(
+		pipe_hnd, mem_ctx, argv[0], 2, &info);
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	d_printf("Name:     %s\n", info.info2->name);
-	d_printf("Comment:  %s\n", info.info2->comment);
-	d_printf("Path:     %s\n", info.info2->path);
-	d_printf("Password: %s\n", info.info2->password);
+	d_printf("Name:     %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_netname));
+	d_printf("Comment:  %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_remark));
+	
+	d_printf("Path:     %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_path));
+	d_printf("Password: %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_passwd));
 
  done:
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
@@ -4820,9 +4909,9 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS result;
-	result = rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, NULL, atoi(argv[0]));
-	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
+	result = rpccli_srvsvc_net_file_close(pipe_hnd, mem_ctx, atoi(argv[0]));
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 
@@ -4853,10 +4942,15 @@ static int rpc_file_close(int argc, const char **argv)
  * @param str3   strings for FILE_INFO_3
  **/
 
-static void display_file_info_3( struct srvsvc_NetFileInfo3 *info3 )
+static void display_file_info_3( FILE_INFO_3 *info3 )
 {
+	fstring user = "", path = "";
+
+	rpcstr_pull_unistr2_fstring(user, info3->user);
+	rpcstr_pull_unistr2_fstring(path, info3->path);
+
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
-		 info3->fid, info3->user, info3->permissions, info3->num_locks, info3->path);
+		 info3->id, user, info3->perms, info3->num_locks, path);
 }
 
 /** 
@@ -4883,25 +4977,22 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	union srvsvc_NetFileCtr ctr;
-	NTSTATUS result;
-	uint32 hnd;
+	SRV_FILE_INFO_CTR ctr;
+	WERROR result;
+	ENUM_HND hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	const char *username=NULL;
-	uint32 level = 3;
-	uint32 numentries;
 
-	hnd = 0;
+	init_enum_hnd(&hnd, 0);
 
 	/* if argc > 0, must be user command */
 	if (argc > 0)
 		username = smb_xstrdup(argv[0]);
 		
-	result = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx, NULL, NULL,
-					   username, &level, &ctr,
-					   preferred_len, &numentries, &hnd);
+	result = rpccli_srvsvc_net_file_enum(pipe_hnd,
+					mem_ctx, 3, username, &ctr, preferred_len, &hnd);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -4910,10 +5001,10 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 		 "\nEnumerating open files on remote server:\n\n"\
 		 "\nFileId  Opened by            Perms  Locks  Path"\
 		 "\n------  ---------            -----  -----  ---- \n");
-	for (i = 0; i < numentries; i++)
-		display_file_info_3(&ctr.ctr3->array[i]);
+	for (i = 0; i < ctr.num_entries; i++)
+		display_file_info_3(&ctr.file.info3[i]);
  done:
-	return NT_STATUS_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /** 
@@ -4990,7 +5081,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = rpccli_initshutdown_Abort(pipe_hnd, mem_ctx, NULL);
+	result = rpccli_shutdown_abort(pipe_hnd, mem_ctx);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5027,7 +5118,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, NULL);
+	result = werror_to_ntstatus(rpccli_reg_abort_shutdown(pipe_hnd, mem_ctx));
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5050,7 +5141,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
 				 rpc_shutdown_abort_internals,
 				 argc, argv);
 
@@ -5091,8 +5182,6 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
 
 	if (opt_comment) {
 		msg = opt_comment;
@@ -5101,12 +5190,9 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 		timeout = opt_timeout;
 	}
 
-	s.name = msg;
-	msg_string.name = &s;
-
 	/* create an entry */
-	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot);
+	result = rpccli_shutdown_init(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, 
+				   opt_force);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -5141,37 +5227,55 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv) 
 {
+	WERROR result;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
-	struct initshutdown_String msg_string;
-	struct initshutdown_String_sub s;
-	NTSTATUS result;
+#if 0
+	poptContext pc;
+	int rc;
 
+	struct poptOption long_options[] = {
+		{"message",    'm', POPT_ARG_STRING, &msg},
+		{"timeout",    't', POPT_ARG_INT,    &timeout},
+		{"reboot",     'r', POPT_ARG_NONE,   &reboot},
+		{"force",      'f', POPT_ARG_NONE,   &force},
+		{ 0, 0, 0, 0}
+	};
+
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	rc = poptGetNextOpt(pc);
+	
+	if (rc < -1) {
+		/* an error occurred during option processing */
+		DEBUG(0, ("%s: %s\n",
+			  poptBadOption(pc, POPT_BADOPTION_NOALIAS),
+			  poptStrerror(rc)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif
 	if (opt_comment) {
 		msg = opt_comment;
 	}
-	s.name = msg;
-	msg_string.name = &s;
-
 	if (opt_timeout) {
 		timeout = opt_timeout;
 	}
 
 	/* create an entry */
-	result = rpccli_winreg_InitiateSystemShutdown(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot);
+	result = rpccli_reg_shutdown(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, opt_force);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
 	} else {
 		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
-		if ( W_ERROR_EQUAL(ntstatus_to_werror(result),WERR_MACHINE_LOCKED) )
+		if (W_ERROR_EQUAL(result,WERR_MACHINE_LOCKED))
 			d_fprintf(stderr, "\nMachine locked, use -f switch to force\n");
 		else
-			d_fprintf(stderr, "\nresult was: %s\n", nt_errstr(result));
+			d_fprintf(stderr, "\nresult was: %s\n", dos_errstr(result));
 	}
 
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 /** 
@@ -5186,7 +5290,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 
 static int rpc_shutdown(int argc, const char **argv) 
 {
-	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
+	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
 				 rpc_init_shutdown_internals,
 				 argc, argv);
 
@@ -5620,7 +5724,9 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Store the password in secrets db
 	 */
 
-	if (!pdb_set_trusteddom_pw(domain_name, opt_password, domain_sid)) {
+	if (!secrets_store_trusted_domain_password(domain_name,
+						   opt_password,
+						   domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
@@ -5631,7 +5737,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Close the pipes and clean up
 	 */
 	 
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -5660,7 +5766,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 static int rpc_trustdom_revoke(int argc, const char **argv)
 {
 	char* domain_name;
-	int rc = -1;
 
 	if (argc < 1) return -1;
 	
@@ -5669,16 +5774,13 @@ static int rpc_trustdom_revoke(int argc, const char **argv)
 	strupper_m(domain_name);
 
 	/* delete password of the trust */
-	if (!pdb_del_trusteddom_pw(domain_name)) {
+	if (!trusted_domain_password_delete(domain_name)) {
 		DEBUG(0, ("Failed to revoke relationship to the trusted domain %s\n",
 			  domain_name));
-		goto done;
+		return -1;
 	};
 	
-	rc = 0;
-done:
-	SAFE_FREE(domain_name);
-	return rc;
+	return 0;
 }
 
 /**
@@ -5764,7 +5866,9 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 	
-	if (!pdb_set_trusteddom_pw(trusted_dom_name, cleartextpwd, &dom_sid)) {
+	if (!secrets_store_trusted_domain_password(trusted_dom_name,
+						   cleartextpwd,
+						   &dom_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -5902,7 +6006,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6036,7 +6140,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_lsa_close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));

@@ -59,7 +59,7 @@ NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	}
 
 	result = rpccli_lsa_lookup_names(lsa_pipe, mem_ctx, &pol, 1,
-					 &name, &dom_names, 1, &sids, &types);
+					 &name, &dom_names, &sids, &types);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* This can happen easily, don't log an error */
@@ -81,7 +81,7 @@ NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
  done:
 	if (is_valid_policy_hnd(&pol)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
+		rpccli_lsa_close(lsa_pipe, mem_ctx, &pol);
 	}
 	cli_rpc_pipe_close(lsa_pipe);
 

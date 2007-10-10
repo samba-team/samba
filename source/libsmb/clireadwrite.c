@@ -35,7 +35,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	if ((SMB_BIG_UINT)offset >> 32) 
 		bigoffset = True;
 
-	set_message(NULL,cli->outbuf,bigoffset ? 12 : 10,0,True);
+	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -46,7 +46,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
-	SSVAL(cli->outbuf,smb_vwv7,(size >> 16));
+	SSVAL(cli->outbuf,smb_vwv7,((size >> 16) & 1));
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	if (bigoffset) {
@@ -63,11 +63,9 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
 	char *p;
-	size_t size2;
-	size_t readsize;
+	int size2;
+	int readsize;
 	ssize_t total = 0;
-	/* We can only do direct reads if not signing. */
-	BOOL direct_reads = !client_is_signing_on(cli);
 
 	if (size == 0) 
 		return 0;
@@ -77,11 +75,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * rounded down to a multiple of 1024.
 	 */
 
-	if (client_is_signing_on(cli) == False &&
-			cli_encryption_on(cli) == False &&
-			(cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
-		readsize = CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
-	} else if (cli->capabilities & CAP_LARGE_READX) {
+	if (cli->capabilities & CAP_LARGE_READX) {
 		if (cli->is_samba) {
 			readsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
 		} else {
@@ -99,13 +93,8 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		if (!cli_issue_read(cli, fnum, offset, readsize, 0))
 			return -1;
 
-		if (direct_reads) {
-			if (!cli_receive_smb_readX_header(cli))
-				return -1;
-		} else {
-			if (!cli_receive_smb(cli))
-				return -1;
-		}
+		if (!cli_receive_smb(cli))
+			return -1;
 
 		/* Check for error.  Make sure to check for DOS and NT
                    errors. */
@@ -136,7 +125,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
-		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7))) << 16);
+		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7) & 1)) << 16);
 
 		if (size2 > readsize) {
 			DEBUG(5,("server returned more than we wanted!\n"));
@@ -146,29 +135,10 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 			return -1;
 		}
 
-		if (!direct_reads) {
-			/* Copy data into buffer */
-			p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
-			memcpy(buf + total, p, size2);
-		} else {
-			/* Ensure the remaining data matches the return size. */
-			ssize_t toread = smb_len_large(cli->inbuf) - SVAL(cli->inbuf,smb_vwv6);
+		/* Copy data into buffer */
 
-			/* Ensure the size is correct. */
-			if (toread != size2) {
-				DEBUG(5,("direct read logic fail toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
-			}
-
-			/* Read data directly into buffer */
-			toread = cli_receive_smb_data(cli,buf+total,size2);
-			if (toread != size2) {
-				DEBUG(5,("direct read read failure toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
-			}
-		}
+		p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+		memcpy(buf + total, p, size2);
 
 		total += size2;
 		offset += size2;
@@ -206,7 +176,7 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(NULL,cli->outbuf,10,0,True);
+	set_message(cli->outbuf,10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -315,9 +285,9 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	}
 
 	if (large_writex)
-		set_message(NULL,cli->outbuf,14,0,True);
+		set_message(cli->outbuf,14,0,True);
 	else
-		set_message(NULL,cli->outbuf,12,0,True);
+		set_message(cli->outbuf,12,0,True);
 	
 	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -429,7 +399,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(NULL,cli->outbuf,5, 0,True);
+		set_message(cli->outbuf,5, 0,True);
 
 		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);

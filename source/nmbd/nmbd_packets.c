@@ -1730,8 +1730,7 @@ BOOL listen_for_packets(BOOL run_election)
 	int i;
 	static int maxfd = 0;
 
-	fd_set r_fds;
-	fd_set w_fds;
+	fd_set fds;
 	int selrtn;
 	struct timeval timeout;
 #ifndef SYNC_DNS
@@ -1746,13 +1745,12 @@ BOOL listen_for_packets(BOOL run_election)
 		rescan_listen_set = False;
 	}
 
-	memcpy((char *)&r_fds, (char *)listen_set, sizeof(fd_set));
-	FD_ZERO(&w_fds);
+	memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));
 
 #ifndef SYNC_DNS
 	dns_fd = asyncdns_fd();
 	if (dns_fd != -1) {
-		FD_SET(dns_fd, &r_fds);
+		FD_SET(dns_fd, &fds);
 		maxfd = MAX( maxfd, dns_fd);
 	}
 #endif
@@ -1767,24 +1765,11 @@ BOOL listen_for_packets(BOOL run_election)
 	timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
 	timeout.tv_usec = 0;
 
-	{
-		struct timeval now = timeval_current();
-		event_add_to_select_args(nmbd_event_context(), &now,
-					 &r_fds, &w_fds, &timeout, &maxfd);
-	}
-
-	if (timeval_is_zero(&timeout)) {
-		/* Process a timed event now... */
-		if (run_events(nmbd_event_context(), 0, NULL, NULL)) {
-			return False;
-		}
-	}
-	
 	/* Prepare for the select - allow certain signals. */
 
 	BlockSignals(False, SIGTERM);
 
-	selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&timeout);
+	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&timeout);
 
 	/* We can only take signals when we are in the select - block them again here. */
 
@@ -1794,12 +1779,8 @@ BOOL listen_for_packets(BOOL run_election)
 		return False;
 	}
 
-	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
-		return False;
-	}
-
 #ifndef SYNC_DNS
-	if (dns_fd != -1 && FD_ISSET(dns_fd,&r_fds)) {
+	if (dns_fd != -1 && FD_ISSET(dns_fd,&fds)) {
 		run_dns_queue();
 	}
 #endif
@@ -1807,7 +1788,7 @@ BOOL listen_for_packets(BOOL run_election)
 	for(i = 0; i < listen_number; i++) {
 		if (i < (listen_number/2)) {
 			/* Processing a 137 socket. */
-			if (FD_ISSET(sock_array[i],&r_fds)) {
+			if (FD_ISSET(sock_array[i],&fds)) {
 				struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
 				if (packet) {
 					/*
@@ -1834,7 +1815,7 @@ BOOL listen_for_packets(BOOL run_election)
 			}
 		} else {
 			/* Processing a 138 socket. */
-				if (FD_ISSET(sock_array[i],&r_fds)) {
+				if (FD_ISSET(sock_array[i],&fds)) {
 				struct packet_struct *packet = read_packet(sock_array[i], DGRAM_PACKET);
 				if (packet) {
 					/*
@@ -1905,7 +1886,7 @@ BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
 	/* Setup the smb part. */
 	ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
 	memcpy(tmp,ptr,4);
-	set_message(NULL,ptr,17,strlen(mailslot) + 1 + len,True);
+	set_message(ptr,17,strlen(mailslot) + 1 + len,True);
 	memcpy(ptr,tmp,4);
 
 	SCVAL(ptr,smb_com,SMBtrans);

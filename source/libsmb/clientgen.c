@@ -2,7 +2,6 @@
    Unix SMB/CIFS implementation.
    SMB client generic functions
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Jeremy Allison 2007.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,71 +48,49 @@ int cli_set_port(struct cli_state *cli, int port)
  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds
 
- This is exactly the same as receive_smb except that it can be set to never return
+ This is exactly the same as receive_smb except that it never returns
  a session keepalive packet (just as receive_smb used to do).
  receive_smb was changed to return keepalives as the oplock processing means this call
  should never go into a blocking read.
 ****************************************************************************/
 
-static ssize_t client_receive_smb(struct cli_state *cli, BOOL eat_keepalives, size_t maxlen)
+static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 {
-	ssize_t len;
-	int fd = cli->fd;
-	char *buffer = cli->inbuf;
-	unsigned int timeout = cli->timeout;
+	BOOL ret;
 
 	for(;;) {
-		len = receive_smb_raw(fd, buffer, timeout, maxlen);
+		ret = receive_smb_raw(fd, buffer, timeout);
 
-		if (len < 0) {
+		if (!ret) {
 			DEBUG(10,("client_receive_smb failed\n"));
 			show_msg(buffer);
-			return len;
+			return ret;
 		}
 
 		/* Ignore session keepalive packets. */
-		if (eat_keepalives && (CVAL(buffer,0) == SMBkeepalive)) {
-			continue;
-		}
-		break;
-	}
-
-	if (cli_encryption_on(cli)) {
-		NTSTATUS status = cli_decrypt_message(cli);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("SMB decryption failed on incoming packet! Error %s\n",
-				nt_errstr(status)));
-			cli->smb_rw_error = READ_BAD_DECRYPT;
-			close(cli->fd);
-			cli->fd = -1;
-			return -1;
-		}
+		if(CVAL(buffer,0) != SMBkeepalive)
+			break;
 	}
 	show_msg(buffer);
-	return len;
+	return ret;
 }
 
 /****************************************************************************
  Recv an smb.
 ****************************************************************************/
 
-BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
+BOOL cli_receive_smb(struct cli_state *cli)
 {
-	ssize_t len;
+	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1)
 		return False; 
 
  again:
-	len = client_receive_smb(cli, eat_keepalives, 0);
-
-	if (len >= 0 && !eat_keepalives && (CVAL(cli->inbuf,0) == SMBkeepalive)) {
-		/* Give back the keepalive. */
-		return True;
-	}
+	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
 	
-	if (len > 0) {
+	if (ret) {
 		/* it might be an oplock break request */
 		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
 		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
@@ -122,9 +99,7 @@ BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 			if (cli->oplock_handler) {
 				int fnum = SVAL(cli->inbuf,smb_vwv2);
 				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
-				if (!cli->oplock_handler(cli, fnum, level)) {
-					return False;
-				}
+				if (!cli->oplock_handler(cli, fnum, level)) return False;
 			}
 			/* try to prevent loops */
 			SCVAL(cli->inbuf,smb_com,0xFF);
@@ -133,12 +108,12 @@ BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 	}
 
 	/* If the server is not responding, note that now */
-	if (len < 0) {
+	if (!ret) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
 		cli->smb_rw_error = smb_read_error;
 		close(cli->fd);
 		cli->fd = -1;
-		return False;
+		return ret;
 	}
 
 	if (!cli_check_sign_mac(cli)) {
@@ -167,128 +142,8 @@ BOOL cli_receive_smb_internal(struct cli_state *cli, BOOL eat_keepalives)
 		close(cli->fd);
 		cli->fd = -1;
 		return False;
-	}
-
+	};
 	return True;
-}
-
-/****************************************************************************
- Recv an smb - eat keepalives.
-****************************************************************************/
-
-BOOL cli_receive_smb(struct cli_state *cli)
-{
-	return cli_receive_smb_internal(cli, True);
-}
-
-/****************************************************************************
- Recv an smb - return keepalives.
-****************************************************************************/
-
-BOOL cli_receive_smb_return_keepalive(struct cli_state *cli)
-{
-	return cli_receive_smb_internal(cli, False);
-}
-
-/****************************************************************************
- Read the data portion of a readX smb.
- The timeout is in milliseconds
-****************************************************************************/
-
-ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
-{
-	if (cli->timeout > 0) {
-		return read_socket_with_timeout(cli->fd, buffer, len, len, cli->timeout);
-	} else {
-		return read_data(cli->fd, buffer, len);
-	}
-}
-
-/****************************************************************************
- Read a smb readX header.
- We can only use this if encryption and signing are off.
-****************************************************************************/
-
-BOOL cli_receive_smb_readX_header(struct cli_state *cli)
-{
-	ssize_t len, offset;
-
-	if (cli->fd == -1)
-		return False; 
-
- again:
-
-	/* Read up to the size of a readX header reply. */
-	len = client_receive_smb(cli, True, (smb_size - 4) + 24);
-	
-	if (len > 0) {
-		/* it might be an oplock break request */
-		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
-		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
-		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
-		    SVAL(cli->inbuf,smb_vwv7) == 0) {
-			ssize_t total_len = smb_len(cli->inbuf);
-
-			if (total_len > CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN) {
-				goto read_err;
-			}
-
-			/* Read the rest of the data. */
-			if ((total_len - len > 0) &&
-			    !cli_receive_smb_data(cli,cli->inbuf+len,total_len - len)) {
-				goto read_err;
-			}
-
-			if (cli->oplock_handler) {
-				int fnum = SVAL(cli->inbuf,smb_vwv2);
-				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
-				if (!cli->oplock_handler(cli, fnum, level)) return False;
-			}
-			/* try to prevent loops */
-			SCVAL(cli->inbuf,smb_com,0xFF);
-			goto again;
-		}
-	}
-
-	/* If it's not the above size it probably was an error packet. */
-
-	if ((len == (smb_size - 4) + 24) && !cli_is_error(cli)) {
-		/* Check it's a non-chained readX reply. */
-		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) ||
-			(CVAL(cli->inbuf,smb_vwv0) != 0xFF) ||
-			(CVAL(cli->inbuf,smb_com) != SMBreadX)) {
-			/* 
-			 * We're not coping here with asnyc replies to
-			 * other calls. Punt here - we need async client
-			 * libs for this.
-			 */
-			goto read_err;
-		}
-
-		/* 
-		 * We know it's a readX reply - ensure we've read the
-		 * padding bytes also.
-		 */
-
-		offset = SVAL(cli->inbuf,smb_vwv6);
-		if (offset > len) {
-			ssize_t ret;
-			size_t padbytes = offset - len;
-			ret = cli_receive_smb_data(cli,smb_buf(cli->inbuf),padbytes);
-			if (ret != padbytes) {
-				goto read_err;
-			}
-		}
-	}
-
-	return True;
-
-  read_err:
-
-	cli->smb_rw_error = smb_read_error = READ_ERROR;
-	close(cli->fd);
-	cli->fd = -1;
-	return False;
 }
 
 static ssize_t write_socket(int fd, const char *buf, size_t len)
@@ -297,7 +152,7 @@ static ssize_t write_socket(int fd, const char *buf, size_t len)
                                                                                                                                             
         DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
         ret = write_data(fd,buf,len);
-
+                                                                                                                                            
         DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
         if(ret <= 0)
                 DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
@@ -315,36 +170,18 @@ BOOL cli_send_smb(struct cli_state *cli)
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	char *buf_out = cli->outbuf;
-	BOOL enc_on = cli_encryption_on(cli);
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) {
+	if (cli->fd == -1)
 		return False;
-	}
 
 	cli_calculate_sign_mac(cli);
 
-	if (enc_on) {
-		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
-		if (!NT_STATUS_IS_OK(status)) {
-			close(cli->fd);
-			cli->fd = -1;
-			cli->smb_rw_error = WRITE_ERROR;
-			DEBUG(0,("Error in encrypting client message. Error %s\n",
-				nt_errstr(status) ));
-			return False;
-		}
-	}
-
-	len = smb_len(buf_out) + 4;
+	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
-		ret = write_socket(cli->fd,buf_out+nwritten,len - nwritten);
+		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
 		if (ret <= 0) {
-			if (enc_on) {
-				cli_free_enc_buffer(cli, buf_out);
-			}
 			close(cli->fd);
 			cli->fd = -1;
 			cli->smb_rw_error = WRITE_ERROR;
@@ -354,14 +191,10 @@ BOOL cli_send_smb(struct cli_state *cli)
 		}
 		nwritten += ret;
 	}
-
-	cli_free_enc_buffer(cli, buf_out);
-
 	/* Increment the mid so we can tell between responses. */
 	cli->mid++;
-	if (!cli->mid) {
+	if (!cli->mid)
 		cli->mid++;
-	}
 	return True;
 }
 
@@ -402,7 +235,7 @@ void cli_setup_packet(struct cli_state *cli)
 
 void cli_setup_bcc(struct cli_state *cli, void *p)
 {
-	set_message_bcc(NULL,cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
+	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
 }
 
 /****************************************************************************
@@ -608,8 +441,6 @@ void cli_shutdown(struct cli_state *cli)
 	SAFE_FREE(cli->inbuf);
 
 	cli_free_signing_context(cli);
-	cli_free_encryption_context(cli);
-
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
@@ -688,7 +519,7 @@ BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
 	SMB_ASSERT(length < 1024);
 
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(NULL,cli->outbuf,1,length,True);
+	set_message(cli->outbuf,1,length,True);
 	SCVAL(cli->outbuf,smb_com,SMBecho);
 	SSVAL(cli->outbuf,smb_tid,65535);
 	SSVAL(cli->outbuf,smb_vwv0,1);

@@ -141,30 +141,28 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 	return acl;
 }
 
-/* Tries to get nfs4 acls and returns SMB ACL allocated.
- * On failure returns 1 if it got non-NFSv4 ACL to prompt 
- * retry with POSIX ACL checks.
- * On failure returns -1 if there is system (GPFS) error, check errno.
- * Returns 0 on success
- */
-static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
+static BOOL gpfs_get_nfs4_acl(struct files_struct *fsp, SMB4ACL_T **ppacl, BOOL *pretryPosix)
 {
+	TALLOC_CTX *mem_ctx;
 	int i;
 	struct gpfs_acl *gacl = NULL;
-	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fname));
+
+	mem_ctx = main_loop_talloc_get();
+
+	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fsp->fsp_name));
 
 	/* First get the real acl length */
-	gacl = gpfs_getacl_alloc(fname, GPFS_ACL_TYPE_NFS4);
+	gacl = gpfs_getacl_alloc(fsp->fsp_name, GPFS_ACL_TYPE_NFS4);
 	if (gacl == NULL) {
 		DEBUG(9, ("gpfs_getacl failed for %s with %s\n",
-			   fname, strerror(errno)));
-		return -1;
+			   fsp->fsp_name, strerror(errno)));
+		return False;
 	}
 
 	if (gacl->acl_type != GPFS_ACL_TYPE_NFS4) {
 		DEBUG(10, ("Got non-nfsv4 acl\n"));
-		/* Retry with POSIX ACLs check */
-		return 1;
+		*pretryPosix = True;
+		return False;
 	}
 
 	*ppacl = smb_create_smb4acl();
@@ -176,11 +174,12 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 	for (i=0; i<gacl->acl_nace; i++) {
 		struct gpfs_ace_v4 *gace = &gacl->ace_v4[i];
 		SMB_ACE4PROP_T smbace;
+		memset(&smbace, 0, sizeof(SMB4ACE_T));
+
 		DEBUG(10, ("type: %d, iflags: %x, flags: %x, mask: %x, "
 			   "who: %d\n", gace->aceType, gace->aceIFlags,
 			   gace->aceFlags, gace->aceMask, gace->aceWho));
 
-		memset(&smbace, 0, sizeof(SMB4ACE_T));
 		if (gace->aceIFlags & ACE4_IFLAG_SPECIAL_ID) {
 			smbace.flags |= SMB_ACE4_ID_SPECIAL;
 			switch (gace->aceWho) {
@@ -205,47 +204,35 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 				smbace.who.uid = gace->aceWho;
 		}
 
-		/* remove redundent deny entries */
-		if (i > 0 && gace->aceType == SMB_ACE4_ACCESS_DENIED_ACE_TYPE) {
-			struct gpfs_ace_v4 *prev = &gacl->ace_v4[i-1];
-			if (prev->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE &&
-					prev->aceFlags == gace->aceFlags &&
-					prev->aceIFlags == gace->aceIFlags &&
-					(gace->aceMask & prev->aceMask) == 0 &&
-					gace->aceWho == prev->aceWho) {
-				/* its redundent - skip it */
-				continue;
-			}                                                
-		}
-
 		smbace.aceType = gace->aceType;
 		smbace.aceFlags = gace->aceFlags;
 		smbace.aceMask = gace->aceMask;
+		smbace.flags = (gace->aceIFlags&ACE4_IFLAG_SPECIAL_ID) ? SMB_ACE4_ID_SPECIAL : 0;
+
 		smb_add_ace4(*ppacl, &smbace);
 	}
 
-	return 0;
+	return True;
 }
 
 static size_t gpfsacl_get_nt_acl_common(files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
-	int	result;
+	BOOL	result;
+	BOOL	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = gpfs_get_nfs4_acl(fsp->fsp_name, &pacl);
-
-	if (result == 0)
-		return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
-
-	if (result > 0) {
+	result = gpfs_get_nfs4_acl(fsp, &pacl, &retryPosix);
+	if (retryPosix)
+	{
 		DEBUG(10, ("retrying with posix acl...\n"));
 		return get_nt_acl(fsp, security_info, ppdesc);
 	}
-	
-	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
-	return 0;
+	if (result==False)
+		return 0;
+
+	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 }
 
 size_t gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
@@ -334,14 +321,14 @@ static BOOL gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	struct gpfs_acl *acl;
-	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
+	BOOL	result = False;
 
 	acl = gpfs_getacl_alloc(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
 	if (acl == NULL)
-		return result;
+		return False;
 
 	if (acl->acl_version&GPFS_ACL_VERSION_NFS4)
 	{
@@ -355,12 +342,12 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 	return result;
 }
 
-static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
 
-static NTSTATUS gpfsacl_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+static BOOL gpfsacl_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
@@ -621,77 +608,57 @@ int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
-{
-		 SMB_STRUCT_STAT st;
-		 if (SMB_VFS_NEXT_STAT(handle, path, &st) != 0) {
-		 		 return -1;
-		 }
-		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_mode & ~S_IFMT) == mode) {
-		 		 return 0;
-		 }
-		 return SMB_VFS_NEXT_CHMOD(handle, path, mode);
-}
-
-static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
-{
-		 SMB_STRUCT_STAT st;
-		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, fd, &st) != 0) {
-		 		 return -1;
-		 }
-		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_mode & ~S_IFMT) == mode) {
-		 		 return 0;
-		 }
-		 return SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
-}
-
 /* VFS operations structure */
 
 static vfs_op_tuple gpfs_op_tuples[] = {
 
-		{ SMB_VFS_OP(vfs_gpfs_kernel_flock), SMB_VFS_OP_KERNEL_FLOCK,
-				SMB_VFS_LAYER_OPAQUE },
+	{SMB_VFS_OP(vfs_gpfs_kernel_flock),
+	 SMB_VFS_OP_KERNEL_FLOCK,
+	 SMB_VFS_LAYER_OPAQUE},
 
-        { SMB_VFS_OP(vfs_gpfs_setlease), SMB_VFS_OP_LINUX_SETLEASE,
-        		SMB_VFS_LAYER_OPAQUE },
+	{SMB_VFS_OP(vfs_gpfs_setlease),
+	 SMB_VFS_OP_LINUX_SETLEASE,
+	 SMB_VFS_LAYER_OPAQUE},
 
-        { SMB_VFS_OP(gpfsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
-        		SMB_VFS_LAYER_TRANSPARENT },
+	{SMB_VFS_OP(gpfsacl_fget_nt_acl),
+        SMB_VFS_OP_FGET_NT_ACL,
+        SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_get_nt_acl),
+        SMB_VFS_OP_GET_NT_ACL,
+        SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_fset_nt_acl),
+        SMB_VFS_OP_FSET_NT_ACL,
+        SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_set_nt_acl), SMB_VFS_OP_SET_NT_ACL,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_set_nt_acl),
+        SMB_VFS_OP_SET_NT_ACL,
+        SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_sys_acl_get_file), SMB_VFS_OP_SYS_ACL_GET_FILE,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_sys_acl_get_file),
+         SMB_VFS_OP_SYS_ACL_GET_FILE,
+         SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_sys_acl_get_fd), SMB_VFS_OP_SYS_ACL_GET_FD,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_sys_acl_get_fd),
+         SMB_VFS_OP_SYS_ACL_GET_FD,
+         SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_sys_acl_set_file), SMB_VFS_OP_SYS_ACL_SET_FILE,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_sys_acl_set_file),
+         SMB_VFS_OP_SYS_ACL_SET_FILE,
+         SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_sys_acl_set_fd), SMB_VFS_OP_SYS_ACL_SET_FD,
-        		SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_sys_acl_set_fd),
+         SMB_VFS_OP_SYS_ACL_SET_FD,
+         SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(gpfsacl_sys_acl_delete_def_file),
-                SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-                SMB_VFS_LAYER_TRANSPARENT },
+        {SMB_VFS_OP(gpfsacl_sys_acl_delete_def_file),
+         SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
+         SMB_VFS_LAYER_TRANSPARENT},
 
-        { SMB_VFS_OP(vfs_gpfs_chmod), SMB_VFS_OP_CHMOD,
-                SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_fchmod), SMB_VFS_OP_FCHMOD,
-                SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP }
+	{SMB_VFS_OP(NULL),
+	 SMB_VFS_OP_NOOP,
+	 SMB_VFS_LAYER_NOOP}
 
 };
 

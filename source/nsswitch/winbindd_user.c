@@ -105,7 +105,9 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	safe_strcpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
 
-	/* Home directory and shell */
+	/* Home directory and shell - use template config parameters.  The
+	   defaults are /tmp for the home directory and /bin/false for
+	   shell. */
 	
 	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
 			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
@@ -237,30 +239,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 		return;
 	}
 
-	if ( acct_name && *acct_name ) {
 	fstrcpy( username, acct_name );
-	} else {		
-		char *domain_name = NULL;
-		enum lsa_SidType type;
-		char *user_name = NULL;
-		struct winbindd_domain *domain = NULL;
-		
-		domain = find_lookup_domain_from_sid(&s->user_sid);
-		winbindd_lookup_name_by_sid(s->state->mem_ctx, domain,
-					    &s->user_sid, &domain_name,
-					    &user_name, &type );		
-
-		/* If this still fails we ar4e done.  Just error out */
-		if ( !user_name ) {
-			DEBUG(5,("Could not obtain a name for SID %s\n",
-				 sid_string_static(&s->user_sid)));			
-			request_error(s->state);
-			return;			
-		}
-
-		fstrcpy( username, user_name );		
-	}
-
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
 
@@ -381,13 +360,10 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	domain = find_domain_from_name(domname);
 
 	if (domain == NULL) {
-		DEBUG(7, ("could not find domain entry for domain %s.  "
-			  "Using primary domain\n", domname));
-		if ( (domain = find_our_domain()) == NULL ) {
-			DEBUG(0,("Cannot find my primary domain structure!\n"));
+		DEBUG(7, ("could not find domain entry for domain %s\n",
+			  domname));
 		request_error(state);
 		return;
-	}
 	}
 
 	if ( strequal(domname, lp_workgroup()) && lp_winbind_trusted_domains_only() ) {
@@ -400,8 +376,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Get rid and name type from name.  The following costs 1 packet */
 
 	winbindd_lookupname_async(state->mem_ctx, domname, username,
-				  getpwnam_name2sid_recv, WINBINDD_GETPWNAM, 
-				  state);
+				  getpwnam_name2sid_recv, state);
 }
 
 static void getpwnam_name2sid_recv(void *private_data, BOOL success,
@@ -409,7 +384,6 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
-	fstring domname, username;	
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup name for user %s\n",
@@ -423,12 +397,6 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 		request_error(state);
 		return;
 	}
-
-	if ( parse_domain_user(state->request.data.username, domname, username) ) {
-		check_domain_trusted( domname, sid );	
-	}
-
-
 
 	winbindd_getpwsid(state, sid);
 }

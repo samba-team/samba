@@ -1190,50 +1190,28 @@ done:
 static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 {
 	ADS_STATUS rc = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *ou_str = NULL;
-	char *dn = NULL;
+	char *dn, *ou_str;
 	LDAPMessage *res = NULL;
-	BOOL moved;
 
 	ou_str = ads_ou_string(ads, ou);
-	if (asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path) == -1) {
-		rc = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
+	if ((asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path)) == -1) {
+		SAFE_FREE(ou_str);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	rc = ads_search_dn(ads, &res, dn, NULL);
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, "The specified OU does not exist.\n");
-		goto done;
-	}
+	ads_msgfree(ads, res);
 
+	if (ADS_ERR_OK(rc)) {
 		/* Attempt to create the machine account and bail if this fails.
 		   Assume that the admin wants exactly what they requested */
 
 		rc = ads_create_machine_acct( ads, global_myname(), dn );
-	if (ADS_ERR_OK(rc)) {
-		DEBUG(1, ("machine account created\n"));
-		goto done;
+		if ( rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS ) {
+			rc = ADS_SUCCESS;
 		}
-	if ( !(rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS) ) {
-		DEBUG(1, ("machine account creation failed\n"));
-		goto done;
 	}
 
-	rc = ads_move_machine_acct(ads, global_myname(), dn, &moved);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("failure to locate/move pre-existing machine account\n"));
-		goto done;
-	}
-
-	if (moved) {
-		d_printf("The machine account was moved into the specified OU.\n");
-	} else {
-		d_printf("The machine account already exists in the specified OU.\n");
-	}
-
-done:
-	ads_msgfree(ads, res);
 	SAFE_FREE( ou_str );
 	SAFE_FREE( dn );
 
@@ -1369,10 +1347,10 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 		status = ads_dns_lookup_ns( ctx, root_domain, &nameservers, &ns_count );
 		
 		if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {			
-			DEBUG(3,("net_ads_join: Failed to find name server for the %s "
+		DEBUG(3,("net_ads_join: Failed to find name server for the %s "
 			 "realm\n", ads->config.realm));
-			goto done;
-		}
+		goto done;
+	}
 
 		dnsdomain = root_domain;		
 		
@@ -1450,12 +1428,7 @@ static int net_ads_join_usage(int argc, const char **argv)
 	d_printf("                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n");
 	d_printf("                      E.g. \"createcomputer=Computers/Servers/Unix\"\n");
 	d_printf("                      NB: A backslash '\\' is used as escape at multiple levels and may\n");
-	d_printf("                          need to be doubled or even quadrupled.  It is not used as a separator.\n");
-	d_printf("   osName=string      Set the operatingSystem attribute during the join.\n");
-	d_printf("   osVer=string       Set the operatingSystemVersion attribute during the join.\n");
-	d_printf("                      NB: osName and osVer must be specified together for either to take effect.\n");
-	d_printf("                          Also, the operatingSystemService attribute is also set when along with\n");
-	d_printf("                          the two other attributes.\n");
+	d_printf("                          need to be doubled or even quadrupled.  It is not used as a separator");
 
 	return -1;
 }
@@ -1555,7 +1528,7 @@ int net_ads_join(int argc, const char **argv)
 		status = net_precreate_machine_acct( ads, create_in_ou );
 		if ( !ADS_ERR_OK(status) ) {
 			d_fprintf( stderr, "Failed to pre-create the machine object "
-				"in OU %s.\n", create_in_ou);
+				"in OU %s.\n", argv[0]);
 			DEBUG(1, ("error calling net_precreate_machine_acct: %s\n", 
 				  ads_errstr(status)));
 			nt_status = ads_ntstatus(status);
@@ -1747,7 +1720,7 @@ static int net_ads_dns_register(int argc, const char **argv)
 #endif
 	
 	if (argc > 0) {
-		d_fprintf(stderr, "net ads dns register <name> <ip>\n");
+		d_fprintf(stderr, "net ads dns register\n");
 		return -1;
 	}
 
@@ -1919,6 +1892,12 @@ static int net_ads_printer_info(int argc, const char **argv)
 	ads_destroy(&ads);
 
 	return 0;
+}
+
+void do_drv_upgrade_printer(int msg_type, struct process_id src,
+			    void *buf, size_t len, void *private_data)
+{
+	return;
 }
 
 static int net_ads_printer_publish(int argc, const char **argv)
@@ -2418,18 +2397,16 @@ static int net_ads_keytab_usage(int argc, const char **argv)
 	d_printf(
 		"net ads keytab <COMMAND>\n"\
 "<COMMAND> can be either:\n"\
-"  ADD       Adds new service principal\n"\
 "  CREATE    Creates a fresh keytab\n"\
+"  ADD       Adds new service principal\n"\
 "  FLUSH     Flushes out all keytab entries\n"\
 "  HELP      Prints this help message\n"\
-"  LIST      List the keytab\n"\
-"The ADD and LIST command will take arguments, the other commands\n"\
+"The ADD command will take arguments, the other commands\n"\
 "will not take any arguments.   The arguments given to ADD\n"\
 "should be a list of principals to add.  For example, \n"\
 "   net ads keytab add srv1 srv2\n"\
 "will add principals for the services srv1 and srv2 to the\n"\
 "system's keytab.\n"\
-"The LIST command takes a keytabname.\n"\
 "\n"
 		);
 	return -1;
@@ -2478,26 +2455,13 @@ static int net_ads_keytab_create(int argc, const char **argv)
 	return ret;
 }
 
-static int net_ads_keytab_list(int argc, const char **argv)
-{
-	const char *keytab = NULL;
-
-	if (argc >= 1) {
-		keytab = argv[0];
-	}
-
-	return ads_keytab_list(keytab);
-}
-
-
 int net_ads_keytab(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"ADD", net_ads_keytab_add},
 		{"CREATE", net_ads_keytab_create},
+		{"ADD", net_ads_keytab_add},
 		{"FLUSH", net_ads_keytab_flush},
 		{"HELP", net_ads_keytab_usage},
-		{"LIST", net_ads_keytab_list},
 		{NULL, NULL}
 	};
 

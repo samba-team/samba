@@ -255,18 +255,18 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	BOOL ret;
 	NTSTATUS nt_status;
 	NTSTATUS update_login_attempts_status;
-	DATA_BLOB user_sess_key = data_blob_null;
-	DATA_BLOB lm_sess_key = data_blob_null;
+	DATA_BLOB user_sess_key = data_blob(NULL, 0);
+	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 	BOOL updated_autolock = False, updated_badpw = False;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* the returned struct gets kept on the server_info, by means
-	   of a steal further down */
+	/* Can't use the talloc version here, because the returned struct gets
+	   kept on the server_info */
 
-	if ( !(sampass = samu_new( mem_ctx )) ) {
+	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

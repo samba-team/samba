@@ -221,70 +221,53 @@ void dump_gpo(TALLOC_CTX *mem_ctx, struct GROUP_POLICY_OBJECT *gpo, int debuglev
 	DEBUGADD(lvl,("link:\t\t\t%s\n", gpo->link));
 	DEBUGADD(lvl,("link_type:\t\t%d ", gpo->link_type));
 	switch (gpo->link_type) {
-		case GP_LINK_UNKOWN:
-			DEBUGADD(lvl,("GP_LINK_UNKOWN\n"));
-			break;
-		case GP_LINK_OU:
-			DEBUGADD(lvl,("GP_LINK_OU\n"));
-			break;
-		case GP_LINK_DOMAIN:
-			DEBUGADD(lvl,("GP_LINK_DOMAIN\n"));
-			break;
-		case GP_LINK_SITE:
-			DEBUGADD(lvl,("GP_LINK_SITE\n"));
-			break;
-		case GP_LINK_MACHINE:
-			DEBUGADD(lvl,("GP_LINK_MACHINE\n"));
-			break;
-		default:
-			break;
+	case GP_LINK_UNKOWN:
+		DEBUGADD(lvl,("GP_LINK_UNKOWN\n"));
+		break;
+	case GP_LINK_OU:
+		DEBUGADD(lvl,("GP_LINK_OU\n"));
+		break;
+	case GP_LINK_DOMAIN:
+		DEBUGADD(lvl,("GP_LINK_DOMAIN\n"));
+		break;
+	case GP_LINK_SITE:
+		DEBUGADD(lvl,("GP_LINK_SITE\n"));
+		break;
+	case GP_LINK_MACHINE:
+		DEBUGADD(lvl,("GP_LINK_MACHINE\n"));
+		break;
+	default:
+		break;
 	}
-
-	DEBUGADD(lvl,("machine_extensions:\t%s\n", gpo->machine_extensions));
 
 	if (gpo->machine_extensions) {
 
-		struct GP_EXT *gp_ext = NULL;
+		struct GP_EXT gp_ext;
 		ADS_STATUS status;
+
+		DEBUGADD(lvl,("machine_extensions:\t%s\n", gpo->machine_extensions));
 
 		status = ads_parse_gp_ext(mem_ctx, gpo->machine_extensions, &gp_ext);
 		if (!ADS_ERR_OK(status)) {
 			return;
 		}
-		dump_gp_ext(gp_ext, lvl);
+		dump_gp_ext(&gp_ext, lvl);
 	}
 	
-	DEBUGADD(lvl,("user_extensions:\t%s\n", gpo->user_extensions));
-
 	if (gpo->user_extensions) {
 	
-		struct GP_EXT *gp_ext = NULL;
+		struct GP_EXT gp_ext;
 		ADS_STATUS status;
 		
+		DEBUGADD(lvl,("user_extensions:\t%s\n", gpo->user_extensions));
+
 		status = ads_parse_gp_ext(mem_ctx, gpo->user_extensions, &gp_ext);
 		if (!ADS_ERR_OK(status)) {
 			return;
 		}
-		dump_gp_ext(gp_ext, lvl);
+		dump_gp_ext(&gp_ext, lvl);
 	}
 }
-
-/****************************************************************
-****************************************************************/
-
-void dump_gpo_list(TALLOC_CTX *mem_ctx, 
-		   struct GROUP_POLICY_OBJECT *gpo_list, 
-		   int debuglevel)
-{
-	struct GROUP_POLICY_OBJECT *gpo = NULL;
-
-	for (gpo = gpo_list; gpo; gpo = gpo->next) {
-		dump_gpo(mem_ctx, gpo, debuglevel);
-	}
-}
-
-/****************************************************************
-****************************************************************/
 
 void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 {
@@ -301,14 +284,14 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 	DEBUGADD(lvl,("gplink: %s\n", gp_link->gp_link));
 	DEBUGADD(lvl,("gpopts: %d ", gp_link->gp_opts));
 	switch (gp_link->gp_opts) {
-		case GPOPTIONS_INHERIT:
-			DEBUGADD(lvl,("GPOPTIONS_INHERIT\n"));
-			break;
-		case GPOPTIONS_BLOCK_INHERITANCE:
-			DEBUGADD(lvl,("GPOPTIONS_BLOCK_INHERITANCE\n"));
-			break;
-		default:
-			break;
+	case GPOPTIONS_INHERIT:
+		DEBUGADD(lvl,("GPOPTIONS_INHERIT\n"));
+		break;
+	case GPOPTIONS_BLOCK_INHERITANCE:
+		DEBUGADD(lvl,("GPOPTIONS_BLOCK_INHERITANCE\n"));
+		break;
+	default:
+		break;
 	}
 
 	DEBUGADD(lvl,("num links: %d\n", gp_link->num_links));
@@ -343,9 +326,6 @@ void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link)
 	}
 }
 
-/****************************************************************
-****************************************************************/
-
 ADS_STATUS process_extension_with_snapin(ADS_STRUCT *ads,
 					 TALLOC_CTX *mem_ctx,
 					 const char *extension_guid,
@@ -365,20 +345,17 @@ ADS_STATUS process_extension_with_snapin(ADS_STRUCT *ads,
 	DEBUG(10,("process_extension_with_snapin: no snapin handler for extension %s (%s) found\n", 
 		extension_guid, snapin_guid));
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
-
-/****************************************************************
-****************************************************************/
 
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
 			     struct GROUP_POLICY_OBJECT *gpo,
-			     const char *extension_guid_filter,
+			     const char *extension_guid,
 			     uint32 flags)
 {
 	ADS_STATUS status;
-	struct GP_EXT *gp_ext = NULL;
+	struct GP_EXT gp_ext;
 	int i;
 	
 	if (flags & GPO_LIST_FLAG_MACHINE) {
@@ -393,7 +370,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 		} else {
 			/* nothing to apply */
-			return ADS_SUCCESS;
+			return ADS_ERROR(LDAP_SUCCESS);
 		}
 	
 	} else {
@@ -407,40 +384,36 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			}
 		} else {
 			/* nothing to apply */
-			return ADS_SUCCESS;
+			return ADS_ERROR(LDAP_SUCCESS);
 		}
 	}
 
-	for (i=0; i<gp_ext->num_exts; i++) {
+	for (i=0; i<gp_ext.num_exts; i++) {
 
-		if (extension_guid_filter && !strequal(extension_guid_filter, gp_ext->extensions_guid[i])) {
+		if (extension_guid && !strequal(extension_guid, gp_ext.extensions_guid[i])) {
 			continue;
 		}
 
-		status = process_extension_with_snapin(ads, mem_ctx,
-						       gp_ext->extensions_guid[i], 
-						       gp_ext->snapins_guid[i]);
+		status = process_extension_with_snapin(ads, mem_ctx, gp_ext.extensions_guid[i], 
+						       gp_ext.snapins_guid[i]);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
 	}
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
-
-/****************************************************************
-****************************************************************/
 
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				struct GROUP_POLICY_OBJECT *gpo_list,
+				struct GROUP_POLICY_OBJECT **gpo_list,
 				const char *extensions_guid,
 				uint32 flags)
 {
 	ADS_STATUS status;
-	struct GROUP_POLICY_OBJECT *gpo;
+	struct GROUP_POLICY_OBJECT *gpo = *gpo_list;
 
-	for (gpo = gpo_list; gpo; gpo = gpo->next) {
+	for (gpo = *gpo_list; gpo; gpo = gpo->next) {
 	
 		status = gpo_process_a_gpo(ads, mem_ctx, gpo, 
 					   extensions_guid, flags);
@@ -451,7 +424,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 
 	}
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads, 
@@ -461,7 +434,7 @@ ADS_STATUS gpo_snapin_handler_none(ADS_STRUCT *ads,
 {
 	DEBUG(10,("gpo_snapin_handler_none\n"));
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 ADS_STATUS gpo_snapin_handler_security_settings(ADS_STRUCT *ads, 
@@ -471,7 +444,7 @@ ADS_STATUS gpo_snapin_handler_security_settings(ADS_STRUCT *ads,
 {
 	DEBUG(10,("gpo_snapin_handler_security_settings\n"));
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 ADS_STATUS gpo_lockout_policy(ADS_STRUCT *ads,
@@ -481,9 +454,6 @@ ADS_STATUS gpo_lockout_policy(ADS_STRUCT *ads,
 {
 	return ADS_ERROR_NT(NT_STATUS_NOT_IMPLEMENTED);
 }
-
-/****************************************************************
-****************************************************************/
 
 ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
@@ -542,14 +512,14 @@ ADS_STATUS gpo_password_policy(ADS_STRUCT *ads,
 
 	ads_memfree(ads, dn);
 
-	status = gpo_process_gpo_list(ads, mem_ctx, gpo_list, 
+	status = gpo_process_gpo_list(ads, mem_ctx, &gpo_list, 
 				      cse_gpo_name_to_guid_string("Security"), 
 				      GPO_LIST_FLAG_MACHINE); 
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	return ADS_SUCCESS;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 /****************************************************************
@@ -563,25 +533,22 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   struct cli_state **cli_out)
 {
 	NTSTATUS result;
-	char *server = NULL;
-	char *share = NULL;
-	char *nt_path = NULL;
-	char *unix_path = NULL;
+	char *server, *share, *nt_path, *unix_path;
 	uint32 sysvol_gpt_version = 0;
-	char *display_name = NULL;
+	char *display_name;
 	struct cli_state *cli = NULL;
 
-	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path, 
-					 &server, &share, &nt_path, &unix_path);
+	result = ads_gpo_explode_filesyspath(ads, mem_ctx, gpo->file_sys_path, 
+					     &server, &share, &nt_path, &unix_path);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
 
-	result = gpo_get_sysvol_gpt_version(mem_ctx, 
-					    unix_path,
-					    &sysvol_gpt_version,
-					    &display_name);
+	result = ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, 
+						unix_path,
+						&sysvol_gpt_version,
+						&display_name); 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_FILE)) {
 		DEBUG(10,("check_refresh_gpo: failed to get local gpt version: %s\n", 
@@ -610,15 +577,15 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			*cli_out = cli;
 		}
 
-		result = gpo_fetch_files(mem_ctx, *cli_out, gpo);
+		result = ads_fetch_gpo_files(ads, mem_ctx, *cli_out, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
 
-		result = gpo_get_sysvol_gpt_version(mem_ctx, 
-						    unix_path, 
-						    &sysvol_gpt_version,
-						    &display_name); 
+		result = ads_gpo_get_sysvol_gpt_version(ads, mem_ctx, 
+							unix_path, 
+							&sysvol_gpt_version,
+							&display_name); 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("check_refresh_gpo: failed to get local gpt version: %s\n", 
 				nt_errstr(result)));
@@ -659,10 +626,6 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct cli_state *cli = NULL;
 	struct GROUP_POLICY_OBJECT *gpo;
-
-	if (!gpo_list) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 

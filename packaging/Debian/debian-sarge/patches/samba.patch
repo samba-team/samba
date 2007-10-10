@@ -32,11 +32,11 @@ diff -uNr samba-3.0.0beta1.orig/source/web/diagnose.c samba-3.0.0beta1/source/we
 --- samba-3.0.0beta1.orig/source/web/diagnose.c	2003-06-07 12:57:41.000000000 -0500
 +++ samba-3.0.0beta1/source/web/diagnose.c	2003-06-30 20:12:22.000000000 -0500
 @@ -66,6 +66,7 @@
- 	static struct cli_state cli;
- 	extern struct in_addr loopback_ip;
+ {
+ 	struct cli_state *cli;
  
 +	loopback_ip.s_addr = htonl((127 << 24) + 1);
- 	if (!cli_initialise(&cli))
+ 	if ((cli = cli_initialise()) == NULL)
  		return False;
  
 --- samba-3.0.23/source/script/installbin.sh.in.orig	2006-07-15 09:08:36.000000000 -0400

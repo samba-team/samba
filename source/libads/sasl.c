@@ -28,10 +28,10 @@
 */
 static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 {
-	DATA_BLOB msg1 = data_blob_null;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB blob_in = data_blob_null;
-	DATA_BLOB blob_out = data_blob_null;
+	DATA_BLOB msg1 = data_blob(NULL, 0);
+	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out = data_blob(NULL, 0);
 	struct berval cred, *scred = NULL;
 	int rc;
 	NTSTATUS nt_status;
@@ -54,7 +54,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		return ADS_ERROR_NT(nt_status);
 	}
 
-	blob_in = data_blob_null;
+	blob_in = data_blob(NULL, 0);
 
 	do {
 		nt_status = ntlmssp_update(ntlmssp_state, 
@@ -90,7 +90,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 				blob = data_blob(scred->bv_val, scred->bv_len);
 				ber_bvfree(scred);
 			} else {
-				blob = data_blob_null;
+				blob = data_blob(NULL, 0);
 			}
 
 		} else {
@@ -102,7 +102,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		
 		if ((turn == 1) && 
 		    (rc == LDAP_SASL_BIND_IN_PROGRESS)) {
-			DATA_BLOB tmp_blob = data_blob_null;
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
 			/* the server might give us back two challenges */
 			if (!spnego_parse_challenge(blob, &blob_in, 
 						    &tmp_blob)) {
@@ -114,7 +114,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			}
 			data_blob_free(&tmp_blob);
 		} else if (rc == LDAP_SASL_BIND_IN_PROGRESS) {
-			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
+			if (!spnego_parse_auth_response(blob, nt_status, 
 							&blob_in)) {
 
 				ntlmssp_end(&ntlmssp_state);
@@ -142,9 +142,9 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 */
 static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *principal)
 {
-	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob = data_blob(NULL, 0);
 	struct berval cred, *scred = NULL;
-	DATA_BLOB session_key = data_blob_null;
+	DATA_BLOB session_key = data_blob(NULL, 0);
 	int rc;
 
 	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0,
@@ -441,8 +441,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	gss_release_buffer(&minor_status, &output_token);
 
-	output_token.length = 4;
-	output_token.value = SMB_MALLOC(output_token.length);
+	output_token.value = SMB_MALLOC(strlen(ads->config.bind_path) + 8);
 	p = (uint8 *)output_token.value;
 
 	*p++ = 1; /* no sign & seal selection */
@@ -450,14 +449,10 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	*p++ = max_msg_size>>16;
 	*p++ = max_msg_size>>8;
 	*p++ = max_msg_size;
-	/*
-	 * we used to add sprintf("dn:%s", ads->config.bind_path) here.
-	 * but using ads->config.bind_path is the wrong! It should be
-	 * the DN of the user object!
-	 *
-	 * w2k3 gives an error when we send an incorrect DN, but sending nothing
-	 * is ok and matches the information flow used in GSS-SPNEGO.
-	 */
+	snprintf((char *)p, strlen(ads->config.bind_path)+4, "dn:%s", ads->config.bind_path);
+	p += strlen((const char *)p);
+
+	output_token.length = PTR_DIFF(p, output_token.value);
 
 	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
 			  &output_token, (int *)&conf_state,

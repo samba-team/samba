@@ -129,22 +129,18 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 		break;
 
 	case REG_MULTI_SZ: {
-		uint32 i, num_values;
-		char **values;
-
-		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
-						     value.size, &num_values,
-						     &values))) {
-			d_printf("reg_pull_multi_sz failed\n");
-			break;
+		uint16 *curstr = (uint16 *) value.data_p;
+		uint8 *start = value.data_p;
+		d_printf("\t[%s:%s]: REG_MULTI_SZ:\n", subkey, value.valuename);
+		while ((*curstr != 0) && 
+		       ((uint8 *) curstr < start + value.size)) {
+			rpcstr_pull(text, curstr, sizeof(text), -1, 
+				    STR_TERMINATE);
+			d_printf("%s\n", text);
+			curstr += strlen(text) + 1;
 		}
-
-		for (i=0; i<num_values; i++) {
-			d_printf("%s\n", values[i]);
-		}
-		TALLOC_FREE(values);
-		break;
 	}
+	break;
 
 	default:
 		d_printf("\t%s: unknown type %d\n", value.valuename, value.type);
@@ -2170,7 +2166,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 		if (ctr_enum.printers_2[i].devmode != NULL) {
 
 			/* copy devmode (info level 2) */
-			ctr_dst.printers_2->devmode = (DEVICEMODE *)
+			ctr_dst.printers_2->devmode =
 				TALLOC_MEMDUP(mem_ctx,
 					      ctr_enum.printers_2[i].devmode,
 					      sizeof(DEVICEMODE));
@@ -2332,7 +2328,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 					value.type = REG_SZ;
 					value.size = data.uni_str_len * 2;
 					if (value.size) {
-						value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+						value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
 					} else {
 						value.data_p = NULL;
 					}

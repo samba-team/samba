@@ -78,6 +78,9 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
+#ifdef __INSURE__
+		pol->marker = MALLOC(1);
+#endif
 	}
 
 	return result;
@@ -122,214 +125,47 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
+#ifdef __INSURE__
+		pol->marker = (char *)malloc(1);
+#endif
 	}
 
 	return result;
 }
 
-/* Lookup a list of sids
- *
- * internal version withOUT memory allocation of the target arrays.
- * this assumes suffciently sized arrays to store domains, names and types. */
+/** Close a LSA policy handle */
 
-static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
-					       TALLOC_CTX *mem_ctx,
-					       POLICY_HND *pol,
-					       int num_sids,
-					       const DOM_SID *sids,
-					       char **domains,
-					       char **names,
-					       enum lsa_SidType *types)
+NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
+			  POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_SIDS q;
-	LSA_R_LOOKUP_SIDS r;
-	DOM_R_REF ref;
-	NTSTATUS result = NT_STATUS_OK;
-	TALLOC_CTX *tmp_ctx = NULL;
-	int i;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		DEBUG(0, ("rpccli_lsa_lookup_sids_noalloc: out of memory!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	LSA_Q_CLOSE q;
+	LSA_R_CLOSE r;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	init_q_lookup_sids(tmp_ctx, &q, pol, num_sids, sids, 1);
+	init_lsa_q_close(&q, pol);
 
-	ZERO_STRUCT(ref);
-
-	r.dom_ref = &ref;
-
-	CLI_DO_RPC( cli, tmp_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CLOSE,
 			q, r,
 			qbuf, rbuf,
-			lsa_io_q_lookup_sids,
-			lsa_io_r_lookup_sids,
+			lsa_io_q_close,
+			lsa_io_r_close,
 			NT_STATUS_UNSUCCESSFUL );
-
-	if (!NT_STATUS_IS_OK(r.status) &&
-	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) 
-	{
-		/* An actual error occured */
-		result = r.status;
-		goto done;
-	}
 
 	/* Return output parameters */
 
-	if (r.mapped_count == 0) {
-		result = NT_STATUS_NONE_MAPPED;
-		goto done;
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+#ifdef __INSURE__
+		SAFE_FREE(pol->marker);
+#endif
+		*pol = r.pol;
 	}
 
-	for (i = 0; i < num_sids; i++) {
-		fstring name, dom_name;
-		uint32 dom_idx = r.names.name[i].domain_idx;
-
-		/* Translate optimised name through domain index array */
-
-		if (dom_idx != 0xffffffff) {
-
-			rpcstr_pull_unistr2_fstring(
-                                dom_name, &ref.ref_dom[dom_idx].uni_dom_name);
-			rpcstr_pull_unistr2_fstring(
-                                name, &r.names.uni_name[i]);
-
-			(names)[i] = talloc_strdup(mem_ctx, name);
-			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
-			
-			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
-				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
-				result = NT_STATUS_UNSUCCESSFUL;
-				goto done;
-			}
-
-		} else {
-			(names)[i] = NULL;
-			(domains)[i] = NULL;
-			(types)[i] = SID_NAME_UNKNOWN;
-		}
-	}
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return result;
-}
-
-/* Lookup a list of sids 
- *
- * do it the right way: there is a limit (of 20480 for w2k3) entries
- * returned by this call. when the sids list contains more entries,
- * empty lists are returned. This version of lsa_lookup_sids passes
- * the list of sids in hunks of LOOKUP_SIDS_HUNK_SIZE to the lsa call. */
-
-/* This constant defines the limit of how many sids to look up
- * in one call (maximum). the limit from the server side is
- * at 20480 for win2k3, but we keep it at a save 1000 for now. */
-#define LOOKUP_SIDS_HUNK_SIZE 1000
-
-NTSTATUS rpccli_lsa_lookup_sids_all(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, 
-				    int num_sids,
-				    const DOM_SID *sids, 
-				    char ***domains,
-				    char ***names,
-				    enum lsa_SidType **types)
-{
-	NTSTATUS result = NT_STATUS_OK;
-	int sids_left = 0;
-	int sids_processed = 0;
-	const DOM_SID *hunk_sids = sids;
-	char **hunk_domains = NULL;
-	char **hunk_names = NULL;
-	enum lsa_SidType *hunk_types = NULL;
-
-	if (num_sids) {
-		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
-			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
-			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
-			DEBUG(0, ("rpccli_lsa_lookup_sids_all(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	} else {
-		(*domains) = NULL;
-		(*names) = NULL;
-		(*types) = NULL;
-	}
-	
-	sids_left = num_sids;
-	hunk_domains = *domains;
-	hunk_names = *names;
-	hunk_types = *types;
-
-	while (sids_left > 0) {
-		int hunk_num_sids;
-		NTSTATUS hunk_result = NT_STATUS_OK;
-
-		hunk_num_sids = ((sids_left > LOOKUP_SIDS_HUNK_SIZE) 
-				? LOOKUP_SIDS_HUNK_SIZE 
-				: sids_left);
-
-		DEBUG(10, ("rpccli_lsa_lookup_sids_all: processing items "
-			   "%d -- %d of %d.\n", 
-			   sids_processed, 
-			   sids_processed + hunk_num_sids - 1,
-			   num_sids));
-
-		hunk_result = rpccli_lsa_lookup_sids_noalloc(cli,
-							     mem_ctx,
-							     pol,
-							     hunk_num_sids, 
-							     hunk_sids,
-							     hunk_domains,
-							     hunk_names,
-							     hunk_types);
-
-		if (!NT_STATUS_IS_OK(hunk_result) &&
-		    !NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED) &&
-		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)) 
-		{
-			/* An actual error occured */
-			goto done;
-		}
-
-		/* adapt overall result */
-		if (( NT_STATUS_IS_OK(result) && 
-		     !NT_STATUS_IS_OK(hunk_result)) 
-		    ||
-		    ( NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
-		     !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)))
-		{
-			result = STATUS_SOME_UNMAPPED;
-		}
-
-		sids_left -= hunk_num_sids;
-		sids_processed += hunk_num_sids; /* only used in DEBUG */
-		hunk_sids += hunk_num_sids;
-		hunk_domains += hunk_num_sids;
-		hunk_names += hunk_num_sids;
-		hunk_types += hunk_num_sids;
-	}
-
-done:
 	return result;
 }
 
@@ -339,9 +175,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				POLICY_HND *pol, int num_sids,
 				const DOM_SID *sids, 
-				char ***domains,
-				char ***names,
-				enum lsa_SidType **types)
+				char ***domains, char ***names, uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -367,7 +201,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 			NT_STATUS_UNSUCCESSFUL );
 
 	if (!NT_STATUS_IS_OK(r.status) &&
-	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED)) {
+	    NT_STATUS_V(r.status) != NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
 	  
 		/* An actual error occured */
 		result = r.status;
@@ -395,7 +229,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 			goto done;
 		}
 
-		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
+		if (!((*types) = TALLOC_ARRAY(mem_ctx, uint32, num_sids))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -421,7 +255,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 			(*names)[i] = talloc_strdup(mem_ctx, name);
 			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(*types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
+			(*types)[i] = r.names.name[i].sid_name_use;
 			
 			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
@@ -448,9 +282,8 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 POLICY_HND *pol, int num_names, 
 				 const char **names,
 				 const char ***dom_names,
-				 int level,
 				 DOM_SID **sids,
-				 enum lsa_SidType **types)
+				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -465,7 +298,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(ref);
 	r.dom_ref = &ref;
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, names, level);
+	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPNAMES,
 			q, r,
@@ -498,7 +331,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			goto done;
 		}
 
-		if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
+		if (!((*types = TALLOC_ARRAY(mem_ctx, uint32, num_names)))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -541,7 +374,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			sid_append_rid(sid, dom_rid);
 		}
 
-		(*types)[i] = (enum lsa_SidType)t_rids[i].type;
+		(*types)[i] = t_rids[i].type;
 
 		if (dom_names == NULL) {
 			continue;
@@ -1466,43 +1299,43 @@ done:
 BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
 {
 	extern pstring global_myname;
-	struct cli_state *cli;
+	struct cli_state cli;
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
 	BOOL ret = False;
  
 	ZERO_STRUCT(cli);
-	if((cli = cli_initialise()) == NULL) {
+	if(cli_initialise(&cli) == False) {
 		DEBUG(0,("fetch_domain_sid: unable to initialize client connection.\n"));
 		return False;
 	}
  
-	if(!resolve_name( remote_machine, &cli->dest_ip, 0x20)) {
+	if(!resolve_name( remote_machine, &cli.dest_ip, 0x20)) {
 		DEBUG(0,("fetch_domain_sid: Can't resolve address for %s\n", remote_machine));
 		goto done;
 	}
  
-	if (!cli_connect(cli, remote_machine, &cli->dest_ip)) {
+	if (!cli_connect(&cli, remote_machine, &cli.dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
-	if (!attempt_netbios_session_request(cli, global_myname, remote_machine, &cli->dest_ip)) {
+	if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
 		goto done;
 	}
  
-	cli->protocol = PROTOCOL_NT1;
+	cli.protocol = PROTOCOL_NT1;
  
-	if (!cli_negprot(cli)) {
+	if (!cli_negprot(&cli)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
  
-	if (cli->protocol != PROTOCOL_NT1) {
+	if (cli.protocol != PROTOCOL_NT1) {
 		DEBUG(0,("fetch_domain_sid: machine %s didn't negotiate NT protocol.\n",
 			remote_machine));
 		goto done;
@@ -1512,39 +1345,39 @@ Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 	 * Do an anonymous session setup.
 	 */
  
-	if (!cli_session_setup(cli, "", "", 0, "", 0, "")) {
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
  
-	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+	if (!(cli.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(0,("fetch_domain_sid: machine %s isn't in user level security mode\n",
 			remote_machine));
 		goto done;
 	}
 
-	if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
 	/* Fetch domain sid */
  
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
 		DEBUG(0, ("fetch_domain_sid: Error connecting to SAM pipe\n"));
 		goto done;
 	}
  
-	result = cli_lsa_open_policy(cli, cli->mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
+	result = cli_lsa_open_policy(&cli, cli.mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error opening lsa policy handle. %s\n",
 			nt_errstr(result) ));
 		goto done;
 	}
  
-	result = cli_lsa_query_info_policy(cli, cli->mem_ctx, &lsa_pol, 5, domain, psid);
+	result = cli_lsa_query_info_policy(&cli, cli.mem_ctx, &lsa_pol, 5, domain, psid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error querying lsa policy handle. %s\n",
 			nt_errstr(result) ));
@@ -1555,7 +1388,7 @@ Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 
   done:
 
-	cli_shutdown(cli);
+	cli_shutdown(&cli);
 	return ret;
 }
 

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python2.2
 
 def run_trial():
     # import tdbutil

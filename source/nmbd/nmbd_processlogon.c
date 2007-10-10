@@ -38,10 +38,24 @@ Send a message to smbd to do a sam delta sync
 
 static void send_repl_message(uint32 low_serial)
 {
+        TDB_CONTEXT *tdb;
+
+        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
+                           TDB_DEFAULT, O_RDONLY, 0);
+
+        if (!tdb) {
+                DEBUG(3, ("send_repl_message(): failed to open connections "
+                          "database\n"));
+                return;
+        }
+
         DEBUG(3, ("sending replication message, serial = 0x%04x\n", 
                   low_serial));
-        message_send_all(nmbd_messaging_context(), MSG_SMB_SAM_REPL,
-			 &low_serial, sizeof(low_serial), NULL);
+        
+        message_send_all(tdb, MSG_SMB_SAM_REPL, &low_serial,
+                         sizeof(low_serial), False, NULL);
+
+        tdb_close(tdb);
 }
 
 /****************************************************************************
@@ -127,7 +141,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				SSVAL(q, 0, token);
 				q += 2;
 
-				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				send_mailslot(True, getdc_str, 
 						outbuf,PTR_DIFF(q,outbuf),
@@ -243,7 +257,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
 					(uint32)lm20token ));
 
-				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
 				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
@@ -487,7 +501,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				SSVAL(q, 6, 0xffff); /* our lm20token */
 				q += 8;
 
-				dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
+				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
 				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);

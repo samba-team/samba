@@ -63,9 +63,9 @@ void unexpected_packet(struct packet_struct *p)
 	key.timestamp = p->timestamp;
 	key.count = count++;
 
-	kbuf.dptr = (uint8_t *)&key;
+	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
-	dbuf.dptr = (uint8_t *)buf;
+	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
 	tdb_store(tdbd, kbuf, dbuf, TDB_REPLACE);
@@ -124,7 +124,7 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	if (key.packet_type != match_type) return 0;
 
-	p = parse_packet((char *)dbuf.dptr, dbuf.dsize, match_type);
+	p = parse_packet(dbuf.dptr, dbuf.dsize, match_type);
 
 	if ((match_type == NMB_PACKET && 
 	     p->packet.nmb.header.name_trn_id == match_id) ||

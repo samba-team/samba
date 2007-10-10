@@ -98,7 +98,8 @@ uint32 reg_perfcount_get_base_index(void)
 	   even_num+1 perf_counter<even_num>_help
 	   and so on.
 	   So last_counter becomes num_counters*2, and last_help will be last_counter+1 */
-	kbuf = string_tdb_data(key);
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(names, kbuf);
 	if(dbuf.dptr == NULL)
 	{
@@ -165,7 +166,8 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 
 	memset(temp, 0, sizeof(temp));
 	snprintf(temp, sizeof(temp), "%d", keyval);
-	kbuf = string_tdb_data(temp);
+	kbuf.dptr = temp;
+	kbuf.dsize = strlen(temp);
 	dbuf = tdb_fetch(tdb, kbuf);
 	if(dbuf.dptr == NULL)
 	{
@@ -182,7 +184,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		buffer_size = 0;
 		return buffer_size;
 	}
-	init_unistr2(&name_index, (const char *)kbuf.dptr, UNI_STR_TERMINATE);
+	init_unistr2(&name_index, kbuf.dptr, UNI_STR_TERMINATE);
 	memcpy(buf1+buffer_size, (char *)name_index.buffer, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */
@@ -307,7 +309,8 @@ static void _reg_perfcount_make_key(TDB_DATA *key,
 	else 
 		snprintf(buf, buflen, "%d", key_part1);
 
-	*key = string_tdb_data(buf);
+	key->dptr = buf;
+	key->dsize = strlen(buf);
 
 	return;
 }
@@ -358,7 +361,6 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
     
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
-	SAFE_FREE(data.dptr);
 	return (uint32)atoi(buf);
 }
 
@@ -1029,7 +1031,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
 					 prs_struct *ps, 
 					 PERF_DATA_BLOCK *block,
-					 const char *object_ids)
+					 char *object_ids)
 {
 	uint32 buffer_size = 0;
 	const char *fname = counters_directory( NAMES_DB );
@@ -1322,15 +1324,11 @@ static BOOL _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
 /*********************************************************************
 *********************************************************************/
 
-WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids)
+WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, char *object_ids)
 {
 	/*
 	 * For a detailed description of the layout of this structure,
 	 * see http://msdn.microsoft.com/library/default.asp?url=/library/en-us/perfmon/base/performance_data_format.asp
-	 *
-	 * By 2006-11-23 this link did not work anymore, I found something
-	 * promising under
-	 * http://msdn2.microsoft.com/en-us/library/aa373105.aspx -- vl
 	 */
 	PERF_DATA_BLOCK block;
 	uint32 buffer_size, base_index; 
