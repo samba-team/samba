@@ -41,7 +41,7 @@ SMB_EXT_LIB(EXT_SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],
 AC_CHECK_FUNCS(gethostbyname)
 if test x"$ac_cv_func_gethostbyname" = x"no"; then
     AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, gethostbyname)
-    AC_CHECK_LIB_EXT(nsl, NSl_LIBS, gethostbyname)
+    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, gethostbyname)
     AC_CHECK_LIB_EXT(socket, NSL_LIBS, gethostbyname)
     SMB_ENABLE(EXT_NSL,YES)
     dnl We can't just call AC_CHECK_FUNCS(gethostbyname) here, because the value
