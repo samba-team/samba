@@ -192,17 +192,15 @@ sub mk_fedora_ds($$$)
 
 	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
 
+	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $ldapdir/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
+
 my $dir = getcwd();
 chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
-	if (system("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf >&2") != 0) {
+	if (system("perl $ENV{FEDORA_DS_PREFIX}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf >&2") != 0) {
             chdir $dir;
-            die("perl $ENV{FEDORA_DS_PREFIX}/bin/ds_newinst.pl $fedora_ds_inf FAILED: $?");
+            die("perl $ENV{FEDORA_DS_PREFIX}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf FAILED: $?");
         }
         chdir $dir || die;
-
-	system("cat $fedora_ds_extra_ldif >> $fedora_ds_dir/dse.ldif");
-
-	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $fedora_ds_dir/schema/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
 
 	return ($fedora_ds_dir, $pidfile);
 }
