@@ -388,6 +388,8 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	
 	if (lp_winbind_nested_groups()) {
 
+		become_root();
+
 		/* Now add the aliases. First the one from our local SAM */
 
 		status = add_aliases(get_global_sam_sid(), result);
@@ -405,6 +407,8 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(result);
 			return NULL;
 		}
+
+		unbecome_root();
 	} 
 
 
