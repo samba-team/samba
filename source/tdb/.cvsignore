@@ -1,8 +1,0 @@
-*.po
-*.po32
-tdbtool
-tdbtest
-tdbtorture
-test.db
-test.gdbm
-test.tdb
