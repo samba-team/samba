@@ -187,10 +187,9 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
 	torture_assert_werr_ok(tctx, error, "getting value");
 
-	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
-
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
+	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
 
 	return true;
 }
@@ -251,10 +250,10 @@ static bool test_list_values(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, error, "getting value");
 
 	torture_assert_str_equal(tctx, name, "Answer", "value name");
-	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
 
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
+	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 1, &name,
 					&type, &value);
