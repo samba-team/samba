@@ -2004,7 +2004,7 @@ bool try_tcon(TALLOC_CTX *mem_ctx,
 	}
 
 	sd = security_descriptor_create(
-		tmp_ctx, "S-1-5-32-544",
+		tmp_ctx, 0, "S-1-5-32-544",
 		dom_sid_string(mem_ctx, dom_sid_add_rid(mem_ctx, domain_sid,
 							DOMAIN_RID_USERS)),
 		dom_sid_string(mem_ctx, user_sid),

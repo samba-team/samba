@@ -138,6 +138,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	struct winreg_SecBuf secbuf;
 
 	sd = security_descriptor_create(tctx,
+					0,
 					NULL, NULL,
 					SID_NT_AUTHENTICATED_USERS,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
