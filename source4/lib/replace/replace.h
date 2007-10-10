@@ -91,19 +91,14 @@ char *rep_strdup(const char *s);
 void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
-#if !defined(HAVE_MKTIME) || !defined(HAVE_TIMEGM)
-#include "system/time.h"
-#endif
-
 #ifndef HAVE_MKTIME
 #define mktime rep_mktime
-time_t rep_mktime(struct tm *t);
+/* prototype is in "system/time.h" */
 #endif
 
 #ifndef HAVE_TIMEGM
-struct tm;
 #define timegm rep_timegm
-time_t rep_timegm(struct tm *tm);
+/* prototype is in "system/time.h" */
 #endif
 
 #ifndef HAVE_STRLCPY
