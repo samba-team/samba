@@ -325,15 +325,19 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
 #endif
 
+#ifdef REPLACE_INET_NTOA
+#define inet_ntoa rep_inet_ntoa
+/* prototype is in "system/network.h" */
+#endif
+
 #ifndef HAVE_INET_PTON
-int rep_inet_pton(int af, const char *src, void *dst);
 #define inet_pton rep_inet_pton
+/* prototype is in "system/network.h" */
 #endif
 
 #ifndef HAVE_INET_NTOP
-#include "system/network.h"
-const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #define inet_ntop rep_inet_ntop
+/* prototype is in "system/network.h" */
 #endif
 
 #ifdef HAVE_LIMITS_H
