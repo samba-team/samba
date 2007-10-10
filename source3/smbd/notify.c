@@ -131,11 +131,10 @@ static BOOL notify_marshall_changes(int num_changes,
 static void change_notify_reply_packet(const uint8 *request_buf,
 				       NTSTATUS error_code)
 {
-	const char *inbuf = (char *)request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common(inbuf, outbuf);
+	construct_reply_common((char *)request_buf, outbuf);
 
 	ERROR_NT(error_code);
 
@@ -143,7 +142,7 @@ static void change_notify_reply_packet(const uint8 *request_buf,
 	 * Seems NT needs a transact command with an error code
 	 * in it. This is a longer packet than a simple error.
 	 */
-	set_message(inbuf,outbuf,18,0,False);
+	set_message(outbuf,18,0,False);
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
@@ -187,7 +186,7 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 	 * We're only interested in the header fields here
 	 */
 
-	smb_setlen(NULL, (char *)tmp_request, smb_size);
+	smb_setlen((char *)tmp_request, smb_size);
 	SCVAL(tmp_request, smb_wct, 0);
 
 	init_smb_request(req, tmp_request);

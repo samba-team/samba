@@ -2471,15 +2471,16 @@ net_share_enum_rpc(struct cli_state *cli,
                    void *state)
 {
         int i;
-	NTSTATUS result;
-	uint32 enum_hnd;
+	WERROR result;
+	ENUM_HND enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
-	struct srvsvc_NetShareCtr1 ctr1;
-	union srvsvc_NetShareCtr ctr;
+        uint32 type;
+	SRV_SHARE_INFO_CTR ctr;
+	fstring name = "";
+        fstring comment = "";
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
-	uint32 numentries;
         NTSTATUS nt_status;
 
         /* Open the server service pipe */
@@ -2497,28 +2498,37 @@ net_share_enum_rpc(struct cli_state *cli,
                 return -1; 
         }
 
-	ZERO_STRUCT(ctr1);
-	ctr.ctr1 = &ctr1;
-
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	enum_hnd = 0;
-	result = rpccli_srvsvc_NetShareEnum(pipe_hnd, mem_ctx, NULL,
-					    &info_level, &ctr, preferred_len,
-					    &numentries, &enum_hnd);
+	init_enum_hnd(&enum_hnd, 0);
+	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+                                              mem_ctx,
+                                              info_level,
+                                              &ctr,
+                                              preferred_len,
+                                              &enum_hnd);
 
         /* Was it successful? */
-	if (!NT_STATUS_IS_OK(result) || numentries == 0) {
+	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
 
         /* For each returned entry... */
-        for (i = 0; i < numentries; i++) {
+        for (i = 0; i < ctr.num_entries; i++) {
+
+                /* pull out the share name */
+                rpcstr_pull_unistr2_fstring(
+                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+
+                /* pull out the share's comment */
+                rpcstr_pull_unistr2_fstring(
+                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+
+                /* Get the type value */
+                type = ctr.share.info1[i].info_1.type;
 
                 /* Add this share to the list */
-                (*fn)(ctr.ctr1->array[i].name, 
-					  ctr.ctr1->array[i].type, 
-					  ctr.ctr1->array[i].comment, state);
+                (*fn)(name, type, comment, state);
         }
 
 done:
@@ -2529,7 +2539,7 @@ done:
         TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
-        return NT_STATUS_IS_OK(result) ? 0 : -1;
+        return W_ERROR_IS_OK(result) ? 0 : -1;
 }
 
 
@@ -4076,7 +4086,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	fstring tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL;
+	DOM_SID *group_sid=NULL;
         DOM_SID *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
@@ -4121,15 +4131,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4137,15 +4147,15 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
-			if (grp_sid) {
+			if (group_sid) {
 				DEBUG(5, ("GROUP specified more than once!\n"));
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
-			if (!grp_sid ||
+			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
-                                                   grp_sid, tok+6)) {
+                                                   group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
@@ -4183,10 +4193,10 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	}
 
 	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
-			    owner_sid, grp_sid, NULL, dacl, &sd_size);
+			    owner_sid, group_sid, NULL, dacl, &sd_size);
 
   done:
-	SAFE_FREE(grp_sid);
+	SAFE_FREE(group_sid);
 	SAFE_FREE(owner_sid);
 
 	return ret;
@@ -5132,7 +5142,7 @@ cacl_set(TALLOC_CTX *ctx,
 	SEC_DESC *sd = NULL, *old;
         SEC_ACL *dacl = NULL;
 	DOM_SID *owner_sid = NULL; 
-	DOM_SID *grp_sid = NULL;
+	DOM_SID *group_sid = NULL;
 	uint32 i, j;
 	size_t sd_size;
 	int ret = 0;
@@ -5257,7 +5267,7 @@ cacl_set(TALLOC_CTX *ctx,
 	case SMBC_XATTR_MODE_SET:
  		old = sd;
                 owner_sid = old->owner_sid;
-                grp_sid = old->group_sid;
+                group_sid = old->group_sid;
                 dacl = old->dacl;
 		break;
 
@@ -5266,7 +5276,7 @@ cacl_set(TALLOC_CTX *ctx,
                 break;
 
         case SMBC_XATTR_MODE_CHGRP:
-                grp_sid = sd->group_sid;
+                group_sid = sd->group_sid;
                 break;
 	}
 
@@ -5275,7 +5285,7 @@ cacl_set(TALLOC_CTX *ctx,
 
 	/* Create new security descriptor and set it */
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE, 
-			   owner_sid, grp_sid, NULL, dacl, &sd_size);
+			   owner_sid, group_sid, NULL, dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename,
                              WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);

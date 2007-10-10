@@ -813,7 +813,7 @@ main()
 
 	if((strcmp(c_out1, expected_out) != 0) && 
 		(strcmp(c_out2, expected_out) == 0))
-		return 1;
+		exit(1);
 
 #ifdef HAVE_BIGCRYPT
 	/*
@@ -842,10 +842,10 @@ main()
 
 		if((strcmp(big_c_out1, big_expected_out) != 0) && 
 			(strcmp(big_c_out2, big_expected_out) == 0))
-			return 1;
+			exit(1);
 
 	}
 #endif
 
-	return 0;
+	exit(0);
 }

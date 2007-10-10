@@ -139,7 +139,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 					       const DOM_SID *sids,
 					       char **domains,
 					       char **names,
-					       enum lsa_SidType *types)
+					       uint32 *types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -213,7 +213,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 
 			(names)[i] = talloc_strdup(mem_ctx, name);
 			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(types)[i] = (enum lsa_SidType)r.names.name[i].sid_name_use;
+			(types)[i] = r.names.name[i].sid_name_use;
 
 			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
@@ -252,7 +252,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				const DOM_SID *sids,
 				char ***domains,
 				char ***names,
-				enum lsa_SidType **types)
+				uint32 **types)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	int sids_left = 0;
@@ -260,7 +260,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	const DOM_SID *hunk_sids = sids;
 	char **hunk_domains = NULL;
 	char **hunk_names = NULL;
-	enum lsa_SidType *hunk_types = NULL;
+	uint32 *hunk_types = NULL;
 
 	if (num_sids) {
 		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
@@ -359,7 +359,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 const char ***dom_names,
 				 int level,
 				 DOM_SID **sids,
-				 enum lsa_SidType **types)
+				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -407,7 +407,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			goto done;
 		}
 
-		if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
+		if (!((*types = TALLOC_ARRAY(mem_ctx, uint32, num_names)))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -450,7 +450,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			sid_append_rid(sid, dom_rid);
 		}
 
-		(*types)[i] = (enum lsa_SidType)t_rids[i].type;
+		(*types)[i] = t_rids[i].type;
 
 		if (dom_names == NULL) {
 			continue;
@@ -1375,43 +1375,43 @@ done:
 BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
 {
 	extern pstring global_myname;
-	struct cli_state *cli;
+	struct cli_state cli;
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
 	BOOL ret = False;
 
 	ZERO_STRUCT(cli);
-	if((cli = cli_initialise()) == NULL) {
+	if(cli_initialise(&cli) == False) {
 		DEBUG(0,("fetch_domain_sid: unable to initialize client connection.\n"));
 		return False;
 	}
 
-	if(!resolve_name( remote_machine, &cli->dest_ip, 0x20)) {
+	if(!resolve_name( remote_machine, &cli.dest_ip, 0x20)) {
 		DEBUG(0,("fetch_domain_sid: Can't resolve address for %s\n", remote_machine));
 		goto done;
 	}
 
-	if (!cli_connect(cli, remote_machine, &cli->dest_ip)) {
+	if (!cli_connect(&cli, remote_machine, &cli.dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
-	if (!attempt_netbios_session_request(cli, global_myname, remote_machine, &cli->dest_ip)) {
+	if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n",
 			remote_machine));
 		goto done;
 	}
 
-	cli->protocol = PROTOCOL_NT1;
+	cli.protocol = PROTOCOL_NT1;
 
-	if (!cli_negprot(cli)) {
+	if (!cli_negprot(&cli)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
-	if (cli->protocol != PROTOCOL_NT1) {
+	if (cli.protocol != PROTOCOL_NT1) {
 		DEBUG(0,("fetch_domain_sid: machine %s didn't negotiate NT protocol.\n",
 			remote_machine));
 		goto done;
@@ -1421,39 +1421,39 @@ Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 	 * Do an anonymous session setup.
 	 */
 
-	if (!cli_session_setup(cli, "", "", 0, "", 0, "")) {
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
-	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+	if (!(cli.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(0,("fetch_domain_sid: machine %s isn't in user level security mode\n",
 			remote_machine));
 		goto done;
 	}
 
-	if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		DEBUG(0,("fetch_domain_sid: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(cli) ));
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 		goto done;
 	}
 
 	/* Fetch domain sid */
 
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
 		DEBUG(0, ("fetch_domain_sid: Error connecting to SAM pipe\n"));
 		goto done;
 	}
 
-	result = cli_lsa_open_policy(cli, cli->mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
+	result = cli_lsa_open_policy(&cli, cli.mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error opening lsa policy handle. %s\n",
 			nt_errstr(result) ));
 		goto done;
 	}
 
-	result = cli_lsa_query_info_policy(cli, cli->mem_ctx, &lsa_pol, 5, domain, psid);
+	result = cli_lsa_query_info_policy(&cli, cli.mem_ctx, &lsa_pol, 5, domain, psid);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("fetch_domain_sid: Error querying lsa policy handle. %s\n",
 			nt_errstr(result) ));
@@ -1464,7 +1464,7 @@ Error was : %s.\n", remote_machine, cli_errstr(cli) ));
 
   done:
 
-	cli_shutdown(cli);
+	cli_shutdown(&cli);
 	return ret;
 }
 

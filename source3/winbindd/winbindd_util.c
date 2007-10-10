@@ -35,6 +35,7 @@ extern struct winbindd_methods passdb_methods;
  * Winbind daemon for NT domain authentication nss module.
  **/
 
+
 /* The list of trusted domains.  Note that the list can be deleted and
    recreated using the init_domain_list() function so pointers to
    individual winbindd_domain structures cannot be made.  Keep a copy of
@@ -324,10 +325,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 						    &cache_methods,
 						    &sid);
 			if (domain) {
-				setup_domain_child(domain,
-						   &domain->child,
-						   domain_dispatch_table,
-						   NULL);
+				setup_domain_child(domain, &domain->child, NULL);
 			}
 		}
 		p=q;
@@ -696,10 +694,7 @@ BOOL init_domain_list(void)
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
 	if (domain) {
-		setup_domain_child(domain,
-				   &domain->child,
-				   domain_dispatch_table,
-				   NULL);
+		setup_domain_child(domain, &domain->child, NULL);
 	}
 
 	/* Local SAM */
@@ -710,10 +705,7 @@ BOOL init_domain_list(void)
 		if ( role != ROLE_DOMAIN_MEMBER ) {
 			domain->primary = True;
 		}
-		setup_domain_child(domain,
-				   &domain->child,
-				   domain_dispatch_table,
-				   NULL);
+		setup_domain_child(domain, &domain->child, NULL);
 	}
 
 	/* Add ourselves as the first entry. */
@@ -730,11 +722,8 @@ BOOL init_domain_list(void)
 					     &cache_methods, &our_sid);
 		if (domain) {
 			domain->primary = True;
-			setup_domain_child(domain,
-					   &domain->child,
-					   domain_dispatch_table,
-					   NULL);
-
+			setup_domain_child(domain, &domain->child, NULL);
+		
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can
 			   contact it. Theoretically this isn't neccessary
@@ -779,10 +768,7 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	domain->internal = False;
 	domain->online = True;	
 
-	setup_domain_child(domain,
-			   &domain->child,
-			   domain_dispatch_table,
-			   NULL);
+	setup_domain_child(domain, &domain->child, NULL);
 
 	wcache_tdc_add_domain( domain );
 
@@ -1177,6 +1163,53 @@ const char *get_winbind_pipe_dir(void)
 char *get_winbind_priv_pipe_dir(void) 
 {
 	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+}
+
+/* Open the winbindd socket */
+
+static int _winbindd_socket = -1;
+static int _winbindd_priv_socket = -1;
+
+int open_winbindd_socket(void)
+{
+	if (_winbindd_socket == -1) {
+		_winbindd_socket = create_pipe_sock(
+			get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
+		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
+			   _winbindd_socket));
+	}
+
+	return _winbindd_socket;
+}
+
+int open_winbindd_priv_socket(void)
+{
+	if (_winbindd_priv_socket == -1) {
+		_winbindd_priv_socket = create_pipe_sock(
+			get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
+		DEBUG(10, ("open_winbindd_priv_socket: opened socket fd %d\n",
+			   _winbindd_priv_socket));
+	}
+
+	return _winbindd_priv_socket;
+}
+
+/* Close the winbindd socket */
+
+void close_winbindd_socket(void)
+{
+	if (_winbindd_socket != -1) {
+		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
+			   _winbindd_socket));
+		close(_winbindd_socket);
+		_winbindd_socket = -1;
+	}
+	if (_winbindd_priv_socket != -1) {
+		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
+			   _winbindd_priv_socket));
+		close(_winbindd_priv_socket);
+		_winbindd_priv_socket = -1;
+	}
 }
 
 /*

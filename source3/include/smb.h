@@ -78,7 +78,6 @@
 #define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
 #define DO_NOT_DO_TDIS 6 /* cli_close_connection() check for this when smbfs wants to keep tree connected */
-#define READ_BAD_DECRYPT 7
 
 #define DIR_STRUCT_SIZE 43
 
@@ -186,10 +185,9 @@ typedef uint32 codepoint_t;
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
 #define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPMAPPER "\\PIPE\\epmapper"
+#define PIPE_EPM      "\\PIPE\\epmapper"
 #define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_EVENTLOG "\\PIPE\\eventlog"
-#define PIPE_UNIXINFO    "\\PIPE\\unixinfo"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -206,10 +204,8 @@ typedef uint32 codepoint_t;
 #define PI_INITSHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
-#define PI_UNIXINFO		13
-#define PI_NTSVCS		14
-#define PI_EPMAPPER		15
-#define PI_MAX_PIPES		16
+#define PI_NTSVCS		13
+#define PI_MAX_PIPES		14
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
@@ -304,11 +300,10 @@ struct id_map {
 #include "librpc/ndr/misc.h"
 #include "librpc/ndr/security.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/gen_ndr/unixinfo.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/dfs.h"
-#include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "librpc/gen_ndr/initshutdown.h"
 #include "librpc/gen_ndr/eventlog.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "librpc/gen_ndr/wkssvc.h"
@@ -507,6 +502,7 @@ typedef struct files_struct {
 	BOOL modified;
 	BOOL is_directory;
 	BOOL is_stat;
+	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	BOOL posix_open;
@@ -657,6 +653,7 @@ typedef struct connection_struct {
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
+	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
 	struct notify_context *notify_ctx;
@@ -1917,7 +1914,5 @@ enum usershare_err {
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
-
-#include "librpc/gen_ndr/epmapper.h"
 
 #endif /* _SMB_H */

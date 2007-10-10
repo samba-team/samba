@@ -1,5 +1,4 @@
-/*
- * -*- c-file-style: "linux" -*-
+/* -*- c-file-style: "linux" -*-
  *
  * Try creating a Unix-domain socket, opening it, and reading from it.
  * The POSIX name for these is AF_LOCAL/PF_LOCAL.
@@ -9,16 +8,14 @@
  * on which they are broken under some conditions, such as RedHat 7.0
  * (unpatched).  We can't build WinBind there at the moment.
  *
- * Martin Pool <mbp@samba.org>, June 2000.
- */
+ * Coding standard says to always use exit() for this, not return, so
+ * we do.
+ *
+ * Martin Pool <mbp@samba.org>, June 2000. */
 
 /* TODO: Look for AF_LOCAL (most standard), AF_UNIX, and AF_FILE. */
 
 #include <stdio.h>
-
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
 
 #ifdef HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
@@ -51,7 +48,7 @@ static int bind_socket(char const *filename)
 	/* Create the socket. */
 	if ((sock_fd = socket(PF_LOCAL, SOCK_STREAM, 0)) < 0) {
 		perror ("socket(PF_LOCAL, SOCK_STREAM)");
-		return 1;
+		exit(1);
 	}
      
 	/* Bind a name to the socket. */
@@ -70,7 +67,7 @@ static int bind_socket(char const *filename)
      
 	if (bind(sock_fd, (struct sockaddr *) &name, size) < 0) {
 		perror ("bind");
-		return 1;
+		exit(1);
 	}
 
 	return sock_fd;
@@ -87,10 +84,10 @@ int main(void)
 	alarm(15);		/* secs */
 
 	if ((sock_fd = bind_socket(filename)) < 0)
-		return 1;
+		exit(1);
 
 	/* the socket will be deleted when autoconf cleans up these
            files. */
 
-	return 0;
+	exit(0);
 }

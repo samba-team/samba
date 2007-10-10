@@ -384,6 +384,7 @@ typedef struct {
 	char *fstype;
 	char **szVfsObjects;
 	char *szMSDfsProxy;
+	char *szAioWriteBehind;
 	char *szDfree;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
@@ -524,6 +525,7 @@ static service sDefault = {
 	NULL,			/* fstype */
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
+	NULL,			/* szAioWriteBehind */
 	NULL,			/* szDfree */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
@@ -990,6 +992,7 @@ static struct parm_struct parm_table[] = {
 	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
 	{"aio read size", P_INTEGER, P_LOCAL, &sDefault.iAioReadSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"aio write size", P_INTEGER, P_LOCAL, &sDefault.iAioWriteSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write behind", P_STRING, P_LOCAL, &sDefault.szAioWriteBehind, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -1034,7 +1037,7 @@ static struct parm_struct parm_table[] = {
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
-	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED}, 
+	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED},
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"directory name cache size", P_INTEGER, P_LOCAL, &sDefault.iDirectoryNameCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"kernel change notify", P_BOOL, P_LOCAL, &sDefault.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
@@ -1666,7 +1669,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
-	Globals.winbind_expand_groups = 1;	
+	Globals.winbind_expand_groups = 1;
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
@@ -2073,6 +2076,7 @@ FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
+FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
 FN_LOCAL_STRING(lp_dfree_command, szDfree)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
@@ -2593,7 +2597,7 @@ static int add_a_service(const service *pservice, const char *name)
 }
 
 /***************************************************************************
-  Canonicalize by converting to lowercase.
+  Convert a string to uppercase and remove whitespaces.
 ***************************************************************************/
 
 static char *canonicalize_servicename(const char *src)
@@ -4077,7 +4081,9 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		parm_ptr =
 			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
+	}
 
+	if (snum >= 0) {
 		if (!ServicePtrs[snum]->copymap)
 			init_copymap(ServicePtrs[snum]);
 

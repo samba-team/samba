@@ -78,28 +78,6 @@ struct rpc_pipe_client {
 	struct dcinfo *dc;
 };
 
-/* Transport encryption state. */
-enum smb_trans_enc_type { SMB_TRANS_ENC_NTLM, SMB_TRANS_ENC_GSS };
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-struct smb_tran_enc_state_gss {
-	gss_ctx_id_t gss_ctx;
-	gss_cred_id_t creds;
-};
-#endif
-
-struct smb_trans_enc_state {
-	enum smb_trans_enc_type smb_enc_type;
-	uint16 enc_ctx_num;
-	BOOL enc_on;
-	union {
-		NTLMSSP_STATE *ntlmssp_state;
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		struct smb_tran_enc_state_gss *gss_state;
-#endif
-	} s;
-};
-
 struct cli_state {
 	int port;
 	int fd;
@@ -158,8 +136,6 @@ struct cli_state {
 	TALLOC_CTX *mem_ctx;
 
 	smb_sign_info sign_info;
-
-	struct smb_trans_enc_state *trans_enc_state; /* Setup if we're encrypting SMB's. */
 
 	/* the session key for this CLI, outside 
 	   any per-pipe authenticaion */

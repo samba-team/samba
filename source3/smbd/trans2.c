@@ -2733,9 +2733,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
-					/* Ensure we don't do this on signed or sealed data. */
-					(srv_is_signing_active() ? 0 : CIFS_UNIX_LARGE_READ_CAP)
-					)));
+					CIFS_UNIX_LARGE_READ_CAP)));
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2985,51 +2983,6 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 
 				}
 				break;
-			}
-		case SMB_REQUEST_TRANSPORT_ENCRYPTION:
-			{
-				NTSTATUS status;
-				size_t param_len = 0;
-				size_t data_len = total_data;
-
-				if (!lp_unix_extensions()) {
-					reply_nterror(
-						req, NT_STATUS_INVALID_LEVEL);
-					return;
-				}
-
-				DEBUG( 4,("call_trans2setfsinfo: request transport encrption.\n"));
-
-				status = srv_request_encryption_setup(conn,
-									(unsigned char **)ppdata,
-									&data_len,
-									(unsigned char **)pparams,
-									&param_len
-									);
-
-				if (!NT_STATUS_IS_OK(status)) {
-					/*
-					 * TODO: Check
-					 * MORE_PROCESSING_REQUIRED, this used
-					 * to have special handling here.
-					 */
-					reply_nterror(req, status);
-					return;
-				}
-
-				send_trans2_replies(req,
-						    *pparams, param_len,
-						    *ppdata, data_len,
-						    max_data_bytes);
-
-				if (NT_STATUS_IS_OK(status)) {
-					/* Server-side transport encryption is now *on*. */
-					status = srv_encryption_start(conn);
-					if (!NT_STATUS_IS_OK(status)) {
-						exit_server_cleanly("Failure in setting up encrypted transport");
-					}
-				}
-				return;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
 			{

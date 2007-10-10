@@ -83,19 +83,9 @@ static int count_fn(struct db_record *rec,
 		}
 		return 0;
 	}
- 
-	if (cs->name) {
-		/* We are counting all the connections to a given share. */
-		if (strequal(crec->servicename, cs->name)) {
-			cs->curr_connections++;
-		}
-	} else {
-		/* We are counting all the connections. Static registrations
-		 * like the lpq backgroud process and the smbd daemon process
-		 * have a cnum of -1, so won't be counted here.
-		 */
+
+	if (strequal(crec->servicename, cs->name))
 		cs->curr_connections++;
-	}
 
 	return 0;
 }
@@ -121,26 +111,10 @@ int count_current_connections( const char *sharename, BOOL clear  )
 	if (connections_forall(count_fn, &cs) == -1) {
 		DEBUG(0,("count_current_connections: traverse of "
 			 "connections.tdb failed\n"));
-		DEBUGADD(0, ("count_current_connections: connection count of %d might not be accurate",
-			    cs.curr_connections));
+		return False;
 	}
 
-	/* If the traverse failed part-way through, we at least return
-	 * as many connections as we had already counted. If it failed
-	 * right at the start, we will return 0, which is about all we
-	 * can do anywway.
-	 */
-
 	return cs.curr_connections;
-}
-
-/****************************************************************************
- Count the number of connections open across all shares.
-****************************************************************************/
-
-int count_all_current_connections(void)
-{
-	return count_current_connections(NULL, True /* clear stale entries */);
 }
 
 /****************************************************************************

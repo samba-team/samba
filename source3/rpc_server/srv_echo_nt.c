@@ -35,7 +35,7 @@ void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
 {
 	DEBUG(10, ("_echo_AddOne\n"));
 
-	*r->out.out_data = r->in.in_data + 1;
+	*r->out.out_data = r->in.in_data + 1;	
 }
 
 /* Echo back an array of data */
@@ -88,66 +88,38 @@ void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
 
 void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
 {
-	*r->out.s2 = talloc_strdup(p->mem_ctx, r->in.s1);
+	p->rng_fault_state = True;
+	return;
 }
 
 NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r)
 {
-	switch (r->in.level) {
-	case 1:
-		r->out.info->info1.v = 10;
-		break;
-	case 2:
-		r->out.info->info2.v = 20;
-		break;
-	case 3:
-		r->out.info->info3.v = 30;
-		break;
-	case 4:
-		r->out.info->info4.v = 40;
-		break;
-	case 5:
-		r->out.info->info5.v1 = 50;
-		r->out.info->info5.v2 = 60;
-		break;
-	case 6:
-		r->out.info->info6.v1 = 70;
-		r->out.info->info6.info1.v= 80;
-		break;
-	case 7:
-		r->out.info->info7.v1 = 80;
-		r->out.info->info7.info4.v = 90;
-		break;
-	default:
-		return NT_STATUS_INVALID_LEVEL;
-	}
-
+	p->rng_fault_state = True;
 	return NT_STATUS_OK;
 }
 
 uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r)
 {
-	sleep(r->in.seconds);
-	return r->in.seconds;
+	p->rng_fault_state = True;
+	return 0;
 }
 
 void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
 {
+	p->rng_fault_state = True;
+	return;
 }
 
 void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
 {
-	r->out.data->x *= 2;
-	r->out.data->surrounding = TALLOC_ZERO_ARRAY(p->mem_ctx, uint16_t, r->in.data->x);
+	p->rng_fault_state = True;
+	return;
 }
 
 uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)
 {
-	if (!*r->in.data) 
-		return 0;
-	if (!**r->in.data)
-		return 0;
-	return ***r->in.data;
+	p->rng_fault_state = True;
+	return 0;
 }
 
 #endif /* DEVELOPER */

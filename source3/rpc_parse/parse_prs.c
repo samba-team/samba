@@ -1500,7 +1500,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *m
 	prs_give_memory(ps, (char *)dbuf.dptr, dbuf.dsize, True);
 
 	return 0;
-} 
+}
 
 /*******************************************************************
  hash a stream.
@@ -1766,9 +1766,9 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		   checksum after the decode, below
 		*/
 		DEBUG(2, ("schannel_decode: FAILED: packet sequence number:\n"));
-		dump_data(2, (const uint8 *)verf->seq_num, sizeof(verf->seq_num));
+		dump_data(2, verf->seq_num, sizeof(verf->seq_num));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, (const uint8 *)seq_num, sizeof(seq_num));
+		dump_data(2, seq_num, sizeof(seq_num));
 
 		return False;
 	}
@@ -1776,9 +1776,9 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	if (memcmp(verf->sig, schannel_sig, sizeof(verf->sig))) {
 		/* Validate that the other end sent the expected header */
 		DEBUG(2, ("schannel_decode: FAILED: packet header:\n"));
-		dump_data(2, (const uint8 *)verf->sig, sizeof(verf->sig));
+		dump_data(2, verf->sig, sizeof(verf->sig));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, (const uint8 *)schannel_sig, sizeof(schannel_sig));
+		dump_data(2, schannel_sig, sizeof(schannel_sig));
 		return False;
 	}
 

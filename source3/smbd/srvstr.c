@@ -79,7 +79,7 @@ ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
 		DEBUG(0, ("srvstr_push failed\n"));
 		return -1;
 	}
-	set_message_bcc(NULL, (char *)tmp, smb_buflen(tmp) + result);
+	set_message_bcc((char *)tmp, smb_buflen(tmp) + result);
 
 	*outbuf = tmp;
 

@@ -312,14 +312,7 @@ static int load_registry_service(const char *servicename)
 		TALLOC_FREE(value);
 	}
 
-	if (!service_ok(res)) {
-		/* this is actually never reached, since 
-		 * service_ok only returns False if the service
-		 * entry does not have a service name, and we _know_
-		 * we do have a service name here... */
-		res = -1;
-	}
-
+	res = 0;
  error:
 
 	TALLOC_FREE(key);
@@ -409,6 +402,10 @@ int find_service(fstring service)
 	if (iService < 0) {
 	}
 
+	if (iService < 0) {
+		iService = load_registry_service(service);
+	}
+
 	/* Is it a usershare service ? */
 	if (iService < 0 && *lp_usershare_path()) {
 		/* Ensure the name is canonicalized. */
@@ -442,10 +439,6 @@ int find_service(fstring service)
 				iService = lp_add_service(service, iService);
 			}
 		}
-	}
-
-	if (iService < 0) {
-		iService = load_registry_service(service);
 	}
 
 	if (iService >= 0) {
@@ -789,6 +782,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;
+	conn->aio_write_behind_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 

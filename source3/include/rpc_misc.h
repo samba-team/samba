@@ -92,6 +92,10 @@ enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_
  **********************************************************************/
  
 typedef struct policy_handle POLICY_HND;
+typedef struct {
+	uint32 ptr_hnd;          /* pointer to enumeration handle */
+	uint32 handle;           /* enumeration handle */
+} ENUM_HND;
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\
 	( IVAL((hnd)->uuid.node,2) == (uint32)sys_getpid() ? "OURS" : \

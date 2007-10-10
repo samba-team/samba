@@ -996,32 +996,40 @@ NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
 
 /***************************************************************************
  _lsa_lookup_sida3
-
- Before someone actually re-activates this, please present a sniff showing
- this call against some Windows server. I (vl) could not make it work against
- w2k3 at all.
  ***************************************************************************/
 
 NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 			  LSA_Q_LOOKUP_SIDS3 *q_u,
 			  LSA_R_LOOKUP_SIDS3 *r_u)
 {
+	int num_sids = q_u->sids.num_entries;
 	uint32 mapped_count = 0;
-	DOM_R_REF *ref;
+	DOM_R_REF *ref = NULL;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r_u->status = NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
-
-	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-
-	if (ref == NULL) {
-		/* We would segfault later on in lsa_io_r_lookup_sids3 anyway,
-		 * so do a planned exit here. We NEEEED pidl! */
-		smb_panic("talloc failed");
+	/* No policy handle on this call. Restrict to crypto connections. */
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		DEBUG(0,("_lsa_lookup_sids3: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	if (num_sids >  MAX_LOOKUP_SIDS) {
+		DEBUG(5,("_lsa_lookup_sids3: limit of %d exceeded, requested %d\n",
+			 MAX_LOOKUP_SIDS, num_sids));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	r_u->status = _lsa_lookup_sids_internal(p,
+						q_u->level,
+						num_sids, 
+						q_u->sids.sid,
+						&ref,
+						&r_u->names,
+						&mapped_count);
 
 	init_reply_lookup_sids3(r_u, ref, mapped_count);
 	return r_u->status;
@@ -1537,26 +1545,14 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 
 NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
-	const char *username, *domname;
+	fstring username, domname;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
   
 	if (vuser == NULL)
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-
-	if (vuser->guest) {
-		/*
-		 * I'm 99% sure this is not the right place to do this,
-		 * global_sid_Anonymous should probably be put into the token
-		 * instead of the guest id -- vl
-		 */
-		if (!lookup_sid(p->mem_ctx, &global_sid_Anonymous,
-				&domname, &username, NULL)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		username = vuser->user.smb_name;
-		domname = vuser->user.domain;
-	}
+  
+	fstrcpy(username, vuser->user.smb_name);
+	fstrcpy(domname, vuser->user.domain);
   
 	r_u->ptr_user_name = 1;
 	init_unistr2(&r_u->uni2_user_name, username, UNI_STR_TERMINATE);
@@ -1592,23 +1588,17 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	 * I don't know if it's the right one. not documented.
 	 * but guessed with rpcclient.
 	 */
-	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION)) {
-		DEBUG(10, ("_lsa_create_account: No POLICY_GET_PRIVATE_INFORMATION access right!\n"));
+	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	/* check to see if the pipe_user is a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) {
-		DEBUG(10, ("_lsa_create_account: The use is not a Domain Admin, deny access!\n"));
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
-	}
 		
-	if ( is_privileged_sid( &q_u->sid.sid ) ) {
-		DEBUG(10, ("_lsa_create_account: Policy account already exists!\n"));
+	if ( is_privileged_sid( &q_u->sid.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
 
 	/* associate the user/group SID with the (unique) handle. */
 	
@@ -1623,7 +1613,6 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	DEBUG(10, ("_lsa_create_account: call privileges code to create an account\n"));
 	return privilege_create_account( &info->sid );
 }
 
@@ -1718,7 +1707,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
-		return NT_STATUS_OK;
+		return NT_STATUS_ACCESS_DENIED;
 
 	/*
 	  0x01 -> Log on locally

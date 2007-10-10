@@ -69,7 +69,7 @@ BOOL cli_send_mailslot(struct messaging_context *msg_ctx,
 	/* Setup the smb part. */
 	ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
 	memcpy(tmp,ptr,4);
-	set_message(NULL,ptr,17,strlen(mailslot) + 1 + len,True);
+	set_message(ptr,17,strlen(mailslot) + 1 + len,True);
 	memcpy(ptr,tmp,4);
 
 	SCVAL(ptr,smb_com,SMBtrans);
