@@ -1568,7 +1568,14 @@ again:
 		goto again;
 	}
 
-	/* grap the nodemap from the recovery master */
+	/* if recovery master is disconnected we must elect a new recmaster */
+	if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+		DEBUG(0, ("Recmaster node %u is disconnected. Force reelection\n", nodemap->nodes[j].pnn));
+		force_election(rec, mem_ctx, pnn, nodemap);
+		goto again;
+	}
+
+	/* grap the nodemap from the recovery master to check if it is banned*/
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 				   mem_ctx, &remote_nodemap);
 	if (ret != 0) {
