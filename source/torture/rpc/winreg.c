@@ -175,10 +175,11 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 
 static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 				struct torture_context *tctx,
-				struct policy_handle *handle)
+				struct policy_handle *handle,
+				struct security_descriptor **sd_out)
 {
 	struct winreg_GetKeySecurity r;
-	struct security_descriptor sd;
+	struct security_descriptor *sd;
 	DATA_BLOB sdblob;
 
 	ZERO_STRUCT(r);
@@ -188,7 +189,8 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	r.in.sd->size = 0x1000;
 	r.in.sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_GetKeySecurity(p, tctx, &r),
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_winreg_GetKeySecurity(p, tctx, &r),
 				   "GetKeySecurity failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "GetKeySecurity failed");
@@ -197,12 +199,16 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	sdblob.length = r.out.sd->len;
 
 	torture_assert_ntstatus_ok(tctx,
-		ndr_pull_struct_blob(&sdblob, tctx, &sd,
+		ndr_pull_struct_blob(&sdblob, tctx, sd,
 				     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor),
 				     "pull_security_descriptor failed");
 
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
-		NDR_PRINT_DEBUG(security_descriptor, &sd);
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+	}
+
+	if (sd_out) {
+		*sd_out = sd;
 	}
 
 	return true;
@@ -584,7 +590,7 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	if (!test_NotifyChangeKeyValue(p, tctx, handle)) {
 	}
 
-	if (!test_GetKeySecurity(p, tctx, handle)) {
+	if (!test_GetKeySecurity(p, tctx, handle, NULL)) {
 	}
 
 	if (!test_EnumKey(p, tctx, handle, depth)) {
@@ -667,7 +673,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		created2 = true;
 	}
 
-	if (created2 && !test_GetKeySecurity(p, tctx, &newhandle)) {
+	if (created2 && !test_GetKeySecurity(p, tctx, &newhandle, NULL)) {
 		printf("GetKeySecurity failed\n");
 		ret = false;
 	}
