@@ -336,6 +336,48 @@ bool security_descriptor_mask_equal(const struct security_descriptor *sd1,
 				    NULL);
   that would create a sd with one DACL ACE
 */
+
+struct security_descriptor *security_descriptor_append(struct security_descriptor *sd,
+						       ...)
+{
+	va_list ap;
+	const char *sidstr;
+
+	va_start(ap, sd);
+	while ((sidstr = va_arg(ap, const char *))) {
+		struct dom_sid *sid;
+		struct security_ace *ace = talloc(sd, struct security_ace);
+		NTSTATUS status;
+
+		if (ace == NULL) {
+			talloc_free(sd);
+			va_end(ap);
+			return NULL;
+		}
+		ace->type = va_arg(ap, unsigned int);
+		ace->access_mask = va_arg(ap, unsigned int);
+		ace->flags = va_arg(ap, unsigned int);
+		sid = dom_sid_parse_talloc(ace, sidstr);
+		if (sid == NULL) {
+			va_end(ap);
+			talloc_free(sd);
+			return NULL;
+		}
+		ace->trustee = *sid;
+		status = security_descriptor_dacl_add(sd, ace);
+		/* TODO: check: would talloc_free(ace) here be correct? */
+		if (!NT_STATUS_IS_OK(status)) {
+			va_end(ap);
+			talloc_free(sd);
+			return NULL;
+		}
+	}
+	va_end(ap);
+
+	return sd;
+
+}
+
 struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 						       const char *owner_sid,
 						       const char *group_sid,
