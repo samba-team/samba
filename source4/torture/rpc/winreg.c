@@ -220,6 +220,44 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SetKeySecurity(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				struct security_descriptor *sd)
+{
+	struct winreg_SetKeySecurity r;
+	struct KeySecurityData *sdata = NULL;
+	DATA_BLOB sdblob;
+
+	ZERO_STRUCT(r);
+
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		ndr_push_struct_blob(&sdblob, tctx, sd,
+				     (ndr_push_flags_fn_t)ndr_push_security_descriptor),
+				     "push_security_descriptor failed");
+
+	sdata = talloc_zero(tctx, struct KeySecurityData);
+	sdata->data = sdblob.data;
+	sdata->size = sdblob.length;
+	sdata->len = sdblob.length;
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.sd = sdata;
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_winreg_SetKeySecurity(p, tctx, &r),
+				   "SetKeySecurity failed");
+
+	torture_assert_werr_ok(tctx, r.out.result, "SetKeySecurity failed");
+
+	return true;
+}
+
 static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			  struct policy_handle *handle)
 {
@@ -625,6 +663,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	bool ret = true, created = false, created2 = false, deleted = false;
 	bool created3 = false, created_subkey = false;
 	struct winreg_OpenHKLM r;
+	struct security_descriptor *sd = NULL;
 
 	winreg_open_fn open_fn = userdata;
 
@@ -686,8 +725,13 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		created2 = true;
 	}
 
-	if (created2 && !test_GetKeySecurity(p, tctx, &newhandle, NULL)) {
+	if (created2 && !test_GetKeySecurity(p, tctx, &newhandle, &sd)) {
 		printf("GetKeySecurity failed\n");
+		ret = false;
+	}
+
+	if (created2 && sd && !test_SetKeySecurity(p, tctx, &newhandle, sd)) {
+		printf("SetKeySecurity failed\n");
 		ret = false;
 	}
 
