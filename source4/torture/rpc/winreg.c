@@ -129,7 +129,8 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, const char *name,
-			      const char *class, struct policy_handle *newhandle)
+			      const char *class,
+			      struct policy_handle *newhandle)
 {
 	struct winreg_CreateKey r;
 	enum winreg_CreateAction action_taken = 0;
@@ -300,7 +301,8 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
  * return WERR_ACCESS_DENIED. */
 static bool test_DeleteKeyWithSubkey(struct dcerpc_pipe *p,
 				     struct torture_context *tctx,
-				     struct policy_handle *handle, const char *key)
+				     struct policy_handle *handle,
+				     const char *key)
 {
 	struct winreg_DeleteKey r;
 
@@ -381,7 +383,8 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			struct policy_handle key_handle;
 
-			torture_comment(tctx, "EnumKey: %d: %s\n", r.in.enum_index, 
+			torture_comment(tctx, "EnumKey: %d: %s\n",
+					r.in.enum_index,
 					r.out.name->name);
 
 			if (!test_OpenKey(p, tctx, handle, r.out.name->name,
@@ -496,13 +499,15 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.size = &size;
 
 	do {
-		torture_assert_ntstatus_ok(tctx, 
+		torture_assert_ntstatus_ok(tctx,
 					   dcerpc_winreg_EnumValue(p, tctx, &r),
 					   "EnumValue failed");
 
 		if (W_ERROR_IS_OK(r.out.result)) {
-			ret &= test_QueryValue(p, tctx, handle, r.out.name->name);
-			ret &= test_QueryMultipleValues(p, tctx, handle, r.out.name->name);
+			ret &= test_QueryValue(p, tctx, handle,
+					       r.out.name->name);
+			ret &= test_QueryMultipleValues(p, tctx, handle,
+							r.out.name->name);
 		}
 
 		r.in.enum_index++;
@@ -526,7 +531,8 @@ static bool test_AbortSystemShutdown(struct dcerpc_pipe *p,
 				   dcerpc_winreg_AbortSystemShutdown(p, tctx, &r),
 				   "AbortSystemShutdown failed");
 
-	torture_assert_werr_ok(tctx, r.out.result, "AbortSystemShutdown failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "AbortSystemShutdown failed");
 
 	return true;
 }
@@ -548,7 +554,8 @@ static bool test_InitiateSystemShutdown(struct torture_context *tctx,
 				   dcerpc_winreg_InitiateSystemShutdown(p, tctx, &r),
 				   "InitiateSystemShutdown failed");
 
-	torture_assert_werr_ok(tctx, r.out.result, "InitiateSystemShutdown failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "InitiateSystemShutdown failed");
 
 	return test_AbortSystemShutdown(p, tctx);
 }
@@ -631,7 +638,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(p, tctx, &handle, TEST_KEY1, NULL)) {
-		torture_comment(tctx, "CreateKey failed - not considering a failure\n");
+		torture_comment(tctx,
+				"CreateKey failed - not considering a failure\n");
 	} else {
 		created = true;
 	}
@@ -694,29 +702,25 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created3 &&
-	    test_CreateKey(p, tctx, &handle, TEST_SUBKEY, NULL))
-	{
+	    test_CreateKey(p, tctx, &handle, TEST_SUBKEY, NULL)) {
 		created_subkey = true;
 	}
 
 	if (created_subkey &&
-	    !test_DeleteKeyWithSubkey(p, tctx, &handle, TEST_KEY3))
-	{
+	    !test_DeleteKeyWithSubkey(p, tctx, &handle, TEST_KEY3)) {
 		printf("DeleteKeyWithSubkey failed "
 		       "(DeleteKey didn't return ACCESS_DENIED)\n");
 		ret = false;
 	}
 
 	if (created_subkey &&
-	    !test_DeleteKey(p, tctx, &handle, TEST_SUBKEY))
-	{
+	    !test_DeleteKey(p, tctx, &handle, TEST_SUBKEY)) {
 		printf("DeleteKey failed\n");
 		ret = false;
 	}
 
 	if (created3 &&
-	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3))
-	{
+	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3)) {
 		printf("DeleteKey failed\n");
 		ret = false;
 	}
@@ -728,7 +732,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		}
 	}
 
-	if(!test_key(p, tctx, &handle, 0)) {
+	if (!test_key(p, tctx, &handle, 0)) {
 		ret = false;
 	}
 
