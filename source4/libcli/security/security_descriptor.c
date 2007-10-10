@@ -387,7 +387,6 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 {
 	va_list ap;
 	struct security_descriptor *sd;
-	const char *sidstr;
 
 	sd = security_descriptor_initialise(mem_ctx);
 	if (sd == NULL) return NULL;
@@ -410,34 +409,7 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 	}
 
 	va_start(ap, group_sid);
-	while ((sidstr = va_arg(ap, const char *))) {
-		struct dom_sid *sid;
-		struct security_ace *ace = talloc(sd, struct security_ace);
-		NTSTATUS status;
-
-		if (ace == NULL) {
-			talloc_free(sd);
-			va_end(ap);
-			return NULL;
-		}
-		ace->type = va_arg(ap, unsigned int);
-		ace->access_mask = va_arg(ap, unsigned int);
-		ace->flags = va_arg(ap, unsigned int);
-		sid = dom_sid_parse_talloc(ace, sidstr);
-		if (sid == NULL) {
-			va_end(ap);
-			talloc_free(sd);
-			return NULL;
-		}
-		ace->trustee = *sid;
-		status = security_descriptor_dacl_add(sd, ace);
-		/* TODO: check: would talloc_free(ace) here be correct? */
-		if (!NT_STATUS_IS_OK(status)) {
-			va_end(ap);
-			talloc_free(sd);
-			return NULL;
-		}
-	}
+	sd = security_descriptor_append(sd, ap);
 	va_end(ap);
 
 	return sd;
