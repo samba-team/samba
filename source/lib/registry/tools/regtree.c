@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    simple registry frontend
-   
+
    Copyright (C) Jelmer Vernooij 2004-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,16 +25,16 @@
 #include "lib/cmdline/popt_common.h"
 
 /**
- * Print a registry key recursively 
- * 
+ * Print a registry key recursively
+ *
  * @param level Level at which to print
  * @param p Key to print
  * @param fullpath Whether the full pat hshould be printed or just the last bit
  * @param novals Whether values should not be printed
  */
-static void print_tree(int level, struct registry_key *p, 
-					   const char *name,
-					   bool fullpath, bool novals)
+static void print_tree(int level, struct registry_key *p,
+		       const char *name,
+		       bool fullpath, bool novals)
 {
 	struct registry_key *subkey;
 	const char *valuename;
@@ -49,37 +49,47 @@ static void print_tree(int level, struct registry_key *p,
 	for(i = 0; i < level; i++) putchar(' '); puts(name);
 
 	mem_ctx = talloc_init("print_tree");
-	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &keyname, NULL, NULL)); i++) {
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx,
+								      p,
+								      i,
+								      &keyname,
+								      NULL,
+								      NULL)); i++) {
 		SMB_ASSERT(strlen(keyname) > 0);
-		if (!W_ERROR_IS_OK(reg_open_key(mem_ctx, p, keyname, &subkey))) 
+		if (!W_ERROR_IS_OK(reg_open_key(mem_ctx, p, keyname, &subkey)))
 			continue;
 		print_tree(level+1, subkey, (fullpath && strlen(name))?
-						talloc_asprintf(mem_ctx, "%s\\%s", name, keyname):
+						talloc_asprintf(mem_ctx, "%s\\%s",
+								name, keyname):
 						keyname, fullpath, novals);
 	}
 	talloc_free(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", 
+		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n",
 				  name, win_errstr(error)));
 	}
 
 	if (!novals) {
 		mem_ctx = talloc_init("print_tree");
-		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, 
-						p, i, &valuename, &value_type, &value_data)); i++) {
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx,
+									    p,
+									    i,
+									    &valuename,
+									    &value_type,
+									    &value_data)); i++) {
 			int j;
 			char *desc;
 			for(j = 0; j < level+1; j++) putchar(' ');
-			desc = reg_val_description(mem_ctx, valuename, value_type, 
-									   value_data);
+			desc = reg_val_description(mem_ctx, valuename,
+						   value_type, value_data);
 			printf("%s\n", desc);
 		}
 		talloc_free(mem_ctx);
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", 
-					  name, win_errstr(error)));
+			DEBUG(0, ("Error occured while fetching values for '%s': %s\n",
+				name, win_errstr(error)));
 		}
 	}
 
@@ -106,14 +116,14 @@ int main(int argc, char **argv)
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL },
 		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
-		POPT_COMMON_SAMBA	
-		POPT_COMMON_CREDENTIALS	
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
@@ -131,21 +141,23 @@ int main(int argc, char **argv)
 	poptFreeContext(pc);
 
 	error = WERR_OK;
-	
+
 	if (start_key != NULL) {
 		print_tree(0, start_key, "", fullpath, no_values);
 	} else {
 		for(i = 0; reg_predefined_keys[i].handle; i++) {
-			error = reg_get_predefined_key(h, reg_predefined_keys[i].handle, 
-										   &start_key);
+			error = reg_get_predefined_key(h,
+						       reg_predefined_keys[i].handle,
+						       &start_key);
 			if (!W_ERROR_IS_OK(error)) {
-				fprintf(stderr, "Skipping %s: %s\n", reg_predefined_keys[i].name, 
-						win_errstr(error));
+				fprintf(stderr, "Skipping %s: %s\n",
+					reg_predefined_keys[i].name,
+					win_errstr(error));
 				continue;
 			}
 			SMB_ASSERT(start_key != NULL);
-			print_tree(0, start_key, reg_predefined_keys[i].name, fullpath, 
-					   no_values);
+			print_tree(0, start_key, reg_predefined_keys[i].name,
+				   fullpath, no_values);
 		}
 	}
 

@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    simple registry frontend
-   
+
    Copyright (C) Jelmer Vernooij 2004-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -55,14 +55,15 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	const char *classname;
 	NTTIME last_change;
 
-	error = reg_key_get_info(ctx, ctx->current, &classname, NULL, NULL, &last_change);
+	error = reg_key_get_info(ctx, ctx->current, &classname, NULL, NULL,
+				 &last_change);
 	if (!W_ERROR_IS_OK(error)) {
 		printf("Error getting key info: %s\n", win_errstr(error));
 		return error;
 	}
 
-	
-	printf("Name: %s\n", strchr(ctx->path, '\\')?strrchr(ctx->path, '\\')+1: 
+
+	printf("Name: %s\n", strchr(ctx->path, '\\')?strrchr(ctx->path, '\\')+1:
 		   ctx->path);
 	printf("Full path: %s\n", ctx->path);
 	printf("Key Class: %s\n", classname);
@@ -73,8 +74,9 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	if (!W_ERROR_IS_OK(error)) {
 		printf("Error getting security descriptor\n");
 		return error;
-	} 
-	ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "Security", sec_desc);
+	}
+	ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor,
+			"Security", sec_desc);
 	talloc_free(sec_desc);
 
 	return WERR_OK;
@@ -88,10 +90,12 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 	} else if (!ctx) {
 		fprintf(stderr, "No full registry loaded, no predefined keys defined\n");
 	} else {
-		WERROR error = reg_get_predefined_key_by_name(ctx->registry, argv[1], &ret);
+		WERROR error = reg_get_predefined_key_by_name(ctx->registry,
+							      argv[1], &ret);
 
 		if (!W_ERROR_IS_OK(error)) {
-			fprintf(stderr, "Error opening predefined key %s: %s\n", argv[1], win_errstr(error));
+			fprintf(stderr, "Error opening predefined key %s: %s\n",
+				argv[1], win_errstr(error));
 			return error;
 		}
 	}
@@ -100,7 +104,7 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 }
 
 static WERROR cmd_pwd(struct regshell_context *ctx,
-									int argc, char **argv)
+		      int argc, char **argv)
 {
 	printf("%s\n", ctx->path);
 	return WERR_OK;
@@ -114,10 +118,10 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 	if (argc < 4) {
 		fprintf(stderr, "Usage: set value-name type value\n");
 		return WERR_INVALID_PARAM;
-	} 
+	}
 
-	if (!reg_string_to_val(ctx, argv[2], argv[3], &val.data_type, 
-						   &val.data)) {
+	if (!reg_string_to_val(ctx, argv[2], argv[3], &val.data_type,
+			       &val.data)) {
 		fprintf(stderr, "Unable to interpret data\n");
 		return WERR_INVALID_PARAM;
 	}
@@ -132,24 +136,26 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 }
 
 static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
-{ 
+{
 	struct registry_key *new = NULL;
 	WERROR error;
 
 	if(argc < 2) {
 		new = ctx->current;
 	} else {
-		error = reg_open_key(ctx->registry, ctx->current, argv[1], &new);
+		error = reg_open_key(ctx->registry, ctx->current, argv[1],
+				     &new);
 		if(!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Error opening specified key: %s\n", win_errstr(error)));
+			DEBUG(0, ("Error opening specified key: %s\n",
+				win_errstr(error)));
 			return error;
 		}
-	} 
+	}
 
 	ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
 	printf("Current path is: %s\n", ctx->path);
 	ctx->current = new;
-	
+
 	return WERR_OK;
 }
 
@@ -163,15 +169,15 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 		fprintf(stderr, "Usage: print <valuename>");
 		return WERR_INVALID_PARAM;
 	}
-	
-	error = reg_key_get_value_by_name(ctx, ctx->current, argv[1], 
-									  &value_type, &value_data);
+
+	error = reg_key_get_value_by_name(ctx, ctx->current, argv[1],
+					  &value_type, &value_data);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "No such value '%s'\n", argv[1]);
 		return error;
 	}
 
-	printf("%s\n%s\n", str_regtype(value_type), 
+	printf("%s\n%s\n", str_regtype(value_type),
 		   reg_val_data_string(ctx, value_type, value_data));
 
 	return WERR_OK;
@@ -186,23 +192,34 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 	DATA_BLOB data;
 	const char *name;
 
-	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx, ctx->current, i, &name, NULL, NULL)); i++) {
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx,
+								      ctx->current,
+								      i,
+								      &name,
+								      NULL,
+								      NULL)); i++) {
 		printf("K %s\n", name);
 	}
 
 	if (!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while browsing thru keys: %s\n", win_errstr(error)));
+		DEBUG(0, ("Error occured while browsing thru keys: %s\n",
+			win_errstr(error)));
 	}
 
-	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx, ctx->current, i, &name, &data_type, &data)); i++) {
-		printf("V \"%s\" %s %s\n", value->name, str_regtype(data_type), 
+	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
+								     ctx->current,
+								     i,
+								     &name,
+								     &data_type,
+								     &data)); i++) {
+		printf("V \"%s\" %s %s\n", value->name, str_regtype(data_type),
 			   reg_val_data_string(ctx, data_type, data));
 	}
-	
-	return WERR_OK; 
+
+	return WERR_OK;
 }
 static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
-{ 
+{
 	struct registry_key *tmp;
 	WERROR error;
 
@@ -212,18 +229,18 @@ static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, char **argv)
 	}
 
 	error = reg_key_add_name(ctx, ctx->current, argv[1], 0, NULL, &tmp);
-	
+
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Error adding new subkey '%s'\n", argv[1]);
 		return error;
 	}
 
-	return WERR_OK; 
+	return WERR_OK;
 }
 
 static WERROR cmd_rmkey(struct regshell_context *ctx,
-									  int argc, char **argv)
-{ 
+			int argc, char **argv)
+{
 	WERROR error;
 
 	if(argc < 2) {
@@ -238,12 +255,12 @@ static WERROR cmd_rmkey(struct regshell_context *ctx,
 	} else {
 		fprintf(stderr, "Successfully deleted '%s'\n", argv[1]);
 	}
-	
+
 	return WERR_OK;
 }
 
 static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
-{ 
+{
 	WERROR error;
 
 	if(argc < 2) {
@@ -259,10 +276,11 @@ static WERROR cmd_rmval(struct regshell_context *ctx, int argc, char **argv)
 		fprintf(stderr, "Successfully deleted value '%s'\n", argv[1]);
 	}
 
-	return WERR_OK; 
+	return WERR_OK;
 }
 
-_NORETURN_ static WERROR cmd_exit(struct regshell_context *ctx, int argc, char **argv)
+_NORETURN_ static WERROR cmd_exit(struct regshell_context *ctx,
+				  int argc, char **argv)
 {
 	exit(0);
 	return WERR_OK;
@@ -292,18 +310,19 @@ static struct {
 };
 
 static WERROR cmd_help(struct regshell_context *ctx,
-									 int argc, char **argv)
+		       int argc, char **argv)
 {
 	int i;
 	printf("Available commands:\n");
 	for(i = 0; regshell_cmds[i].name; i++) {
-		printf("%s - %s\n", regshell_cmds[i].name, regshell_cmds[i].help);
+		printf("%s - %s\n", regshell_cmds[i].name,
+			regshell_cmds[i].help);
 	}
 	return WERR_OK;
-} 
+}
 
 static WERROR process_cmd(struct regshell_context *ctx,
-										char *line)
+			  char *line)
 {
 	int argc;
 	char **argv = NULL;
@@ -315,14 +334,14 @@ static WERROR process_cmd(struct regshell_context *ctx,
 	}
 
 	for(i = 0; regshell_cmds[i].name; i++) {
-		if(!strcmp(regshell_cmds[i].name, argv[0]) || 
+		if(!strcmp(regshell_cmds[i].name, argv[0]) ||
 		   (regshell_cmds[i].alias && !strcmp(regshell_cmds[i].alias, argv[0]))) {
 			return regshell_cmds[i].handle(ctx, argc, argv);
 		}
 	}
 
 	fprintf(stderr, "No such command '%s'\n", argv[0]);
-	
+
 	return WERR_INVALID_PARAM;
 }
 
@@ -399,8 +418,8 @@ static char **reg_complete_key(const char *text, int start, int end)
 
 	len = strlen(text);
 	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
-		status = reg_key_get_subkey_by_index(mem_ctx, base, i, &subkeyname, 
-											 NULL, NULL);
+		status = reg_key_get_subkey_by_index(mem_ctx, base, i,
+						     &subkeyname, NULL, NULL);
 		if(W_ERROR_IS_OK(status)) {
 			if(!strncmp(text, subkeyname, len)) {
 				matches[j] = strdup(subkeyname);
@@ -415,7 +434,8 @@ static char **reg_complete_key(const char *text, int start, int end)
 		} else if(W_ERROR_EQUAL(status, WERR_NO_MORE_ITEMS)) {
 			break;
 		} else {
-			printf("Error creating completion list: %s\n", win_errstr(status));
+			printf("Error creating completion list: %s\n",
+				win_errstr(status));
 			talloc_free(mem_ctx);
 			return NULL;
 		}
@@ -430,9 +450,9 @@ static char **reg_complete_key(const char *text, int start, int end)
 	if (j == 2) { /* Exact match */
 		asprintf(&matches[0], "%s%s", base_n, matches[1]);
 	} else {
-		asprintf(&matches[0], "%s%s", base_n, 
+		asprintf(&matches[0], "%s%s", base_n,
 				talloc_strndup(mem_ctx, matches[1], samelen));
-	}		
+	}
 	talloc_free(mem_ctx);
 
 	matches[j] = NULL;
@@ -469,14 +489,15 @@ int main(int argc, char **argv)
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
 	ctx = talloc_zero(NULL, struct regshell_context);
 
 	if (remote != NULL) {
-		ctx->registry = reg_common_open_remote(remote, cmdline_credentials);
+		ctx->registry = reg_common_open_remote(remote,
+						       cmdline_credentials);
 	} else if (file != NULL) {
 		ctx->current = reg_common_open_file(file, cmdline_credentials);
 		if (ctx->current == NULL)
@@ -495,11 +516,12 @@ int main(int argc, char **argv)
 
 		for (i = 0; reg_predefined_keys[i].handle; i++) {
 			WERROR err;
-			err = reg_get_predefined_key(ctx->registry, 
-										 reg_predefined_keys[i].handle, 
-										 &ctx->current);
+			err = reg_get_predefined_key(ctx->registry,
+						     reg_predefined_keys[i].handle,
+						     &ctx->current);
 			if (W_ERROR_IS_OK(err)) {
-				ctx->path = talloc_strdup(ctx, reg_predefined_keys[i].name);
+				ctx->path = talloc_strdup(ctx,
+							  reg_predefined_keys[i].name);
 				break;
 			} else {
 				ctx->current = NULL;
@@ -511,16 +533,16 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Unable to access any of the predefined keys\n");
 		return -1;
 	}
-	
+
 	poptFreeContext(pc);
-	
+
 	while (true) {
 		char *line, *prompt;
-		
+
 		asprintf(&prompt, "%s> ", ctx->path);
-		
-		current_key = ctx->current; 		/* No way to pass a void * pointer 
-									   		   via readline :-( */
+
+		current_key = ctx->current; 		/* No way to pass a void * pointer
+							   via readline :-( */
 		line = smb_readline(prompt, NULL, reg_completion);
 
 		if (line == NULL)
