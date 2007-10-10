@@ -37,6 +37,12 @@ case $cmd in
 	# kill off any ipmux processes
 	killall -9 ctdb_ipmux >/dev/null 2>/dev/null
 
+	# kill off any tcp connections
+	/sbin/iptables -D INPUT -i $CTDB_PUBLIC_INTERFACE -d $CTDB_SINGLE_PUBLIC_IP -j DROP 2> /dev/null
+	/sbin/iptables -I INPUT -i $CTDB_PUBLIC_INTERFACE -d $CTDB_SINGLE_PUBLIC_IP -j DROP
+	kill_tcp_connections $CTDB_SINGLE_PUBLIC_IP
+	/sbin/iptables -D INPUT -i $CTDB_PUBLIC_INTERFACE -d $CTDB_SINGLE_PUBLIC_IP -j DROP 2> /dev/null
+
 	# are we the recmaster ? 
 	ctdb isnotrecmaster >/dev/null 2>/dev/null || {
 	    # change the ip address to have scope host so we wont respond
