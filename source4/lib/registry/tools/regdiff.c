@@ -1,7 +1,7 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    simple registry frontend
-   
+
    Copyright (C) Jelmer Vernooij 2004-2007
    Copyright (C) Wilco Baan Hofman 2006
 
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,11 +27,13 @@
 
 enum reg_backend { REG_UNKNOWN, REG_LOCAL, REG_REMOTE, REG_NULL };
 
-static struct registry_context *open_backend(poptContext pc, enum reg_backend backend, const char *remote_host)
+static struct registry_context *open_backend(poptContext pc,
+					     enum reg_backend backend,
+					     const char *remote_host)
 {
 	WERROR error;
 	struct registry_context *ctx;
-	
+
 	switch (backend) {
 	case REG_UNKNOWN:
 		poptPrintUsage(pc, stderr, 0);
@@ -40,7 +42,8 @@ static struct registry_context *open_backend(poptContext pc, enum reg_backend ba
 		error = reg_open_samba(NULL, &ctx, NULL, cmdline_credentials);
 		break;
 	case REG_REMOTE:
-		error = reg_open_remote(&ctx, NULL, cmdline_credentials, remote_host, NULL);
+		error = reg_open_remote(&ctx, NULL, cmdline_credentials,
+					remote_host, NULL);
 		break;
 	case REG_NULL:
 		error = reg_open_local(NULL, &ctx, NULL, cmdline_credentials);
@@ -121,15 +124,18 @@ int main(int argc, const char **argv)
 
 	poptFreeContext(pc);
 
-	error = reg_dotreg_diff_save(ctx, outputfile, &callbacks, &callback_data);
+	error = reg_dotreg_diff_save(ctx, outputfile, &callbacks,
+				     &callback_data);
 	if (!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Problem saving registry diff to '%s': %s\n", outputfile, win_errstr(error));
+		fprintf(stderr, "Problem saving registry diff to '%s': %s\n",
+			outputfile, win_errstr(error));
 		return -1;
 	}
 
 	error = reg_generate_diff(h1, h2, callbacks, callback_data);
 	if (!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to generate diff between keys: %s\n", win_errstr(error));
+		fprintf(stderr, "Unable to generate diff between keys: %s\n",
+			win_errstr(error));
 		return -1;
 	}
 
