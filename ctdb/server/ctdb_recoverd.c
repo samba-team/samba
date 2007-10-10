@@ -1017,26 +1017,14 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 
 	ctdb_election_data(rec, &myem);
 
-	/* try to use a unbanned node */
-	if ((em->node_flags & NODE_FLAGS_BANNED) &&
-	    !(myem.node_flags & NODE_FLAGS_BANNED)) {
-		cmp = 1;
-	}
-	if (!(em->node_flags & NODE_FLAGS_BANNED) &&
-	    (myem.node_flags & NODE_FLAGS_BANNED)) {
-		cmp = -1;
-	}
+	/* we cant win if we are banned */
+	if (rec->node_flags & NODE_FLAGS_BANNED) {
+		return 0;
+	}	
 
-	/* try to use a healthy node */
-	if (cmp == 0) {
-		if ((em->node_flags & NODE_FLAGS_UNHEALTHY) &&
-		    !(myem.node_flags & NODE_FLAGS_UNHEALTHY)) {
-			cmp = 1;
-		}
-		if (!(em->node_flags & NODE_FLAGS_UNHEALTHY) &&
-		    (myem.node_flags & NODE_FLAGS_UNHEALTHY)) {
-			cmp = -1;
-		}
+	/* we will automatically win if the other node is banned */
+	if (em->node_flags & NODE_FLAGS_BANNED) {
+		return 1;
 	}
 
 	/* try to use the most connected node */
@@ -1066,7 +1054,7 @@ static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	struct election_message emsg;
 	uint64_t srvid;
 	struct ctdb_context *ctdb = rec->ctdb;
-	
+
 	srvid = CTDB_SRVID_RECOVERY;
 
 	ctdb_election_data(rec, &emsg);
@@ -1580,7 +1568,17 @@ again:
 		goto again;
 	}
 
-	if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+	/* grap the nodemap from the recovery master */
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+				   mem_ctx, &remote_nodemap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to get nodemap from recovery master %u\n", 
+			  nodemap->nodes[j].pnn));
+		goto again;
+	}
+
+
+	if (remote_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(0, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
 		force_election(rec, mem_ctx, pnn, nodemap);
 		goto again;
@@ -1637,6 +1635,37 @@ again:
 	 */
 	if (pnn != recmaster) {
 		goto again;
+	}
+
+
+	/* we are recovery master, go through the list of all connected nodes
+	   and get the nodeflags from them and update our copy of nodeflags
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (nodemap->nodes[j].pnn == pnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+					   mem_ctx, &remote_nodemap);
+		if (ret != 0) {
+			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
+				  nodemap->nodes[j].pnn));
+			goto again;
+		}
+
+		/* update our nodemap flags according to the other
+		   server - this gets the NODE_FLAGS_DISABLED
+		   flag. Note that the remote node is authoritative
+		   for its flags (except CONNECTED, which we know
+		   matches in this code) */
+		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
+			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+			rec->need_takeover_run = true;
+		}
 	}
 
 	/* update the list of public ips that a node can handle for
@@ -1767,15 +1796,6 @@ again:
 			}
 		}
 
-		/* update our nodemap flags according to the other
-		   server - this gets the NODE_FLAGS_DISABLED
-		   flag. Note that the remote node is authoritative
-		   for its flags (except CONNECTED, which we know
-		   matches in this code) */
-		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
-			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
-			rec->need_takeover_run = true;
-		}
 	}
 
 
