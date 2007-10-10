@@ -327,6 +327,7 @@ bool security_descriptor_mask_equal(const struct security_descriptor *sd1,
   a typical call would be:
 
     sd = security_descriptor_create(mem_ctx,
+                                    sd_type_flags,
                                     mysid,
 				    mygroup,
 				    SID_NT_AUTHENTICATED_USERS, 
@@ -379,6 +380,7 @@ struct security_descriptor *security_descriptor_append(struct security_descripto
 }
 
 struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
+						       uint16_t sd_type,
 						       const char *owner_sid,
 						       const char *group_sid,
 						       ...)
@@ -389,6 +391,8 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 
 	sd = security_descriptor_initialise(mem_ctx);
 	if (sd == NULL) return NULL;
+
+	sd->type |= sd_type;
 
 	if (owner_sid) {
 		sd->owner_sid = dom_sid_parse_talloc(sd, owner_sid);
