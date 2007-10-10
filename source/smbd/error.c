@@ -28,7 +28,7 @@ extern uint32 global_client_caps;
  Create an error packet from errno.
 ****************************************************************************/
 
-int unix_error_packet(const char *inbuf,char *outbuf,int def_class,uint32 def_code, NTSTATUS def_status, int line, const char *file)
+int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_status, int line, const char *file)
 {
 	int eclass=def_class;
 	int ecode=def_code;
@@ -49,7 +49,7 @@ int unix_error_packet(const char *inbuf,char *outbuf,int def_class,uint32 def_co
 		}
 	}
 
-	return error_packet(inbuf,outbuf,eclass,ecode,ntstatus,line,file);
+	return error_packet(outbuf,eclass,ecode,ntstatus,line,file);
 }
 
 BOOL use_nt_status(void)
@@ -109,9 +109,9 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 	}
 }
 
-int error_packet(const char *inbuf, char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = set_message(inbuf,outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }

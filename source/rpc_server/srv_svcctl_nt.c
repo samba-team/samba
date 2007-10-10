@@ -626,7 +626,7 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG
 	   the client from showing the "Start" button (if of course the services
 	   are not running */
 
-	if ( strequal( name, "NETLOGON" ) && ( !share_defined(name) ) )
+	if ( strequal( name, "NETLOGON" ) && ( lp_servicenumber(name) == -1 ) )
 		config->start_type = SVCCTL_DISABLED;
 	else if ( strequal( name, "WINS" ) && ( !lp_wins_support() ))
 		config->start_type = SVCCTL_DISABLED;

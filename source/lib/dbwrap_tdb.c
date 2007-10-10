@@ -72,8 +72,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	result->delete_rec = db_tdb_delete;
 
 	if (DEBUGLEVEL > 10) {
-		char *keystr = hex_encode(NULL, (unsigned char *)key.dptr,
-					  key.dsize);
+		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking key %s\n" : "Locking key %20s\n",
 			   keystr));

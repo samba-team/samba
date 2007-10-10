@@ -1,3 +1,0 @@
-RPC-NETLOGSAMBA3				# FIXME: Should only be run on the build farm
-RPC-SAMBA3SESSIONKEY			# FIXME: Should only be run on the build farm
-RPC-SAMBA3-GETUSERNAME			# FIXME: Should only be run on the build farm

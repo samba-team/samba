@@ -60,8 +60,8 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
 	}
 	if (ADS_ERR_OK(status)) {
-		DEBUG(5,("Search for %s in <%s> gave %d replies\n",
-			expr, bp, ads_count_replies(ads, *res)));
+               DEBUG(5,("Search for %s in <%s> gave %d replies\n",
+                        expr, bp, ads_count_replies(ads, *res)));
 		SAFE_FREE(bp);
 		return status;
 	}
@@ -159,6 +159,21 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 					"(objectclass=*)", attrs, &args, res);
 }
 
+ ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
+					 uint32 sd_flags,
+					 const char *dn, 
+					 const char **attrs)
+{
+	ads_control args;
+
+	args.control = ADS_SD_FLAGS_OID;
+	args.val = sd_flags;
+	args.critical = True;
+
+	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
+					"(objectclass=*)", attrs, &args, res);
+}
+
  ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, 
 						const char *dn, 
 						const char **attrs,
@@ -181,21 +196,6 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 				 "(objectclass=*)", &args, attrs[0],
 				 strings, num_strings);
 
-}
-
- ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
-					 uint32 sd_flags,
-					 const char *dn, 
-					 const char **attrs)
-{
-	ads_control args;
-
-	args.control = ADS_SD_FLAGS_OID;
-	args.val = sd_flags;
-	args.critical = True;
-
-	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
-					"(objectclass=*)", attrs, &args, res);
 }
 
  ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 

@@ -16,7 +16,7 @@ localstatedir=@localstatedir@
 datarootdir=@datarootdir@
 
 selftest_prefix=@selftest_prefix@
-samba4srcdir=@samba4srcdir@
+smbtorture4_path=@smbtorture4_path@
 
 LIBS=@LIBS@
 CC=@CC@
@@ -48,12 +48,9 @@ WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
 AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
-PYTHON=@PYTHON@
 PERL=@PERL@
 
 PIDL_ARGS=@PIDL_ARGS@
-
-SELFTEST_ARGS = @SELFTEST_ARGS@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -134,7 +131,6 @@ LOCKDIR = @lockdir@
 PIDDIR = @piddir@
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
-LIBMSRPC=bin/libmsrpc.a @LIBMSRPC_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 
@@ -254,9 +250,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_srvsvc.o \
 		 librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
-		 librpc/gen_ndr/ndr_unixinfo.o \
-		 librpc/gen_ndr/ndr_notify.o \
-		 librpc/gen_ndr/ndr_epmapper.o
+		 librpc/gen_ndr/ndr_notify.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -264,7 +258,7 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 # that requires knowledge of security contexts
 RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o
+RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o rpc_parse/parse_srv.o
 
 LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 
@@ -351,10 +345,10 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
-	     libsmb/smb_seal.o $(DOSERR_OBJ) \
+	     $(DOSERR_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
-RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
+RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
@@ -369,8 +363,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_winreg.o \
 		   librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o \
-		   librpc/gen_ndr/cli_unixinfo.o \
-		   librpc/gen_ndr/cli_epmapper.o \
+		   librpc/gen_ndr/cli_wkssvc.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
@@ -390,19 +383,18 @@ RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
 
-RPC_UNIXINFO_OBJ = librpc/gen_ndr/srv_unixinfo.o rpc_server/srv_unixinfo_nt.o
 REGFIO_OBJ = registry/regfio.o
-
-RPC_EPMAPPER_OBJ = librpc/gen_ndr/srv_epmapper.o rpc_server/srv_epmapper_nt.o
 
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
 RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
 	       librpc/gen_ndr/srv_winreg.o \
 	       $(REGFIO_OBJ)
+
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
-RPC_SVC_OBJ = librpc/gen_ndr/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
+RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
+	      librpc/gen_ndr/srv_srvsvc.o
 
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
@@ -529,7 +521,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
+	       smbd/vfs.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
@@ -537,7 +529,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
-	       smbd/dmapi.o lib/launchd.o smbd/sockinit.o \
+	       smbd/dmapi.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
@@ -630,7 +622,6 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_dfs.o \
 		 rpcclient/cmd_ds.o rpcclient/cmd_echo.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
-		 rpcclient/cmd_unixinfo.o \
 		 $(DISPLAY_SEC_OBJ) $(DISPLAY_DSDCINFO_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
@@ -649,11 +640,6 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
-
-CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
-			 libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
-			 libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
-			 libmsrpc/cac_svcctl.o
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDB_BASE_OBJ)
 
@@ -680,6 +666,7 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
+             $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
 
 UTIL_REG_OBJ = lib/util_reg.o
@@ -827,7 +814,6 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
-	    $(RPCCLIENT_NDR_OBJ) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) \
@@ -844,7 +830,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
 	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
-	    $(RPC_EPMAPPER_OBJ) $(DISPLAY_DSDCINFO_OBJ)
+	    $(RPCCLIENT_NDR_OBJ) $(DISPLAY_DSDCINFO_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -861,7 +847,6 @@ NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
-		winbindd/winbindd_sockinit.o \
 		winbindd/winbindd_user.o  \
 		winbindd/winbindd_group.o \
 		winbindd/winbindd_util.o  \
@@ -869,19 +854,17 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_pam.o   \
 		winbindd/winbindd_sid.o   \
 		winbindd/winbindd_misc.o  \
-		winbindd/winbindd_cm.o \
-		winbindd/winbindd_wins.o \
-		winbindd/winbindd_rpc.o \
+		winbindd/winbindd_cm.o    \
+		winbindd/winbindd_wins.o  \
+		winbindd/winbindd_rpc.o   \
 		winbindd/winbindd_reconnect.o \
-		winbindd/winbindd_ads.o \
+		winbindd/winbindd_ads.o   \
 		winbindd/winbindd_passdb.o \
-		winbindd/winbindd_dual.o \
+		winbindd/winbindd_dual.o  \
 		winbindd/winbindd_async.o \
 		winbindd/winbindd_creds.o \
 		winbindd/winbindd_cred_cache.o \
 		winbindd/winbindd_ccache_access.o \
-		winbindd/winbindd_idmap.o \
-		winbindd/winbindd_locator.o \
 		auth/token_util.o
 
 WINBINDD_OBJ = \
@@ -891,7 +874,7 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
-		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) lib/launchd.o \
+		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
 		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1067,18 +1050,6 @@ COMPILE_CC_PATH = $(CC) -I. -I$(srcdir) $(PATH_FLAGS) $(FLAGS) $(PICFLAG) -c $< 
 
 COMPILE = $(COMPILE_CC)
 
-# BEGIN GNU make specific
-# Rewrite the COMPILE rule to generate dependencies as a side-effect.
-# This is is actually toolchain-independent, but making use of the dependency
-# files requires GNU make, so it's pointless to have them otherwise.
-@ifGNUmake@DEPDIR=.
-@ifGNUmake@COMPILE_DEPENDS = source=$< object=$@ libtool=no \
-@ifGNUmake@	tmpdepfile=$(DEPDIR)/$*.TPo depfile=$(DEPDIR)/$*.d \
-@ifGNUmake@	DEPDIR=$(DEPDIR) @CCDEPMODE@ \
-@ifGNUmake@	$(srcdir)/depcomp $(COMPILE_CC)
-@ifGNUmake@COMPILE = $(COMPILE_DEPENDS)
-# END GNU make specific
-
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
@@ -1092,13 +1063,6 @@ COMPILE = $(COMPILE_CC)
 		echo "$(COMPILE_CC)" 1>&2;\
 		$(COMPILE_CC) >/dev/null 2>&1
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
-# BEGIN GNU make specific
-# Include all the generated dependency files. The sort is done to
-# remove duplicates.
-@ifGNUmake@DEPENDS_OBJ = $(SMBD_SRV_OBJ) $(NET_OBJ) $(WINBINDD_OBJ)
-@ifGNUmake@-include $(patsubst %.o, %.d, $(sort $(DEPENDS_OBJ)))
-# END GNU make specific
 
 PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
@@ -1392,15 +1356,6 @@ bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
 
-bin/libmsrpc.@SHLIBEXT@: $(BINARY_PREREQS) $(CAC_OBJ)
-	@echo Linking shared library $@
-	@$(SHLD_DSO) $(CAC_OBJ) $(LDFLAGS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
-
-bin/libmsrpc.a: $(BINARY_PREREQS) $(CAC_OBJ)
-	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(CAC_OBJ)
-
 # This is probably wrong for anything other than the GNU linker.
 bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ)
 	@echo Linking shared library $@
@@ -1433,10 +1388,6 @@ bin/librpc_samr.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SAMR_OBJ)
 bin/librpc_unixinfo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_UNIXINFO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_UNIXINFO_OBJ)
-
-bin/librpc_epmapper.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EPMAPPER_OBJ)
-	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_EPMAPPER_OBJ)
 
 bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
 	@echo "Linking $@"
@@ -1836,36 +1787,6 @@ installpammodules: $(PAM_MODULES)
 			"$(DESTDIR)/$(PAMMODULESDIR)"; \
 	done
 
-# Python extensions
-
-PYTHON_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-	$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	$(SECRETS_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
-
-python_ext: $(PYTHON_OBJ)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; \
-	fi
-	PYTHON_OBJS="$(PYTHON_OBJ)" \
-	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LDFLAGS) $(LIBS) $(PASSDB_LIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAP_LIBS)" \
-		$(PYTHON) python/setup.py build
-
-python_install: $(PYTHON_OBJ)
-	@if test -z "$(PYTHON)"; then \
-		echo Use the option --with-python to configure python; \
-		exit 1; \
-	fi
-	PYTHON_OBJS="$(PYTHON_OBJ)" \
-	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
-	LIBS="$(LDFLAGS) $(LIBS)" \
-		$(PYTHON) python/setup.py install --root=$(DESTDIR)
-
-python_clean:
-	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
-	@-rm -rf build/
-
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS)
@@ -1948,11 +1869,10 @@ uninstallpammodules:
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean: delheaders python_clean
+clean: delheaders 
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
-	        */*.d */*/*.d */*/*/*.d \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
@@ -2099,32 +2019,16 @@ test_pam_modules: pam_modules
 			|| exit 1; \
 	done
 
-
-SELFTEST = $(PERL) $(samba4srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
-		   --srcdir="${samba4srcdir}" --bindir=${builddir}/bin --testlist="${srcdir}/script/tests/tests_all.sh|" \
-		   --expected-failures=samba3-knownfail --target=samba3 --skip=samba3-skip $(SELFTEST_ARGS)
 ##
 ## Targets for 'make test'
 ##
 test: all torture timelimit
 	@echo Running Test suite
-	@$(SELFTEST) --socket-wrapper --immediate $(TESTS)
-
-htmltest: all torture timelimit
-	@echo Running Test suite
-	@$(SELFTEST) --socket-wrapper --format=html --immediate $(TESTS)
+	@sh $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
 valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	 $(SELFTEST) --immediate --socket-wrapper $(TESTS)
-
-gdbtest: all torture timelimit
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
-		$(SELFTEST) --immediate --socket-wrapper $(TESTS)
-
-testenv: everything
-	$(SELFTEST) --socket-wrapper --testenv
-
+	 $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"

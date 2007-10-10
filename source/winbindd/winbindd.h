@@ -134,17 +134,6 @@ struct winbindd_async_request;
 
 /* Async child */
 
-struct winbindd_domain;
-
-struct winbindd_child_dispatch_table {
-	enum winbindd_cmd cmd;
-	enum winbindd_result (*fn)(struct winbindd_domain *domain,
-				   struct winbindd_cli_state *state);
-	const char *winbindd_cmd_name;
-};
-
-extern const struct winbindd_child_dispatch_table domain_dispatch_table[];
-
 struct winbindd_child {
 	struct winbindd_child *next, *prev;
 
@@ -155,8 +144,6 @@ struct winbindd_child {
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
 	struct winbindd_async_request *requests;
-
-	const struct winbindd_child_dispatch_table *table;
 };
 
 /* Structures to hold per domain information */
@@ -177,14 +164,6 @@ struct winbindd_domain {
 	BOOL online;			       /* is this domain available ? */
 	time_t startup_time;		       /* When we set "startup" true. */
 	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
-
-	BOOL can_do_samlogon_ex; /* Due to the lack of finer control what type
-				  * of DC we have, let us try to do a
-				  * credential-chain less samlogon_ex call
-				  * with AD and schannel. If this fails with
-				  * DCERPC_FAULT_OP_RNG_ERROR, then set this
-				  * to False. This variable is around so that
-				  * we don't have to try _ex every time. */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;

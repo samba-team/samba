@@ -104,7 +104,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	if (!tdb)
 		return False;
 	return tdb_trans_store(tdb, string_tdb_data(key),
-			       make_tdb_data((uint8 *)data, size),
+			       make_tdb_data((const uint8 *)data, size),
 			       TDB_REPLACE) == 0;
 }
 
@@ -499,6 +499,20 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	return True;
 }
 
+/************************************************************************
+ Routine to set the trust account password for a domain.
+************************************************************************/
+
+BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
+{
+	struct machine_acct_pass pass;
+
+	pass.mod_time = time(NULL);
+	memcpy(pass.hash, new_pwd, 16);
+
+	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+}
+
 /**
  * Routine to store the password for trusted domain
  *
@@ -555,78 +569,40 @@ the password is assumed to be a null terminated ascii string
 BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
 	char *key = NULL;
-	BOOL ret = False;
+	BOOL ret;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
 
-	if (tdb_transaction_start(tdb) == -1) {
-		DEBUG(5, ("tdb_transaction_start failed: %s\n",
-			  tdb_errorstr(tdb)));
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
+	if (!key)
 		return False;
-	}
-
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
 	strupper_m(key);
 
 	ret = secrets_store(key, pass, strlen(pass)+1);
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
+	if (!ret)
+		return ret;
 
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME,
-		     domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+	if (!key)
+		return False;
 	strupper_m(key);
 
 	SIVAL(&last_change_time, 0, time(NULL));
 	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
-
-	if (asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE,
-		     domain) == -1) {
-		DEBUG(5, ("asprintf failed\n"));
-		goto fail;
-	}
+	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+	if (!key)
+		return False;
 	strupper_m(key);
 
 	SIVAL(&sec_channel_type, 0, sec_channel);
 	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
 	SAFE_FREE(key);
 
-	if (!ret) {
-		DEBUG(5, ("secrets_store failed: %s\n",
-			  tdb_errorstr(tdb)));
-		goto fail;
-	}
-
-	if (tdb_transaction_commit(tdb) != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed: %s\n",
-			  tdb_errorstr(tdb)));
-		return False;
-	}
-
-	return True;
-
- fail:
-	if (tdb_transaction_cancel(tdb) != 0) {
-		smb_panic("tdb_transaction_cancel failed!\n");
-	}
-	return False;
+	return ret;
 }
 
 /************************************************************************
@@ -676,6 +652,15 @@ char *secrets_fetch_machine_password(const char *domain,
 	}
 
 	return ret;
+}
+
+/************************************************************************
+ Routine to delete the machine trust account password file for a domain.
+************************************************************************/
+
+BOOL trust_password_delete(const char *domain)
+{
+	return secrets_delete(trust_keystr(domain));
 }
 
 /************************************************************************

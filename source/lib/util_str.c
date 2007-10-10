@@ -447,7 +447,6 @@ BOOL strisnormal(const char *s, int case_default)
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
-
 void string_replace( char *s, char oldc, char newc )
 {
 	char *p;

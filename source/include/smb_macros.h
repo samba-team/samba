@@ -158,10 +158,11 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-#define ERROR_DOS(class,code) error_packet(inbuf,outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(inbuf,outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(inbuf,outbuf,class,code,status,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_OPEN(status) error_open(outbuf,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 #define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
 #define reply_force_nterror(req,status) reply_force_nt_error(req,status,__LINE__,__FILE__)
@@ -170,7 +171,7 @@
 #define reply_unixerror(req,defclass,deferror) reply_unix_error(req,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
@@ -377,5 +378,13 @@ do { \
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
+
+#ifndef ISDOT
+#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
+#endif /* ISDOT */
+
+#ifndef ISDOTDOT
+#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
+#endif /* ISDOTDOT */
 
 #endif /* _SMB_MACROS_H */

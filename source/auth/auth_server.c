@@ -149,7 +149,7 @@ struct server_security_state {
 ****************************************************************************/
 
 static BOOL send_server_keepalive(const struct timeval *now,
-				  void *private_data) 
+				  void *private_data)
 {
 	struct server_security_state *state = talloc_get_type_abort(
 		private_data, struct server_security_state);
@@ -231,7 +231,6 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			*my_private_data =
 				(void *)make_server_security_state(cli);
 			return data_blob_null;
-			
 		} else if (cli->secblob.length < 8) {
 			/* We can't do much if we don't get a full challenge */
 			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
@@ -240,7 +239,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 		}
 
 		if (!(*my_private_data = (void *)make_server_security_state(cli))) {
-			return data_blob_null;
+			return data_blob(NULL,0);
 		}
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
@@ -258,7 +257,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 ****************************************************************************/
 
 static NTSTATUS check_smbserver_security(const struct auth_context *auth_context,
-					 void *private_data, 
+					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
 					 const auth_usersupplied_info *user_info, 
 					 auth_serversupplied_info **server_info)
@@ -270,12 +269,8 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static BOOL bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	BOOL locally_made_cli = False;
-	struct server_security_state *state;
 
-	state = talloc_get_type_abort(
-		private_data, struct server_security_state);
-
-	cli = state->cli;
+	cli = (struct cli_state *)my_private_data;
 	
 	if (cli) {
 	} else {

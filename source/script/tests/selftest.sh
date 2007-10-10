@@ -139,9 +139,6 @@ cat >$SERVERCONFFILE<<EOF
 	printing = bsd
 	printcap name = /dev/null
 
-#	host msdfs = yes
-#	panic action = "/bin/sleep 90000"
-
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no

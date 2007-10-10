@@ -492,7 +492,6 @@ static struct cmd_set separator_command[] = {
 
 /* Various pipe commands */
 
-extern struct cmd_set unixinfo_commands[];
 extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
@@ -506,7 +505,6 @@ extern struct cmd_set test_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
-	unixinfo_commands,
 	lsarpc_commands,
 	ds_commands,
 	samr_commands,

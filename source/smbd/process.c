@@ -91,8 +91,8 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
- Function to push a message onto the tail of a linked list of smb messages
- ready for processing.
+ Function to push a message onto the tail of a linked list of smb messages ready
+ for processing.
 ****************************************************************************/
 
 static BOOL push_queued_message(struct smb_request *req,
@@ -148,7 +148,7 @@ void remove_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
-			DEBUG(10,("remove_deferred_open_smb_message: "
+			DEBUG(10,("remove_sharing_violation_open_smb_message: "
 				  "deleting mid %u len %u\n",
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
@@ -171,11 +171,11 @@ void schedule_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
-		DEBUG(10, ("schedule_deferred_open_smb_message: [%d] "
-			   "msg_mid = %u\n", i++, (unsigned int)msg_mid ));
+		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
+			(unsigned int)msg_mid ));
 		if (mid == msg_mid) {
-			DEBUG(10, ("schedule_deferred_open_smb_message: "
-				   "scheduling mid %u\n", mid));
+			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
+				mid ));
 			pml->end_time.tv_sec = 0;
 			pml->end_time.tv_usec = 0;
 			DLIST_PROMOTE(deferred_open_queue, pml);
@@ -183,8 +183,8 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		}
 	}
 
-	DEBUG(10, ("schedule_deferred_open_smb_message: failed to find "
-		   "message mid %u\n", mid ));
+	DEBUG(10,("schedule_deferred_open_smb_message: failed to find message mid %u\n",
+		mid ));
 }
 
 /****************************************************************************
@@ -932,8 +932,7 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 	}
 
 	construct_reply_common((char *)req->inbuf, (char *)req->outbuf);
-	set_message((char *)req->inbuf, (char *)req->outbuf,
-		    num_words, num_bytes, False);
+	set_message((char *)req->outbuf, num_words, num_bytes, False);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
 	 * himself
@@ -1226,8 +1225,8 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(const char *inbuf, char *outbuf)
 {
-	set_message(inbuf,outbuf,0,0,False);
-
+	set_message(outbuf,0,0,False);
+	
 	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
@@ -1341,7 +1340,7 @@ void chain_reply(struct smb_request *req)
 	}
 
 	/* And set it in the header. */
-	smb_setlen(inbuf, inbuf2, new_size - 4);
+	smb_setlen(inbuf2, new_size - 4);
 
 	DEBUG(3,("Chained message\n"));
 	show_msg(inbuf2);
@@ -1428,7 +1427,7 @@ void chain_reply(struct smb_request *req)
 		memset(outbuf + outsize, 0, outsize_padded - outsize);
 	}
 
-	smb_setlen(NULL, outbuf, outsize2 + chain_size - 4);
+	smb_setlen(outbuf, outsize2 + chain_size - 4);
 
 	/*
 	 * restore the saved data, being careful not to overwrite any data

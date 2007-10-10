@@ -4,7 +4,6 @@
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
    Copyright (C) Jelmer Vernooij		2002-2003
-   Copyright (C) James Peach			2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -294,33 +293,25 @@ static BOOL allowable_number_of_smbd_processes(void)
 }
 
 /****************************************************************************
- Are we idle enough that we could safely exit?
-****************************************************************************/
-
-static BOOL smbd_is_idle(void)
-{
-	/* Currently we define "idle" as having no client connections. */
-	return count_all_current_connections() == 0;
-}
-
-/****************************************************************************
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_ports)
+static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
 {
+	int num_interfaces = iface_count();
 	int num_sockets = 0;
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
 	int maxfd = 0;
 	int i;
-	struct timeval idle_timeout = timeval_zero();
+	char *ports;
 
-	if (server_mode == SERVER_MODE_INETD) {
+	if (!is_daemon) {
 		return open_sockets_inetd();
 	}
 
+		
 #ifdef HAVE_ATEXIT
 	{
 		static int atexit_set;
@@ -333,21 +324,116 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 
 	/* Stop zombies */
 	CatchSignal(SIGCLD, sig_cld);
-
+				
 	FD_ZERO(&listen_set);
 
-	/* At this point, it doesn't matter what daemon mode we are in, we
-	 * need some sockets to listen on.
-	 */
-	num_sockets = smbd_sockinit(smb_ports, fd_listenset, &idle_timeout);
-	if (num_sockets == 0) {
-		return False;
+	/* use a reasonable default set of ports - listing on 445 and 139 */
+	if (!smb_ports) {
+		ports = lp_smb_ports();
+		if (!ports || !*ports) {
+			ports = smb_xstrdup(SMB_PORTS);
+		} else {
+			ports = smb_xstrdup(ports);
+		}
+	} else {
+		ports = smb_xstrdup(smb_ports);
 	}
 
-	for (i = 0; i < num_sockets; ++i) {
-		FD_SET(fd_listenset[i], &listen_set);
-		maxfd = MAX(maxfd, fd_listenset[i]);
-	}
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		/* We have been given an interfaces line, and been 
+		   told to only bind to those interfaces. Create a
+		   socket per interface and bind to only these.
+		*/
+		
+		/* Now open a listen socket for each of the
+		   interfaces. */
+		for(i = 0; i < num_interfaces; i++) {
+			struct in_addr *ifip = iface_n_ip(i);
+			fstring tok;
+			const char *ptr;
+
+			if(ifip == NULL) {
+				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
+				continue;
+			}
+
+			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
+				unsigned port = atoi(tok);
+				if (port == 0 || port > 0xffff) {
+					continue;
+				}
+				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+				if(s == -1)
+					return False;
+
+				/* ready to listen */
+				set_socket_options(s,"SO_KEEPALIVE"); 
+				set_socket_options(s,user_socket_options);
+     
+				/* Set server socket to non-blocking for the accept. */
+				set_blocking(s,False); 
+ 
+				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
+					DEBUG(0,("listen: %s\n",strerror(errno)));
+					close(s);
+					return False;
+				}
+				FD_SET(s,&listen_set);
+				maxfd = MAX( maxfd, s);
+
+				num_sockets++;
+				if (num_sockets >= FD_SETSIZE) {
+					DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
+					return False;
+				}
+			}
+		}
+	} else {
+		/* Just bind to 0.0.0.0 - accept connections
+		   from anywhere. */
+
+		fstring tok;
+		const char *ptr;
+
+		num_interfaces = 1;
+		
+		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
+			unsigned port = atoi(tok);
+			if (port == 0 || port > 0xffff) continue;
+			/* open an incoming socket */
+			s = open_socket_in(SOCK_STREAM, port, 0,
+					   interpret_addr(lp_socket_address()),True);
+			if (s == -1)
+				return(False);
+		
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
+			
+			/* Set server socket to non-blocking for the accept. */
+			set_blocking(s,False); 
+ 
+			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
+				DEBUG(0,("open_sockets_smbd: listen: %s\n",
+					 strerror(errno)));
+				close(s);
+				return False;
+			}
+
+			fd_listenset[num_sockets] = s;
+			FD_SET(s,&listen_set);
+			maxfd = MAX( maxfd, s);
+
+			num_sockets++;
+
+			if (num_sockets >= FD_SETSIZE) {
+				DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
+				return False;
+			}
+		}
+	} 
+
+	SAFE_FREE(ports);
 
 
 	/* Setup the main smbd so that we can get messages. Note that
@@ -380,7 +466,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
 	while (1) {
-		struct timeval now;
+		struct timeval now, idle_timeout;
 		fd_set r_fds, w_fds;
 		int num;
 		
@@ -396,6 +482,8 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			}
 		}
 
+		idle_timeout = timeval_zero();
+
 		memcpy((char *)&r_fds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		FD_ZERO(&w_fds);
@@ -405,21 +493,9 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 					 &r_fds, &w_fds, &idle_timeout,
 					 &maxfd);
 
-		if (timeval_is_zero(&idle_timeout)) {
-			num = sys_select(maxfd + 1, &r_fds, &w_fds,
-					NULL, NULL);
-		} else {
-			num = sys_select(maxfd + 1, &r_fds, &w_fds,
-					NULL, &idle_timeout);
-
-			/* If the idle timeout fired and we are idle, exit
-			 * gracefully. We expect to be running under a process
-			 * controller that will restart us if necessry.
-			 */
-			if (num == 0 && smbd_is_idle()) {
-				exit_server_cleanly("idle timeout");
-			}
-		}
+		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
+				 timeval_is_zero(&idle_timeout) ?
+				 NULL : &idle_timeout);
 
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
@@ -436,7 +512,7 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 
 			continue;
 		}
-
+		
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
 			continue;
 		}
@@ -476,13 +552,8 @@ static BOOL open_sockets_smbd(enum smb_server_mode server_mode, const char *smb_
 			/* Ensure child is set to blocking mode */
 			set_blocking(smbd_server_fd(),True);
 
-			/* In interactive mode, return with a connected socket.
-			 * Foreground and daemon modes should fork worker
-			 * processes.
-			 */
-			if (server_mode == SERVER_MODE_INTERACTIVE) {
+			if (smbd_server_fd() != -1 && interactive)
 				return True;
-			}
 			
 			if (allowable_number_of_smbd_processes() &&
 			    smbd_server_fd() != -1 &&
@@ -694,8 +765,6 @@ static void exit_server_common(enum server_exit_reason how,
 	locking_end();
 	printing_end();
 
-	server_encryption_shutdown();
-
 	if (how != SERVER_EXIT_NORMAL) {
 		int oldlevel = DEBUGLEVEL;
 
@@ -804,26 +873,23 @@ extern void build_options(BOOL screen);
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	BOOL no_process_group = False;
-	BOOL log_stdout = False;
-	const char *ports = NULL;
-	const char *profile_level = NULL;
+	static BOOL is_daemon = False;
+	static BOOL interactive = False;
+	static BOOL Fork = True;
+	static BOOL no_process_group = False;
+	static BOOL log_stdout = False;
+	static char *ports = NULL;
+	static char *profile_level = NULL;
 	int opt;
 	poptContext pc;
 	BOOL print_build_options = False;
 
-	enum smb_server_mode server_mode = SERVER_MODE_DAEMON;
-
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &server_mode, SERVER_MODE_DAEMON,
-		"Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &server_mode, SERVER_MODE_INTERACTIVE,
-		"Run interactive (not a daemon)"},
-	{"foreground", 'F', POPT_ARG_VAL, &server_mode, SERVER_MODE_FOREGROUND,
-		"Run daemon in foreground (for daemontools, etc.)" },
-	{"no-process-group", '\0', POPT_ARG_VAL, &no_process_group, True,
-		"Don't create a new process group" },
+	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
+	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
+	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc.)" },
+	{"no-process-group", '\0', POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
@@ -870,14 +936,16 @@ extern void build_options(BOOL screen);
 
 	set_remote_machine_name("smbd", False);
 
-	if (server_mode == SERVER_MODE_INTERACTIVE) {
+	if (interactive) {
+		Fork = False;
 		log_stdout = True;
-		if (DEBUGLEVEL >= 9) {
-			talloc_enable_leak_report();
-		}
 	}
 
-	if (log_stdout && server_mode == SERVER_MODE_DAEMON) {
+	if (interactive && (DEBUGLEVEL >= 9)) {
+		talloc_enable_leak_report();
+	}
+
+	if (log_stdout && Fork) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
@@ -967,19 +1035,21 @@ extern void build_options(BOOL screen);
 
 	DEBUG(3,( "loaded services\n"));
 
-	if (is_a_socket(0)) {
-		if (server_mode == SERVER_MODE_DAEMON) {
-			DEBUG(0,("standard input is a socket, "
-				    "assuming -F option\n"));
-		}
-		server_mode = SERVER_MODE_INETD;
+	if (!is_daemon && !is_a_socket(0)) {
+		if (!interactive)
+			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+
+		/*
+		 * Setting is_daemon here prevents us from eventually calling
+		 * the open_sockets_inetd()
+		 */
+
+		is_daemon = True;
 	}
 
-	if (server_mode == SERVER_MODE_DAEMON) {
+	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon(True, no_process_group);
-	} else if (server_mode == SERVER_MODE_FOREGROUND) {
-		become_daemon(False, no_process_group);
+		become_daemon(Fork, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -987,18 +1057,15 @@ extern void build_options(BOOL screen);
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (server_mode == SERVER_MODE_INTERACTIVE && !no_process_group) {
+	if (interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0);
-	}
 #endif
 
 	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
 
-	if (server_mode != SERVER_MODE_INETD &&
-	    server_mode != SERVER_MODE_INTERACTIVE) {
+	if (is_daemon)
 		pidfile_create("smbd");
-	}
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
@@ -1052,10 +1119,9 @@ extern void build_options(BOOL screen);
 	   running as a daemon -- bad things will happen if
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
-	if (server_mode != SERVER_MODE_INETD &&
-	    server_mode != SERVER_MODE_INTERACTIVE) {
+
+	if ( is_daemon && !interactive )
 		start_background_queue(); 
-	}
 
 	/* Always attempt to initialize DMAPI. We will only use it later if
 	 * lp_dmapi_support is set on the share, but we need a single global
@@ -1063,9 +1129,8 @@ extern void build_options(BOOL screen);
 	 */
 	dmapi_init_session();
 
-	if (!open_sockets_smbd(server_mode, ports)) {
+	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
-	}
 
 	/*
 	 * everything after this point is run after the fork()
@@ -1078,8 +1143,7 @@ extern void build_options(BOOL screen);
 	/* Possibly reload the services file. Only worth doing in
 	 * daemon mode. In inetd mode, we know we only just loaded this.
 	 */
-	if (server_mode != SERVER_MODE_INETD &&
-	    server_mode != SERVER_MODE_INTERACTIVE) {
+	if (is_daemon) {
 		reload_services(True);
 	}
 

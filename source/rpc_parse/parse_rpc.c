@@ -190,16 +190,6 @@ interface/version dce/rpc pipe identification
 	}, 0x00				    \
 }
 
-#define SYNT_UNIXINFO_V0                    \
-{                                           \
-	{                                   \
-		0x9c54e310, 0xa955, 0x4885, \
-		{ 0xbd, 0x31 },		    \
-                { 0x78, 0x78,               \
-                  0x71, 0x47, 0xdf, 0xa6 }  \
-	}, 0x00                             \
-}
-
 #define SYNT_NTSVCS_V1                      \
 {                                           \
 	{                                   \
@@ -208,16 +198,6 @@ interface/version dce/rpc pipe identification
                 { 0x08, 0x00,               \
                   0x3e, 0x30, 0x05, 0x1b }  \
 	}, 0x01                             \
-}
-
-#define SYNT_EPMAPPER_V3					\
-{											\
-	{										\
-		0xe1af8308, 0x5d1f,0x11c9, \
-		{ 0x91,0xa4},						\
-		         {0x08,0x00,				\
-			      0x2b,0x14,0xa0,0xfa}      \
-	}, 0x03 \
 }
 
 /*
@@ -241,9 +221,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
-	{ PIPE_UNIXINFO, SYNT_UNIXINFO_V0      , PIPE_UNIXINFO , TRANS_SYNT_V2 },
 	{ PIPE_NTSVCS  , SYNT_NTSVCS_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_EPMAPPER, SYNT_EPMAPPER_V3	   , PIPE_EPMAPPER , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

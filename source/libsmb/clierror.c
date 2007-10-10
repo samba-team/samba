@@ -83,7 +83,6 @@ static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
 		case WRITE_ERROR:
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	        case READ_BAD_SIG:
-	        case READ_BAD_DECRYPT:
 			return NT_STATUS_INVALID_PARAMETER;
 	        default:
 			break;
@@ -132,10 +131,6 @@ const char *cli_errstr(struct cli_state *cli)
 		        case READ_BAD_SIG:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Server packet had invalid SMB signature!");
-				break;
-		        case READ_BAD_DECRYPT:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Server packet could not be decrypted !");
 				break;
 		        default:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,

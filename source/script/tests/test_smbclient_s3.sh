@@ -9,28 +9,14 @@ EOF
 exit 1;
 fi
 
-BINDIR=`dirname $0`/../../bin
-
 SERVER="$1"
 SERVER_IP="$2"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
 
-failed=0
+incdir=`dirname $0`
+. $incdir/test_functions.sh
 
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+failed=0
 
 # Test that a noninteractive smbclient does not prompt
 test_noninteractive_no_prompt()
@@ -96,4 +82,4 @@ testit "interactive smbclient -l prompts on stdout" \
    test_interactive_prompt_stdout -l /tmp || \
     failed=`expr $failed + 1`
 
-exit $failed
+testok $0 $failed

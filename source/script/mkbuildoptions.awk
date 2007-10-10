@@ -16,7 +16,7 @@ BEGIN {
 	print "   GNU General Public License for more details.";
 	print "   ";
 	print "   You should have received a copy of the GNU General Public License";
-	print "   along with this program; if not, see <http://www.gnu.org/licenses/>";
+	print "   along with this program; if not, see <http://www.gnu.org/licenses/>."
 	print "*/";
 	print "";
 	print "#include \"includes.h\"";
