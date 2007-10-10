@@ -90,8 +90,18 @@
 #endif
 
 #ifdef REPLACE_INET_NTOA
+/* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
-#define inet_ntoa rep_inet_ntoa
+#endif
+
+#ifndef HAVE_INET_PTON
+/* define is in "replace.h" */
+int rep_inet_pton(int af, const char *src, void *dst);
+#endif
+
+#ifndef HAVE_INET_NTOP
+/* define is in "replace.h" */
+const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
 /*
