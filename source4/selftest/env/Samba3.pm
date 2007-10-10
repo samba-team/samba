@@ -168,7 +168,13 @@ sub check_or_start($$$$) {
 		}
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
-		exec($self->binpath("timelimit"), $nmbd_maxtime, $self->binpath("nmbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+
+		my @preargs = ($self->binpath("timelimit"), $nmbd_maxtime);
+		if(defined($ENV{NMBD_VALGRIND})) { 
+			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
+		}
+
+		exec(@preargs, $self->binpath("nmbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -189,7 +195,7 @@ sub check_or_start($$$$) {
 #		}
 #
 #		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
-#		exec($self->binpath("timelimit"), $winbindd_maxtime, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+#		exec($self->binpath("timelimit"), $winbindd_maxtime, $ENV{WINBINDD_VALGRIND}, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 #	}
 #	write_pid($env_vars, "winbindd", $pid);
 #	print "DONE\n";
@@ -208,7 +214,11 @@ sub check_or_start($$$$) {
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		exec($self->binpath("timelimit"), $smbd_maxtime, $self->binpath("smbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		my @preargs = ($self->binpath("timelimit"), $smbd_maxtime);
+		if(defined($ENV{SMBD_VALGRIND})) {
+			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
+		}
+		exec(@preargs, $self->binpath("smbd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
