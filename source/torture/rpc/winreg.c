@@ -181,7 +181,7 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 				struct security_descriptor **sd_out)
 {
 	struct winreg_GetKeySecurity r;
-	struct security_descriptor *sd;
+	struct security_descriptor *sd = NULL;
 	DATA_BLOB sdblob;
 
 	ZERO_STRUCT(r);
@@ -200,6 +200,8 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	sdblob.data = r.out.sd->data;
 	sdblob.length = r.out.sd->len;
 
+	sd = talloc_zero(tctx, struct security_descriptor);
+
 	torture_assert_ntstatus_ok(tctx,
 		ndr_pull_struct_blob(&sdblob, tctx, sd,
 				     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor),
@@ -211,6 +213,8 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 
 	if (sd_out) {
 		*sd_out = sd;
+	} else {
+		talloc_free(sd);
 	}
 
 	return true;
