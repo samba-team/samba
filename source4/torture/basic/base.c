@@ -415,7 +415,7 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	cnum1 = cli->tree->tid;
 	vuid1 = cli->session->vuid;
 
-	memset(&buf, 0, 4); /* init buf so valgrind won't complain */
+	memset(buf, 0, 4); /* init buf so valgrind won't complain */
 	if (smbcli_write(cli->tree, fnum1, 0, buf, 130, 4) != 4) {
 		torture_comment(tctx, "initial write failed (%s)\n", smbcli_errstr(cli->tree));
 		return false;
