@@ -110,4 +110,8 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define INADDR_NONE 0xffffffff
 #endif
 
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
 #endif
