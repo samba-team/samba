@@ -31,7 +31,7 @@
 #define FSTRING_LEN 256
 
 _DEPRECATED_ typedef char pstring[PSTRING_LEN];
-_DEPRECATED_ typedef char fstring[FSTRING_LEN];
+typedef char fstring[FSTRING_LEN];
 
 #define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
