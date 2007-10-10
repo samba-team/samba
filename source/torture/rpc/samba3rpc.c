@@ -649,7 +649,7 @@ static bool delete_user(struct smbcli_state *cli,
 
 		status = dcerpc_samr_DeleteUser(samr_pipe, mem_ctx, &d);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("samr_DeleteUser failed\n");
+			d_printf("samr_DeleteUser failed %s\n", nt_errstr(status));
 			goto done;
 		}
 	}
