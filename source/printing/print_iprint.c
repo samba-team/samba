@@ -726,7 +726,7 @@ static int iprint_job_submit(int snum, struct printjob *pjob)
 	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	char 		*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
+	const char	*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
 
 	DEBUG(5,("iprint_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -782,7 +782,7 @@ static int iprint_job_submit(int snum, struct printjob *pjob)
 	if (strcmp(clientname, "UNKNOWN") == 0) {
 		clientname = client_addr();
 	}
-
+	
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
 	             "job-originating-host-name", NULL,
 	             clientname);

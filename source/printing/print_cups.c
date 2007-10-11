@@ -563,7 +563,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 			*response = NULL;	/* IPP Response */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	char 		*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
+	const char 	*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
 	pstring		new_jobname;
 	int		num_options = 0; 
 	cups_option_t 	*options = NULL;
