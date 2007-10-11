@@ -1292,7 +1292,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 
 	*addr = addrs[fd_index];
 
-	if (*dcnames[fd_index] != '\0' && !is_ipaddress(dcnames[fd_index])) {
+	if (*dcnames[fd_index] != '\0' && !is_ipaddress_v4(dcnames[fd_index])) {
 		/* Ok, we've got a name for the DC */
 		fstrcpy(dcname, dcnames[fd_index]);
 		return True;
@@ -1336,7 +1336,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			saf_servername, domain->name ));
 
 		/* convert an ip address to a name */
-		if ( is_ipaddress( saf_servername ) ) {
+		if ( is_ipaddress_v4( saf_servername ) ) {
 			fstring saf_name;
 			struct in_addr ip;
 

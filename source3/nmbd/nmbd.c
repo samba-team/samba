@@ -27,7 +27,6 @@ int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
 extern BOOL rescan_listen_set;
-extern struct in_addr loopback_ip;
 extern BOOL global_in_nmbd;
 
 extern BOOL override_logfile;
@@ -192,12 +191,24 @@ static BOOL reload_interfaces(time_t t)
 
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
-		struct interface *iface = get_interface(n);
+		char str[INET6_ADDRSTRLEN];
+		const struct interface *iface = get_interface(n);
+		struct in_addr ip, nmask;
 
 		if (!iface) {
 			DEBUG(2,("reload_interfaces: failed to get interface %d\n", n));
 			continue;
 		}
+
+		/* Ensure we're only dealing with IPv4 here. */
+		if (iface->ip.ss_family != AF_INET) {
+			DEBUG(2,("reload_interfaces: "
+				"ignoring non IPv4 interface.\n"));
+			continue;
+		}
+
+		ip = ((struct sockaddr_in *)&iface->ip)->sin_addr;
+		nmask = ((struct sockaddr_in *)&iface->netmask)->sin_addr;
 
 		/*
 		 * We don't want to add a loopback interface, in case
@@ -205,20 +216,24 @@ static BOOL reload_interfaces(time_t t)
 		 * ignore it here. JRA.
 		 */
 
-		if (ip_equal(iface->ip, loopback_ip)) {
-			DEBUG(2,("reload_interfaces: Ignoring loopback interface %s\n", inet_ntoa(iface->ip)));
+		if (is_loopback_addr(&iface->ip)) {
+			DEBUG(2,("reload_interfaces: Ignoring loopback "
+				"interface %s\n",
+				print_sockaddr(str, sizeof(str),
+					&iface->ip, sizeof(iface->ip)) ));
 			continue;
 		}
 
 		for (subrec=subnetlist; subrec; subrec=subrec->next) {
-			if (ip_equal(iface->ip, subrec->myip) &&
-			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+			if (ip_equal(ip, subrec->myip) &&
+			    ip_equal(nmask, subrec->mask_ip)) break;
 		}
 
 		if (!subrec) {
 			/* it wasn't found! add it */
 			DEBUG(2,("Found new interface %s\n", 
-				 inet_ntoa(iface->ip)));
+				 print_sockaddr(str, sizeof(str),
+					 &iface->ip, sizeof(iface->ip)) ));
 			subrec = make_normal_subnet(iface);
 			if (subrec)
 				register_my_workgroup_one_subnet(subrec);
@@ -229,8 +244,20 @@ static BOOL reload_interfaces(time_t t)
 	for (subrec=subnetlist; subrec; subrec=subrec->next) {
 		for (n=iface_count() - 1; n >= 0; n--) {
 			struct interface *iface = get_interface(n);
-			if (ip_equal(iface->ip, subrec->myip) &&
-			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+			struct in_addr ip, nmask;
+			if (!iface) {
+				continue;
+			}
+			/* Ensure we're only dealing with IPv4 here. */
+			if (iface->ip.ss_family != AF_INET) {
+				DEBUG(2,("reload_interfaces: "
+					"ignoring non IPv4 interface.\n"));
+				continue;
+			}
+			ip = ((struct sockaddr_in *)&iface->ip)->sin_addr;
+			nmask = ((struct sockaddr_in *)&iface->netmask)->sin_addr;
+			if (ip_equal(ip, subrec->myip) &&
+			    ip_equal(nmask, subrec->mask_ip)) break;
 		}
 		if (n == -1) {
 			/* oops, an interface has disapeared. This is
@@ -322,7 +349,9 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 {
 	struct packet_struct *p = (struct packet_struct *)data->data;
 	struct subnet_record *subrec;
-	struct in_addr *local_ip;
+	struct sockaddr_storage ss;
+	const struct sockaddr_storage *pss;
+	const struct in_addr *local_ip;
 
 	DEBUG(10, ("Received send_packet from %d\n", procid_to_pid(&src)));
 
@@ -339,14 +368,16 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 		return;
 	}
 
-	local_ip = iface_ip(p->ip);
+	in_addr_to_sockaddr_storage(&ss, p->ip);
+	pss = iface_ip(&ss);
 
-	if (local_ip == NULL) {
+	if (pss == NULL) {
 		DEBUG(2, ("Could not find ip for packet from %d\n",
 			  procid_to_pid(&src)));
 		return;
 	}
 
+	local_ip = &((const struct sockaddr_in *)pss)->sin_addr;
 	subrec = FIRST_SUBNET;
 
 	p->fd = (p->packet_type == NMB_PACKET) ?

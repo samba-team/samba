@@ -1286,102 +1286,6 @@ int interpret_protocol(const char *str,int def)
 	return(def);
 }
 
-/****************************************************************************
- Return true if a string could be a pure IP address.
-****************************************************************************/
-
-BOOL is_ipaddress(const char *str)
-{
-	BOOL pure_address = True;
-	int i;
-  
-	for (i=0; pure_address && str[i]; i++)
-		if (!(isdigit((int)str[i]) || str[i] == '.'))
-			pure_address = False;
-
-	/* Check that a pure number is not misinterpreted as an IP */
-	pure_address = pure_address && (strchr_m(str, '.') != NULL);
-
-	return pure_address;
-}
-
-/****************************************************************************
- Interpret an internet address or name into an IP address in 4 byte form.
-****************************************************************************/
-
-uint32 interpret_addr(const char *str)
-{
-	struct hostent *hp;
-	uint32 res;
-
-	if (strcmp(str,"0.0.0.0") == 0)
-		return(0);
-	if (strcmp(str,"255.255.255.255") == 0)
-		return(0xFFFFFFFF);
-
-  /* if it's in the form of an IP address then get the lib to interpret it */
-	if (is_ipaddress(str)) {
-		res = inet_addr(str);
-	} else {
-		/* otherwise assume it's a network name of some sort and use 
-			sys_gethostbyname */
-		if ((hp = sys_gethostbyname(str)) == 0) {
-			DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
-			return 0;
-		}
-
-		if(hp->h_addr == NULL) {
-			DEBUG(3,("sys_gethostbyname: host address is invalid for host %s\n",str));
-			return 0;
-		}
-		putip((char *)&res,(char *)hp->h_addr);
-	}
-
-	if (res == (uint32)-1)
-		return(0);
-
-	return(res);
-}
-
-/*******************************************************************
- A convenient addition to interpret_addr().
-******************************************************************/
-
-struct in_addr *interpret_addr2(const char *str)
-{
-	static struct in_addr ret;
-	uint32 a = interpret_addr(str);
-	ret.s_addr = a;
-	return(&ret);
-}
-
-/*******************************************************************
- Check if an IP is the 0.0.0.0.
-******************************************************************/
-
-BOOL is_zero_ip(struct in_addr ip)
-{
-	uint32 a;
-	putip((char *)&a,(char *)&ip);
-	return(a == 0);
-}
-
-/*******************************************************************
- Set an IP to 0.0.0.0.
-******************************************************************/
-
-void zero_ip(struct in_addr *ip)
-{
-        static BOOL init;
-        static struct in_addr ipzero;
-
-        if (!init) {
-                ipzero = *interpret_addr2("0.0.0.0");
-                init = True;
-        }
-
-        *ip = ipzero;
-}
 
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
@@ -1505,22 +1409,6 @@ char *automount_lookup(const char *user_name)
 }
 #endif /* WITH_NISPLUS_HOME */
 #endif
-
-/*******************************************************************
- Are two IPs on the same subnet?
-********************************************************************/
-
-BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
-{
-	uint32 net1,net2,nmask;
-
-	nmask = ntohl(mask.s_addr);
-	net1  = ntohl(ip1.s_addr);
-	net2  = ntohl(ip2.s_addr);
-            
-	return((net1 & nmask) == (net2 & nmask));
-}
-
 
 /****************************************************************************
  Check if a process exists. Does this work on all unixes?
@@ -2095,83 +1983,6 @@ BOOL is_myname(const char *s)
 	}
 	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
 	return(ret);
-}
-
-BOOL is_myname_or_ipaddr(const char *s)
-{
-	fstring name, dnsname;
-	char *servername;
-
-	if ( !s )
-		return False;
-
-	/* santize the string from '\\name' */
-
-	fstrcpy( name, s );
-
-	servername = strrchr_m( name, '\\' );
-	if ( !servername )
-		servername = name;
-	else
-		servername++;
-
-	/* optimize for the common case */
-
-	if (strequal(servername, global_myname()))
-		return True;
-
-	/* check for an alias */
-
-	if (is_myname(servername))
-		return True;
-
-	/* check for loopback */
-
-	if (strequal(servername, "127.0.0.1"))
-		return True;
-
-	if (strequal(servername, "localhost"))
-		return True;
-
-	/* maybe it's my dns name */
-
-	if ( get_mydnsfullname( dnsname ) )
-		if ( strequal( servername, dnsname ) )
-			return True;
-
-	/* handle possible CNAME records */
-
-	if ( !is_ipaddress( servername ) ) {
-		/* use DNS to resolve the name, but only the first address */
-		struct hostent *hp;
-
-		if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-			struct in_addr return_ip;
-			putip( (char*)&return_ip, (char*)hp->h_addr );
-			fstrcpy( name, inet_ntoa( return_ip ) );
-			servername = name;
-		}
-	}
-
-	/* maybe its an IP address? */
-	if (is_ipaddress(servername)) {
-		struct iface_struct nics[MAX_INTERFACES];
-		int i, n;
-		uint32 ip;
-
-		ip = interpret_addr(servername);
-		if ((ip==0) || (ip==0xffffffff))
-			return False;
-
-		n = get_interfaces(nics, MAX_INTERFACES);
-		for (i=0; i<n; i++) {
-			if (ip == nics[i].iface_addr.ip.s_addr)
-				return True;
-		}
-	}
-
-	/* no match */
-	return False;
 }
 
 /*******************************************************************

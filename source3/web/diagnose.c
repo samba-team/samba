@@ -20,8 +20,6 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-extern struct in_addr loopback_ip;
-
 #ifdef WITH_WINBIND
 
 /* check to see if winbind is running by pinging it */
@@ -36,8 +34,11 @@ BOOL winbindd_running(void)
    response */
 BOOL nmbd_running(void)
 {
+	struct in_addr loopback_ip;
 	int fd, count, flags;
 	struct in_addr *ip_list;
+
+	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 
 	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
 				 interpret_addr("127.0.0.1"), True)) != -1) {
@@ -59,8 +60,11 @@ BOOL nmbd_running(void)
    then closing it */
 BOOL smbd_running(void)
 {
+	struct in_addr loopback_ip;
 	NTSTATUS status;
 	struct cli_state *cli;
+
+	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 
 	if ((cli = cli_initialise()) == NULL)
 		return False;

@@ -145,7 +145,6 @@ int get_my_ip_address( struct in_addr **ips )
 {
 	struct iface_struct nics[MAX_INTERFACES];
 	int i, n;
-	struct in_addr loopback_ip = *interpret_addr2("127.0.0.1");
 	struct in_addr *list;
 	int count = 0;
 
@@ -158,7 +157,7 @@ int get_my_ip_address( struct in_addr **ips )
 	}
 
 	for ( i=0; i<n; i++ ) {
-		if ( nics[i].iface_addr.ip.s_addr != loopback_ip.s_addr ) {
+		if (!is_loopback_ip_v4(nics[i].iface_addr.ip.s_addr)) {
 			memcpy( &list[count++], &nics[i].iface_addr.ip, sizeof( struct in_addr ) );
 		}
 	}

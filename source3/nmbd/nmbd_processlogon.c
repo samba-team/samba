@@ -54,6 +54,19 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	pstring ascuser;
 	char *unicomp; /* Unicode computer name. */
 	size_t size;
+	struct sockaddr_storage ss;
+	const struct sockaddr_storage *pss;
+	struct in_addr ip;
+
+	in_addr_to_sockaddr_storage(&ss, p->ip);
+	pss = iface_ip(&ss);
+	if (!pss) {
+		DEBUG(5,("process_logon_packet:can't find outgoing interface "
+			"for packet from IP %s\n",
+			inet_ntoa(p->ip) ));
+		return;
+	}
+	ip = ((struct sockaddr_in *)pss)->sin_addr;
 
 	memset(outbuf, 0, sizeof(outbuf));
 
@@ -127,7 +140,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 						global_myname(), 0x0,
 						mach_str,
 						dgram->source_name.name_type,
-						p->ip, *iface_ip(p->ip), p->port);  
+						p->ip, ip, p->port);
 				break;
 			}
 
@@ -258,7 +271,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					global_myname(), 0x0,
 					source_name,
 					dgram->source_name.name_type,
-					p->ip, *iface_ip(p->ip), p->port);  
+					p->ip, ip, p->port);
 				return;
 			}
 
@@ -543,7 +556,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 					SIVAL(q, 0, 0x00000002);
 					q += 4; /* unknown */
-					SIVAL(q, 0, (iface_ip(p->ip))->s_addr);
+					SIVAL(q, 0, ntohl(ip.s_addr));
 					q += 4;
 					SIVAL(q, 0, 0x00000000);
 					q += 4; /* unknown */
@@ -573,7 +586,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					global_myname(), 0x0,
 					source_name,
 					dgram->source_name.name_type,
-					p->ip, *iface_ip(p->ip), p->port);
+					p->ip, ip, p->port);
 				break;
 			}
 

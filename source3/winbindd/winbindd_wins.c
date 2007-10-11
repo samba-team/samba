@@ -118,7 +118,10 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	for (j=iface_count() - 1;
 	     j >= 0;
 	     j--) {
-		struct in_addr *bcast = iface_n_bcast(j);
+		const struct in_addr *bcast = iface_n_bcast_v4(j);
+		if (!bcast) {
+			continue;
+		}
 		return_ip = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
 		if (return_ip) {
 			break;
