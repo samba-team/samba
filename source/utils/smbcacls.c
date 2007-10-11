@@ -768,7 +768,7 @@ static struct cli_state *connect_one(const char *share)
 	struct cli_state *c;
 	struct in_addr ip;
 	NTSTATUS nt_status;
-	zero_ip(&ip);
+	zero_ip_v4(&ip);
 	
 	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password: ");

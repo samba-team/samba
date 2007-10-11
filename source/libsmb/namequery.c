@@ -352,12 +352,18 @@ static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
+	struct sockaddr_storage ss;
 	int i;
 
 	for (i=0;i<num_interfaces;i++) {
+		const struct sockaddr_storage *pss = iface_n_bcast(i);
 		struct in_addr ip;
 		int bits1, bits2;
-		ip = *iface_n_bcast(i);
+
+		if (pss->ss_family != AF_INET) {
+			continue;
+		}
+		ip = ((const struct sockaddr_in *)pss)->sin_addr;
 		bits1 = matching_quad_bits((uchar *)&ip1->s_addr, (uchar *)&ip.s_addr);
 		bits2 = matching_quad_bits((uchar *)&ip2->s_addr, (uchar *)&ip.s_addr);
 		max_bits1 = MAX(bits1, max_bits1);
@@ -365,10 +371,12 @@ static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 	}	
 	
 	/* bias towards directly reachable IPs */
-	if (iface_local(*ip1)) {
+	in_addr_to_sockaddr_storage(&ss, *ip1);
+	if (iface_local(&ss)) {
 		max_bits1 += 32;
 	}
-	if (iface_local(*ip2)) {
+	in_addr_to_sockaddr_storage(&ss, *ip1);
+	if (iface_local(&ss)) {
 		max_bits2 += 32;
 	}
 
@@ -431,19 +439,19 @@ static int remove_duplicate_addrs2( struct ip_service *iplist, int count )
 	
 	/* one loop to remove duplicates */
 	for ( i=0; i<count; i++ ) {
-		if ( is_zero_ip(iplist[i].ip) )
+		if ( is_zero_ip_v4(iplist[i].ip) )
 			continue;
 					
 		for ( j=i+1; j<count; j++ ) {
 			if ( ip_service_equal(iplist[i], iplist[j]) )
-				zero_ip(&iplist[j].ip);
+				zero_ip_v4(&iplist[j].ip);
 		}
 	}
 			
 	/* one loop to clean up any holes we left */
 	/* first ip should never be a zero_ip() */
 	for (i = 0; i<count; ) {
-		if ( is_zero_ip(iplist[i].ip) ) {
+		if ( is_zero_ip_v4(iplist[i].ip) ) {
 			if (i != count-1 )
 				memmove(&iplist[i], &iplist[i+1], (count - i - 1)*sizeof(iplist[i]));
 			count--;
@@ -812,9 +820,14 @@ NTSTATUS name_resolve_bcast(const char *name, int name_type,
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
+		const struct sockaddr_storage *ss = iface_n_bcast(i);
 		int flags;
+
 		/* Done this way to fix compiler error on IRIX 5.x */
-		sendto_ip = *iface_n_bcast(i);
+		if (!ss || ss->ss_family != AF_INET) {
+			continue;
+		}
+		sendto_ip = ((const struct sockaddr_in *)ss)->sin_addr;
 		ip_list = name_query(sock, name, name_type, True, 
 				    True, sendto_ip, return_count, &flags, NULL);
 		if( ip_list ) 
@@ -886,7 +899,7 @@ NTSTATUS resolve_wins(const char *name, int name_type,
 
 			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
 
-			if (global_in_nmbd && ismyip(wins_ip)) {
+			if (global_in_nmbd && ismyip_v4(wins_ip)) {
 				/* yikes! we'll loop forever */
 				continue;
 			}
@@ -1144,7 +1157,7 @@ NTSTATUS resolve_ads(const char *name, int name_type,
 		   The standard reason for falling back to netbios lookups is that 
 		   our DNS server doesn't know anything about the DC's   -- jerry */	
 			   
-		if ( ! is_zero_ip(r->ip) )
+		if ( ! is_zero_ip_v4(r->ip) )
 			(*return_count)++;
 	}
 		
@@ -1173,7 +1186,7 @@ NTSTATUS internal_resolve_name(const char *name, int name_type,
 	const char *ptr;
 	BOOL allones = (strcmp(name,"255.255.255.255") == 0);
 	BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
-	BOOL is_address = is_ipaddress(name);
+	BOOL is_address = is_ipaddress_v4(name);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
@@ -1347,7 +1360,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	char *sitename = sitename_fetch(lp_realm()); /* wild guess */
 	int count = 0;
 
-	if (is_ipaddress(name)) {
+	if (is_ipaddress_v4(name)) {
 		*return_ip = *interpret_addr2(name);
 		SAFE_FREE(sitename);
 		return True;

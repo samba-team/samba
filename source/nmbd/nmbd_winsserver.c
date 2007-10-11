@@ -1273,7 +1273,7 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
 	if ( namerec != NULL ) {
 		pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 		if( is_myname(name) ) {
-			if(!ismyip(from_ip)) {
+			if(!ismyip_v4(from_ip)) {
 				DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
 is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
 				send_wins_name_registration_response(RFS_ERR, 0, p);
@@ -1595,7 +1595,7 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
 	 */
 
 	if((namerec != NULL) && (is_myname(namerec->name.name)) ) {
-		if(!ismyip(from_ip)) {
+		if(!ismyip_v4(from_ip)) {
 			DEBUG(3,("wins_process_multihomed_name_registration_request: Attempt to register name %s. Name \
 is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
 			send_wins_name_registration_response(RFS_ERR, 0, p);

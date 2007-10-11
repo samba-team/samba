@@ -650,7 +650,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 * back to netbios lookups is that our DNS server doesn't know
 		 * anything about the DC's   -- jerry */
 
-		if (!is_zero_ip(r->ip)) {
+		if (!is_zero_ip_v4(r->ip)) {
 			(*return_count)++;
 			continue;
 		}

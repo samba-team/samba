@@ -101,6 +101,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	struct ifaddrs *iflist = NULL;
 	struct ifaddrs *ifptr = NULL;
 	int total = 0;
+	size_t copy_size;
 
 	if (getifaddrs(&iflist) < 0) {
 		return -1;
@@ -111,25 +112,40 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			ifptr != NULL && total < max_interfaces;
 			ifptr = ifptr->ifa_next) {
 
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
+
+		copy_size = sizeof(struct sockaddr_in);
+
 		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
 			continue;
 		}
 
-		/* Skip ipv6 for now. */
-		if (ifptr->ifa_addr->sa_family != AF_INET) {
+		ifaces[total].flags = ifptr->ifa_flags;
+
+		/* Check the interface is up. */
+		if (!(ifaces[total].flags & IFF_UP)) {
 			continue;
 		}
-		if (!(ifptr->ifa_flags & IFF_UP)) {
+
+#ifdef AF_INET6
+		if (ifptr->ifa_addr->sa_family == AF_INET6) {
+			copy_size = sizeof(struct sockaddr_in6);
+		}
+#endif
+
+		memcpy(&ifaces[total].ip, ifptr->ifa_addr, copy_size);
+		memcpy(&ifaces[total].netmask, ifptr->ifa_netmask, copy_size);
+		if (ifaces[total].flags & IFF_BROADCAST) {
+			memcpy(&ifaces[total].bcast,
+				ifptr->ifa_broadaddr,
+				copy_size);
+		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
+			memcpy(&ifaces[total].bcast,
+				ifptr->ifa_dstaddr,
+				copy_size);
+		} else {
 			continue;
 		}
-
-		ifaces[total].sa_family = ifptr->ifa_addr->sa_family;
-
-		ifaces[total].iface_addr.ip =
-			((struct sockaddr_in *)ifptr->ifa_addr)->sin_addr;
-
-		ifaces[total].iface_netmask.netmask =
-			((struct sockaddr_in *)ifptr->ifa_netmask)->sin_addr;
 
 		strncpy(ifaces[total].name, ifptr->ifa_name,
 				sizeof(ifaces[total].name)-1);
@@ -162,9 +178,6 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
 	int total = 0;
-	struct in_addr ipaddr;
-	struct in_addr nmask;
-	char *iname;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
@@ -184,32 +197,54 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 	/* Loop through interfaces, looking for given IP address */
 	for (i=n-1;i>=0 && total < max_interfaces;i--) {
-		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
-			continue;
-		}
 
-		iname = ifr[i].ifr_name;
-		ipaddr = (*(struct sockaddr_in *)&ifr[i].ifr_addr).sin_addr;
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
 
+		/* Check the interface is up. */
 		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) != 0) {
 			continue;
 		}
 
-		if (!(ifr[i].ifr_flags & IFF_UP)) {
+		ifaces[total].flags = ifr[i].ifr_flags;
+
+		if (!(flags & IFF_UP)) {
 			continue;
 		}
+
+		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
+			continue;
+		}
+
+		strncpy(ifaces[total].name, ifr[i].ifr_name,
+				sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+
+		memcpy(&ifaces[total].ip, &ifr[i].ifr_addr,
+				sizeof(struct sockaddr_in));
 
 		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != 0) {
 			continue;
 		}
 
-		nmask = ((struct sockaddr_in *)&ifr[i].ifr_addr)->sin_addr;
+		memcpy(&ifaces[total].netmask, &ifr[i].ifr_netmask,
+				sizeof(struct sockaddr_in));
 
-		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
-		ifaces[total].sa_family = AF_INET;
-		ifaces[total].iface_addr.ip = ipaddr;
-		ifaces[total].iface_netmask.netmask = nmask;
+		if (ifaces[total].flags & IFF_BROADCAST) {
+			if (ioctl(fd, SIOCGIFBRDADDR, &ifr[i]) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifr[i].ifr_broadaddr,
+				sizeof(struct sockaddr_in));
+		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
+			if (ioctl(fd, SIOCGIFDSTADDR, &ifr[i]) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifr[i].ifr_dstaddr,
+				sizeof(struct sockaddr_in));
+		} else {
+			continue;
+		}
+
 		total++;
 	}
 
@@ -239,9 +274,6 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
 	int total = 0;
-	struct in_addr ipaddr;
-	struct in_addr nmask;
-	char *iname;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
@@ -271,6 +303,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	/* Loop through interfaces */
 
 	for (i = 0; i<n && total < max_interfaces; i++) {
+
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
+
 		ifreq = ifr[i];
 
 		strioctl.ic_cmd = SIOCGIFFLAGS;
@@ -280,7 +315,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		if (!(ifreq.ifr_flags & IFF_UP)) {
+		ifaces[total].flags = ifreq.ifr_flags;
+
+		if (!(ifaces[total].flags & IFF_UP)) {
 			continue;
 		}
 
@@ -291,8 +328,12 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		ipaddr = (*(struct sockaddr_in *) &ifreq.ifr_addr).sin_addr;
-		iname = ifreq.ifr_name;
+		strncpy(ifaces[total].name, iname,
+				sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+
+		memcpy(&ifaces[total].ip, &ifreq.ifr_addr,
+				sizeof(struct sockaddr_in));
 
 		strioctl.ic_cmd = SIOCGIFNETMASK;
 		strioctl.ic_dp  = (char *)&ifreq;
@@ -301,13 +342,30 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		nmask = ((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr;
+		memcpy(&ifaces[total].netmask, &ifreq.ifr_addr,
+				sizeof(struct sockaddr_in));
 
-		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
-		ifaces[total].sa_family = AF_INET;
-		ifaces[total].iface_addr.ip = ipaddr;
-		ifaces[total].iface_netmask.netmask = nmask;
+		if (ifaces[total].flags & IFF_BROADCAST) {
+			strioctl.ic_cmd = SIOCGIFBRDADDR;
+			strioctl.ic_dp  = (char *)&ifreq;
+			strioctl.ic_len = sizeof(struct ifreq);
+			if (ioctl(fd, I_STR, &strioctl) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifreq.ifr_broadaddr,
+				sizeof(struct sockaddr_in));
+		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
+			strioctl.ic_cmd = SIOCGIFDSTADDR;
+			strioctl.ic_dp  = (char *)&ifreq;
+			strioctl.ic_len = sizeof(struct ifreq);
+			if (ioctl(fd, I_STR, &strioctl) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifreq.ifr_dstaddr,
+				sizeof(struct sockaddr_in));
+		} else {
+			continue;
+		}
 
 		total++;
 	}
@@ -331,9 +389,6 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	int fd, i;
 	struct ifconf ifc;
 	struct ifreq *ifr=NULL;
-	struct in_addr ipaddr;
-	struct in_addr nmask;
-	char *iname;
 	int total = 0;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -357,34 +412,54 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	while (i > 0 && total < max_interfaces) {
 		uint_t inc;
 
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
+
 		inc = ifr->ifr_addr.sa_len;
-
-		if (ioctl(fd, SIOCGIFADDR, ifr) != 0) {
-			goto next;
-		}
-
-		ipaddr = (*(struct sockaddr_in *) &ifr->ifr_addr).sin_addr;
-		iname = ifr->ifr_name;
 
 		if (ioctl(fd, SIOCGIFFLAGS, ifr) != 0) {
 			goto next;
 		}
 
-		if (!(ifr->ifr_flags & IFF_UP)) {
+		ifaces[total].flags = ifr->ifr_flags;
+
+		if (!(ifaces[total].flags & IFF_UP)) {
 			goto next;
 		}
+
+		if (ioctl(fd, SIOCGIFADDR, ifr) != 0) {
+			goto next;
+		}
+
+		memcpy(&ifaces[total].ip, &ifr->ifr_addr,
+				sizeof(struct sockaddr_in));
+
+		strncpy(ifaces[total].name, ifr->ifr_name,
+				sizeof(ifaces[total].name)-1);
+		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
 
 		if (ioctl(fd, SIOCGIFNETMASK, ifr) != 0) {
 			goto next;
 		}
 
-		nmask = ((struct sockaddr_in *)&ifr->ifr_addr)->sin_addr;
+		memcpy(&ifaces[total].netmask, &ifr->ifr_addr,
+				sizeof(struct sockaddr_in));
 
-		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
-		ifaces[total].sa_family = AF_INET;
-		ifaces[total].iface_addr.ip = ipaddr;
-		ifaces[total].iface_netmask.netmask = nmask;
+		if (ifaces[total].flags & IFF_BROADCAST) {
+			if (ioctl(fd, SIOCGIFBRDADDR, &ifr[i]) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifr[i].ifr_broadaddr,
+				sizeof(struct sockaddr_in));
+		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
+			if (ioctl(fd, SIOCGIFDSTADDR, &ifr[i]) != 0) {
+				continue;
+			}
+			memcpy(&ifaces[total].bcast, &ifr[i].ifr_dstaddr,
+				sizeof(struct sockaddr_in));
+		} else {
+			continue;
+		}
+
 
 		total++;
 
@@ -421,25 +496,36 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 {
 	int r;
-	r = strcmp(i1->name, i2->name);
-	if (r) {
-		return r;
-	}
-	r = i1->sa_family - i2->sa_family;
-	if (r) {
-		return r;
-	}
 
 #ifdef AF_INET6
-	if (i1->sa_family == AF_INET6) {
-		r = memcmp(&i1->iface_addr.ip6,
-				&i2->iface_addr.ip6,
+	/*
+	 * If we have IPv6 - sort these interfaces lower
+	 * than any IPv4 ones.
+	 */
+	if (i1->ip.ss_family == AF_INET6 &&
+			i2->ip.ss_family == AF_INET) {
+		return -1;
+	} else if (i1->ip.ss_family == AF_INET &&
+			i2->ip.ss_family == AF_INET6) {
+		return 1;
+	}
+
+	if (i1->ip.ss_family == AF_INET6) {
+		struct sockaddr_in6 *s1 = (struct sockaddr_in6 *)&i1->ip;
+		struct sockaddr_in6 *s2 = (struct sockaddr_in6 *)&i2->ip;
+
+		r = memcmp(&s1->sin6_addr,
+				&s2->sin6_addr,
 				sizeof(struct in6_addr));
 		if (r) {
 			return r;
 		}
-		r = memcmp(&i1->iface_netmask.netmask6,
-				&i1->iface_netmask.netmask6,
+
+		s1 = (struct sockaddr_in6 *)&i1->netmask;
+		s2 = (struct sockaddr_in6 *)&i2->netmask;
+
+		r = memcmp(&s1->sin6_addr,
+				&s2->sin6_addr,
 				sizeof(struct in6_addr));
 		if (r) {
 			return r;
@@ -447,14 +533,21 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 	}
 #endif
 
-	if (i1->sa_family == AF_INET) {
-		r = ntohl(i1->iface_addr.ip.s_addr) -
-			ntohl(i2->iface_addr.ip.s_addr);
+	if (i1->ip.ss_family == AF_INET) {
+		struct sockaddr_in *s1 = (struct sockaddr_in *)&i1->ip;
+		struct sockaddr_in *s2 = (struct sockaddr_in *)&i2->ip;
+
+		r = ntohl(s1->sin_addr.s_addr) -
+			ntohl(s2->sin_addr.s_addr);
 		if (r) {
 			return r;
 		}
-		r = ntohl(i1->iface_netmask.netmask.s_addr) -
-			ntohl(i2->iface_netmask.netmask.s_addr);
+
+		s1 = (struct sockaddr_in *)&i1->netmask;
+		s2 = (struct sockaddr_in *)&i2->netmask;
+
+		r = ntohl(s1->sin_addr.s_addr) -
+			ntohl(s2->sin_addr.s_addr);
 	}
 	return r;
 }
@@ -503,15 +596,26 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 	for (i=0;i<total;i++) {
 		char addr[INET6_ADDRSTRLEN];
+		int ret;
 		printf("%-10s ", ifaces[i].name);
-		printf("IP=%s ", inet_ntop(ifaces[i].sa_family,
-					(const void *)&ifaces[i].iface_addr.ip,
-					addr,
-					sizeof(addr)));
-		printf("NETMASK=%s\n", inet_ntop(ifaces[i].sa_family,
-				(const void *)&ifaces[i].iface_netmask.netmask,
-				addr,
-				sizeof(addr)));
+		addr[0] = '\0';
+		ret = getnameinfo((struct sockaddr *)&ifaces[i].ip,
+				sizeof(ifaces[i].ip),
+				addr, sizeof(addr),
+				NULL, 0, NI_NUMERICHOST);
+		printf("IP=%s ", addr);
+		addr[0] = '\0';
+		ret = getnameinfo((struct sockaddr *)&ifaces[i].netmask,
+				sizeof(ifaces[i].netmask),
+				addr, sizeof(addr),
+				NULL, 0, NI_NUMERICHOST);
+		printf("NETMASK=%s ", addr);
+		addr[0] = '\0';
+		ret = getnameinfo((struct sockaddr *)&ifaces[i].bcast,
+				sizeof(ifaces[i].bcast),
+				addr, sizeof(addr),
+				NULL, 0, NI_NUMERICHOST);
+		printf("BCAST=%s\n", addr);
 	}
 	return 0;
 }

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern struct in_addr allones_ip;
-
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
 static void become_domain_master_browser_bcast(const char *);
@@ -119,7 +117,7 @@ in workgroup %s on subnet %s\n",
 	if( subrec == unicast_subnet ) {
 		struct nmb_name nmbname;
 		struct in_addr my_first_ip;
-		struct in_addr *nip;
+		const struct in_addr *nip;
 
 		/* Put our name and first IP address into the 
 		   workgroup struct as domain master browser. This
@@ -129,14 +127,14 @@ in workgroup %s on subnet %s\n",
 		make_nmb_name(&nmbname, global_myname(), 0x20);
 
 		work->dmb_name = nmbname;
-		/* Pick the first interface ip address as the domain master browser ip. */
-		nip = iface_n_ip(0);
 
+		/* Pick the first interface IPv4 address as the domain master browser ip. */
+		nip = first_ipv4_iface();
 		if (!nip) {
-			DEBUG(0,("become_domain_master_stage2: Error. iface_n_ip returned NULL\n"));
+			DEBUG(0,("become_domain_master_stage2: "
+				"Error. get_interface returned NULL\n"));
 			return;
 		}
-
 		my_first_ip = *nip;
 
 		putip((char *)&work->dmb_addr, &my_first_ip);
@@ -204,10 +202,12 @@ workgroup %s on subnet %s\n", wg_name, subrec->subnet_name));
 
 static void become_domain_master_query_success(struct subnet_record *subrec,
                         struct userdata_struct *userdata,
-                        struct nmb_name *nmbname, struct in_addr ip, 
+                        struct nmb_name *nmbname, struct in_addr ip,
                         struct res_rec *rrec)
 {
 	unstring name;
+	struct in_addr allones_ip;
+
 	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 
 	/* If the given ip is not ours, then we can't become a domain
@@ -217,7 +217,9 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
 	/* BUG note. Samba 1.9.16p11 servers seem to return the broadcast
 		address or zero ip for this query. Pretend this is ok. */
 
-	if(ismyip(ip) || ip_equal(allones_ip, ip) || is_zero_ip(ip)) {
+	allones_ip.s_addr = htonl(INADDR_BROADCAST);
+
+	if(ismyip_v4(ip) || ip_equal(allones_ip, ip) || is_zero_ip_v4(ip)) {
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "become_domain_master_query_success():\n" );
 			dbgtext( "Our address (%s) ", inet_ntoa(ip) );

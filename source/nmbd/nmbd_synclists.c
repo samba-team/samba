@@ -149,7 +149,7 @@ void sync_browse_lists(struct work_record *work,
 	START_PROFILE(sync_browse_lists);
 	/* Check we're not trying to sync with ourselves. This can
 	   happen if we are a domain *and* a local master browser. */
-	if (ismyip(ip)) {
+	if (ismyip_v4(ip)) {
 done:
 		END_PROFILE(sync_browse_lists);
 		return;

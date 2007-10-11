@@ -107,7 +107,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 
 	if(namerec && original_packet->packet.nmb.header.nm_flags.bcast) {
 		for( i = 0; i < namerec->data.num_ips; i++) {
-			if( same_net( namerec->data.ip[i], orig_broadcast_subnet->myip,
+			if( same_net_v4( namerec->data.ip[i], orig_broadcast_subnet->myip,
 					orig_broadcast_subnet->mask_ip ) ) {
 				DEBUG( 5, ( "wins_proxy_name_query_request_success: name %s is a WINS \
 proxy name and is also on the same subnet (%s) as the requestor. \

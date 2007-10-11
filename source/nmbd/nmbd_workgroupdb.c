@@ -110,7 +110,7 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 
 	/* No known domain master browser as yet. */
 	*work->dmb_name.name = '\0';
-	zero_ip(&work->dmb_addr);
+	zero_ip_v4(&work->dmb_addr);
 
 	/* WfWg  uses 01040b01 */
 	/* Win95 uses 01041501 */

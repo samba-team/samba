@@ -279,7 +279,7 @@ static BOOL only_ipaddrs_in_list(const char** list)
 			continue;
 		}
 		
-		if (!is_ipaddress(*list)) {
+		if (!is_ipaddress_v4(*list)) {
 			/* 
 			 * if we failed, make sure that it was not because the token
 			 * was a network/netmask pair.  Only network/netmask pairs

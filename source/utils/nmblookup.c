@@ -141,11 +141,14 @@ static BOOL query_one(const char *lookup, unsigned int lookup_type)
 				     use_bcast?True:recursion_desired,
 				     bcast_addr,&count, &flags, NULL);
 	} else {
-		struct in_addr *bcast;
+		const struct in_addr *bcast;
 		for (j=iface_count() - 1;
 		     !ip_list && j >= 0;
 		     j--) {
-			bcast = iface_n_bcast(j);
+			bcast = iface_n_bcast_v4(j);
+			if (!bcast) {
+				continue;
+			}
 			d_printf("querying %s on %s\n", 
 			       lookup, inet_ntoa(*bcast));
 			ip_list = name_query(ServerFD,lookup,lookup_type,
