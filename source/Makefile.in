@@ -917,8 +917,8 @@ LDBADD_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbadd.o
 LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
-SMB_KRB5_LOCATOR_OBJ1 = nsswitch/smb_krb5_locator.o
-SMB_KRB5_LOCATOR_OBJ = $(SMB_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
+WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
+WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -997,7 +997,7 @@ replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
 timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
-	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@ @SMB_KRB5_LOCATOR@
+	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@ @WINBIND_KRB5_LOCATOR@
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
@@ -1453,9 +1453,9 @@ bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@
 		$(LDAP_LIBS) $(KRB5LIBS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-bin/smb_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(SMB_KRB5_LOCATOR_OBJ)
+bin/winbind_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(WINBIND_KRB5_LOCATOR_OBJ)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(SMB_KRB5_LOCATOR_OBJ) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_KRB5_LOCATOR_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ)

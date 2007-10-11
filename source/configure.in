@@ -3751,8 +3751,8 @@ if test x"$with_ads_support" != x"no"; then
   fi
   AC_CHECK_HEADERS(krb5/locate_plugin.h)
   if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
-	SMB_KRB5_LOCATOR="bin/smb_krb5_locator.$SHLIBEXT"
-	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $SMB_KRB5_LOCATOR"
+	WINBIND_KRB5_LOCATOR="bin/winbind_krb5_locator.$SHLIBEXT"
+	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
   fi
 fi
 
@@ -6025,7 +6025,7 @@ AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 AC_SUBST(NSSSONAMEVERSIONSUFFIX)
 
-AC_SUBST(SMB_KRB5_LOCATOR)
+AC_SUBST(WINBIND_KRB5_LOCATOR)
 
 # Check the setting of --with-winbind
 
