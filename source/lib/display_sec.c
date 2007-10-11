@@ -66,6 +66,23 @@ void display_sec_access(SEC_ACCESS *info)
 }
 
 /****************************************************************************
+ display sec_ace object
+ ****************************************************************************/
+static void disp_sec_ace_object(struct security_ace_object *object)
+{
+	if (object->flags & SEC_ACE_OBJECT_PRESENT) {
+		printf("Object type: SEC_ACE_OBJECT_PRESENT\n");
+		printf("Object GUID: %s\n", smb_uuid_string_static(
+			object->type.type));
+	}
+	if (object->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
+		printf("Object type: SEC_ACE_OBJECT_INHERITED_PRESENT\n");
+		printf("Object GUID: %s\n", smb_uuid_string_static(
+			object->inherited_type.inherited_type));
+	}
+}
+
+/****************************************************************************
  display sec_ace structure
  ****************************************************************************/
 void display_sec_ace(SEC_ACE *ace)
@@ -86,14 +103,35 @@ void display_sec_ace(SEC_ACE *ace)
 		case SEC_ACE_TYPE_SYSTEM_ALARM:
 			printf("SYSTEM ALARM");
 			break;
+		case SEC_ACE_TYPE_ALLOWED_COMPOUND:
+			printf("SEC_ACE_TYPE_ALLOWED_COMPOUND");
+			break;
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+			printf("SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT");
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			printf("SEC_ACE_TYPE_ACCESS_DENIED_OBJECT");
+			break;
+		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+			printf("SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT");
+			break;
+		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+			printf("SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT");
+			break;
 		default:
 			printf("????");
 			break;
 	}
+
 	printf(" (%d) flags: %d\n", ace->type, ace->flags);
 	display_sec_access(&ace->access_mask);
 	sid_to_string(sid_str, &ace->trustee);
 	printf("\t\tSID: %s\n\n", sid_str);
+
+	if (sec_ace_object(ace->type)) {
+		disp_sec_ace_object(&ace->object.object);
+	}
+
 }
 
 /****************************************************************************
@@ -110,7 +148,6 @@ void display_sec_acl(SEC_ACL *sec_acl)
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
 		for (i = 0; i < sec_acl->num_aces; i++)
 			display_sec_ace(&sec_acl->aces[i]);
-				
 }
 
 void display_acl_type(uint16 type)
@@ -187,6 +224,6 @@ void display_sec_desc(SEC_DESC *sec)
 
 	if (sec->group_sid) {
 		sid_to_string(sid_str, sec->group_sid);
-		printf("\tParent SID:\t%s\n", sid_str);
+		printf("\tGroup SID:\t%s\n", sid_str);
 	}
 }
