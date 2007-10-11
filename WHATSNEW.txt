@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.2.0pre1
-                               Sep 28, 2007
+                   Release Notes for Samba 3.2.0pre2
+                               Oct XX, 2007
                    =================================
 
-This is the first preview release of Samba 3.2.0.  This is *not*
+This is the second preview release of Samba 3.2.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -117,9 +117,12 @@ smb.conf changes
     winbind rpc only                    New             No
 
 
-Commit Highlights:
-------------------
+Changes since 3.2.0pre1:
+-----------------------
 
+
+Original 3.2.0pre1 commits:
+---------------------------
 o   Michael Adam <obnox@samba.org>
     * Unified POSIX ACL detection including support for FreeBSD and
       HP-UX.
