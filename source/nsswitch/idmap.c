@@ -252,12 +252,6 @@ NTSTATUS idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-/**********************************************************************
- Initialise idmap cache and a remote backend (if configured).
-**********************************************************************/
-
-static const char *idmap_default_domain[] = { "default domain", NULL };
-
 /****************************************************************************
  ****************************************************************************/
 
@@ -292,6 +286,7 @@ NTSTATUS idmap_init(void)
 	char *compat_backend = NULL;
 	char *compat_params = NULL;
 	const char **dom_list = NULL;
+	const char *default_domain = NULL;
 	char *alloc_backend = NULL;
 	BOOL default_already_defined = False;
 	BOOL pri_dom_is_in_list = False;
@@ -321,12 +316,6 @@ NTSTATUS idmap_init(void)
 		} else {
 			compat = 1;
 
-			compat_backend = talloc_strdup(idmap_ctx, *compat_list);
-			if (compat_backend == NULL) {
-				ret = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-
 			/* strip any leading idmap_ prefix of */
 			if (strncmp(*compat_list, "idmap_", 6) == 0 ) {
 				q = *compat_list += 6;
@@ -338,6 +327,11 @@ NTSTATUS idmap_init(void)
 			} else {
 				compat_backend = talloc_strdup(idmap_ctx,
 								*compat_list);
+			}
+
+			if (compat_backend == NULL) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
 			}
 
 			/* separate the backend and module arguements */
@@ -356,7 +350,25 @@ NTSTATUS idmap_init(void)
 	}
 
 	if ( ! dom_list) {
-		dom_list = idmap_default_domain;
+		/* generate a list with our main domain */
+		char ** dl;
+
+		dl = talloc_array(idmap_ctx, char *, 2);
+		if (dl == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		dl[0] = talloc_strdup(dl, lp_workgroup());
+		if (dl[0] == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		/* terminate */
+		dl[1] = NULL;
+
+		dom_list = dl;
+		default_domain = dl[0];
 	}
 
 	/***************************
@@ -398,10 +410,10 @@ NTSTATUS idmap_init(void)
 						   "default", False);
 
 		if (dom->default_domain ||
-		    strequal(dom_list[i], idmap_default_domain[0])) {
+		    (default_domain && strequal(dom_list[i], default_domain))) {
 
 			/* make sure this is set even when we match
-			 * idmap_default_domain[0] */
+			 * default_domain */
 			dom->default_domain = True;
 
 			if (default_already_defined) {
