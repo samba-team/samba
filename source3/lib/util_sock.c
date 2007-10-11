@@ -388,7 +388,7 @@ void client_setfd(int fd)
  Return a static string of an IP address (IPv4 or IPv6).
 ****************************************************************************/
 
-static char *get_socket_addr(int fd)
+static const char *get_socket_addr(int fd)
 {
 	struct sockaddr_storage sa;
 	socklen_t length = sizeof(sa);
@@ -444,17 +444,17 @@ static int get_socket_port(int fd)
 	return -1;
 }
 
-char *client_name(void)
+const char *client_name(void)
 {
 	return get_peer_name(client_fd,false);
 }
 
-char *client_addr(void)
+const char *client_addr(void)
 {
 	return get_peer_addr(client_fd);
 }
 
-char *client_socket_addr(void)
+const char *client_socket_addr(void)
 {
 	return get_socket_addr(client_fd);
 }
@@ -1598,14 +1598,14 @@ static bool matchname(char *remotehost,struct in_addr  addr)
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-char *get_peer_name(int fd, bool force_lookup)
+const char *get_peer_name(int fd, bool force_lookup)
 {
 	static pstring name_buf;
 	pstring tmp_name;
 	static fstring addr_buf;
 	struct hostent *hp;
 	struct in_addr addr;
-	char *p;
+	const char *p;
 
 	/* reverse lookups can be *very* expensive, and in many
 	   situations won't work because many networks don't link dhcp
@@ -1659,27 +1659,28 @@ char *get_peer_name(int fd, bool force_lookup)
  Return the IP addr of the remote end of a socket as a string.
  ******************************************************************/
 
-char *get_peer_addr(int fd)
+const char *get_peer_addr(int fd)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	socklen_t length = sizeof(sa);
-	static fstring addr_buf;
+	struct sockaddr_storage ss;
+	socklen_t length = sizeof(ss);
+	static char addr_buf[INET6_ADDRSTRLEN];
 
-	fstrcpy(addr_buf,"0.0.0.0");
+	safe_strcpy(addr_buf,"0.0.0.0",sizeof(addr_buf)-1);
 
 	if (fd == -1) {
 		return addr_buf;
 	}
 
-	if (getpeername(fd, &sa, &length) < 0) {
+	if (getpeername(fd, (struct sockaddr *)&ss, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n",
 					strerror(errno) ));
 		return addr_buf;
 	}
 
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-
+	print_sockaddr(addr_buf,
+			sizeof(addr_buf),
+			&ss,
+			length);
 	return addr_buf;
 }
 

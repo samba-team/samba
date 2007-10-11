@@ -633,7 +633,7 @@ const char *cgi_pathinfo(void)
 /***************************************************************************
 return the hostname of the client
   ***************************************************************************/
-char *cgi_remote_host(void)
+const char *cgi_remote_host(void)
 {
 	if (inetd_server) {
 		return get_peer_name(1,False);
@@ -644,7 +644,7 @@ char *cgi_remote_host(void)
 /***************************************************************************
 return the hostname of the client
   ***************************************************************************/
-char *cgi_remote_addr(void)
+const char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
 		return get_peer_addr(1);

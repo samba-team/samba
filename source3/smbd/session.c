@@ -65,7 +65,7 @@ BOOL session_claim(user_struct *vuser)
 	struct sessionid sessionid;
 	struct server_id pid = procid_self();
 	fstring keystr;
-	char * hostname;
+	const char * hostname;
 	struct db_context *ctx;
 	struct db_record *rec;
 	NTSTATUS status;
