@@ -3853,7 +3853,7 @@ static int do_message_op(void)
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
 	fstrcat(server_name, name_type_hex);
 
-        zero_ip(&ip);
+        zero_ip_v4(&ip);
 	if (have_ip) 
 		ip = dest_ip;
 
@@ -3994,7 +3994,7 @@ static int do_message_op(void)
 		case 'I':
 			{
 				dest_ip = *interpret_addr2(poptGetOptArg(pc));
-				if (is_zero_ip(dest_ip))
+				if (is_zero_ip_v4(dest_ip))
 					exit(1);
 				have_ip = True;
 

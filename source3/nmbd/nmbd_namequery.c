@@ -35,7 +35,7 @@ static void query_name_response( struct subnet_record   *subrec,
 	struct nmb_name *question_name = &rrec->packet->packet.nmb.question.question_name;
 	struct in_addr answer_ip;
 
-	zero_ip(&answer_ip);
+	zero_ip_v4(&answer_ip);
 
 	/* Ensure we don't retry the query but leave the response record cleanup
 		to the timeout code. We may get more answer responses in which case

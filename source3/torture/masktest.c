@@ -179,13 +179,13 @@ static struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-        zero_ip(&ip);
+        zero_ip_v4(&ip);
 
 	make_nmb_name(&calling, "masktest", 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip(&ip);
+        zero_ip_v4(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise())) {

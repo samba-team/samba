@@ -654,7 +654,7 @@ smbc_server(SMBCCTX *context,
         const char *username_used;
  	NTSTATUS status;
 
-	zero_ip(&ip);
+	zero_ip_v4(&ip);
 	ZERO_STRUCT(c);
 
 	if (server[0] == 0) {
@@ -742,7 +742,7 @@ smbc_server(SMBCCTX *context,
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-	zero_ip(&ip);
+	zero_ip_v4(&ip);
 
 	/* have to open a new connection */
 	if ((c = cli_initialise()) == NULL) {
@@ -796,7 +796,7 @@ smbc_server(SMBCCTX *context,
 
 			/* Only try this if server is an IP address ... */
 
-			if (is_ipaddress(server) && !tried_reverse) {
+			if (is_ipaddress_v4(server) && !tried_reverse) {
 				fstring remote_name;
 				struct in_addr rem_ip;
 
@@ -962,7 +962,7 @@ smbc_attr_server(SMBCCTX *context,
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
 
-                zero_ip(&ip);
+                zero_ip_v4(&ip);
                 nt_status = cli_full_connection(&ipc_cli,
                                                 global_myname(), server, 
                                                 &ip, 0, "IPC$", "?????",  
@@ -2761,7 +2761,7 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * LMB or DMB
                          */
 			if (!srv &&
-                            !is_ipaddress(server) &&
+                            !is_ipaddress_v4(server) &&
 			    (resolve_name(server, &rem_ip, 0x1d) ||   /* LMB */
                              resolve_name(server, &rem_ip, 0x1b) )) { /* DMB */
 

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern struct in_addr loopback_ip;
-
 /*
   This is pretty much a complete rewrite of the earlier code. The main
   aim of the rewrite is to add support for having multiple wins server
@@ -134,7 +132,7 @@ void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 {
 	char *keystr;
 
-	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip, src_ip))
+	if (is_zero_ip_v4(wins_ip) || wins_srv_is_dead(wins_ip, src_ip))
 		return;
 
 	keystr = wins_srv_keystr(wins_ip, src_ip);
@@ -284,13 +282,15 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 
 	/* if we are a wins server then we always just talk to ourselves */
 	if (lp_wins_support()) {
+		struct in_addr loopback_ip;
+		loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 		return loopback_ip;
 	}
 
 	list = lp_wins_server_list();
 	if (!list || !list[0]) {
 		struct in_addr ip;
-		zero_ip(&ip);
+		zero_ip_v4(&ip);
 		return ip;
 	}
 
@@ -322,7 +322,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 	}
 
 	/* this can't happen?? */
-	zero_ip(&t_ip.ip);
+	zero_ip_v4(&t_ip.ip);
 	return t_ip.ip;
 }
 

@@ -2534,13 +2534,13 @@ static BOOL spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	struct cli_state *the_cli;
 	struct in_addr rm_addr;
 
-	if ( is_zero_ip(*client_ip) ) {
+	if ( is_zero_ip_v4(*client_ip) ) {
 		if ( !resolve_name( remote_machine, &rm_addr, 0x20) ) {
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return False;
 		}
 
-		if ( ismyip( rm_addr )) {
+		if ( ismyip_v4( rm_addr )) {
 			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
 			return False;
 		}

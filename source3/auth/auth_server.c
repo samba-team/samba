@@ -59,7 +59,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		if (ismyip(dest_ip)) {
+		if (ismyip_v4(dest_ip)) {
 			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
 			continue;
 		}

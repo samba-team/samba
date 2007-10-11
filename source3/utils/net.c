@@ -89,7 +89,6 @@ BOOL opt_testmode = False;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
-extern struct in_addr loopback_ip;
 extern BOOL AllowDebugChange;
 
 uint32 get_sec_channel_type(const char *param) 
@@ -407,7 +406,7 @@ BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_
 		if (get_pdc_ip(d, &pdc_ip)) {
 			fstring dc_name;
 			
-			if (is_zero_ip(pdc_ip))
+			if (is_zero_ip_v4(pdc_ip))
 				return False;
 			
 			if ( !name_status_find(d, 0x1b, 0x20, pdc_ip, dc_name) )
@@ -437,7 +436,7 @@ BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_
 		}
 		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
-		*server_ip = loopback_ip;
+		(*server_ip).s_addr = htonl(INADDR_LOOPBACK);
 		*server_name = SMB_STRDUP("127.0.0.1");
 	}
 
@@ -453,7 +452,7 @@ BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_
 BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	if (get_pdc_ip(domain_name, server_ip)) {
-		if (is_zero_ip(*server_ip))
+		if (is_zero_ip_v4(*server_ip))
 			return False;
 		
 		if (!name_status_find(domain_name, 0x1b, 0x20, *server_ip, server_name))
@@ -990,7 +989,7 @@ static struct functable net_func[] = {
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	zero_ip(&opt_dest_ip);
+	zero_ip_v4(&opt_dest_ip);
 
 	load_case_tables();
 
@@ -1009,7 +1008,7 @@ static struct functable net_func[] = {
 			break;
 		case 'I':
 			opt_dest_ip = *interpret_addr2(poptGetOptArg(pc));
-			if (is_zero_ip(opt_dest_ip))
+			if (is_zero_ip_v4(opt_dest_ip))
 				d_fprintf(stderr, "\nInvalid ip address specified\n");
 			else
 				opt_have_ip = True;

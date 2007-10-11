@@ -24,7 +24,6 @@
 
 #include "includes.h"
 
-extern struct in_addr loopback_ip;
 extern int global_nmb_port;
 
 /* This is the broadcast subnets database. */
@@ -169,12 +168,16 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
   Create a normal subnet
 **************************************************************************/
 
-struct subnet_record *make_normal_subnet(struct interface *iface)
+struct subnet_record *make_normal_subnet(const struct interface *iface)
 {
-	struct subnet_record *subrec;
 
-	subrec = make_subnet(inet_ntoa(iface->ip), NORMAL_SUBNET,
-			     iface->ip, iface->bcast, iface->nmask);
+	struct subnet_record *subrec;
+	const struct in_addr *pip = &((const struct sockaddr_in *)&iface->ip)->sin_addr;
+	const struct in_addr *pbcast = &((const struct sockaddr_in *)&iface->bcast)->sin_addr;
+	const struct in_addr *pnmask = &((const struct sockaddr_in *)&iface->netmask)->sin_addr;
+
+	subrec = make_subnet(inet_ntoa(*pip), NORMAL_SUBNET,
+			     *pip, *pbcast, *pnmask);
 	if (subrec) {
 		add_subnet(subrec);
 	}
@@ -186,8 +189,9 @@ struct subnet_record *make_normal_subnet(struct interface *iface)
 **************************************************************************/
 
 BOOL create_subnets(void)
-{    
-	int num_interfaces = iface_count();
+{
+	/* We only count IPv4 interfaces whilst we're waiting. */
+	int num_interfaces = iface_count_v4();
 	int i;
 	struct in_addr unicast_ip, ipzero;
 
@@ -197,37 +201,49 @@ BOOL create_subnets(void)
 		DEBUG(0,("create_subnets: No local interfaces !\n"));
 		DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
 
-		/* 
+		/*
 		 * Whilst we're waiting for an interface, allow SIGTERM to
 		 * cause us to exit.
 		 */
 
 		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
 
-		while (iface_count() == 0) {
+		/* We only count IPv4 interfaces here. */
+		while (iface_count_v4() == 0) {
 			sleep(5);
 			load_interfaces();
 		}
 
-		/* 
+		/*
 		 * We got an interface, restore our normal term handler.
 		 */
 
 		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
 	}
 
+	/*
+	 * Here we count v4 and v6 - we know there's at least one
+	 * IPv4 interface and we filter on it below.
+	 */
 	num_interfaces = iface_count();
 
-	/* 
+	/*
 	 * Create subnets from all the local interfaces and thread them onto
-	 * the linked list. 
+	 * the linked list.
 	 */
 
 	for (i = 0 ; i < num_interfaces; i++) {
-		struct interface *iface = get_interface(i);
+		const struct interface *iface = get_interface(i);
 
 		if (!iface) {
 			DEBUG(2,("create_subnets: can't get interface %d.\n", i ));
+			continue;
+		}
+
+		/* Ensure we're only dealing with IPv4 here. */
+		if (iface->ip.ss_family != AF_INET) {
+			DEBUG(2,("create_subnets: "
+				"ignoring non IPv4 interface.\n"));
 			continue;
 		}
 
@@ -237,7 +253,7 @@ BOOL create_subnets(void)
 		 * ignore it here. JRA.
 		 */
 
-		if (ip_equal(iface->ip, loopback_ip)) {
+		if (is_loopback_addr(&iface->ip)) {
 			DEBUG(2,("create_subnets: Ignoring loopback interface.\n" ));
 			continue;
 		}
@@ -254,8 +270,8 @@ BOOL create_subnets(void)
 	}
 
 	if (lp_we_are_a_wins_server()) {
-		/* Pick the first interface ip address as the WINS server ip. */
-		struct in_addr *nip = iface_n_ip(0);
+		/* Pick the first interface IPv4 address as the WINS server ip. */
+		const struct in_addr *nip = first_ipv4_iface();
 
 		if (!nip) {
 			return False;
@@ -266,7 +282,7 @@ BOOL create_subnets(void)
 		/* note that we do not set the wins server IP here. We just
 			set it at zero and let the wins registration code cope
 			with getting the IPs right for each packet */
-		zero_ip(&unicast_ip);
+		zero_ip_v4(&unicast_ip);
 	}
 
 	/*
@@ -279,7 +295,7 @@ BOOL create_subnets(void)
 	unicast_subnet = make_subnet( "UNICAST_SUBNET", UNICAST_SUBNET, 
 				unicast_ip, unicast_ip, unicast_ip);
 
-	zero_ip(&ipzero);
+	zero_ip_v4(&ipzero);
 
 	remote_broadcast_subnet = make_subnet( "REMOTE_BROADCAST_SUBNET",
 				REMOTE_BROADCAST_SUBNET,

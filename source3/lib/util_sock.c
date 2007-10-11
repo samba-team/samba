@@ -29,32 +29,352 @@ static int client_fd = -1;
 static char client_ip_string[INET6_ADDRSTRLEN];
 
 /****************************************************************************
- Pritn out an IPv4 or IPv6 address from a struct sockaddr_storage.
+ Return true if a string could be a pure IPv4 address.
+****************************************************************************/
+
+bool is_ipaddress_v4(const char *str)
+{
+	bool pure_address = true;
+	int i;
+
+	for (i=0; pure_address && str[i]; i++) {
+		if (!(isdigit((int)str[i]) || str[i] == '.')) {
+			pure_address = false;
+		}
+	}
+
+	/* Check that a pure number is not misinterpreted as an IP */
+	pure_address = pure_address && (strchr_m(str, '.') != NULL);
+	return pure_address;
+}
+
+/****************************************************************************
+ Interpret an internet address or name into an IP address in 4 byte form.
+****************************************************************************/
+
+uint32 interpret_addr(const char *str)
+{
+	struct hostent *hp;
+	uint32 res;
+
+	if (strcmp(str,"0.0.0.0") == 0)
+		return(0);
+	if (strcmp(str,"255.255.255.255") == 0)
+		return(0xFFFFFFFF);
+
+	/* if it's in the form of an IP address then
+	 * get the lib to interpret it */
+	if (is_ipaddress_v4(str)) {
+		res = inet_addr(str);
+	} else {
+		/* otherwise assume it's a network name of some sort and use
+			sys_gethostbyname */
+		if ((hp = sys_gethostbyname(str)) == 0) {
+			DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
+			return 0;
+		}
+
+		if(hp->h_addr == NULL) {
+			DEBUG(3,("sys_gethostbyname: host address is "
+				"invalid for host %s\n",str));
+			return 0;
+		}
+		putip((char *)&res,(char *)hp->h_addr);
+	}
+
+	if (res == (uint32)-1)
+		return(0);
+
+	return(res);
+}
+
+/*******************************************************************
+ A convenient addition to interpret_addr().
+******************************************************************/
+
+struct in_addr *interpret_addr2(const char *str)
+{
+	static struct in_addr ret;
+	uint32 a = interpret_addr(str);
+	ret.s_addr = a;
+	return(&ret);
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage.
+******************************************************************/
+
+bool interpret_string_addr(struct sockaddr_storage *pss, const char *str)
+{
+	int ret;
+	struct addrinfo *res = NULL;
+	struct addrinfo hints;
+
+	memset(pss,'\0', sizeof(*pss));
+
+	memset(&hints, '\0', sizeof(hints));
+	/* By default make sure it supports TCP. */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_ADDRCONFIG;
+
+	ret = getaddrinfo(str, NULL,
+			&hints,
+			&res);
+
+	if (ret) {
+		DEBUG(3,("interpret_string_addr: getaddrinfo failed for "
+			"name %s [%s]\n",
+			str,
+			gai_strerror(ret) ));
+		return false;
+	}
+
+	/* Copy the first sockaddr. */
+	memcpy(pss, res->ai_addr, res->ai_addrlen);
+	freeaddrinfo(res);
+	return true;
+}
+
+/*******************************************************************
+ Check if an IPv7 is 127.0.0.1
+******************************************************************/
+
+bool is_loopback_ip_v4(struct in_addr ip)
+{
+	struct in_addr a;
+	a.s_addr = htonl(INADDR_LOOPBACK);
+	return(ip.s_addr == a.s_addr);
+}
+
+/*******************************************************************
+ Check if a struct sockaddr_storage is the loopback address.
+******************************************************************/
+
+bool is_loopback_addr(const struct sockaddr_storage *pss)
+{
+#if defined(AF_INET6)
+	if (pss->ss_family == AF_INET) {
+		struct in6_addr *pin6 = &((struct sockaddr_in6 *)pss)->sin6_addr;
+		return IN6_IS_ADDR_LOOPBACK(pin6);
+	}
+#endif
+	if (pss->ss_family == AF_INET) {
+		struct in_addr *pin = &((struct sockaddr_in *)pss)->sin_addr;
+		return is_loopback_ip_v4(*pin);
+	}
+	return false;
+}
+
+/*******************************************************************
+ Check if an IPv4 is 0.0.0.0.
+******************************************************************/
+
+bool is_zero_ip_v4(struct in_addr ip)
+{
+	uint32 a;
+	putip((char *)&a,(char *)&ip);
+	return(a == 0);
+}
+
+/*******************************************************************
+ Check if a struct sockaddr_storage has an unspecified address.
+******************************************************************/
+
+bool is_zero_addr(const struct sockaddr_storage *pss)
+{
+#if defined(AF_INET6)
+	if (pss->ss_family == AF_INET) {
+		struct in6_addr *pin6 = &((struct sockaddr_in6 *)pss)->sin6_addr;
+		return IN6_IS_ADDR_UNSPECIFIED(pin6);
+	}
+#endif
+	if (pss->ss_family == AF_INET) {
+		struct in_addr *pin = &((struct sockaddr_in *)pss)->sin_addr;
+		return is_zero_ip_v4(*pin);
+	}
+	return false;
+}
+
+/*******************************************************************
+ Set an IP to 0.0.0.0.
+******************************************************************/
+
+void zero_ip_v4(struct in_addr *ip)
+{
+        static bool init;
+        static struct in_addr ipzero;
+
+        if (!init) {
+                ipzero = *interpret_addr2("0.0.0.0");
+                init = true;
+        }
+
+        *ip = ipzero;
+}
+
+/*******************************************************************
+ Are two IPs on the same subnet - IPv4 version ?
+********************************************************************/
+
+bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
+{
+	uint32 net1,net2,nmask;
+
+	nmask = ntohl(mask.s_addr);
+	net1  = ntohl(ip1.s_addr);
+	net2  = ntohl(ip2.s_addr);
+
+	return((net1 & nmask) == (net2 & nmask));
+}
+
+/*******************************************************************
+ Convert an IPv4 struct in_addr to a struct sockaddr_storage.
+********************************************************************/
+
+void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
+		struct in_addr ip)
+{
+	struct sockaddr_in *sa = (struct sockaddr_in *)ss;
+	memset(ss, '\0', sizeof(*ss));
+	ss->ss_family = AF_INET;
+	sa->sin_addr = ip;
+}
+
+#ifdef AF_INET6
+/*******************************************************************
+ Convert an IPv6 struct in_addr to a struct sockaddr_storage.
+********************************************************************/
+
+void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
+		struct in6_addr ip)
+{
+	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)ss;
+	memset(ss, '\0', sizeof(*ss));
+	ss->ss_family = AF_INET6;
+	sa->sin6_addr = ip;
+}
+#endif
+
+/*******************************************************************
+ Are two IPs on the same subnet?
+********************************************************************/
+
+bool same_net(const struct sockaddr_storage *ip1,
+		const struct sockaddr_storage *ip2,
+		const struct sockaddr_storage *mask)
+{
+	if (ip1->ss_family != ip2->ss_family) {
+		/* Never on the same net. */
+		return false;
+	}
+
+#ifdef AF_INET6
+	if (ip1->ss_family == AF_INET6) {
+		struct sockaddr_in6 ip1_6 = *(struct sockaddr_in6 *)ip1;
+		struct sockaddr_in6 ip2_6 = *(struct sockaddr_in6 *)ip2;
+		struct sockaddr_in6 mask_6 = *(struct sockaddr_in6 *)mask;
+		char *p1 = (char *)&ip1_6.sin6_addr;
+		char *p2 = (char *)&ip2_6.sin6_addr;
+		char *m = (char *)&mask_6.sin6_addr;
+		int i;
+
+		for (i = 0; i < sizeof(struct in6_addr); i++) {
+			*p1++ &= *m;
+			*p2++ &= *m;
+			m++;
+		}
+		return (memcmp(&ip1_6.sin6_addr,
+				&ip2_6.sin6_addr,
+				sizeof(struct in6_addr)) == 0);
+	}
+#endif
+	if (ip1->ss_family == AF_INET) {
+		return same_net_v4(((const struct sockaddr_in *)ip1)->sin_addr,
+				((const struct sockaddr_in *)ip2)->sin_addr,
+				((const struct sockaddr_in *)mask)->sin_addr);
+	}
+	return false;
+}
+
+/*******************************************************************
+ Are two sockaddr_storage's the same family and address ? Ignore port etc.
+********************************************************************/
+
+bool addr_equal(const struct sockaddr_storage *ip1,
+		const struct sockaddr_storage *ip2)
+{
+	if (ip1->ss_family != ip2->ss_family) {
+		/* Never the same. */
+		return false;
+	}
+
+#ifdef AF_INET6
+	if (ip1->ss_family == AF_INET6) {
+		return (memcmp(&((const struct sockaddr_in6 *)ip1)->sin6_addr,
+				&((const struct sockaddr_in6 *)ip2)->sin6_addr,
+				sizeof(struct in6_addr)) == 0);
+	}
+#endif
+	if (ip1->ss_family == AF_INET) {
+		return (memcmp(&((const struct sockaddr_in *)ip1)->sin_addr,
+				&((const struct sockaddr_in *)ip2)->sin_addr,
+				sizeof(struct in_addr)) == 0);
+	}
+	return false;
+}
+
+
+/****************************************************************************
+ Is an IP address the INADDR_ANY or in6addr_any value ?
+****************************************************************************/
+
+bool is_address_any(const struct sockaddr_storage *psa)
+{
+#ifdef AF_INET6
+	if (psa->ss_family == AF_INET6) {
+		struct sockaddr_in6 *si6 = (struct sockaddr_in6 *)psa;
+		if (memcmp(&in6addr_any,
+				&si6->sin6_addr,
+				sizeof(in6addr_any)) == 0) {
+			return true;
+		}
+		return false;
+	}
+#endif
+	if (psa->ss_family == AF_INET) {
+		struct sockaddr_in *si = (struct sockaddr_in *)psa;
+		if (si->sin_addr.s_addr == INADDR_ANY) {
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+/****************************************************************************
+ Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
 ****************************************************************************/
 
 char *print_sockaddr(char *dest,
 			size_t destlen,
-			struct sockaddr_storage *psa)
+			const struct sockaddr_storage *psa,
+			socklen_t psalen)
 {
 	if (destlen > 0) {
 		dest[0] = '\0';
 	}
-#ifdef AF_INET6
-	if (psa->ss_family == AF_INET6) {
-		inet_ntop(AF_INET6,
-			&((struct sockaddr_in6 *)psa)->sin6_addr,
-			dest,
-			destlen);
-	}
-#endif
-	if (psa->ss_family == AF_INET) {
-		inet_ntop(AF_INET,
-			&((struct sockaddr_in *)psa)->sin_addr,
-			dest,
-			destlen);
-	}
+	(void)getnameinfo((const struct sockaddr *)psa,
+			psalen,
+			dest, destlen,
+			NULL, 0,
+			NI_NUMERICHOST);
 	return dest;
 }
+
+/****************************************************************************
+ Set the global client_fd variable.
+****************************************************************************/
 
 void client_setfd(int fd)
 {
@@ -63,6 +383,10 @@ void client_setfd(int fd)
 			get_peer_addr(client_fd),
 			sizeof(client_ip_string)-1);
 }
+
+/****************************************************************************
+ Return a static string of an IP address (IPv4 or IPv6).
+****************************************************************************/
 
 static char *get_socket_addr(int fd)
 {
@@ -87,8 +411,12 @@ static char *get_socket_addr(int fd)
 		return addr_buf;
 	}
 
-	return print_sockaddr(addr_buf, sizeof(addr_buf), &sa);
+	return print_sockaddr(addr_buf, sizeof(addr_buf), &sa, length);
 }
+
+/****************************************************************************
+ Return the port number we've bound to on a socket.
+****************************************************************************/
 
 static int get_socket_port(int fd)
 {
@@ -118,7 +446,7 @@ static int get_socket_port(int fd)
 
 char *client_name(void)
 {
-	return get_peer_name(client_fd,False);
+	return get_peer_name(client_fd,false);
 }
 
 char *client_addr(void)
@@ -142,7 +470,7 @@ int smb_read_error = 0;
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
 
-BOOL is_a_socket(int fd)
+bool is_a_socket(int fd)
 {
 	int v;
 	socklen_t l;
@@ -247,12 +575,12 @@ void set_socket_options(int fd, const char *options)
 		int ret=0,i;
 		int value = 1;
 		char *p;
-		BOOL got_value = False;
+		bool got_value = false;
 
 		if ((p = strchr_m(tok,'='))) {
 			*p = 0;
 			value = atoi(p+1);
-			got_value = True;
+			got_value = true;
 		}
 
 		for (i=0;socket_options[i].name;i++)
@@ -559,7 +887,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
  Send a keepalive packet (rfc1002).
 ****************************************************************************/
 
-BOOL send_keepalive(int client)
+bool send_keepalive(int client)
 {
 	unsigned char buf[4];
 
@@ -583,7 +911,7 @@ static ssize_t read_smb_length_return_keepalive(int fd,
 {
 	ssize_t len=0;
 	int msg_type;
-	BOOL ok = False;
+	bool ok = false;
 
 	while (!ok) {
 		if (timeout > 0) {
@@ -809,23 +1137,23 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
  Checks the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
+bool receive_smb(int fd, char *buffer, unsigned int timeout)
 {
 	if (receive_smb_raw(fd, buffer, timeout, 0) < 0) {
-		return False;
+		return false;
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(buffer, True)) {
+	if (!srv_check_sign_mac(buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification "
 			"failed on incoming packet!\n"));
 		if (smb_read_error == 0) {
 			smb_read_error = READ_BAD_SIG;
 		}
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
@@ -840,7 +1168,7 @@ ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(*buffer, True)) {
+	if (!srv_check_sign_mac(*buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		if (smb_read_error == 0) {
@@ -856,7 +1184,7 @@ ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
  Send an smb to a fd.
 ****************************************************************************/
 
-BOOL send_smb(int fd, char *buffer)
+bool send_smb(int fd, char *buffer)
 {
 	size_t len;
 	size_t nwritten=0;
@@ -872,12 +1200,12 @@ BOOL send_smb(int fd, char *buffer)
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
-			return False;
+			return false;
 		}
 		nwritten += ret;
 	}
 
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -888,7 +1216,7 @@ int open_socket_in(int type,
 		int port,
 		int dlevel,
 		uint32 socket_addr,
-		BOOL rebind )
+		bool rebind )
 {
 	struct sockaddr_in sock;
 	int res;
@@ -919,7 +1247,7 @@ int open_socket_in(int type,
 			if( DEBUGLVL( dlevel ) ) {
 				dbgtext( "open_socket_in(): setsockopt: " );
 				dbgtext( "SO_REUSEADDR = %s ",
-						val?"True":"False" );
+						val?"true":"false" );
 				dbgtext( "on port %d failed ", port );
 				dbgtext( "with error = %s\n", strerror(errno) );
 			}
@@ -930,7 +1258,7 @@ int open_socket_in(int type,
 			if( DEBUGLVL( dlevel ) ) {
 				dbgtext( "open_socket_in(): setsockopt: ");
 				dbgtext( "SO_REUSEPORT = %s ",
-						val?"True":"False" );
+						val?"true":"false" );
 				dbgtext( "on port %d failed ", port );
 				dbgtext( "with error = %s\n", strerror(errno) );
 			}
@@ -984,7 +1312,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	sock_out.sin_family = PF_INET;
 
 	/* set it non-blocking */
-	set_blocking(res,False);
+	set_blocking(res,false);
 
 	DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
 
@@ -1029,7 +1357,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	}
 
 	/* set it blocking again */
-	set_blocking(res,True);
+	set_blocking(res,true);
 
 	return res;
 }
@@ -1040,12 +1368,12 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
  of DC's all of which are equivalent for our purposes.
 **************************************************************************/
 
-BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
+bool open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd)
 {
 	int i, resulting_index, res;
 	int *sockets;
-	BOOL good_connect;
+	bool good_connect;
 
 	fd_set r_fds, wr_fds;
 	struct timeval tv;
@@ -1058,7 +1386,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	sockets = SMB_MALLOC_ARRAY(int, num_addrs);
 
 	if (sockets == NULL)
-		return False;
+		return false;
 
 	resulting_index = -1;
 
@@ -1069,11 +1397,11 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 		sockets[i] = socket(PF_INET, SOCK_STREAM, 0);
 		if (sockets[i] < 0)
 			goto done;
-		set_blocking(sockets[i], False);
+		set_blocking(sockets[i], false);
 	}
 
  connect_again:
-	good_connect = False;
+	good_connect = false;
 
 	for (i=0; i<num_addrs; i++) {
 
@@ -1095,7 +1423,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 		    errno == EAGAIN || errno == EINTR) {
 			/* These are the error messages that something is
 			   progressing. */
-			good_connect = True;
+			good_connect = true;
 		} else if (errno != 0) {
 			/* There was a direct error */
 			close(sockets[i]);
@@ -1180,7 +1508,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	if (resulting_index >= 0) {
 		*fd_index = resulting_index;
 		*fd = sockets[*fd_index];
-		set_blocking(*fd, True);
+		set_blocking(*fd, true);
 	}
 
 	free(sockets);
@@ -1223,7 +1551,7 @@ int open_udp_socket(const char *host, int port)
  confirm a hostname lookup to prevent spoof attacks.
 ******************************************************************/
 
-static BOOL matchname(char *remotehost,struct in_addr  addr)
+static bool matchname(char *remotehost,struct in_addr  addr)
 {
 	struct hostent *hp;
 	int     i;
@@ -1231,7 +1559,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	if ((hp = sys_gethostbyname(remotehost)) == 0) {
 		DEBUG(0,("sys_gethostbyname(%s): lookup failure.\n",
 					remotehost));
-		return False;
+		return false;
 	}
 
 	/*
@@ -1246,13 +1574,13 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	    && !strequal(remotehost, "localhost")) {
 		DEBUG(0,("host name/name mismatch: %s != %s\n",
 			 remotehost, hp->h_name));
-		return False;
+		return false;
 	}
 
 	/* Look up the host address in the address list we just got. */
 	for (i = 0; hp->h_addr_list[i]; i++) {
 		if (memcmp(hp->h_addr_list[i], (char *)&addr,sizeof(addr)) == 0)
-			return True;
+			return true;
 	}
 
 	/*
@@ -1263,14 +1591,14 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 
 	DEBUG(0,("host name/address mismatch: %s != %s\n",
 		 inet_ntoa(addr), hp->h_name));
-	return False;
+	return false;
 }
 
 /*******************************************************************
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-char *get_peer_name(int fd, BOOL force_lookup)
+char *get_peer_name(int fd, bool force_lookup)
 {
 	static pstring name_buf;
 	pstring tmp_name;
@@ -1283,7 +1611,7 @@ char *get_peer_name(int fd, BOOL force_lookup)
 	   situations won't work because many networks don't link dhcp
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
-	if (!lp_hostname_lookups() && (force_lookup == False)) {
+	if (!lp_hostname_lookups() && (force_lookup == false)) {
 		return get_peer_addr(fd);
 	}
 
@@ -1449,4 +1777,93 @@ out_umask:
         DEBUG(0, ("create_pipe_sock: No Unix sockets on this system\n"));
         return -1;
 #endif /* HAVE_UNIXSOCKET */
+}
+
+/************************************************************
+ Is this my name ? Needs fixing for IPv6.
+************************************************************/
+
+bool is_myname_or_ipaddr(const char *s)
+{
+	fstring name, dnsname;
+	char *servername;
+
+	if ( !s )
+		return false;
+
+	/* santize the string from '\\name' */
+
+	fstrcpy( name, s );
+
+	servername = strrchr_m( name, '\\' );
+	if ( !servername )
+		servername = name;
+	else
+		servername++;
+
+	/* optimize for the common case */
+
+	if (strequal(servername, global_myname()))
+		return true;
+
+	/* check for an alias */
+
+	if (is_myname(servername))
+		return true;
+
+	/* check for loopback */
+
+	if (strequal(servername, "127.0.0.1"))
+		return true;
+
+	if (strequal(servername, "localhost"))
+		return true;
+
+	/* maybe it's my dns name */
+
+	if ( get_mydnsfullname( dnsname ) )
+		if ( strequal( servername, dnsname ) )
+			return true;
+
+	/* handle possible CNAME records */
+
+	if ( !is_ipaddress_v4( servername ) ) {
+		/* use DNS to resolve the name, but only the first address */
+		struct hostent *hp;
+
+		if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+			struct in_addr return_ip;
+			putip( (char*)&return_ip, (char*)hp->h_addr );
+			fstrcpy( name, inet_ntoa( return_ip ) );
+			servername = name;
+		}
+	}
+
+	/* maybe its an IP address? */
+	if (is_ipaddress_v4(servername)) {
+		struct sockaddr_storage ss;
+		struct iface_struct nics[MAX_INTERFACES];
+		int i, n;
+		struct in_addr ip;
+
+		ip = *interpret_addr2(servername);
+		if (is_zero_ip_v4(ip) || is_loopback_ip_v4(ip)) {
+			return false;
+		}
+
+		in_addr_to_sockaddr_storage(&ss, ip);
+
+		n = get_interfaces(nics, MAX_INTERFACES);
+		for (i=0; i<n; i++) {
+			if (nics[i].ip.ss_family != AF_INET) {
+				continue;
+			}
+			if (addr_equal(&nics[i].ip, &ss)) {
+				return true;
+			}
+		}
+	}
+
+	/* no match */
+	return false;
 }
