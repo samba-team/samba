@@ -56,8 +56,9 @@ static int cs_destructor(struct con_struct *p)
 static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
 {
 	NTSTATUS nt_status;
-	struct in_addr loopback_ip = *interpret_addr2("127.0.0.1");
+	struct in_addr loopback_ip;
 
+	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 	*perr = NT_STATUS_OK;
 
 	if (cs) {

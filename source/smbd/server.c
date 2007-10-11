@@ -348,14 +348,23 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
-			struct in_addr *ifip = iface_n_ip(i);
+			const struct sockaddr_storage *ifss =
+					iface_n_sockaddr_storage(i);
+			const struct in_addr *ifip;
 			fstring tok;
 			const char *ptr;
 
-			if(ifip == NULL) {
+			if (ifss == NULL) {
 				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
 				continue;
 			}
+
+			/* For now only deal with IPv4. */
+			if (ifss->ss_family != AF_INET) {
+				continue;
+			}
+
+			ifip = &((const struct sockaddr_in *)ifss)->sin_addr;
 
 			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 				unsigned port = atoi(tok);

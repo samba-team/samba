@@ -103,7 +103,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	unstring dmb_name;
 	char *p;
 
-	if(ismyip(work->dmb_addr)) {
+	if(ismyip_v4(work->dmb_addr)) {
 		if( DEBUGLVL( 2 ) ) {
 			dbgtext( "announce_local_master_browser_to_domain_master_browser:\n" );
 			dbgtext( "We are both a domain and a local master browser for " );
@@ -291,7 +291,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 
   /* First check if we already have a dmb for this workgroup. */
 
-	if(!is_zero_ip(work->dmb_addr) && ip_equal(work->dmb_addr, answer_ip)) {
+	if(!is_zero_ip_v4(work->dmb_addr) && ip_equal(work->dmb_addr, answer_ip)) {
 		/* Do the local master browser announcement to the domain
 			master browser name and IP. */
 		announce_local_master_browser_to_domain_master_browser( work );
@@ -300,7 +300,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 		sync_with_dmb(work);
 		return;
 	} else {
-		zero_ip(&work->dmb_addr);
+		zero_ip_v4(&work->dmb_addr);
 	}
 
 	/* Now initiate the node status request. */
@@ -526,7 +526,7 @@ static void find_all_domain_master_names_query_success(struct subnet_record *sub
 		 * Don't send node status requests to ourself.
 		 */
 
-		if(ismyip( send_ip )) {
+		if(ismyip_v4( send_ip )) {
 			if( DEBUGLVL( 5 ) ) {
 				dbgtext( "find_all_domain_master_names_query_succes:\n" );
 				dbgtext( "Not sending node status to our own IP " );

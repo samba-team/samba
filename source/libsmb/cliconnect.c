@@ -1421,7 +1421,7 @@ NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip
 		*p = 0;
 	}
 	
-	if (!ip || is_zero_ip(*ip)) {
+	if (!ip || is_zero_ip_v4(*ip)) {
                 if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
 			return NT_STATUS_BAD_NETWORK_NAME;
                 }
@@ -1522,7 +1522,7 @@ again:
 		char *p;
 		DEBUG(1,("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(cli)));
-		if ((p=strchr(called.name, '.')) && !is_ipaddress(called.name)) {
+		if ((p=strchr(called.name, '.')) && !is_ipaddress_v4(called.name)) {
 			*p = 0;
 			goto again;
 		}
@@ -1650,7 +1650,7 @@ BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 	 * then use *SMBSERVER immediately.
 	 */
 
-	if(is_ipaddress(desthost)) {
+	if(is_ipaddress_v4(desthost)) {
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
 	} else {
 		make_nmb_name(&called, desthost, 0x20);
@@ -1764,7 +1764,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
-	} else if (is_ipaddress(server)) {
+	} else if (is_ipaddress_v4(server)) {
 	    /* windows 9* needs a correct NMB name for connections */
 	    fstring remote_name;
 

@@ -339,7 +339,7 @@ enum winbindd_result winbindd_dual_dsgetdcname(struct winbindd_domain *domain,
 		}
 	}
 
-	if ((!dc || !is_ipaddress(dc)) && info->domain_controller_name) {
+	if ((!dc || !is_ipaddress_v4(dc)) && info->domain_controller_name) {
 		dc = info->domain_controller_name;
 	}
 

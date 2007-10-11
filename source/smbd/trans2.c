@@ -1469,7 +1469,7 @@ static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			p += fill_ea_buffer(ctx, p, space_remaining, conn, name_list);
 			nameptr = p;
 			len = srvstr_push(base_data, flags2,
-					  p + 1, fname, PTR_DIFF(end_data, p),
+					  p + 1, fname, PTR_DIFF(end_data, p+1),
 					  STR_TERMINATE | STR_NOALIGN);
 			if (flags2 & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
@@ -1554,7 +1554,7 @@ static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
 			len = srvstr_push(base_data, flags2,
-					  p + 4, fname, PTR_DIFF(end_data, p),
+					  p + 4, fname, PTR_DIFF(end_data, p+4),
 					  STR_TERMINATE_ASCII);
 			SIVAL(p,0,len);
 			p += 4 + len;

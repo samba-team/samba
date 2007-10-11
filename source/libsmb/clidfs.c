@@ -83,13 +83,13 @@ static struct cli_state *do_connect( const char *server, const char *share,
 
 	server_n = server;
 	
-	zero_ip(&ip);
+	zero_ip_v4(&ip);
 
 	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
-	zero_ip(&ip);
+	zero_ip_v4(&ip);
 	if (have_ip) 
 		ip = dest_ip;
 

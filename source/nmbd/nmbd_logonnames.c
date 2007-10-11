@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern struct in_addr allones_ip;
-
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
 /****************************************************************************

@@ -155,7 +155,7 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 	int count, i;
 	NTSTATUS result;
 	
-	zero_ip(&exclude_ip);
+	zero_ip_v4(&exclude_ip);
 
 	/* get a list of all domain controllers */
 	
@@ -168,7 +168,7 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 	/* Remove the entry we've already failed with (should be the PDC). */
 
 	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i].ip))
+		if (is_zero_ip_v4(ip_list[i].ip))
 			continue;
 
 		if (name_status_find(domain, 0x1c, 0x20, ip_list[i].ip, srv_name)) {
@@ -212,7 +212,7 @@ BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct
 	BOOL ret;
 	BOOL our_domain = False;
 
-	zero_ip(&dc_ip);
+	zero_ip_v4(&dc_ip);
 
 	ret = False;
 	
