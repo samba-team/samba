@@ -1547,40 +1547,101 @@ int open_udp_socket(const char *host, int port)
 }
 
 /*******************************************************************
+ Return the IP addr of the remote end of a socket as a string.
+ Optionally return the struct sockaddr_storage.
+ ******************************************************************/
+
+static const char *get_peer_addr_internal(int fd,
+				struct sockaddr_storage *pss,
+				socklen_t *plength)
+{
+	struct sockaddr_storage ss;
+	socklen_t length = sizeof(ss);
+	static char addr_buf[INET6_ADDRSTRLEN];
+
+	safe_strcpy(addr_buf,"0.0.0.0",sizeof(addr_buf)-1);
+
+	if (fd == -1) {
+		return addr_buf;
+	}
+
+	if (pss == NULL) {
+		pss = &ss;
+	}
+	if (plength == NULL) {
+		plength = &length;
+	}
+
+	if (getpeername(fd, (struct sockaddr *)pss, plength) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n",
+					strerror(errno) ));
+		return addr_buf;
+	}
+
+	print_sockaddr(addr_buf,
+			sizeof(addr_buf),
+			pss,
+			*plength);
+	return addr_buf;
+}
+
+
+/*******************************************************************
  Matchname - determine if host name matches IP address. Used to
  confirm a hostname lookup to prevent spoof attacks.
 ******************************************************************/
 
-static bool matchname(char *remotehost,struct in_addr  addr)
+static bool matchname(const char *remotehost,
+		const struct sockaddr_storage *pss,
+		socklen_t len)
 {
-	struct hostent *hp;
-	int     i;
+	struct addrinfo hints;
+	struct addrinfo *res = NULL;
+	struct addrinfo *ailist = NULL;
+	char addr_buf[INET6_ADDRSTRLEN];
+	int ret = -1;
 
-	if ((hp = sys_gethostbyname(remotehost)) == 0) {
-		DEBUG(0,("sys_gethostbyname(%s): lookup failure.\n",
-					remotehost));
+	memset(&hints,'\0',sizeof(struct addrinfo));
+	/* By default make sure it supports TCP. */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_ADDRCONFIG|AI_CANONNAME;
+
+	ret = getaddrinfo(remotehost, NULL,
+			&hints,
+			&res);
+
+	if (ret || res == NULL) {
+		DEBUG(3,("matchname: getaddrinfo failed for "
+			"name %s [%s]\n",
+			remotehost,
+			gai_strerror(ret) ));
 		return false;
 	}
 
 	/*
-	 * Make sure that gethostbyname() returns the "correct" host name.
-	 * Unfortunately, gethostbyname("localhost") sometimes yields
-	 * "localhost.domain". Since the latter host name comes from the
-	 * local DNS, we just have to trust it (all bets are off if the local
-	 * DNS is perverted). We always check the address list, though.
+	 * Make sure that getaddrinfo() returns the "correct" host name.
 	 */
 
-	if (!strequal(remotehost, hp->h_name)
-	    && !strequal(remotehost, "localhost")) {
-		DEBUG(0,("host name/name mismatch: %s != %s\n",
-			 remotehost, hp->h_name));
+	if (res->ai_canonname == NULL ||
+		(!strequal(remotehost, res->ai_canonname) &&
+		 !strequal(remotehost, "localhost"))) {
+		DEBUG(0,("matchname: host name/name mismatch: %s != %s\n",
+			 remotehost,
+			 res->ai_canonname ? res->ai_canonname : "(NULL)"));
+		freeaddrinfo(res);
 		return false;
 	}
 
 	/* Look up the host address in the address list we just got. */
-	for (i = 0; hp->h_addr_list[i]; i++) {
-		if (memcmp(hp->h_addr_list[i], (char *)&addr,sizeof(addr)) == 0)
+	for (ailist = res; ailist; ailist = ailist->ai_next) {
+		if (!ailist->ai_addr) {
+			continue;
+		}
+		if (addr_equal((const struct sockaddr_storage *)ailist->ai_addr,
+					pss)) {
+			freeaddrinfo(res);
 			return true;
+		}
 	}
 
 	/*
@@ -1589,8 +1650,14 @@ static bool matchname(char *remotehost,struct in_addr  addr)
 	 * it, but that could be dangerous, too.
 	 */
 
-	DEBUG(0,("host name/address mismatch: %s != %s\n",
-		 inet_ntoa(addr), hp->h_name));
+	DEBUG(0,("matchname: host name/address mismatch: %s != %s\n",
+		print_sockaddr(addr_buf,
+			sizeof(addr_buf),
+			pss,
+			len),
+		 res->ai_canonname ? res->ai_canonname : "(NULL)"));
+
+	freeaddrinfo(res);
 	return false;
 }
 
@@ -1600,12 +1667,13 @@ static bool matchname(char *remotehost,struct in_addr  addr)
 
 const char *get_peer_name(int fd, bool force_lookup)
 {
-	static pstring name_buf;
-	pstring tmp_name;
 	static fstring addr_buf;
-	struct hostent *hp;
-	struct in_addr addr;
+	static pstring name_buf;
+	struct sockaddr_storage ss;
+	socklen_t length = sizeof(ss);
 	const char *p;
+	int ret;
+	pstring tmp_name;
 
 	/* reverse lookups can be *very* expensive, and in many
 	   situations won't work because many networks don't link dhcp
@@ -1615,28 +1683,37 @@ const char *get_peer_name(int fd, bool force_lookup)
 		return get_peer_addr(fd);
 	}
 
-	p = get_peer_addr(fd);
+	p = get_peer_addr_internal(fd, &ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (strcmp(p, addr_buf) == 0)
+	if (strcmp(p, addr_buf) == 0) {
 		return name_buf;
+	}
 
 	pstrcpy(name_buf,"UNKNOWN");
-	if (fd == -1)
+	if (fd == -1) {
 		return name_buf;
+	}
 
 	fstrcpy(addr_buf, p);
 
-	addr = *interpret_addr2(p);
-
 	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *)&addr.s_addr,
-					sizeof(addr.s_addr), AF_INET)) == 0) {
-		DEBUG(1,("Gethostbyaddr failed for %s\n",p));
+	ret = getnameinfo((struct sockaddr *)&ss,
+			length,
+			name_buf,
+			sizeof(name_buf),
+			NULL,
+			0,
+			NI_NUMERICHOST);
+
+	if (ret) {
+		DEBUG(1,("get_peer_name: getnameinfo failed "
+			"for %s with error %s\n",
+			p,
+			gai_strerror(ret)));
 		pstrcpy(name_buf, p);
 	} else {
-		pstrcpy(name_buf,(char *)hp->h_name);
-		if (!matchname(name_buf, addr)) {
+		if (!matchname(name_buf, &ss, length)) {
 			DEBUG(0,("Matchname failed on %s %s\n",name_buf,p));
 			pstrcpy(name_buf,"UNKNOWN");
 		}
@@ -1646,7 +1723,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	   use --enable-developer or the clobber_region() call will
 	   get you */
 
-	pstrcpy( tmp_name, name_buf );
+	pstrcpy(tmp_name, name_buf );
 	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
 	if (strstr(name_buf,"..")) {
 		pstrcpy(name_buf, "UNKNOWN");
@@ -1661,27 +1738,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 
 const char *get_peer_addr(int fd)
 {
-	struct sockaddr_storage ss;
-	socklen_t length = sizeof(ss);
-	static char addr_buf[INET6_ADDRSTRLEN];
-
-	safe_strcpy(addr_buf,"0.0.0.0",sizeof(addr_buf)-1);
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-
-	if (getpeername(fd, (struct sockaddr *)&ss, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n",
-					strerror(errno) ));
-		return addr_buf;
-	}
-
-	print_sockaddr(addr_buf,
-			sizeof(addr_buf),
-			&ss,
-			length);
-	return addr_buf;
+	return get_peer_addr_internal(fd, NULL, NULL);
 }
 
 /*******************************************************************
