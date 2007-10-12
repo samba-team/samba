@@ -303,6 +303,12 @@ testone: everything
 test-swrap: everything
 	$(SELFTEST) --socket-wrapper --immediate $(TESTS)
 
+test-swrap-pcap: everything
+	$(SELFTEST) --socket-wrapper-pcap --immediate $(TESTS)
+
+test-swrap-keep-pcap: everything
+	$(SELFTEST) --socket-wrapper-keep-pcap --immediate $(TESTS)
+
 test-noswrap: everything
 	$(SELFTEST) --immediate $(TESTS)
 
