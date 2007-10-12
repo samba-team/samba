@@ -721,6 +721,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	}
 
 	if (sid_check_is_in_our_domain(&user_sid)) {
+		BOOL ret;
 
 		/* This is a passdb user, so ask passdb */
 
@@ -731,7 +732,11 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		if (!pdb_getsampwsid(sam_acct, &user_sid)) {
+		become_root();
+		ret = pdb_getsampwsid(sam_acct, &user_sid);
+		unbecome_root();
+
+		if (!ret) {
 			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
 				  sid_string_static(&user_sid), username));
 			DEBUGADD(1, ("Fall back to unix user %s\n", username));
