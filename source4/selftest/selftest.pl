@@ -407,6 +407,10 @@ if (defined($ENV{PKG_CONFIG_PATH})) {
 # Required for smbscript:
 $ENV{PATH} = "$old_pwd/bin:$old_pwd:$ENV{PATH}";
 
+if ($opt_socket_wrapper_keep_pcap) {
+	# Socket wrapper keep pcap implies socket wrapper pcap
+	$opt_socket_wrapper_pcap = 1;
+}
 
 if ($opt_socket_wrapper_pcap) {
 	# Socket wrapper pcap implies socket wrapper
