@@ -157,8 +157,14 @@ int get_my_ip_address( struct in_addr **ips )
 	}
 
 	for ( i=0; i<n; i++ ) {
-		if (!is_loopback_ip_v4(nics[i].iface_addr.ip.s_addr)) {
-			memcpy( &list[count++], &nics[i].iface_addr.ip, sizeof( struct in_addr ) );
+		if ((nics[i].ip.ss_family == AF_INET)) {
+			struct in_addr ifip;
+
+			ifip = ((const struct sockaddr_in *)&nics[i].ip)->sin_addr;
+
+			if (!is_loopback_ip_v4(ifip)) {
+				memcpy(&list[count++], &ifip, sizeof(struct in_addr));
+			}
 		}
 	}
 	*ips = list;
