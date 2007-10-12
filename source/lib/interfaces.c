@@ -135,11 +135,14 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 		memcpy(&ifaces[total].ip, ifptr->ifa_addr, copy_size);
 		memcpy(&ifaces[total].netmask, ifptr->ifa_netmask, copy_size);
-		if (ifaces[total].flags & IFF_BROADCAST) {
+
+		if ((ifaces[total].flags & IFF_BROADCAST) &&
+				ifptr->ifa_broadaddr) {
 			memcpy(&ifaces[total].bcast,
 				ifptr->ifa_broadaddr,
 				copy_size);
-		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
+		} else if ((ifaces[total].flags & IFF_POINTOPOINT) &&
+			       ifptr->ifa_dstaddr ) {
 			memcpy(&ifaces[total].bcast,
 				ifptr->ifa_dstaddr,
 				copy_size);
