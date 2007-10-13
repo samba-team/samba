@@ -1846,8 +1846,9 @@ bool is_myname_or_ipaddr(const char *s)
 	fstring name, dnsname;
 	char *servername;
 
-	if ( !s )
+	if ( !s ) {
 		return false;
+	}
 
 	/* santize the string from '\\name' */
 
