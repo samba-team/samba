@@ -85,6 +85,7 @@
 #endif
 
 #include "interfaces.h"
+#include "lib/replace/replace.h"
 
 /****************************************************************************
  Try the "standard" getifaddrs/freeifaddrs interfaces.
@@ -150,9 +151,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, ifptr->ifa_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifptr->ifa_name,
+			sizeof(ifaces[total].name));
 		total++;
 	}
 
@@ -218,9 +218,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, ifr[i].ifr_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifr[i].ifr_name,
+			sizeof(ifaces[total].name));
 
 		memcpy(&ifaces[total].ip, &ifr[i].ifr_addr,
 				sizeof(struct sockaddr_in));
@@ -331,9 +330,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, iname,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, iname, sizeof(ifaces[total].name));
 
 		memcpy(&ifaces[total].ip, &ifreq.ifr_addr,
 				sizeof(struct sockaddr_in));
@@ -436,9 +433,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		memcpy(&ifaces[total].ip, &ifr->ifr_addr,
 				sizeof(struct sockaddr_in));
 
-		strncpy(ifaces[total].name, ifr->ifr_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifr->ifr_name,
+			sizeof(ifaces[total].name));
 
 		if (ioctl(fd, SIOCGIFNETMASK, ifr) != 0) {
 			goto next;
