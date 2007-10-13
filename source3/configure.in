@@ -6162,6 +6162,40 @@ AC_SUBST(POPTLIBS)
 AC_SUBST(FLAGS1)
 
 #################################################
+# Check if user wants DNS service discovery support
+
+AC_ARG_ENABLE(dnssd,
+[  --enable-dnssd          Enable DNS service discovery support (default=auto)])
+
+if test x"$enable_dnssd" != x"no"; then
+    have_dnssd_support=yes
+
+    AC_CHECK_HEADERS(dns_sd.h)
+    if test x"$ac_cv_header_dns_sd_h" != x"yes"; then
+	have_dnssd_support=no
+    fi
+
+    # On Darwin the DNSSD API is in libc, but on other platforms it's
+    # probably in -ldns_sd
+    AC_CHECK_FUNCS(DNSServiceRegister)
+    AC_CHECK_LIB_EXT(dns_sd, DNSSD_LIBS, DNSServiceRegister)
+    if test x"$ac_cv_func_DNSServiceRegister" != x"yes" -a \
+            x"$ac_cv_lib_ext_DNSServiceRegister" != x"yes"; then
+	have_dnssd_support=no
+    fi
+
+    if test x"$have_dnssd_support" = x"yes"; then
+	AC_DEFINE(WTH_DNSSD_SUPPORT, 1,
+		[Whether to enable DNS service discovery support])
+    else
+    	if test x"$enable_dnssd" = x"yes"; then
+	    AC_MSG_ERROR(DNS service discovery support not available)
+	fi
+    fi
+
+fi
+
+#################################################
 # Check to see if we should use the included iniparser
 
 AC_ARG_WITH(included-iniparser,
@@ -6466,6 +6500,9 @@ if test x"$with_ldap_support" != x"no"; then
 fi
 if test x"$with_dnsupdate_support" != x"no"; then
     AC_MSG_RESULT([    UUID_LIBS = $UUID_LIBS])
+fi
+if test x"$have_dnssd_support" != x"no"; then
+    AC_MSG_RESULT([    DNSSD_LIBS = $DNSSD_LIBS])
 fi
 AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 
