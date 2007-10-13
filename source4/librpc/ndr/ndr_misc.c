@@ -24,13 +24,13 @@
 #include "system/network.h"
 #include "librpc/ndr/libndr.h"
 
-_PUBLIC_ void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip)
+_PUBLIC_ void ndr_print_in_addr(struct ndr_print *ndr, const char *name, const struct in_addr *_ip)
 {
-	struct ipv4_addr ip;
+	struct in_addr ip;
 
-	ip.addr = htonl(_ip->addr);
+	ip.s_addr = htonl(_ip->s_addr);
 
-	ndr->print(ndr, "%-25s: %s", name, sys_inet_ntoa(ip));
+	ndr->print(ndr, "%-25s: %s", name, inet_ntoa(ip));
 }
 
 _PUBLIC_ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)

@@ -25,6 +25,7 @@
 #include "lib/samba3/samba3.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "system/network.h"
 
 
 static struct MprVar mprRegistry(struct samba3_regdb *reg)
@@ -407,7 +408,7 @@ static struct MprVar mprWinsEntries(struct samba3 *samba3)
 
 		for (j = 0; j < samba3->winsdb_entries[i].ip_count; j++) {
 			const char *addr;
-			addr = sys_inet_ntoa(samba3->winsdb_entries[i].ips[j]);
+			addr = inet_ntoa(samba3->winsdb_entries[i].ips[j]);
 			mprAddArray(&ips, j, mprString(addr));
 		}
 

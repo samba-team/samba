@@ -28,8 +28,8 @@
 /** used for network interfaces */
 struct interface {
 	struct interface *next, *prev;
-	struct ipv4_addr ip;
-	struct ipv4_addr nmask;
+	struct in_addr ip;
+	struct in_addr nmask;
 	const char *ip_s;
 	const char *bcast_s;
 	const char *nmask_s;
@@ -44,25 +44,18 @@ static struct interface *local_interfaces;
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 #define MKNETADDR(_IP, _NM) (_IP & _NM)
 
-static struct ipv4_addr tov4(struct in_addr in)
-{
-	struct ipv4_addr in2;
-	in2.addr = in.s_addr;
-	return in2;
-}
-
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
 static struct interface *iface_find(struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(tov4(ip))) return local_interfaces;
+	if (is_zero_ip(ip)) return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
 		if (CheckMask) {
-			if (same_net(i->ip,tov4(ip),i->nmask)) return i;
-		} else if (i->ip.addr == ip.s_addr) return i;
+			if (same_net(i->ip,ip,i->nmask)) return i;
+		} else if (i->ip.s_addr == ip.s_addr) return i;
 
 	return NULL;
 }
@@ -74,7 +67,7 @@ add an interface to the linked list of interfaces
 static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
-	struct ipv4_addr bcast;
+	struct in_addr bcast;
 
 	if (iface_find(ip, false)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
@@ -86,17 +79,17 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 	
 	ZERO_STRUCTPN(iface);
 
-	iface->ip = tov4(ip);
-	iface->nmask = tov4(nmask);
-	bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
+	iface->ip = ip;
+	iface->nmask = nmask;
+	bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
 
 	/* keep string versions too, to avoid people tripping over the implied
-	   static in sys_inet_ntoa() */
-	iface->ip_s = talloc_strdup(iface, sys_inet_ntoa(iface->ip));
-	iface->nmask_s = talloc_strdup(iface, sys_inet_ntoa(iface->nmask));
+	   static in inet_ntoa() */
+	iface->ip_s = talloc_strdup(iface, inet_ntoa(iface->ip));
+	iface->nmask_s = talloc_strdup(iface, inet_ntoa(iface->nmask));
 	
 	if (nmask.s_addr != ~0) {
-		iface->bcast_s = talloc_strdup(iface, sys_inet_ntoa(bcast));
+		iface->bcast_s = talloc_strdup(iface, inet_ntoa(bcast));
 	}
 
 	DLIST_ADD_END(local_interfaces, iface, struct interface *);
@@ -145,7 +138,7 @@ static void interpret_interface(const char *token,
 		if (strpbrk(token, "*?") != NULL) {
 			return;
 		}
-		ip.s_addr = interpret_addr2(token).addr;
+		ip.s_addr = interpret_addr2(token).s_addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
 				add_interface(probed_ifaces[i].ip,
@@ -160,10 +153,10 @@ static void interpret_interface(const char *token,
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip.s_addr = interpret_addr2(token).addr;
+	ip.s_addr = interpret_addr2(token).s_addr;
 
 	if (strlen(p) > 2) {
-		nmask.s_addr = interpret_addr2(p).addr;
+		nmask.s_addr = interpret_addr2(p).s_addr;
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -172,7 +165,7 @@ static void interpret_interface(const char *token,
 	if (ip.s_addr == MKBCADDR(ip.s_addr, nmask.s_addr) ||
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
-			if (same_net(tov4(ip), tov4(probed_ifaces[i].ip), tov4(nmask))) {
+			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
 				add_interface(probed_ifaces[i].ip, nmask);
 				return;
 			}
@@ -193,7 +186,7 @@ static void load_interfaces(void)
 	const char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
-	struct ipv4_addr loopback_ip;
+	struct in_addr loopback_ip;
 	int total_probed;
 
 	if (local_interfaces != NULL) {
@@ -213,7 +206,7 @@ static void load_interfaces(void)
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 		}
 		for (i=0;i<total_probed;i++) {
-			if (ifaces[i].ip.s_addr != loopback_ip.addr) {
+			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
 				add_interface(ifaces[i].ip, 
 					      ifaces[i].netmask);
 			}

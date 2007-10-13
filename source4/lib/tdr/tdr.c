@@ -203,10 +203,10 @@ NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char *
 NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, 
 							  const char **address)
 {
-	struct ipv4_addr in;
-	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &in.addr));
-	in.addr = htonl(in.addr);
-	*address = talloc_strdup(tdr, sys_inet_ntoa(in));
+	struct in_addr in;
+	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &in.s_addr));
+	in.s_addr = htonl(in.s_addr);
+	*address = talloc_strdup(tdr, inet_ntoa(in));
 	NT_STATUS_HAVE_NO_MEMORY(*address);
 	return NT_STATUS_OK;
 }

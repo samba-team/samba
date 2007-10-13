@@ -233,7 +233,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 		if (num_interfaces > 0) {
 			primary_address = iface_n_ip(0);
 		} else {
-			primary_address = sys_inet_ntoa(interpret_addr2(
+			primary_address = inet_ntoa(interpret_addr2(
 							lp_netbios_name(global_loadparm)));
 		}
 		primary_address = talloc_strdup(tmp_ctx, primary_address);

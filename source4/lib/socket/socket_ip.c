@@ -91,8 +91,8 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 			     uint32_t flags)
 {
 	struct sockaddr_in srv_addr;
-	struct ipv4_addr my_ip;
-	struct ipv4_addr srv_ip;
+	struct in_addr my_ip;
+	struct in_addr srv_ip;
 	int ret;
 
 	if (my_address && my_address->sockaddr) {
@@ -103,13 +103,13 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 	} else if (my_address) {
 		my_ip = interpret_addr2(my_address->addr);
 		
-		if (my_ip.addr != 0 || my_address->port != 0) {
+		if (my_ip.s_addr != 0 || my_address->port != 0) {
 			struct sockaddr_in my_addr;
 			ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
 			my_addr.sin_len		= sizeof(my_addr);
 #endif
-			my_addr.sin_addr.s_addr	= my_ip.addr;
+			my_addr.sin_addr.s_addr	= my_ip.s_addr;
 			my_addr.sin_port	= htons(my_address->port);
 			my_addr.sin_family	= PF_INET;
 			
@@ -127,7 +127,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 		}
 	} else {
 		srv_ip = interpret_addr2(srv_address->addr);
-		if (!srv_ip.addr) {
+		if (!srv_ip.s_addr) {
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
 		
@@ -135,7 +135,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 		srv_addr.sin_len	= sizeof(srv_addr);
 #endif
-		srv_addr.sin_addr.s_addr= srv_ip.addr;
+		srv_addr.sin_addr.s_addr= srv_ip.s_addr;
 		srv_addr.sin_port	= htons(srv_address->port);
 		srv_addr.sin_family	= PF_INET;
 
@@ -158,7 +158,7 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 			    int queue_size, uint32_t flags)
 {
 	struct sockaddr_in my_addr;
-	struct ipv4_addr ip_addr;
+	struct in_addr ip_addr;
 	int ret;
 
 	socket_set_option(sock, "SO_REUSEADDR=1", NULL);
@@ -172,7 +172,7 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 #ifdef HAVE_SOCK_SIN_LEN
 		my_addr.sin_len		= sizeof(my_addr);
 #endif
-		my_addr.sin_addr.s_addr	= ip_addr.addr;
+		my_addr.sin_addr.s_addr	= ip_addr.s_addr;
 		my_addr.sin_port	= htons(my_address->port);
 		my_addr.sin_family	= PF_INET;
 		
@@ -355,17 +355,17 @@ static NTSTATUS ipv4_sendto(struct socket_context *sock,
 			     dest_addr->sockaddr, dest_addr->sockaddrlen);
 	} else {
 		struct sockaddr_in srv_addr;
-		struct ipv4_addr addr;
+		struct in_addr addr;
 		
 		ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN
 		srv_addr.sin_len         = sizeof(srv_addr);
 #endif
 		addr                     = interpret_addr2(dest_addr->addr);
-		if (addr.addr == 0) {
+		if (addr.s_addr == 0) {
 			return NT_STATUS_HOST_UNREACHABLE;
 		}
-		srv_addr.sin_addr.s_addr = addr.addr;
+		srv_addr.sin_addr.s_addr = addr.s_addr;
 		srv_addr.sin_port        = htons(dest_addr->port);
 		srv_addr.sin_family      = PF_INET;
 		

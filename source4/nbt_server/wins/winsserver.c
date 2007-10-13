@@ -560,13 +560,13 @@ done:
 	nbtd_name_registration_reply(nbtsock, packet, src, rcode);
 }
 
-static uint32_t ipv4_match_bits(struct ipv4_addr ip1,struct ipv4_addr ip2)
+static uint32_t ipv4_match_bits(struct in_addr ip1, struct in_addr ip2)
 {
 	uint32_t i, j, match=0;
 	uint8_t *p1, *p2;
 
-	p1 = (uint8_t *)&ip1.addr;
-	p2 = (uint8_t *)&ip2.addr;
+	p1 = (uint8_t *)&ip1.s_addr;
+	p2 = (uint8_t *)&ip2.s_addr;
 
 	for (i=0; i<4; i++) {
 		if (p1[i] != p2[i]) break;

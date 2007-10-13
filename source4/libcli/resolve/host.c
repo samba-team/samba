@@ -65,14 +65,14 @@ static int host_destructor(struct host_state *state)
 static void run_child(struct composite_context *c, int fd)
 {
 	struct host_state *state = talloc_get_type(c->private_data, struct host_state);
-	struct ipv4_addr ip;
+	struct in_addr ip;
 	const char *address;
 
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid in the parent */
 	ip = interpret_addr2(state->name.name);
 
-	address = sys_inet_ntoa(ip);
+	address = inet_ntoa(ip);
 	if (address != NULL) {
 		write(fd, address, strlen(address)+1);
 	}

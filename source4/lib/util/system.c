@@ -79,19 +79,12 @@ _PUBLIC_ struct hostent *sys_gethostbyname(const char *name)
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
 
-_PUBLIC_ const char *sys_inet_ntoa(struct ipv4_addr in)
-{
-	struct in_addr in2;
-	in2.s_addr = in.addr;
-	return inet_ntoa(in2);
-}
-
-_PUBLIC_ struct ipv4_addr sys_inet_makeaddr(int net, int host)
+_PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host)
 {
 	struct in_addr in;
-	struct ipv4_addr in2;
+	struct in_addr in2;
 	in = inet_makeaddr(net, host);
-	in2.addr = in.s_addr;
+	in2.s_addr = in.s_addr;
 	return in2;
 }
 

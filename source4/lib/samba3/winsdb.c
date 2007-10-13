@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/samba3/samba3.h"
+#include "system/network.h"
 
 #define WINS_VERSION 1
 
@@ -110,7 +111,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		}
 
 		/* Allocate the space for the ip_list. */
-		if((entry.ips = talloc_array ( ctx, struct ipv4_addr, entry.ip_count)) == NULL) {
+		if((entry.ips = talloc_array ( ctx, struct in_addr, entry.ip_count)) == NULL) {
 			DEBUG(0,("initialise_wins: Malloc fail !\n"));
 			SAFE_FREE(line);
 			return NT_STATUS_NO_MEMORY;
