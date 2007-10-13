@@ -549,10 +549,10 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 		s1 = (struct sockaddr_in *)&i1->netmask;
 		s2 = (struct sockaddr_in *)&i2->netmask;
 
-		r = ntohl(s1->sin_addr.s_addr) -
+		return ntohl(s1->sin_addr.s_addr) -
 			ntohl(s2->sin_addr.s_addr);
 	}
-	return r;
+	return 0;
 }
 
 int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
