@@ -29,3 +29,4 @@ source/library-versions
 source/nsswitch/*.so
 source/proto_exists
 source/winbindd/winbindd_proto.h
+*~
