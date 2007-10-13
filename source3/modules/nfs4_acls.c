@@ -257,7 +257,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	return True;
 }
 
-size_t smb_get_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_get_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info,
 	SEC_DESC **ppdesc, SMB4ACL_T *acl)
 {
@@ -272,23 +272,25 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
 
 	if (acl==NULL || smb_get_naces(acl)==0)
-		return 0; /* special because we shouldn't alloc 0 for win */
+		return NT_STATUS_ACCESS_DENIED; /* special because we
+						 * shouldn't alloc 0 for
+						 * win */
 
 	if (smbacl4_GetFileOwner(fsp, &sbuf))
-		return 0;
+		return map_nt_error_from_unix(errno);
 
 	uid_to_sid(&sid_owner, sbuf.st_uid);
 	gid_to_sid(&sid_group, sbuf.st_gid);
 
 	if (smbacl4_nfs42win(mem_ctx, acl, &sid_owner, &sid_group, &nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
-		return 0;
+		return map_nt_error_from_unix(errno);
 	}
 
 	psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, good_aces, nt_ace_list);
 	if (psa == NULL) {
 		DEBUG(2,("make_sec_acl failed\n"));
-		return 0;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10,("after make sec_acl\n"));
@@ -298,11 +300,13 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
 	                        NULL, psa, &sd_size);
 	if (*ppdesc==NULL) {
 		DEBUG(2,("make_sec_desc failed\n"));
-		return 0;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(10, ("smb_get_nt_acl_nfs4 successfully exited with sd_size %d\n", sd_size));
-	return sd_size;
+	DEBUG(10, ("smb_get_nt_acl_nfs4 successfully exited with sd_size %d\n",
+		   sec_desc_size(*ppdesc)));
+
+	return NT_STATUS_OK;
 }
 
 enum smbacl4_mode_enum {e_simple=0, e_special=1};

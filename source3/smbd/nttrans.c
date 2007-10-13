@@ -2302,17 +2302,17 @@ static void call_nt_transact_rename(connection_struct *conn,
  Fake up a completely empty SD.
 *******************************************************************************/
 
-static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
+static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 {
 	size_t sd_size;
 
 	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);
 	if(!*ppsd) {
 		DEBUG(0,("get_null_nt_acl: Unable to malloc space for security descriptor.\n"));
-		sd_size = 0;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return sd_size;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -2337,6 +2337,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	uint32 security_info_wanted;
 	TALLOC_CTX *mem_ctx;
 	files_struct *fsp = NULL;
+	NTSTATUS status;
 
         if(parameter_count < 8) {
 		reply_doserror(req, ERRDOS, ERRbadfunc);
@@ -2371,16 +2372,19 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	 */
 
 	if (!lp_nt_acl_support(SNUM(conn))) {
-		sd_size = get_null_nt_acl(mem_ctx, &psd);
+		status = get_null_nt_acl(mem_ctx, &psd);
 	} else {
-		sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd, security_info_wanted, &psd);
+		status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+					     security_info_wanted, &psd);
 	}
 
-	if (sd_size == 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, status);
 		return;
 	}
+
+	sd_size = sec_desc_size(psd);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 

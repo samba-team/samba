@@ -2728,7 +2728,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
  the UNIX style get ACL.
 ****************************************************************************/
 
-size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
+NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 {
 	connection_struct *conn = fsp->conn;
 	SMB_STRUCT_STAT sbuf;
@@ -2756,7 +2756,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 		/* Get the stat struct for the owner info. */
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
-			return 0;
+			return map_nt_error_from_unix(errno);
 		}
 		/*
 		 * Get the ACL from the path.
@@ -2777,7 +2777,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 		/* Get the stat struct for the owner info. */
 		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
-			return 0;
+			return map_nt_error_from_unix(errno);
 		}
 		/*
 		 * Get the ACL from the fd.
@@ -3027,7 +3027,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	free_inherited_info(pal);
 	SAFE_FREE(nt_ace_list);
 
-	return sd_size;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3174,7 +3174,6 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	int info;
-	size_t sd_size;
 	unsigned int i, j;
 	mode_t unx_mode;
 
@@ -3213,13 +3212,13 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 		return status;
 	}
 
-	sd_size = SMB_VFS_GET_NT_ACL(parent_fsp, parent_fsp->fsp_name,
-			DACL_SECURITY_INFORMATION, &parent_sd );
+	status = SMB_VFS_GET_NT_ACL(parent_fsp, parent_fsp->fsp_name,
+				    DACL_SECURITY_INFORMATION, &parent_sd );
 
 	close_file(parent_fsp, NORMAL_CLOSE);
 
-	if (!sd_size) {
-		return NT_STATUS_ACCESS_DENIED;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
@@ -4174,7 +4173,8 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	finfo.fh->fd = -1;
 	finfo.fsp_name = CONST_DISCARD(char *,fname);
 
-	if (get_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd ) == 0) {
+	if (!NT_STATUS_IS_OK(get_nt_acl( &finfo, DACL_SECURITY_INFORMATION,
+					 &psd ))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		conn_free_internal( &conn );
 		return NULL;

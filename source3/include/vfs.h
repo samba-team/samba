@@ -74,6 +74,7 @@
 /* Leave at 22 - not yet released. Add file_id_create operation. --metze */
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
 /* Leave at 22 - not yet released. Added recvfile. */
+/* Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl */
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -305,8 +306,15 @@ struct vfs_ops {
 
 		/* NT ACL operations. */
 		
-		size_t (*fget_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd,  uint32 security_info, struct security_descriptor **ppdesc);
-		size_t (*get_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name,  uint32 security_info, struct security_descriptor **ppdesc);
+		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
+					struct files_struct *fsp, int fd,
+					uint32 security_info,
+					struct security_descriptor **ppdesc);
+		NTSTATUS (*get_nt_acl)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *name,
+				       uint32 security_info,
+				       struct security_descriptor **ppdesc);
 		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
 		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
 		

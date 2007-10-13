@@ -34,7 +34,7 @@
  * read the local file's acls and return it in NT form
  * using the NFSv4 format conversion
  */
-static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
+static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 			     struct security_descriptor **ppdesc)
 {
 	int naces, i;
@@ -50,20 +50,19 @@ static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", fsp->fsp_name,
 					strerror(errno)));
 		}
-		return 0;
+		return map_nt_error_from_unix(errno);
 	}
 	/* allocate the field of ZFS aces */
 	mem_ctx = talloc_tos();
 	acebuf = (ace_t *) talloc_size(mem_ctx, sizeof(ace_t)*naces);
 	if(acebuf == NULL) {
-		errno = ENOMEM;
-		return 0;
+		return NT_STATUS_NO_MEMORY;
 	}
 	/* read the aces into the field */
 	if(acl(fsp->fsp_name, ACE_GETACL, naces, acebuf) < 0) {
 		DEBUG(9, ("acl(ACE_GETACL, %s): %s ", fsp->fsp_name,
 				strerror(errno)));
-		return 0;
+		return map_nt_error_from_unix(errno);
 	}
 	/* create SMB4ACL data */
 	if((pacl = smb_create_smb4acl()) == NULL) return 0;
@@ -87,7 +86,8 @@ static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 		} else {
 			aceprop.flags	= 0;
 		}
-		if(smb_add_ace4(pacl, &aceprop) == NULL) return 0;
+		if(smb_add_ace4(pacl, &aceprop) == NULL)
+			return NT_STATUS_NO_MEMORY;
 	}
 
 	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
@@ -164,7 +164,7 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			zfs_process_smbacl);
 }
 
-static size_t zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
+static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 int fd,  uint32 security_info,
 				 struct security_descriptor **ppdesc)
@@ -172,7 +172,7 @@ static size_t zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	return zfs_get_nt_acl(fsp, security_info, ppdesc);
 }
 
-static size_t zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
+static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *name,  uint32 security_info,
 				struct security_descriptor **ppdesc)

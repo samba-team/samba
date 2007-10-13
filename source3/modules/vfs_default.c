@@ -943,9 +943,11 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, S
 	return file_id_create_dev(dev, inode);
 }
 
-static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info, SEC_DESC **ppdesc)
+static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
+				    files_struct *fsp, int fd,
+				    uint32 security_info, SEC_DESC **ppdesc)
 {
-	size_t result;
+	NTSTATUS result;
 
 	START_PROFILE(fget_nt_acl);
 	result = get_nt_acl(fsp, security_info, ppdesc);
@@ -953,9 +955,11 @@ static size_t vfswrap_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp, 
 	return result;
 }
 
-static size_t vfswrap_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info, SEC_DESC **ppdesc)
+static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
+				   files_struct *fsp, const char *name,
+				   uint32 security_info, SEC_DESC **ppdesc)
 {
-	size_t result;
+	NTSTATUS result;
 
 	START_PROFILE(get_nt_acl);
 	result = get_nt_acl(fsp, security_info, ppdesc);

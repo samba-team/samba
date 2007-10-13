@@ -190,10 +190,10 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 			    const char *path, unsigned int flags);
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
 						    SMB_DEV_T dev, SMB_INO_T inode);
-static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, uint32 security_info,
 				SEC_DESC **ppdesc);
-static size_t smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
 			       SEC_DESC **ppdesc);
 static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1510,31 +1510,33 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 	return result;
 }
 
-static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, uint32 security_info,
 				SEC_DESC **ppdesc)
 {
-	size_t result;
+	NTSTATUS result;
 
 	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info,
 					  ppdesc);
 
-	do_log(SMB_VFS_OP_FGET_NT_ACL, (result > 0), handle,
+	do_log(SMB_VFS_OP_FGET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", fsp->fsp_name);
 
 	return result;
 }
 
-static size_t smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			       const char *name, uint32 security_info,
-			       SEC_DESC **ppdesc)
+static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  const char *name,
+					  uint32 security_info,
+					  SEC_DESC **ppdesc)
 {
-	size_t result;
+	NTSTATUS result;
 
 	result = SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info,
 					 ppdesc);
 
-	do_log(SMB_VFS_OP_GET_NT_ACL, (result > 0), handle,
+	do_log(SMB_VFS_OP_GET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", fsp->fsp_name);
 
 	return result;
