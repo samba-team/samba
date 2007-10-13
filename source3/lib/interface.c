@@ -460,7 +460,13 @@ static void interpret_interface(char *token)
 
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
-	if (!p && interpret_string_addr(&ss, token)) {
+	if (p == NULL) {
+		if (!interpret_string_addr(&ss, token)) {
+			DEBUG(2, ("interpret_interface: Can't find address "
+				  "for %s\n", token));
+			return;
+		}
+
 		for (i=0;i<total_probed;i++) {
 			if (addr_equal(&ss, &probed_ifaces[i].ip)) {
 				add_interface(&probed_ifaces[i]);
