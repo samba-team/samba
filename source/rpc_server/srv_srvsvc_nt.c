@@ -2050,13 +2050,18 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	sd_size = SMB_VFS_GET_NT_ACL(fsp, fsp->fsp_name, (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
+	nt_status = SMB_VFS_GET_NT_ACL(fsp, fsp->fsp_name,
+				       (OWNER_SECURITY_INFORMATION
+					|GROUP_SECURITY_INFORMATION
+					|DACL_SECURITY_INFORMATION), &psd);
 
-	if (sd_size == 0) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		r_u->status = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
+
+	sd_size = sec_desc_size(psd);
 
 	r_u->ptr_response = 1;
 	r_u->size_response = sd_size;

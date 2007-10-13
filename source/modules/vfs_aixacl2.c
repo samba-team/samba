@@ -158,7 +158,7 @@ static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
 	return True;
 }
 
-static size_t aixjfs2_get_nt_acl_common(files_struct *fsp,
+static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -173,19 +173,19 @@ static size_t aixjfs2_get_nt_acl_common(files_struct *fsp,
 		return get_nt_acl(fsp, security_info, ppdesc);
 	}
 	if (result==False)
-		return 0;
+		return NT_STATUS_ACCESS_DENIED;
 
 	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 }
 
-size_t aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
+NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, int fd, uint32 security_info,
 	SEC_DESC **ppdesc)
 {
 	return aixjfs2_get_nt_acl_common(fsp, security_info, ppdesc);
 }
 
-size_t aixjfs2_get_nt_acl(vfs_handle_struct *handle,
+NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, const char *name,
 	uint32 security_info, SEC_DESC **ppdesc)
 {

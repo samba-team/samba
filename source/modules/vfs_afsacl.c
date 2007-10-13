@@ -829,8 +829,8 @@ static bool afs_get_afs_acl(char *filename, struct afs_acl *acl)
 	return True;
 }
 
-static size_t afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
-			     struct security_descriptor **ppdesc)
+static NTSTATUS afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
+			       struct security_descriptor **ppdesc)
 {
 	struct afs_acl acl;
 	size_t sd_size;
@@ -840,14 +840,14 @@ static size_t afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 	sidpts = lp_parm_bool(SNUM(fsp->conn), "afsacl", "sidpts", False);
 
 	if (!afs_get_afs_acl(fsp->fsp_name, &acl)) {
-		return 0;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	sd_size = afs_to_nt_acl(&acl, fsp, security_info, ppdesc);
 
 	free_afs_acl(&acl);
 
-	return sd_size;
+	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /* For setting an AFS ACL we have to take care of the ACEs we could
@@ -982,17 +982,17 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
-static size_t afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 int fd,  uint32 security_info,
-				 struct security_descriptor **ppdesc)
+static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   int fd,  uint32 security_info,
+				   struct security_descriptor **ppdesc)
 {
 	return afs_get_nt_acl(fsp, security_info, ppdesc);
 }
-static size_t afsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				const char *name,  uint32 security_info,
-				struct security_descriptor **ppdesc)
+static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  const char *name,  uint32 security_info,
+				  struct security_descriptor **ppdesc)
 {
 	return afs_get_nt_acl(fsp, security_info, ppdesc);
 }

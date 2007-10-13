@@ -226,7 +226,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 	return 0;
 }
 
-static size_t gpfsacl_get_nt_acl_common(files_struct *fsp,
+static NTSTATUS gpfsacl_get_nt_acl_common(files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -244,17 +244,17 @@ static size_t gpfsacl_get_nt_acl_common(files_struct *fsp,
 	}
 	
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
-	return 0;
+	return map_nt_error_from_unix(errno);
 }
 
-size_t gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
+NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, int fd, uint32 security_info,
 	SEC_DESC **ppdesc)
 {
         return gpfsacl_get_nt_acl_common(fsp, security_info, ppdesc);
 }
 
-size_t gpfsacl_get_nt_acl(vfs_handle_struct *handle,
+NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, const char *name,
 	uint32 security_info, SEC_DESC **ppdesc)
 {

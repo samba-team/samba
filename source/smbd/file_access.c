@@ -41,7 +41,6 @@ static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct files_struct *fsp = NULL;
 	struct security_descriptor *secdesc = NULL;
-	size_t secdesc_size;
 
 	if (!VALID_STAT(*psbuf)) {
 		if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
@@ -70,14 +69,14 @@ static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	secdesc_size = SMB_VFS_GET_NT_ACL(fsp, fname,
-					  (OWNER_SECURITY_INFORMATION |
-					   GROUP_SECURITY_INFORMATION |
-					   DACL_SECURITY_INFORMATION),
-					  &secdesc);
-	if (secdesc_size == 0) {
+	status = SMB_VFS_GET_NT_ACL(fsp, fname,
+				    (OWNER_SECURITY_INFORMATION |
+				     GROUP_SECURITY_INFORMATION |
+				     DACL_SECURITY_INFORMATION),
+				    &secdesc);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Unable to get NT ACL for file %s\n", fname));
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 
 	*psd = talloc_move(mem_ctx, &secdesc);

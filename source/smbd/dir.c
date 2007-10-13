@@ -911,7 +911,6 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	SEC_DESC *psd = NULL;
-	size_t sd_size;
 	files_struct *fsp;
 	NTSTATUS status;
 	uint32 access_granted;
@@ -951,12 +950,12 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 
 	/* No access if SD get failed. */
-	if (!sd_size) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
@@ -974,7 +973,6 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	SEC_DESC *psd = NULL;
-	size_t sd_size;
 	files_struct *fsp;
 	int info;
 	NTSTATUS status;
@@ -1014,13 +1012,14 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 
 	/* No access if SD get failed. */
-	if (!sd_size)
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
 
 	return se_access_check(psd, current_user.nt_user_token, FILE_WRITE_DATA,
                                  &access_granted, &status);
