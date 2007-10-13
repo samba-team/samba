@@ -1,5 +1,5 @@
 ##
-## Basic script for defining the major and minor librrary revision numbers
+## Basic script for defining the major and minor library revision numbers
 ## Makefile_target:major:minor
 ##
 bin/libsmbclient.@SHLIBEXT@:0:1
