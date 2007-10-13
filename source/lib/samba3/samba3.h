@@ -98,7 +98,7 @@ struct samba3_winsdb_entry
 	int type;
 	time_t ttl;
 	uint32_t ip_count;
-	struct ipv4_addr *ips;
+	struct in_addr *ips;
 };
 
 struct samba3_policy

@@ -254,13 +254,7 @@ void CatchChildLeaveStatus(void);
 /* The following definitions come from lib/util/system.c  */
 
 
-/*
-  we use struct ipv4_addr to avoid having to include all the
-  system networking headers everywhere
-*/
-struct ipv4_addr {
-	uint32_t addr;
-};
+struct in_addr;
 
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
@@ -268,8 +262,8 @@ in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
 _PUBLIC_ struct hostent *sys_gethostbyname(const char *name);
-_PUBLIC_ const char *sys_inet_ntoa(struct ipv4_addr in);
-_PUBLIC_ struct ipv4_addr sys_inet_makeaddr(int net, int host);
+_PUBLIC_ const char *sys_inet_ntoa(struct in_addr in);
+_PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
 
 /* The following definitions come from lib/util/genrand.c  */
 
@@ -676,17 +670,17 @@ _PUBLIC_ uint32_t interpret_addr(const char *str);
 /**
  A convenient addition to interpret_addr().
 **/
-_PUBLIC_ struct ipv4_addr interpret_addr2(const char *str);
+_PUBLIC_ struct in_addr interpret_addr2(const char *str);
 
 /**
  Check if an IP is the 0.0.0.0.
 **/
-_PUBLIC_ bool is_zero_ip(struct ipv4_addr ip);
+_PUBLIC_ bool is_zero_ip(struct in_addr ip);
 
 /**
  Are two IPs on the same subnet?
 **/
-_PUBLIC_ bool same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask);
+_PUBLIC_ bool same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 
 /**
  Check if a process exists. Does this work on all unixes?

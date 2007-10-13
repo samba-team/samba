@@ -285,11 +285,11 @@ _PUBLIC_ uint32_t interpret_addr(const char *str)
 /**
  A convenient addition to interpret_addr().
 **/
-_PUBLIC_ struct ipv4_addr interpret_addr2(const char *str)
+_PUBLIC_ struct in_addr interpret_addr2(const char *str)
 {
-	struct ipv4_addr ret;
+	struct in_addr ret;
 	uint32_t a = interpret_addr(str);
-	ret.addr = a;
+	ret.s_addr = a;
 	return ret;
 }
 
@@ -297,22 +297,22 @@ _PUBLIC_ struct ipv4_addr interpret_addr2(const char *str)
  Check if an IP is the 0.0.0.0.
 **/
 
-_PUBLIC_ bool is_zero_ip(struct ipv4_addr ip)
+_PUBLIC_ bool is_zero_ip(struct in_addr ip)
 {
-	return ip.addr == 0;
+	return ip.s_addr == 0;
 }
 
 /**
  Are two IPs on the same subnet?
 **/
 
-_PUBLIC_ bool same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
+_PUBLIC_ bool same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask)
 {
 	uint32_t net1,net2,nmask;
 
-	nmask = ntohl(mask.addr);
-	net1  = ntohl(ip1.addr);
-	net2  = ntohl(ip2.addr);
+	nmask = ntohl(mask.s_addr);
+	net1  = ntohl(ip1.s_addr);
+	net2  = ntohl(ip2.s_addr);
             
 	return((net1 & nmask) == (net2 & nmask));
 }

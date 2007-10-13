@@ -25,6 +25,7 @@
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "system/network.h"
 
 struct resolve_state {
 	struct nbt_name name;
@@ -151,8 +152,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 
 	if (is_ipaddress(state->name.name) || 
 	    strcasecmp(state->name.name, "localhost") == 0) {
-		struct ipv4_addr ip = interpret_addr2(state->name.name);
-		state->reply_addr = talloc_strdup(state, sys_inet_ntoa(ip));
+		struct in_addr ip = interpret_addr2(state->name.name);
+		state->reply_addr = talloc_strdup(state, inet_ntoa(ip));
 		if (composite_nomem(state->reply_addr, c)) return c;
 		composite_done(c);
 		return c;

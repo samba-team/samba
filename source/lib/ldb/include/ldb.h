@@ -735,12 +735,14 @@ struct ldb_register_partition {
 	struct ldb_dn *dn;
 };
 
+enum ldb_sequence_type {
+	LDB_SEQ_HIGHEST_SEQ,
+	LDB_SEQ_HIGHEST_TIMESTAMP,
+	LDB_SEQ_NEXT
+};
+
 struct ldb_sequence_number {
-	enum ldb_sequence_type {
-		LDB_SEQ_HIGHEST_SEQ,
-		LDB_SEQ_HIGHEST_TIMESTAMP,
-		LDB_SEQ_NEXT
-	} type;
+	enum ldb_sequence_type type;
 	uint64_t seq_num;
 	uint32_t flags;
 };

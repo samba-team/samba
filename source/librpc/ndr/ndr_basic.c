@@ -585,10 +585,10 @@ _PUBLIC_ NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, time_t *t
 */
 _PUBLIC_ NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address)
 {
-	struct ipv4_addr in;
-	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.addr));
-	in.addr = htonl(in.addr);
-	*address = talloc_strdup(ndr->current_mem_ctx, sys_inet_ntoa(in));
+	struct in_addr in;
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.s_addr));
+	in.s_addr = htonl(in.s_addr);
+	*address = talloc_strdup(ndr->current_mem_ctx, inet_ntoa(in));
 	NT_STATUS_HAVE_NO_MEMORY(*address);
 	return NT_STATUS_OK;
 }

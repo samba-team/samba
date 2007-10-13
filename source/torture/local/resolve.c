@@ -23,6 +23,7 @@
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
+#include "system/network.h"
 
 static bool test_async_resolve(struct torture_context *tctx)
 {
@@ -68,7 +69,7 @@ static bool test_sync_resolve(struct torture_context *tctx)
 	torture_comment(tctx, "Testing sync resolve of '%s' for %d seconds\n", 
 			host, timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		sys_inet_ntoa(interpret_addr2(host));
+		inet_ntoa(interpret_addr2(host));
 		count++;
 	}
 	

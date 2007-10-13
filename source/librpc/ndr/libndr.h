@@ -329,7 +329,7 @@ NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct do
 NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
-void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip);
+void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct in_addr *_ip);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
 
 #endif /* __LIBNDR_H__ */
