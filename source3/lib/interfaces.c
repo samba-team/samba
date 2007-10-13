@@ -85,6 +85,7 @@
 #endif
 
 #include "interfaces.h"
+#include "lib/replace/replace.h"
 
 /****************************************************************************
  Try the "standard" getifaddrs/freeifaddrs interfaces.
@@ -136,7 +137,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		memcpy(&ifaces[total].ip, ifptr->ifa_addr, copy_size);
 		memcpy(&ifaces[total].netmask, ifptr->ifa_netmask, copy_size);
 
-		if ((ifaces[total].flags & IFF_BROADCAST) &&
+		if ((ifaces[total].flags & (IFF_BROADCAST|IFF_LOOPBACK)) &&
 				ifptr->ifa_broadaddr) {
 			memcpy(&ifaces[total].bcast,
 				ifptr->ifa_broadaddr,
@@ -150,9 +151,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, ifptr->ifa_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifptr->ifa_name,
+			sizeof(ifaces[total].name));
 		total++;
 	}
 
@@ -218,9 +218,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, ifr[i].ifr_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifr[i].ifr_name,
+			sizeof(ifaces[total].name));
 
 		memcpy(&ifaces[total].ip, &ifr[i].ifr_addr,
 				sizeof(struct sockaddr_in));
@@ -331,9 +330,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strncpy(ifaces[total].name, iname,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, iname, sizeof(ifaces[total].name));
 
 		memcpy(&ifaces[total].ip, &ifreq.ifr_addr,
 				sizeof(struct sockaddr_in));
@@ -436,9 +433,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		memcpy(&ifaces[total].ip, &ifr->ifr_addr,
 				sizeof(struct sockaddr_in));
 
-		strncpy(ifaces[total].name, ifr->ifr_name,
-				sizeof(ifaces[total].name)-1);
-		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;
+		strlcpy(ifaces[total].name, ifr->ifr_name,
+			sizeof(ifaces[total].name));
 
 		if (ioctl(fd, SIOCGIFNETMASK, ifr) != 0) {
 			goto next;
@@ -549,10 +545,10 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 		s1 = (struct sockaddr_in *)&i1->netmask;
 		s2 = (struct sockaddr_in *)&i2->netmask;
 
-		r = ntohl(s1->sin_addr.s_addr) -
+		return ntohl(s1->sin_addr.s_addr) -
 			ntohl(s2->sin_addr.s_addr);
 	}
-	return r;
+	return 0;
 }
 
 int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
