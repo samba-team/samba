@@ -290,7 +290,7 @@ static void add_interface(const struct iface_struct *ifs)
 		return;
 	}
 
-	if (!(ifs->flags & IFF_BROADCAST)) {
+	if (!(ifs->flags & (IFF_BROADCAST|IFF_LOOPBACK))) {
 		DEBUG(3,("not adding non-broadcast interface %s\n",
 					ifs->name ));
 		return;
