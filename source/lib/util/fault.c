@@ -208,7 +208,8 @@ _PUBLIC_ void fault_setup(const char *pname)
   register a fault handler. 
   Should only be called once in the execution of smbd.
 */
-_PUBLIC_ bool register_fault_handler(const char *name, void (*fault_handler)(int sig))
+_PUBLIC_ bool register_fault_handler(const char *name, 
+				     void (*fault_handler)(int sig))
 {
 	if (fault_handlers.name != NULL) {
 		/* it's already registered! */

@@ -146,61 +146,6 @@ extern const char *panic_action;
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 #endif
 
-
-/** 
- * this global variable determines what messages are printed 
- */
-_PUBLIC_ void debug_schedule_reopen_logs(void);
-
-/**
-  the backend for debug messages. Note that the DEBUG() macro has already
-  ensured that the log level has been met before this is called
-*/
-_PUBLIC_ void do_debug_header(int level, const char *location, const char *func);
-
-/**
-  the backend for debug messages. Note that the DEBUG() macro has already
-  ensured that the log level has been met before this is called
-
-  @note You should never have to call this function directly. Call the DEBUG()
-  macro instead.
-*/
-_PUBLIC_ void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
-
-/**
-  reopen the log file (usually called because the log file name might have changed)
-*/
-_PUBLIC_ void reopen_logs(void);
-
-/**
-  control the name of the logfile and whether logging will be to stdout, stderr
-  or a file
-*/
-_PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
-
-/**
-  return a string constant containing n tabs
-  no more than 10 tabs are returned
-*/
-_PUBLIC_ const char *do_debug_tab(int n);
-
-/**
-  log suspicious usage - print comments and backtrace
-*/	
-_PUBLIC_ void log_suspicious_usage(const char *from, const char *info);
-
-/**
-  print suspicious usage - print comments and backtrace
-*/	
-_PUBLIC_ void print_suspicious_usage(const char* from, const char* info);
-_PUBLIC_ uint32_t get_task_id(void);
-_PUBLIC_ void log_task_id(void);
-
-/**
-  register a set of debug handlers. 
-*/
-_PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
-
 /* The following definitions come from lib/util/fault.c  */
 
 
