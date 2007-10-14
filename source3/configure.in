@@ -3000,9 +3000,11 @@ AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
+#include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
@@ -3015,8 +3017,10 @@ AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_GETIFADDRS 1
 #define AUTOCONF_TEST 1
+#include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
@@ -3030,8 +3034,10 @@ AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
+#include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
@@ -3045,8 +3051,10 @@ AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
+#include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
