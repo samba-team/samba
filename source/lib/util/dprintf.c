@@ -19,8 +19,10 @@
 
 
 /*
-  this module provides functions for printing internal strings in the "display charset"
-  This charset may be quite different from the chosen unix charset
+  this module provides functions for printing internal strings in the 
+  "display charset".
+  
+  This charset may be quite different from the chosen unix charset.
 
   Eventually these functions will need to take care of column count constraints
 
@@ -99,25 +101,14 @@ _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 	return ret;
 }
 
-static FILE *outfile;
-
 _PUBLIC_ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	int ret;
 	va_list ap;
 
-	if (!outfile) outfile = stdout;
-	
 	va_start(ap, format);
-	ret = d_vfprintf(outfile, format, ap);
+	ret = d_vfprintf(stdout, format, ap);
 	va_end(ap);
 
 	return ret;
-}
-
-/* interactive programs need a way of tell d_*() to write to stderr instead
-   of stdout */
-_PUBLIC_ void display_set_stderr(void)
-{
-	outfile = stderr;
 }
