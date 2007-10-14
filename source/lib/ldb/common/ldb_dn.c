@@ -75,7 +75,7 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *st
 {
 	struct ldb_dn *dn;
 
-	if ( (! mem_ctx) || (! ldb)) return NULL;
+	if (! ldb) return NULL;
 
 	dn = talloc_zero(mem_ctx, struct ldb_dn);
 	LDB_DN_NULL_FAILED(dn);
