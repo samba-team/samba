@@ -272,10 +272,10 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 		return -1;
 	}
 
-        ment.mnt_fsname = share_name ? share_name : "none";
+        ment.mnt_fsname = share_name ? share_name : (char *)"none";
         ment.mnt_dir = mount_point;
-        ment.mnt_type = "smbfs";
-        ment.mnt_opts = "";
+        ment.mnt_type = (char *)"smbfs";
+        ment.mnt_opts = (char *)"";
         ment.mnt_freq = 0;
         ment.mnt_passno= 0;
 

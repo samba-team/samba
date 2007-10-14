@@ -146,7 +146,7 @@ static struct cli_state *do_connection(char *the_service)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip(&ip);
+        zero_ip_v4(&ip);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
@@ -435,7 +435,7 @@ static void init_mount(void)
 	pstring tmp;
 	pstring svc2;
 	struct cli_state *c;
-	char *args[20];
+	const char *args[20];
 	int i, status;
 
 	if (realpath(mpoint, mount_point) == NULL) {
@@ -503,12 +503,12 @@ static void init_mount(void)
 		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
 		
 		if (file_exist(smbmnt_path, NULL)) {
-			execv(smbmnt_path, args);
+			execv(smbmnt_path, (char * const *)args);
 			fprintf(stderr,
 				"smbfs/init_mount: execv of %s failed. Error was %s.",
 				smbmnt_path, strerror(errno));
 		} else {
-			execvp("smbmnt", args);
+			execvp("smbmnt", (char * const *)args);
 			fprintf(stderr,
 				"smbfs/init_mount: execv of %s failed. Error was %s.",
 				"smbmnt", strerror(errno));
@@ -799,7 +799,7 @@ static void parse_mount_smb(int argc, char **argv)
 				DEBUGLEVEL = val;
 			} else if(!strcmp(opts, "ip")) {
 				dest_ip = *interpret_addr2(opteq+1);
-				if (is_zero_ip(dest_ip)) {
+				if (is_zero_ip_v4(dest_ip)) {
 					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
 					exit(1);
 				}
