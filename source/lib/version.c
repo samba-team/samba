@@ -27,9 +27,11 @@ const char *samba_version_string(void)
 	return SAMBA_VERSION_OFFICIAL_STRING;
 #else
 	static fstring samba_version;
-	fstring tmp_version;
 	static BOOL init_samba_version;
+#ifdef SAMBA_VENDOR_PATCH
+	fstring tmp_version;
 	size_t remaining;
+#endif
 
 	if (init_samba_version)
 		return samba_version;
