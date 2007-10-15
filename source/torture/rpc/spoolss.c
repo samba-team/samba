@@ -1367,7 +1367,7 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 	torture_comment(tctx, "Testing OpenPrinterEx(%s) with bad name\n", opEx.in.printername);
 
 	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &opEx);
-	torture_assert_ntstatus_ok(tctx, status, "OpenPrinter failed");
+	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
 	if (!W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME,opEx.out.result)) {
 		torture_comment(tctx, "OpenPrinterEx(%s) unexpected result[%s] should be WERR_INVALID_PRINTER_NAME\n",
 			name, win_errstr(opEx.out.result));
