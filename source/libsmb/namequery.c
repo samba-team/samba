@@ -1028,8 +1028,12 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 	/*
 	 * "host" means do a localhost, or dns lookup.
 	 */
-	struct hostent *hp;
-	
+	struct addrinfo hints;
+	struct addrinfo *ailist = NULL;
+	struct addrinfo *res = NULL;
+	int ret = -1;
+	int i = 0;
+
 	if ( name_type != 0x20 && name_type != 0x0) {
 		DEBUG(5, ("resolve_hosts: not appropriate for name type <0x%x>\n", name_type));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1039,18 +1043,54 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 	*return_count = 0;
 
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x%x>\n", name, name_type));
-	
-	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+
+	ZERO_STRUCT(hints);
+	/* By default make sure it supports TCP. */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_ADDRCONFIG;
+
+	ret = getaddrinfo(name,
+			NULL,
+			&hints,
+			&ailist);
+	if (ret) {
+		DEBUG(3,("resolve_hosts: getaddrinfo failed for name %s [%s]\n",
+			name,
+			gai_strerror(ret) ));
+	}
+
+	for (res = ailist; res; res = res->ai_next) {
 		struct in_addr return_ip;
-		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = SMB_MALLOC_P(struct ip_service);
-		if(*return_iplist == NULL) {
+
+		/* IPv4 only for now until I convert ip_service */
+		if (res->ai_family != AF_INET) {
+			continue;
+		}
+		if (!res->ai_addr) {
+			continue;
+		}
+
+		putip((char *)&return_ip,
+			&((struct sockaddr_in *)res->ai_addr)->sin_addr);
+
+		*return_count += 1;
+		i++;
+
+		*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
+						struct ip_service,
+						*return_count);
+		if (!*return_iplist) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
+			freeaddrinfo(ailist);
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*return_iplist)->ip   = return_ip;
-		(*return_iplist)->port = PORT_NONE;
-		*return_count = 1;
+		(*return_iplist)[i].ip   = return_ip;
+		(*return_iplist)[i].port = PORT_NONE;
+	}
+	if (ailist) {
+		freeaddrinfo(ailist);
+	}
+	if (*return_count) {
 		return NT_STATUS_OK;
 	}
 	return NT_STATUS_UNSUCCESSFUL;

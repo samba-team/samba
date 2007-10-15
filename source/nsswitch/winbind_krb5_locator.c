@@ -171,7 +171,7 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 						    int (*cbfunc)(void *, int, struct sockaddr *),
 						    void *cbdata)
 {
-	struct addrinfo *out;
+	struct addrinfo *out = NULL;
 	int ret;
 	int count = 3;
 
@@ -206,7 +206,6 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 #endif
 
 	freeaddrinfo(out);
-
 	return ret;
 }
 

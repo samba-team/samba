@@ -461,7 +461,7 @@ static void interpret_interface(char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (p == NULL) {
-		if (!interpret_string_addr(&ss, token)) {
+		if (!interpret_string_addr(&ss, token, 0)) {
 			DEBUG(2, ("interpret_interface: Can't find address "
 				  "for %s\n", token));
 			return;
@@ -481,7 +481,7 @@ static void interpret_interface(char *token)
 
 	/* parse it into an IP address/netmasklength pair */
 	*p = 0;
-	goodaddr = interpret_string_addr(&ss, token);
+	goodaddr = interpret_string_addr(&ss, token, 0);
 	*p++ = '/';
 
 	if (!goodaddr) {
@@ -492,7 +492,7 @@ static void interpret_interface(char *token)
 	}
 
 	if (strlen(p) > 2) {
-		goodaddr = interpret_string_addr(&ss_mask, p);
+		goodaddr = interpret_string_addr(&ss_mask, p, 0);
 		if (!goodaddr) {
 			DEBUG(2,("interpret_interface: "
 				"can't determine netmask from %s\n",

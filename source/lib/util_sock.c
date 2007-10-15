@@ -29,63 +29,133 @@ static int client_fd = -1;
 static char client_ip_string[INET6_ADDRSTRLEN];
 
 /****************************************************************************
- Return true if a string could be a pure IPv4 address.
+ Return true if a string could be an IPv4 address.
 ****************************************************************************/
 
 bool is_ipaddress_v4(const char *str)
 {
-	bool pure_address = true;
-	int i;
+	int ret = -1;
+	struct in_addr dest;
 
-	for (i=0; pure_address && str[i]; i++) {
-		if (!(isdigit((int)str[i]) || str[i] == '.')) {
-			pure_address = false;
-		}
+	ret = inet_pton(AF_INET, str, &dest);
+	if (ret > 0) {
+		return true;
 	}
+	return false;
+}
 
-	/* Check that a pure number is not misinterpreted as an IP */
-	pure_address = pure_address && (strchr_m(str, '.') != NULL);
-	return pure_address;
+/****************************************************************************
+ Return true if a string could be an IPv4 or IPv6 address.
+****************************************************************************/
+
+bool is_ipaddress(const char *str)
+{
+	int ret = -1;
+
+#if defined(AF_INET6)
+	struct in6_addr dest6;
+
+	ret = inet_pton(AF_INET6, str, &dest6);
+	if (ret > 0) {
+		return true;
+	}
+#endif
+	return is_ipaddress_v4(str);
+}
+
+/*******************************************************************
+ Wrap getaddrinfo...
+******************************************************************/
+
+static bool interpret_string_addr_internal(struct addrinfo **ppres,
+					const char *str, int flags)
+{
+	int ret;
+	struct addrinfo hints;
+
+	memset(&hints, '\0', sizeof(hints));
+	/* By default make sure it supports TCP. */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = flags;
+
+	ret = getaddrinfo(str, NULL,
+			&hints,
+			ppres);
+	if (ret) {
+		DEBUG(3,("interpret_string_addr_interal: getaddrinfo failed "
+			"for name %s [%s]\n",
+			str,
+			gai_strerror(ret) ));
+		return false;
+	}
+	return true;
 }
 
 /****************************************************************************
  Interpret an internet address or name into an IP address in 4 byte form.
+ RETURNS IN NETWORK BYTE ORDER (big endian).
 ****************************************************************************/
 
 uint32 interpret_addr(const char *str)
 {
-	struct hostent *hp;
-	uint32 res;
+	uint32 ret;
 
-	if (strcmp(str,"0.0.0.0") == 0)
-		return(0);
-	if (strcmp(str,"255.255.255.255") == 0)
-		return(0xFFFFFFFF);
-
-	/* if it's in the form of an IP address then
+	/* If it's in the form of an IP address then
 	 * get the lib to interpret it */
 	if (is_ipaddress_v4(str)) {
-		res = inet_addr(str);
+		struct in_addr dest;
+
+		if (inet_pton(AF_INET, str, &dest) <= 0) {
+			/* Error - this shouldn't happen ! */
+			DEBUG(0,("interpret_addr: inet_pton failed "
+				"host %s\n",
+				str));
+			return 0;
+		}
+		ret = dest.s_addr; /* NETWORK BYTE ORDER ! */
 	} else {
-		/* otherwise assume it's a network name of some sort and use
-			sys_gethostbyname */
-		if ((hp = sys_gethostbyname(str)) == 0) {
-			DEBUG(3,("sys_gethostbyname: Unknown host. %s\n",str));
+		/* Otherwise assume it's a network name of some sort and use
+			getadddrinfo. */
+		struct addrinfo *res = NULL;
+		struct addrinfo *res_list = NULL;
+		if (!interpret_string_addr_internal(&res_list,
+					str,
+					AI_ADDRCONFIG)) {
+			DEBUG(3,("interpret_addr: Unknown host. %s\n",str));
 			return 0;
 		}
 
-		if(hp->h_addr == NULL) {
-			DEBUG(3,("sys_gethostbyname: host address is "
+		/* Find the first IPv4 address. */
+		for (res = res_list; res; res = res->ai_next) {
+			if (res->ai_family != AF_INET) {
+				continue;
+			}
+			if (res->ai_addr == NULL) {
+				continue;
+			}
+			break;
+		}
+		if(res == NULL) {
+			DEBUG(3,("interpret_addr: host address is "
 				"invalid for host %s\n",str));
+			if (res_list) {
+				freeaddrinfo(res_list);
+			}
 			return 0;
 		}
-		putip((char *)&res,(char *)hp->h_addr);
+		putip((char *)&ret,
+			&((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr);
+		if (res_list) {
+			freeaddrinfo(res_list);
+		}
 	}
 
-	if (res == (uint32)-1)
-		return(0);
+	/* This is so bogus - all callers need fixing... JRA. */
+	if (ret == (uint32)-1) {
+		return 0;
+	}
 
-	return(res);
+	return ret;
 }
 
 /*******************************************************************
@@ -105,31 +175,20 @@ struct in_addr *interpret_addr2(const char *str)
  struct sockaddr_storage.
 ******************************************************************/
 
-bool interpret_string_addr(struct sockaddr_storage *pss, const char *str)
+bool interpret_string_addr(struct sockaddr_storage *pss,
+		const char *str,
+		int flags)
 {
-	int ret;
 	struct addrinfo *res = NULL;
-	struct addrinfo hints;
 
 	memset(pss,'\0', sizeof(*pss));
 
-	memset(&hints, '\0', sizeof(hints));
-	/* By default make sure it supports TCP. */
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_ADDRCONFIG;
-
-	ret = getaddrinfo(str, NULL,
-			&hints,
-			&res);
-
-	if (ret) {
-		DEBUG(3,("interpret_string_addr: getaddrinfo failed for "
-			"name %s [%s]\n",
-			str,
-			gai_strerror(ret) ));
+	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
 		return false;
 	}
-
+	if (!res) {
+		return false;
+	}
 	/* Copy the first sockaddr. */
 	memcpy(pss, res->ai_addr, res->ai_addrlen);
 	freeaddrinfo(res);
@@ -155,7 +214,8 @@ bool is_loopback_addr(const struct sockaddr_storage *pss)
 {
 #if defined(AF_INET6)
 	if (pss->ss_family == AF_INET) {
-		struct in6_addr *pin6 = &((struct sockaddr_in6 *)pss)->sin6_addr;
+		struct in6_addr *pin6 =
+			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_LOOPBACK(pin6);
 	}
 #endif
@@ -185,7 +245,8 @@ bool is_zero_addr(const struct sockaddr_storage *pss)
 {
 #if defined(AF_INET6)
 	if (pss->ss_family == AF_INET) {
-		struct in6_addr *pin6 = &((struct sockaddr_in6 *)pss)->sin6_addr;
+		struct in6_addr *pin6 =
+			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_UNSPECIFIED(pin6);
 	}
 #endif
@@ -1215,7 +1276,7 @@ bool send_smb(int fd, char *buffer)
 int open_socket_in(int type,
 		int port,
 		int dlevel,
-		uint32 socket_addr,
+		uint32 socket_addr, /* NETWORK BYTE ORDER */
 		bool rebind )
 {
 	struct sockaddr_in sock;
@@ -1595,22 +1656,14 @@ static bool matchname(const char *remotehost,
 		const struct sockaddr_storage *pss,
 		socklen_t len)
 {
-	struct addrinfo hints;
 	struct addrinfo *res = NULL;
 	struct addrinfo *ailist = NULL;
 	char addr_buf[INET6_ADDRSTRLEN];
-	int ret = -1;
+	bool ret = interpret_string_addr_internal(&ailist,
+			remotehost,
+			AI_ADDRCONFIG|AI_CANONNAME);
 
-	memset(&hints,'\0',sizeof(struct addrinfo));
-	/* By default make sure it supports TCP. */
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_ADDRCONFIG|AI_CANONNAME;
-
-	ret = getaddrinfo(remotehost, NULL,
-			&hints,
-			&res);
-
-	if (ret || res == NULL) {
+	if (!ret || ailist == NULL) {
 		DEBUG(3,("matchname: getaddrinfo failed for "
 			"name %s [%s]\n",
 			remotehost,
@@ -1622,24 +1675,25 @@ static bool matchname(const char *remotehost,
 	 * Make sure that getaddrinfo() returns the "correct" host name.
 	 */
 
-	if (res->ai_canonname == NULL ||
-		(!strequal(remotehost, res->ai_canonname) &&
+	if (ailist->ai_canonname == NULL ||
+		(!strequal(remotehost, ailist->ai_canonname) &&
 		 !strequal(remotehost, "localhost"))) {
 		DEBUG(0,("matchname: host name/name mismatch: %s != %s\n",
 			 remotehost,
-			 res->ai_canonname ? res->ai_canonname : "(NULL)"));
-		freeaddrinfo(res);
+			 ailist->ai_canonname ?
+				 ailist->ai_canonname : "(NULL)"));
+		freeaddrinfo(ailist);
 		return false;
 	}
 
 	/* Look up the host address in the address list we just got. */
-	for (ailist = res; ailist; ailist = ailist->ai_next) {
-		if (!ailist->ai_addr) {
+	for (res = ailist; res; res = res->ai_next) {
+		if (!res->ai_addr) {
 			continue;
 		}
-		if (addr_equal((const struct sockaddr_storage *)ailist->ai_addr,
+		if (addr_equal((const struct sockaddr_storage *)res->ai_addr,
 					pss)) {
-			freeaddrinfo(res);
+			freeaddrinfo(ailist);
 			return true;
 		}
 	}
@@ -1655,9 +1709,11 @@ static bool matchname(const char *remotehost,
 			sizeof(addr_buf),
 			pss,
 			len),
-		 res->ai_canonname ? res->ai_canonname : "(NULL)"));
+		 ailist->ai_canonname ? ailist->ai_canonname : "(NULL)"));
 
-	freeaddrinfo(res);
+	if (ailist) {
+		freeaddrinfo(ailist);
+	}
 	return false;
 }
 
@@ -1837,8 +1893,62 @@ out_umask:
 #endif /* HAVE_UNIXSOCKET */
 }
 
+/****************************************************************************
+ Get my own canonical name, including domain.
+****************************************************************************/
+
+bool get_mydnsfullname(fstring my_dnsname)
+{
+	static fstring dnshostname;
+
+	if (!*dnshostname) {
+		struct addrinfo *res = NULL;
+		bool ret;
+
+		/* get my host name */
+		if (gethostname(dnshostname, sizeof(dnshostname)) == -1) {
+			*dnshostname = '\0';
+			DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
+			return false;
+		}
+
+		/* Ensure null termination. */
+		dnshostname[sizeof(dnshostname)-1] = '\0';
+
+		ret = interpret_string_addr_internal(&res,
+					dnshostname,
+					AI_ADDRCONFIG|AI_CANONNAME);
+
+		if (!ret || res == NULL) {
+			DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
+				"name %s [%s]\n",
+				dnshostname,
+				gai_strerror(ret) ));
+			return false;
+		}
+
+		/*
+		 * Make sure that getaddrinfo() returns the "correct" host name.
+		 */
+
+		if (res->ai_canonname == NULL) {
+			DEBUG(3,("get_mydnsfullname: failed to get "
+				"canonical name for %s\n",
+				dnshostname));
+			freeaddrinfo(res);
+			return false;
+		}
+
+
+		fstrcpy(dnshostname, res->ai_canonname);
+		freeaddrinfo(res);
+	}
+	fstrcpy(my_dnsname, dnshostname);
+	return true;
+}
+
 /************************************************************
- Is this my name ? Needs fixing for IPv6.
+ Is this my name ?
 ************************************************************/
 
 bool is_myname_or_ipaddr(const char *s)
@@ -1846,83 +1956,82 @@ bool is_myname_or_ipaddr(const char *s)
 	fstring name, dnsname;
 	char *servername;
 
-	if ( !s ) {
+	if (!s) {
 		return false;
 	}
 
-	/* santize the string from '\\name' */
+	/* Santize the string from '\\name' */
+	fstrcpy(name, s);
 
-	fstrcpy( name, s );
-
-	servername = strrchr_m( name, '\\' );
-	if ( !servername )
+	servername = strrchr_m(name, '\\' );
+	if (!servername) {
 		servername = name;
-	else
+	} else {
 		servername++;
+	}
 
-	/* optimize for the common case */
-
-	if (strequal(servername, global_myname()))
+	/* Optimize for the common case */
+	if (strequal(servername, global_myname())) {
 		return true;
+	}
 
-	/* check for an alias */
-
-	if (is_myname(servername))
+	/* Check for an alias */
+	if (is_myname(servername)) {
 		return true;
+	}
 
-	/* check for loopback */
-
-	if (strequal(servername, "127.0.0.1"))
+	/* Check for loopback */
+	if (strequal(servername, "127.0.0.1") ||
+			strequal(servername, "::1")) {
 		return true;
+	}
 
-	if (strequal(servername, "localhost"))
+	if (strequal(servername, "localhost")) {
 		return true;
+	}
 
-	/* maybe it's my dns name */
-
-	if ( get_mydnsfullname( dnsname ) )
-		if ( strequal( servername, dnsname ) )
+	/* Maybe it's my dns name */
+	if (get_mydnsfullname(dnsname)) {
+		if (strequal(servername, dnsname)) {
 			return true;
+		}
+	}
 
-	/* handle possible CNAME records */
-
-	if ( !is_ipaddress_v4( servername ) ) {
-		/* use DNS to resolve the name, but only the first address */
-		struct hostent *hp;
-
-		if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-			struct in_addr return_ip;
-			putip( (char*)&return_ip, (char*)hp->h_addr );
-			fstrcpy( name, inet_ntoa( return_ip ) );
+	/* Handle possible CNAME records - convert to an IP addr. */
+	if (!is_ipaddress(servername)) {
+		/* Use DNS to resolve the name, but only the first address */
+		struct sockaddr_storage ss;
+		if (interpret_string_addr(&ss, servername,0)) {
+			print_sockaddr(name,
+					sizeof(name),
+					&ss,
+					sizeof(ss));
 			servername = name;
 		}
 	}
 
-	/* maybe its an IP address? */
-	if (is_ipaddress_v4(servername)) {
+	/* Maybe its an IP address? */
+	if (is_ipaddress(servername)) {
 		struct sockaddr_storage ss;
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
-		struct in_addr ip;
 
-		ip = *interpret_addr2(servername);
-		if (is_zero_ip_v4(ip) || is_loopback_ip_v4(ip)) {
+		if (!interpret_string_addr(&ss, servername, AI_NUMERICHOST)) {
 			return false;
 		}
 
-		in_addr_to_sockaddr_storage(&ss, ip);
+		if (is_zero_addr(&ss) || is_loopback_addr(&ss)) {
+			return false;
+		}
 
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
-			if (nics[i].ip.ss_family != AF_INET) {
-				continue;
-			}
 			if (addr_equal(&nics[i].ip, &ss)) {
 				return true;
 			}
 		}
 	}
 
-	/* no match */
+	/* No match */
 	return false;
 }
