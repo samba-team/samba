@@ -713,6 +713,50 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
 	}
 }
 
+
+/*
+  update our local flags from all remote connected nodes. 
+ */
+static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	int j;
+	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+
+	/* get the nodemap for all active remote nodes and verify
+	   they are the same as for this node
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		struct ctdb_node_map *remote_nodemap=NULL;
+		int ret;
+
+		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+					   mem_ctx, &remote_nodemap);
+		if (ret != 0) {
+			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
+				  nodemap->nodes[j].pnn));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
+			DEBUG(0,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
+				 nodemap->nodes[j].pnn, nodemap->nodes[j].flags,
+				 remote_nodemap->nodes[j].flags));
+			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+		}
+		talloc_free(remote_nodemap);
+	}
+	talloc_free(mem_ctx);
+	return 0;
+}
+
+
 /* Create a new random generation ip. 
    The generation id can not be the INVALID_GENERATION id
 */
@@ -1650,34 +1694,11 @@ again:
 	}
 
 
-	/* we are recovery master, go through the list of all connected nodes
-	   and get the nodeflags from them and update our copy of nodeflags
-	 */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-		if (nodemap->nodes[j].pnn == pnn) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					   mem_ctx, &remote_nodemap);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
-				  nodemap->nodes[j].pnn));
-			goto again;
-		}
-
-		/* update our nodemap flags according to the other
-		   server - this gets the NODE_FLAGS_DISABLED
-		   flag. Note that the remote node is authoritative
-		   for its flags (except CONNECTED, which we know
-		   matches in this code) */
-		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
-			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
-			rec->need_takeover_run = true;
-		}
+	/* ensure our local copies of flags are right */
+	ret = update_local_flags(ctdb, nodemap);
+	if (ret != 0) {
+		DEBUG(0,("Unable to update local flags\n"));
+		goto again;
 	}
 
 	/* update the list of public ips that a node can handle for
