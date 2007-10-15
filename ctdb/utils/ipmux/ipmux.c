@@ -25,6 +25,8 @@
 #include "cmdline.h"
 #include "ctdb.h"
 #include "ctdb_private.h"
+
+#if defined(HAVE_LINUX_NETFILTER_H) && defined(HAVE_LIBIPQ_H)
 #include <linux/netfilter.h>
 #include <libipq.h>
 
@@ -227,3 +229,11 @@ int main(int argc, const char *argv[])
 
 	return 0;
 }
+
+#else
+int main(void)
+{
+	printf("ipmux tool disabled - lacking netfilter and libipq development libs\n");
+	return 1;
+}
+#endif

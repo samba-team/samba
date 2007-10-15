@@ -18,13 +18,11 @@ case `uname` in
   Linux*)
     CTDB_SYSTEM_OBJ=common/system_linux.o
     CTDB_SCSI_IO=bin/scsi_io
-    CTDB_IPMUX=bin/ctdb_ipmux
     CTDB_PCAP_LDFLAGS=
     ;;
   AIX*)
     CTDB_SYSTEM_OBJ=common/system_aix.o
     CTDB_SCSI_IO=
-    CTDB_IPMUX=
     CTDB_PCAP_LDFLAGS=-lpcap
     ;;
   *)
@@ -49,6 +47,8 @@ m4_include(libtdb.m4)
 m4_include(libevents.m4)
 m4_include(ib/config.m4)
 
+AC_CHECK_HEADERS(libipq.h linux/netfilter.h)
+
 AC_CHECK_HEADERS(sched.h)
 AC_CHECK_FUNCS(sched_setscheduler)
 
@@ -65,7 +65,6 @@ fi
 AC_SUBST(EXTRA_OBJ)
 AC_SUBST(CTDB_SYSTEM_OBJ)
 AC_SUBST(CTDB_SCSI_IO)
-AC_SUBST(CTDB_IPMUX)
 AC_SUBST(CTDB_PCAP_LDFLAGS)
 
 AC_OUTPUT(Makefile)
