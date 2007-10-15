@@ -451,14 +451,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct ctdb_set_recmode_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	/* we should not be able to get the lock on the nodes list, as it should be
-	   held by the recovery master */
-	if (ctdb_recovery_lock(ctdb, false)) {
-		DEBUG(0,("ERROR: recovery lock file %s not locked when recovering!\n",
-			 ctdb->recovery_lock_file));
-		return -1;
-	}	
-
 	state->c = talloc_steal(state, c);
 	state->recmode = recmode;
 	
