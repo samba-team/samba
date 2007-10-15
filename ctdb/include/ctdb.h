@@ -113,7 +113,7 @@ struct ctdb_client_control_state {
 	*/
 	struct {
 		void (*fn)(struct ctdb_client_control_state *);
-		void *private;
+		void *private_data;
 	} async;	
 };
 

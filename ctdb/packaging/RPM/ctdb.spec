@@ -100,10 +100,12 @@ fi
 %{_sysconfdir}/ctdb/events.d/50.samba
 %{_sysconfdir}/ctdb/events.d/60.nfs
 %{_sysconfdir}/ctdb/events.d/61.nfstickle
+%{_sysconfdir}/ctdb/events.d/90.ipmux
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
 %{_bindir}/smnotify
+%{_bindir}/ctdb_ipmux
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode.ssh
 %{_bindir}/onnode.rsh
