@@ -579,12 +579,21 @@ typedef struct vfs_statvfs_struct {
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
 } vfs_statvfs_struct;
 
+/* Add a new FSP extension of the given type. Returns a pointer to the
+ * extenstion data.
+ */
 #define VFS_ADD_FSP_EXTENSION(handle, fsp, type) \
     vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type))
 
+/* Return a pointer to the existing FSP extension data. */
 #define VFS_FETCH_FSP_EXTENSION(handle, fsp) \
     vfs_fetch_fsp_extension(handle, (fsp))
 
+/* Return the talloc context associated with an FSP extension. */
+#define VFS_MEMCTX_FSP_EXTENSION(handle, fsp) \
+    vfs_memctx_fsp_extension(handle, (fsp))
+
+/* Remove and destroy an FSP extension. */
 #define VFS_REMOVE_FSP_EXTENSION(handle, fsp) \
     vfs_remove_fsp_extension((handle), (fsp))
 
