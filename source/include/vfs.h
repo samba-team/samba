@@ -577,6 +577,8 @@ typedef struct vfs_statvfs_struct {
 	SMB_BIG_UINT FsIdentifier;   /* fsid */
 	/* NB Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call */
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
+
+	int FsCapabilities;
 } vfs_statvfs_struct;
 
 /* Add a new FSP extension of the given type. Returns a pointer to the
