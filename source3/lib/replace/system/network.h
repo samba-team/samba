@@ -49,6 +49,10 @@
 #include <netinet/tcp.h>
 #endif
 
+#if !defined(HAVE_GETADDRINFO)
+#include "getaddrinfo.h"
+#endif
+
 /*
  * The next three defines are needed to access the IPTOS_* options
  * on some systems.

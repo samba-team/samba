@@ -97,7 +97,6 @@ void *rep_memmove(void *dest,const void *src,int size);
 #endif
 
 #ifndef HAVE_TIMEGM
-struct tm;
 #define timegm rep_timegm
 /* prototype is in "system/time.h" */
 #endif
