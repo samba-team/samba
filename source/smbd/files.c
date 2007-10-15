@@ -460,6 +460,11 @@ void file_free(files_struct *fsp)
 		ZERO_STRUCT(fsp_fi_cache);
 	}
 
+	/* Drop all remaining extensions. */
+	while (fsp->vfs_extension) {
+		vfs_remove_fsp_extension(fsp->vfs_extension->owner, fsp);
+	}
+
 	SAFE_FREE(fsp);
 }
 
