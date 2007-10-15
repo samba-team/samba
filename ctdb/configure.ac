@@ -49,6 +49,12 @@ m4_include(ib/config.m4)
 
 AC_CHECK_HEADERS(libipq.h linux/netfilter.h)
 
+IPQ_LIBS=""
+if test x"$ac_cv_header_libipq_h" = x"yes"; then
+   IPQ_LIBS="-lipq"
+fi
+AC_SUBST(IPQ_LIBS)
+
 AC_CHECK_HEADERS(sched.h)
 AC_CHECK_FUNCS(sched_setscheduler)
 
