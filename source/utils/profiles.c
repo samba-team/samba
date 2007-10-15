@@ -138,6 +138,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	}
 
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) ) {
+		TALLOC_FREE( subkeys );
 		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
 		return False;
 	}
@@ -163,8 +164,10 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	
 	nk->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
-		if ( !copy_registry_tree( infile, subkey, key, outfile, path ) )
+		if ( !copy_registry_tree( infile, subkey, key, outfile, path ) ) {
+			TALLOC_FREE( subkeys );
 			return False;
+		}
 	}
 
 	/* values is a talloc()'d child of subkeys here so just throw it all away */
