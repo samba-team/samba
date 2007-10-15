@@ -1209,37 +1209,6 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
- Get my own canonical name, including domain.
-****************************************************************************/
-
-BOOL get_mydnsfullname(fstring my_dnsname)
-{
-	static fstring dnshostname;
-	struct hostent *hp;
-
-	if (!*dnshostname) {
-		/* get my host name */
-		if (gethostname(dnshostname, sizeof(dnshostname)) == -1) {
-			*dnshostname = '\0';
-			DEBUG(0,("gethostname failed\n"));
-			return False;
-		} 
-
-		/* Ensure null termination. */
-		dnshostname[sizeof(dnshostname)-1] = '\0';
-
-		/* Ensure we get the cannonical name. */
-		if (!(hp = sys_gethostbyname(dnshostname))) {
-			*dnshostname = '\0';
-			return False;
-		}
-		fstrcpy(dnshostname, hp->h_name);
-	}
-	fstrcpy(my_dnsname, dnshostname);
-	return True;
-}
-
-/****************************************************************************
  Get my own domain name.
 ****************************************************************************/
 
@@ -2742,48 +2711,48 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 
 /**********************************************************************
  Converts a name to a fully qualified domain name.
- Returns True if lookup succeeded, False if not (then fqdn is set to name)
+ Returns true if lookup succeeded, false if not (then fqdn is set to name)
+ Note we deliberately use gethostbyname here, not getaddrinfo as we want
+ to examine the h_aliases and I don't know how to do that with getaddrinfo.
 ***********************************************************************/
-                                                                                                                                                   
-BOOL name_to_fqdn(fstring fqdn, const char *name)
+
+bool name_to_fqdn(fstring fqdn, const char *name)
 {
-	struct hostent *hp = sys_gethostbyname(name);
+	char *full = NULL;
+	struct hostent *hp = gethostbyname(name);
 
-	if ( hp && hp->h_name && *hp->h_name ) {
-		char *full = NULL;
-
-		/* find out if the fqdn is returned as an alias
-		 * to cope with /etc/hosts files where the first
-		 * name is not the fqdn but the short name */
-		if (hp->h_aliases && (! strchr_m(hp->h_name, '.'))) {
-			int i;
-			for (i = 0; hp->h_aliases[i]; i++) {
-				if (strchr_m(hp->h_aliases[i], '.')) {
-					full = hp->h_aliases[i];
-					break;
-				}
-			}
-		}
-		if (full && (StrCaseCmp(full, "localhost.localdomain") == 0)) {
-			DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
-			DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
-			DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
-			DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
-			full = hp->h_name;
-		}
-			
-		if (!full) {
-			full = hp->h_name;
-		}
-
-		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
-		fstrcpy(fqdn, full);
-		return True;
-	} else {
+	if (!hp || !hp->h_name || !*hp->h_name) {
 		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
 		fstrcpy(fqdn, name);
-		return False;
+		return false;
 	}
+
+	/* Find out if the fqdn is returned as an alias
+	 * to cope with /etc/hosts files where the first
+	 * name is not the fqdn but the short name */
+	if (hp->h_aliases && (! strchr_m(hp->h_name, '.'))) {
+		int i;
+		for (i = 0; hp->h_aliases[i]; i++) {
+			if (strchr_m(hp->h_aliases[i], '.')) {
+				full = hp->h_aliases[i];
+				break;
+			}
+		}
+	}
+	if (full && (StrCaseCmp(full, "localhost.localdomain") == 0)) {
+		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
+		DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
+		DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
+		DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
+		full = hp->h_name;
+	}
+	if (!full) {
+		full = hp->h_name;
+	}
+
+	DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
+	fstrcpy(fqdn, full);
+	return true;
 }
 
 /**********************************************************************
