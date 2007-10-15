@@ -65,7 +65,8 @@
 #endif
 
 #ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
+#define getpass(prompt) rep_getpass(prompt)
+char *rep_getpass(const char *prompt);
 #endif
 
 #ifndef NGROUPS_MAX

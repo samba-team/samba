@@ -138,7 +138,7 @@ static void gotintr_sig(void)
 	in_fd = -1;
 }
 
-char *getsmbpass(const char *prompt)
+char *rep_getpass(const char *prompt)
 {
 	FILE *in, *out;
 	int echo_off;
