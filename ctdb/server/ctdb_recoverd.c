@@ -59,7 +59,7 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 	struct ctdb_context *ctdb = rec->ctdb;
 
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
-		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", pnn));
+		DEBUG(0,("Bad pnn %u in ctdb_unban_node\n", pnn));
 		return;
 	}
 
@@ -96,6 +96,11 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", pnn));
+		return;
+	}
+
+	if (0 == ctdb->tunable.enable_bans) {
+		DEBUG(0,("Bans are disabled - ignoring ban of node %u\n", pnn));
 		return;
 	}
 
