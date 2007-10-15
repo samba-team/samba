@@ -226,7 +226,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		/* Make up a new session key */
 		uint8_t client_session_key[16];
-		generate_random_buffer(client_session_key, sizeof(client_session_key));
+		generate_secret_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob_talloc(gensec_ntlmssp_state, 

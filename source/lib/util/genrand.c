@@ -33,6 +33,10 @@ static unsigned char hash[258];
 static uint32_t counter;
 
 static bool done_reseed = false;
+static unsigned int bytes_since_reseed = 0;
+
+static int urand_fd = -1;
+
 static void (*reseed_callback)(int *newseed);
 
 /**
@@ -51,6 +55,7 @@ _PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *))
 _PUBLIC_ void set_need_random_reseed(void)
 {
 	done_reseed = false;
+	bytes_since_reseed = 0;
 }
 
 static void get_rand_reseed_data(int *reseed_data)
@@ -163,12 +168,16 @@ static int do_reseed(bool use_fd, int fd)
 	int reseed_data = 0;
 
 	if (use_fd) {
-		if (fd != -1)
+		if (fd == -1) {
+			fd = open( "/dev/urandom", O_RDONLY,0);
+		}
+		if (fd != -1
+		    && (read(fd, seed_inbuf, sizeof(seed_inbuf)) == sizeof(seed_inbuf))) {
+			DEBUG(0, ("do_reseed: need %d\n", sizeof(seed_inbuf)));
+			call_backtrace();
+			seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
 			return fd;
-
-		fd = open( "/dev/urandom", O_RDONLY,0);
-		if(fd >= 0)
-			return fd;
+		}
 	}
 
 	/* Add in some secret file contents */
@@ -205,28 +214,33 @@ static int do_reseed(bool use_fd, int fd)
 
 /**
  Interface to the (hopefully) good crypto random number generator.
+ Will use our internal PRNG if more than 40 bytes of random generation
+ has been requested, otherwise tries to read from /dev/random
 **/
 _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 {
-	static int urand_fd = -1;
 	unsigned char md4_buf[64];
 	unsigned char tmp_buf[16];
 	unsigned char *p;
 
 	if(!done_reseed) {
+		bytes_since_reseed += len;
+		
+		/* Magic constant to try and avoid reading 40 bytes
+		 * and setting up the PRNG if the app only ever wants
+		 * a few bytes */
+		if (bytes_since_reseed < 40) {
+			if (urand_fd == -1) {
+				urand_fd = open( "/dev/urandom", O_RDONLY,0);
+			}
+			DEBUG(0, ("generate_random_buffer: need %d\n", len));
+			call_backtrace();
+			if(urand_fd != -1 && (read(urand_fd, out, len) == len)) {
+				return;
+			}
+		}
+
 		urand_fd = do_reseed(true, urand_fd);
-		done_reseed = true;
-	}
-
-	if (urand_fd != -1 && len > 0) {
-
-		if (read(urand_fd, out, len) == len)
-			return; /* len bytes of random data read from urandom. */
-
-		/* Read of urand error, drop back to non urand method. */
-		close(urand_fd);
-		urand_fd = -1;
-		do_reseed(false, -1);
 		done_reseed = true;
 	}
 
@@ -247,6 +261,24 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 		p += copy_len;
 		len -= copy_len;
 	}
+}
+
+/**
+ Interface to the (hopefully) good crypto random number generator.
+ Will always use /dev/urandom if available.
+**/
+_PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
+{
+	if (urand_fd == -1) {
+		urand_fd = open( "/dev/urandom", O_RDONLY,0);
+	}
+	DEBUG(0, ("generate_random_buffer: need %d\n", len));
+	call_backtrace();
+	if(urand_fd != -1 && (read(urand_fd, out, len) == len)) {
+		return;
+	}
+	
+	generate_random_buffer(out, len);
 }
 
 /**
