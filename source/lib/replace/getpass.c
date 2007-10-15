@@ -49,8 +49,6 @@ typedef int sig_atomic_t;
 #define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
 
-#ifdef REPLACE_GETPASS
-
 #ifdef SYSV_TERMIO 
 
 /* SYSTEM V TERMIO HANDLING */
@@ -131,10 +129,9 @@ static void catch_signal(int signum,void (*handler)(int ))
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
 	sigaction(signum,&act,&oldact);
-	return oldact.sa_handler;
 #else /* !HAVE_SIGACTION */
 	/* FIXME: need to handle sigvec and systems with broken signal() */
-	return signal(signum, handler);
+	signal(signum, handler);
 #endif
 }
 
@@ -231,8 +228,3 @@ char *getsmbpass(const char *prompt)
 	}
 	return buf;
 }
-
-#else
- void getsmbpasswd_dummy(void);
- void getsmbpasswd_dummy(void) {;}
-#endif
