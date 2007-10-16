@@ -71,13 +71,19 @@ interface frsapi
 
 	/****************/
 	/* Function 0x08 */
+	typedef [v1_enum] enum {
+		FRSAPI_REPLICA_SET_TYPE_0	= 0x00000000,
+		FRSAPI_REPLICA_SET_TYPE_DOMAIN	= 0x00000002,
+		FRSAPI_REPLICA_SET_TYPE_DFS	= 0x00000003
+	} frsapi_ReplicaSetType;
+
 	WERROR frsapi_IsPathReplicated(
 		[in,unique] [string,charset(UTF16)] uint16 *path,
-		[in] uint32 unknown,
+		[in] frsapi_ReplicaSetType replica_set_type,
 		[out] uint32 *unknown1,
 		[out] uint32 *unknown2,
 		[out] uint32 *unknown3,
-		[out] GUID *guid
+		[out] GUID *replica_set_guid
 	);
 
 	/****************/
