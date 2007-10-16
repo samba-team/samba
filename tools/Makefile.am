@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-CLEANFILES = krb5-config krb5-config.new
-
 bin_SCRIPTS = krb5-config
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -45,4 +43,10 @@ EXTRA_DIST = \
 	heimdal-build.sh \
 	krb5-config.in \
 	heimdal-gssapi.pc.in
+
+CLEANFILES = \
+	krb5-config \
+	krb5-config.new \
+	heimdal-gssapi.gc \
+	heimdal-gssapi.pc.new
 
