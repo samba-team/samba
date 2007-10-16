@@ -399,8 +399,13 @@ int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
 }
 
 struct ctdb_set_recmode_state {
+	struct ctdb_context *ctdb;
 	struct ctdb_req_control *c;
 	uint32_t recmode;
+	int fd[2];
+	struct timed_event *te;
+	struct fd_event *fde;
+	pid_t child;
 };
 
 /*
@@ -423,6 +428,78 @@ static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void 
 }
 
 /*
+  called if our set_recmode child times out. this would happen if
+  ctdb_recovery_lock() would block.
+ */
+static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_set_recmode_state *state = talloc_get_type(private_data, 
+					   struct ctdb_set_recmode_state);
+
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "timeout in ctdb_set_recmode");
+	talloc_free(state);
+}
+
+
+/* when we free the recmode state we must kill any child process.
+*/
+static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
+{
+	kill(state->child, SIGKILL);
+	waitpid(state->child, NULL, 0);
+	return 0;
+}
+
+/* this is called when the client process has completed ctdb_recovery_lock()
+   and has written data back to us through the pipe.
+*/
+static void set_recmode_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct ctdb_set_recmode_state *state= talloc_get_type(private_data, 
+					     struct ctdb_set_recmode_state);
+	char c;
+	int ret;
+
+	/* we got a response from our child process so we can abort the
+	   timeout.
+	*/
+	talloc_free(state->te);
+	state->te = NULL;
+
+
+	/* read the childs status when trying to lock the reclock file.
+	   child wrote 0 if everything is fine and 1 if it did manage
+	   to lock the file, which would be a problem since that means
+	   we got a request to exit from recovery but we could still lock
+	   the file   which at this time SHOULD be locked by the recovery
+	   daemon on the recmaster
+	*/		
+	read(state->fd[0], &c, 1);
+	if (c != 0) {
+		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "managed to lock reclock file from inside daemon");
+		talloc_free(state);
+		return;
+	}
+
+
+	ctdb_stop_monitoring(state->ctdb);
+
+	/* call the events script to tell all subsystems that we have recovered */
+	ret = ctdb_event_script_callback(state->ctdb, 
+					 timeval_current_ofs(state->ctdb->tunable.script_timeout, 0),
+					 state, 
+					 ctdb_recovered_callback, 
+					 state, "recovered");
+	if (ret != 0) {
+		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "failed to run eventscript from set_recmode");
+		talloc_free(state);
+		return;
+	}
+}
+
+/*
   set the recovery mode
  */
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
@@ -433,6 +510,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	uint32_t recmode = *(uint32_t *)indata.dptr;
 	int ret;
 	struct ctdb_set_recmode_state *state;
+	pid_t parent = getpid();
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(0,("Attempt to change recovery mode to %u when not frozen\n", 
@@ -451,20 +529,66 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct ctdb_set_recmode_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(state, c);
-	state->recmode = recmode;
-	
-	ctdb_stop_monitoring(ctdb);
-
-	/* call the events script to tell all subsystems that we have recovered */
-	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
-					 state, 
-					 ctdb_recovered_callback, 
-					 state, "recovered");
+	/* For the rest of what needs to be done, we need to do this in
+	   a child process since 
+	   1, the call to ctdb_recovery_lock() can block if the cluster
+	      filesystem is in the process of recovery.
+	   2, running of the script may take a while.
+	*/
+	ret = pipe(state->fd);
 	if (ret != 0) {
-		return ret;
+		talloc_free(state);
+		DEBUG(0,(__location__ " Failed to open pipe for set_recmode child\n"));
+		return -1;
 	}
+
+	state->child = fork();
+	if (state->child == (pid_t)-1) {
+		close(state->fd[0]);
+		close(state->fd[1]);
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->child == 0) {
+		char cc = 0;
+		close(state->fd[0]);
+
+		/* we should not be able to get the lock on the nodes list, 
+		  as it should  be held by the recovery master 
+		*/
+		if (ctdb_recovery_lock(ctdb, false)) {
+			DEBUG(0,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
+			cc = 1;
+		}
+
+		write(state->fd[1], &cc, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
+		_exit(0);
+	}
+	close(state->fd[1]);
+
+	talloc_set_destructor(state, set_recmode_destructor);
+
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(3, 0),
+			ctdb_set_recmode_timeout, state);
+
+	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
+				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+				set_recmode_handler,
+				(void *)state);
+	if (state->fde == NULL) {
+		talloc_free(state);
+		return -1;
+	}
+
+	state->ctdb    = ctdb;
+	state->recmode = recmode;
+	state->c       = talloc_steal(state, c);
+
 	*async_reply = true;
 
 	return 0;
