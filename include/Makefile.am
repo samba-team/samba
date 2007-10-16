@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 SUBDIRS = kadm5 hcrypto gssapi
 
 noinst_PROGRAMS = bits make_crypto
-CHECK_LOCAL =
+CHECK_LOCAL = no-check-local
 
 AM_CPPFLAGS += -DHOST=\"$(CANONICAL_HOST)\"
 
