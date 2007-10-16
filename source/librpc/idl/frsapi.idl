@@ -1,10 +1,14 @@
-[ 
+#include "idl_types.h"
+
+import "misc.idl";
+
+[
   uuid("d049b186-814f-11d1-9a3c-00c04fc9b232"),
   version(1.1),
   endpoint("ncacn_ip_tcp:", "ncalrpc:"),
   helpstring("File Replication API"),
   pointer_default(unique)
-] 
+]
 interface frsapi
 {
 	/****************/
@@ -63,7 +67,14 @@ interface frsapi
 
 	/****************/
 	/* Function 0x08 */
-	void FRSAPI_IS_PATH_REPLICATED();
+	WERROR frsapi_IsPathReplicated(
+		[in,unique] [string,charset(UTF16)] uint16 *path,
+		[in] uint32 unknown,
+		[out] uint32 *unknown1,
+		[out] uint32 *unknown2,
+		[out] uint32 *unknown3,
+		[out] GUID *guid
+	);
 
 	/****************/
 	/* Function 0x09 */
