@@ -105,6 +105,83 @@ static bool test_DsPollingIntervalW(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_IsPathReplicated_err(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *path,
+				      uint32_t type,
+				      WERROR werr)
+{
+	struct frsapi_IsPathReplicated r;
+	struct GUID guid;
+	uint32_t unknown1, unknown2, unknown3 = 0;
+
+	ZERO_STRUCT(r);
+
+	r.in.path = path;
+	r.in.replica_set_type = type;
+	r.out.unknown1 = &unknown1;
+	r.out.unknown2 = &unknown2;
+	r.out.unknown3 = &unknown3;
+	r.out.replica_set_guid = &guid;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_frsapi_IsPathReplicated(p, tctx, &r),
+		"IsPathReplicated failed");
+
+	torture_assert_werr_equal(tctx, r.out.result, werr,
+			          "GetDsPollingIntervalW failed");
+
+	return true;
+}
+
+static bool _test_IsPathReplicated(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  const char *path,
+				  uint32_t type)
+{
+	return test_IsPathReplicated_err(tctx, p, path, type, WERR_OK);
+}
+
+static bool test_IsPathReplicated(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	const uint32_t lvls[] = {
+		FRSAPI_REPLICA_SET_TYPE_0,
+		FRSAPI_REPLICA_SET_TYPE_DOMAIN,
+		FRSAPI_REPLICA_SET_TYPE_DFS };
+	int i;
+
+	if (!test_IsPathReplicated_err(tctx, p, NULL, 0,
+				       WERR_FRS_INVALID_SERVICE_PARAMETER)) {
+		return false;
+	}
+
+	for (i=0; i<ARRAY_SIZE(lvls); i++) {
+		if (!_test_IsPathReplicated(tctx, p, dcerpc_server_name(p),
+					    lvls[i])) {
+			return false;
+		}
+	}
+
+	for (i=0; i<ARRAY_SIZE(lvls); i++) {
+		const char *path = talloc_asprintf(tctx, "\\\\%s\\SYSVOL",
+						   dcerpc_server_name(p));
+		if (!_test_IsPathReplicated(tctx, p, path, lvls[i])) {
+			return false;
+		}
+	}
+
+	for (i=0; i<ARRAY_SIZE(lvls); i++) {
+		if (!_test_IsPathReplicated(tctx, p,
+					    "C:\\windows\\sysvol\\domain",
+					    lvls[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -116,6 +193,9 @@ struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 
 	test = torture_rpc_tcase_add_test(tcase, "DsPollingIntervalW",
 					  test_DsPollingIntervalW);
+
+	test = torture_rpc_tcase_add_test(tcase, "IsPathReplicated",
+					  test_IsPathReplicated);
 
 	return suite;
 }
