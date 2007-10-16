@@ -37,6 +37,20 @@ interface frsapi
 
 	/****************/
 	/* Function 0x07 */
+
+	typedef enum {
+		FRSAPI_INFO_VERSION	= 0,
+		FRSAPI_INFO_SETS	= 1,
+		FRSAPI_INFO_DS		= 2,
+		FRSAPI_INFO_MEMORY	= 3,
+		FRSAPI_INFO_IDTABLE	= 4,
+		FRSAPI_INFO_OUTLOG	= 5,
+		FRSAPI_INFO_INLOG	= 6,
+		FRSAPI_INFO_THREADS	= 7,
+		FRSAPI_INFO_STAGE	= 8,
+		FRSAPI_INFO_CONFIGTABLE	= 9
+	} frsapi_InfoEnum;
+
 	void FRSAPI_INFO_W();
 
 	/****************/
