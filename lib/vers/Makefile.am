@@ -8,6 +8,8 @@ noinst_LTLIBRARIES	= libvers.la
 
 build_HEADERZ		= vers.h
 
+CHECK_LOCAL		= no-check-local
+
 noinst_PROGRAMS		= make-print-version
 
 if KRB4
