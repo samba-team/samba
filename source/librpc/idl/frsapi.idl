@@ -89,4 +89,9 @@ interface frsapi
 	/****************/
 	/* Function 0x09 */
 	void FRSAPI_WRITER_COMMAND();
+
+	/****************/
+	/* Function 0x0a */
+	void FRSAPI_FORCE_REPLICATION();
+
 }
