@@ -179,9 +179,6 @@ typedef uint32_t WERROR;
 #define WERR_DS_DUP_MSDS_INTID W_ERROR(0x00002195)
 
 /* FRS errors */
-#ifndef FRS_ERR_BASE
-#define FRS_ERR_BASE (8000)
-#endif
 #define WERR_FRS_INVALID_SERVICE_PARAMETER W_ERROR(FRS_ERROR_BASE+17)
 
 /* SEC errors */

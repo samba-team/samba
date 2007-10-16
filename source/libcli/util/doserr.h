@@ -165,4 +165,8 @@
 #define NERR_BASE (2100)
 #endif
 
+#ifndef FRS_ERR_BASE
+#define FRS_ERR_BASE (8000)
+#endif
+
 #endif /* _DOSERR_H */
