@@ -389,7 +389,8 @@ NTSTATUS idmap_init(void)
 			continue;
 		}
 
-		if (strequal(dom_list[i], lp_workgroup())) {
+		if ((dom_list[i] != default_domain) &&
+		    strequal(dom_list[i], lp_workgroup())) {
 			pri_dom_is_in_list = True;
 		}
 		/* init domain */
