@@ -29,14 +29,18 @@ interface frsapi
 
 	/****************/
 	/* Function 0x04 */
+
+	/* The DsPollingLongInterval and DsPollingShortInterval attributes
+	   represent registry attributes below HKLM\System\CCS\Services\NtFrs */
+
 	WERROR frsapi_SetDsPollingIntervalW(
 		[in] uint32 CurrentInterval,
 		[in] uint32 DsPollingLongInterval,
 		[in] uint32 DsPollingShortInterval
 	);
 
-        /****************/
-        /* Function 0x05 */
+	/****************/
+	/* Function 0x05 */
 	WERROR frsapi_GetDsPollingIntervalW(
 		[out] uint32 *CurrentInterval,
 		[out] uint32 *DsPollingLongInterval,
