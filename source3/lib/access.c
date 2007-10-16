@@ -144,7 +144,7 @@ static bool string_match(const char *tok,const char *s)
 			return true;
 		}
 	} else if ((cut = strchr_m(tok, '/')) != 0) {	/* netnumber/netmask */
-		if (isdigit(s[0]) ||
+		if ((isdigit(s[0]) && strchr_m(tok, '.') != NULL) ||
 			(tok[0] == '[' && cut > tok && cut[-1] == ']') ||
 			((isxdigit(s[0]) || s[0] == ':') &&
 				strchr_m(tok, ':') != NULL)) {
