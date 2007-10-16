@@ -333,7 +333,7 @@ static void add_interface(const struct iface_struct *ifs)
  Create a struct sockaddr_storage with the netmask bits set to 1.
 ****************************************************************************/
 
-static bool make_netmask(struct sockaddr_storage *pss_out,
+bool make_netmask(struct sockaddr_storage *pss_out,
 			const struct sockaddr_storage *pss_in,
 			unsigned long masklen)
 {
