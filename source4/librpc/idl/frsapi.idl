@@ -25,11 +25,19 @@ interface frsapi
 
 	/****************/
 	/* Function 0x04 */
-	void FRSAPI_SET_DS_POLLING_INTERVAL_W();
+	WERROR frsapi_SetDsPollingIntervalW(
+		[in] uint32 CurrentInterval,
+		[in] uint32 DsPollingLongInterval,
+		[in] uint32 DsPollingShortInterval
+	);
 
-	/****************/
-	/* Function 0x05 */
-	void FRSAPI_GET_DS_POLLING_INTERVAL_W();
+        /****************/
+        /* Function 0x05 */
+	WERROR frsapi_GetDsPollingIntervalW(
+		[out] uint32 CurrentInterval,
+		[out] uint32 DsPollingLongInterval,
+		[out] uint32 DsPollingShortInterval
+	);
 
 	/****************/
 	/* Function 0x06 */
