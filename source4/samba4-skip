@@ -43,6 +43,7 @@ RPC-EVENTLOG						# Not provided by Samba 4
 RPC-INITSHUTDOWN					# Not provided by Samba 4
 RPC-SVCCTL							# Not provided by Samba 4
 RPC-ATSVC							# Not provided by Samba 4
+RPC-FRSAPI							# Not provided by Samba 4
 .*SAMBA3.*							# Samba3-specific test
 ^NET-DOMOPEN$						# Hangs for some reason
 ^NET-API-BECOME-DC$					# Fails
