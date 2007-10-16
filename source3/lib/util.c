@@ -2586,7 +2586,7 @@ BOOL mask_match_list(const char *string, char **list, int listLen, BOOL is_case_
  Recursive routine that is called by unix_wild_match.
 *********************************************************/
 
-static BOOL unix_do_match(const char *regexp, const char *str)
+static bool unix_do_match(const char *regexp, const char *str)
 {
 	const char *p;
 
@@ -2606,7 +2606,7 @@ static BOOL unix_do_match(const char *regexp, const char *str)
 				 */
 				p++;
 				if(!*p)
-					return True; /* Automatic match */
+					return true; /* Automatic match */
 				while(*str) {
 
 					while(*str && (*p != *str))
@@ -2641,24 +2641,24 @@ static BOOL unix_do_match(const char *regexp, const char *str)
 						}
 
 						if ( matchcount <= 0 )
-							return False;
+							return false;
 					}
 
 					str--; /* We've eaten the match char after the '*' */
 
 					if(unix_do_match(p, str))
-						return True;
+						return true;
 
 					if(!*str)
-						return False;
+						return false;
 					else
 						str++;
 				}
-				return False;
+				return false;
 
 			default:
 				if(*str != *p)
-					return False;
+					return false;
 				str++;
 				p++;
 				break;
@@ -2666,11 +2666,11 @@ static BOOL unix_do_match(const char *regexp, const char *str)
 	}
 
 	if(!*p && !*str)
-		return True;
+		return true;
 
 	if (!*p && str[0] == '.' && str[1] == 0)
-		return(True);
-  
+		return true;
+
 	if (!*str && *p == '?') {
 		while (*p == '?')
 			p++;
@@ -2678,9 +2678,9 @@ static BOOL unix_do_match(const char *regexp, const char *str)
 	}
 
 	if(!*str && (*p == '*' && p[1] == '\0'))
-		return True;
+		return true;
 
-	return False;
+	return false;
 }
 
 /*******************************************************************
@@ -2688,25 +2688,38 @@ static BOOL unix_do_match(const char *regexp, const char *str)
  Returns True if match, False if not.
 *******************************************************************/
 
-BOOL unix_wild_match(const char *pattern, const char *string)
+bool unix_wild_match(const char *pattern, const char *string)
 {
-	pstring p2, s2;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	char *p2;
+	char *s2;
 	char *p;
+	bool ret = false;
 
-	pstrcpy(p2, pattern);
-	pstrcpy(s2, string);
+	p2 = talloc_strdup(ctx,pattern);
+	s2 = talloc_strdup(ctx,string);
+	if (!p2 || !s2) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
 	strlower_m(p2);
 	strlower_m(s2);
 
 	/* Remove any *? and ** from the pattern as they are meaningless */
-	for(p = p2; *p; p++)
-		while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
-			pstrcpy( &p[1], &p[2]);
- 
-	if (strequal(p2,"*"))
-		return True;
+	for(p = p2; *p; p++) {
+		while( *p == '*' && (p[1] == '?' ||p[1] == '*')) {
+			memmove(&p[1], &p[2], strlen(&p[2])+1);
+		}
+	}
 
-	return unix_do_match(p2, s2);
+	if (strequal(p2,"*")) {
+		TALLOC_FREE(ctx);
+		return true;
+	}
+
+	ret = unix_do_match(p2, s2);
+	TALLOC_FREE(ctx);
+	return ret;
 }
 
 /**********************************************************************
