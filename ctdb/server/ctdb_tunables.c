@@ -43,6 +43,7 @@ static const struct {
 	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period) },
 	{ "DatabaseHashSize", 10000,  offsetof(struct ctdb_tunable, database_hash_size) },
 	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout) },
+	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
 };
 
 /*

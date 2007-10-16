@@ -23,6 +23,8 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
 
+IPQ_LIBS = @IPQ_LIBS@
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
@@ -54,7 +56,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/ctdb_persistent bin/rb_test \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ @CTDB_IPMUX@ bin/smnotify
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/ctdb_ipmux bin/smnotify
 SBINS = bin/ctdbd
 
 DIRS = lib bin
@@ -86,7 +88,7 @@ bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o
 
 bin/ctdb_ipmux: $(CTDB_CLIENT_OBJ) utils/ipmux/ipmux.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/ipmux/ipmux.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) -lipq
+	@$(CC) $(CFLAGS) -o $@ utils/ipmux/ipmux.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) $(IPQ_LIBS)
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o 
 	@echo Linking $@

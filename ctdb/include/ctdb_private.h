@@ -87,6 +87,7 @@ struct ctdb_tunable {
 	uint32_t recovery_ban_period;
 	uint32_t database_hash_size;
 	uint32_t rerecovery_timeout;
+	uint32_t enable_bans;
 };
 
 /*
