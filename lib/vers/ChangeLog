@@ -1,3 +1,7 @@
+2007-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: don't run local checks.
+	
 2006-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* print_version.c: Update (c).
