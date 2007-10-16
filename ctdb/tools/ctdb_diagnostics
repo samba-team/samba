@@ -136,7 +136,7 @@ show_all "/usr/sbin/showmount -a"
 show_all "/usr/sbin/showmount -e"
 show_all "/usr/sbin/nfsstat -v"
 [ -x /sbin/multipath ] && {
-    show_all "/sbin/multipath -l"
+    show_all "/sbin/multipath -ll"
 }
 [ -x /sbin/chkconfig ] && {
     show_all "/sbin/chkconfig --list"
