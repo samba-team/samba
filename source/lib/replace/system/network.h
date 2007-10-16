@@ -49,10 +49,6 @@
 #include <netinet/tcp.h>
 #endif
 
-#if !defined(HAVE_GETADDRINFO)
-#include "getaddrinfo.h"
-#endif
-
 /*
  * The next three defines are needed to access the IPTOS_* options
  * on some systems.
@@ -103,6 +99,97 @@ int rep_inet_pton(int af, const char *src, void *dst);
 /* define is in "replace.h" */
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
+
+#if !defined(HAVE_GETADDRINFO)
+#include "getaddrinfo.h"
+#endif
+
+/*
+ * Some systems have getaddrinfo but not the
+ * defines needed to use it.
+ */
+
+/* Various macros that ought to be in <netdb.h>, but might not be */
+
+#ifndef EAI_FAIL
+#define EAI_BADFLAGS	(-1)
+#define EAI_NONAME	(-2)
+#define EAI_AGAIN	(-3)
+#define EAI_FAIL	(-4)
+#define EAI_FAMILY	(-6)
+#define EAI_SOCKTYPE	(-7)
+#define EAI_SERVICE	(-8)
+#define EAI_MEMORY	(-10)
+#define EAI_SYSTEM	(-11)
+#endif   /* !EAI_FAIL */
+
+#ifndef AI_PASSIVE
+#define AI_PASSIVE	0x0001
+#endif
+
+#ifndef AI_CANONNAME
+#define AI_CANONNAME	0x0002
+#endif
+
+#ifndef AI_NUMERICHOST
+/*
+ * some platforms don't support AI_NUMERICHOST; define as zero if using
+ * the system version of getaddrinfo...
+ */
+#if defined(HAVE_STRUCT_ADDRINFO) && defined(HAVE_GETADDRINFO)
+#define AI_NUMERICHOST	0
+#else
+#define AI_NUMERICHOST	0x0004
+#endif
+#endif
+
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG	0x0020
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST	1
+#endif
+
+#ifndef NI_NUMERICSERV
+#define NI_NUMERICSERV	2
+#endif
+
+#ifndef NI_NOFQDN
+#define NI_NOFQDN	4
+#endif
+
+#ifndef NI_NAMEREQD
+#define NI_NAMEREQD 	8
+#endif
+
+#ifndef NI_DGRAM
+#define NI_DGRAM	16
+#endif
+
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST	1025
+#endif
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV	32
+#endif
+
+#ifndef HAVE_STRUCT_ADDRINFO
+
+struct addrinfo
+{
+	int			ai_flags;
+	int			ai_family;
+	int			ai_socktype;
+	int			ai_protocol;
+	size_t		ai_addrlen;
+	struct sockaddr *ai_addr;
+	char	   *ai_canonname;
+	struct addrinfo *ai_next;
+};
+#endif   /* HAVE_STRUCT_ADDRINFO */
 
 /*
  * glibc on linux doesn't seem to have MSG_WAITALL
