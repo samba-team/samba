@@ -41,7 +41,7 @@
 	Where the script dfree (which must be made executable) could be:
 <programlisting format="linespecific"> 
 #!/bin/sh
-df $1 | tail -1 | awk '{print $2&quot; &quot;$4}'
+df $1 | tail -1 | awk '{print $(NF-4),$(NF-2)}'
 </programlisting>
 	or perhaps (on Sys V based systems):
 <programlisting format="linespecific"> 
