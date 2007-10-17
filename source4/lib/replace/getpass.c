@@ -18,21 +18,9 @@ not, see <http://www.gnu.org/licenses/>.  */
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
 #include "replace.h"
-
-#if defined(HAVE_TERMIOS_H)
-/* POSIX terminal handling. */
-#include <termios.h>
-#elif defined(HAVE_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <termio.h>
-#elif defined(HAVE_SYS_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <sys/termio.h>
-#endif
-
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
+#include "system/filesys.h"
+#include "system/wait.h"
+#include "system/terminal.h"
 
 /*
  * Define additional missing types
