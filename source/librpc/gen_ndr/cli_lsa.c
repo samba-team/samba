@@ -127,7 +127,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	if ( sdbuf ) {
+	if (sdbuf && r.out.sdbuf) {
 		*sdbuf = *r.out.sdbuf;
 	}
 	
@@ -252,7 +252,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -482,7 +482,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*sids = *r.out.sids;
@@ -521,7 +521,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*names = *r.out.names;
@@ -622,7 +622,7 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	if ( privs ) {
+	if (privs && r.out.privs) {
 		*privs = *r.out.privs;
 	}
 	
@@ -868,7 +868,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -999,16 +999,16 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	if ( new_val ) {
+	if (new_val && r.out.new_val) {
 		*new_val = *r.out.new_val;
 	}
-	if ( new_mtime ) {
+	if (new_mtime && r.out.new_mtime) {
 		*new_mtime = *r.out.new_mtime;
 	}
-	if ( old_val ) {
+	if (old_val && r.out.old_val) {
 		*old_val = *r.out.old_val;
 	}
-	if ( old_mtime ) {
+	if (old_mtime && r.out.old_mtime) {
 		*old_mtime = *r.out.old_mtime;
 	}
 	
@@ -1074,7 +1074,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	if ( name ) {
+	if (name && r.out.name) {
 		*name = *r.out.name;
 	}
 	
@@ -1110,7 +1110,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	if ( disp_name ) {
+	if (disp_name && r.out.disp_name) {
 		*disp_name = *r.out.disp_name;
 	}
 	*language_id = *r.out.language_id;
@@ -1304,7 +1304,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli, TAL
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1490,10 +1490,10 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	if ( account_name ) {
+	if (account_name && r.out.account_name) {
 		*account_name = *r.out.account_name;
 	}
-	if ( authority_name ) {
+	if (authority_name && r.out.authority_name) {
 		*authority_name = *r.out.authority_name;
 	}
 	
@@ -1527,7 +1527,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1591,7 +1591,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli, TA
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1752,7 +1752,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli, TA
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1885,7 +1885,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*names = *r.out.names;
@@ -1927,7 +1927,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*sids = *r.out.sids;
@@ -2230,7 +2230,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*sids = *r.out.sids;
@@ -2473,7 +2473,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*names = *r.out.names;
@@ -2514,7 +2514,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return variables */
-	if ( domains ) {
+	if (domains && r.out.domains) {
 		*domains = *r.out.domains;
 	}
 	*sids = *r.out.sids;

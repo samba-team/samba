@@ -229,7 +229,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	/* Return variables */
 	*new_handle = *r.out.new_handle;
-	if ( action_taken ) {
+	if (action_taken && r.out.action_taken) {
 		*action_taken = *r.out.action_taken;
 	}
 	
@@ -329,10 +329,10 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	
 	/* Return variables */
 	*name = *r.out.name;
-	if ( keyclass ) {
+	if (keyclass && r.out.keyclass) {
 		*keyclass = *r.out.keyclass;
 	}
-	if ( last_changed_time ) {
+	if (last_changed_time && r.out.last_changed_time) {
 		*last_changed_time = *r.out.last_changed_time;
 	}
 	
@@ -372,16 +372,16 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	/* Return variables */
 	*name = *r.out.name;
-	if ( type ) {
+	if (type && r.out.type) {
 		*type = *r.out.type;
 	}
-	if ( value ) {
+	if (value && r.out.value) {
 		memcpy(value, r.out.value, *r.in.size);
 	}
-	if ( size ) {
+	if (size && r.out.size) {
 		*size = *r.out.size;
 	}
-	if ( length ) {
+	if (length && r.out.length) {
 		*length = *r.out.length;
 	}
 	
@@ -624,16 +624,16 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	if ( type ) {
+	if (type && r.out.type) {
 		*type = *r.out.type;
 	}
-	if ( data ) {
+	if (data && r.out.data) {
 		memcpy(data, r.out.data, *r.in.data_size);
 	}
-	if ( data_size ) {
+	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
 	}
-	if ( value_length ) {
+	if (value_length && r.out.value_length) {
 		*value_length = *r.out.value_length;
 	}
 	
@@ -1018,7 +1018,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli, TALLOC_C
 	
 	/* Return variables */
 	memcpy(values, r.out.values, r.in.num_values);
-	if ( buffer ) {
+	if (buffer && r.out.buffer) {
 		memcpy(buffer, r.out.buffer, *r.in.buffer_size);
 	}
 	*buffer_size = *r.out.buffer_size;
