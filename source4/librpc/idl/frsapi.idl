@@ -92,6 +92,12 @@ interface frsapi
 
 	/****************/
 	/* Function 0x0a */
-	void FRSAPI_FORCE_REPLICATION();
+	/* not supported before w2k3 sp2 */
+	WERROR frsapi_ForceReplication(
+		[in] uint32 unknown1,
+		[in] uint32 unknown2,
+		[in,unique] [charset(UTF16),string] uint16 *replica_set,
+		[in,unique] [charset(UTF16),string] uint16 *partner_name
+	);
 
 }
