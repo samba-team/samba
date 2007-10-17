@@ -1462,6 +1462,7 @@ bool torture_hold_oplock(struct torture_context *torture,
 	for (i=0;i<ARRAY_SIZE(hold_info);i++) {
 		union smb_open io;
 		NTSTATUS status;
+		char c = 1;
 
 		io.generic.level = RAW_OPEN_NTCREATEX;
 		io.ntcreatex.in.root_fid = 0;
@@ -1493,6 +1494,12 @@ bool torture_hold_oplock(struct torture_context *torture,
 			return false;
 		}
 		hold_info[i].fnum = io.ntcreatex.out.file.fnum;
+
+		/* make the file non-zero size */
+		if (smbcli_write(cli->tree, hold_info[i].fnum, 0, &c, 0, 1) != 1) {
+			printf("Failed to write to file\n");
+			return false;
+		}
 	}
 
 	printf("Waiting for oplock events\n");
