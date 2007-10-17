@@ -715,7 +715,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<title>REGISTRY-BASED CONFIGURATION</title>
 
 	<para>
-		Starting with Samba version 3.0.26, the capability to
+		Starting with Samba version 3.2.0, the capability to
 		store Samba configuration in the registry is available. 
 		There are two levels of registry configuration. 
 	</para>
