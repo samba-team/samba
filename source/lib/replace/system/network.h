@@ -120,8 +120,38 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #define INADDR_NONE 0xffffffff
 #endif
 
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT EINVAL
+#endif
+
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
+#endif
+
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46
+#endif
+
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
+#ifndef HAVE_SA_FAMILY_T
+typedef unsigned short int sa_family_t;
+#endif
+
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
+#define sockaddr_storage sockaddr_in6
+#define ss_family sin6_family
+#else
+#define sockaddr_storage sockaddr_in
+#define ss_family sin_family
+#endif
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 256
 #endif
 
 #endif
