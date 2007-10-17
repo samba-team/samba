@@ -163,8 +163,6 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct fd_even
 {
 	struct epoll_event event;
 
-	DLIST_REMOVE(epoll_ev->fd_events, fde);
-		
 	if (epoll_ev->epoll_fd == -1) return;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
@@ -232,7 +230,6 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct fd_e
 
 	/* there's no epoll_event attached to the fde */
 	if (want_read || (want_write && !got_error)) {
-		DLIST_ADD(epoll_ev->fd_events, fde);
 		epoll_add_event(epoll_ev, fde);
 		return;
 	}
@@ -353,6 +350,8 @@ static int epoll_event_fd_destructor(struct fd_event *fde)
 	epoll_ev->num_fd_events--;
 	epoll_ev->destruction_count++;
 
+	DLIST_REMOVE(epoll_ev->fd_events, fde);
+		
 	epoll_del_event(epoll_ev, fde);
 
 	if (fde->flags & EVENT_FD_AUTOCLOSE) {
