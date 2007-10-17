@@ -419,6 +419,8 @@ NTSTATUS torture_rpc_init(void)
 			    torture_samba3_rpc_sharesec);
 	torture_suite_add_simple_test(suite, "SAMBA3-GETUSERNAME",
 			    torture_samba3_rpc_getusername);
+	torture_suite_add_simple_test(suite, "SAMBA3-RANDOMAUTH2",
+				      torture_samba3_rpc_randomauth2);
 	torture_suite_add_simple_test(suite, "SAMBA3-LSA", torture_samba3_rpc_lsa);
 	torture_suite_add_simple_test(suite, "SAMBA3-SPOOLSS", torture_samba3_rpc_spoolss);
 	torture_suite_add_simple_test(suite, "SAMBA3-WKSSVC", torture_samba3_rpc_wkssvc);

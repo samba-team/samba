@@ -1859,6 +1859,120 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	return ret;
 }
 
+/*
+ * Do a ReqChallenge/Auth2 with a random wks name, make sure it returns
+ * NT_STATUS_NO_SAM_ACCOUNT
+ */
+
+bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	struct dcerpc_pipe *net_pipe;
+	char *wksname;
+	bool result = false;
+	NTSTATUS status;
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential netr_cli_creds;
+	struct netr_Credential netr_srv_creds;
+	uint32_t negotiate_flags;
+	struct netr_ServerAuthenticate2 a;
+	struct creds_CredentialState *creds_state;
+	struct netr_Credential netr_cred;
+	struct samr_Password mach_pw;
+	struct smbcli_state *cli;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		d_printf("talloc_new failed\n");
+		return false;
+	}
+
+	if (!(wksname = generate_random_str_list(
+		      mem_ctx, 14, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))) {
+		d_printf("generate_random_str_list failed\n");
+		goto done;
+	}
+
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli,
+		      torture_setting_string(torture, "host", NULL),
+		      "IPC$", NULL))) {
+		d_printf("IPC$ connection failed\n");
+		goto done;
+	}
+
+	if (!(net_pipe = dcerpc_pipe_init(
+		      mem_ctx, cli->transport->socket->event.ctx))) {
+		d_printf("dcerpc_pipe_init failed\n");
+		goto done;
+	}
+
+	status = dcerpc_pipe_open_smb(net_pipe, cli->tree, "\\netlogon");
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_bind_auth_none(net_pipe, &ndr_table_netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_bind_auth_none failed: %s\n",
+			 nt_errstr(status));
+		goto done;
+	}
+
+	r.in.computer_name = wksname;
+	r.in.server_name = talloc_asprintf(
+		mem_ctx, "\\\\%s", dcerpc_server_name(net_pipe));
+	if (r.in.server_name == NULL) {
+		d_printf("talloc_asprintf failed\n");
+		goto done;
+	}
+	generate_random_buffer(netr_cli_creds.data,
+			       sizeof(netr_cli_creds.data));
+	r.in.credentials = &netr_cli_creds;
+	r.out.credentials = &netr_srv_creds;
+
+	status = dcerpc_netr_ServerReqChallenge(net_pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("netr_ServerReqChallenge failed: %s\n",
+			 nt_errstr(status));
+		goto done;
+	}
+
+	negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	E_md4hash("foobar", mach_pw.hash);
+
+	creds_state = talloc(mem_ctx, struct creds_CredentialState);
+	creds_client_init(creds_state, r.in.credentials,
+			  r.out.credentials, &mach_pw,
+			  &netr_cred, negotiate_flags);
+
+	a.in.server_name = talloc_asprintf(
+		mem_ctx, "\\\\%s", dcerpc_server_name(net_pipe));
+	a.in.account_name = talloc_asprintf(
+		mem_ctx, "%s$", wksname);
+	a.in.computer_name = wksname;
+	a.in.secure_channel_type = SEC_CHAN_WKSTA;
+	a.in.negotiate_flags = &negotiate_flags;
+	a.out.negotiate_flags = &negotiate_flags;
+	a.in.credentials = &netr_cred;
+	a.out.credentials = &netr_cred;
+
+	status = dcerpc_netr_ServerAuthenticate2(net_pipe, mem_ctx, &a);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NO_TRUST_SAM_ACCOUNT)) {
+		d_printf("dcerpc_netr_ServerAuthenticate2 returned %s, "
+			 "expected NT_STATUS_NO_TRUST_SAM_ACCOUNT\n",
+			 nt_errstr(status));
+		goto done;
+	}
+
+	result = true;
+ done:
+	talloc_free(mem_ctx);
+	return result;
+}
+
 static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 						struct smbcli_session *sess,
 						const char *sharename)
