@@ -198,10 +198,10 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	if ( total ) {
+	if (total && r.out.total) {
 		*total = *r.out.total;
 	}
 	
@@ -358,7 +358,7 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	}
 	
 	/* Return variables */
-	if ( unknown2 ) {
+	if (unknown2 && r.out.unknown2) {
 		*unknown2 = *r.out.unknown2;
 	}
 	
@@ -396,7 +396,7 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return variables */
-	if ( unknown ) {
+	if (unknown && r.out.unknown) {
 		*unknown = *r.out.unknown;
 	}
 	
@@ -709,10 +709,10 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	if ( total ) {
+	if (total && r.out.total) {
 		*total = *r.out.total;
 	}
 	

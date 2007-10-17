@@ -38,7 +38,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -144,7 +144,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -215,7 +215,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	if ( parm_error ) {
+	if (parm_error && r.out.parm_error) {
 		*parm_error = *r.out.parm_error;
 	}
 	
@@ -319,7 +319,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -361,7 +361,7 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -467,7 +467,7 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -535,7 +535,7 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	if ( parm_error ) {
+	if (parm_error && r.out.parm_error) {
 		*parm_error = *r.out.parm_error;
 	}
 	
@@ -575,7 +575,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -645,7 +645,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	}
 	
 	/* Return variables */
-	if ( parm_error ) {
+	if (parm_error && r.out.parm_error) {
 		*parm_error = *r.out.parm_error;
 	}
 	
@@ -809,7 +809,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	if ( parm_error ) {
+	if (parm_error && r.out.parm_error) {
 		*parm_error = *r.out.parm_error;
 	}
 	
@@ -848,7 +848,7 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	*info = *r.out.info;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -954,7 +954,7 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX 
 	*level = *r.out.level;
 	*transports = *r.out.transports;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -1019,7 +1019,7 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1292,7 +1292,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
 	*totalentries = *r.out.totalentries;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -1327,7 +1327,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX 
 	}
 	
 	/* Return variables */
-	if ( hnd ) {
+	if (hnd && r.out.hnd) {
 		*hnd = *r.out.hnd;
 	}
 	
@@ -1360,7 +1360,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX
 	}
 	
 	/* Return variables */
-	if ( hnd ) {
+	if (hnd && r.out.hnd) {
 		*hnd = *r.out.hnd;
 	}
 	
@@ -1396,7 +1396,7 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return variables */
-	if ( sd_buf ) {
+	if (sd_buf && r.out.sd_buf) {
 		*sd_buf = *r.out.sd_buf;
 	}
 	

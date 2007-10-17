@@ -102,10 +102,10 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli, TALLOC_CTX
 	
 	/* Return variables */
 	*users = *r.out.users;
-	if ( entriesread ) {
+	if (entriesread && r.out.entriesread) {
 		*entriesread = *r.out.entriesread;
 	}
-	if ( totalentries ) {
+	if (totalentries && r.out.totalentries) {
 		*totalentries = *r.out.totalentries;
 	}
 	*resumehandle = *r.out.resumehandle;
@@ -203,7 +203,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli, TALLOC
 	/* Return variables */
 	*level = *r.out.level;
 	*ctr = *r.out.ctr;
-	if ( totalentries ) {
+	if (totalentries && r.out.totalentries) {
 		*totalentries = *r.out.totalentries;
 	}
 	*resume_handle = *r.out.resume_handle;

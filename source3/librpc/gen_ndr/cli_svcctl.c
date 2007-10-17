@@ -420,7 +420,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	if ( TagId ) {
+	if (TagId && r.out.TagId) {
 		*TagId = *r.out.TagId;
 	}
 	*handle = *r.out.handle;
@@ -456,7 +456,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return variables */
-	if ( service_status ) {
+	if (service_status && r.out.service_status) {
 		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
@@ -498,7 +498,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -698,7 +698,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLO
 	
 	/* Return variables */
 	*display_name = *r.out.display_name;
-	if ( display_name_length ) {
+	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
 	
@@ -734,7 +734,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	/* Return variables */
 	*key_name = *r.out.key_name;
-	if ( display_name_length ) {
+	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
 	
@@ -851,7 +851,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return variables */
-	if ( TagId ) {
+	if (TagId && r.out.TagId) {
 		*TagId = *r.out.TagId;
 	}
 	
@@ -886,7 +886,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return variables */
-	if ( service_status ) {
+	if (service_status && r.out.service_status) {
 		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
@@ -928,7 +928,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	
@@ -1127,7 +1127,7 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLO
 	
 	/* Return variables */
 	*display_name = *r.out.display_name;
-	if ( display_name_length ) {
+	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
 	
@@ -1163,7 +1163,7 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CT
 	
 	/* Return variables */
 	*key_name = *r.out.key_name;
-	if ( display_name_length ) {
+	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
 	
@@ -1428,7 +1428,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*service_returned = *r.out.service_returned;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	*group_name = *r.out.group_name;
@@ -1470,7 +1470,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*service_returned = *r.out.service_returned;
-	if ( resume_handle ) {
+	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
 	*group_name = *r.out.group_name;

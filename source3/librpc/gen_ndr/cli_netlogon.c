@@ -33,7 +33,7 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -105,7 +105,7 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return variables */
-	if ( return_authenticator ) {
+	if (return_authenticator && r.out.return_authenticator) {
 		*return_authenticator = *r.out.return_authenticator;
 	}
 	*validation = *r.out.validation;
@@ -145,7 +145,7 @@ NTSTATUS rpccli_netr_LogonSamLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	if ( return_authenticator ) {
+	if (return_authenticator && r.out.return_authenticator) {
 		*return_authenticator = *r.out.return_authenticator;
 	}
 	
@@ -290,7 +290,7 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sequence_num = *r.out.sequence_num;
-	if ( delta_enum_array ) {
+	if (delta_enum_array && r.out.delta_enum_array) {
 		*delta_enum_array = *r.out.delta_enum_array;
 	}
 	
@@ -331,7 +331,7 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	if ( delta_enum_array ) {
+	if (delta_enum_array && r.out.delta_enum_array) {
 		*delta_enum_array = *r.out.delta_enum_array;
 	}
 	
@@ -626,7 +626,7 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	if ( delta_enum_array ) {
+	if (delta_enum_array && r.out.delta_enum_array) {
 		*delta_enum_array = *r.out.delta_enum_array;
 	}
 	
@@ -665,7 +665,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
-	if ( delta_enum_array ) {
+	if (delta_enum_array && r.out.delta_enum_array) {
 		*delta_enum_array = *r.out.delta_enum_array;
 	}
 	
@@ -765,7 +765,7 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -985,7 +985,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1215,7 +1215,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return variables */
-	if ( info ) {
+	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
 	
@@ -1558,7 +1558,7 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	}
 	
 	/* Return variables */
-	if ( return_authenticator ) {
+	if (return_authenticator && r.out.return_authenticator) {
 		*return_authenticator = *r.out.return_authenticator;
 	}
 	*validation = *r.out.validation;
