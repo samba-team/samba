@@ -526,7 +526,9 @@ krb5_cc_retrieve_cred(krb5_context context,
 				    mcreds, creds);
     }
 
-    krb5_cc_start_seq_get(context, id, &cursor);
+    ret = krb5_cc_start_seq_get(context, id, &cursor);
+    if (ret)
+	return ret;
     while((ret = krb5_cc_next_cred(context, id, &cursor, creds)) == 0){
 	if(krb5_compare_creds(context, whichfields, mcreds, creds)){
 	    ret = 0;
