@@ -273,11 +273,12 @@ RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o rpc_parse/parse_srv
 LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 
 SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
+NSS_WRAPPER_OBJ = @NSS_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
 
-LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(TALLOC_OBJ) \
+LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(NSS_WRAPPER_OBJ) $(TALLOC_OBJ) \
 	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
 	lib/interfaces.o
