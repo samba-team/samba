@@ -180,7 +180,7 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 static void ctdb_ibw_restart(struct ctdb_node *node)
 {
 	/* TODO: implement this method for IB */
-	DEBUG(0,("WARNING: method restart is not yet implemented for IB\n");
+	DEBUG(0,("WARNING: method restart is not yet implemented for IB\n"));
 }
 
 /*
