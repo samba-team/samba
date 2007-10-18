@@ -8,7 +8,7 @@ import "misc.idl";
   version(3.0),
   pointer_default(unique),
   helpstring("Settings for Microsoft Distributed File System"),
-  endpoint("ncacn_np:[\\pipe\\dfs]", "ncacn_ip_tcp:", "ncalrpc:")
+  endpoint("ncacn_np:[\\pipe\\netdfs]", "ncacn_ip_tcp:", "ncalrpc:")
 ] interface netdfs
 {
 	/******************/
