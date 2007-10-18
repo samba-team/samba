@@ -1,3 +1,7 @@
+2007-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Some "old" windows enctypes. From Andy Polyakov.
+	
 2007-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Fold in pk-init-alg-agilty.
