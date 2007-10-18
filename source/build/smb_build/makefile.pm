@@ -231,7 +231,23 @@ sub _prepare_mk_files($)
 		push (@tmp, $_);
 	}
 
+	if ($self->{gnu_make}) {
+		$self->output("
+ifneq (\$(MAKECMDGOALS),clean)
+ifneq (\$(MAKECMDGOALS),distclean)
+ifneq (\$(MAKECMDGOALS),realdistclean)
+");
+	}
+
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
+
+	if ($self->{gnu_make}) {
+		$self->output("
+endif
+endif
+endif
+");
+	}
 }
 
 sub array2oneperline($)
