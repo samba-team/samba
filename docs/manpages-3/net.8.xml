@@ -333,9 +333,13 @@ Currently listed are: file-id, username, locks, path, permissions.
 </refsect3>
 
 <refsect3>
-<title>[RAP|RPC] FILE USER</title>
+<title>[RAP|RPC] FILE USER <replaceable>user</replaceable></title>
 
-&not.implemented;
+<para>
+List files opened by specified <replaceable>user</replaceable>.
+Please note that <command>net rap file user</command> does not work
+against Samba servers. 
+</para>
 
 </refsect3>
 
