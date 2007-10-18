@@ -2939,40 +2939,6 @@ SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
 
-dnl test for socklen_t
-AC_CACHE_CHECK([for socklen_t],samba_cv_HAVE_SA_FAMILY_T,[
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-],
-[
-socklen_t foo;
-],
-samba_cv_HAVE_SOCKLEN_T=yes,samba_cv_HAVE_SOCKLEN_T=no)])
-if test x"$samba_cv_HAVE_SOCKLEN_T" = x"yes"; then
-    AC_DEFINE(HAVE_SOCKLEN_T,1,[Whether the system has socklen_t])
-fi
-
-dnl test for sa_family_t
-AC_CACHE_CHECK([for sa_family_t],samba_cv_HAVE_SA_FAMILY_T,[
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-],
-[
-sa_family_t foo;
-],
-samba_cv_HAVE_SA_FAMILY_T=yes,samba_cv_HAVE_SA_FAMILY_T=no)])
-if test x"$samba_cv_HAVE_SA_FAMILY_T" = x"yes"; then
-    AC_DEFINE(HAVE_SA_FAMILY_T,1,[Whether the system has sa_family_t])
-fi
-
 dnl test for getifaddrs and freeifaddrs
 AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
 AC_TRY_COMPILE([
@@ -3082,34 +3048,6 @@ freeaddrinfo(ai);
 samba_cv_HAVE_IPV6=yes,samba_cv_HAVE_IPV6=no)])
 if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
     AC_DEFINE(HAVE_IPV6,1,[Whether the system has IPv6 support])
-fi
-
-dnl test for struct sockaddr_storage
-AC_CACHE_CHECK([for struct sockaddr_storage],samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE,[
-AC_TRY_COMPILE([
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>],
-[
-struct sockaddr_storage sa_store;
-],
-samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=yes,samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE=no)])
-if test x"$samba_cv_HAVE_STRUCT_SOCKADDR_STORAGE" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE,1,[Whether the system has struct sockaddr_storage])
-fi
-
-dnl test for struct struct sockaddr_in6
-AC_CACHE_CHECK([for struct sockaddr_in6],samba_cv_HAVE_STRUCT_SOCKADDR_IN6,[
-AC_TRY_COMPILE([
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>],
-[
-struct sockaddr_in6 sa6;
-],
-samba_cv_HAVE_STRUCT_SOCKADDR_IN6=yes,samba_cv_HAVE_STRUCT_SOCKADDR_IN6=no)])
-if test x"$samba_cv_HAVE_STRUCT_SOCKADDR_IN6" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6,1,[Whether the system has struct sockaddr_in6])
 fi
 
 ################################################
