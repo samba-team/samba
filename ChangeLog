@@ -1,5 +1,10 @@
 2007-10-18  Love  <lha@stacken.kth.se>
 
+	* lib/krb5/cache.c (krb5_cc_retrieve_cred): check return value
+	from krb5_cc_start_seq_get. From Zeqing (Fred) Xia
+	
+	* lib/krb5/fcache.c (init_fcc): provide better error codes
+
 	* kdc/kerberos5.c (get_pa_etype_info2): more paranoia, avoid
 	sending warning about pruned etypes.
 
