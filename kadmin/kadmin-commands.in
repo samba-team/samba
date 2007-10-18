@@ -327,9 +327,9 @@ command = {
 	}
 	option = {
 		long = "constrained-delegation"
-		type = "string"
+		type = "strings"
 		argument = "principal"
-		help = "allowed target principal"
+		help = "allowed target principals"
 	}
 	option = {
 		long = "alias"
