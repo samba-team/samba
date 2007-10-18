@@ -88,6 +88,28 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 	return 0;
 }
 
+/*
+  shutdown and try to restart a connection to a node after it has been
+  disconnected
+*/
+static void ctdb_tcp_restart(struct ctdb_node *node)
+{
+	struct ctdb_tcp_node *tnode = talloc_get_type(
+		node->private_data, struct ctdb_tcp_node);
+
+	DEBUG(0,("Tearing down connection to dead node :%d\n", node->pnn));
+
+	if (tnode->fd == -1) {
+		close(tnode->fd);
+		tnode->fd = -1;
+	}
+
+	ctdb_queue_set_fd(tnode->out_queue, -1);
+
+	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
+			ctdb_tcp_node_connect, node);
+}
+
 
 /*
   shutdown the transport
@@ -121,6 +143,7 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 	.add_node     = ctdb_tcp_add_node,
 	.allocate_pkt = ctdb_tcp_allocate_pkt,
 	.shutdown     = ctdb_tcp_shutdown,
+	.restart      = ctdb_tcp_restart,
 };
 
 /*

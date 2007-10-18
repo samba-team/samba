@@ -207,6 +207,7 @@ struct ctdb_methods {
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
 	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
 	void (*shutdown)(struct ctdb_context *); /* shutdown transport */
+	void (*restart)(struct ctdb_node *); /* stop and restart the connection */
 };
 
 /*
