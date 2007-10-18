@@ -972,8 +972,8 @@ function provision_guess()
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
 	subobj.DOMAINDN_MOD = "subtree_rename,pdc_fsmo,password_hash";
-	subobj.CONFIGDN_MOD = "naming_fsmo";
-	subobj.SCHEMADN_MOD = "schema_fsmo";
+	subobj.CONFIGDN_MOD = "subtree_rename,naming_fsmo";
+	subobj.SCHEMADN_MOD = "subtree_rename,schema_fsmo";
 	subobj.DOMAINDN_MOD2 = ",objectguid";
 	subobj.CONFIGDN_MOD2 = ",objectguid";
 	subobj.SCHEMADN_MOD2 = ",objectguid";
