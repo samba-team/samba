@@ -1,3 +1,13 @@
+2007-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (older_enctype): old windows enctypes (arcfour
+	based) "old", this to support windows 2000 clients (unjoined to a
+	domain). From Andy Polyakov.
+
+2007-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: Spelling, from Mark Peoples via Bjorn Sandell.
+	
 2007-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/krb5tgs.c: More prettier printing of enctype, from KAMADA
