@@ -57,6 +57,50 @@ add_tl(kadm5_principal_ent_rec *princ, int type, krb5_data *data)
 }
 
 static void
+add_constrained_delegation(krb5_context context,
+			   kadm5_principal_ent_rec *princ,
+			   struct getarg_strings *strings)
+{
+    krb5_error_code ret;
+    HDB_extension ext;
+    krb5_data buf;
+    size_t size;
+	    
+    memset(&ext, 0, sizeof(ext));
+    ext.mandatory = FALSE;
+    ext.data.element = choice_HDB_extension_data_allowed_to_delegate_to;
+
+    if (strings->num_strings == 1 && strings->strings[0][0] == '\0') {
+	ext.data.u.allowed_to_delegate_to.val = NULL;
+	ext.data.u.allowed_to_delegate_to.len = 0;
+    } else {
+	krb5_principal p;
+	int i;
+
+	ext.data.u.allowed_to_delegate_to.val = 
+	    calloc(strings->num_strings, 
+		   sizeof(ext.data.u.allowed_to_delegate_to.val[0]));
+	ext.data.u.allowed_to_delegate_to.len = strings->num_strings;
+	
+	for (i = 0; i < strings->num_strings; i++) {
+	    ret = krb5_parse_name(context, strings->strings[i], &p);
+	    ret = copy_Principal(p, &ext.data.u.allowed_to_delegate_to.val[i]);
+	    krb5_free_principal(context, p);
+	}
+    }
+
+    ASN1_MALLOC_ENCODE(HDB_extension, buf.data, buf.length,
+		       &ext, &size, ret);
+    free_HDB_extension(&ext);
+    if (ret)
+	abort();
+    if (buf.length != size)
+	abort();
+
+    add_tl(princ, KRB5_TL_EXTENSION, &buf);
+}
+
+static void
 add_aliases(krb5_context context, kadm5_principal_ent_rec *princ,
 	    struct getarg_strings *strings)
 {
@@ -162,7 +206,7 @@ do_mod_entry(krb5_principal principal, void *data)
        e->pw_expiration_time_string ||
        e->attributes_string ||
        e->kvno_integer != -1 ||
-       e->constrained_delegation_string ||
+       e->constrained_delegation_strings.num_strings ||
        e->alias_strings.num_strings ||
        e->pkinit_acl_strings.num_strings) {
 	ret = set_entry(context, &princ, &mask, 
@@ -175,34 +219,9 @@ do_mod_entry(krb5_principal principal, void *data)
 	    princ.kvno = e->kvno_integer;
 	    mask |= KADM5_KVNO;
 	}
-	if (e->constrained_delegation_string) {
-	    HDB_extension ext;
-	    krb5_data buf;
-	    krb5_principal p;
-	    size_t size;
-	    
-	    memset(&ext, 0, sizeof(ext));
-	    ext.mandatory = FALSE;
-	    ext.data.element = choice_HDB_extension_data_allowed_to_delegate_to;
-	    ext.data.u.allowed_to_delegate_to.len = 1;
-	    ext.data.u.allowed_to_delegate_to.val = 
-		emalloc(sizeof(ext.data.u.allowed_to_delegate_to.val[0]));
-	    ret = krb5_parse_name(context, 
-				  e->constrained_delegation_string,
-				  &p);
-	    ext.data.u.allowed_to_delegate_to.val[0] = *p;
-	    free(p);
-	    
-	    ASN1_MALLOC_ENCODE(HDB_extension, buf.data, buf.length,
-			       &ext, &size, ret);
-	    free_HDB_extension(&ext);
-	    if (ret)
-		abort();
-	    if (buf.length != size)
-		abort();
-
-	    add_tl(&princ, KRB5_TL_EXTENSION, &buf);
-
+	if (e->constrained_delegation_strings.num_strings) {
+	    add_constrained_delegation(context, &princ,
+				       &e->constrained_delegation_strings);
 	    mask |= KADM5_TL_DATA;
 	}
 	if (e->alias_strings.num_strings) {
