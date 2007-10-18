@@ -459,7 +459,7 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 {
 	struct ctdb_set_recmode_state *state= talloc_get_type(private_data, 
 					     struct ctdb_set_recmode_state);
-	char c;
+	char c = 0;
 	int ret;
 
 	/* we got a response from our child process so we can abort the
@@ -476,8 +476,8 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	   the file   which at this time SHOULD be locked by the recovery
 	   daemon on the recmaster
 	*/		
-	read(state->fd[0], &c, 1);
-	if (c != 0) {
+	ret = read(state->fd[0], &c, 1);
+	if (ret != 1 || c != 0) {
 		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "managed to lock reclock file from inside daemon");
 		talloc_free(state);
 		return;
