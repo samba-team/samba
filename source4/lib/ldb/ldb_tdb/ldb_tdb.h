@@ -27,6 +27,8 @@ struct ltdb_private {
 			int flags;
 		} last_attribute;
 	} *cache;
+
+	int in_transaction;
 };
 
 /*

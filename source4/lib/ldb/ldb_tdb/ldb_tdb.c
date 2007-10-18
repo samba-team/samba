@@ -907,6 +907,8 @@ static int ltdb_start_trans(struct ldb_module *module)
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
+	ltdb->in_transaction++;
+
 	return LDB_SUCCESS;
 }
 
@@ -914,6 +916,8 @@ static int ltdb_end_trans(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb =
 		talloc_get_type(module->private_data, struct ltdb_private);
+
+	ltdb->in_transaction--;
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -926,6 +930,8 @@ static int ltdb_del_trans(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb =
 		talloc_get_type(module->private_data, struct ltdb_private);
+
+	ltdb->in_transaction--;
 
 	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));

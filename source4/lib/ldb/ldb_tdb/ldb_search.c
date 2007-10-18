@@ -253,7 +253,10 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 static int ltdb_lock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	return tdb_lockall_read(ltdb->tdb);
+	if (ltdb->in_transaction == 0) {
+		return tdb_lockall_read(ltdb->tdb);
+	}
+	return 0;
 }
 
 /*
@@ -262,7 +265,10 @@ static int ltdb_lock_read(struct ldb_module *module)
 static int ltdb_unlock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	return tdb_unlockall_read(ltdb->tdb);
+	if (ltdb->in_transaction == 0) {
+		return tdb_unlockall_read(ltdb->tdb);
+	}
+	return 0;
 }
 
 /*
@@ -442,7 +448,11 @@ static int ltdb_search_full(struct ldb_handle *handle)
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	int ret;
 
-	ret = tdb_traverse_read(ltdb->tdb, search_func, handle);
+	if (ltdb->in_transaction != 0) {
+		ret = tdb_traverse(ltdb->tdb, search_func, handle);
+	} else {
+		ret = tdb_traverse_read(ltdb->tdb, search_func, handle);
+	}
 
 	if (ret == -1) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
