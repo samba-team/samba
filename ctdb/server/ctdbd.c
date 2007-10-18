@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "system/wait.h"
+#include "system/network.h"
 #include "cmdline.h"
 #include "../include/ctdb_private.h"
 

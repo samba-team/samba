@@ -675,6 +675,17 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	*/
 	all_ips = create_merged_ip_list(ctdb, tmp_ctx);
 
+	/* If we want deterministic ip allocations, i.e. that the ip addresses
+	   will always be allocated the same way for a specific set of
+	   available/unavailable nodes.
+	*/
+	if (1 == ctdb->tunable.deterministic_public_ips) {		
+		DEBUG(0,("Deterministic IPs enabled. Resetting all ip allocations\n"));
+		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
+			tmp_ip->pnn = i%nodemap->num;
+		}
+	}
+
 
 	/* mark all public addresses with a masked node as being served by
 	   node -1
@@ -756,6 +767,13 @@ try_again:
 		}
 		if (maxnode == -1) {
 			DEBUG(0,(__location__ " Could not find maxnode. May not be able to serve ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
+			continue;
+		}
+
+		/* If we want deterministic IPs then dont try to reallocate 
+		   them to spread out the load.
+		*/
+		if (1 == ctdb->tunable.deterministic_public_ips) {
 			continue;
 		}
 
