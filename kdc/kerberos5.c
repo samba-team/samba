@@ -484,6 +484,7 @@ get_pa_etype_info(krb5_context context,
     skip1:;
     }
     for(i = 0; i < client->keys.len; i++) {
+	/* already added? */
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip2;
@@ -504,7 +505,7 @@ get_pa_etype_info(krb5_context context,
     }
     
     if(n < pa.len) {
-	/* stripped out newer enctypes */
+	/* stripped out dups, newer enctypes, and not valid enctypes */
  	pa.len = n;
     }
 
@@ -628,6 +629,8 @@ get_pa_etype_info2(krb5_context context,
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if (krb5_enctype_valid(context, etypes[j]) != 0)
 		    continue;
+		if (n >= pa.len)
+		    krb5_abortx(context, "internal error: n >= p.len");
 		if((ret = make_etype_info2_entry(&pa.val[n++], 
 						 &client->keys.val[i])) != 0) {
 		    free_ETYPE_INFO2(&pa);
@@ -637,14 +640,17 @@ get_pa_etype_info2(krb5_context context,
 	}
     skip1:;
     }
-    /* send enctypes that the cliene doesn't know about too */
+    /* send enctypes that the client doesn't know about too */
     for(i = 0; i < client->keys.len; i++) {
+	/* already added? */
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip2;
 	}
 	if (krb5_enctype_valid(context, client->keys.val[i].key.keytype) != 0)
 	    continue;
+	if (n >= pa.len)
+	    krb5_abortx(context, "internal error: n >= p.len");
 	if((ret = make_etype_info2_entry(&pa.val[n++],
 					 &client->keys.val[i])) != 0) {
 	    free_ETYPE_INFO2(&pa);
@@ -653,16 +659,8 @@ get_pa_etype_info2(krb5_context context,
       skip2:;
     }
     
-    if(n != pa.len) {
-	char *name;
-	ret = krb5_unparse_name(context, client->principal, &name);
-	if (ret)
-	    name = rk_UNCONST("<unparse_name failed>");
-	kdc_log(context, config, 0,
-		"internal error in get_pa_etype_info2(%s): %d != %d", 
-		name, n, pa.len);
-	if (ret == 0)
-	    free(name);
+    if(n < pa.len) {
+	/* stripped out dups, and not valid enctypes */
  	pa.len = n;
     }
 
