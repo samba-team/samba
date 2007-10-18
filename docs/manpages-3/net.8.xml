@@ -1355,6 +1355,148 @@ shares created by other users.
 </refsect2>
 
 <refsect2>
+<title>CONF</title>
+
+<para>Starting with version 3.2.0, a Samba server can be configured by data
+stored in registry. This configuration data can be edited with the new "net
+conf" commands.
+</para>
+
+<para>
+The deployment of this configuration data can be activated in two levels from the
+<emphasis>smb.conf</emphasis> file: Share definitions from registry are
+activated by setting <parameter>registry shares</parameter> to
+<quote>yes</quote> in the [global] section and global configuration options are
+activated by setting <smbconfoption name="include">registry</smbconfoption> in
+the [global] section.
+See the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+<manvolnum>5</manvolnum></citerefentry> manpage for details.
+</para>
+
+<para>The conf commands are:
+<simplelist>
+<member>net conf list - Dump the complete configuration in smb.conf like
+format.</member>
+<member>net conf import - Import configuration from file in smb.conf
+format.</member>
+<member>net conf listshares - List the registry shares.</member>
+<member>net conf drop - Delete the complete configuration from
+registry.</member>
+<member>net conf showshare - Show the definition of a registry share.</member>
+<member>net conf addshare - Create a new registry share.</member>
+<member>net conf delshare - Delete a registry share.</member>
+<member>net conf setparm - Store a parameter.</member>
+<member>net conf getparm - Retrieve the value of a parameter.</member>
+<member>net conf delparm - Delete a parameter.</member>
+</simplelist>
+</para>
+
+<refsect3>
+<title>CONF LIST</title>
+
+<para>
+Print the configuration data stored in the registry in a smb.conf-like format to
+standard output.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF IMPORT <replaceable>[--test|-T]</replaceable> <replaceable>filename</replaceable> <replaceable>[section]</replaceable></title>
+
+<para>
+This command imports configuration from a file in smb.conf format.
+If a section encountered in the input file is present in registry,
+its contents is replaced. Sections of registry configuration that have
+no counterpart in the input file are not affected. If you want to delete these,
+you will have to use the "net conf drop" or "net conf delshare" commands.
+Optionally, a section may be specified to restrict the effect of the
+import command to that specific section. A test mode is enabled by specifying
+the parameter "-T" on the commandline. In test mode, no changes are made to the
+registry, and the resulting configuration is printed to standard output instead.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF LISTSHARES</title>
+
+<para>
+List the names of the shares defined in registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF DROP</title>
+
+<para>
+Delete the complete configuration data from registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF SHOWSHARE <replaceable>sharename</replaceable></title>
+
+<para>
+Show the definition of the share or section specified. It is valid to specify
+"global" as sharename to retrieve the global configuration options from
+registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF ADDSHARE <replaceable>sharename</replaceable> <replaceable>path</replaceable> [<replaceable>writeable={y|N}</replaceable> [<replaceable>guest_ok={y|N}</replaceable> [<replaceable>comment</replaceable>]]] </title>
+
+<para>Create a new share definition in registry.
+The sharename and path have to be given. The share name may
+<emphasis>not</emphasis> be "global". Optionally, values for the very
+common options "writeable", "guest ok" and a "comment" may be specified.
+The same result may be obtained by a sequence of "net conf setparm"
+commands.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF DELSHARE <replaceable>sharename</replaceable></title>
+
+<para>
+Delete a share definition from registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF SETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable> <replaceable>value</replaceable></title>
+
+<para>
+Store a parameter in registry. The section may be global or a sharename.
+The section is created if it does not exist yet.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF GETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
+
+<para>
+Show a parameter stored in registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF DELPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
+
+<para>
+Delete a parameter stored in registry.
+</para>
+</refsect3>
+
+<refsect3>
+<title></title>
+
+<para>
+</para>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
