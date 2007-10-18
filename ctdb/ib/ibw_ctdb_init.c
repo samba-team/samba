@@ -177,6 +177,12 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 	return rc;
 }
 
+static void ctdb_ibw_restart(struct ctdb_node *node)
+{
+	/* TODO: implement this method for IB */
+	DEBUG(0,("WARNING: method restart is not yet implemented for IB\n"));
+}
+
 /*
  * transport packet allocator - allows transport to control memory for packets
  */
@@ -204,6 +210,7 @@ static const struct ctdb_methods ctdb_ibw_methods = {
 	.queue_pkt = ctdb_ibw_queue_pkt,
 	.add_node = ctdb_ibw_add_node,
 	.allocate_pkt = ctdb_ibw_allocate_pkt,
+	.restart      = ctdb_ibw_restart,
 
 //	.stop = ctdb_ibw_stop
 };

@@ -120,7 +120,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	node->pnn = ctdb->num_nodes;
 
 	/* nodes start out disconnected and unhealthy */
-	node->flags |= NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY;
+	node->flags = (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY);
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
@@ -338,9 +338,12 @@ void ctdb_node_dead(struct ctdb_node *node)
 	node->flags |= NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY;
 	node->rx_cnt = 0;
 	node->dead_count = 0;
-	DEBUG(1,("%s: node %s is dead: %u connected\n", 
+
+	DEBUG(0,("%s: node %s is dead: %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 	ctdb_daemon_cancel_controls(node->ctdb, node);
+
+	node->ctdb->methods->restart(node);
 }
 
 /*
