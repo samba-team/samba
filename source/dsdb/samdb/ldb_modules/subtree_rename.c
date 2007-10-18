@@ -79,20 +79,26 @@ static struct subtree_rename_context *subtree_rename_init_handle(struct ldb_requ
 
 static int subtree_rename_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares) 
 {
+	struct ldb_request *req;
+	struct subtree_rename_context *ac = talloc_get_type(context, struct subtree_rename_context);
+	TALLOC_CTX *mem_ctx = talloc_new(ac);
+    
+	if (!mem_ctx) {
+		ldb_oom(ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	/* OK, we have one of *many* search results here:
 
 	   We should also get the entry we tried to rename.  This
 	   callback handles this and everything below it.
 	 */
 
-	if (ares->type == LDB_REPLY_ENTRY) {
+	/* Only entries are interesting, and we handle the case of the parent seperatly */
+	if (ares->type == LDB_REPLY_ENTRY
+	    && ldb_dn_compare(ares->message->dn, ac->orig_req->op.rename.olddn) != 0) {
 		/* And it is an actual entry: now create a rename from it */
-		struct subtree_rename_context *ac = talloc_get_type(context, struct subtree_rename_context);
-		struct ldb_request *req;
 		int ret;
 
-		TALLOC_CTX *mem_ctx = talloc_new(ac);
-		
 		struct ldb_dn *newdn = ldb_dn_copy(mem_ctx, ares->message->dn);
 		if (!newdn) {
 			ldb_oom(ac->module->ldb);
@@ -118,26 +124,30 @@ static int subtree_rename_search_callback(struct ldb_context *ldb, void *context
 		talloc_steal(req, newdn);
 
 		talloc_steal(req, ares->message->dn);
-
-		talloc_free(ares);
-
-		ac->down_req = talloc_realloc(ac, ac->down_req, 
-					      struct ldb_request *, ac->num_requests + 1);
-		if (!ac->down_req) {
-			ldb_oom(ac->module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		ac->down_req[ac->num_requests] = req;
-		ac->num_requests++;
 		
-		return ldb_next_request(ac->module, req);
+		talloc_free(ares);
+		
+	} else if (ares->type == LDB_REPLY_DONE) {
+		req = talloc(mem_ctx, struct ldb_request);
+		*req = *ac->orig_req;
+		talloc_free(ares);
 
 	} else {
 		talloc_free(ares);
+		return LDB_SUCCESS;
 	}
-
-	return LDB_SUCCESS;
-
+	
+	ac->down_req = talloc_realloc(ac, ac->down_req, 
+				      struct ldb_request *, ac->num_requests + 1);
+	if (!ac->down_req) {
+		ldb_oom(ac->module->ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac->down_req[ac->num_requests] = req;
+	ac->num_requests++;
+	
+	return ldb_next_request(ac->module, req);
+	
 }
 
 /* rename */
@@ -148,7 +158,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	struct subtree_rename_context *ac;
 	int ret;
 	struct ldb_search_options_control *search_options;
-	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.rename.olddn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
 
@@ -174,6 +184,10 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 				   req->controls,
 				   ac, 
 				   subtree_rename_search_callback);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* We want to find any partitions under this entry.  That way,
 	 * if we try and rename a whole partition, the partitions
@@ -237,8 +251,6 @@ static int subtree_rename_wait_none(struct ldb_handle *handle) {
 			return LDB_SUCCESS;
 		}
 	}
-
-	ret = LDB_SUCCESS;
 
 done:
 	handle->state = LDB_ASYNC_DONE;
