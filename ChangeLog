@@ -1,4 +1,7 @@
-2007-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-10-18  Love  <lha@stacken.kth.se>
+
+	* kdc/kerberos5.c (get_pa_etype_info2): more paranoia, avoid
+	sending warning about pruned etypes.
 
 	* kdc/kerberos5.c (older_enctype): old windows enctypes (arcfour
 	based) "old", this to support windows 2000 clients (unjoined to a
