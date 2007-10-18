@@ -965,15 +965,16 @@ function provision_guess()
 					"operational",
 					"objectclass",
 					"rdn_name",
+					"subtree_rename",
 					"show_deleted",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
 	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
-	subobj.DOMAINDN_MOD = "subtree_rename,pdc_fsmo,password_hash";
-	subobj.CONFIGDN_MOD = "subtree_rename,naming_fsmo";
-	subobj.SCHEMADN_MOD = "subtree_rename,schema_fsmo";
+	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
+	subobj.CONFIGDN_MOD = "naming_fsmo";
+	subobj.SCHEMADN_MOD = "schema_fsmo";
 	subobj.DOMAINDN_MOD2 = ",objectguid";
 	subobj.CONFIGDN_MOD2 = ",objectguid";
 	subobj.SCHEMADN_MOD2 = ",objectguid";
