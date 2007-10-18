@@ -120,7 +120,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	node->pnn = ctdb->num_nodes;
 
 	/* nodes start out disconnected and unhealthy */
-	node->flags |= NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY;
+	node->flags = (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY);
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
