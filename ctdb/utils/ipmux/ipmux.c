@@ -223,7 +223,7 @@ int main(int argc, const char *argv[])
 		   about this packet any more
 		*/
 		ret = sendto(s, &ipqp->payload[0], ipqp->data_len, 0, &ipmux_nodes[hash].sin, sizeof(struct sockaddr_in));
-		ipq_set_verdict(ipqh, ipqp->packet_id, NF_STOLEN, 0, pktbuf);
+		ipq_set_verdict(ipqh, ipqp->packet_id, NF_DROP, 0, pktbuf);
 
 	}
 

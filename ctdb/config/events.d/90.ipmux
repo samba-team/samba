@@ -22,6 +22,17 @@ case $cmd in
 	;;
 
      shutdown)
+	# remove the ip
+	ip addr del $CTDB_SINGLE_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+
+	# remove any iptables rules
+	/sbin/iptables -D INPUT -i $CTDB_PUBLIC_INTERFACE -d $CTDB_SINGLE_PUBLIC_IP -j DROP 2> /dev/null
+
+	# kill off any ipmux processes
+	killall -9 ctdb_ipmux >/dev/null 2>/dev/null
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
      takeip)
@@ -63,6 +74,9 @@ case $cmd in
 	iptables -I INPUT 1 -d $CTDB_SINGLE_PUBLIC_IP -i $CTDB_PUBLIC_INTERFACE -j QUEUE >/dev/null 2>/dev/null
 
 	ctdb_ipmux &
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
       monitor)
