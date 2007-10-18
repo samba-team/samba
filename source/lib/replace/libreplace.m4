@@ -137,23 +137,20 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
 fi
 
-dnl test for struct addrinfo
-AC_CACHE_CHECK([for struct addrinfo],samba_cv_HAVE_STRUCT_ADDRINFO,[
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
+AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
+AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
+AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
+AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
+AC_HAVE_TYPE([struct sockaddr_storage], [
 #include <sys/socket.h>
-#include <netdb.h>],
-[
-struct addrinfo ai;
-],
-samba_cv_HAVE_STRUCT_ADDRINFO=yes,samba_cv_HAVE_STRUCT_ADDRINFO=no)])
-if test x"$samba_cv_HAVE_STRUCT_ADDRINFO" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_ADDRINFO,1,[Whether the system has struct addrinfo])
-fi
+#include <sys/types.h>
+#include <netinet/in.h>
+])
+AC_HAVE_TYPE([struct sockaddr_in6], [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+])
 
 dnl test for getaddrinfo/getnameinfo
 AC_CACHE_CHECK([for getaddrinfo],samba_cv_HAVE_GETADDRINFO,[
@@ -184,18 +181,6 @@ if test x"$samba_cv_HAVE_GETADDRINFO" = x"yes"; then
     AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
     AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
 fi
-
-
-dnl Provided by replace.c:
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>], 
-[socklen_t foo;],,
-[AC_DEFINE(socklen_t, int,[Socket length type])])
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
