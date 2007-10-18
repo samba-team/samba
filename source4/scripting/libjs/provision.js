@@ -500,7 +500,7 @@ function provision_fix_subobj(subobj, paths)
 	if (subobj.REALM_CONF == undefined) {
 		subobj.REALM_CONF = subobj.REALM;
 	}
-	if (subobj.SERVERROLE != "domain controller") {
+	if (strlower(subobj.SERVERROLE) != strlower("domain controller")) {
 		subobj.REALM = subobj.HOSTNAME;
 		subobj.DOMAIN = subobj.HOSTNAME;
 	}
@@ -590,9 +590,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
 		var smbconfsuffix;
-		if (subobj.SERVERROLE == "domain controller") {
+		if (strlower(subobj.SERVERROLE) == strlower("domain controller")) {
 			smbconfsuffix = "dc";
-		} else if (subobj.SERVERROLE == "member server") {
+		} else if (strlower(subobj.SERVERROLE) == strlower("member server")) {
 			smbconfsuffix = "member";
 		} else {
 			smbconfsuffix = subobj.SERVERROLE;
@@ -750,7 +750,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Setting up sam.ldb users and groups\n");
 	setup_add_ldif("provision_users.ldif", info, samdb, false);
 
-	if (subobj.SERVERROLE == "domain controller") {
+	if (strlower(subobj.SERVERROLE) == strlower("domain controller")) {
 		message("Setting up self join\n");
 		setup_add_ldif("provision_self_join.ldif", info, samdb, false);
 		setup_add_ldif("provision_group_policy.ldif", info, samdb, false);
@@ -838,7 +838,7 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 function provision_dns(subobj, message, paths, session_info, credentials)
 {
 	var lp = loadparm_init();
-	if (subobj.SERVERROLE != "domain controller") {
+	if (strlower(subobj.SERVERROLE) != strlower("domain controller")) {
 		message("No DNS zone required for role %s\n", subobj.SERVERROLE);
 		return;
 	}
@@ -971,7 +971,7 @@ function provision_guess()
 	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
-	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
+	subobj.DOMAINDN_MOD = "subtree_rename,pdc_fsmo,password_hash";
 	subobj.CONFIGDN_MOD = "naming_fsmo";
 	subobj.SCHEMADN_MOD = "schema_fsmo";
 	subobj.DOMAINDN_MOD2 = ",objectguid";
@@ -1142,7 +1142,7 @@ function provision_validate(subobj, message)
 		return false;
 	}
 
-	if (strupper(lp.get("server role")) != strupper(subobj.SERVERROLE)) {
+	if (strlower(lp.get("server role")) != strlower(subobj.SERVERROLE)) {
 		message("server role '%s' in smb.conf must match chosen role '%s'\n",
 			lp.get("server role"), subobj.SERVERROLE);
 		return false;
