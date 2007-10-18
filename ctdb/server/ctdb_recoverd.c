@@ -806,6 +806,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
 
+	DEBUG(0, (__location__ " Starting do_recovery\n"));
+
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
@@ -1510,6 +1512,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_recoverd *rec;
 	struct ctdb_all_public_ips *ips;
 	char c;
+
+	DEBUG(0,("monitor_cluster starting\n"));
 
 	rec = talloc_zero(ctdb, struct ctdb_recoverd);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
