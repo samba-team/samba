@@ -108,11 +108,23 @@ static int rap_file_info(int argc, const char **argv)
 
 static int rap_file_user(int argc, const char **argv)
 {
+	struct cli_state *cli;
+	int ret;
+
 	if (argc == 0)
 		return net_rap_file_usage(argc, argv);
 
-	d_fprintf(stderr, "net rap file user not implemented yet\n");
-	return -1;
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		return -1;
+
+	/* list open files */
+
+	d_printf("\nEnumerating open files on remote server:\n\n"
+		 "\nFileId  Opened by            Perms  Locks  Path \n"
+		 "------  ---------            -----  -----  ---- \n");
+	ret = cli_NetFileEnum(cli, argv[0], NULL, file_fn);
+	cli_shutdown(cli);
+	return ret;
 }
 
 int net_rap_file(int argc, const char **argv)
@@ -132,10 +144,10 @@ int net_rap_file(int argc, const char **argv)
                         return -1;
 
 		/* list open files */
-		d_printf(
-		 "\nEnumerating open files on remote server:\n\n"\
-		 "\nFileId  Opened by            Perms  Locks  Path \n"\
-		 "------  ---------            -----  -----  ---- \n");
+
+		d_printf("\nEnumerating open files on remote server:\n\n"
+			 "\nFileId  Opened by            Perms  Locks  Path \n"
+			 "------  ---------            -----  -----  ---- \n");
 		ret = cli_NetFileEnum(cli, NULL, NULL, file_fn);
 		cli_shutdown(cli);
 		return ret;

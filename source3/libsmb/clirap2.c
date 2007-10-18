@@ -1021,7 +1021,10 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
 *             False     - failure
 *
 ****************************************************************************/
-int cli_NetFileEnum(struct cli_state *cli, char * user, char * base_path, void (*fn)(const char *, const char *, uint16, uint16, uint32))
+int cli_NetFileEnum(struct cli_state *cli, const char * user,
+		    const char * base_path,
+		    void (*fn)(const char *, const char *, uint16, uint16,
+			       uint32))
 {
   char *rparam = NULL;
   char *rdata = NULL;
