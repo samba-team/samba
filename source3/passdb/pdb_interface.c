@@ -347,14 +347,6 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 			smb_nscd_flush_user_cache();
 		}
 
-#ifdef ENABLE_BUILD_FARM_HACKS
-		if (add_ret != 0) {
-			DEBUG(1, ("Creating a faked user %s for build farm "
-				  "purposes\n", name));
-			faked_create_user(name);
-		}
-#endif
-
 		flush_pwnam_cache();
 
 		pwd = Get_Pwnam_alloc(tmp_ctx, name);
