@@ -366,11 +366,13 @@ static void ldap_connect_got_sock(struct composite_context *ctx, struct ldap_con
 	/* setup a handler for events on this socket */
 	conn->event.fde = event_add_fd(conn->event.event_ctx, conn->sock, 
 				       socket_get_fd(conn->sock), 
-				       EVENT_FD_READ, ldap_io_handler, conn);
+				       EVENT_FD_READ | EVENT_FD_AUTOCLOSE, ldap_io_handler, conn);
 	if (conn->event.fde == NULL) {
 		composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
+
+	socket_set_flags(conn->sock, SOCKET_FLAG_NOCLOSE);
 
 	talloc_steal(conn, conn->sock);
 	if (conn->ldaps) {
