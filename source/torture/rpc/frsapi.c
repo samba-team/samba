@@ -24,6 +24,7 @@
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_frsapi_c.h"
 #include "torture/util.h"
+#include "param/param.h"
 
 static bool test_GetDsPollingIntervalW(struct torture_context *tctx,
 				       struct dcerpc_pipe *p,
@@ -150,16 +151,17 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 		FRSAPI_REPLICA_SET_TYPE_DOMAIN,
 		FRSAPI_REPLICA_SET_TYPE_DFS };
 	int i;
+	bool ret = true;
 
 	if (!test_IsPathReplicated_err(tctx, p, NULL, 0,
 				       WERR_FRS_INVALID_SERVICE_PARAMETER)) {
-		return false;
+		ret = false;
 	}
 
 	for (i=0; i<ARRAY_SIZE(lvls); i++) {
 		if (!_test_IsPathReplicated(tctx, p, dcerpc_server_name(p),
 					    lvls[i])) {
-			return false;
+			ret = false;
 		}
 	}
 
@@ -167,7 +169,7 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 		const char *path = talloc_asprintf(tctx, "\\\\%s\\SYSVOL",
 						   dcerpc_server_name(p));
 		if (!_test_IsPathReplicated(tctx, p, path, lvls[i])) {
-			return false;
+			ret = false;
 		}
 	}
 
@@ -175,9 +177,32 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 		if (!_test_IsPathReplicated(tctx, p,
 					    "C:\\windows\\sysvol\\domain",
 					    lvls[i])) {
-			return false;
+			ret = false;
 		}
 	}
+
+	return ret;
+}
+
+static bool test_ForceReplication(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	struct frsapi_ForceReplication r;
+
+	ZERO_STRUCT(r);
+
+	r.in.guid1 = NULL;
+	r.in.guid2 = NULL;
+	r.in.replica_set = talloc_asprintf(tctx, "%s",
+					   lp_realm(global_loadparm));
+	r.in.partner_name = dcerpc_server_name(p);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_frsapi_ForceReplication(p, tctx, &r),
+		"ForceReplication failed");
+
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "ForceReplication failed");
 
 	return true;
 }
@@ -196,6 +221,10 @@ struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 
 	test = torture_rpc_tcase_add_test(tcase, "IsPathReplicated",
 					  test_IsPathReplicated);
+
+	test = torture_rpc_tcase_add_test(tcase, "ForceReplication",
+					  test_ForceReplication);
+
 
 	return suite;
 }
