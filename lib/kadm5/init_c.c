@@ -354,7 +354,7 @@ _kadm5_c_get_cred_cache(krb5_context context,
 		krb5_set_error_string(context, "Unable to find local user name");
 		return KADM5_FAILURE;
 	    }
-	    ret = krb5_make_principal(context, &client, 
+	    ret = krb5_make_principal(context, &default_client, 
 				      NULL, user, "admin", NULL);
 	    if(ret)
 		return ret;
