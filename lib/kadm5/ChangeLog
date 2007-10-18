@@ -1,3 +1,8 @@
+2007-10-18  Love  <lha@stacken.kth.se>
+
+	* init_c.c: We are getting default_client, not client. this way
+	the user can override the result.
+	
 2007-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* iprop.8: fix spelling, From Antoine Jacoutt.
