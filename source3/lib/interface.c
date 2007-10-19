@@ -339,7 +339,7 @@ bool make_netmask(struct sockaddr_storage *pss_out,
 {
 	*pss_out = *pss_in;
 	/* Now apply masklen bits of mask. */
-#if defined(AF_INET6)
+#if defined(HAVE_IPV6)
 	if (pss_in->ss_family == AF_INET6) {
 		char *p = (char *)&((struct sockaddr_in6 *)pss_out)->sin6_addr;
 		unsigned int i;
@@ -386,7 +386,7 @@ static void make_bcast_or_net(struct sockaddr_storage *pss_out,
 	*pss_out = *pss_in;
 
 	/* Set all zero netmask bits to 1. */
-#if defined(AF_INET6)
+#if defined(HAVE_IPV6)
 	if (pss_in->ss_family == AF_INET6) {
 		p = (char *)&((struct sockaddr_in6 *)pss_out)->sin6_addr;
 		pmask = (char *)&((struct sockaddr_in6 *)nmask)->sin6_addr;
