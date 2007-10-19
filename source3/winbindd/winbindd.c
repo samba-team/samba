@@ -613,8 +613,8 @@ static void request_len_recv(void *private_data, bool success)
 	}
 
 	if (*(uint32 *)(&state->request) != sizeof(state->request)) {
-		DEBUG(0,("request_len_recv: Invalid request size received: %d\n",
-			 *(uint32 *)(&state->request)));
+		DEBUG(0,("request_len_recv: Invalid request size received: %d (expected %u)\n",
+			 *(uint32_t *)(&state->request), (uint32_t)sizeof(state->request)));
 		state->finished = True;
 		return;
 	}

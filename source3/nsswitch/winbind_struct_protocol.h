@@ -326,7 +326,7 @@ struct winbindd_request {
 		   The size is the sizeof the union without the padding aligned on 
 		   an 8 byte boundary.   --jerry */
 
-		char padding[1560];
+		char padding[1800];
 	} data;
 	union {
 		SMB_TIME_T padding;
