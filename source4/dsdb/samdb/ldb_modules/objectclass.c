@@ -218,12 +218,14 @@ static int objectclass_sort(struct ldb_module *module,
 	} while (parent_class);
 
 	if (!unsorted) {
+		*sorted_out = sorted;
 		return LDB_SUCCESS;
 	}
 
 	if (!schema) {
 		/* If we don't have schema yet, then just merge the lists again */
 		DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
+		*sorted_out = sorted;
 		return LDB_SUCCESS;
 	}
 
