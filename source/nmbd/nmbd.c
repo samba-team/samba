@@ -681,23 +681,31 @@ static bool open_sockets(bool isdaemon, int port)
 /**************************************************************************** **
  main program
  **************************************************************************** */
+
  int main(int argc, const char *argv[])
 {
-	static int is_daemon;
-	static int Fork = True;
-	static int log_stdout;
+	static bool is_daemon;
+	static bool opt_interactive;
+	static bool Fork = true;
+	static bool no_process_group;
+	static bool log_stdout;
 	pstring logfile;
-	static int opt_interactive;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
-	static int no_process_group = False;
 	int opt;
+	enum {
+		OPT_DAEMON = 1000,
+		OPT_INTERACTIVE,
+		OPT_FORK,
+		OPT_NO_PROCESS_GROUP,
+		OPT_LOG_STDOUT
+	};
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
-	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
+	{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON, "Become a daemon(default)" },
+	{"interactive", 'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE, "Run interactive (not a daemon)" },
+	{"foreground", 'F', POPT_ARG_NONE, NULL, OPT_FORK, "Run daemon in foreground (for daemontools & etc)" },
+	{"no-process-group", 0, POPT_ARG_NONE, NULL, OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
@@ -712,6 +720,21 @@ static bool open_sockets(bool isdaemon, int port)
 	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_DAEMON:
+			is_daemon = true;
+			break;
+		case OPT_INTERACTIVE:
+			opt_interactive = true;
+			break;
+		case OPT_FORK:
+			Fork = false;
+			break;
+		case OPT_NO_PROCESS_GROUP:
+			no_process_group = true;
+			break;
+		case OPT_LOG_STDOUT:
+			log_stdout = true;
+			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));

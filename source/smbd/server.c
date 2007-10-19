@@ -882,24 +882,30 @@ extern void build_options(bool screen);
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	static int is_daemon = False;
-	static int interactive = False;
-	static int Fork = True;
-	static int no_process_group = False;
-	static int log_stdout = False;
+	static bool is_daemon = False;
+	static bool interactive = False;
+	static bool Fork = True;
+	static bool no_process_group = False;
+	static bool log_stdout = False;
 	static char *ports = NULL;
 	static char *profile_level = NULL;
 	int opt;
 	poptContext pc;
 	bool print_build_options = False;
-
+        enum {
+		OPT_DAEMON = 1000,
+		OPT_INTERACTIVE,
+		OPT_FORK,
+		OPT_NO_PROCESS_GROUP,
+		OPT_LOG_STDOUT
+	};
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
-	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools, etc.)" },
-	{"no-process-group", '\0', POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
-	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
+	{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON, "Become a daemon (default)" },
+	{"interactive", 'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE, "Run interactive (not a daemon)"},
+	{"foreground", 'F', POPT_ARG_NONE, NULL, OPT_FORK, "Run daemon in foreground (for daemontools, etc.)" },
+	{"no-process-group", '\0', POPT_ARG_NONE, NULL, OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
+	{"log-stdout", 'S', POPT_ARG_NONE, NULL, OPT_LOG_STDOUT, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
 	{"profiling-level", 'P', POPT_ARG_STRING, &profile_level, 0, "Set profiling level","PROFILE_LEVEL"},
@@ -919,6 +925,21 @@ extern void build_options(bool screen);
 	pc = poptGetContext("smbd", argc, argv, long_options, 0);
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
+		case OPT_DAEMON:
+			is_daemon = true;
+			break;
+		case OPT_INTERACTIVE:
+			interactive = true;
+			break;
+		case OPT_FORK:
+			Fork = false;
+			break;
+		case OPT_NO_PROCESS_GROUP:
+			no_process_group = true;
+			break;
+		case OPT_LOG_STDOUT:
+			log_stdout = true;
+			break;
 		case 'b':
 			print_build_options = True;
 			break;

@@ -30,8 +30,8 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-static bool demo_mode = False;
-static bool passwd_only = False;
+static int demo_mode = False;
+static int passwd_only = False;
 static bool have_write_access = False;
 static bool have_read_access = False;
 static int iNumNonAutoPrintServices = 0;

@@ -102,8 +102,8 @@ extern const char *opt_user_name;
 extern const char *opt_password;
 extern bool opt_user_specified;
 
-extern bool opt_localgroup;
-extern bool opt_domaingroup;
+extern int opt_localgroup;
+extern int opt_domaingroup;
 extern const char *opt_newntname;
 extern int opt_rid;
 extern int opt_acls;
@@ -111,9 +111,9 @@ extern int opt_attrs;
 extern int opt_timestamps;
 extern const char *opt_exclude;
 extern const char *opt_destination;
-extern bool opt_testmode;
+extern int opt_testmode;
 
-extern bool opt_have_ip;
+extern int opt_have_ip;
 extern struct in_addr opt_dest_ip;
 
 extern const char *share_type[];

@@ -984,18 +984,24 @@ static void process_loop(void)
 int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
-	static int is_daemon = False;
-	static int Fork = True;
-	static int log_stdout = False;
-	static int no_process_group = False;
+	static bool is_daemon = False;
+	static bool Fork = True;
+	static bool log_stdout = False;
+	static bool no_process_group = False;
+	enum {
+		OPT_DAEMON = 1000,
+		OPT_FORK,
+		OPT_NO_PROCESS_GROUP,
+		OPT_LOG_STDOUT
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
-		{ "no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
-		{ "daemon", 'D', POPT_ARG_NONE, NULL, 'D', "Become a daemon (default)" },
+		{ "stdout", 'S', POPT_ARG_NONE, NULL, OPT_LOG_STDOUT, "Log to stdout" },
+		{ "foreground", 'F', POPT_ARG_NONE, NULL, OPT_FORK, "Daemon in foreground mode" },
+		{ "no-process-group", 0, POPT_ARG_NONE, NULL, OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
+		{ "daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON, "Become a daemon (default)" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
+		{ "no-caching", 'n', POPT_ARG_NONE, NULL, 'n', "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -1034,13 +1040,25 @@ int main(int argc, char **argv, char **envp)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 			/* Don't become a daemon */
-		case 'D':
+		case OPT_DAEMON:
 			is_daemon = True;
 			break;
 		case 'i':
 			interactive = True;
 			log_stdout = True;
 			Fork = False;
+			break;
+                case OPT_FORK:
+			Fork = false;
+			break;
+		case OPT_NO_PROCESS_GROUP:
+			no_process_group = true;
+			break;
+		case OPT_LOG_STDOUT:
+			log_stdout = true;
+			break;
+		case 'n':
+			opt_nocache = true;
 			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",

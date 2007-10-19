@@ -30,7 +30,7 @@ static struct in_addr bcast_addr;
 static bool recursion_desired = False;
 static bool translate_addresses = False;
 static int ServerFD= -1;
-static int RootPort = False;
+static bool RootPort = False;
 static bool find_status=False;
 
 /****************************************************************************
@@ -201,14 +201,14 @@ int main(int argc,char *argv[])
   struct poptOption long_options[] = {
 	  POPT_AUTOHELP
 	  { "broadcast", 'B', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
-	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
+	  { "flags", 'f', POPT_ARG_NONE, NULL, 'f', "List the NMB flags returned" },
 	  { "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
-	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
-	  { "recursion", 'R', POPT_ARG_VAL, &recursion_desired, True, "Set recursion desired in package" },
-	  { "status", 'S', POPT_ARG_VAL, &find_status, True, "Lookup node status as well" },
+	  { "master-browser", 'M', POPT_ARG_NONE, NULL, 'M', "Search for a master browser" },
+	  { "recursion", 'R', POPT_ARG_VAL, NULL, 'R', "Set recursion desired in package" },
+	  { "status", 'S', POPT_ARG_VAL, NULL, 'S', "Lookup node status as well" },
 	  { "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
-	  { "root-port", 'r', POPT_ARG_VAL, &RootPort, True, "Use root port 137 (Win95 only replies to this)" },
-	  { "lookup-by-ip", 'A', POPT_ARG_VAL, &lookup_by_ip, True, "Do a node status on <name> as an IP Address" },
+	  { "root-port", 'r', POPT_ARG_VAL, NULL, 'r', "Use root port 137 (Win95 only replies to this)" },
+	  { "lookup-by-ip", 'A', POPT_ARG_VAL, NULL, 'A', "Do a node status on <name> as an IP Address" },
 	  POPT_COMMON_SAMBA
 	  POPT_COMMON_CONNECTION
 	  { 0, 0, 0, 0 }
@@ -227,6 +227,24 @@ int main(int argc,char *argv[])
 
   while ((opt = poptGetNextOpt(pc)) != -1) {
 	  switch (opt) {
+	  case 'f':
+		  give_flags = true;
+		  break;
+	  case 'M':
+		  find_master = true;
+		  break;
+	  case 'R':
+		  recursion_desired = true;
+		  break;
+	  case 'S':
+		  find_status = true;
+		  break;
+	  case 'r':
+		  RootPort = true;
+		  break;
+	  case 'A':
+		  lookup_by_ip = true;
+		  break;
 	  case 'B':
 		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
 		  got_bcast = True;

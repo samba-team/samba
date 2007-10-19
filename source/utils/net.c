@@ -74,9 +74,9 @@ int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
-bool opt_localgroup = False;
-bool opt_domaingroup = False;
-static bool do_talloc_report=False;
+int opt_localgroup = False;
+int opt_domaingroup = False;
+static int do_talloc_report=False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
@@ -84,9 +84,9 @@ int opt_attrs = 0;
 int opt_timestamps = 0;
 const char *opt_exclude = NULL;
 const char *opt_destination = NULL;
-bool opt_testmode = False;
+int opt_testmode = False;
 
-bool opt_have_ip = False;
+int opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
 extern bool AllowDebugChange;
