@@ -984,10 +984,10 @@ static void process_loop(void)
 int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
-	static bool is_daemon = False;
-	static bool Fork = True;
-	static bool log_stdout = False;
-	static bool no_process_group = False;
+	static int is_daemon = False;
+	static int Fork = True;
+	static int log_stdout = False;
+	static int no_process_group = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },

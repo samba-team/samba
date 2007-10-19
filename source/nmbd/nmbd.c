@@ -31,15 +31,6 @@ extern bool global_in_nmbd;
 
 extern bool override_logfile;
 
-/* are we running as a daemon ? */
-static bool is_daemon;
-
-/* fork or run in foreground ? */
-static bool Fork = True;
-
-/* log to standard output ? */
-static bool log_stdout;
-
 /* have we found LanMan clients yet? */
 bool found_lm_clients = False;
 
@@ -692,11 +683,14 @@ static bool open_sockets(bool isdaemon, int port)
  **************************************************************************** */
  int main(int argc, const char *argv[])
 {
+	static int is_daemon;
+	static int Fork = True;
+	static int log_stdout;
 	pstring logfile;
-	static bool opt_interactive;
+	static int opt_interactive;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
-	static bool no_process_group = False;
+	static int no_process_group = False;
 	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
