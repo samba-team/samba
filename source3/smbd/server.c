@@ -882,11 +882,11 @@ extern void build_options(bool screen);
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	static bool is_daemon = False;
-	static bool interactive = False;
-	static bool Fork = True;
-	static bool no_process_group = False;
-	static bool log_stdout = False;
+	static int is_daemon = False;
+	static int interactive = False;
+	static int Fork = True;
+	static int no_process_group = False;
+	static int log_stdout = False;
 	static char *ports = NULL;
 	static char *profile_level = NULL;
 	int opt;
