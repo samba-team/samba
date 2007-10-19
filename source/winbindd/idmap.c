@@ -362,9 +362,9 @@ NTSTATUS idmap_init(void)
 
 	if ( ! dom_list) {
 		/* generate a list with our main domain */
-		char ** dl;
+		const char ** dl;
 
-		dl = talloc_array(idmap_ctx, char *, 2);
+		dl = talloc_array(idmap_ctx, const char *, 2);
 		if (dl == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
