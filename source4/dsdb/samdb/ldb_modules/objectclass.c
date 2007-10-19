@@ -217,16 +217,14 @@ static int objectclass_sort(struct ldb_module *module,
 		 * the bottom here */
 	} while (parent_class);
 
-	/* This shouldn't happen, and would break MMC, but we can't
-	 * afford to loose objectClasses.  Perhaps there was no 'top',
-	 * or some other schema error? 
-	 *
-	 * Detecting schema errors is the job of the schema module, so
-	 * at this layer we just try not to loose data
- 	 */
-	DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
-
-	*sorted_out = sorted;
+	if (unsorted) {
+		/* This shouldn't happen, and would break MMC, but we can't
+		 * afford to loose objectClasses.  Perhaps there was no 'top',
+		 * or some other schema error? 
+		 */
+		ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
 	return LDB_SUCCESS;
 }
 
@@ -397,6 +395,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	case LDB_FLAG_MOD_DELETE:
 		/* Delete everything?  Probably totally illigal, but hey! */
 		if (objectclass_element->num_values == 0) {
+			
 			return ldb_next_request(module, req);
 		}
 		break;
@@ -474,6 +473,10 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	}
 	}
 
+	/* This isn't the default branch of the switch, but a 'in any
+	 * other case'.  When a delete isn't for all objectClasses for
+	 * example
+	 */
 	{
 		struct ldb_handle *h;
 		struct oc_context *ac;
