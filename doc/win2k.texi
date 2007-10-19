@@ -216,7 +216,7 @@ database.  Make sure it has a DES key.
 @item Run @kbd{ktutil add} to add the key for that principal to a
 keytab.
 @item Run @kbd{appl/test/nt_gss_server -p 2000 -s authsamp
---dump-auth=@var{file}} where @var{file} is an appropriate file.
+@kbd{--dump-auth}=@var{file}} where @var{file} is an appropriate file.
 @item It should authenticate and dump for you the authorisation data in
 the file.
 @item The tool @kbd{lib/asn1/asn1_print} is somewhat useful for

@@ -606,7 +606,7 @@ To read more about the requirements, see RFC3920, Extensible Messaging
 and Presence Protocol (XMPP): Core.
 
 hxtool issue-certificate have support to add jid to the certificate
-using the option --jid.
+using the option @kbd{--jid}.
 
 @example
 hxtool issue-certificate \

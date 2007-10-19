@@ -127,14 +127,14 @@ Verifying password - Master key:
 @end example
 
 If you want to generate a random master key you can use the
---random-key flag to kstash. This will make sure you have a good key
+@kbd{--random-key} flag to kstash. This will make sure you have a good key
 on which attackers can't do a dictionary attack.
 
 If you have a master key, make sure you make a backup of your master
 key file; without it backups of the database are of no use.
 
 To initialise the database use the @command{kadmin} program, with the
-@samp{-l} option (to enable local database mode). First issue a
+@kbd{-l} option (to enable local database mode). First issue a
 @kbd{init MY.REALM} command. This will create the database and insert
 default principals for that realm. You can have more than one realm in
 one database, so @samp{init} does not destroy any old database.
@@ -1048,7 +1048,7 @@ lha/admin@@EXAMPLE.ORG's Password:
 @end example
 
 To get a Kerberos credential file for the service, use kinit in the
---keytab mode. This will not ask for a password but instead fetch the
+@kbd{--keytab} mode. This will not ask for a password but instead fetch the
 key from the keytab.
 
 @example
