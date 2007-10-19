@@ -2,6 +2,8 @@
 
 	* su.c: read environment from _PATH_ETC_ENVIRONMENT
 
+	* supaths.c: paths
+
 2007-08-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* su.c: Check all local realms when su-ing, from Magnus Holmberg.
