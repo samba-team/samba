@@ -99,11 +99,7 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 
 	DEBUG(0,("Tearing down connection to dead node :%d\n", node->pnn));
 
-	if (tnode->fd == -1) {
-		close(tnode->fd);
-		tnode->fd = -1;
-	}
-
+	tnode->fd = -1;
 	ctdb_queue_set_fd(tnode->out_queue, -1);
 
 	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
