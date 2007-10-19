@@ -1,0 +1,58 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal 0.6-7\n"
+"POT-Creation-Date: 2004-02-27 10:15-0800\n"
+"PO-Revision-Date: 2004-03-02 11:40+0100\n"
+"Last-Translator: Rémi Pannequin <remi.pannequin@laposte.net>\n"
+"Language-Team: French <debian-l10n-french@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-15\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Local realm name:"
+msgstr "Nom de l'aire (« realm ») locale :"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid ""
+"Heimdal requires the name of your local realm. This is typically your domain "
+"name in uppercase. eg if your hostname is host.org.com, then your realm will "
+"become ORG.COM. The default for your host is ${default_realm}."
+msgstr ""
+"Typiquement, le nom de l'aire (« realm ») est votre nom de domaine, en "
+"lettres majuscules. Par exemple, si votre nom d'hôte est « host.org.com », "
+"alors le nom de l'aire sera « ORG.COM ». La valeur par défaut pour votre "
+"hôte est « ${default_realm} »."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Password for KDC:"
+msgstr "Mot de passe pour KDC :"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid ""
+"Heimdal can encrypt the KDC data with a password. A hashed representation "
+"will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr ""
+"Heimdal peut chiffrer les données KDC avec un mot de passe. Une "
+"représentation hachée sera enregistrée dans « /var/lib/heimdal-kdc/m-key »."

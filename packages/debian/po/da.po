@@ -1,0 +1,59 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans#
+#    Developers do not need to manually edit POT or PO files.
+# Claus Hindsgaul <claus_h@image.dk>, 2005.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal debconf\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-02-27 10:15-0800\n"
+"PO-Revision-Date: 2005-02-26 10:15+0100\n"
+"Last-Translator: Claus Hindsgaul <claus_h@image.dk>\n"
+"Language-Team: Danish <dansk@klid.dk>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.9.1\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Local realm name:"
+msgstr "okalt områdenavn:"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid ""
+"Heimdal requires the name of your local realm. This is typically your domain "
+"name in uppercase. eg if your hostname is host.org.com, then your realm will "
+"become ORG.COM. The default for your host is ${default_realm}."
+msgstr ""
+"Heimdal skal bruge navnet på dit lokale område (\"realm\"). Det er typisk dit "
+"domænenavn skrevet med store bogstaver. Hvis dit værtsnavn f.eks. er maskine.org.dk, "
+"vil dit område blive til ORG.DK. Standardværdien for din maskine er ${default_realm}."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Password for KDC:"
+msgstr "Adgangskode for KDC:"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid ""
+"Heimdal can encrypt the KDC data with a password. A hashed representation "
+"will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr ""
+"Heimdal kan kryptere KDC-dataene med en adgangskode. Det vil blive gemt i en "
+"sløret udgave i /var/lib/heimdal-kdc/m-key."
+

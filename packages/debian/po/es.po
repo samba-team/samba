@@ -1,0 +1,74 @@
+# heimdal po-debconf translation to Spanish
+# Copyright (C) 2005 Software in the Public Interest
+# This file is distributed under the same license as the heimdal package.
+# 
+# Changes:
+#  - Initial translation
+#         César Gómez Martín <cesar.gomez@gmail.com>
+# 
+#   Traductores, si no conoce el formato PO, merece la pena leer la
+#   documentación de gettext, especialmente las secciones dedicadas a este
+#   formato, por ejemplo ejecutando:
+#          info -n '(gettext)PO Files'
+#          info -n '(gettext)Header Entry'
+# Equipo de traducción al español, por favor, lean antes de traducir
+# los siguientes documentos:
+# 
+#  - El proyecto de traducción de Debian al español
+#    http://www.debian.org/intl/spanish/
+#    especialmente las notas de traducción en
+#    http://www.debian.org/intl/spanish/notas
+# 
+#  - La guía de traducción de po's de debconf:
+#    /usr/share/doc/po-debconf/README-trans
+#    o http://www.debian.org/intl/l10n/po-debconf/README-trans
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal 0.6.3-13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2006-12-14 04:31+0100\n"
+"PO-Revision-Date: 2005-12-05 12:47+0100\n"
+"Last-Translator: César Gómez Martín <cesar.gomez@gmail.com>\n"
+"Language-Team: Debian l10n spanish <debian-l10n-spanish@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Spanish\n"
+"X-Poedit-Country: SPAIN\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:1001
+msgid "Local realm name:"
+msgstr "Nombre del dominio local:"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:1001
+msgid ""
+"Heimdal requires the name of your local realm. This is typically your domain "
+"name in uppercase. eg if your hostname is host.org.com, then your realm will "
+"become ORG.COM. The default for your host is ${default_realm}."
+msgstr ""
+"Heimdal necesita el nombre de su dominio local. Esto se refiere normalmente "
+"al nombre de su dominio en mayúsculas. i.e. si su máquina es maquina.org."
+"com, entonces su dominio será ORG.COM. El dominio por omisión para su "
+"máquina es ${default_realm}."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:2001
+msgid "Password for KDC:"
+msgstr "Contraseña para KDC:"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:2001
+msgid ""
+"Heimdal can encrypt the KDC data with a password. A hashed representation "
+"will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr ""
+"Heimdal puede cifrar los datos KDC con una contraseña. Una representación "
+"hash se almacenará en /var/lib/heimdal-kdc/m-key."

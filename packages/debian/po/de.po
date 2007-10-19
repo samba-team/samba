@@ -1,0 +1,61 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans#
+#    Developers do not need to manually edit POT or PO files.
+# Erik Schanze <mail@erikschanze.de>, 2004.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal_0.6.3-4_de\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-02-27 10:15-0800\n"
+"PO-Revision-Date: 2004-12-05 23:49+0100\n"
+"Last-Translator: Erik Schanze <mail@erikschanze.de>\n"
+"Language-Team: German <debian-l10n-german@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.3.1\n"
+"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Local realm name:"
+msgstr "Ihr \"local realm\"-Name:"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid ""
+"Heimdal requires the name of your local realm. This is typically your domain "
+"name in uppercase. eg if your hostname is host.org.com, then your realm will "
+"become ORG.COM. The default for your host is ${default_realm}."
+msgstr ""
+"Heimdal benötigt den Namen Ihres \"local realm\", bzw. lokalen Reichs. Das "
+"ist üblicherweise Ihr Domänen-Name in Großbuchstaben. Wenn z.B. Ihr "
+"Rechnername \"host.org.com\" lautet, dann ist Ihr realm \"ORG.COM\". Die "
+"Standardeinstellung für Ihren Rechner ist ${default_realm}."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Password for KDC:"
+msgstr "Passwort für KDC:"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid ""
+"Heimdal can encrypt the KDC data with a password. A hashed representation "
+"will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr ""
+"Heimdal kann die Daten des KDC mit einem Passwort verschlüsseln. Ein Hash "
+"davon wird in der Datei /var/lib/heimdal-kdc/m-key abgelegt."
+

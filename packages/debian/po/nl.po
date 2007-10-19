@@ -1,0 +1,48 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal 0.6.2-3\n"
+"POT-Creation-Date: 2004-02-27 10:15-0800\n"
+"PO-Revision-Date: 2004-08-01 14:39+0100\n"
+"Last-Translator: Luk Claes <luk.claes@ugent.be>\n"
+"Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Local realm name:"
+msgstr "Lokale realm-naam:"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Heimdal requires the name of your local realm. This is typically your domain name in uppercase. eg if your hostname is host.org.com, then your realm will become ORG.COM. The default for your host is ${default_realm}."
+msgstr "Heimdal heeft de naam van uw lokale realm nodig. Dit is typisch uw domeinnaam in hoofdletters, bijvoorbeeld als uw computernaam host.example.com is, dan zal uw realm EXAMPLE.COM zijn. De standaard voor uw computer is ${default_realm}."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Password for KDC:"
+msgstr "Wachtwoord voor KDC:"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Heimdal can encrypt the KDC data with a password. A hashed representation will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr "Heimdal kan de KDC-data versleutelen met een wachtwoord. Er zal een gehashte representatie worden bewaard in /var/lib/heimdal-kdc/m-key."
+

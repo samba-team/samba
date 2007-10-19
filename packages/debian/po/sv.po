@@ -1,0 +1,49 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heimdal 0.7.1-2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-02-27 10:15-0800\n"
+"PO-Revision-Date: 2006-01-11 18:58+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Local realm name:"
+msgstr "Namn på lokala sfären:"
+
+#. Type: string
+#. Description
+#: ../heimdal-kdc.templates:3
+msgid "Heimdal requires the name of your local realm. This is typically your domain name in uppercase. eg if your hostname is host.org.com, then your realm will become ORG.COM. The default for your host is ${default_realm}."
+msgstr "Heimdal kräver namnet på din lokala sfär. Detta är vanligtvis ditt domännamn i versaler. Exempelvis om ditt värdnamn är host.org.com, då är din sfär ORG.COM. Som standard är det ${default_realm} för ditt värdnamn."
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Password for KDC:"
+msgstr "Lösenord för KDC:"
+
+#. Type: password
+#. Description
+#: ../heimdal-kdc.templates:10
+msgid "Heimdal can encrypt the KDC data with a password. A hashed representation will be stored in /var/lib/heimdal-kdc/m-key."
+msgstr "Heimdal kan kryptera KDC-datan med ett lösenord. En hashad variant kommer att lagras i /var/lib/heimdal-kdc/m-key."
+
