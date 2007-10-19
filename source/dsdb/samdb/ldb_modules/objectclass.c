@@ -217,15 +217,22 @@ static int objectclass_sort(struct ldb_module *module,
 		 * the bottom here */
 	} while (parent_class);
 
-	if (unsorted) {
-		/* This shouldn't happen, and would break MMC, but we can't
-		 * afford to loose objectClasses.  Perhaps there was no 'top',
-		 * or some other schema error? 
-		 */
-		ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass);
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	if (!unsorted) {
+		return LDB_SUCCESS;
 	}
-	return LDB_SUCCESS;
+
+	if (!schema) {
+		/* If we don't have schema yet, then just merge the lists again */
+		DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
+		return LDB_SUCCESS;
+	}
+
+	/* This shouldn't happen, and would break MMC, perhaps there
+	 * was no 'top', a conflict in the objectClasses or some other
+	 * schema error?
+	 */
+	ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass);
+	return LDB_ERR_OBJECT_CLASS_VIOLATION;
 }
 
 static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
