@@ -36,6 +36,14 @@
 #ifndef __SU_PATH_H
 #define __SU_PATH_H
 
+#ifndef _PATH_DEFPATH
+#define _PATH_DEFPATH "/usr/bin:/bin"
+#endif
+
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
+#endif
+
 #ifndef _PATH_ETC_ENVIRONMENT
 #define _PATH_ETC_ENVIRONMENT SYSCONFDIR "/environment"
 #endif
