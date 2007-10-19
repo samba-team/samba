@@ -65,13 +65,7 @@ RCSID("$Id$");
 #include <roken.h>
 #include <getarg.h>
 
-#ifndef _PATH_DEFPATH
-#define _PATH_DEFPATH "/usr/bin:/bin"
-#endif
-
-#ifndef _PATH_BSHELL
-#define _PATH_BSHELL "/bin/sh"
-#endif
+#include "supaths.h"
 
 int kerberos_flag = 1;
 int csh_f_flag;
@@ -541,11 +535,23 @@ main(int argc, char **argv)
     if(!env_flag) {
 	if(full_login) {
 	    char *t = getenv ("TERM");
-	    
-	    environ = malloc (10 * sizeof (char *));
+	    char **newenv = NULL;
+	    int i, j;
+
+	    i = read_environment(_PATH_ETC_ENVIRONMENT, &newenv);
+
+	    environ = malloc ((10 + i) * sizeof (char *));
 	    if (environ == NULL)
 		err (1, "malloc");
 	    environ[0] = NULL;
+
+	    for (j = 0; j < i; j++) {
+		char *p = strchr(newenv[j], '=');
+		*p++ = 0;
+		esetenv (newenv[j], p, 1);
+	    }
+	    free(newenv);
+
 	    esetenv ("PATH", _PATH_DEFPATH, 1);
 	    if (t)
 		esetenv ("TERM", t, 1);
