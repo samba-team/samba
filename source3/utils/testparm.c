@@ -199,8 +199,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 {
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
-	static bool silent_mode = False;
-	static bool show_all_parameters = False;
+	static int silent_mode = False;
+	static int show_all_parameters = False;
 	int ret = 0;
 	poptContext pc;
 	static const char *term_code = "";

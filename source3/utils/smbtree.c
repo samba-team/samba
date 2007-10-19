@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static bool use_bcast;
+static int use_bcast;
 
 /* How low can we go? */
 

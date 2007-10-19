@@ -35,8 +35,8 @@
 
 #include <assert.h>
 
-int quiet = 0;
-int hexformat = 0;
+bool quiet = 0;
+bool hexformat = 0;
 
 #define itoa(a) ((a) < 0xa?'0'+(a):'A' + (a-0xa))
 
@@ -233,8 +233,8 @@ int main (int argc, char **argv)
 	int in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "quiet", 'q', POPT_ARG_NONE, &quiet, 0, "Be quiet, don't output warnings" },
-		{ "hex", 'h', POPT_ARG_NONE, &hexformat, 0, "Output format readable by text2pcap" },
+		{ "quiet", 'q', POPT_ARG_NONE, NULL, 'q', "Be quiet, don't output warnings" },
+		{ "hex", 'h', POPT_ARG_NONE, NULL, 'h', "Output format readable by text2pcap" },
 		POPT_TABLEEND
 	};
 	
@@ -245,6 +245,12 @@ int main (int argc, char **argv)
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case 'q':
+			quiet = true;
+			break;
+		case 'h':
+			hexformat = true;
+			break;
 		}
 	}
 

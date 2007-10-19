@@ -413,9 +413,9 @@ SETSTRING:\n\
 UQLIM:<username>/<softlimit>/<hardlimit> for user quotas\n\
 FSQLIM:<softlimit>/<hardlimit> for filesystem defaults\n\
 FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
-		{ "numeric", 'n', POPT_ARG_NONE, &numeric, True, "Don't resolve sids or limits to names" },
-		{ "verbose", 'v', POPT_ARG_NONE, &verbose, True, "be verbose" },
-		{ "test-args", 't', POPT_ARG_NONE, &test_args, True, "Test arguments"},
+		{ "numeric", 'n', POPT_ARG_NONE, NULL, 'n', "Don't resolve sids or limits to names" },
+		{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "be verbose" },
+		{ "test-args", 't', POPT_ARG_NONE, NULL, 'r', "Test arguments"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		{ NULL }
@@ -444,6 +444,15 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case 'n':
+			numeric = true;
+			break;
+		case 'v':
+			verbose = true;
+			break;
+		case 't':
+			test_args = true;
+			break;
 		case 'L':
 			if (todo != 0) {
 				d_printf("Please specify only one option of <-L|-F|-S|-u>\n");

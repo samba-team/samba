@@ -723,13 +723,13 @@ static int delete_machine_entry (struct pdb_methods *in, const char *machinename
 
 int main (int argc, char **argv)
 {
-	static bool list_users = False;
-	static bool verbose = False;
-	static bool spstyle = False;
-	static bool machine = False;
-	static bool add_user = False;
-	static bool delete_user = False;
-	static bool modify_user = False;
+	static int list_users = False;
+	static int verbose = False;
+	static int spstyle = False;
+	static int machine = False;
+	static int add_user = False;
+	static int delete_user = False;
+	static int modify_user = False;
 	uint32	setparms, checkparms;
 	int opt;
 	static char *full_name = NULL;
@@ -740,10 +740,10 @@ int main (int argc, char **argv)
 	static char *backend = NULL;
 	static char *backend_in = NULL;
 	static char *backend_out = NULL;
-	static bool transfer_groups = False;
-	static bool transfer_account_policies = False;
-	static bool reset_account_policies = False;
-	static bool  force_initialised_password = False;
+	static int transfer_groups = False;
+	static int transfer_account_policies = False;
+	static int reset_account_policies = False;
+	static int  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
 	static char *user_domain = NULL;
@@ -752,10 +752,10 @@ int main (int argc, char **argv)
 	static char *user_sid = NULL;
 	static long int account_policy_value = 0;
 	bool account_policy_value_set = False;
-	static bool badpw_reset = False;
-	static bool hours_reset = False;
+	static int badpw_reset = False;
+	static int hours_reset = False;
 	static char *pwd_time_format = NULL;
-	static bool pw_from_stdin = False;
+	static int pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
 	char *configfile = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
