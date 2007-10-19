@@ -199,22 +199,14 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_container **_ccc)
 {
 	krb5_error_code ret;
-	char *rand_string;
 	struct ccache_container *ccc = talloc(cred, struct ccache_container);
 	char *ccache_name;
 	if (!ccc) {
 		return ENOMEM;
 	}
 
-	rand_string = generate_random_str(NULL, 16);
-	if (!rand_string) {
-		talloc_free(ccc);
-		return ENOMEM;
-	}
-
-	ccache_name = talloc_asprintf(ccc, "MEMORY:%s", 
-				      rand_string);
-	talloc_free(rand_string);
+	ccache_name = talloc_asprintf(ccc, "MEMORY:%p", 
+				      ccc);
 
 	if (!ccache_name) {
 		talloc_free(ccc);
