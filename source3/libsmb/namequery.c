@@ -1074,7 +1074,6 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 			&((struct sockaddr_in *)res->ai_addr)->sin_addr);
 
 		*return_count += 1;
-		i++;
 
 		*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
 						struct ip_service,
@@ -1086,6 +1085,8 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 		}
 		(*return_iplist)[i].ip   = return_ip;
 		(*return_iplist)[i].port = PORT_NONE;
+
+		i++;
 	}
 	if (ailist) {
 		freeaddrinfo(ailist);
