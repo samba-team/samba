@@ -39,12 +39,12 @@ extern const DOM_SID global_sid_NULL;
 static char space_replacement = '%';
 
 /* Do we expect SIDs as pts names? */
-static BOOL sidpts;
+static bool sidpts;
 
 extern int afs_syscall(int, char *, int, char *, int);
 
 struct afs_ace {
-	BOOL positive;
+	bool positive;
 	char *name;
 	DOM_SID sid;
 	enum lsa_SidType type;
@@ -65,7 +65,7 @@ struct afs_iob {
 };
 
 
-static BOOL init_afs_acl(struct afs_acl *acl)
+static bool init_afs_acl(struct afs_acl *acl)
 {
 	ZERO_STRUCT(*acl);
 	acl->ctx = talloc_init("afs_acl");
@@ -105,7 +105,7 @@ static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 }
 	
 static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
-				   BOOL positive,
+				   bool positive,
 				   const char *name, uint32 rights)
 {
 	DOM_SID sid;
@@ -188,7 +188,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 }
 
 static void add_afs_ace(struct afs_acl *acl,
-			BOOL positive,
+			bool positive,
 			const char *name, uint32 rights)
 {
 	struct afs_ace *ace;
@@ -227,7 +227,7 @@ static void add_afs_ace(struct afs_acl *acl,
  * Second field: Rights
  */
 
-static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
+static bool parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 {
 	int nplus, nminus;
 	int aces;
@@ -290,7 +290,7 @@ static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 	return True;
 }
 
-static BOOL unparse_afs_acl(struct afs_acl *acl, char *acl_str)
+static bool unparse_afs_acl(struct afs_acl *acl, char *acl_str)
 {
 	/* TODO: String length checks!!!! */
 
@@ -414,7 +414,7 @@ static void split_afs_acl(struct afs_acl *acl,
 	return;
 }
 
-static BOOL same_principal(struct afs_ace *x, struct afs_ace *y)
+static bool same_principal(struct afs_ace *x, struct afs_ace *y)
 {
 	return ( (x->positive == y->positive) &&
 		 (sid_compare(&x->sid, &y->sid) == 0) );
@@ -430,7 +430,7 @@ static void merge_afs_acls(struct afs_acl *dir_acl,
 
 	for (ace = dir_acl->acelist; ace != NULL; ace = ace->next) {
 		struct afs_ace *file_ace;
-		BOOL found = False;
+		bool found = False;
 
 		for (file_ace = file_acl->acelist;
 		     file_ace != NULL;
@@ -450,7 +450,7 @@ static void merge_afs_acls(struct afs_acl *dir_acl,
 
 	for (ace = file_acl->acelist; ace != NULL; ace = ace->next) {
 		struct afs_ace *dir_ace;
-		BOOL already_seen = False;
+		bool already_seen = False;
 
 		for (dir_ace = dir_acl->acelist;
 		     dir_ace != NULL;
@@ -668,7 +668,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	return sd_size;
 }
 
-static BOOL mappable_sid(const DOM_SID *sid)
+static bool mappable_sid(const DOM_SID *sid)
 {
 	DOM_SID domain_sid;
 	
@@ -692,7 +692,7 @@ static BOOL mappable_sid(const DOM_SID *sid)
 	return False;
 }
 
-static BOOL nt_to_afs_acl(const char *filename,
+static bool nt_to_afs_acl(const char *filename,
 			  uint32 security_info_sent,
 			  struct security_descriptor *psd,
 			  uint32 (*nt_to_afs_rights)(const char *filename,
@@ -795,7 +795,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 	return True;
 }
 
-static BOOL afs_get_afs_acl(char *filename, struct afs_acl *acl)
+static bool afs_get_afs_acl(char *filename, struct afs_acl *acl)
 {
 	struct afs_iob iob;
 

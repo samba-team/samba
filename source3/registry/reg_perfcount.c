@@ -314,7 +314,7 @@ static void _reg_perfcount_make_key(TDB_DATA *key,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_isparent(TDB_DATA data)
+static bool _reg_perfcount_isparent(TDB_DATA data)
 {
 	if(data.dsize > 0)
 	{
@@ -329,7 +329,7 @@ static BOOL _reg_perfcount_isparent(TDB_DATA data)
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_ischild(TDB_DATA data)
+static bool _reg_perfcount_ischild(TDB_DATA data)
 {
 	if(data.dsize > 0)
 	{
@@ -364,14 +364,14 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 				      prs_struct *ps,
 				      int num,
 				      TDB_DATA data,
 				      TDB_CONTEXT *names)
 {
 	int i;
-	BOOL success = True;
+	bool success = True;
 	PERF_OBJECT_TYPE *obj;
 
 	block->objects = (PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
@@ -406,7 +406,7 @@ static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-BOOL _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
+bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 {
 	TDB_CONTEXT *counters;
 	const char *fname = counters_directory( DATA_DB );
@@ -468,7 +468,7 @@ static uint32 _reg_perfcount_compute_scale(SMB_BIG_INT data)
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 					    prs_struct *ps,
 					    int CounterIndex,
 					    PERF_OBJECT_TYPE *obj,
@@ -597,7 +597,7 @@ PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind)
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 				       prs_struct *ps,
 				       int num,
 				       TDB_DATA data,
@@ -606,7 +606,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 	char *begin, *end, *start, *stop;
 	int parent;
 	PERF_OBJECT_TYPE *obj;
-	BOOL success = True;
+	bool success = True;
 	char buf[PERFCOUNT_MAX_LEN];
     
 	obj = NULL;
@@ -659,7 +659,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
+bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 				      prs_struct *ps,
 				      int instId,
 				      PERF_OBJECT_TYPE *obj,
@@ -746,7 +746,7 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 /*********************************************************************
 *********************************************************************/
 
-BOOL _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
+bool _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
 				 prs_struct *ps,
 				 int instInd,
 				 TDB_CONTEXT *names)
@@ -775,7 +775,7 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 					  int base_index,
 					  TDB_CONTEXT *names)
 {
-	BOOL success;
+	bool success;
 	int i, j, retval = 0;
 	char keybuf[PERFCOUNT_MAX_LEN];
 	TDB_DATA key, data;
@@ -812,7 +812,7 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_get_64(SMB_BIG_UINT *retval,
+static bool _reg_perfcount_get_64(SMB_BIG_UINT *retval,
 				  TDB_CONTEXT *tdb,
 				  int key_part1,
 				  const char *key_part2)
@@ -841,12 +841,12 @@ static BOOL _reg_perfcount_get_64(SMB_BIG_UINT *retval,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 						TDB_CONTEXT *names)
 {
 	SMB_BIG_UINT PerfFreq, PerfTime, PerfTime100nSec;
 	TDB_CONTEXT *counters;
-	BOOL status = False;
+	bool status = False;
 	const char *fname = counters_directory( DATA_DB );
     
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
@@ -888,7 +888,7 @@ static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
+static bool _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
 					   prs_struct *ps, TDB_CONTEXT *names)
 {
 	wpstring temp;
@@ -1075,7 +1075,7 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
+static bool _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
 {
 	int i;
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_data_block");
@@ -1129,7 +1129,7 @@ static BOOL _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BL
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_perf_counters(prs_struct *ps,
+static bool _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 						  PERF_OBJECT_TYPE object,
 						  int depth)
 {
@@ -1173,7 +1173,7 @@ static BOOL _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_perf_counter_data(prs_struct *ps, 
+static bool _reg_perfcount_marshall_perf_counter_data(prs_struct *ps, 
 						      PERF_COUNTER_BLOCK counter_data, 
 						      int depth)
 {
@@ -1196,7 +1196,7 @@ static BOOL _reg_perfcount_marshall_perf_counter_data(prs_struct *ps,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_perf_instances(prs_struct *ps,
+static bool _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 						   PERF_OBJECT_TYPE object, 
 						   int depth)
 {
@@ -1237,7 +1237,7 @@ static BOOL _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
+static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
 {
 	int obj;
 
@@ -1307,7 +1307,7 @@ static BOOL _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK
 /*********************************************************************
 *********************************************************************/
 
-static BOOL _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
+static bool _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
 {
 	int depth = 0;
 	if(_reg_perfcount_marshall_perf_data_block(ps, block, depth) == True)

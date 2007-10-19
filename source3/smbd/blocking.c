@@ -66,7 +66,7 @@ static void free_blocking_lock_record(blocking_lock_record *blr)
  Determine if this is a secondary element of a chained SMB.
   **************************************************************************/
 
-static BOOL in_chained_smb(void)
+static bool in_chained_smb(void)
 {
 	return (chain_size != 0);
 }
@@ -97,7 +97,7 @@ static void brl_timeout_fn(struct event_context *event_ctx,
  next processing.
 ****************************************************************************/
 
-static BOOL recalc_brl_timeout(void)
+static bool recalc_brl_timeout(void)
 {
 	blocking_lock_record *brl;
 	struct timeval next_timeout;
@@ -148,7 +148,7 @@ static BOOL recalc_brl_timeout(void)
  Function to push a blocking lock request onto the lock queue.
 ****************************************************************************/
 
-BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
+bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		const char *inbuf, int length,
 		files_struct *fsp,
 		int lock_timeout,
@@ -160,7 +160,7 @@ BOOL push_blocking_lock_request( struct byte_range_lock *br_lck,
 		SMB_BIG_UINT count,
 		uint32 blocking_pid)
 {
-	static BOOL set_lock_msg;
+	static bool set_lock_msg;
 	blocking_lock_record *blr;
 	NTSTATUS status;
 
@@ -327,7 +327,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
 	uint32 lock_pid;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
-	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
 	int i;
 
@@ -345,7 +345,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	 */
 	
 	for(i = blr->lock_num - 1; i >= 0; i--) {
-		BOOL err;
+		bool err;
 		
 		lock_pid = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
@@ -404,7 +404,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static BOOL process_lockingX(blocking_lock_record *blr)
+static bool process_lockingX(blocking_lock_record *blr)
 {
 	char *inbuf = blr->inbuf;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
@@ -413,7 +413,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	uint16 num_locks = SVAL(inbuf,smb_vwv7);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
 	uint32 lock_pid;
-	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -426,7 +426,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 
 	for(; blr->lock_num < num_locks; blr->lock_num++) {
 		struct byte_range_lock *br_lck = NULL;
-		BOOL err;
+		bool err;
 
 		lock_pid = get_lock_pid( data, blr->lock_num, large_file_format);
 		count = get_lock_count( data, blr->lock_num, large_file_format);
@@ -494,7 +494,7 @@ Waiting....\n",
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static BOOL process_trans2(blocking_lock_record *blr)
+static bool process_trans2(blocking_lock_record *blr)
 {
 	struct smb_request *req;
 	char params[2];
@@ -546,7 +546,7 @@ static BOOL process_trans2(blocking_lock_record *blr)
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static BOOL blocking_lock_record_process(blocking_lock_record *blr)
+static bool blocking_lock_record_process(blocking_lock_record *blr)
 {
 	switch(blr->com_type) {
 		case SMBlockingX:
@@ -639,7 +639,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
  Is this mid a blocking lock request on the queue ?
 *****************************************************************************/
 
-BOOL blocking_lock_was_deferred(int mid)
+bool blocking_lock_was_deferred(int mid)
 {
 	blocking_lock_record *blr, *next = NULL;
 
@@ -674,7 +674,7 @@ static void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
 	blocking_lock_record *blr, *next = NULL;
-	BOOL recalc_timeout = False;
+	bool recalc_timeout = False;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
@@ -861,7 +861,7 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
  Send ourselves a blocking lock cancelled message. Handled asynchronously above.
 *****************************************************************************/
 
-BOOL blocking_lock_cancel(files_struct *fsp,
+bool blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
 			SMB_BIG_UINT offset,
 			SMB_BIG_UINT count,
@@ -869,7 +869,7 @@ BOOL blocking_lock_cancel(files_struct *fsp,
 			unsigned char locktype,
                         NTSTATUS err)
 {
-	static BOOL initialized;
+	static bool initialized;
 	char msg[MSG_BLOCKING_LOCK_CANCEL_SIZE];
 	blocking_lock_record *blr;
 

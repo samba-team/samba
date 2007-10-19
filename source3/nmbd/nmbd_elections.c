@@ -216,7 +216,7 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
   Determine if I win an election.
 ******************************************************************/
 
-static BOOL win_election(struct work_record *work, int version,
+static bool win_election(struct work_record *work, int version,
                          uint32 criterion, int timeup, const char *server_name)
 {  
 	int mytimeup = time(NULL) - StartupTime;
@@ -328,10 +328,10 @@ done:
   be done by run_elections().
 ***************************************************************************/
 
-BOOL check_elections(void)
+bool check_elections(void)
 {
 	struct subnet_record *subrec;
-	BOOL run_any_election = False;
+	bool run_any_election = False;
 
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;

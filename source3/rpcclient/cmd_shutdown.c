@@ -35,8 +35,8 @@ static NTSTATUS cmd_shutdown_init(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
 	uint32 timeout = 20;
-	BOOL force = False;
-	BOOL reboot = False;
+	bool force = False;
+	bool reboot = False;
 	int opt;
 
 	*msg = 0;

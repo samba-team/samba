@@ -65,7 +65,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static BOOL ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
+static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                           uint8 **ptr, struct dns_query *q )
 {
 	uint8 *p = *ptr;
@@ -103,7 +103,7 @@ static BOOL ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
+static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                        uint8 **ptr, struct dns_rr *rr )
 {
 	uint8 *p = *ptr;
@@ -157,7 +157,7 @@ static BOOL ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
+static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                        uint8 **ptr, struct dns_rr_srv *srv )
 {
 	struct dns_rr rr;
@@ -202,7 +202,7 @@ static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 /*********************************************************************
 *********************************************************************/
 
-static BOOL ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
+static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                        uint8 **ptr, struct dns_rr_ns *nsrec )
 {
 	struct dns_rr rr;
@@ -638,10 +638,10 @@ static char *sitename_key(const char *realm)
  We store indefinately as every new CLDAP query will re-write this.
 ****************************************************************************/
 
-BOOL sitename_store(const char *realm, const char *sitename)
+bool sitename_store(const char *realm, const char *sitename)
 {
 	time_t expire;
-	BOOL ret = False;
+	bool ret = False;
 	char *key;
 
 	if (!gencache_init()) {
@@ -681,7 +681,7 @@ char *sitename_fetch(const char *realm)
 {
 	char *sitename = NULL;
 	time_t timeout;
-	BOOL ret = False;
+	bool ret = False;
 	const char *query_realm;
 	char *key;
 	
@@ -713,9 +713,9 @@ char *sitename_fetch(const char *realm)
  Did the sitename change ?
 ****************************************************************************/
 
-BOOL stored_sitename_changed(const char *realm, const char *sitename)
+bool stored_sitename_changed(const char *realm, const char *sitename)
 {
-	BOOL ret = False;
+	bool ret = False;
 
 	char *new_sitename;
 

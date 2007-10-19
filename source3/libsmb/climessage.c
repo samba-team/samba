@@ -45,7 +45,7 @@ int cli_message_start_build(struct cli_state *cli, char *host, char *username)
 	return(PTR_DIFF(p, cli->outbuf));
 }
 
-BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
+bool cli_message_start(struct cli_state *cli, char *host, char *username,
 			      int *grp)
 {
 	cli_message_start_build(cli, host, username);
@@ -101,7 +101,7 @@ int cli_message_text_build(struct cli_state *cli, char *msg, int len, int grp)
 	return(PTR_DIFF(p, cli->outbuf));
 }
 
-BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
+bool cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 {
 	cli_message_text_build(cli, msg, len, grp);
 
@@ -137,7 +137,7 @@ int cli_message_end_build(struct cli_state *cli, int grp)
 	return(PTR_DIFF(p, cli->outbuf));
 }
 
-BOOL cli_message_end(struct cli_state *cli, int grp)
+bool cli_message_end(struct cli_state *cli, int grp)
 {
 	cli_message_end_build(cli, grp);
 

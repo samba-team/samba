@@ -42,7 +42,7 @@ static TDB_CONTEXT *tdb_stat_cache;
 
 void stat_cache_add( const char *full_orig_name,
 		char *translated_path,
-		BOOL case_sensitive)
+		bool case_sensitive)
 {
 	size_t translated_path_length;
 	TDB_DATA data_val;
@@ -174,7 +174,7 @@ void stat_cache_add( const char *full_orig_name,
  *
  */
 
-BOOL stat_cache_lookup(connection_struct *conn,
+bool stat_cache_lookup(connection_struct *conn,
 			char **pp_name,
 			char **pp_dirpath,
 			char **pp_start,
@@ -182,7 +182,7 @@ BOOL stat_cache_lookup(connection_struct *conn,
 {
 	char *chk_name;
 	size_t namelen;
-	BOOL sizechanged = False;
+	bool sizechanged = False;
 	unsigned int num_components = 0;
 	char *translated_path;
 	size_t translated_path_length;
@@ -390,7 +390,7 @@ unsigned int fast_string_hash(TDB_DATA *key)
  Initializes or clears the stat cache.
 **************************************************************************/
 
-BOOL reset_stat_cache( void )
+bool reset_stat_cache( void )
 {
 	if (!lp_stat_cache())
 		return True;

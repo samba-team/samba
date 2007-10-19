@@ -31,7 +31,7 @@ static void query_name_response( struct subnet_record   *subrec,
                                  struct packet_struct   *p)
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
-	BOOL success = False;
+	bool success = False;
 	struct nmb_name *question_name = &rrec->packet->packet.nmb.question.question_name;
 	struct in_addr answer_ip;
 
@@ -139,7 +139,7 @@ static void query_name_timeout_response(struct subnet_record *subrec,
 {
 	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
 	/* We can only fail here, never succeed. */
-	BOOL failed = True;
+	bool failed = True;
 	struct nmb_name *question_name = &sent_nmb->question.question_name;
 
 	if(rrec->num_msgs != 0) {
@@ -168,7 +168,7 @@ static void query_name_timeout_response(struct subnet_record *subrec,
  name is not there we look for the name on the given subnet.
 ****************************************************************************/
 
-static BOOL query_local_namelists(struct subnet_record *subrec, struct nmb_name *nmbname,
+static bool query_local_namelists(struct subnet_record *subrec, struct nmb_name *nmbname,
                                   struct name_record **namerecp) 
 {
 	struct name_record *namerec;
@@ -192,7 +192,7 @@ static BOOL query_local_namelists(struct subnet_record *subrec, struct nmb_name 
  Try and query for a name.
 ****************************************************************************/
 
-BOOL query_name(struct subnet_record *subrec, const char *name, int type,
+bool query_name(struct subnet_record *subrec, const char *name, int type,
                    query_name_success_function success_fn,
                    query_name_fail_function fail_fn, 
                    struct userdata_struct *userdata)
@@ -254,7 +254,7 @@ BOOL query_name(struct subnet_record *subrec, const char *name, int type,
  Try and query for a name from nmbd acting as a WINS server.
 ****************************************************************************/
 
-BOOL query_name_from_wins_server(struct in_addr ip_to, 
+bool query_name_from_wins_server(struct in_addr ip_to, 
                    const char *name, int type,
                    query_name_success_function success_fn,
                    query_name_fail_function fail_fn, 

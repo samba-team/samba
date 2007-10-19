@@ -129,7 +129,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
  attributes and a user SID.
 *********************************************************************/
 
-static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, BOOL create)
+static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, bool create)
 {
 	const char *guest_account = lp_guestaccount();
 	const char *domain = global_myname();
@@ -298,7 +298,7 @@ char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
 uint32 pdb_decode_acct_ctrl(const char *p)
 {
 	uint32 acct_ctrl = 0;
-	BOOL finished = False;
+	bool finished = False;
 
 	/*
 	 * Check if the account type bits have been encoded after the
@@ -356,7 +356,7 @@ void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
  into a 16 byte array.
 **************************************************************/
 
-BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
+bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
@@ -405,7 +405,7 @@ void pdb_sethexhours(char *p, const unsigned char *hours)
  into a 21 byte array.
 **************************************************************/
 
-BOOL pdb_gethexhours(const char *p, unsigned char *hours)
+bool pdb_gethexhours(const char *p, unsigned char *hours)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
@@ -518,7 +518,7 @@ uint32 algorithmic_pdb_gid_to_group_rid(gid_t gid)
  Decides if a RID is a well known RID.
  ********************************************************************/
 
-static BOOL rid_is_well_known(uint32 rid)
+static bool rid_is_well_known(uint32 rid)
 {
 	/* Not using rid_offset here, because this is the actual
 	   NT fixed value (1000) */
@@ -530,7 +530,7 @@ static BOOL rid_is_well_known(uint32 rid)
  Decides if a RID is a user or group RID.
  ********************************************************************/
 
-BOOL algorithmic_pdb_rid_is_user(uint32 rid)
+bool algorithmic_pdb_rid_is_user(uint32 rid)
 {
 	if ( rid_is_well_known(rid) ) {
 		/*
@@ -549,11 +549,11 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
+bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 			    enum lsa_SidType *type)
 {
 	GROUP_MAP map;
-	BOOL ret;
+	bool ret;
 	
 	/* Windows treats "MACHINE\None" as a special name for 
 	   rid 513 on non-DCs.  You cannot create a user or group
@@ -822,7 +822,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 /*********************************************************************
 *********************************************************************/
 
-BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
+bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -860,9 +860,9 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
-	BOOL ret = True;
+	bool ret = True;
 	fstring tmpstring;
-	BOOL expand_explicit = lp_passdb_expand_explicit();
+	bool expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v3: NULL parameters found!\n"));
@@ -1056,7 +1056,7 @@ done:
 /*********************************************************************
 *********************************************************************/
 
-uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_only)
+uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, bool size_only)
 {
 	size_t len, buflen;
 
@@ -1326,7 +1326,7 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 /*********************************************************************
 *********************************************************************/
 
-BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
+bool pdb_copy_sam_account(struct samu *dst, struct samu *src )
 {
 	uint8 *buf = NULL;
 	int len;
@@ -1360,12 +1360,12 @@ BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
  Update the bad password count checking the AP_RESET_COUNT_TIME 
 *********************************************************************/
 
-BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
+bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
 {
 	time_t LastBadPassword;
 	uint16 BadPasswordCount;
 	uint32 resettime; 
-	BOOL res;
+	bool res;
 
 	BadPasswordCount = pdb_get_bad_password_count(sampass);
 	if (!BadPasswordCount) {
@@ -1406,11 +1406,11 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
  Update the ACB_AUTOLOCK flag checking the AP_LOCK_ACCOUNT_DURATION 
 *********************************************************************/
 
-BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
+bool pdb_update_autolock_flag(struct samu *sampass, bool *updated)
 {
 	uint32 duration;
 	time_t LastBadPassword;
-	BOOL res;
+	bool res;
 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
 		DEBUG(9, ("pdb_update_autolock_flag: Account %s not autolocked, no check needed\n",
@@ -1463,11 +1463,11 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
  Increment the bad_password_count 
 *********************************************************************/
 
-BOOL pdb_increment_bad_password_count(struct samu *sampass)
+bool pdb_increment_bad_password_count(struct samu *sampass)
 {
 	uint32 account_policy_lockout;
-	BOOL autolock_updated = False, badpw_updated = False;
-	BOOL ret;
+	bool autolock_updated = False, badpw_updated = False;
+	bool ret;
 
 	/* Retrieve the account lockout policy */
 	become_root();
@@ -1522,7 +1522,7 @@ BOOL pdb_increment_bad_password_count(struct samu *sampass)
  Wrapper around retrieving the trust account password
 *******************************************************************/
 
-BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
+bool get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 {
 	DOM_SID sid;
 	char *pwd;

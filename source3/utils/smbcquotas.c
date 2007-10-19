@@ -27,8 +27,8 @@ static pstring server;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
-static BOOL numeric;
-static BOOL verbose;
+static bool numeric;
+static bool verbose;
 
 enum todo_values {NOOP_QUOTA=0,FS_QUOTA,USER_QUOTA,LIST_QUOTA,SET_QUOTA};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
@@ -36,13 +36,13 @@ enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 static struct cli_state *cli_ipc;
 static struct rpc_pipe_client *global_pipe_hnd;
 static POLICY_HND pol;
-static BOOL got_policy_hnd;
+static bool got_policy_hnd;
 
 static struct cli_state *connect_one(const char *share);
 
 /* Open cli connection and policy handle */
 
-static BOOL cli_open_policy_hnd(void)
+static bool cli_open_policy_hnd(void)
 {
 	/* Initialise cli LSA connection */
 
@@ -74,7 +74,7 @@ static BOOL cli_open_policy_hnd(void)
 }
 
 /* convert a SID to a string, either numeric or username/group */
-static void SidToString(fstring str, DOM_SID *sid, BOOL _numeric)
+static void SidToString(fstring str, DOM_SID *sid, bool _numeric)
 {
 	char **domains = NULL;
 	char **names = NULL;
@@ -103,11 +103,11 @@ static void SidToString(fstring str, DOM_SID *sid, BOOL _numeric)
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, const char *str)
+static bool StringToSid(DOM_SID *sid, const char *str)
 {
 	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
-	BOOL result = True;
+	bool result = True;
 
 	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
@@ -138,9 +138,9 @@ static int parse_quota_set(pstring set_str, pstring username_str, enum SMB_QUOTA
 {
 	char *p = set_str,*p2;
 	int todo;
-	BOOL stop = False;
-	BOOL enable = False;
-	BOOL deny = False;
+	bool stop = False;
+	bool enable = False;
+	bool deny = False;
 	
 	if (strnequal(set_str,"UQLIM:",6)) {
 		p += 6;
@@ -397,9 +397,9 @@ static struct cli_state *connect_one(const char *share)
 	pstring set_str = {0};
 	enum SMB_QUOTA_TYPE qtype = SMB_INVALID_QUOTA_TYPE;
 	int cmd = 0;
-	static BOOL test_args = False;
+	static bool test_args = False;
 	struct cli_state *cli;
-	BOOL fix_user = False;
+	bool fix_user = False;
 	SMB_NTQUOTA_STRUCT qt;
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;

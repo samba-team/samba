@@ -211,7 +211,7 @@ void creds_server_init(uint32 neg_flags,
  Check a credential sent by the client.
 ****************************************************************************/
 
-BOOL creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in)
+bool creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in)
 {
 	if (memcmp(dc->clnt_chal.data, rcv_cli_chal_in->data, 8)) {
 		DEBUG(5,("creds_server_check: challenge : %s\n", credstr(rcv_cli_chal_in->data)));
@@ -243,9 +243,9 @@ static void creds_reseed(struct dcinfo *dc)
  Step the server credential chain one forward. 
 ****************************************************************************/
 
-BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
+bool creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
 {
-	BOOL ret;
+	bool ret;
 	struct dcinfo tmp_dc = *dc;
 
 	/* Do all operations on a temporary copy of the dc,
@@ -315,7 +315,7 @@ void creds_client_init(uint32 neg_flags,
  Check a credential returned by the server.
 ****************************************************************************/
 
-BOOL creds_client_check(const struct dcinfo *dc, const DOM_CHAL *rcv_srv_chal_in)
+bool creds_client_check(const struct dcinfo *dc, const DOM_CHAL *rcv_srv_chal_in)
 {
 	if (memcmp(dc->srv_chal.data, rcv_srv_chal_in->data, 8)) {
 		DEBUG(5,("creds_client_check: challenge : %s\n", credstr(rcv_srv_chal_in->data)));

@@ -22,7 +22,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static BOOL proxy_svcctl_call(pipes_struct *p, uint8 opnum)
+static bool proxy_svcctl_call(pipes_struct *p, uint8 opnum)
 {
 	struct api_struct *fns;
 	int n_fns;
@@ -43,7 +43,7 @@ static BOOL proxy_svcctl_call(pipes_struct *p, uint8 opnum)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_close_service(pipes_struct *p)
+static bool api_svcctl_close_service(pipes_struct *p)
 {
 	return proxy_svcctl_call( p, NDR_SVCCTL_CLOSESERVICEHANDLE );
 }
@@ -51,7 +51,7 @@ static BOOL api_svcctl_close_service(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_open_scmanager(pipes_struct *p)
+static bool api_svcctl_open_scmanager(pipes_struct *p)
 {
 	SVCCTL_Q_OPEN_SCMANAGER q_u;
 	SVCCTL_R_OPEN_SCMANAGER r_u;
@@ -75,7 +75,7 @@ static BOOL api_svcctl_open_scmanager(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_open_service(pipes_struct *p)
+static bool api_svcctl_open_service(pipes_struct *p)
 {
 	SVCCTL_Q_OPEN_SERVICE q_u;
 	SVCCTL_R_OPEN_SERVICE r_u;
@@ -99,7 +99,7 @@ static BOOL api_svcctl_open_service(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_get_display_name(pipes_struct *p)
+static bool api_svcctl_get_display_name(pipes_struct *p)
 {
 	SVCCTL_Q_GET_DISPLAY_NAME q_u;
 	SVCCTL_R_GET_DISPLAY_NAME r_u;
@@ -123,7 +123,7 @@ static BOOL api_svcctl_get_display_name(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_query_status(pipes_struct *p)
+static bool api_svcctl_query_status(pipes_struct *p)
 {
 	SVCCTL_Q_QUERY_STATUS q_u;
 	SVCCTL_R_QUERY_STATUS r_u;
@@ -147,7 +147,7 @@ static BOOL api_svcctl_query_status(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_enum_services_status(pipes_struct *p)
+static bool api_svcctl_enum_services_status(pipes_struct *p)
 {
 	SVCCTL_Q_ENUM_SERVICES_STATUS q_u;
 	SVCCTL_R_ENUM_SERVICES_STATUS r_u;
@@ -170,7 +170,7 @@ static BOOL api_svcctl_enum_services_status(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_query_service_status_ex(pipes_struct *p)
+static bool api_svcctl_query_service_status_ex(pipes_struct *p)
 {
 	SVCCTL_Q_QUERY_SERVICE_STATUSEX q_u;
 	SVCCTL_R_QUERY_SERVICE_STATUSEX r_u;
@@ -193,7 +193,7 @@ static BOOL api_svcctl_query_service_status_ex(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_enum_dependent_services(pipes_struct *p)
+static bool api_svcctl_enum_dependent_services(pipes_struct *p)
 {
 	SVCCTL_Q_ENUM_DEPENDENT_SERVICES q_u;
 	SVCCTL_R_ENUM_DEPENDENT_SERVICES r_u;
@@ -217,7 +217,7 @@ static BOOL api_svcctl_enum_dependent_services(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_start_service(pipes_struct *p)
+static bool api_svcctl_start_service(pipes_struct *p)
 {
 	SVCCTL_Q_START_SERVICE q_u;
 	SVCCTL_R_START_SERVICE r_u;
@@ -241,7 +241,7 @@ static BOOL api_svcctl_start_service(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_control_service(pipes_struct *p)
+static bool api_svcctl_control_service(pipes_struct *p)
 {
 	SVCCTL_Q_CONTROL_SERVICE q_u;
 	SVCCTL_R_CONTROL_SERVICE r_u;
@@ -265,7 +265,7 @@ static BOOL api_svcctl_control_service(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_query_service_config(pipes_struct *p)
+static bool api_svcctl_query_service_config(pipes_struct *p)
 {
 	SVCCTL_Q_QUERY_SERVICE_CONFIG q_u;
 	SVCCTL_R_QUERY_SERVICE_CONFIG r_u;
@@ -289,7 +289,7 @@ static BOOL api_svcctl_query_service_config(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_query_service_config2(pipes_struct *p)
+static bool api_svcctl_query_service_config2(pipes_struct *p)
 {
 	SVCCTL_Q_QUERY_SERVICE_CONFIG2 q_u;
 	SVCCTL_R_QUERY_SERVICE_CONFIG2 r_u;
@@ -313,7 +313,7 @@ static BOOL api_svcctl_query_service_config2(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_lock_service_db(pipes_struct *p)
+static bool api_svcctl_lock_service_db(pipes_struct *p)
 {
 	SVCCTL_Q_LOCK_SERVICE_DB q_u;
 	SVCCTL_R_LOCK_SERVICE_DB r_u;
@@ -338,7 +338,7 @@ static BOOL api_svcctl_lock_service_db(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_unlock_service_db(pipes_struct *p)
+static bool api_svcctl_unlock_service_db(pipes_struct *p)
 {
 	SVCCTL_Q_UNLOCK_SERVICE_DB q_u;
 	SVCCTL_R_UNLOCK_SERVICE_DB r_u;
@@ -362,7 +362,7 @@ static BOOL api_svcctl_unlock_service_db(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_query_security_sec(pipes_struct *p)
+static bool api_svcctl_query_security_sec(pipes_struct *p)
 {
 	SVCCTL_Q_QUERY_SERVICE_SEC q_u;
 	SVCCTL_R_QUERY_SERVICE_SEC r_u;
@@ -386,7 +386,7 @@ static BOOL api_svcctl_query_security_sec(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_svcctl_set_security_sec(pipes_struct *p)
+static bool api_svcctl_set_security_sec(pipes_struct *p)
 {
 	SVCCTL_Q_SET_SERVICE_SEC q_u;
 	SVCCTL_R_SET_SERVICE_SEC r_u;

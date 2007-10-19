@@ -712,7 +712,7 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 					struct registry_key *parent,
 					const char *path,
-					BOOL del_key)
+					bool del_key)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;

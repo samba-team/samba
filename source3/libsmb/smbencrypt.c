@@ -49,9 +49,9 @@ void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24])
    Returns False if password must have been truncated to create LM hash
 */
 
-BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
+bool SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
-	BOOL ret;
+	bool ret;
 	uchar lm_hash[16];
 
 	ret = E_deshash(passwd, lm_hash); 
@@ -107,9 +107,9 @@ void E_md5hash(const uchar salt[16], const uchar nthash[16], uchar hash_out[16])
  * @note p16 is filled in regardless
  */
  
-BOOL E_deshash(const char *passwd, uchar p16[16])
+bool E_deshash(const char *passwd, uchar p16[16])
 {
-	BOOL ret = True;
+	bool ret = True;
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
 	
@@ -159,9 +159,9 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
-BOOL ntv2_owf_gen(const uchar owf[16],
+bool ntv2_owf_gen(const uchar owf[16],
 		  const char *user_in, const char *domain_in,
-		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
+		  bool upper_case_domain, /* Transform the domain into UPPER case */
 		  uchar kr_buf[16])
 {
 	smb_ucs2_t *user;
@@ -431,7 +431,7 @@ static DATA_BLOB LMv2_generate_response(const uchar ntlm_v2_hash[16],
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_hash[16], 
+bool SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_hash[16], 
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
@@ -470,7 +470,7 @@ BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_
 
 /* Plaintext version of the above. */
 
-BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+bool SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
@@ -490,7 +490,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
  encode a password buffer with a unicode password.  The buffer
  is filled with random data to make it harder to attack.
 ************************************************************/
-BOOL encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
+bool encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
 {
 	uchar new_pw[512];
 	size_t new_pw_len;
@@ -522,7 +522,7 @@ BOOL encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
  returned password including termination.
 ************************************************************/
 
-BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
+bool decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      int string_flags)
 {

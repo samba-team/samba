@@ -29,7 +29,7 @@
  for an eventlog, add in the default values
 *********************************************************************/
 
-BOOL eventlog_init_keys( void )
+bool eventlog_init_keys( void )
 {
 	/* Find all of the eventlogs, add keys for each of them */
 	const char **elogs = lp_eventlog_list(  );
@@ -175,7 +175,7 @@ BOOL eventlog_init_keys( void )
  already exists, change the information (remove, replace)
 *********************************************************************/
 
-BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
+bool eventlog_add_source( const char *eventlog, const char *sourcename,
 			  const char *messagefile )
 {
 	/* Find all of the eventlogs, add keys for each of them */
@@ -191,7 +191,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 	UNISTR2 data;
 	uint16 *msz_wp;
 	int mbytes, ii;
-	BOOL already_in;
+	bool already_in;
 	int i;
 	int numsources;
 

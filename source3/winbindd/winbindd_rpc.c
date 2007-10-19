@@ -869,7 +869,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	SAM_UNK_CTR ctr;
 	NTSTATUS result;
 	POLICY_HND dom_pol;
-	BOOL got_seq_num = False;
+	bool got_seq_num = False;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));

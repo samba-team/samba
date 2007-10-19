@@ -55,7 +55,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	const char *name;
 	struct samu *sampass = NULL;
 	void (*oldsig_handler)(int);
-	extern BOOL in_client;
+	extern bool in_client;
 
 	/* Samba initialization. */
 	load_case_tables();

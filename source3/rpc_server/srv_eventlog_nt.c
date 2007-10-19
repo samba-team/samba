@@ -67,11 +67,11 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
 /********************************************************************
 ********************************************************************/
 
-static BOOL elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
+static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 {
 	char *tdbname = elog_tdbname( info->logname );
 	SEC_DESC *sec_desc;
-	BOOL ret;
+	bool ret;
 	NTSTATUS ntstatus;
 	
 	if ( !tdbname ) 
@@ -117,7 +117,7 @@ static BOOL elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 /********************************************************************
  ********************************************************************/
 
-static BOOL elog_validate_logname( const char *name )
+static bool elog_validate_logname( const char *name )
 {
 	int i;
 	const char **elogs = lp_eventlog_list();
@@ -137,7 +137,7 @@ static BOOL elog_validate_logname( const char *name )
 /********************************************************************
 ********************************************************************/
 
-static BOOL get_num_records_hook( EVENTLOG_INFO * info )
+static bool get_num_records_hook( EVENTLOG_INFO * info )
 {
 	int next_record;
 	int oldest_record;
@@ -167,7 +167,7 @@ static BOOL get_num_records_hook( EVENTLOG_INFO * info )
 /********************************************************************
  ********************************************************************/
 
-static BOOL get_oldest_entry_hook( EVENTLOG_INFO * info )
+static bool get_oldest_entry_hook( EVENTLOG_INFO * info )
 {
 	/* it's the same thing */
 	return get_num_records_hook( info );
@@ -385,7 +385,7 @@ static Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
  since it uses the table to find the tdb handle
  ********************************************************************/
 
-static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
+static bool sync_eventlog_params( EVENTLOG_INFO *info )
 {
 	pstring path;
 	uint32 uiMaxSize;
@@ -543,7 +543,7 @@ static Eventlog_entry *read_package_entry( prs_struct * ps,
 /********************************************************************
  ********************************************************************/
 
-static BOOL add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
+static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 				Eventlog_entry * ee_new )
 {
 	Eventlog_entry *insert_point;

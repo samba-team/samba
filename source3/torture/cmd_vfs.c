@@ -829,7 +829,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	BOOL ret;
+	bool ret;
 	int fd;
 	int op;
 	long offset;

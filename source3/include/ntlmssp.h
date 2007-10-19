@@ -83,8 +83,8 @@ typedef struct ntlmssp_state
 	enum server_types server_role;
 	uint32 expected_state;
 
-	BOOL unicode;
-	BOOL use_ntlmv2;
+	bool unicode;
+	bool use_ntlmv2;
 	char *user;
 	char *domain;
 	char *workstation;
@@ -122,7 +122,7 @@ typedef struct ntlmssp_state
 	 * @return Can the challenge be set to arbitary values?
 	 *
 	 */
-	BOOL (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
+	bool (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
 
 	/**
 	 * Callback to set the 'challenge' used for NTLM authentication.  

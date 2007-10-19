@@ -80,32 +80,32 @@ static char *tarbuf, *buffer_p;
 static int tp, ntarf, tbufsiz;
 static double ttarf;
 /* Incremental mode */
-static BOOL tar_inc=False;
+static bool tar_inc=False;
 /* Reset archive bit */
-static BOOL tar_reset=False;
+static bool tar_reset=False;
 /* Include / exclude mode (true=include, false=exclude) */
-static BOOL tar_excl=True;
+static bool tar_excl=True;
 /* use regular expressions for search on file names */
-static BOOL tar_re_search=False;
+static bool tar_re_search=False;
 /* Do not dump anything, just calculate sizes */
-static BOOL dry_run=False;
+static bool dry_run=False;
 /* Dump files with System attribute */
-static BOOL tar_system=True;
+static bool tar_system=True;
 /* Dump files with Hidden attribute */
-static BOOL tar_hidden=True;
+static bool tar_hidden=True;
 /* Be noisy - make a catalogue */
-static BOOL tar_noisy=True;
-static BOOL tar_real_noisy=False;  /* Don't want to be really noisy by default */
+static bool tar_noisy=True;
+static bool tar_real_noisy=False;  /* Don't want to be really noisy by default */
 
 char tar_type='\0';
 static char **cliplist=NULL;
 static int clipn=0;
-static BOOL must_free_cliplist = False;
+static bool must_free_cliplist = False;
 
 extern file_info def_finfo;
-extern BOOL lowercase;
+extern bool lowercase;
 extern uint16 cnum;
-extern BOOL readbraw_supported;
+extern bool readbraw_supported;
 extern int max_xmit;
 extern pstring cur_dir;
 extern int get_total_time_ms;
@@ -129,7 +129,7 @@ static void initarbuf(void);
 static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix);
 static long unoct(char *p, int ndgs);
 static void do_tarput(void);
-static void unfixtarname(char *tptr, char *fp, int l, BOOL first);
+static void unfixtarname(char *tptr, char *fp, int l, bool first);
 
 /*
  * tar specific utitlities
@@ -512,7 +512,7 @@ static int strslashcmp(char *s1, char *s2)
 Ensure a remote path exists (make if necessary)
 ***************************************************************************/
 
-static BOOL ensurepath(char *fname)
+static bool ensurepath(char *fname)
 {
 	/* *must* be called with buffer ready malloc'ed */
 	/* ensures path exists */
@@ -608,8 +608,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	SMB_BIG_UINT nread=0;
 	char ftype;
 	file_info2 finfo;
-	BOOL close_done = False;
-	BOOL shallitime=True;
+	bool close_done = False;
+	bool shallitime=True;
 	char data[65520];
 	int read_size = 65520;
 	int datalen=0;
@@ -689,7 +689,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		DEBUG(4, ("skipping %s - hidden bit is set\n", finfo.name));
 		shallitime=0;
 	} else {
-		BOOL wrote_tar_header = False;
+		bool wrote_tar_header = False;
 
 		DEBUG(3,("getting file %s of size %.0f bytes as a tar file %s",
 			finfo.name, (double)finfo.size, lname));
@@ -861,7 +861,7 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 Convert from UNIX to DOS file names
 ***************************************************************************/
 
-static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
+static void unfixtarname(char *tptr, char *fp, int l, bool first)
 {
 	/* remove '.' from start of file name, convert from unix /'s to
 	 * dos \'s in path. Kill any absolute path names. But only if first!
@@ -1076,7 +1076,7 @@ static char *get_longfilename(file_info2 finfo)
 	int namesize = finfo.size + strlen(cur_dir) + 2;
 	char *longname = (char *)SMB_MALLOC(namesize);
 	int offset = 0, left = finfo.size;
-	BOOL first = True;
+	bool first = True;
 
 	DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
 	DEBUG(5, ("Len = %.0f\n", (double)finfo.size));

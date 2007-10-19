@@ -43,9 +43,9 @@ struct reg_dyn_tree {
 	
 	/* callbscks for fetch/store operations */
 	int ( *fetch_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
-	BOOL (*store_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
+	bool (*store_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
 	int  (*fetch_values)  ( const char *path, REGVAL_CTR *values );
-	BOOL (*store_values)  ( const char *path, REGVAL_CTR *values );
+	bool (*store_values)  ( const char *path, REGVAL_CTR *values );
 };
 
 /*********************************************************************
@@ -264,7 +264,7 @@ done:
  keyname is the sharename and not the printer name.
  *********************************************************************/
 
-static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
+static bool add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 {
 	int i, num_keys, snum;
 	char *printername;
@@ -299,7 +299,7 @@ static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 /**********************************************************************
  *********************************************************************/
 
-static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	char *printers_key;
 	char *printername, *printerdatakey;
@@ -663,7 +663,7 @@ static void convert_values_to_printer_info_2( NT_PRINTER_INFO_LEVEL_2 *printer2,
 /**********************************************************************
  *********************************************************************/
 
-static BOOL key_printers_store_values( const char *key, REGVAL_CTR *values )
+static bool key_printers_store_values( const char *key, REGVAL_CTR *values )
 {
 	char *printers_key;
 	char *printername, *keyname;
@@ -1184,7 +1184,7 @@ static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 /**********************************************************************
  *********************************************************************/
 
-static BOOL regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	int i = match_registry_path( key );
 	
@@ -1219,7 +1219,7 @@ static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
 /**********************************************************************
  *********************************************************************/
 
-static BOOL regprint_store_reg_values( const char *key, REGVAL_CTR *values )
+static bool regprint_store_reg_values( const char *key, REGVAL_CTR *values )
 {
 	int i = match_registry_path( key );
 	

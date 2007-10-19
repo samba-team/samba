@@ -36,11 +36,11 @@
 
 struct idmap_domain {
 	const char *name;
-	BOOL default_domain;
-	BOOL readonly;
+	bool default_domain;
+	bool readonly;
 	void *private_data;
 	struct idmap_methods *methods;
-	BOOL initialized;
+	bool initialized;
 	const char *params;
 };
 

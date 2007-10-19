@@ -24,7 +24,7 @@
  Send a SMB trans or trans2 request.
 ****************************************************************************/
 
-BOOL cli_send_trans(struct cli_state *cli, int trans, 
+bool cli_send_trans(struct cli_state *cli, int trans, 
 		    const char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, unsigned int lsetup, unsigned int msetup,
@@ -162,7 +162,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
  Receive a SMB trans or trans2 response allocating the necessary memory.
 ****************************************************************************/
 
-BOOL cli_receive_trans(struct cli_state *cli,int trans,
+bool cli_receive_trans(struct cli_state *cli,int trans,
                               char **param, unsigned int *param_len,
                               char **data, unsigned int *data_len)
 {
@@ -170,7 +170,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	unsigned int total_param=0;
 	unsigned int this_data,this_param;
 	NTSTATUS status;
-	BOOL ret = False;
+	bool ret = False;
 
 	*data_len = *param_len = 0;
 
@@ -341,7 +341,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
  Send a SMB nttrans request.
 ****************************************************************************/
 
-BOOL cli_send_nt_trans(struct cli_state *cli, 
+bool cli_send_nt_trans(struct cli_state *cli, 
 		       int function, 
 		       int flags,
 		       uint16 *setup, unsigned int lsetup, unsigned int msetup,
@@ -469,7 +469,7 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
  Receive a SMB nttrans response allocating the necessary memory.
 ****************************************************************************/
 
-BOOL cli_receive_nt_trans(struct cli_state *cli,
+bool cli_receive_nt_trans(struct cli_state *cli,
 			  char **param, unsigned int *param_len,
 			  char **data, unsigned int *data_len)
 {
@@ -478,7 +478,7 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 	unsigned int this_data,this_param;
 	uint8 eclass;
 	uint32 ecode;
-	BOOL ret = False;
+	bool ret = False;
 
 	*data_len = *param_len = 0;
 

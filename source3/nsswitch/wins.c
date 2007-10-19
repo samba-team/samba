@@ -31,7 +31,7 @@
 
 static int initialised;
 
-extern BOOL AllowDebugChange;
+extern bool AllowDebugChange;
 
 NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 			  char *buffer, size_t buflen, int *h_errnop);
@@ -175,7 +175,7 @@ int lookup(nsd_file_t *rq)
 	NODE_STATUS_STRUCT *status;
 	int i, count, len, size;
 	char response[1024];
-	BOOL found = False;
+	bool found = False;
 
 	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
 	if (! rq) 

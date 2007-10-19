@@ -322,7 +322,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
-	BOOL result;
+	bool result;
 	time_t seq_num;
 
 	result = pdb_get_seq_num(&seq_num);

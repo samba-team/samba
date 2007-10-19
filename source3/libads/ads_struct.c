@@ -145,7 +145,7 @@ ADS_STRUCT *ads_init(const char *realm,
 void ads_destroy(ADS_STRUCT **ads)
 {
 	if (ads && *ads) {
-		BOOL is_mine;
+		bool is_mine;
 
 		is_mine = (*ads)->is_mine;
 #if HAVE_LDAP

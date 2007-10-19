@@ -48,7 +48,7 @@ REGISTRY_HOOK reg_hooks[] = {
  Open the registry database and initialize the REGISTRY_HOOK cache
  ***********************************************************************/
  
-BOOL init_registry( void )
+bool init_registry( void )
 {
 	int i;
 	

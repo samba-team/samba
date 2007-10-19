@@ -24,7 +24,7 @@
 /**************************************************************************
  *************************************************************************/
 
-static BOOL trim_tree_keypath( char *path, char **base, char **new_path )
+static bool trim_tree_keypath( char *path, char **base, char **new_path )
 {
 	char *p;
 	
@@ -191,11 +191,11 @@ static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
  Add a new node into the tree given a key path and a blob of data
  *************************************************************************/
 
- BOOL pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
+ bool pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
 {
 	char *str, *base, *path2;
 	TREE_NODE *current, *next;
-	BOOL ret = True;
+	bool ret = True;
 	
 	DEBUG(8,("pathtree_add: Enter\n"));
 		

@@ -99,7 +99,7 @@ ADS_STATUS ads_add_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 /*
   map a REG_SZ to an ldap mod
 */
-static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+static bool map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 			    const REGISTRY_VALUE *value)
 {
 	char *str_value = NULL;
@@ -120,7 +120,7 @@ static BOOL map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 /*
   map a REG_DWORD to an ldap mod
 */
-static BOOL map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+static bool map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		      const REGISTRY_VALUE *value)
 {
 	char *str_value = NULL;
@@ -139,7 +139,7 @@ static BOOL map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 /*
   map a boolean REG_BINARY to an ldap mod
 */
-static BOOL map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
+static bool map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		     const REGISTRY_VALUE *value)
 {
 	char *str_value;
@@ -159,7 +159,7 @@ static BOOL map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 /*
   map a REG_MULTI_SZ to an ldap mod
 */
-static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
+static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			 const REGISTRY_VALUE *value)
 {
 	char **str_values = NULL;
@@ -198,7 +198,7 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 struct valmap_to_ads {
 	const char *valname;
-	BOOL (*fn)(TALLOC_CTX *, ADS_MODLIST *, const REGISTRY_VALUE *);
+	bool (*fn)(TALLOC_CTX *, ADS_MODLIST *, const REGISTRY_VALUE *);
 };
 
 /*
@@ -347,7 +347,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	return result;
 }
 
-BOOL get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
+bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 				       ADS_MODLIST *mods,
 				       NT_PRINTER_DATA *data)
 {

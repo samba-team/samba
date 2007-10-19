@@ -26,7 +26,7 @@
  Check if ACE has OBJECT type.
 ********************************************************************/
 
-BOOL sec_ace_object(uint8 type)
+bool sec_ace_object(uint8 type)
 {
 	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
             type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
@@ -146,7 +146,7 @@ NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32
  Compares two SEC_ACE structures
 ********************************************************************/
 
-BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
+bool sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 {
 	/* Trivial case */
 
@@ -279,7 +279,7 @@ void dacl_sort_into_canonical_order(SEC_ACE *srclist, unsigned int num_aces)
  Check if this ACE has a SID in common with the token.
 ********************************************************************/
 
-BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
+bool token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
 {
 	size_t i;
 

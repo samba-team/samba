@@ -25,8 +25,8 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-BOOL cli_send_mailslot(struct messaging_context *msg_ctx,
-		       BOOL unique, const char *mailslot,
+bool cli_send_mailslot(struct messaging_context *msg_ctx,
+		       bool unique, const char *mailslot,
 		       uint16 priority,
 		       char *buf, int len,
 		       const char *srcname, int src_type, 
@@ -110,7 +110,7 @@ BOOL cli_send_mailslot(struct messaging_context *msg_ctx,
 /*
  * cli_get_response: Get a response ...
  */
-BOOL cli_get_response(const char *mailslot, char *buf, int bufsiz)
+bool cli_get_response(const char *mailslot, char *buf, int bufsiz)
 {
 	struct packet_struct *p;
 

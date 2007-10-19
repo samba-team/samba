@@ -25,7 +25,7 @@
  Creates new name (sym)linked to oldname.
 ****************************************************************************/
 
-static BOOL cli_link_internal(struct cli_state *cli, const char *oldname, const char *newname, BOOL hard_link)
+static bool cli_link_internal(struct cli_state *cli, const char *oldname, const char *newname, bool hard_link)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -168,7 +168,7 @@ static mode_t unix_filetype_from_wire(uint32 wire_type)
  Do a POSIX getfacl (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf)
+bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf)
 {
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
@@ -217,7 +217,7 @@ BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size,
  Stat a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf)
+bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf)
 {
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
@@ -293,7 +293,7 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
  Symlink a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname)
+bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname)
 {
 	return cli_link_internal(cli, oldname, newname, False);
 }
@@ -302,7 +302,7 @@ BOOL cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *ne
  Hard a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname)
+bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname)
 {
 	return cli_link_internal(cli, oldname, newname, True);
 }
@@ -311,7 +311,7 @@ BOOL cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *n
  Chmod or chown a file internal (UNIX extensions).
 ****************************************************************************/
 
-static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32 mode, uint32 uid, uint32 gid)
+static bool cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32 mode, uint32 uid, uint32 gid)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -363,7 +363,7 @@ static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
  chmod a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
+bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 {
 	return cli_unix_chmod_chown_internal(cli, fname, 
 		unix_perms_to_wire(mode), SMB_UID_NO_CHANGE, SMB_GID_NO_CHANGE);
@@ -373,7 +373,7 @@ BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
  chown a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid)
+bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid)
 {
 	return cli_unix_chmod_chown_internal(cli, fname, SMB_MODE_NO_CHANGE, (uint32)uid, (uint32)gid);
 }
@@ -382,7 +382,7 @@ BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t g
  Rename a file.
 ****************************************************************************/
 
-BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+bool cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	char *p;
 
@@ -419,7 +419,7 @@ BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_
  NT Rename a file.
 ****************************************************************************/
 
-BOOL cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+bool cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	char *p;
 
@@ -457,7 +457,7 @@ BOOL cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fnam
  NT hardlink a file.
 ****************************************************************************/
 
-BOOL cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	char *p;
 
@@ -495,7 +495,7 @@ BOOL cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *f
  Delete a file.
 ****************************************************************************/
 
-BOOL cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs)
+bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs)
 {
 	char *p;
 
@@ -531,7 +531,7 @@ BOOL cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs)
  Delete a file.
 ****************************************************************************/
 
-BOOL cli_unlink(struct cli_state *cli, const char *fname)
+bool cli_unlink(struct cli_state *cli, const char *fname)
 {
 	return cli_unlink_full(cli, fname, aSYSTEM | aHIDDEN);
 }
@@ -540,7 +540,7 @@ BOOL cli_unlink(struct cli_state *cli, const char *fname)
  Create a directory.
 ****************************************************************************/
 
-BOOL cli_mkdir(struct cli_state *cli, const char *dname)
+bool cli_mkdir(struct cli_state *cli, const char *dname)
 {
 	char *p;
 
@@ -575,7 +575,7 @@ BOOL cli_mkdir(struct cli_state *cli, const char *dname)
  Remove a directory.
 ****************************************************************************/
 
-BOOL cli_rmdir(struct cli_state *cli, const char *dname)
+bool cli_rmdir(struct cli_state *cli, const char *dname)
 {
 	char *p;
 
@@ -610,7 +610,7 @@ BOOL cli_rmdir(struct cli_state *cli, const char *dname)
  Set or clear the delete on close flag.
 ****************************************************************************/
 
-int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
+int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
 {
 	unsigned int data_len = 1;
 	unsigned int param_len = 6;
@@ -800,7 +800,7 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
  Close a file.
 ****************************************************************************/
 
-BOOL cli_close(struct cli_state *cli, int fnum)
+bool cli_close(struct cli_state *cli, int fnum)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -880,7 +880,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
  note that timeout is in units of 2 milliseconds
 ****************************************************************************/
 
-BOOL cli_lock(struct cli_state *cli, int fnum, 
+bool cli_lock(struct cli_state *cli, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
 	char *p;
@@ -935,7 +935,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
  Unlock a file.
 ****************************************************************************/
 
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
+bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 {
 	char *p;
 
@@ -977,7 +977,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
  Lock a file with 64 bit offsets.
 ****************************************************************************/
 
-BOOL cli_lock64(struct cli_state *cli, int fnum, 
+bool cli_lock64(struct cli_state *cli, int fnum, 
 		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type)
 {
 	char *p;
@@ -1038,7 +1038,7 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
  Unlock a file with 64 bit offsets.
 ****************************************************************************/
 
-BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+bool cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
 {
 	char *p;
 
@@ -1084,8 +1084,8 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
  Get/unlock a POSIX lock on a file - internal function.
 ****************************************************************************/
 
-static BOOL cli_posix_lock_internal(struct cli_state *cli, int fnum, 
-		SMB_BIG_UINT offset, SMB_BIG_UINT len, BOOL wait_lock, enum brl_type lock_type)
+static bool cli_posix_lock_internal(struct cli_state *cli, int fnum, 
+		SMB_BIG_UINT offset, SMB_BIG_UINT len, bool wait_lock, enum brl_type lock_type)
 {
 	unsigned int param_len = 4;
 	unsigned int data_len = POSIX_LOCK_DATA_SIZE;
@@ -1155,9 +1155,9 @@ static BOOL cli_posix_lock_internal(struct cli_state *cli, int fnum,
  POSIX Lock a file.
 ****************************************************************************/
 
-BOOL cli_posix_lock(struct cli_state *cli, int fnum,
+bool cli_posix_lock(struct cli_state *cli, int fnum,
 			SMB_BIG_UINT offset, SMB_BIG_UINT len,
-			BOOL wait_lock, enum brl_type lock_type)
+			bool wait_lock, enum brl_type lock_type)
 {
 	if (lock_type != READ_LOCK && lock_type != WRITE_LOCK) {
 		return False;
@@ -1169,7 +1169,7 @@ BOOL cli_posix_lock(struct cli_state *cli, int fnum,
  POSIX Unlock a file.
 ****************************************************************************/
 
-BOOL cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+bool cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
 {
 	return cli_posix_lock_internal(cli, fnum, offset, len, False, UNLOCK_LOCK);
 }
@@ -1178,7 +1178,7 @@ BOOL cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_
  POSIX Get any lock covering a file.
 ****************************************************************************/
 
-BOOL cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen)
+bool cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen)
 {
 	return True;
 }
@@ -1187,7 +1187,7 @@ BOOL cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, S
  Do a SMBgetattrE call.
 ****************************************************************************/
 
-BOOL cli_getattrE(struct cli_state *cli, int fd, 
+bool cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, SMB_OFF_T *size, 
 		  time_t *change_time,
                   time_t *access_time,
@@ -1240,7 +1240,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
  Do a SMBgetatr call
 ****************************************************************************/
 
-BOOL cli_getatr(struct cli_state *cli, const char *fname, 
+bool cli_getatr(struct cli_state *cli, const char *fname, 
 		uint16 *attr, SMB_OFF_T *size, time_t *write_time)
 {
 	char *p;
@@ -1289,7 +1289,7 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
  Do a SMBsetattrE call.
 ****************************************************************************/
 
-BOOL cli_setattrE(struct cli_state *cli, int fd,
+bool cli_setattrE(struct cli_state *cli, int fd,
 		  time_t change_time,
                   time_t access_time,
                   time_t write_time)
@@ -1332,7 +1332,7 @@ BOOL cli_setattrE(struct cli_state *cli, int fd,
  Do a SMBsetatr call.
 ****************************************************************************/
 
-BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
+bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 {
 	char *p;
 
@@ -1370,7 +1370,7 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 /****************************************************************************
  Check for existance of a dir.
 ****************************************************************************/
-BOOL cli_chkpath(struct cli_state *cli, const char *path)
+bool cli_chkpath(struct cli_state *cli, const char *path)
 {
 	pstring path2;
 	char *p;
@@ -1405,7 +1405,7 @@ BOOL cli_chkpath(struct cli_state *cli, const char *path)
  Query disk space.
 ****************************************************************************/
 
-BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
+bool cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
@@ -1513,7 +1513,7 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *
  Set an extended attribute utility fn.
 *********************************************************/
 
-static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigned int param_len,
+static bool cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigned int param_len,
 			const char *ea_name, const char *ea_val, size_t ea_len)
 {	
 	unsigned int data_len = 0;
@@ -1573,7 +1573,7 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
  Set an extended attribute on a pathname.
 *********************************************************/
 
-BOOL cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
+bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	uint16 setup = TRANSACT2_SETPATHINFO;
 	unsigned int param_len = 0;
@@ -1595,7 +1595,7 @@ BOOL cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
  Set an extended attribute on an fnum.
 *********************************************************/
 
-BOOL cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len)
+bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	char param[6];
 	uint16 setup = TRANSACT2_SETFILEINFO;
@@ -1611,7 +1611,7 @@ BOOL cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const
  Get an extended attribute list tility fn.
 *********************************************************/
 
-static BOOL cli_get_ea_list(struct cli_state *cli,
+static bool cli_get_ea_list(struct cli_state *cli,
 		uint16 setup, char *param, unsigned int param_len,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
@@ -1623,7 +1623,7 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
 	char *p;
 	size_t ea_size;
 	size_t num_eas;
-	BOOL ret = False;
+	bool ret = False;
 	struct ea_struct *ea_list;
 
 	*pnum_eas = 0;
@@ -1736,7 +1736,7 @@ static BOOL cli_get_ea_list(struct cli_state *cli,
  Get an extended attribute list from a pathname.
 *********************************************************/
 
-BOOL cli_get_ea_list_path(struct cli_state *cli, const char *path,
+bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
@@ -1760,7 +1760,7 @@ BOOL cli_get_ea_list_path(struct cli_state *cli, const char *path,
  Get an extended attribute list from an fnum.
 *********************************************************/
 
-BOOL cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
+bool cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
@@ -1832,7 +1832,7 @@ static uint32 open_flags_to_wire(int flags)
  Open a file - POSIX semantics. Returns fnum. Doesn't request oplock.
 ****************************************************************************/
 
-static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int flags, mode_t mode, BOOL is_dir)
+static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int flags, mode_t mode, bool is_dir)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -1911,7 +1911,7 @@ int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
  unlink or rmdir - POSIX semantics.
 ****************************************************************************/
 
-static BOOL cli_posix_unlink_internal(struct cli_state *cli, const char *fname, BOOL is_dir)
+static bool cli_posix_unlink_internal(struct cli_state *cli, const char *fname, bool is_dir)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -1958,7 +1958,7 @@ static BOOL cli_posix_unlink_internal(struct cli_state *cli, const char *fname, 
  unlink - POSIX semantics.
 ****************************************************************************/
 
-BOOL cli_posix_unlink(struct cli_state *cli, const char *fname)
+bool cli_posix_unlink(struct cli_state *cli, const char *fname)
 {
 	return cli_posix_unlink_internal(cli, fname, False);
 }

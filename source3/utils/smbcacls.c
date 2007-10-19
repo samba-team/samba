@@ -32,7 +32,7 @@ static TALLOC_CTX *ctx;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
-static BOOL numeric = False;
+static bool numeric = False;
 
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
@@ -65,13 +65,13 @@ static const struct perm_value standard_values[] = {
 static struct cli_state *global_hack_cli;
 static struct rpc_pipe_client *global_pipe_hnd;
 static POLICY_HND pol;
-static BOOL got_policy_hnd;
+static bool got_policy_hnd;
 
 static struct cli_state *connect_one(const char *share);
 
 /* Open cli connection and policy handle */
 
-static BOOL cacls_open_policy_hnd(void)
+static bool cacls_open_policy_hnd(void)
 {
 	/* Initialise cli LSA connection */
 
@@ -132,11 +132,11 @@ static void SidToString(fstring str, DOM_SID *sid)
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, const char *str)
+static bool StringToSid(DOM_SID *sid, const char *str)
 {
 	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
-	BOOL result = True;
+	bool result = True;
 
 	if (strncmp(str, "S-", 2) == 0) {
 		return string_to_sid(sid, str);
@@ -225,7 +225,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 
 /* parse an ACE in the same format as print_ace() */
-static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
+static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 {
 	char *p;
 	const char *cp;
@@ -323,7 +323,7 @@ static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 	p = tok;
 
 	while(*p) {
-		BOOL found = False;
+		bool found = False;
 
 		for (v = special_values; v->perm; v++) {
 			if (v->perm[0] == *p) {
@@ -354,7 +354,7 @@ static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
+static bool add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 {
 	SEC_ACL *new_ace;
 	SEC_ACE *aces;
@@ -661,7 +661,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	switch (mode) {
 	case SMB_ACL_DELETE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-			BOOL found = False;
+			bool found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->aces[i],
@@ -686,7 +686,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 	case SMB_ACL_MODIFY:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-			BOOL found = False;
+			bool found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sid_equal(&sd->dacl->aces[i].trustee,

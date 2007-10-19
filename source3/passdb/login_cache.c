@@ -28,7 +28,7 @@
 
 static TDB_CONTEXT *cache;
 
-BOOL login_cache_init(void)
+bool login_cache_init(void)
 {
 	char* cache_fname = NULL;
 	
@@ -54,7 +54,7 @@ BOOL login_cache_init(void)
 	return (cache ? True : False);
 }
 
-BOOL login_cache_shutdown(void)
+bool login_cache_shutdown(void)
 {
 	/* tdb_close routine returns -1 on error */
 	if (!cache) return False;
@@ -111,11 +111,11 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	return entry;
 }
 
-BOOL login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
+bool login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 {
 	char *keystr;
 	TDB_DATA databuf;
-	BOOL ret;
+	bool ret;
 
 	if (!login_cache_init())
 		return False;
@@ -161,7 +161,7 @@ BOOL login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 	return ret == 0;
 }
 
-BOOL login_cache_delentry(const struct samu *sampass)
+bool login_cache_delentry(const struct samu *sampass)
 {
 	int ret;
 	char *keystr;

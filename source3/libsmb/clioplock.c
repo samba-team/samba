@@ -22,11 +22,11 @@
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
-BOOL cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
+bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 {
 	char *oldbuf = cli->outbuf;
 	pstring buf;
-	BOOL ret;
+	bool ret;
 
 	cli->outbuf = buf;
 
@@ -59,7 +59,7 @@ BOOL cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 set the oplock handler for a connection
 ****************************************************************************/
 void cli_oplock_handler(struct cli_state *cli, 
-			BOOL (*handler)(struct cli_state *, int, unsigned char))
+			bool (*handler)(struct cli_state *, int, unsigned char))
 {
 	cli->oplock_handler = handler;
 }

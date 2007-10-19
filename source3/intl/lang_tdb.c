@@ -26,7 +26,7 @@ static char *current_lang;
 
 
 /* load a msg file into the tdb */
-static BOOL load_msg(const char *msg_file)
+static bool load_msg(const char *msg_file)
 {
 	char **lines;
 	int num_lines, i;
@@ -93,14 +93,14 @@ static const char *get_lang(void)
 
 /* initialise the message translation subsystem. If the "lang" argument
    is NULL then get the language from the normal environment variables */
-BOOL lang_tdb_init(const char *lang)
+bool lang_tdb_init(const char *lang)
 {
 	char *path = NULL;
 	char *msg_path = NULL;
 	struct stat st;
 	static int initialised;
 	time_t loadtime;
-	BOOL result = False;
+	bool result = False;
 
 	/* we only want to init once per process, unless given
 	   an override */

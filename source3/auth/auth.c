@@ -156,7 +156,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
  *         False otherwise.
 **/
 
-static BOOL check_domain_match(const char *user, const char *domain) 
+static bool check_domain_match(const char *user, const char *domain) 
 {
 	/*
 	 * If we aren't serving to trusted domains, we must make sure that
@@ -366,16 +366,16 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 	return NT_STATUS_OK;
 }
 
-BOOL load_auth_module(struct auth_context *auth_context, 
+bool load_auth_module(struct auth_context *auth_context, 
 		      const char *module, auth_methods **ret) 
 {
-	static BOOL initialised_static_modules = False;
+	static bool initialised_static_modules = False;
 
 	struct auth_init_function_entry *entry;
 	char *module_name = smb_xstrdup(module);
 	char *module_params = NULL;
 	char *p;
-	BOOL good = False;
+	bool good = False;
 
 	/* Initialise static modules if not done so yet */
 	if(!initialised_static_modules) {

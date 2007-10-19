@@ -26,7 +26,7 @@
 #include "includes.h"
 
 extern int  updatecount;
-extern BOOL found_lm_clients;
+extern bool found_lm_clients;
 
 /****************************************************************************
  Send a browser reset packet.

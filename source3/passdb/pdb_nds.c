@@ -740,7 +740,7 @@ int pdb_nds_set_password(
 *********************************************************************/
 
 static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
-					struct samu *sam_acct, BOOL success)
+					struct samu *sam_acct, bool success)
 {
 	struct ldapsam_privates *ldap_state;
 
@@ -763,7 +763,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		char clear_text_pw[512];
 		LDAP *ld = NULL;
 		const char *username = pdb_get_username(sam_acct);
-		BOOL got_clear_text_pw = False;
+		bool got_clear_text_pw = False;
 
 		DEBUG(5,("pdb_nds_update_login_attempts: %s login for %s\n",
 				success ? "Successful" : "Failed", username));

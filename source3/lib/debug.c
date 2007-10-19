@@ -79,15 +79,15 @@
 
 XFILE   *dbf        = NULL;
 pstring debugf     = "";
-BOOL    debug_warn_unknown_class = True;
-BOOL    debug_auto_add_unknown_class = True;
-BOOL    AllowDebugChange = True;
+bool    debug_warn_unknown_class = True;
+bool    debug_auto_add_unknown_class = True;
+bool    AllowDebugChange = True;
 
 /* 
    used to check if the user specified a 
    logfile on the command line 
 */
-BOOL    override_logfile;		
+bool    override_logfile;		
 
 
 /*
@@ -95,11 +95,11 @@ BOOL    override_logfile;
  * system has been initialised.
  */
 static int debug_all_class_hack = 1;
-static BOOL debug_all_class_isset_hack = True;
+static bool debug_all_class_isset_hack = True;
 
 static int debug_num_classes = 0;
 int     *DEBUGLEVEL_CLASS = &debug_all_class_hack;
-BOOL    *DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack;
+bool    *DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack;
 
 /* DEBUGLEVEL is #defined to *debug_level */
 int     DEBUGLEVEL = &debug_all_class_hack;
@@ -132,14 +132,14 @@ int     DEBUGLEVEL = &debug_all_class_hack;
  *                    are unable to open a new log file for some reason.
  */
 
-static BOOL    stdout_logging = False;
+static bool    stdout_logging = False;
 static int     debug_count    = 0;
 #ifdef WITH_SYSLOG
 static int     syslog_level   = 0;
 #endif
 static pstring format_bufr    = { '\0' };
 static size_t     format_pos     = 0;
-static BOOL    log_overflow   = False;
+static bool    log_overflow   = False;
 
 /*
  * Define all the debug class selection names here. Names *MUST NOT* contain 
@@ -211,7 +211,7 @@ static char *debug_list_class_names_and_levels(void)
 	char **list;
 	char *buf = NULL;
 	char *b;
-	BOOL err = False;
+	bool err = False;
 
 	if (DEBUGLEVEL_CLASS == &debug_all_class_hack) {
 		return NULL;
@@ -334,10 +334,10 @@ int debug_add_class(const char *classname)
 	if (new_ptr == &debug_all_class_isset_hack) {
 		new_ptr = NULL;
 	}
-	new_ptr = SMB_REALLOC_ARRAY(new_ptr, BOOL, debug_num_classes + 1);
+	new_ptr = SMB_REALLOC_ARRAY(new_ptr, bool, debug_num_classes + 1);
 	if (!new_ptr)
 		return -1;
-	DEBUGLEVEL_CLASS_ISSET = (int *)new_ptr;
+	DEBUGLEVEL_CLASS_ISSET = (bool *)new_ptr;
 	DEBUGLEVEL_CLASS_ISSET[ndx] = False;
 
 	new_ptr = SMB_REALLOC_ARRAY(classname_table, char *, debug_num_classes + 1);
@@ -403,7 +403,7 @@ static void debug_dump_status(int level)
  printdrivers:7
 ****************************************************************************/
 
-static BOOL debug_parse_params(char **params)
+static bool debug_parse_params(char **params)
 {
 	int   i, ndx;
 	char *class_name;
@@ -445,7 +445,7 @@ static BOOL debug_parse_params(char **params)
  Note: the 1st param has no "name:" preceeding it.
 ****************************************************************************/
 
-BOOL debug_parse_levels(const char *params_str)
+bool debug_parse_levels(const char *params_str)
 {
 	char **params;
 
@@ -525,7 +525,7 @@ Init debugging (one time stuff)
 
 void debug_init(void)
 {
-	static BOOL initialised = False;
+	static bool initialised = False;
 	const char **p;
 
 	if (initialised)
@@ -549,7 +549,7 @@ void debug_register_msgs(struct messaging_context *msg_ctx)
  Get ready for syslog stuff
 **************************************************************************/
 
-void setup_logging(const char *pname, BOOL interactive)
+void setup_logging(const char *pname, bool interactive)
 {
 	debug_init();
 
@@ -591,13 +591,13 @@ void setup_logging(const char *pname, BOOL interactive)
  Fix from dgibson@linuxcare.com.
 **************************************************************************/
 
-BOOL reopen_logs( void )
+bool reopen_logs( void )
 {
 	pstring fname;
 	mode_t oldumask;
 	XFILE *new_dbf = NULL;
 	XFILE *old_dbf = NULL;
-	BOOL ret = True;
+	bool ret = True;
 
 	if (stdout_logging)
 		return True;
@@ -662,7 +662,7 @@ void force_check_log_size( void )
  Check to see if there is any need to check if the logfile has grown too big.
 **************************************************************************/
 
-BOOL need_to_check_log_size( void )
+bool need_to_check_log_size( void )
 {
 	int maxlog;
 
@@ -864,7 +864,7 @@ static void bufr_print( void )
 static void format_debug_text( const char *msg )
 {
 	size_t i;
-	BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || !(lp_loaded())));
+	bool timestamp = (!stdout_logging && (lp_timestamp_logs() || !(lp_loaded())));
 
 	for( i = 0; msg[i]; i++ ) {
 		/* Indent two spaces at each new line. */
@@ -931,7 +931,7 @@ void dbgflush( void )
 
 ****************************************************************************/
 
-BOOL dbghdr(int level, int cls, const char *file, const char *func, int line)
+bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 {
 	/* Ensure we don't lose any real errno value. */
 	int old_errno = errno;
@@ -1015,7 +1015,7 @@ BOOL dbghdr(int level, int cls, const char *file, const char *func, int line)
 
 ***************************************************************************/
 
- BOOL dbgtext( const char *format_str, ... )
+ bool dbgtext( const char *format_str, ... )
 {
 	va_list ap;
 	pstring msgbuf;

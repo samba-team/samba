@@ -45,12 +45,12 @@ END {
 
 /^FN_LOCAL_BOOL/ {
   split($0,a,"[,()]")
-  printf "BOOL %s(int );\n", a[2]
+  printf "bool %s(int );\n", a[2]
 }
 
 /^FN_LOCAL_PARM_BOOL/ {
   split($0,a,"[,()]")
-  printf "BOOL %s(const struct share_params *p );\n", a[2]
+  printf "bool %s(const struct share_params *p );\n", a[2]
 }
 
 /^FN_LOCAL_PARM_INTEGER/ {
@@ -90,7 +90,7 @@ END {
 
 /^FN_GLOBAL_BOOL/ {
   split($0,a,"[,()]")
-  printf "BOOL %s(void);\n", a[2]
+  printf "bool %s(void);\n", a[2]
 }
 
 /^FN_GLOBAL_LIST/ {
@@ -139,7 +139,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^smb_iconv_t|^long|^char|^uint|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^struct|^bool|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^FILE|^XFILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|^SMB_BIG_INT/ ) {
+  if( $0 ~ /^smb_iconv_t|^long|^char|^uint|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^struct|^bool|^void|^time|^smb_shm_offset_t|^shm_offset_t|^FILE|^XFILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|^SMB_BIG_INT/ ) {
     gotstart = 1;
   }
 

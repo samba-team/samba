@@ -369,7 +369,7 @@ static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
 static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t serv_name)
 {
 	ADS_STATUS status;
-	BOOL ok;
+	bool ok;
 	uint32 minor_status;
 	int gss_rc, rc;
 	gss_OID_desc krb5_mech_type =
@@ -746,7 +746,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	char *given_principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 #ifdef HAVE_KRB5
-	BOOL got_kerberos_mechanism = False;
+	bool got_kerberos_mechanism = False;
 #endif
 
 	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);

@@ -72,6 +72,7 @@
 /* Changed to version22 to add lchown operation -- jra */
 /* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
 /* Leave at 22 - not yet released. Add file_id_create operation. --metze */
+/* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -237,11 +238,11 @@ struct vfs_ops {
 		
 		int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle);
-		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, const char *path, BOOL small_query, SMB_BIG_UINT *bsize,
+		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, const char *path, bool small_query, SMB_BIG_UINT *bsize,
 			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 		int (*get_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
-		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
+		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 		int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
 		
 		/* Directory operations */
@@ -280,10 +281,10 @@ struct vfs_ops {
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
 		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset);
-		BOOL (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 share_mode);
 		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int leasetype);
-		BOOL (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
+		bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 		int (*readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 		int (*link)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);

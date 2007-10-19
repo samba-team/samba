@@ -138,10 +138,10 @@ void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, con
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval);
-BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   const char *attribute, char *value,
 				   int max_len);
-BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+bool smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
 				 const char *attribute, pstring value);
 char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
 int smbldap_modify(struct smbldap_state *ldap_state,
@@ -161,11 +161,11 @@ struct smbldap_state {
 	const char *uri;
 
 	/* credentials */
-	BOOL anonymous;
+	bool anonymous;
 	char *bind_dn;
 	char *bind_secret;
 
-	BOOL paged_results;
+	bool paged_results;
 
 	unsigned int num_failures;
 

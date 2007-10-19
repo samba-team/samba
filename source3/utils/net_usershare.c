@@ -188,7 +188,7 @@ static struct file_list *flist;
 /***************************************************************************
 ***************************************************************************/
 
-static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
+static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 {
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_DIRENT *de;
@@ -304,7 +304,7 @@ static int info_fn(struct file_list *fl, void *priv)
 	int num_aces;
 	char sep_str[2];
 	enum usershare_err us_err;
-	BOOL guest_ok = False;
+	bool guest_ok = False;
 
 	sep_str[0] = *lp_winbind_separator();
 	sep_str[1] = '\0';
@@ -419,7 +419,7 @@ static int info_fn(struct file_list *fl, void *priv)
 static int net_usershare_info(int argc, const char **argv)
 {
 	fstring wcard;
-	BOOL only_ours = True;
+	bool only_ours = True;
 	int ret = -1;
 	struct us_priv_info pi;
 	TALLOC_CTX *ctx;
@@ -536,7 +536,7 @@ static int net_usershare_add(int argc, const char **argv)
 	const char *pacl;
 	size_t to_write;
 	uid_t myeuid = geteuid();
-	BOOL guest_ok = False;
+	bool guest_ok = False;
 	int num_usershares;
 
 	us_comment = "";
@@ -857,7 +857,7 @@ static int list_fn(struct file_list *fl, void *priv)
 static int net_usershare_list(int argc, const char **argv)
 {
 	fstring wcard;
-	BOOL only_ours = True;
+	bool only_ours = True;
 	int ret = -1;
 	struct us_priv_info pi;
 	TALLOC_CTX *ctx;

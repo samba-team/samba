@@ -37,12 +37,12 @@ extern userdom_struct current_user_info;
   This is to redirect a DFS client to a host close to it.
 ***********************************************************/
 
-static BOOL read_target_host(const char *mapfile, pstring targethost)
+static bool read_target_host(const char *mapfile, pstring targethost)
 {
 	XFILE *f;
 	pstring buf;
 	char *space = buf;
-	BOOL found = False;
+	bool found = False;
 	
 	f = x_fopen(mapfile, O_RDONLY, 0);
 
@@ -103,7 +103,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 
 ***********************************************************/
 
-static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
+static bool expand_msdfs_target(connection_struct* conn, pstring target)
 {
 	pstring mapfilename;
 	char *filename_start = strchr_m(target, '@');

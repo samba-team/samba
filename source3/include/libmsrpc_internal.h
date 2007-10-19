@@ -29,19 +29,19 @@ struct CacServerHandleInternal {
    uint16 srv_level;
 
    /*stores the initialized/active pipes*/
-   BOOL pipes[PI_MAX_PIPES];
+   bool pipes[PI_MAX_PIPES];
 
    /*underlying smbc context*/
    SMBCCTX *ctx;
 
    /*did the user supply this SMBCCTX?*/
-   BOOL user_supplied_ctx;
+   bool user_supplied_ctx;
 };
 
 /*used to get a struct rpc_pipe_client* to be passed into rpccli* calls*/
 
 /*nessecary prototypes*/
-BOOL rid_in_list(uint32 rid, uint32 *list, uint32 list_len);
+bool rid_in_list(uint32 rid, uint32 *list, uint32 list_len);
 
 int cac_ParseRegPath(char *path, uint32 *reg_type, char **key_name);
 

@@ -75,9 +75,9 @@ static const char *recycle_repository(vfs_handle_struct *handle)
 	return tmp_str;
 }
 
-static BOOL recycle_keep_dir_tree(vfs_handle_struct *handle)
+static bool recycle_keep_dir_tree(vfs_handle_struct *handle)
 {
-	BOOL ret;
+	bool ret;
 	
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "keeptree", False);
 
@@ -86,9 +86,9 @@ static BOOL recycle_keep_dir_tree(vfs_handle_struct *handle)
 	return ret;
 }
 
-static BOOL recycle_versions(vfs_handle_struct *handle)
+static bool recycle_versions(vfs_handle_struct *handle)
 {
-	BOOL ret;
+	bool ret;
 
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "versions", False);
 
@@ -97,9 +97,9 @@ static BOOL recycle_versions(vfs_handle_struct *handle)
 	return ret;
 }
 
-static BOOL recycle_touch(vfs_handle_struct *handle)
+static bool recycle_touch(vfs_handle_struct *handle)
 {
-	BOOL ret;
+	bool ret;
 
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch", False);
 
@@ -108,9 +108,9 @@ static BOOL recycle_touch(vfs_handle_struct *handle)
 	return ret;
 }
 
-static BOOL recycle_touch_mtime(vfs_handle_struct *handle)
+static bool recycle_touch_mtime(vfs_handle_struct *handle)
 {
-	BOOL ret;
+	bool ret;
 
 	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch_mtime", False);
 
@@ -210,7 +210,7 @@ static mode_t recycle_subdir_mode(vfs_handle_struct *handle)
 	return (mode_t)dirmode;
 }
 
-static BOOL recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
+static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
 {
 	SMB_STRUCT_STAT st;
 
@@ -223,7 +223,7 @@ static BOOL recycle_directory_exist(vfs_handle_struct *handle, const char *dname
 	return False;
 }
 
-static BOOL recycle_file_exist(vfs_handle_struct *handle, const char *fname)
+static bool recycle_file_exist(vfs_handle_struct *handle, const char *fname)
 {
 	SMB_STRUCT_STAT st;
 
@@ -260,7 +260,7 @@ static SMB_OFF_T recycle_get_file_size(vfs_handle_struct *handle, const char *fn
  * @param dname Directory tree to be created
  * @return Returns True for success
  **/
-static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
+static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 {
 	size_t len;
 	mode_t mode;
@@ -268,7 +268,7 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	char *tmp_str = NULL;
 	char *token;
 	char *tok_str;
-	BOOL ret = False;
+	bool ret = False;
 
 	mode = recycle_directory_mode(handle);
 
@@ -314,7 +314,7 @@ done:
  * Return True if found
  **/
 
-static BOOL matchdirparam(const char **dir_exclude_list, char *path)
+static bool matchdirparam(const char **dir_exclude_list, char *path)
 {
 	char *startp = NULL, *endp = NULL;
 
@@ -364,7 +364,7 @@ static BOOL matchdirparam(const char **dir_exclude_list, char *path)
  * @param needle string to be matched exectly to haystack including pattern matching
  * @return True if found
  **/
-static BOOL matchparam(const char **haystack_list, const char *needle)
+static bool matchparam(const char **haystack_list, const char *needle)
 {
 	int i;
 
@@ -386,7 +386,7 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
  * Touch access or modify date
  **/
 static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
-			     BOOL touch_mtime)
+			     bool touch_mtime)
 {
 	SMB_STRUCT_STAT st;
 	struct timespec ts[2];
@@ -426,7 +426,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	int i = 1;
 	SMB_OFF_T maxsize, minsize;
 	SMB_OFF_T file_size; /* space_avail;	*/
-	BOOL exist;
+	bool exist;
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),

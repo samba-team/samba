@@ -25,8 +25,8 @@
 #include "includes.h"
 
 extern struct auth_context *negprot_global_auth_context;
-extern BOOL global_encrypted_passwords_negotiated;
-extern BOOL global_spnego_negotiated;
+extern bool global_encrypted_passwords_negotiated;
+extern bool global_spnego_negotiated;
 extern enum protocol_types Protocol;
 extern int max_send;
 
@@ -186,14 +186,14 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
  Cerate a clock skew error blob for a Windows client.
 ****************************************************************************/
 
-static BOOL make_krb5_skew_error(DATA_BLOB *pblob_out)
+static bool make_krb5_skew_error(DATA_BLOB *pblob_out)
 {
 	krb5_context context = NULL;
 	krb5_error_code kerr = 0;
 	krb5_data reply;
 	krb5_principal host_princ = NULL;
 	char *host_princ_s = NULL;
-	BOOL ret = False;
+	bool ret = False;
 
 	*pblob_out = data_blob_null;
 
@@ -251,7 +251,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 				  struct smb_request *req,
 				  DATA_BLOB *secblob,
 				  uint16 vuid,
-				  BOOL *p_invalidate_vuid)
+				  bool *p_invalidate_vuid)
 {
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB ticket;
@@ -268,8 +268,8 @@ static void reply_spnego_kerberos(connection_struct *conn,
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
 	fstring real_username;
-	BOOL map_domainuser_to_guest = False;
-	BOOL username_was_mapped;
+	bool map_domainuser_to_guest = False;
+	bool username_was_mapped;
 	PAC_LOGON_INFO *logon_info = NULL;
 
 	ZERO_STRUCT(ticket);
@@ -316,7 +316,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 			 * -- Looks like this only happens with a KDC. JRA.
 			 */
 
-			BOOL ok = make_krb5_skew_error(&ap_rep);
+			bool ok = make_krb5_skew_error(&ap_rep);
 			if (!ok) {
 				talloc_destroy(mem_ctx);
 				return ERROR_NT(nt_status_squash(
@@ -628,7 +628,7 @@ static void reply_spnego_ntlmssp(connection_struct *conn,
 				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
-				 BOOL wrap)
+				 bool wrap)
 {
 	DATA_BLOB response;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -716,7 +716,7 @@ static void reply_spnego_ntlmssp(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out,
-		BOOL *p_is_krb5)
+		bool *p_is_krb5)
 {
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
@@ -764,7 +764,7 @@ static void reply_spnego_negotiate(connection_struct *conn,
 {
 	DATA_BLOB secblob;
 	DATA_BLOB chal;
-	BOOL got_kerberos_mechanism = False;
+	bool got_kerberos_mechanism = False;
 	NTSTATUS status;
 
 	status = parse_spnego_mechanisms(blob1, &secblob,
@@ -782,7 +782,7 @@ static void reply_spnego_negotiate(connection_struct *conn,
 #ifdef HAVE_KRB5
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) ||
 				lp_use_kerberos_keytab()) ) {
-		BOOL destroy_vuid = True;
+		bool destroy_vuid = True;
 		reply_spnego_kerberos(conn, req, &secblob, vuid,
 				      &destroy_vuid);
 		data_blob_free(&secblob);
@@ -850,7 +850,7 @@ static void reply_spnego_auth(connection_struct *conn,
 	if (auth.data[0] == ASN1_APPLICATION(0)) {
 		/* Might be a second negTokenTarg packet */
 
-		BOOL got_krb5_mechanism = False;
+		bool got_krb5_mechanism = False;
 		status = parse_spnego_mechanisms(auth, &secblob,
 				&got_krb5_mechanism);
 		if (NT_STATUS_IS_OK(status)) {
@@ -859,7 +859,7 @@ static void reply_spnego_auth(connection_struct *conn,
 #ifdef HAVE_KRB5
 			if ( got_krb5_mechanism && ((lp_security()==SEC_ADS) ||
 						lp_use_kerberos_keytab()) ) {
-				BOOL destroy_vuid = True;
+				bool destroy_vuid = True;
 				reply_spnego_kerberos(conn, req, &secblob,
 						      vuid, &destroy_vuid);
 				data_blob_free(&secblob);
@@ -1336,14 +1336,14 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 	fstring native_os;
 	fstring native_lanman;
 	fstring primary_domain;
-	static BOOL done_sesssetup = False;
+	static bool done_sesssetup = False;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;
 
-	BOOL doencrypt = global_encrypted_passwords_negotiated;
+	bool doencrypt = global_encrypted_passwords_negotiated;
 
 	DATA_BLOB session_key;
 
@@ -1489,7 +1489,7 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
 			pstring pass;
-			BOOL unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
+			bool unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
 
 #if 0
 			/* This was the previous fix. Not sure if it's still

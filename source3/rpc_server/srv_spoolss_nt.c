@@ -267,7 +267,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
  Close printer index by handle.
 ****************************************************************************/
 
-static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
+static bool close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
@@ -290,7 +290,7 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 	pstring command;
 	int ret;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	BOOL is_print_op = False;
+	bool is_print_op = False;
 		
 	/* can't fail if we don't try */
 	
@@ -374,7 +374,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
  Return the snum of a printer corresponding to an handle.
 ****************************************************************************/
 
-static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number,
+static bool get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number,
 			     struct share_params **params)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
@@ -401,7 +401,7 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number,
  Check if it's \\server or \\server\printer
 ****************************************************************************/
 
-static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename)
+static bool set_printer_hnd_printertype(Printer_entry *Printer, char *handlename)
 {
 	DEBUG(3,("Setting printer type=%s\n", handlename));
 
@@ -431,14 +431,14 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
  XcvDataPort() interface.
 ****************************************************************************/
 
-static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
+static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 {
 	int snum;
 	int n_services=lp_numservices();
 	char *aprinter, *printername;
 	const char *servername;
 	fstring sname;
-	BOOL found=False;
+	bool found=False;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR result;
 	
@@ -558,7 +558,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
  Find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint32 access_granted)
+static bool open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint32 access_granted)
 {
 	Printer_entry *new_printer;
 
@@ -607,13 +607,13 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
  given by (notify_type, notify_field).
  **************************************************************************/
 
-static BOOL is_monitoring_event_flags(uint32 flags, uint16 notify_type,
+static bool is_monitoring_event_flags(uint32 flags, uint16 notify_type,
 				      uint16 notify_field)
 {
 	return True;
 }
 
-static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
+static bool is_monitoring_event(Printer_entry *p, uint16 notify_type,
 				uint16 notify_field)
 {
 	SPOOL_NOTIFY_OPTION *option = p->notify.option;
@@ -1062,7 +1062,7 @@ done:
 /***********************************************************************
  **********************************************************************/
 
-static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, void *buf, size_t len )
+static bool notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, void *buf, size_t len )
 {
 
 	uint32 tv_sec, tv_usec;
@@ -1198,7 +1198,7 @@ static void receive_notify2_message_list(struct messaging_context *msg,
  driver
  ********************************************************************/
  
-static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
+static bool srv_spoolss_drv_upgrade_printer(char* drivername)
 {
 	int len = strlen(drivername);
 	
@@ -1301,7 +1301,7 @@ void update_monitored_printq_cache( void )
  driver
  ********************************************************************/
  
-static BOOL srv_spoolss_reset_printerdata(char* drivername)
+static bool srv_spoolss_reset_printerdata(char* drivername)
 {
 	int len = strlen(drivername);
 	
@@ -1741,10 +1741,10 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
+static bool convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 				NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
-	BOOL ret;
+	bool ret;
 
 	switch (level) {
 		case 2:
@@ -1769,10 +1769,10 @@ static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 	return False;
 }
 
-static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
+static bool convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
                                  	NT_PRINTER_DRIVER_INFO_LEVEL *printer, uint32 level)
 {
-	BOOL result = True;
+	bool result = True;
 
 	switch (level) {
 		case 3:
@@ -1792,7 +1792,7 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	return result;
 }
 
-BOOL convert_devicemode(const char *printername, const DEVICEMODE *devmode,
+bool convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode)
 {
 	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
@@ -2069,7 +2069,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
 	uint32				flags = q_u->delete_flags;
-	BOOL				delete_files;
+	bool				delete_files;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;	
@@ -2527,7 +2527,7 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
+static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
 	NTSTATUS ret;
@@ -2594,7 +2594,7 @@ static BOOL spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
  Connect to the client.
 ****************************************************************************/
 
-static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, 
+static bool srv_spoolss_replyopenprinter(int snum, const char *printer, 
 					uint32 localprinter, uint32 type, 
 					POLICY_HND *handle, struct in_addr *client_ip)
 {
@@ -3564,7 +3564,7 @@ static uint32 type_of_notify_info_data(uint16 type, uint16 field)
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL search_notify(uint16 type, uint16 field, int *value)
+static bool search_notify(uint16 type, uint16 field, int *value)
 {	
 	int i;
 
@@ -3601,7 +3601,7 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
  *
  ********************************************************************/
 
-static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY_INFO *info, int
+static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY_INFO *info, int
 					  snum, SPOOL_NOTIFY_OPTION_TYPE
 					  *option_type, uint32 id,
 					  TALLOC_CTX *mem_ctx) 
@@ -3660,7 +3660,7 @@ static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
  *
  ********************************************************************/
 
-static BOOL construct_notify_jobs_info(print_queue_struct *queue,
+static bool construct_notify_jobs_info(print_queue_struct *queue,
 				       SPOOL_NOTIFY_INFO *info,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       int snum, SPOOL_NOTIFY_OPTION_TYPE
@@ -3946,7 +3946,7 @@ done:
  * fill a printer_info_0 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *printer, int snum)
+static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *printer, int snum)
 {
 	pstring chaine;
 	int count;
@@ -4051,7 +4051,7 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
  * construct_printer_info_1
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_1(Printer_entry *print_hnd, uint32 flags, PRINTER_INFO_1 *printer, int snum)
+static bool construct_printer_info_1(Printer_entry *print_hnd, uint32 flags, PRINTER_INFO_1 *printer, int snum)
 {
 	pstring chaine;
 	pstring chaine2;
@@ -4102,7 +4102,7 @@ static void free_dev_mode(DEVICEMODE *dev)
  should be valid upon entry
 ****************************************************************************/
 
-static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode )
+static bool convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode )
 {
 	if ( !devmode || !ntdevmode )
 		return False;
@@ -4189,7 +4189,7 @@ done:
  * fill a printer_info_2 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *printer, int snum)
+static bool construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *printer, int snum)
 {
 	int count;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
@@ -4254,7 +4254,7 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
  * fill a printer_info_3 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **pp_printer, int snum)
+static bool construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **pp_printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	PRINTER_INFO_3 *printer = NULL;
@@ -4292,7 +4292,7 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
  * fill a printer_info_4 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_4(Printer_entry *print_hnd, PRINTER_INFO_4 *printer, int snum)
+static bool construct_printer_info_4(Printer_entry *print_hnd, PRINTER_INFO_4 *printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
@@ -4312,7 +4312,7 @@ static BOOL construct_printer_info_4(Printer_entry *print_hnd, PRINTER_INFO_4 *p
  * fill a printer_info_5 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *printer, int snum)
+static bool construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
@@ -4338,7 +4338,7 @@ static BOOL construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *p
  * fill a printer_info_6 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_6(Printer_entry *print_hnd,
+static bool construct_printer_info_6(Printer_entry *print_hnd,
 				     PRINTER_INFO_6 *printer,
 				     int snum)
 {
@@ -4364,7 +4364,7 @@ static BOOL construct_printer_info_6(Printer_entry *print_hnd,
  * fill a printer_info_7 struct
  ********************************************************************/
 
-static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
+static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
 {
 	char *guid_str = NULL;
 	struct GUID guid; 
@@ -6057,7 +6057,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
  _spoolss_open_printer_ex().
  ********************************************************************/
 
-static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
+static bool check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 {
 	fstring printername;
 	const char *p;
@@ -6109,7 +6109,7 @@ WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri
 	int ret;
 	int fd;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	BOOL is_print_op = False;
+	bool is_print_op = False;
 
 	if ( !*cmd ) {
 		return WERR_ACCESS_DENIED;
@@ -6148,7 +6148,7 @@ WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri
 /****************************************************************************
 ****************************************************************************/
 
-BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
+bool add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -6158,7 +6158,7 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	int fd;
 	fstring remote_machine = "%m";
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	BOOL is_print_op = False;
+	bool is_print_op = False;
 
 	standard_sub_basic(current_user_info.smb_name,
 			   current_user_info.domain,
@@ -6574,7 +6574,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, const print_queue_struct *queu
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL fill_job_info_2(JOB_INFO_2 *job_info, const print_queue_struct *queue,
+static bool fill_job_info_2(JOB_INFO_2 *job_info, const print_queue_struct *queue,
                             int position, int snum, 
 			    const NT_PRINTER_INFO_LEVEL *ntprinter,
 			    DEVICEMODE *devmode)
@@ -7286,7 +7286,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 	nt_forms_struct *list=NULL;
 	nt_forms_struct builtin_form;
-	BOOL foundBuiltin;
+	bool foundBuiltin;
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
@@ -8843,7 +8843,7 @@ static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
 			     uint32 *needed)
 {
 	int i=0;
-	BOOL found=False;
+	bool found=False;
 	JOB_INFO_1 *info_1=NULL;
 	WERROR result = WERR_OK;
 
@@ -8895,7 +8895,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 			     uint32 *needed)
 {
 	int 		i = 0;
-	BOOL 		found = False;
+	bool 		found = False;
 	JOB_INFO_2 	*info_2;
 	WERROR 		result;
 	DEVICEMODE 	*devmode = NULL;

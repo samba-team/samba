@@ -41,14 +41,14 @@ static unsigned int	Ucrit_IsActive = 0;                /* added by OH */
 static int verbose, brief;
 static int            shares_only = 0;            /* Added by RJS */
 static int            locks_only  = 0;            /* Added by RJS */
-static BOOL processes_only=False;
+static bool processes_only=False;
 static int show_brl;
-static BOOL numeric_only = False;
+static bool numeric_only = False;
 
 const char *username = NULL;
 
-extern BOOL status_profile_dump(BOOL be_verbose);
-extern BOOL status_profile_rates(BOOL be_verbose);
+extern bool status_profile_dump(bool be_verbose);
+extern bool status_profile_rates(bool be_verbose);
 
 /* added by OH */
 static void Ucrit_addUid(uid_t uid)
@@ -83,7 +83,7 @@ static unsigned int Ucrit_checkPid(struct server_id pid)
 	return 0;
 }
 
-static BOOL Ucrit_addPid( struct server_id pid )
+static bool Ucrit_addPid( struct server_id pid )
 {
 	if ( !Ucrit_IsActive )
 		return True;
@@ -277,7 +277,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 {
 	int c;
 	int profile_only = 0;
-	BOOL show_processes, show_locks, show_shares;
+	bool show_processes, show_locks, show_shares;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

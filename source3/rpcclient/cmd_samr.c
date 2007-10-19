@@ -839,7 +839,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	uint32 *dom_rids;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 acb_mask = ACB_NORMAL;
-	BOOL got_connect_pol = False, got_domain_pol = False;
+	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 3)) {
 		printf("Usage: %s [access_mask] [acb_mask]\n", argv[0]);
@@ -914,7 +914,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	uint32 start_idx, size, num_dom_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct acct_info *dom_groups;
-	BOOL got_connect_pol = False, got_domain_pol = False;
+	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 2)) {
 		printf("Usage: %s [access_mask]\n", argv[0]);
@@ -987,7 +987,7 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	uint32 start_idx, size, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct acct_info *als_groups;
-	BOOL got_connect_pol = False, got_domain_pol = False;
+	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s builtin|domain [access mask]\n", argv[0]);
@@ -1223,7 +1223,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 	SAM_DISPINFO_4 info4;
 	SAM_DISPINFO_5 info5;
 	int loop_count = 0;
-	BOOL got_params = False; /* Use get_query_dispinfo_params() or not? */
+	bool got_params = False; /* Use get_query_dispinfo_params() or not? */
 
 	if (argc > 6) {
 		printf("Usage: %s [info level] [start index] [max entries] [max size] [access mask]\n", argv[0]);
@@ -1927,7 +1927,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC_BUF *sec_desc_buf=NULL;
-	BOOL domain = False;
+	bool domain = False;
 
 	ctx=talloc_init("cmd_samr_query_sec_obj");
 	

@@ -23,10 +23,10 @@ static fstring password;
 static fstring username;
 static int got_pass;
 static int numops = 1000;
-static BOOL showall;
-static BOOL analyze;
-static BOOL hide_unlock_fails;
-static BOOL use_oplocks;
+static bool showall;
+static bool analyze;
+static bool hide_unlock_fails;
+static bool use_oplocks;
 
 extern char *optarg;
 extern int optind;
@@ -79,7 +79,7 @@ static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fnam
 	return -1;
 }
 
-static BOOL try_close(struct cli_state *c, int fstype, int fd)
+static bool try_close(struct cli_state *c, int fstype, int fd)
 {
 	switch (fstype) {
 	case FSTYPE_SMB:
@@ -92,7 +92,7 @@ static BOOL try_close(struct cli_state *c, int fstype, int fd)
 	return False;
 }
 
-static BOOL try_lock(struct cli_state *c, int fstype, 
+static bool try_lock(struct cli_state *c, int fstype, 
 		     int fd, unsigned start, unsigned len,
 		     enum brl_type op)
 {
@@ -114,7 +114,7 @@ static BOOL try_lock(struct cli_state *c, int fstype,
 	return False;
 }
 
-static BOOL try_unlock(struct cli_state *c, int fstype, 
+static bool try_unlock(struct cli_state *c, int fstype, 
 		       int fd, unsigned start, unsigned len)
 {
 	struct flock lock;
@@ -223,7 +223,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 
 
 
-static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
 		     char *nfs[NSERVERS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
@@ -237,7 +237,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	unsigned r2 = rec->r2;
 	enum brl_type op;
 	int server;
-	BOOL ret[NSERVERS];
+	bool ret[NSERVERS];
 
 	if (r1 < READ_PCT) {
 		op = READ_LOCK; 

@@ -135,7 +135,7 @@ size_t smb_get_nt_acl_nfs4(files_struct *fsp,
 
 /* Callback function needed to set the native acl
  * when applicable */
-typedef BOOL (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
+typedef bool (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
 
 NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,

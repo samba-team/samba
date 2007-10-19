@@ -214,7 +214,7 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
  Print info from sam structure
 **********************************************************/
 
-static int print_sam_info (struct samu *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
+static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdstyle)
 {
 	uid_t uid;
 	time_t tmp;
@@ -298,10 +298,10 @@ static int print_sam_info (struct samu *sam_pwent, BOOL verbosity, BOOL smbpwdst
  Get an Print User Info
 **********************************************************/
 
-static int print_user_info (struct pdb_methods *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
+static int print_user_info (struct pdb_methods *in, const char *username, bool verbosity, bool smbpwdstyle)
 {
 	struct samu *sam_pwent=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return -1;
@@ -324,10 +324,10 @@ static int print_user_info (struct pdb_methods *in, const char *username, BOOL v
 /*********************************************************
  List Users
 **********************************************************/
-static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwdstyle)
+static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwdstyle)
 {
 	struct samu *sam_pwent=NULL;
-	BOOL check;
+	bool check;
 	
 	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
@@ -362,7 +362,7 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 static int fix_users_list (struct pdb_methods *in)
 {
 	struct samu *sam_pwent=NULL;
-	BOOL check;
+	bool check;
 	
 	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
@@ -406,11 +406,11 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *user_domain,
-			  const BOOL badpw, const BOOL hours)
+			  const bool badpw, const bool hours)
 {
-	BOOL updated_autolock = False, updated_badpw = False;
+	bool updated_autolock = False, updated_badpw = False;
 	struct samu *sam_pwent=NULL;
-	BOOL ret;
+	bool ret;
 	
 	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return 1;
@@ -510,7 +510,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 static int new_user (struct pdb_methods *in, const char *username,
 			const char *fullname, const char *homedir,
 			const char *drive, const char *script,
-			const char *profile, char *user_sid, BOOL stdin_get)
+			const char *profile, char *user_sid, bool stdin_get)
 {
 	struct samu *sam_pwent;
 	char *password1, *password2;
@@ -723,13 +723,13 @@ static int delete_machine_entry (struct pdb_methods *in, const char *machinename
 
 int main (int argc, char **argv)
 {
-	static BOOL list_users = False;
-	static BOOL verbose = False;
-	static BOOL spstyle = False;
-	static BOOL machine = False;
-	static BOOL add_user = False;
-	static BOOL delete_user = False;
-	static BOOL modify_user = False;
+	static bool list_users = False;
+	static bool verbose = False;
+	static bool spstyle = False;
+	static bool machine = False;
+	static bool add_user = False;
+	static bool delete_user = False;
+	static bool modify_user = False;
 	uint32	setparms, checkparms;
 	int opt;
 	static char *full_name = NULL;
@@ -740,10 +740,10 @@ int main (int argc, char **argv)
 	static char *backend = NULL;
 	static char *backend_in = NULL;
 	static char *backend_out = NULL;
-	static BOOL transfer_groups = False;
-	static BOOL transfer_account_policies = False;
-	static BOOL reset_account_policies = False;
-	static BOOL  force_initialised_password = False;
+	static bool transfer_groups = False;
+	static bool transfer_account_policies = False;
+	static bool reset_account_policies = False;
+	static bool  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
 	static char *user_domain = NULL;
@@ -751,11 +751,11 @@ int main (int argc, char **argv)
 	static char *account_policy = NULL;
 	static char *user_sid = NULL;
 	static long int account_policy_value = 0;
-	BOOL account_policy_value_set = False;
-	static BOOL badpw_reset = False;
-	static BOOL hours_reset = False;
+	bool account_policy_value_set = False;
+	static bool badpw_reset = False;
+	static bool hours_reset = False;
 	static char *pwd_time_format = NULL;
-	static BOOL pw_from_stdin = False;
+	static bool pw_from_stdin = False;
 	struct pdb_methods *bin, *bout, *bdef;
 	char *configfile = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();

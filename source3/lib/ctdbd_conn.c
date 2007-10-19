@@ -155,7 +155,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
  * Do we have a complete ctdb packet in the queue?
  */
 
-static BOOL ctdb_req_complete(const struct data_blob *data,
+static bool ctdb_req_complete(const struct data_blob *data,
 			      size_t *length,
 			      void *private_data)
 {
@@ -765,7 +765,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 /*
  * see if a remote process exists
  */
-BOOL ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
 {
 	NTSTATUS status;
 	TDB_DATA data;

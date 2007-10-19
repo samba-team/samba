@@ -59,7 +59,7 @@ static char* get_string_param( const char* param )
  Figure out if the input was an NT group or a SID string.
  Return the SID.
 **********************************************************/
-static BOOL get_sid_from_input(DOM_SID *sid, char *input)
+static bool get_sid_from_input(DOM_SID *sid, char *input)
 {
 	GROUP_MAP map;
 
@@ -84,7 +84,7 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
  Dump a GROUP_MAP entry to stdout (long or short listing)
 **********************************************************/
 
-static void print_map_entry ( GROUP_MAP map, BOOL long_list )
+static void print_map_entry ( GROUP_MAP map, bool long_list )
 {
 	if (!long_list)
 		d_printf("%s (%s) -> %s\n", map.nt_name,
@@ -106,7 +106,7 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 static int net_groupmap_list(int argc, const char **argv)
 {
 	size_t entries;
-	BOOL long_list = False;
+	bool long_list = False;
 	size_t i;
 	fstring ntgroup = "";
 	fstring sid_string = "";
@@ -526,7 +526,7 @@ static int net_groupmap_set(int argc, const char **argv)
 	const char *ntgroup = NULL;
 	struct group *grp = NULL;
 	GROUP_MAP map;
-	BOOL have_map = False;
+	bool have_map = False;
 
 	if ((argc < 1) || (argc > 2)) {
 		d_printf("Usage: net groupmap set \"NT Group\" "
@@ -729,7 +729,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	return 0;
 }
 
-static BOOL print_alias_memberships(TALLOC_CTX *mem_ctx,
+static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
 				    const DOM_SID *member)
 {

@@ -44,9 +44,9 @@ enum ntlm_break {
  * Test the normal 'LM and NTLM' combination
  */
 
-static BOOL test_lm_ntlm_broken(enum ntlm_break break_which) 
+static bool test_lm_ntlm_broken(enum ntlm_break break_which) 
 {
-	BOOL pass = True;
+	bool pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
 	DATA_BLOB lm_response = data_blob(NULL, 24);
@@ -149,7 +149,7 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
  * Test LM authentication, no NT response supplied
  */
 
-static BOOL test_lm(void) 
+static bool test_lm(void) 
 {
 
 	return test_lm_ntlm_broken(NO_NT);
@@ -159,7 +159,7 @@ static BOOL test_lm(void)
  * Test the NTLM response only, no LM.
  */
 
-static BOOL test_ntlm(void) 
+static bool test_ntlm(void) 
 {
 	return test_lm_ntlm_broken(NO_LM);
 }
@@ -168,9 +168,9 @@ static BOOL test_ntlm(void)
  * Test the NTLM response only, but in the LM field.
  */
 
-static BOOL test_ntlm_in_lm(void) 
+static bool test_ntlm_in_lm(void) 
 {
-	BOOL pass = True;
+	bool pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
 	DATA_BLOB nt_response = data_blob(NULL, 24);
@@ -234,9 +234,9 @@ static BOOL test_ntlm_in_lm(void)
  * Test the NTLM response only, but in the both the NT and LM fields.
  */
 
-static BOOL test_ntlm_in_both(void) 
+static bool test_ntlm_in_both(void) 
 {
-	BOOL pass = True;
+	bool pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
 	DATA_BLOB nt_response = data_blob(NULL, 24);
@@ -308,9 +308,9 @@ static BOOL test_ntlm_in_both(void)
  * Test the NTLMv2 and LMv2 responses
  */
 
-static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which) 
+static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which) 
 {
-	BOOL pass = True;
+	bool pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
 	DATA_BLOB ntlmv2_response = data_blob_null;
@@ -389,7 +389,7 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
  * Test the NTLMv2 and LMv2 responses
  */
 
-static BOOL test_lmv2_ntlmv2(void) 
+static bool test_lmv2_ntlmv2(void) 
 {
 	return test_lmv2_ntlmv2_broken(BREAK_NONE);
 }
@@ -398,7 +398,7 @@ static BOOL test_lmv2_ntlmv2(void)
  * Test the LMv2 response only
  */
 
-static BOOL test_lmv2(void) 
+static bool test_lmv2(void) 
 {
 	return test_lmv2_ntlmv2_broken(NO_NT);
 }
@@ -407,37 +407,37 @@ static BOOL test_lmv2(void)
  * Test the NTLMv2 response only
  */
 
-static BOOL test_ntlmv2(void) 
+static bool test_ntlmv2(void) 
 {
 	return test_lmv2_ntlmv2_broken(NO_LM);
 }
 
-static BOOL test_lm_ntlm(void) 
+static bool test_lm_ntlm(void) 
 {
 	return test_lm_ntlm_broken(BREAK_NONE);
 }
 
-static BOOL test_ntlm_lm_broken(void) 
+static bool test_ntlm_lm_broken(void) 
 {
 	return test_lm_ntlm_broken(BREAK_LM);
 }
 
-static BOOL test_ntlm_ntlm_broken(void) 
+static bool test_ntlm_ntlm_broken(void) 
 {
 	return test_lm_ntlm_broken(BREAK_NT);
 }
 
-static BOOL test_ntlmv2_lmv2_broken(void) 
+static bool test_ntlmv2_lmv2_broken(void) 
 {
 	return test_lmv2_ntlmv2_broken(BREAK_LM);
 }
 
-static BOOL test_ntlmv2_ntlmv2_broken(void) 
+static bool test_ntlmv2_ntlmv2_broken(void) 
 {
 	return test_lmv2_ntlmv2_broken(BREAK_NT);
 }
 
-static BOOL test_plaintext(enum ntlm_break break_which)
+static bool test_plaintext(enum ntlm_break break_which)
 {
 	NTSTATUS nt_status;
 	uint32 flags = 0;
@@ -526,23 +526,23 @@ static BOOL test_plaintext(enum ntlm_break break_which)
         return break_which != BREAK_NT;
 }
 
-static BOOL test_plaintext_none_broken(void) {
+static bool test_plaintext_none_broken(void) {
 	return test_plaintext(BREAK_NONE);
 }
 
-static BOOL test_plaintext_lm_broken(void) {
+static bool test_plaintext_lm_broken(void) {
 	return test_plaintext(BREAK_LM);
 }
 
-static BOOL test_plaintext_nt_broken(void) {
+static bool test_plaintext_nt_broken(void) {
 	return test_plaintext(BREAK_NT);
 }
 
-static BOOL test_plaintext_nt_only(void) {
+static bool test_plaintext_nt_only(void) {
 	return test_plaintext(NO_LM);
 }
 
-static BOOL test_plaintext_lm_only(void) {
+static bool test_plaintext_lm_only(void) {
 	return test_plaintext(NO_NT);
 }
 
@@ -565,7 +565,7 @@ static BOOL test_plaintext_lm_only(void) {
 */
 
 static const struct ntlm_tests {
-	BOOL (*fn)(void);
+	bool (*fn)(void);
 	const char *name;
 } test_table[] = {
 	{test_lm, "LM"},
@@ -588,10 +588,10 @@ static const struct ntlm_tests {
 	{NULL, NULL}
 };
 
-BOOL diagnose_ntlm_auth(void)
+bool diagnose_ntlm_auth(void)
 {
 	unsigned int i;
-	BOOL pass = True;
+	bool pass = True;
 
 	for (i=0; test_table[i].fn; i++) {
 		if (!test_table[i].fn()) {

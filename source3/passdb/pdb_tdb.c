@@ -49,7 +49,7 @@ struct pwent_list {
 	TDB_DATA key;
 };
 static struct pwent_list *tdbsam_pwent_list;
-static BOOL pwent_initialized;
+static bool pwent_initialized;
 
 /* GLOBAL TDB SAM CONTEXT */
 
@@ -68,7 +68,7 @@ static pstring tdbsam_filename;
 /*********************************************************************
 *********************************************************************/
 
-static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buflen)
+static bool init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -104,7 +104,7 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
-	BOOL ret = True;
+	bool ret = True;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v0: NULL parameters found!\n"));
@@ -253,7 +253,7 @@ done:
 /*********************************************************************
 *********************************************************************/
 
-static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buflen)
+static bool init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -290,7 +290,7 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, hourslen;
-	BOOL ret = True;
+	bool ret = True;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v1: NULL parameters found!\n"));
@@ -442,7 +442,7 @@ done:
 	return ret;
 }
 
-BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
+bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -480,9 +480,9 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	uint32		len = 0;
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
-	BOOL ret = True;
+	bool ret = True;
 	fstring tmpstring;
-	BOOL expand_explicit = lp_passdb_expand_explicit();
+	bool expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
@@ -679,7 +679,7 @@ done:
  Intialize a struct samu struct from a BYTE buffer of size len
  *********************************************************************/
 
-static BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen)
+static bool init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 	return init_sam_from_buffer_v3(sampass, buf, buflen);
 }
@@ -688,7 +688,7 @@ static BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen
  Intialize a BYTE buffer from a struct samu struct
  *********************************************************************/
 
-static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, BOOL size_only)
+static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, bool size_only)
 {
 	return init_buffer_from_sam_v3(buf, sampass, size_only);
 }
@@ -697,13 +697,13 @@ static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, BOOL size
  Intialize a BYTE buffer from a struct samu struct
  *********************************************************************/
 
-static BOOL tdbsam_convert(int32 from) 
+static bool tdbsam_convert(int32 from) 
 {
 	const char      *vstring = TDBSAM_VERSION_STRING;
 	const char      *prefix = USERPREFIX;
 	TDB_DATA 	data, key, old_key;
 	uint8		*buf = NULL;
-	BOOL 		ret;
+	bool 		ret;
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdbsam, vstring);
@@ -808,7 +808,7 @@ static BOOL tdbsam_convert(int32 from)
  Uses a reference count to allow multiple open calls.
 *********************************************************************/
 
-static BOOL tdbsam_open( const char *name )
+static bool tdbsam_open( const char *name )
 {
 	int32	version;
 	
@@ -934,7 +934,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
  Save a list of user keys for iteration.
 ****************************************************************/
 
-static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
+static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, bool update, uint32 acb_mask)
 {
 	if ( !tdbsam_open( tdbsam_filename ) ) {
 		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
@@ -1136,7 +1136,7 @@ static NTSTATUS tdbsam_getsampwsid(struct pdb_methods *my_methods, struct samu *
 	return tdbsam_getsampwrid(my_methods, user, rid);
 }
 
-static BOOL tdb_delete_samacct_only( struct samu *sam_pass )
+static bool tdb_delete_samacct_only( struct samu *sam_pass )
 {
 	fstring 	keystr;
 	fstring		name;
@@ -1222,13 +1222,13 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
  Update the TDB SAM account record only
  Assumes that the tdbsam is already open 
 ****************************************************************************/
-static BOOL tdb_update_samacct_only( struct samu* newpwd, int flag )
+static bool tdb_update_samacct_only( struct samu* newpwd, int flag )
 {
 	TDB_DATA 	data;
 	uint8		*buf = NULL;
 	fstring 	keystr;
 	fstring		name;
-	BOOL		ret = True;
+	bool		ret = True;
 
 	/* copy the struct samu struct into a BYTE buffer for storage */
 	
@@ -1271,7 +1271,7 @@ done:
  Update the TDB SAM RID record only
  Assumes that the tdbsam is already open 
 ****************************************************************************/
-static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
+static bool tdb_update_ridrec_only( struct samu* newpwd, int flag )
 {
 	TDB_DATA 	data;
 	fstring 	keystr;
@@ -1302,9 +1302,9 @@ static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, int flag)
+static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, int flag)
 {
-	BOOL            result = True;
+	bool            result = True;
 
 	/* invalidate the existing TDB iterator if it is open */
 	
@@ -1380,7 +1380,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 {
 	struct samu      *new_acct = NULL;
 	pstring          rename_script;
-	BOOL             interim_account = False;
+	bool             interim_account = False;
 	int              rename_ret;
 	fstring          oldname_lower;
 	fstring          newname_lower;
@@ -1482,7 +1482,7 @@ done:
 	return NT_STATUS_ACCESS_DENIED;	
 }
 
-static BOOL tdbsam_rid_algorithm(struct pdb_methods *methods)
+static bool tdbsam_rid_algorithm(struct pdb_methods *methods)
 {
 	return False;
 }
@@ -1503,7 +1503,7 @@ static BOOL tdbsam_rid_algorithm(struct pdb_methods *methods)
  interested in the RID counter.
 *****************************************************************************/
 
-static BOOL init_idmap_tdb(TDB_CONTEXT *tdb)
+static bool init_idmap_tdb(TDB_CONTEXT *tdb)
 {
 	int32 version;
 
@@ -1536,11 +1536,11 @@ static BOOL init_idmap_tdb(TDB_CONTEXT *tdb)
 	return True;
 }
 
-static BOOL tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
+static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 {
 	TDB_CONTEXT *tdb;
 	uint32 rid;
-	BOOL ret = False;
+	bool ret = False;
 
 	tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
 			   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);

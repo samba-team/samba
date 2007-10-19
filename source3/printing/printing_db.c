@@ -34,7 +34,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 	struct tdb_print_db *p = NULL, *last_entry = NULL;
 	int num_open = 0;
 	pstring printdb_path;
-	BOOL done_become_root = False;
+	bool done_become_root = False;
 
 	SMB_ASSERT(printername != NULL);
 
@@ -152,7 +152,7 @@ void close_all_print_db(void)
  messages. data needs freeing on exit.
 ****************************************************************************/
 
-TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, BOOL cleanlist)
+TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, bool cleanlist)
 {
 	TDB_DATA data;
 	size_t i;

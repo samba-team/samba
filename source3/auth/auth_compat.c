@@ -20,7 +20,7 @@
 #include "includes.h"
 
 extern struct auth_context *negprot_global_auth_context;
-extern BOOL global_encrypted_passwords_negotiated;
+extern bool global_encrypted_passwords_negotiated;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -66,7 +66,7 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 			       DATA_BLOB lm_pwd,
 			       DATA_BLOB nt_pwd,
 			       DATA_BLOB plaintext_password,
-			       BOOL encrypted)
+			       bool encrypted)
 
 {
 	NTSTATUS nt_status;
@@ -92,11 +92,11 @@ check if a username/password pair is ok via the auth subsystem.
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
+bool password_ok(char *smb_name, DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob_null;
-	BOOL encrypted = (global_encrypted_passwords_negotiated && (password_blob.length == 24 || password_blob.length > 46));
+	bool encrypted = (global_encrypted_passwords_negotiated && (password_blob.length == 24 || password_blob.length > 46));
 	
 	if (encrypted) {
 		/* 

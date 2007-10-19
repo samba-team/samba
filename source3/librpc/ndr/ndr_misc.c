@@ -133,7 +133,7 @@ struct GUID GUID_zero(void)
  * see if a range of memory is all zero. A NULL pointer is considered
  * to be all zero 
  */
-BOOL all_zero(const uint8_t *ptr, size_t size)
+bool all_zero(const uint8_t *ptr, size_t size)
 {
 	int i;
 	if (!ptr) return True;
@@ -144,7 +144,7 @@ BOOL all_zero(const uint8_t *ptr, size_t size)
 }
 
 
-BOOL GUID_all_zero(const struct GUID *u)
+bool GUID_all_zero(const struct GUID *u)
 {
 	if (u->time_low != 0 ||
 	    u->time_mid != 0 ||
@@ -157,7 +157,7 @@ BOOL GUID_all_zero(const struct GUID *u)
 	return True;
 }
 
-BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
+bool GUID_equal(const struct GUID *u1, const struct GUID *u2)
 {
 	if (u1->time_low != u2->time_low ||
 	    u1->time_mid != u2->time_mid ||
@@ -199,7 +199,7 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
 }
 
-BOOL policy_handle_empty(struct policy_handle *h) 
+bool policy_handle_empty(struct policy_handle *h) 
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }

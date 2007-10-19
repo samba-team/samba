@@ -289,7 +289,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
   do a cldap netlogon query.  Always 389/udp
 *******************************************************************/
 
-BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_netlogon_reply *reply)
+bool ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_netlogon_reply *reply)
 {
 	int sock;
 	int ret;

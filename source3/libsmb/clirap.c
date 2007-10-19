@@ -24,7 +24,7 @@
  Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
 
-BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name, 
+bool cli_api_pipe(struct cli_state *cli, const char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
@@ -47,7 +47,7 @@ BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name,
  Call a remote api
 ****************************************************************************/
 
-BOOL cli_api(struct cli_state *cli,
+bool cli_api(struct cli_state *cli,
 	     char *param, int prcnt, int mprcnt,
 	     char *data, int drcnt, int mdrcnt,
 	     char **rparam, unsigned int *rprcnt,
@@ -70,7 +70,7 @@ BOOL cli_api(struct cli_state *cli,
  Perform a NetWkstaUserLogon.
 ****************************************************************************/
 
-BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
+bool cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -205,7 +205,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
  the comment and a state pointer.
 ****************************************************************************/
 
-BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *, void *),
 		       void *state)
 {
@@ -291,7 +291,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
  Send a SamOEMChangePassword command.
 ****************************************************************************/
 
-BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
+bool cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password)
 {
 	pstring param;
@@ -380,7 +380,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
  Send a qpathinfo call.
 ****************************************************************************/
 
-BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
+bool cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *change_time,
                    time_t *access_time,
                    time_t *write_time, 
@@ -393,7 +393,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
-	BOOL ret;
+	bool ret;
 	time_t (*date_fn)(struct cli_state *, void *);
 	char *p;
 
@@ -463,7 +463,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
  Send a setpathinfo call.
 ****************************************************************************/
 
-BOOL cli_setpathinfo(struct cli_state *cli, const char *fname, 
+bool cli_setpathinfo(struct cli_state *cli, const char *fname, 
                      time_t create_time,
                      time_t access_time,
                      time_t write_time,
@@ -478,7 +478,7 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
         pstring data;
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
-	BOOL ret;
+	bool ret;
 	char *p;
 
 	memset(param, 0, sizeof(param));
@@ -561,7 +561,7 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
  Send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level.
 ****************************************************************************/
 
-BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
+bool cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    struct timespec *create_time,
                     struct timespec *access_time,
                     struct timespec *write_time, 
@@ -635,7 +635,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
  Send a qfileinfo QUERY_FILE_NAME_INFO call.
 ****************************************************************************/
 
-BOOL cli_qfilename(struct cli_state *cli, int fnum, 
+bool cli_qfilename(struct cli_state *cli, int fnum, 
 		   pstring name)
 {
 	unsigned int data_len = 0;
@@ -678,7 +678,7 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
  Send a qfileinfo call.
 ****************************************************************************/
 
-BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
+bool cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint16 *mode, SMB_OFF_T *size,
 		   struct timespec *create_time,
                    struct timespec *access_time,
@@ -753,7 +753,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
  Send a qpathinfo BASIC_INFO call.
 ****************************************************************************/
 
-BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name, 
+bool cli_qpathinfo_basic( struct cli_state *cli, const char *name, 
                           SMB_STRUCT_STAT *sbuf, uint32 *attributes )
 {
 	unsigned int param_len = 0;
@@ -817,7 +817,7 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
  Send a qfileinfo call.
 ****************************************************************************/
 
-BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
+bool cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -882,7 +882,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	char *p;
-	BOOL ret;
+	bool ret;
 	unsigned int len;
 
 	p = param;

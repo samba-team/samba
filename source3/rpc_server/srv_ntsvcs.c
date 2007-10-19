@@ -25,7 +25,7 @@
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_get_version(pipes_struct *p)
+static bool api_ntsvcs_get_version(pipes_struct *p)
 {
 	NTSVCS_Q_GET_VERSION q_u;
 	NTSVCS_R_GET_VERSION r_u;
@@ -49,7 +49,7 @@ static BOOL api_ntsvcs_get_version(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_get_device_list_size(pipes_struct *p)
+static bool api_ntsvcs_get_device_list_size(pipes_struct *p)
 {
 	NTSVCS_Q_GET_DEVICE_LIST_SIZE q_u;
 	NTSVCS_R_GET_DEVICE_LIST_SIZE r_u;
@@ -73,7 +73,7 @@ static BOOL api_ntsvcs_get_device_list_size(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_get_device_list(pipes_struct *p)
+static bool api_ntsvcs_get_device_list(pipes_struct *p)
 {
 	NTSVCS_Q_GET_DEVICE_LIST q_u;
 	NTSVCS_R_GET_DEVICE_LIST r_u;
@@ -97,7 +97,7 @@ static BOOL api_ntsvcs_get_device_list(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_validate_device_instance(pipes_struct *p)
+static bool api_ntsvcs_validate_device_instance(pipes_struct *p)
 {
 	NTSVCS_Q_VALIDATE_DEVICE_INSTANCE q_u;
 	NTSVCS_R_VALIDATE_DEVICE_INSTANCE r_u;
@@ -121,7 +121,7 @@ static BOOL api_ntsvcs_validate_device_instance(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_get_device_reg_property(pipes_struct *p)
+static bool api_ntsvcs_get_device_reg_property(pipes_struct *p)
 {
 	NTSVCS_Q_GET_DEVICE_REG_PROPERTY q_u;
 	NTSVCS_R_GET_DEVICE_REG_PROPERTY r_u;
@@ -145,7 +145,7 @@ static BOOL api_ntsvcs_get_device_reg_property(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_get_hw_profile_info(pipes_struct *p)
+static bool api_ntsvcs_get_hw_profile_info(pipes_struct *p)
 {
 	NTSVCS_Q_GET_HW_PROFILE_INFO q_u;
 	NTSVCS_R_GET_HW_PROFILE_INFO r_u;
@@ -169,7 +169,7 @@ static BOOL api_ntsvcs_get_hw_profile_info(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_ntsvcs_hw_profile_flags(pipes_struct *p)
+static bool api_ntsvcs_hw_profile_flags(pipes_struct *p)
 {
 	NTSVCS_Q_HW_PROFILE_FLAGS q_u;
 	NTSVCS_R_HW_PROFILE_FLAGS r_u;

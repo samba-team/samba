@@ -55,7 +55,7 @@ struct max_n {
 */
 static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 			   struct max_n *max_n, const smb_ucs2_t *ldot,
-			   BOOL is_case_sensitive)
+			   bool is_case_sensitive)
 {
 	smb_ucs2_t c;
 	int i;
@@ -145,8 +145,8 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 	return -1;
 }
 
-int ms_fnmatch(const char *pattern, const char *string, BOOL translate_pattern,
-	       BOOL is_case_sensitive)
+int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
+	       bool is_case_sensitive)
 {
 	smb_ucs2_t *p = NULL;
 	smb_ucs2_t *s = NULL;

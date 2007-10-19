@@ -45,7 +45,7 @@ struct idmap_cache_ctx;
 struct idmap_alloc_context {
 	const char *params;
 	struct idmap_alloc_methods *methods;
-	BOOL initialized;
+	bool initialized;
 };
 
 static TALLOC_CTX *idmap_ctx = NULL;
@@ -104,7 +104,7 @@ static struct idmap_alloc_methods *get_alloc_methods(
 	return NULL;
 }
 
-BOOL idmap_is_offline(void)
+bool idmap_is_offline(void)
 {
 	return ( lp_winbind_offline_logon() &&
 	     get_global_winbindd_state_offline() );
@@ -287,8 +287,8 @@ NTSTATUS idmap_init(void)
 	const char **dom_list = NULL;
 	const char *default_domain = NULL;
 	char *alloc_backend = NULL;
-	BOOL default_already_defined = False;
-	BOOL pri_dom_is_in_list = False;
+	bool default_already_defined = False;
+	bool pri_dom_is_in_list = False;
 	int compat = 0;
 	int i;
 

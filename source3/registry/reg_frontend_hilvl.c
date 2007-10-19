@@ -74,7 +74,7 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
  
-BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
+bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
 	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
 		return key->hook->ops->store_subkeys( key->name, subkeys );
@@ -87,7 +87,7 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
  High level wrapper function for storing registry values
  ***********************************************************************/
  
-BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
+bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	if ( check_dynamic_reg_values( key ) )
 		return False;
@@ -140,7 +140,7 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
  underlying registry backend
  ***********************************************************************/
 
-BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
+bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 			  const struct nt_user_token *token )
 {
 	SEC_DESC *sec_desc;

@@ -22,7 +22,7 @@
 
 /* prototypes for static functions first - for clarity */
 
-static BOOL smb_ace_to_internal(acl_entry_t posix_ace,
+static bool smb_ace_to_internal(acl_entry_t posix_ace,
 				struct smb_acl_entry *ace);
 static struct smb_acl_t *smb_acl_to_internal(acl_t acl);
 static int smb_acl_set_mode(acl_entry_t entry, SMB_ACL_PERM_T perm);
@@ -135,7 +135,7 @@ int posixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 /* private functions */
 
-static BOOL smb_ace_to_internal(acl_entry_t posix_ace,
+static bool smb_ace_to_internal(acl_entry_t posix_ace,
 				struct smb_acl_entry *ace)
 {
 	acl_tag_t tag;

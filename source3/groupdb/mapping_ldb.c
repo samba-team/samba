@@ -28,14 +28,14 @@
 
 static struct ldb_context *ldb;
 
-static BOOL mapping_upgrade(const char *tdb_path);
+static bool mapping_upgrade(const char *tdb_path);
 
 /*
   connect to the group mapping ldb
 */
-static BOOL init_group_mapping(void)
+static bool init_group_mapping(void)
 {
-	BOOL existed;
+	bool existed;
 	const char *init_ldif[] = 
 		{ "dn: @ATTRIBUTES\n" \
 		  "ntName: CASE_INSENSITIVE\n" \
@@ -131,7 +131,7 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 /*
   add a group mapping entry
  */
-static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	struct ldb_message *msg;	
 	int ret, i;
@@ -180,7 +180,7 @@ failed:
 /*
   unpack a ldb message into a GROUP_MAP structure
 */
-static BOOL msg_to_group_map(struct ldb_message *msg, GROUP_MAP *map)
+static bool msg_to_group_map(struct ldb_message *msg, GROUP_MAP *map)
 {
 	const char *sidstr;
 
@@ -203,7 +203,7 @@ static BOOL msg_to_group_map(struct ldb_message *msg, GROUP_MAP *map)
 /*
  return a group map entry for a given sid
 */
-static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	int ret;
 	struct ldb_dn *dn;
@@ -231,7 +231,7 @@ failed:
 /*
  return a group map entry for a given gid
 */
-static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	int ret;
 	char *expr;
@@ -258,7 +258,7 @@ failed:
 /*
   Return the sid and the type of the unix group.
 */
-static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
+static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
 	int ret;
 	char *expr;
@@ -284,7 +284,7 @@ failed:
 /*
  Remove a group mapping entry.
 */
-static BOOL group_map_remove(const DOM_SID *sid)
+static bool group_map_remove(const DOM_SID *sid)
 {
 	struct ldb_dn *dn;
 	int ret;
@@ -303,9 +303,9 @@ static BOOL group_map_remove(const DOM_SID *sid)
 /*
   Enumerate the group mappings for a domain
 */
-static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, 
+static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, 
 			       GROUP_MAP **pp_rmap,
-			       size_t *p_num_entries, BOOL unix_only)
+			       size_t *p_num_entries, bool unix_only)
 {
 	int i, ret;
 	char *expr;
@@ -614,7 +614,7 @@ static int upgrade_alias_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 /*
   upgrade from a old style tdb
 */
-static BOOL mapping_upgrade(const char *tdb_path)
+static bool mapping_upgrade(const char *tdb_path)
 {
 	static TDB_CONTEXT *tdb;
 	int ret, status=0;

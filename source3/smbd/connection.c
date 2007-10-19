@@ -23,7 +23,7 @@
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn, const char *name)
+bool yield_connection(connection_struct *conn, const char *name)
 {
 	struct db_record *rec;
 	NTSTATUS status;
@@ -50,7 +50,7 @@ struct count_stat {
 	pid_t mypid;
 	int curr_connections;
 	const char *name;
-	BOOL Clear;
+	bool Clear;
 };
 
 /****************************************************************************
@@ -94,7 +94,7 @@ static int count_fn(struct db_record *rec,
  Claim an entry in the connections database.
 ****************************************************************************/
 
-int count_current_connections( const char *sharename, BOOL clear  )
+int count_current_connections( const char *sharename, bool clear  )
 {
 	struct count_stat cs;
 
@@ -121,7 +121,7 @@ int count_current_connections( const char *sharename, BOOL clear  )
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn, const char *name,
+bool claim_connection(connection_struct *conn, const char *name,
 		      uint32 msg_flags)
 {
 	struct db_record *rec;
@@ -170,7 +170,7 @@ BOOL claim_connection(connection_struct *conn, const char *name,
 	return True;
 }
 
-BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
+bool register_message_flags(bool doreg, uint32 msg_flags)
 {
 	struct db_record *rec;
 	struct connections_data *pcrec;
@@ -255,13 +255,13 @@ static void fill_pipe_open_rec( struct pipe_open_rec *prec, smb_np_struct *p )
 /*********************************************************************
 *********************************************************************/
 
-BOOL store_pipe_opendb( smb_np_struct *p )
+bool store_pipe_opendb( smb_np_struct *p )
 {
 	struct db_record *dbrec;
 	struct pipe_open_rec *prec;
 	TDB_DATA *key;
 	TDB_DATA data;
-	BOOL ret = False;
+	bool ret = False;
 	
 	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
@@ -291,12 +291,12 @@ done:
 /*********************************************************************
 *********************************************************************/
 
-BOOL delete_pipe_opendb( smb_np_struct *p )
+bool delete_pipe_opendb( smb_np_struct *p )
 {
 	struct db_record *dbrec;
 	struct pipe_open_rec *prec;
 	TDB_DATA *key;
-	BOOL ret = False;
+	bool ret = False;
 	
 	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
 		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));

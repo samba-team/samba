@@ -49,7 +49,7 @@ gid_t get_current_user_gid_next(int *piterator)
  Become the guest user without changing the security context stack.
 ****************************************************************************/
 
-BOOL change_to_guest(void)
+bool change_to_guest(void)
 {
 	static struct passwd *pass=NULL;
 
@@ -81,11 +81,11 @@ BOOL change_to_guest(void)
  Check if a username is OK.
 ********************************************************************/
 
-static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
+static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
 	unsigned int i;
 	struct vuid_cache_entry *ent = NULL;
-	BOOL readonly_share;
+	bool readonly_share;
 	NT_USER_TOKEN *token;
 
 	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
@@ -146,14 +146,14 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
  stack, but modify the current_user entries.
 ****************************************************************************/
 
-BOOL change_to_user(connection_struct *conn, uint16 vuid)
+bool change_to_user(connection_struct *conn, uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
 	int snum;
 	gid_t gid;
 	uid_t uid;
 	char group_c;
-	BOOL must_free_token = False;
+	bool must_free_token = False;
 	NT_USER_TOKEN *token = NULL;
 	int num_groups = 0;
 	gid_t *group_list = NULL;
@@ -279,7 +279,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
  but modify the current_user entries.
 ****************************************************************************/
 
-BOOL change_to_root_user(void)
+bool change_to_root_user(void)
 {
 	set_root_sec_ctx();
 
@@ -298,7 +298,7 @@ BOOL change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-BOOL become_authenticated_pipe_user(pipes_struct *p)
+bool become_authenticated_pipe_user(pipes_struct *p)
 {
 	if (!push_sec_ctx())
 		return False;
@@ -317,7 +317,7 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
  current_user.
 ****************************************************************************/
 
-BOOL unbecome_authenticated_pipe_user(void)
+bool unbecome_authenticated_pipe_user(void)
 {
 	return pop_sec_ctx();
 }
@@ -405,7 +405,7 @@ void unbecome_root(void)
  Saves and restores the connection context.
 ****************************************************************************/
 
-BOOL become_user(connection_struct *conn, uint16 vuid)
+bool become_user(connection_struct *conn, uint16 vuid)
 {
 	if (!push_sec_ctx())
 		return False;
@@ -421,7 +421,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	return True;
 }
 
-BOOL unbecome_user(void)
+bool unbecome_user(void)
 {
 	pop_sec_ctx();
 	pop_conn_ctx();

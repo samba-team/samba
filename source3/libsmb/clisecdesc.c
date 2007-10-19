@@ -29,7 +29,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
 	prs_struct pd;
-	BOOL pd_initialized = False;
+	bool pd_initialized = False;
 	SEC_DESC *psd = NULL;
 
 	SIVAL(param, 0, fnum);
@@ -81,7 +81,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
-BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
+bool cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
@@ -89,7 +89,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	uint32 sec_info = 0;
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
-	BOOL ret = False;
+	bool ret = False;
 
 	if ((mem_ctx = talloc_init("cli_set_secdesc")) == NULL) {
 		DEBUG(0,("talloc_init failed.\n"));

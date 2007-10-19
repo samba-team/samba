@@ -34,7 +34,7 @@
  pipe is open. JRA.
 ****************************************************************************/
 
-static BOOL is_samr_lsa_pipe(const char *pipe_name)
+static bool is_samr_lsa_pipe(const char *pipe_name)
 {
 	return (strstr(pipe_name, "samr") || strstr(pipe_name, "lsa"));
 }
@@ -44,7 +44,7 @@ static BOOL is_samr_lsa_pipe(const char *pipe_name)
  pipes of the same name.
 ****************************************************************************/
 
-BOOL init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
+bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 {
 	pipes_struct *plist = get_first_internal_pipe();
 	struct handle_list *hl = NULL;
@@ -98,7 +98,7 @@ BOOL init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
 
-BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr)
+bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
@@ -184,7 +184,7 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
   find policy by handle
 ****************************************************************************/
 
-BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
+bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
 {
 	return find_policy_by_hnd_internal(p, hnd, data_p) == NULL ? False : True;
 }
@@ -193,7 +193,7 @@ BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
   Close a policy.
 ****************************************************************************/
 
-BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
+bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
 	struct policy *pol = find_policy_by_hnd_internal(p, hnd, NULL);
 
@@ -249,7 +249,7 @@ will be checking a security descriptor to determine whether a user
 token has enough access to access the pipe.
 ********************************************************************/
 
-BOOL pipe_access_check(pipes_struct *p)
+bool pipe_access_check(pipes_struct *p)
 {
 	/* Don't let anonymous users access this RPC if restrict
 	   anonymous > 0 */

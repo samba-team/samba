@@ -208,15 +208,15 @@ static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
 }
 
-static ADS_STATUS ads_startup_int(BOOL only_own_domain, uint32 auth_flags, ADS_STRUCT **ads_ret)
+static ADS_STATUS ads_startup_int(bool only_own_domain, uint32 auth_flags, ADS_STRUCT **ads_ret)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	BOOL need_password = False;
-	BOOL second_time = False;
+	bool need_password = False;
+	bool second_time = False;
 	char *cp;
 	const char *realm = NULL;
-	BOOL tried_closest_dc = False;
+	bool tried_closest_dc = False;
 
 	/* lp_realm() should be handled by a command line param,
 	   However, the join requires that realm be set in smb.conf
@@ -318,12 +318,12 @@ retry:
 	return status;
 }
 
-ADS_STATUS ads_startup(BOOL only_own_domain, ADS_STRUCT **ads)
+ADS_STATUS ads_startup(bool only_own_domain, ADS_STRUCT **ads)
 {
 	return ads_startup_int(only_own_domain, 0, ads);
 }
 
-ADS_STATUS ads_startup_nobind(BOOL only_own_domain, ADS_STRUCT **ads)
+ADS_STATUS ads_startup_nobind(bool only_own_domain, ADS_STRUCT **ads)
 {
 	return ads_startup_int(only_own_domain, ADS_AUTH_NO_BIND, ads);
 }
@@ -395,7 +395,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 
 
 
-static BOOL usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *data_area)
+static bool usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *data_area)
 {
 	char **disp_fields = (char **) data_area;
 
@@ -1190,7 +1190,7 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	char *ou_str = NULL;
 	char *dn = NULL;
 	LDAPMessage *res = NULL;
-	BOOL moved;
+	bool moved;
 
 	ou_str = ads_ou_string(ads, ou);
 	if (asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path) == -1) {
@@ -1240,7 +1240,7 @@ done:
 /************************************************************************
  ************************************************************************/
 
-static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
+static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 {
 	uint32 domain_func;
 	ADS_STATUS status;
@@ -1470,7 +1470,7 @@ int net_ads_join(int argc, const char **argv)
 	char *tmp_password, *password;
 	TALLOC_CTX *ctx = NULL;
 	DOM_SID *domain_sid = NULL;
-	BOOL createupn = False;
+	bool createupn = False;
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
 	int i;

@@ -29,7 +29,7 @@ static int oplock_pipe_read = -1;
  Test to see if IRIX kernel oplocks work.
 ****************************************************************************/
 
-static BOOL irix_oplocks_available(void)
+static bool irix_oplocks_available(void)
 {
 	int fd;
 	int pfd[2];
@@ -175,7 +175,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
  Attempt to set an kernel oplock on a file.
 ****************************************************************************/
 
-static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
+static bool irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if (sys_fcntl_long(fsp->fh->fd, F_OPLKREG, oplock_pipe_write) == -1) {
 		if(errno != EAGAIN) {
@@ -244,7 +244,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
  Note that fds MAY BE NULL ! If so we must do our own select.
 ****************************************************************************/
 
-static BOOL irix_oplock_msg_waiting(fd_set *fds)
+static bool irix_oplock_msg_waiting(fd_set *fds)
 {
 	int selrtn;
 	fd_set myfds;

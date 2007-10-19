@@ -23,7 +23,7 @@
  Normalise for DOS usage.
 ****************************************************************************/
 
-static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+static void disk_norm(bool small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
 	SMB_BIG_UINT maxdisksize = lp_maxdisksize();
@@ -62,7 +62,7 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
  Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
-SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, BOOL small_query, 
+SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small_query, 
                               SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	SMB_BIG_UINT dfree_retval;
@@ -176,7 +176,7 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, BOOL small
 
 SMB_BIG_UINT get_dfree_info(connection_struct *conn,
 			const char *path,
-			BOOL small_query,
+			bool small_query,
 			SMB_BIG_UINT *bsize,
 			SMB_BIG_UINT *dfree,
 			SMB_BIG_UINT *dsize)

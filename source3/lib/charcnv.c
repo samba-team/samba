@@ -46,7 +46,7 @@ char lp_failed_convert_char(void)
 
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
-static BOOL conv_silent; /* Should we do a debug if the conversion fails ? */
+static bool conv_silent; /* Should we do a debug if the conversion fails ? */
 
 /**
  * Return the name of a charset to give to iconv().
@@ -128,7 +128,7 @@ void gfree_charcnv(void)
 void init_iconv(void)
 {
 	int c1, c2;
-	BOOL did_reload = False;
+	bool did_reload = False;
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
@@ -201,7 +201,7 @@ void init_iconv(void)
 
 static size_t convert_string_internal(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
-		      void *dest, size_t destlen, BOOL allow_bad_conv)
+		      void *dest, size_t destlen, bool allow_bad_conv)
 {
 	size_t i_len, o_len;
 	size_t retval;
@@ -375,7 +375,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
-		      void *dest, size_t destlen, BOOL allow_bad_conv)
+		      void *dest, size_t destlen, bool allow_bad_conv)
 {
 	/*
 	 * NB. We deliberately don't do a strlen here if srclen == -1.
@@ -523,7 +523,7 @@ size_t convert_string(charset_t from, charset_t to,
  **/
 
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			       void const *src, size_t srclen, void *dst, BOOL allow_bad_conv)
+			       void const *src, size_t srclen, void *dst, bool allow_bad_conv)
 {
 	size_t i_len, o_len, destlen = MAX(srclen, 512);
 	size_t retval;
@@ -724,7 +724,7 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  **/
 size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			     void const *src, size_t srclen, void *dst,
-			     BOOL allow_bad_conv)
+			     bool allow_bad_conv)
 {
 	void **dest = (void **)dst;
 	size_t dest_len;

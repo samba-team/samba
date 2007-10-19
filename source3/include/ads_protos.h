@@ -17,15 +17,15 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 			      char **current_strings,
 			      const char **next_attribute,
 			      size_t *num_strings,
-			      BOOL *more_strings);
-BOOL ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+			      bool *more_strings);
+bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		     uint32 *v);
-BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid);
-BOOL ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+bool ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid);
+bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		  DOM_SID *sid);
 int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		  LDAPMessage *msg, const char *field, DOM_SID **sids);
-BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		 LDAPMessage *msg, const char *field, SEC_DESC **sd);
 char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 			LDAPMessage *msg);
@@ -90,7 +90,7 @@ ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res,
 LDAPMessage *ads_first_entry(ADS_STRUCT *ads, LDAPMessage *res);
 LDAPMessage *ads_next_entry(ADS_STRUCT *ads, LDAPMessage *res);
 void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
-			 BOOL(*fn)(ADS_STRUCT *,char *, void **, void *),
+			 bool (*fn)(ADS_STRUCT *,char *, void **, void *),
 			 void *data_area);
 void ads_dump(ADS_STRUCT *ads, LDAPMessage *res);
 

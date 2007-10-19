@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_svcctl.h"
 
-static BOOL api_svcctl_CloseServiceHandle(pipes_struct *p)
+static bool api_svcctl_CloseServiceHandle(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -79,7 +79,7 @@ static BOOL api_svcctl_CloseServiceHandle(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_ControlService(pipes_struct *p)
+static bool api_svcctl_ControlService(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -157,7 +157,7 @@ static BOOL api_svcctl_ControlService(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_DeleteService(pipes_struct *p)
+static bool api_svcctl_DeleteService(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -228,7 +228,7 @@ static BOOL api_svcctl_DeleteService(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_LockServiceDatabase(pipes_struct *p)
+static bool api_svcctl_LockServiceDatabase(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -306,7 +306,7 @@ static BOOL api_svcctl_LockServiceDatabase(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
+static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -377,7 +377,7 @@ static BOOL api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
+static bool api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -448,7 +448,7 @@ static BOOL api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceStatus(pipes_struct *p)
+static bool api_svcctl_QueryServiceStatus(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -526,7 +526,7 @@ static BOOL api_svcctl_QueryServiceStatus(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_SetServiceStatus(pipes_struct *p)
+static bool api_svcctl_SetServiceStatus(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -597,7 +597,7 @@ static BOOL api_svcctl_SetServiceStatus(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_UnlockServiceDatabase(pipes_struct *p)
+static bool api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -670,7 +670,7 @@ static BOOL api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
+static bool api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -741,7 +741,7 @@ static BOOL api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_SCSetServiceBitsW(pipes_struct *p)
+static bool api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -812,7 +812,7 @@ static BOOL api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_ChangeServiceConfigW(pipes_struct *p)
+static bool api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -890,7 +890,7 @@ static BOOL api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_CreateServiceW(pipes_struct *p)
+static bool api_svcctl_CreateServiceW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -969,7 +969,7 @@ static BOOL api_svcctl_CreateServiceW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_EnumDependentServicesW(pipes_struct *p)
+static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1059,7 +1059,7 @@ static BOOL api_svcctl_EnumDependentServicesW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_EnumServicesStatusW(pipes_struct *p)
+static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1150,7 +1150,7 @@ static BOOL api_svcctl_EnumServicesStatusW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_OpenSCManagerW(pipes_struct *p)
+static bool api_svcctl_OpenSCManagerW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1228,7 +1228,7 @@ static BOOL api_svcctl_OpenSCManagerW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_OpenServiceW(pipes_struct *p)
+static bool api_svcctl_OpenServiceW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1306,7 +1306,7 @@ static BOOL api_svcctl_OpenServiceW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceConfigW(pipes_struct *p)
+static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1390,7 +1390,7 @@ static BOOL api_svcctl_QueryServiceConfigW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
+static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1474,7 +1474,7 @@ static BOOL api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_StartServiceW(pipes_struct *p)
+static bool api_svcctl_StartServiceW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1545,7 +1545,7 @@ static BOOL api_svcctl_StartServiceW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
+static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1624,7 +1624,7 @@ static BOOL api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_GetServiceKeyNameW(pipes_struct *p)
+static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1703,7 +1703,7 @@ static BOOL api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_SCSetServiceBitsA(pipes_struct *p)
+static bool api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1774,7 +1774,7 @@ static BOOL api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_ChangeServiceConfigA(pipes_struct *p)
+static bool api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1852,7 +1852,7 @@ static BOOL api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_CreateServiceA(pipes_struct *p)
+static bool api_svcctl_CreateServiceA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1930,7 +1930,7 @@ static BOOL api_svcctl_CreateServiceA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_EnumDependentServicesA(pipes_struct *p)
+static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2020,7 +2020,7 @@ static BOOL api_svcctl_EnumDependentServicesA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_EnumServicesStatusA(pipes_struct *p)
+static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2111,7 +2111,7 @@ static BOOL api_svcctl_EnumServicesStatusA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_OpenSCManagerA(pipes_struct *p)
+static bool api_svcctl_OpenSCManagerA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2189,7 +2189,7 @@ static BOOL api_svcctl_OpenSCManagerA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_OpenServiceA(pipes_struct *p)
+static bool api_svcctl_OpenServiceA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2260,7 +2260,7 @@ static BOOL api_svcctl_OpenServiceA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceConfigA(pipes_struct *p)
+static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2344,7 +2344,7 @@ static BOOL api_svcctl_QueryServiceConfigA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
+static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2428,7 +2428,7 @@ static BOOL api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_StartServiceA(pipes_struct *p)
+static bool api_svcctl_StartServiceA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2499,7 +2499,7 @@ static BOOL api_svcctl_StartServiceA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
+static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2578,7 +2578,7 @@ static BOOL api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_GetServiceKeyNameA(pipes_struct *p)
+static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2657,7 +2657,7 @@ static BOOL api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
+static bool api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2728,7 +2728,7 @@ static BOOL api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_EnumServiceGroupW(pipes_struct *p)
+static bool api_svcctl_EnumServiceGroupW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2799,7 +2799,7 @@ static BOOL api_svcctl_EnumServiceGroupW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
+static bool api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2870,7 +2870,7 @@ static BOOL api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
+static bool api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2941,7 +2941,7 @@ static BOOL api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceConfig2A(pipes_struct *p)
+static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3025,7 +3025,7 @@ static BOOL api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceConfig2W(pipes_struct *p)
+static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3109,7 +3109,7 @@ static BOOL api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_QueryServiceStatusEx(pipes_struct *p)
+static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3193,7 +3193,7 @@ static BOOL api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_EnumServicesStatusExA(pipes_struct *p)
+static bool api_EnumServicesStatusExA(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3290,7 +3290,7 @@ static BOOL api_EnumServicesStatusExA(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_EnumServicesStatusExW(pipes_struct *p)
+static bool api_EnumServicesStatusExW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3387,7 +3387,7 @@ static BOOL api_EnumServicesStatusExW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_svcctl_SCSendTSMessage(pipes_struct *p)
+static bool api_svcctl_SCSendTSMessage(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

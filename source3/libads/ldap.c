@@ -118,7 +118,7 @@ static int ldap_search_with_timeout(LDAP *ld,
  Do client and server sitename match ?
 **********************************************/
 
-BOOL ads_sitename_match(ADS_STRUCT *ads)
+bool ads_sitename_match(ADS_STRUCT *ads)
 {
 	if (ads->config.server_site_name == NULL &&
 	    ads->config.client_site_name == NULL ) {
@@ -142,7 +142,7 @@ BOOL ads_sitename_match(ADS_STRUCT *ads)
  Is this the closest DC ?
 **********************************************/
 
-BOOL ads_closest_dc(ADS_STRUCT *ads)
+bool ads_closest_dc(ADS_STRUCT *ads)
 {
 	if (ads->config.flags & ADS_CLOSEST) {
 		DEBUG(10,("ads_closest_dc: ADS_CLOSEST flag set\n"));
@@ -166,7 +166,7 @@ BOOL ads_closest_dc(ADS_STRUCT *ads)
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
  */
-BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
+bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 {
 	char *srv;
 	struct cldap_netlogon_reply cldap_reply;
@@ -246,8 +246,8 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	int count, i=0;
 	struct ip_service *ip_list;
 	pstring realm;
-	BOOL got_realm = False;
-	BOOL use_own_domain = False;
+	bool got_realm = False;
+	bool use_own_domain = False;
 	char *sitename;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
@@ -864,7 +864,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
  **/
 ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *expr, const char **attrs,
-				BOOL(*fn)(ADS_STRUCT *, char *, void **, void *), 
+				bool (*fn)(ADS_STRUCT *, char *, void **, void *), 
 				void *data_area)
 {
 	struct berval *cookie = NULL;
@@ -1738,7 +1738,7 @@ done:
 **/
 
 ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
-                                 const char *org_unit, BOOL *moved)
+                                 const char *org_unit, bool *moved)
 {
 	ADS_STATUS rc;
 	int ldap_status;
@@ -1747,7 +1747,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	char *computer_dn = NULL;
 	char *parent_dn;
 	char *computer_rdn = NULL;
-	BOOL need_move = False;
+	bool need_move = False;
 
 	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
 		rc = ADS_ERROR(LDAP_NO_MEMORY);
@@ -1886,11 +1886,11 @@ static void dump_string(const char *field, char **values)
   used for debugging
 */
 
-static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *data_area)
+static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *data_area)
 {
 	const struct {
 		const char *name;
-		BOOL string;
+		bool string;
 		void (*handler)(ADS_STRUCT *, const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", False, dump_guid},
@@ -1952,7 +1952,7 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
  * @param data_area user-defined area to pass to function
  **/
  void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
-			  BOOL(*fn)(ADS_STRUCT *, char *, void **, void *),
+			  bool (*fn)(ADS_STRUCT *, char *, void **, void *),
 			  void *data_area)
 {
 	LDAPMessage *msg;
@@ -1974,7 +1974,7 @@ static BOOL ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 			struct berval **ber_vals;
 			char **str_vals, **utf8_vals;
 			char *field;
-			BOOL string; 
+			bool string; 
 
 			pull_utf8_talloc(ctx, &field, utf8_field);
 			string = fn(ads, field, NULL, data_area);
@@ -2126,7 +2126,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 			       char **current_strings,
 			       const char **next_attribute,
 			       size_t *num_strings,
-			       BOOL *more_strings)
+			       bool *more_strings)
 {
 	char *attr;
 	char *expected_range_attrib, *range_attr;
@@ -2243,7 +2243,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param v Pointer to int to store result
  * @return boolean inidicating success
 */
- BOOL ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+ bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		      uint32 *v)
 {
 	char **values;
@@ -2268,7 +2268,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param guid 37-byte area to receive text guid
  * @return boolean indicating success
  **/
- BOOL ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid)
+ bool ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid)
 {
 	char **values;
 	UUID_FLAT flat_guid;
@@ -2297,11 +2297,11 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param sid Pointer to sid to store result
  * @return boolean inidicating success
 */
- BOOL ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
+ bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		   DOM_SID *sid)
 {
 	struct berval **values;
-	BOOL ret = False;
+	bool ret = False;
 
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
@@ -2328,7 +2328,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		   LDAPMessage *msg, const char *field, DOM_SID **sids)
 {
 	struct berval **values;
-	BOOL ret;
+	bool ret;
 	int count, i;
 
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
@@ -2372,11 +2372,11 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param sd Pointer to *SEC_DESC to store result (talloc()ed)
  * @return boolean inidicating success
 */
- BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+ bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
 {
 	struct berval **values;
-	BOOL ret = False;
+	bool ret = False;
 
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
@@ -2788,7 +2788,7 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
  * @param sid pointer to a DOM_SID
  * @return boolean inidicating success
  **/
-BOOL ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
+bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
 				  const char *extended_dn, 
 				  enum ads_extended_dn_flags flags, 
 				  DOM_SID *sid)

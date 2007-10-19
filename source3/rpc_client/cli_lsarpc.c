@@ -42,7 +42,7 @@
 
 NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				BOOL sec_qos, uint32 des_access,
+				bool sec_qos, uint32 des_access,
 				POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
@@ -89,7 +89,7 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
   */
 
 NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx, BOOL sec_qos,
+				 TALLOC_CTX *mem_ctx, bool sec_qos,
 				 uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
@@ -1335,7 +1335,7 @@ done:
 /* remove account rights for an account. */
 
 NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				       POLICY_HND *pol, DOM_SID sid, BOOL removeall,
+				       POLICY_HND *pol, DOM_SID sid, bool removeall,
 				       uint32 count, const char **privs_name)
 {
 	prs_struct qbuf, rbuf;
@@ -1372,13 +1372,13 @@ done:
 /** An example of how to use the routines in this file.  Fetch a DOMAIN
     sid. Does complete cli setup / teardown anonymously. */
 
-BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
+bool fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid)
 {
 	extern pstring global_myname;
 	struct cli_state cli;
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
-	BOOL ret = False;
+	bool ret = False;
 
 	ZERO_STRUCT(cli);
 	if(cli_initialise(&cli) == False) {

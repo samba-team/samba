@@ -36,7 +36,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	struct in_addr dest_ip;
 	const char *p;
 	char *pserver;
-	BOOL connected_ok = False;
+	bool connected_ok = False;
 
 	if (!(cli = cli_initialise()))
 		return NULL;
@@ -148,7 +148,7 @@ struct server_security_state {
  Send a 'keepalive' packet down the cli pipe.
 ****************************************************************************/
 
-static BOOL send_server_keepalive(const struct timeval *now,
+static bool send_server_keepalive(const struct timeval *now,
 				  void *private_data)
 {
 	struct server_security_state *state = talloc_get_type_abort(
@@ -265,10 +265,10 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	struct cli_state *cli;
 	static unsigned char badpass[24];
 	static fstring baduser; 
-	static BOOL tested_password_server = False;
-	static BOOL bad_password_server = False;
+	static bool tested_password_server = False;
+	static bool bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	BOOL locally_made_cli = False;
+	bool locally_made_cli = False;
 
 	cli = (struct cli_state *)my_private_data;
 	

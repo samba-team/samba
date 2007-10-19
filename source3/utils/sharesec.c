@@ -144,7 +144,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
     parse an ACE in the same format as print_ace()
 ********************************************************************/
 
-static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
+static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 {
 	char *p;
 	const char *cp;
@@ -243,7 +243,7 @@ static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 	p = tok;
 
 	while(*p) {
-		BOOL found = False;
+		bool found = False;
 
 		for (v = special_values; v->perm; v++) {
 			if (v->perm[0] == *p) {
@@ -319,7 +319,7 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, SEC_ACE *ace)
+static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, SEC_ACE *ace)
 {
 	SEC_ACL *new_ace;
 	SEC_ACE *aces;
@@ -412,7 +412,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		return 0;
 	case SMB_ACL_DELETE:
 	    for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-		BOOL found = False;
+		bool found = False;
 
 		for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 		    if (sec_ace_equal(&sd->dacl->aces[i], &old->dacl->aces[j])) {
@@ -436,7 +436,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	    break;
 	case SMB_ACL_MODIFY:
 	    for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-		BOOL found = False;
+		bool found = False;
 
 		for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 		    if (sid_equal(&sd->dacl->aces[i].trustee,
@@ -490,10 +490,10 @@ int main(int argc, const char *argv[])
 	enum acl_mode mode = SMB_ACL_SET;
 	static char *the_acl = NULL;
 	fstring sharename;
-	BOOL force_acl = False;
+	bool force_acl = False;
 	int snum;
 	poptContext pc;
-	BOOL initialize_sid = False;
+	bool initialize_sid = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "remove", 'r', POPT_ARG_STRING, &the_acl, 'r', "Delete an ACE", "ACL" },

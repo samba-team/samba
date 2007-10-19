@@ -49,7 +49,7 @@
 	  Directories are always displayed...    
 */
 
-static int test_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+static int test_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
 {
 	uint32 num = 3;
 	uint32 i;

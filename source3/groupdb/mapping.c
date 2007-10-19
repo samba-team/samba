@@ -28,7 +28,7 @@ static const struct mapping_backend *backend;
 /*
   initialise a group mapping backend
  */
-static BOOL init_group_mapping(void)
+static bool init_group_mapping(void)
 {
 	if (backend != NULL) {
 		/* already initialised */
@@ -101,10 +101,10 @@ struct aliasmem_closure {
 
 /* get a domain group from it's SID */
 
-BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
+bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	struct group *grp;
-	BOOL ret;
+	bool ret;
 	
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
@@ -387,7 +387,7 @@ NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 					   const DOM_SID *sid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
-					   BOOL unix_only)
+					   bool unix_only)
 {
 	if (!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
@@ -404,7 +404,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	enum lsa_SidType type;
 	uint32 new_rid;
 	gid_t gid;
-	BOOL exists;
+	bool exists;
 	GROUP_MAP map;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -626,7 +626,7 @@ NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
-					   BOOL unix_only)
+					   bool unix_only)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -634,10 +634,10 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 /****************************************************************************
  These need to be redirected through pdb_interface.c
 ****************************************************************************/
-BOOL pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
+bool pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
 {
 	GROUP_MAP map;
-	BOOL res;
+	bool res;
 
 	become_root();
 	res = get_domain_group_from_sid(*sid, &map);
@@ -652,7 +652,7 @@ BOOL pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
 	return True;
 }
 
-BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
+bool pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 {
 	GROUP_MAP map;
 

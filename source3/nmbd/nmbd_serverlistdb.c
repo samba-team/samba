@@ -288,7 +288,7 @@ void write_browse_list_entry(XFILE *fp, const char *name, uint32 rec_type,
 	x_fprintf(fp, "\"%s\"\n", description);
 }
 
-void write_browse_list(time_t t, BOOL force_write)
+void write_browse_list(time_t t, bool force_write)
 {   
 	struct subnet_record *subrec;
 	struct work_record *work;
@@ -297,7 +297,7 @@ void write_browse_list(time_t t, BOOL force_write)
 	uint32 stype;
 	int i;
 	XFILE *fp;
-	BOOL list_changed = force_write;
+	bool list_changed = force_write;
 	static time_t lasttime = 0;
     
 	/* Always dump if we're being told to by a signal. */

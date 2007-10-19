@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-BOOL cli_get_quota_handle(struct cli_state *cli, int *quota_fnum)
+bool cli_get_quota_handle(struct cli_state *cli, int *quota_fnum)
 {
 	*quota_fnum = cli_nt_create_full(cli, FAKE_FILE_NAME_QUOTA_WIN32,
 		 0x00000016, DESIRED_ACCESS_PIPE,
@@ -46,7 +46,7 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 	return;	
 }
 
-static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count, unsigned int *offset, SMB_NTQUOTA_STRUCT *pqt)
+static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count, unsigned int *offset, SMB_NTQUOTA_STRUCT *pqt)
 {
 	int sid_len;
 	SMB_NTQUOTA_STRUCT qt;
@@ -126,9 +126,9 @@ static BOOL parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	return True;
 }
 
-BOOL cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+bool cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char params[16];
 	unsigned int data_len;
@@ -194,9 +194,9 @@ BOOL cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	return ret;
 }
 
-BOOL cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char params[2];
 	char data[112];
@@ -253,9 +253,9 @@ BOOL cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	return ret;
 }
 
-BOOL cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST **pqt_list)
+bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST **pqt_list)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char params[16];
 	char *rparam=NULL, *rdata=NULL;
@@ -412,9 +412,9 @@ BOOL cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 	return ret;
 }
 
-BOOL cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[2];
 	char *rparam=NULL, *rdata=NULL;
@@ -499,9 +499,9 @@ cleanup:
 	return ret;	
 }
 
-BOOL cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[4];
 	char data[48];
@@ -562,7 +562,7 @@ cleanup:
 	return ret;	
 }
 
-static char *quota_str_static(SMB_BIG_UINT val, BOOL special, BOOL _numeric)
+static char *quota_str_static(SMB_BIG_UINT val, bool special, bool _numeric)
 {
 	static fstring buffer;
 	
@@ -580,7 +580,7 @@ static char *quota_str_static(SMB_BIG_UINT val, BOOL special, BOOL _numeric)
 	return buffer;
 }
 
-void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, BOOL _verbose, BOOL _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, BOOL _numeric))
+void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric))
 {
 	if (!qt) {
 		smb_panic("dump_ntquota() called with NULL pointer");
@@ -630,7 +630,7 @@ void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, BOOL _verbose, BOOL _numeric, void (*_
 	}
 }
 
-void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, BOOL _verbose, BOOL _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, BOOL _numeric))
+void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric))
 {
 	SMB_NTQUOTA_LIST *cur;
 

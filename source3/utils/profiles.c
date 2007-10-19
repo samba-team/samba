@@ -26,7 +26,7 @@
 
 DOM_SID old_sid, new_sid;
 int change = 0, new_val = 0;
-BOOL opt_verbose = False;
+bool opt_verbose = False;
 
 /********************************************************************
 ********************************************************************/
@@ -55,11 +55,11 @@ static void verbose_output(const char *format, ...)
 /********************************************************************
 ********************************************************************/
 
-static BOOL swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
+static bool swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 {
 	SEC_ACL *acl;
 	int i;
-	BOOL update = False;
+	bool update = False;
 
 	verbose_output("  Owner SID: %s\n", sid_string_static(sd->owner_sid));
 	if ( sid_equal( sd->owner_sid, s1 ) ) {
@@ -111,7 +111,7 @@ static BOOL swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 /********************************************************************
 ********************************************************************/
 
-static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
+static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
                                 REGF_NK_REC *parent, REGF_FILE *outfile,
                                 const char *parentpath  )
 {

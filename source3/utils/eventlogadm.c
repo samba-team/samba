@@ -59,7 +59,7 @@ static void display_eventlog_names( void )
 		printf( "\t<None specified>\n");
 }
 
-static int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
+static int DoAddSourceCommand( int argc, char **argv, bool debugflag, char *exename )
 {
 
 	if ( argc < 3 ) {
@@ -78,7 +78,7 @@ static int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exen
 	return 0;
 }
 
-static int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
+static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename )
 {
 	FILE *f1;
 	char *argfname;
@@ -86,7 +86,7 @@ static int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename 
 
 	/* fixed constants are bad bad bad  */
 	pstring linein;
-	BOOL is_eor;
+	bool is_eor;
 	Eventlog_entry ee;
 	int rcnum;
 

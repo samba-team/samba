@@ -88,7 +88,7 @@ const char *audit_description_str(uint32 category)
 	return NULL;
 }
 
-BOOL get_audit_category_from_param(const char *param, uint32 *audit_category)
+bool get_audit_category_from_param(const char *param, uint32 *audit_category)
 {
 	*audit_category = Undefined;
 

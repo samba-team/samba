@@ -29,7 +29,7 @@
  Core of smb password checking routine.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
+static bool smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 DATA_BLOB *user_sess_key)
@@ -80,11 +80,11 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
  Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
 
-static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
+static bool smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
-				 BOOL upper_case_domain, /* should the domain be transformed into upper case? */
+				 bool upper_case_domain, /* should the domain be transformed into upper case? */
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -92,7 +92,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	uchar value_from_encryption[16];
 	uchar client_response[16];
 	DATA_BLOB client_key_data;
-	BOOL res;
+	bool res;
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));

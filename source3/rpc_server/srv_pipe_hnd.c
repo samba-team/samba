@@ -62,9 +62,9 @@ static struct bitmap *bmap;
  */
 
 static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
-		BOOL *is_data_outstanding);
+		bool *is_data_outstanding);
 static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n);
-static BOOL close_internal_rpc_pipe_hnd(void *np_conn);
+static bool close_internal_rpc_pipe_hnd(void *np_conn);
 static void *make_internal_rpc_pipe_p(const char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 
@@ -137,7 +137,7 @@ void init_rpc_pipe_hnd(void)
  Initialise an outgoing packet.
 ****************************************************************************/
 
-static BOOL pipe_init_outgoing_data(pipes_struct *p)
+static bool pipe_init_outgoing_data(pipes_struct *p)
 {
 	output_data *o_data = &p->out_data;
 
@@ -173,7 +173,7 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 	int i;
 	smb_np_struct *p, *p_it;
 	static int next_pipe;
-	BOOL is_spoolss_pipe = False;
+	bool is_spoolss_pipe = False;
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
@@ -540,7 +540,7 @@ static void free_pipe_context(pipes_struct *p)
  appends the data into the complete stream if the LAST flag is not set.
 ****************************************************************************/
 
-static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
+static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	uint32 ss_padding_len = 0;
 	size_t data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
@@ -629,7 +629,7 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	if(p->hdr.flags & RPC_FLG_LAST) {
-		BOOL ret = False;
+		bool ret = False;
 		/*
 		 * Ok - we finally have a complete RPC stream.
 		 * Call the rpc command to process it.
@@ -692,7 +692,7 @@ static void process_complete_pdu(pipes_struct *p)
 	prs_struct rpc_in;
 	size_t data_len = p->in_data.pdu_received_len - RPC_HEADER_LEN;
 	char *data_p = (char *)&p->in_data.current_in_pdu[RPC_HEADER_LEN];
-	BOOL reply = False;
+	bool reply = False;
 
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
@@ -984,7 +984,7 @@ static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n)
 ****************************************************************************/
 
 ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
-		BOOL *is_data_outstanding)
+		bool *is_data_outstanding)
 {
 	if (!p || !p->open) {
 		DEBUG(0,("read_from_pipe: pipe not open\n"));
@@ -1008,7 +1008,7 @@ ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
 ****************************************************************************/
 
 static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
-		BOOL *is_data_outstanding)
+		bool *is_data_outstanding)
 {
 	pipes_struct *p = (pipes_struct*)np_conn;
 	uint32 pdu_remaining = 0;
@@ -1102,7 +1102,7 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
  Wait device state on a pipe. Exactly what this is for is unknown...
 ****************************************************************************/
 
-BOOL wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority)
+bool wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority)
 {
 	if (p == NULL) {
 		return False;
@@ -1127,7 +1127,7 @@ BOOL wait_rpc_pipe_hnd_state(smb_np_struct *p, uint16 priority)
  Set device state on a pipe. Exactly what this is for is unknown...
 ****************************************************************************/
 
-BOOL set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state)
+bool set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state)
 {
 	if (p == NULL) {
 		return False;
@@ -1152,7 +1152,7 @@ BOOL set_rpc_pipe_hnd_state(smb_np_struct *p, uint16 device_state)
  Close an rpc pipe.
 ****************************************************************************/
 
-BOOL close_rpc_pipe_hnd(smb_np_struct *p)
+bool close_rpc_pipe_hnd(smb_np_struct *p)
 {
 	if (!p) {
 		DEBUG(0,("Invalid pipe in close_rpc_pipe_hnd\n"));
@@ -1204,7 +1204,7 @@ void pipe_close_conn(connection_struct *conn)
  Close an rpc pipe.
 ****************************************************************************/
 
-static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
+static bool close_internal_rpc_pipe_hnd(void *np_conn)
 {
 	pipes_struct *p = (pipes_struct *)np_conn;
 	if (!p) {

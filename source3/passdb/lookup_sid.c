@@ -29,7 +29,7 @@
  to do guesswork.
 *****************************************************************/  
 
-BOOL lookup_name(TALLOC_CTX *mem_ctx,
+bool lookup_name(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
 		 DOM_SID *ret_sid, enum lsa_SidType *ret_type)
@@ -327,7 +327,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
  and then "Unix Users"\foo (or "Unix Groups"\foo).
 ************************************************************************/
 
-BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
+bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
 		 DOM_SID *ret_sid, enum lsa_SidType *ret_type)
@@ -387,7 +387,7 @@ BOOL lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				ret_sid, ret_type);
 }
 
-static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
+static bool wb_lookup_rids(TALLOC_CTX *mem_ctx,
 			   const DOM_SID *domain_sid,
 			   int num_rids, uint32 *rids,
 			   const char **domain_name,
@@ -438,7 +438,7 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
+static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 			int num_rids, uint32_t *rids,
 			const char **domain_name,
 			const char ***names, enum lsa_SidType **types)
@@ -556,7 +556,7 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
  * Is the SID a domain as such? If yes, lookup its name.
  */
 
-static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
+static bool lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 			     const char **name)
 {
 	const char *tmp;
@@ -634,7 +634,7 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
  * Level 6: Like 4
  */
 
-static BOOL check_dom_sid_to_level(const DOM_SID *sid, int level)
+static bool check_dom_sid_to_level(const DOM_SID *sid, int level)
 {
 	int ret = False;
 
@@ -893,14 +893,14 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
  *THE CANONICAL* convert SID to name function.
 *****************************************************************/  
 
-BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		const char **ret_domain, const char **ret_name,
 		enum lsa_SidType *ret_type)
 {
 	struct lsa_dom_info *domain;
 	struct lsa_name_info *name;
 	TALLOC_CTX *tmp_ctx;
-	BOOL ret = False;
+	bool ret = False;
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -979,7 +979,7 @@ static struct gid_sid_cache {
   Find a SID given a uid.
 *****************************************************************/  
 
-static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
+static bool fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
@@ -999,7 +999,7 @@ static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
   Find a uid given a SID.
 *****************************************************************/  
 
-static BOOL fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
+static bool fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 {
 	struct uid_sid_cache *pc;
 
@@ -1056,7 +1056,7 @@ void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
   Find a SID given a gid.
 *****************************************************************/  
 
-static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
+static bool fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 {
 	struct gid_sid_cache *pc;
 
@@ -1076,7 +1076,7 @@ static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
   Find a gid given a SID.
 *****************************************************************/  
 
-static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
+static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 {
 	struct gid_sid_cache *pc;
 
@@ -1140,7 +1140,7 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	uint32 rid;
-	BOOL ret;
+	bool ret;
 
 	ZERO_STRUCTP(psid);
 
@@ -1173,7 +1173,7 @@ static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-	BOOL ret;
+	bool ret;
 
 	ZERO_STRUCTP(psid);
 
@@ -1202,14 +1202,14 @@ static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
  *THE LEGACY* convert SID to uid function.
 *****************************************************************/  
 
-static BOOL legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
+static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum lsa_SidType type;
 	uint32 rid;
 
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
 		union unid_t id;
-		BOOL ret;
+		bool ret;
 
 		become_root();
 		ret = pdb_sid_to_id(psid, &id, &type);
@@ -1245,7 +1245,7 @@ done:
  Group mapping is used for gids that maps to Wellknown SIDs
 *****************************************************************/  
 
-static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	uint32 rid;
 	GROUP_MAP map;
@@ -1254,7 +1254,7 @@ static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
-		BOOL ret;
+		bool ret;
 
 		become_root();
 		ret = pdb_getgrsid(&map, *psid);
@@ -1269,7 +1269,7 @@ static BOOL legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	}
 
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
-		BOOL ret;
+		bool ret;
 
 		become_root();
 		ret = pdb_sid_to_id(psid, &id, &type);
@@ -1364,7 +1364,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
  *THE CANONICAL* convert SID to uid function.
 *****************************************************************/  
 
-BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
+bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	uint32 rid;
 	gid_t gid;
@@ -1413,7 +1413,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
  Group mapping is used for gids that maps to Wellknown SIDs
 *****************************************************************/  
 
-BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	uint32 rid;
 	uid_t uid;

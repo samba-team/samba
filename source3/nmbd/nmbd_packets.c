@@ -30,7 +30,7 @@ extern int num_response_packets;
 
 static void queue_packet(struct packet_struct *packet);
 
-BOOL rescan_listen_set = False;
+bool rescan_listen_set = False;
 
 
 /*******************************************************************
@@ -141,9 +141,9 @@ static uint16 generate_name_trn_id(void)
  Either loops back or sends out a completed NetBIOS packet.
 **************************************************************************/
 
-static BOOL send_netbios_packet(struct packet_struct *p)
+static bool send_netbios_packet(struct packet_struct *p)
 {
-	BOOL loopback_this_packet = False;
+	bool loopback_this_packet = False;
 
 	/* Check if we are sending to or from ourselves as a WINS server. */
 	if(ismyip_v4(p->ip) && (p->port == global_nmb_port))
@@ -174,7 +174,7 @@ static BOOL send_netbios_packet(struct packet_struct *p)
 **************************************************************************/
 
 static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmbname,
-                                                            BOOL bcast, BOOL rec_des,
+                                                            bool bcast, bool rec_des,
                                                             struct in_addr to_ip)
 {
 	struct packet_struct *packet = NULL;
@@ -221,7 +221,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
  Sets up the common elements of register, refresh or release packet.
 **************************************************************************/
 
-static BOOL create_and_init_additional_record(struct packet_struct *packet,
+static bool create_and_init_additional_record(struct packet_struct *packet,
                                                      uint16 nb_flags,
                                                      const struct in_addr *register_ip)
 {
@@ -269,7 +269,7 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
  Sends out a name query.
 **************************************************************************/
 
-static BOOL initiate_name_query_packet( struct packet_struct *packet)
+static bool initiate_name_query_packet( struct packet_struct *packet)
 {
 	struct nmb_packet *nmb = NULL;
 
@@ -291,7 +291,7 @@ static BOOL initiate_name_query_packet( struct packet_struct *packet)
  Sends out a name query - from a WINS server. 
 **************************************************************************/
 
-static BOOL initiate_name_query_packet_from_wins_server( struct packet_struct *packet)
+static bool initiate_name_query_packet_from_wins_server( struct packet_struct *packet)
 {   
 	struct nmb_packet *nmb = NULL;
   
@@ -313,7 +313,7 @@ static BOOL initiate_name_query_packet_from_wins_server( struct packet_struct *p
  Sends out a name register.
 **************************************************************************/
 
-static BOOL initiate_name_register_packet( struct packet_struct *packet,
+static bool initiate_name_register_packet( struct packet_struct *packet,
                                     uint16 nb_flags, const struct in_addr *register_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
@@ -337,7 +337,7 @@ static BOOL initiate_name_register_packet( struct packet_struct *packet,
  Sends out a multihomed name register.
 **************************************************************************/
 
-static BOOL initiate_multihomed_name_register_packet(struct packet_struct *packet,
+static bool initiate_multihomed_name_register_packet(struct packet_struct *packet,
 						     uint16 nb_flags, struct in_addr *register_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
@@ -365,7 +365,7 @@ for name %s IP %s (bcast=%s) to IP %s\n",
  Sends out a name refresh.
 **************************************************************************/
 
-static BOOL initiate_name_refresh_packet( struct packet_struct *packet,
+static bool initiate_name_refresh_packet( struct packet_struct *packet,
                                    uint16 nb_flags, struct in_addr *refresh_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
@@ -389,7 +389,7 @@ static BOOL initiate_name_refresh_packet( struct packet_struct *packet,
  Sends out a name release.
 **************************************************************************/
 
-static BOOL initiate_name_release_packet( struct packet_struct *packet,
+static bool initiate_name_release_packet( struct packet_struct *packet,
                                    uint16 nb_flags, struct in_addr *release_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
@@ -413,7 +413,7 @@ static BOOL initiate_name_release_packet( struct packet_struct *packet,
  Sends out a node status.
 **************************************************************************/
 
-static BOOL initiate_node_status_packet( struct packet_struct *packet )
+static bool initiate_node_status_packet( struct packet_struct *packet )
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 
@@ -442,7 +442,7 @@ static BOOL initiate_node_status_packet( struct packet_struct *packet )
  broadcast subnet.
 ****************************************************************************/
 
-static BOOL assert_check_subnet(struct subnet_record *subrec)
+static bool assert_check_subnet(struct subnet_record *subrec)
 {
 	if( subrec == remote_broadcast_subnet) {
 		DEBUG(0,("assert_check_subnet: Attempt to send packet on remote broadcast subnet. \
@@ -587,7 +587,7 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
 {
 	struct packet_struct *p;
 	struct response_record *rrec;
-	BOOL ret;
+	bool ret;
 	
 	/* Sanity check. */
 	if(subrec != unicast_subnet) {
@@ -872,7 +872,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 	struct nmb_packet *nmb = NULL;
 	struct res_rec answers;
 	struct nmb_packet *orig_nmb = &orig_packet->packet.nmb;
-	BOOL loopback_this_packet = False;
+	bool loopback_this_packet = False;
 	int rr_type = RR_TYPE_NB;
 	const char *packet_type = "unknown";
 
@@ -1179,7 +1179,7 @@ command code %d from %s IP %s to %s\n", subrec->subnet_name, command, nmb_namest
   stage as subsequent processing is expensive. 
 ****************************************************************************/
 
-static BOOL listening(struct packet_struct *p,struct nmb_name *nbname)
+static bool listening(struct packet_struct *p,struct nmb_name *nbname)
 {
 	struct subnet_record *subrec = NULL;
 
@@ -1307,9 +1307,9 @@ packet sent to name %s from IP %s\n",
   Validate a response nmb packet.
 ****************************************************************************/
 
-static BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
+static bool validate_nmb_response_packet( struct nmb_packet *nmb )
 {
-	BOOL ignore = False;
+	bool ignore = False;
 
 	switch (nmb->header.opcode) {
 		case NMB_NAME_REG_OPCODE:
@@ -1358,9 +1358,9 @@ static BOOL validate_nmb_response_packet( struct nmb_packet *nmb )
   Validate a request nmb packet.
 ****************************************************************************/
 
-static BOOL validate_nmb_packet( struct nmb_packet *nmb )
+static bool validate_nmb_packet( struct nmb_packet *nmb )
 {
-	BOOL ignore = False;
+	bool ignore = False;
 
 	switch (nmb->header.opcode) {
 		case NMB_NAME_REG_OPCODE:
@@ -1657,7 +1657,7 @@ on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), subrec->subnet_
   plus the broadcast sockets.
 ***************************************************************************/
 
-static BOOL create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_number, int *maxfd)
+static bool create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_number, int *maxfd)
 {
 	int *sock_array = NULL;
 	struct subnet_record *subrec = NULL;
@@ -1729,7 +1729,7 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
   return True if the socket is dead
 ***************************************************************************/
 
-BOOL listen_for_packets(BOOL run_election)
+bool listen_for_packets(bool run_election)
 {
 	static fd_set *listen_set = NULL;
 	static int listen_number = 0;
@@ -1874,13 +1874,13 @@ BOOL listen_for_packets(BOOL run_election)
   Construct and send a netbios DGRAM.
 **************************************************************************/
 
-BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf, size_t len,
+bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
                    const char *srcname, int src_type,
                    const char *dstname, int dest_type,
                    struct in_addr dest_ip,struct in_addr src_ip,
 		   int dest_port)
 {
-	BOOL loopback_this_packet = False;
+	bool loopback_this_packet = False;
 	struct packet_struct p;
 	struct dgram_packet *dgram = &p.packet.dgram;
 	char *ptr,*p2;

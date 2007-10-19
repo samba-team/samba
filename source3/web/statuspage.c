@@ -234,7 +234,7 @@ void status_page(void)
 	int autorefresh=0;
 	int refresh_interval=30;
 	int nr_running=0;
-	BOOL waitup = False;
+	bool waitup = False;
 
 	smbd_pid = pid_to_procid(pidfile_pid("smbd"));
 

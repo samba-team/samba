@@ -42,8 +42,8 @@ static char *query_string;
 static const char *baseurl;
 static char *pathinfo;
 static char *C_user;
-static BOOL inetd_server;
-static BOOL got_request;
+static bool inetd_server;
+static bool got_request;
 
 static char *grab_line(FILE *f, int *cl)
 {
@@ -328,7 +328,7 @@ static void cgi_web_auth(void)
 /***************************************************************************
 handle a http authentication line
   ***************************************************************************/
-static BOOL cgi_handle_authorization(char *line)
+static bool cgi_handle_authorization(char *line)
 {
 	char *p;
 	fstring user, user_pass;
@@ -399,7 +399,7 @@ err:
 /***************************************************************************
 is this root?
   ***************************************************************************/
-BOOL am_root(void)
+bool am_root(void)
 {
 	if (geteuid() == 0) {
 		return( True);
@@ -509,7 +509,7 @@ static void cgi_download(char *file)
  **/
 void cgi_setup(const char *rootdir, int auth_required)
 {
-	BOOL authenticated = False;
+	bool authenticated = False;
 	char line[1024];
 	char *url=NULL;
 	char *p;
@@ -656,7 +656,7 @@ const char *cgi_remote_addr(void)
 /***************************************************************************
 return True if the request was a POST
   ***************************************************************************/
-BOOL cgi_waspost(void)
+bool cgi_waspost(void)
 {
 	if (inetd_server) {
 		return request_post;

@@ -82,7 +82,7 @@ static struct nss_function_entry *nss_get_backend(const char *name )
 /********************************************************************
  *******************************************************************/
 
-static BOOL parse_nss_parm( const char *config, char **backend, char **domain )
+static bool parse_nss_parm( const char *config, char **backend, char **domain )
 {
 	char *p;
 	char *q;

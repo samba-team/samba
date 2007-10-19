@@ -28,7 +28,7 @@ extern struct current_user current_user;
 extern userdom_struct current_user_info;
 
 /* Current printer interface */
-static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
+static bool remove_from_jobs_changed(const char* sharename, uint32 jobid);
 
 /* 
    the printing backend revolves around a tdb database that stores the
@@ -102,7 +102,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	return rap_jobid;
 }
 
-BOOL rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
+bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 {
 	TDB_DATA data, key;
 	uint8 buf[2];
@@ -177,7 +177,7 @@ static int get_queue_status(const char* sharename, print_status_struct *);
  Initialise the printing backend. Called once at startup before the fork().
 ****************************************************************************/
 
-BOOL print_backend_init(struct messaging_context *msg_ctx)
+bool print_backend_init(struct messaging_context *msg_ctx)
 {
 	const char *sversion = "INFO/version";
 	pstring printing_path;
@@ -469,7 +469,7 @@ static uint32 map_to_spoolss_status(uint32 lpq_status)
 static void pjob_store_notify(const char* sharename, uint32 jobid, struct printjob *old_data,
 			      struct printjob *new_data)
 {
-	BOOL new_job = False;
+	bool new_job = False;
 
 	if (!old_data)
 		new_job = True;
@@ -512,10 +512,10 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
  Store a job structure back to the database.
 ****************************************************************************/
 
-static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjob)
+static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjob)
 {
 	TDB_DATA 		old_data, new_data;
-	BOOL 			ret = False;
+	bool 			ret = False;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
 	uint8			*buf = NULL;
 	int			len, newlen, buflen;
@@ -889,7 +889,7 @@ static pid_t get_updating_pid(const char *sharename)
  in the tdb.
 ****************************************************************************/
 
-static void set_updating_pid(const fstring sharename, BOOL updating)
+static void set_updating_pid(const fstring sharename, bool updating)
 {
 	fstring keystr;
 	TDB_DATA key;
@@ -1042,12 +1042,12 @@ static void check_job_changed(const char *sharename, TDB_DATA data, uint32 jobid
  Check if the print queue has been updated recently enough.
 ****************************************************************************/
 
-static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
+static bool print_cache_expired(const char *sharename, bool check_pending)
 {
 	fstring key;
 	time_t last_qscan_time, time_now = time(NULL);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
-	BOOL result = False;
+	bool result = False;
 
 	if (!pdb)
 		return False;
@@ -1439,7 +1439,7 @@ void start_background_queue(void)
 update the internal database from the system print queue for a queue
 ****************************************************************************/
 
-static void print_queue_update(int snum, BOOL force)
+static void print_queue_update(int snum, bool force)
 {
 	fstring key;
 	fstring sharename;
@@ -1550,14 +1550,14 @@ static void print_queue_update(int snum, BOOL force)
  updates only to interested smbd's. 
 ****************************************************************************/
 
-BOOL print_notify_register_pid(int snum)
+bool print_notify_register_pid(int snum)
 {
 	TDB_DATA data;
 	struct tdb_print_db *pdb = NULL;
 	TDB_CONTEXT *tdb = NULL;
 	const char *printername;
 	uint32 mypid = (uint32)sys_getpid();
-	BOOL ret = False;
+	bool ret = False;
 	size_t i;
 
 	/* if (snum == -1), then the change notify request was
@@ -1641,7 +1641,7 @@ list for printer %s\n", printername));
  updates only to interested smbd's. 
 ****************************************************************************/
 
-BOOL print_notify_deregister_pid(int snum)
+bool print_notify_deregister_pid(int snum)
 {
 	TDB_DATA data;
 	struct tdb_print_db *pdb = NULL;
@@ -1649,7 +1649,7 @@ BOOL print_notify_deregister_pid(int snum)
 	const char *printername;
 	uint32 mypid = (uint32)sys_getpid();
 	size_t i;
-	BOOL ret = False;
+	bool ret = False;
 
 	/* if ( snum == -1 ), we are deregister a print server handle
 	   which means to deregister on all print queues */
@@ -1730,10 +1730,10 @@ list for printer %s\n", printername));
  Check if a jobid is valid. It is valid if it exists in the database.
 ****************************************************************************/
 
-BOOL print_job_exists(const char* sharename, uint32 jobid)
+bool print_job_exists(const char* sharename, uint32 jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
-	BOOL ret;
+	bool ret;
 
 	if (!pdb)
 		return False;
@@ -1792,7 +1792,7 @@ NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
  Set the place in the queue for a job.
 ****************************************************************************/
 
-BOOL print_job_set_place(const char *sharename, uint32 jobid, int place)
+bool print_job_set_place(const char *sharename, uint32 jobid, int place)
 {
 	DEBUG(2,("print_job_set_place not implemented yet\n"));
 	return False;
@@ -1802,7 +1802,7 @@ BOOL print_job_set_place(const char *sharename, uint32 jobid, int place)
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 
-BOOL print_job_set_name(const char *sharename, uint32 jobid, char *name)
+bool print_job_set_name(const char *sharename, uint32 jobid, char *name)
 {
 	struct printjob *pjob;
 
@@ -1818,13 +1818,13 @@ BOOL print_job_set_name(const char *sharename, uint32 jobid, char *name)
  Remove a jobid from the 'jobs changed' list.
 ***************************************************************************/
 
-static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid)
+static bool remove_from_jobs_changed(const char* sharename, uint32 jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	TDB_DATA data, key;
 	size_t job_count, i;
-	BOOL ret = False;
-	BOOL gotlock = False;
+	bool ret = False;
+	bool gotlock = False;
 
 	if (!pdb) {
 		return False;
@@ -1877,7 +1877,7 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid)
  Delete a print job - don't update queue.
 ****************************************************************************/
 
-static BOOL print_job_delete1(int snum, uint32 jobid)
+static bool print_job_delete1(int snum, uint32 jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob = print_job_find(sharename, jobid);
@@ -1940,7 +1940,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
  Return true if the current user owns the print job.
 ****************************************************************************/
 
-static BOOL is_owner(struct current_user *user, const char *servicename,
+static bool is_owner(struct current_user *user, const char *servicename,
 		     uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(servicename, jobid);
@@ -1960,11 +1960,11 @@ static BOOL is_owner(struct current_user *user, const char *servicename,
  Delete a print job.
 ****************************************************************************/
 
-BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
+bool print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
 	const char* sharename = lp_const_servicename( snum );
 	struct printjob *pjob;
-	BOOL 	owner;
+	bool 	owner;
 	char 	*fname;
 
 	*errcode = WERR_OK;
@@ -2027,7 +2027,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Pause a job.
 ****************************************************************************/
 
-BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
+bool print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2087,7 +2087,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Resume a job.
 ****************************************************************************/
 
-BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
+bool print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
 	const char *sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2230,7 +2230,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
  Allocate a jobid. Hold the lock for as short a time as possible.
 ***************************************************************************/
 
-static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char *sharename, uint32 *pjobid)
+static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char *sharename, uint32 *pjobid)
 {
 	int i;
 	uint32 jobid;
@@ -2296,7 +2296,7 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
  Append a jobid to the 'jobs changed' list.
 ***************************************************************************/
 
-static BOOL add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
+static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 {
 	TDB_DATA data;
 	uint32 store_jobid;
@@ -2473,7 +2473,7 @@ void print_job_endpage(int snum, uint32 jobid)
  error.
 ****************************************************************************/
 
-BOOL print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
+bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2550,7 +2550,7 @@ fail:
  Get a snapshot of jobs in the system without traversing.
 ****************************************************************************/
 
-static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcount, print_queue_struct **ppqueue)
+static bool get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcount, print_queue_struct **ppqueue)
 {
 	TDB_DATA data, cgdata;
 	print_queue_struct *queue = NULL;
@@ -2560,7 +2560,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	size_t len = 0;
 	uint32 i;
 	int max_reported_jobs = lp_max_reported_jobs(snum);
-	BOOL ret = False;
+	bool ret = False;
 	const char* sharename = lp_servicename(snum);
 
 	/* make sure the database is up to date */
@@ -2731,7 +2731,7 @@ int print_queue_status(int snum,
  Pause a queue.
 ****************************************************************************/
 
-BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
+bool print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 {
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2767,7 +2767,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
  Resume a queue.
 ****************************************************************************/
 
-BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
+bool print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 {
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2803,12 +2803,12 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
  Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
 
-BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
+bool print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
 	int njobs, i;
-	BOOL can_job_admin;
+	bool can_job_admin;
 
 	/* Force and update so the count is accurate (i.e. not a cached count) */
 	print_queue_update(snum, True);
@@ -2820,7 +2820,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 		become_root();
 
 	for (i=0;i<njobs;i++) {
-		BOOL owner = is_owner(user, lp_const_servicename(snum), queue[i].job);
+		bool owner = is_owner(user, lp_const_servicename(snum), queue[i].job);
 
 		if (owner || can_job_admin) {
 			print_job_delete1(snum, queue[i].job);

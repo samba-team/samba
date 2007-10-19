@@ -111,7 +111,7 @@ smbc_lseek_ctx(SMBCCTX *context,
                off_t offset,
                int whence);
 
-extern BOOL in_client;
+extern bool in_client;
 
 /*
  * Is the logging working / configfile read ? 
@@ -635,7 +635,7 @@ find_server(SMBCCTX *context,
 
 static SMBCSRV *
 smbc_server(SMBCCTX *context,
-            BOOL connect_if_not_found,
+            bool connect_if_not_found,
             const char *server,
             const char *share, 
             fstring workgroup,
@@ -1481,7 +1481,7 @@ smbc_close_ctx(SMBCCTX *context,
  * Get info from an SMB server on a file. Use a qpathinfo call first
  * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
  */
-static BOOL
+static bool
 smbc_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             char *path, 
@@ -1580,7 +1580,7 @@ smbc_getatr(SMBCCTX * context,
  *
  * "mode" (attributes) parameter may be set to -1 if it is not to be set.
  */
-static BOOL
+static bool
 smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
             time_t create_time,
             time_t access_time,
@@ -3741,8 +3741,8 @@ static int
 ace_compare(SEC_ACE *ace1,
             SEC_ACE *ace2)
 {
-        BOOL b1;
-        BOOL b2;
+        bool b1;
+        bool b2;
 
         /* If the ACEs are equal, we have nothing more to do. */
         if (sec_ace_equal(ace1, ace2)) {
@@ -3851,7 +3851,7 @@ static void
 convert_sid_to_string(struct cli_state *ipc_cli,
                       POLICY_HND *pol,
                       fstring str,
-                      BOOL numeric,
+                      bool numeric,
                       DOM_SID *sid)
 {
 	char **domains = NULL;
@@ -3885,16 +3885,16 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL
+static bool
 convert_string_to_sid(struct cli_state *ipc_cli,
                       POLICY_HND *pol,
-                      BOOL numeric,
+                      bool numeric,
                       DOM_SID *sid,
                       const char *str)
 {
 	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
-	BOOL result = True;
+	bool result = True;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 
 	if (!pipe_hnd) {
@@ -3925,11 +3925,11 @@ convert_string_to_sid(struct cli_state *ipc_cli,
 
 
 /* parse an ACE in the same format as print_ace() */
-static BOOL
+static bool
 parse_ace(struct cli_state *ipc_cli,
           POLICY_HND *pol,
           SEC_ACE *ace,
-          BOOL numeric,
+          bool numeric,
           char *str)
 {
 	char *p;
@@ -4024,7 +4024,7 @@ parse_ace(struct cli_state *ipc_cli,
 	p = tok;
 
 	while(*p) {
-		BOOL found = False;
+		bool found = False;
 
 		for (v = special_values; v->perm; v++) {
 			if (v->perm[0] == *p) {
@@ -4048,7 +4048,7 @@ parse_ace(struct cli_state *ipc_cli,
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL
+static bool
 add_ace(SEC_ACL **the_acl,
         SEC_ACE *ace,
         TALLOC_CTX *ctx)
@@ -4079,7 +4079,7 @@ static SEC_DESC *
 sec_desc_parse(TALLOC_CTX *ctx,
                struct cli_state *ipc_cli,
                POLICY_HND *pol,
-               BOOL numeric,
+               bool numeric,
                char *str)
 {
 	const char *p = str;
@@ -4359,25 +4359,25 @@ cacl_get(SMBCCTX *context,
 	uint32 i;
         int n = 0;
         int n_used;
-        BOOL all;
-        BOOL all_nt;
-        BOOL all_nt_acls;
-        BOOL all_dos;
-        BOOL some_nt;
-        BOOL some_dos;
-        BOOL exclude_nt_revision = False;
-        BOOL exclude_nt_owner = False;
-        BOOL exclude_nt_group = False;
-        BOOL exclude_nt_acl = False;
-        BOOL exclude_dos_mode = False;
-        BOOL exclude_dos_size = False;
-        BOOL exclude_dos_create_time = False;
-        BOOL exclude_dos_access_time = False;
-        BOOL exclude_dos_write_time = False;
-        BOOL exclude_dos_change_time = False;
-        BOOL exclude_dos_inode = False;
-        BOOL numeric = True;
-        BOOL determine_size = (bufsize == 0);
+        bool all;
+        bool all_nt;
+        bool all_nt_acls;
+        bool all_dos;
+        bool some_nt;
+        bool some_dos;
+        bool exclude_nt_revision = False;
+        bool exclude_nt_owner = False;
+        bool exclude_nt_group = False;
+        bool exclude_nt_acl = False;
+        bool exclude_dos_mode = False;
+        bool exclude_dos_size = False;
+        bool exclude_dos_create_time = False;
+        bool exclude_dos_access_time = False;
+        bool exclude_dos_write_time = False;
+        bool exclude_dos_change_time = False;
+        bool exclude_dos_inode = False;
+        bool numeric = True;
+        bool determine_size = (bufsize == 0);
 	int fnum = -1;
 	SEC_DESC *sd;
 	fstring sidstr;
@@ -5147,7 +5147,7 @@ cacl_set(TALLOC_CTX *ctx,
 	size_t sd_size;
 	int ret = 0;
         char *p;
-        BOOL numeric = True;
+        bool numeric = True;
 
         /* the_acl will be null for REMOVE_ALL operations */
         if (the_acl) {
@@ -5208,7 +5208,7 @@ cacl_set(TALLOC_CTX *ctx,
 
         case SMBC_XATTR_MODE_REMOVE:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-			BOOL found = False;
+			bool found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
                                 if (sec_ace_equal(&sd->dacl->aces[i],
@@ -5235,7 +5235,7 @@ cacl_set(TALLOC_CTX *ctx,
 
 	case SMBC_XATTR_MODE_ADD:
 		for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
-			BOOL found = False;
+			bool found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sid_equal(&sd->dacl->aces[i].trustee,
@@ -6387,7 +6387,7 @@ smbc_option_set(SMBCCTX *context,
         va_list ap;
         union {
                 int i;
-                BOOL b;
+                bool b;
                 smbc_get_auth_data_with_context_fn auth_fn;
                 void *v;
         } option_value;
@@ -6398,7 +6398,7 @@ smbc_option_set(SMBCCTX *context,
                 /*
                  * Log to standard error instead of standard output.
                  */
-                option_value.b = (BOOL) va_arg(ap, int);
+                option_value.b = (bool) va_arg(ap, int);
                 context->internal->_debug_stderr = option_value.b;
 
         } else if (strcmp(option_name, "full_time_names") == 0) {
@@ -6410,7 +6410,7 @@ smbc_option_set(SMBCCTX *context,
                  * be CHANGE_TIME but was confused and sometimes referred to
                  * CREATE_TIME.)
                  */
-                option_value.b = (BOOL) va_arg(ap, int);
+                option_value.b = (bool) va_arg(ap, int);
                 context->internal->_full_time_names = option_value.b;
 
         } else if (strcmp(option_name, "open_share_mode") == 0) {
@@ -6533,7 +6533,7 @@ smbc_init_context(SMBCCTX *context)
                  * Do some library-wide intializations the first time we get
                  * called
                  */
-		BOOL conf_loaded = False;
+		bool conf_loaded = False;
 
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->debug;

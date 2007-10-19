@@ -194,7 +194,7 @@ static SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const cha
 
 static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
 {
-	BOOL add = False;
+	bool add = False;
 	TALLOC_CTX *ctx = 0;
 	char *dpath;
 

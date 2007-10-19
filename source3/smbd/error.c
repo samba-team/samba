@@ -52,7 +52,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_s
 	return error_packet(outbuf,eclass,ecode,ntstatus,line,file);
 }
 
-BOOL use_nt_status(void)
+bool use_nt_status(void)
 {
 	return lp_nt_status_support() && (global_client_caps & CAP_STATUS32);
 }
@@ -66,8 +66,8 @@ BOOL use_nt_status(void)
 
 void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	BOOL force_nt_status = False;
-	BOOL force_dos_status = False;
+	bool force_nt_status = False;
+	bool force_dos_status = False;
 
 	if (eclass == (uint8)-1) {
 		force_nt_status = True;

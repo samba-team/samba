@@ -39,7 +39,7 @@
  api_samr_close_hnd
  ********************************************************************/
 
-static BOOL api_samr_close_hnd(pipes_struct *p)
+static bool api_samr_close_hnd(pipes_struct *p)
 {
 	SAMR_Q_CLOSE_HND q_u;
 	SAMR_R_CLOSE_HND r_u;
@@ -69,7 +69,7 @@ static BOOL api_samr_close_hnd(pipes_struct *p)
  api_samr_open_domain
  ********************************************************************/
 
-static BOOL api_samr_open_domain(pipes_struct *p)
+static bool api_samr_open_domain(pipes_struct *p)
 {
 	SAMR_Q_OPEN_DOMAIN q_u;
 	SAMR_R_OPEN_DOMAIN r_u;
@@ -100,7 +100,7 @@ static BOOL api_samr_open_domain(pipes_struct *p)
  api_samr_get_usrdom_pwinfo
  ********************************************************************/
 
-static BOOL api_samr_get_usrdom_pwinfo(pipes_struct *p)
+static bool api_samr_get_usrdom_pwinfo(pipes_struct *p)
 {
 	SAMR_Q_GET_USRDOM_PWINFO q_u;
 	SAMR_R_GET_USRDOM_PWINFO r_u;
@@ -130,7 +130,7 @@ static BOOL api_samr_get_usrdom_pwinfo(pipes_struct *p)
  api_samr_set_sec_obj
  ********************************************************************/
 
-static BOOL api_samr_set_sec_obj(pipes_struct *p)
+static bool api_samr_set_sec_obj(pipes_struct *p)
 {
 	SAMR_Q_SET_SEC_OBJ q_u;
 	SAMR_R_SET_SEC_OBJ r_u;
@@ -160,7 +160,7 @@ static BOOL api_samr_set_sec_obj(pipes_struct *p)
  api_samr_query_sec_obj
  ********************************************************************/
 
-static BOOL api_samr_query_sec_obj(pipes_struct *p)
+static bool api_samr_query_sec_obj(pipes_struct *p)
 {
 	SAMR_Q_QUERY_SEC_OBJ q_u;
 	SAMR_R_QUERY_SEC_OBJ r_u;
@@ -190,7 +190,7 @@ static BOOL api_samr_query_sec_obj(pipes_struct *p)
  api_samr_enum_dom_users
  ********************************************************************/
 
-static BOOL api_samr_enum_dom_users(pipes_struct *p)
+static bool api_samr_enum_dom_users(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOM_USERS q_u;
 	SAMR_R_ENUM_DOM_USERS r_u;
@@ -221,7 +221,7 @@ static BOOL api_samr_enum_dom_users(pipes_struct *p)
  api_samr_enum_dom_groups
  ********************************************************************/
 
-static BOOL api_samr_enum_dom_groups(pipes_struct *p)
+static bool api_samr_enum_dom_groups(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOM_GROUPS q_u;
 	SAMR_R_ENUM_DOM_GROUPS r_u;
@@ -252,7 +252,7 @@ static BOOL api_samr_enum_dom_groups(pipes_struct *p)
  api_samr_enum_dom_aliases
  ********************************************************************/
 
-static BOOL api_samr_enum_dom_aliases(pipes_struct *p)
+static bool api_samr_enum_dom_aliases(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOM_ALIASES q_u;
 	SAMR_R_ENUM_DOM_ALIASES r_u;
@@ -283,7 +283,7 @@ static BOOL api_samr_enum_dom_aliases(pipes_struct *p)
  api_samr_query_dispinfo
  ********************************************************************/
 
-static BOOL api_samr_query_dispinfo(pipes_struct *p)
+static bool api_samr_query_dispinfo(pipes_struct *p)
 {
 	SAMR_Q_QUERY_DISPINFO q_u;
 	SAMR_R_QUERY_DISPINFO r_u;
@@ -313,7 +313,7 @@ static BOOL api_samr_query_dispinfo(pipes_struct *p)
  api_samr_query_aliasinfo
  ********************************************************************/
 
-static BOOL api_samr_query_aliasinfo(pipes_struct *p)
+static bool api_samr_query_aliasinfo(pipes_struct *p)
 {
 	SAMR_Q_QUERY_ALIASINFO q_u;
 	SAMR_R_QUERY_ALIASINFO r_u;
@@ -344,7 +344,7 @@ static BOOL api_samr_query_aliasinfo(pipes_struct *p)
  api_samr_lookup_names
  ********************************************************************/
 
-static BOOL api_samr_lookup_names(pipes_struct *p)
+static bool api_samr_lookup_names(pipes_struct *p)
 {
 	SAMR_Q_LOOKUP_NAMES q_u;
 	SAMR_R_LOOKUP_NAMES r_u;
@@ -375,7 +375,7 @@ static BOOL api_samr_lookup_names(pipes_struct *p)
  api_samr_chgpasswd_user
  ********************************************************************/
 
-static BOOL api_samr_chgpasswd_user(pipes_struct *p)
+static bool api_samr_chgpasswd_user(pipes_struct *p)
 {
 	SAMR_Q_CHGPASSWD_USER q_u;
 	SAMR_R_CHGPASSWD_USER r_u;
@@ -406,7 +406,7 @@ static BOOL api_samr_chgpasswd_user(pipes_struct *p)
  api_samr_lookup_rids
  ********************************************************************/
 
-static BOOL api_samr_lookup_rids(pipes_struct *p)
+static bool api_samr_lookup_rids(pipes_struct *p)
 {
 	SAMR_Q_LOOKUP_RIDS q_u;
 	SAMR_R_LOOKUP_RIDS r_u;
@@ -437,7 +437,7 @@ static BOOL api_samr_lookup_rids(pipes_struct *p)
  api_samr_open_user
  ********************************************************************/
 
-static BOOL api_samr_open_user(pipes_struct *p)
+static bool api_samr_open_user(pipes_struct *p)
 {
 	SAMR_Q_OPEN_USER q_u;
 	SAMR_R_OPEN_USER r_u;
@@ -467,7 +467,7 @@ static BOOL api_samr_open_user(pipes_struct *p)
  api_samr_query_userinfo
  ********************************************************************/
 
-static BOOL api_samr_query_userinfo(pipes_struct *p)
+static bool api_samr_query_userinfo(pipes_struct *p)
 {
 	SAMR_Q_QUERY_USERINFO q_u;
 	SAMR_R_QUERY_USERINFO r_u;
@@ -497,7 +497,7 @@ static BOOL api_samr_query_userinfo(pipes_struct *p)
  api_samr_query_usergroups
  ********************************************************************/
 
-static BOOL api_samr_query_usergroups(pipes_struct *p)
+static bool api_samr_query_usergroups(pipes_struct *p)
 {
 	SAMR_Q_QUERY_USERGROUPS q_u;
 	SAMR_R_QUERY_USERGROUPS r_u;
@@ -527,7 +527,7 @@ static BOOL api_samr_query_usergroups(pipes_struct *p)
  api_samr_query_domain_info
  ********************************************************************/
 
-static BOOL api_samr_query_domain_info(pipes_struct *p)
+static bool api_samr_query_domain_info(pipes_struct *p)
 {
 	SAMR_Q_QUERY_DOMAIN_INFO q_u;
 	SAMR_R_QUERY_DOMAIN_INFO r_u;
@@ -557,7 +557,7 @@ static BOOL api_samr_query_domain_info(pipes_struct *p)
  api_samr_create_user
  ********************************************************************/
 
-static BOOL api_samr_create_user(pipes_struct *p)
+static bool api_samr_create_user(pipes_struct *p)
 {
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
@@ -589,7 +589,7 @@ static BOOL api_samr_create_user(pipes_struct *p)
  api_samr_connect_anon
  ********************************************************************/
 
-static BOOL api_samr_connect_anon(pipes_struct *p)
+static bool api_samr_connect_anon(pipes_struct *p)
 {
 	SAMR_Q_CONNECT_ANON q_u;
 	SAMR_R_CONNECT_ANON r_u;
@@ -620,7 +620,7 @@ static BOOL api_samr_connect_anon(pipes_struct *p)
  api_samr_connect
  ********************************************************************/
 
-static BOOL api_samr_connect(pipes_struct *p)
+static bool api_samr_connect(pipes_struct *p)
 {
 	SAMR_Q_CONNECT q_u;
 	SAMR_R_CONNECT r_u;
@@ -651,7 +651,7 @@ static BOOL api_samr_connect(pipes_struct *p)
  api_samr_connect4
  ********************************************************************/
 
-static BOOL api_samr_connect4(pipes_struct *p)
+static bool api_samr_connect4(pipes_struct *p)
 {
 	SAMR_Q_CONNECT4 q_u;
 	SAMR_R_CONNECT4 r_u;
@@ -682,7 +682,7 @@ static BOOL api_samr_connect4(pipes_struct *p)
  api_samr_chgpasswd_user3
  ********************************************************************/
 
-static BOOL api_samr_chgpasswd_user3(pipes_struct *p)
+static bool api_samr_chgpasswd_user3(pipes_struct *p)
 {
 	SAMR_Q_CHGPASSWD_USER3 q_u;
 	SAMR_R_CHGPASSWD_USER3 r_u;
@@ -713,7 +713,7 @@ static BOOL api_samr_chgpasswd_user3(pipes_struct *p)
  api_samr_connect5
  ********************************************************************/
 
-static BOOL api_samr_connect5(pipes_struct *p)
+static bool api_samr_connect5(pipes_struct *p)
 {
 	SAMR_Q_CONNECT5 q_u;
 	SAMR_R_CONNECT5 r_u;
@@ -744,7 +744,7 @@ static BOOL api_samr_connect5(pipes_struct *p)
  api_samr_lookup_domain
  **********************************************************************/
 
-static BOOL api_samr_lookup_domain(pipes_struct *p)
+static bool api_samr_lookup_domain(pipes_struct *p)
 {
 	SAMR_Q_LOOKUP_DOMAIN q_u;
 	SAMR_R_LOOKUP_DOMAIN r_u;
@@ -773,7 +773,7 @@ static BOOL api_samr_lookup_domain(pipes_struct *p)
  api_samr_enum_domains
  **********************************************************************/
 
-static BOOL api_samr_enum_domains(pipes_struct *p)
+static bool api_samr_enum_domains(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOMAINS q_u;
 	SAMR_R_ENUM_DOMAINS r_u;
@@ -802,7 +802,7 @@ static BOOL api_samr_enum_domains(pipes_struct *p)
  api_samr_open_alias
  ********************************************************************/
 
-static BOOL api_samr_open_alias(pipes_struct *p)
+static bool api_samr_open_alias(pipes_struct *p)
 {
 	SAMR_Q_OPEN_ALIAS q_u;
 	SAMR_R_OPEN_ALIAS r_u;
@@ -833,7 +833,7 @@ static BOOL api_samr_open_alias(pipes_struct *p)
  api_samr_set_userinfo
  ********************************************************************/
 
-static BOOL api_samr_set_userinfo(pipes_struct *p)
+static bool api_samr_set_userinfo(pipes_struct *p)
 {
 	SAMR_Q_SET_USERINFO q_u;
 	SAMR_R_SET_USERINFO r_u;
@@ -868,7 +868,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
  api_samr_set_userinfo2
  ********************************************************************/
 
-static BOOL api_samr_set_userinfo2(pipes_struct *p)
+static bool api_samr_set_userinfo2(pipes_struct *p)
 {
 	SAMR_Q_SET_USERINFO2 q_u;
 	SAMR_R_SET_USERINFO2 r_u;
@@ -898,7 +898,7 @@ static BOOL api_samr_set_userinfo2(pipes_struct *p)
  api_samr_query_useraliases
  ********************************************************************/
 
-static BOOL api_samr_query_useraliases(pipes_struct *p)
+static bool api_samr_query_useraliases(pipes_struct *p)
 {
 	SAMR_Q_QUERY_USERALIASES q_u;
 	SAMR_R_QUERY_USERALIASES r_u;
@@ -928,7 +928,7 @@ static BOOL api_samr_query_useraliases(pipes_struct *p)
  api_samr_query_aliasmem
  ********************************************************************/
 
-static BOOL api_samr_query_aliasmem(pipes_struct *p)
+static bool api_samr_query_aliasmem(pipes_struct *p)
 {
 	SAMR_Q_QUERY_ALIASMEM q_u;
 	SAMR_R_QUERY_ALIASMEM r_u;
@@ -958,7 +958,7 @@ static BOOL api_samr_query_aliasmem(pipes_struct *p)
  api_samr_query_groupmem
  ********************************************************************/
 
-static BOOL api_samr_query_groupmem(pipes_struct *p)
+static bool api_samr_query_groupmem(pipes_struct *p)
 {
 	SAMR_Q_QUERY_GROUPMEM q_u;
 	SAMR_R_QUERY_GROUPMEM r_u;
@@ -988,7 +988,7 @@ static BOOL api_samr_query_groupmem(pipes_struct *p)
  api_samr_add_aliasmem
  ********************************************************************/
 
-static BOOL api_samr_add_aliasmem(pipes_struct *p)
+static bool api_samr_add_aliasmem(pipes_struct *p)
 {
 	SAMR_Q_ADD_ALIASMEM q_u;
 	SAMR_R_ADD_ALIASMEM r_u;
@@ -1018,7 +1018,7 @@ static BOOL api_samr_add_aliasmem(pipes_struct *p)
  api_samr_del_aliasmem
  ********************************************************************/
 
-static BOOL api_samr_del_aliasmem(pipes_struct *p)
+static bool api_samr_del_aliasmem(pipes_struct *p)
 {
 	SAMR_Q_DEL_ALIASMEM q_u;
 	SAMR_R_DEL_ALIASMEM r_u;
@@ -1048,7 +1048,7 @@ static BOOL api_samr_del_aliasmem(pipes_struct *p)
  api_samr_add_groupmem
  ********************************************************************/
 
-static BOOL api_samr_add_groupmem(pipes_struct *p)
+static bool api_samr_add_groupmem(pipes_struct *p)
 {
 	SAMR_Q_ADD_GROUPMEM q_u;
 	SAMR_R_ADD_GROUPMEM r_u;
@@ -1078,7 +1078,7 @@ static BOOL api_samr_add_groupmem(pipes_struct *p)
  api_samr_del_groupmem
  ********************************************************************/
 
-static BOOL api_samr_del_groupmem(pipes_struct *p)
+static bool api_samr_del_groupmem(pipes_struct *p)
 {
 	SAMR_Q_DEL_GROUPMEM q_u;
 	SAMR_R_DEL_GROUPMEM r_u;
@@ -1108,7 +1108,7 @@ static BOOL api_samr_del_groupmem(pipes_struct *p)
  api_samr_delete_dom_user
  ********************************************************************/
 
-static BOOL api_samr_delete_dom_user(pipes_struct *p)
+static bool api_samr_delete_dom_user(pipes_struct *p)
 {
 	SAMR_Q_DELETE_DOM_USER q_u;
 	SAMR_R_DELETE_DOM_USER r_u;
@@ -1138,7 +1138,7 @@ static BOOL api_samr_delete_dom_user(pipes_struct *p)
  api_samr_delete_dom_group
  ********************************************************************/
 
-static BOOL api_samr_delete_dom_group(pipes_struct *p)
+static bool api_samr_delete_dom_group(pipes_struct *p)
 {
 	SAMR_Q_DELETE_DOM_GROUP q_u;
 	SAMR_R_DELETE_DOM_GROUP r_u;
@@ -1168,7 +1168,7 @@ static BOOL api_samr_delete_dom_group(pipes_struct *p)
  api_samr_delete_dom_alias
  ********************************************************************/
 
-static BOOL api_samr_delete_dom_alias(pipes_struct *p)
+static bool api_samr_delete_dom_alias(pipes_struct *p)
 {
 	SAMR_Q_DELETE_DOM_ALIAS q_u;
 	SAMR_R_DELETE_DOM_ALIAS r_u;
@@ -1198,7 +1198,7 @@ static BOOL api_samr_delete_dom_alias(pipes_struct *p)
  api_samr_create_dom_group
  ********************************************************************/
 
-static BOOL api_samr_create_dom_group(pipes_struct *p)
+static bool api_samr_create_dom_group(pipes_struct *p)
 {
 	SAMR_Q_CREATE_DOM_GROUP q_u;
 	SAMR_R_CREATE_DOM_GROUP r_u;
@@ -1228,7 +1228,7 @@ static BOOL api_samr_create_dom_group(pipes_struct *p)
  api_samr_create_dom_alias
  ********************************************************************/
 
-static BOOL api_samr_create_dom_alias(pipes_struct *p)
+static bool api_samr_create_dom_alias(pipes_struct *p)
 {
 	SAMR_Q_CREATE_DOM_ALIAS q_u;
 	SAMR_R_CREATE_DOM_ALIAS r_u;
@@ -1258,7 +1258,7 @@ static BOOL api_samr_create_dom_alias(pipes_struct *p)
  api_samr_query_groupinfo
  ********************************************************************/
 
-static BOOL api_samr_query_groupinfo(pipes_struct *p)
+static bool api_samr_query_groupinfo(pipes_struct *p)
 {
 	SAMR_Q_QUERY_GROUPINFO q_u;
 	SAMR_R_QUERY_GROUPINFO r_u;
@@ -1288,7 +1288,7 @@ static BOOL api_samr_query_groupinfo(pipes_struct *p)
  api_samr_set_groupinfo
  ********************************************************************/
 
-static BOOL api_samr_set_groupinfo(pipes_struct *p)
+static bool api_samr_set_groupinfo(pipes_struct *p)
 {
 	SAMR_Q_SET_GROUPINFO q_u;
 	SAMR_R_SET_GROUPINFO r_u;
@@ -1318,7 +1318,7 @@ static BOOL api_samr_set_groupinfo(pipes_struct *p)
  api_samr_set_aliasinfo
  ********************************************************************/
 
-static BOOL api_samr_set_aliasinfo(pipes_struct *p)
+static bool api_samr_set_aliasinfo(pipes_struct *p)
 {
 	SAMR_Q_SET_ALIASINFO q_u;
 	SAMR_R_SET_ALIASINFO r_u;
@@ -1348,7 +1348,7 @@ static BOOL api_samr_set_aliasinfo(pipes_struct *p)
  api_samr_get_dom_pwinfo
  ********************************************************************/
 
-static BOOL api_samr_get_dom_pwinfo(pipes_struct *p)
+static bool api_samr_get_dom_pwinfo(pipes_struct *p)
 {
 	SAMR_Q_GET_DOM_PWINFO q_u;
 	SAMR_R_GET_DOM_PWINFO r_u;
@@ -1378,7 +1378,7 @@ static BOOL api_samr_get_dom_pwinfo(pipes_struct *p)
  api_samr_open_group
  ********************************************************************/
 
-static BOOL api_samr_open_group(pipes_struct *p)
+static bool api_samr_open_group(pipes_struct *p)
 {
 	SAMR_Q_OPEN_GROUP q_u;
 	SAMR_R_OPEN_GROUP r_u;
@@ -1408,7 +1408,7 @@ static BOOL api_samr_open_group(pipes_struct *p)
  api_samr_remove_sid_foreign_domain
  ********************************************************************/
 
-static BOOL api_samr_remove_sid_foreign_domain(pipes_struct *p)
+static bool api_samr_remove_sid_foreign_domain(pipes_struct *p)
 {
 	SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN q_u;
 	SAMR_R_REMOVE_SID_FOREIGN_DOMAIN r_u;
@@ -1438,7 +1438,7 @@ static BOOL api_samr_remove_sid_foreign_domain(pipes_struct *p)
  api_samr_query_dom_info2
  ********************************************************************/
 
-static BOOL api_samr_query_domain_info2(pipes_struct *p)
+static bool api_samr_query_domain_info2(pipes_struct *p)
 {
 	SAMR_Q_QUERY_DOMAIN_INFO2 q_u;
 	SAMR_R_QUERY_DOMAIN_INFO2 r_u;
@@ -1468,7 +1468,7 @@ static BOOL api_samr_query_domain_info2(pipes_struct *p)
  api_samr_set_dom_info
  ********************************************************************/
 
-static BOOL api_samr_set_dom_info(pipes_struct *p)
+static bool api_samr_set_dom_info(pipes_struct *p)
 {
 	SAMR_Q_SET_DOMAIN_INFO q_u;
 	SAMR_R_SET_DOMAIN_INFO r_u;

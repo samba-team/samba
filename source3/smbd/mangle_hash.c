@@ -58,7 +58,7 @@ static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
 static unsigned char chartest[256]  = { 0 };
-static BOOL          ct_initialized = False;
+static bool          ct_initialized = False;
 
 #define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
@@ -68,7 +68,7 @@ static TDB_CONTEXT *tdb_mangled_cache;
 
 /* -------------------------------------------------------------------- */
 
-static NTSTATUS has_valid_83_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
+static NTSTATUS has_valid_83_chars(const smb_ucs2_t *s, bool allow_wildcards)
 {
 	if (!*s) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -88,7 +88,7 @@ static NTSTATUS has_valid_83_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
+static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, bool allow_wildcards)
 {
 	if (!allow_wildcards && ms_has_wild_w(s)) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -117,7 +117,7 @@ static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
  */
 
 static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix,
-		smb_ucs2_t **extension, BOOL allow_wildcards)
+		smb_ucs2_t **extension, bool allow_wildcards)
 {
 	size_t ext_len;
 	smb_ucs2_t *p;
@@ -155,7 +155,7 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
  * ************************************************************************** **
  */
 
-static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOOL only_8_3)
+static NTSTATUS is_valid_name(const smb_ucs2_t *fname, bool allow_wildcards, bool only_8_3)
 {
 	smb_ucs2_t *str, *p;
 	size_t num_ucs2_chars;
@@ -234,7 +234,7 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOO
 	return ret;
 }
 
-static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
+static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, bool allow_wildcards)
 {
 	smb_ucs2_t *pref = 0, *ext = 0;
 	size_t plen;
@@ -275,7 +275,7 @@ done:
 	return ret;
 }
 
-static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards,
+static bool is_8_3(const char *fname, bool check_case, bool allow_wildcards,
 		   const struct share_params *p)
 {
 	const char *f;
@@ -361,7 +361,7 @@ static void init_chartest( void )
  * ************************************************************************** **
  */
 
-static BOOL is_mangled(const char *s, const struct share_params *p)
+static bool is_mangled(const char *s, const struct share_params *p)
 {
 	char *magic;
 
@@ -461,7 +461,7 @@ static void cache_mangled_name( const char mangled_name[13],
  * ************************************************************************** **
  */
 
-static BOOL lookup_name_from_8_3(TALLOC_CTX *ctx,
+static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 				const char *in,
 				char **out, /* talloced on the given context. */
 				const struct share_params *p)
@@ -526,7 +526,7 @@ static BOOL lookup_name_from_8_3(TALLOC_CTX *ctx,
  Do the actual mangling to 8.3 format.
 *****************************************************************************/
 
-static BOOL to_8_3(const char *in, char out[13], int default_case)
+static bool to_8_3(const char *in, char out[13], int default_case)
 {
 	int csum;
 	char *p;
@@ -545,7 +545,7 @@ static BOOL to_8_3(const char *in, char out[13], int default_case)
 
 	p = strrchr(s,'.');
 	if( p && (strlen(p+1) < (size_t)4) ) {
-		BOOL all_normal = ( strisnormal(p+1, default_case) ); /* XXXXXXXXX */
+		bool all_normal = ( strisnormal(p+1, default_case) ); /* XXXXXXXXX */
 
 		if( all_normal && p[1] != 0 ) {
 			*p = 0;
@@ -599,7 +599,7 @@ static BOOL to_8_3(const char *in, char out[13], int default_case)
 	return True;
 }
 
-static BOOL must_mangle(const char *name,
+static bool must_mangle(const char *name,
 			const struct share_params *p)
 {
 	smb_ucs2_t *name_ucs2 = NULL;
@@ -630,9 +630,9 @@ static BOOL must_mangle(const char *name,
  * ****************************************************************************
  */
 
-static BOOL hash_name_to_8_3(const char *in,
+static bool hash_name_to_8_3(const char *in,
 			char out[13],
-			BOOL cache83,
+			bool cache83,
 			int default_case,
 			const struct share_params *p)
 {

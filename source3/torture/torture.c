@@ -31,16 +31,16 @@ int torture_numops=100;
 static int procnum; /* records process count number when forking */
 static struct cli_state *current_cli;
 static fstring randomfname;
-static BOOL use_oplocks;
-static BOOL use_level_II_oplocks;
+static bool use_oplocks;
+static bool use_level_II_oplocks;
 static const char *client_txt = "client_oplocks.txt";
-static BOOL use_kerberos;
+static bool use_kerberos;
 static fstring multishare_conn_fname;
-static BOOL use_multishare_conn = False;
+static bool use_multishare_conn = False;
 
-BOOL torture_showall = False;
+bool torture_showall = False;
 
-static double create_procs(BOOL (*fn)(int), BOOL *result);
+static double create_procs(bool (*fn)(int), bool *result);
 
 
 static struct timeval tp1,tp2;
@@ -180,7 +180,7 @@ terminate_path_at_separator(char * path)
 /*
   parse a //server/share type UNC name
 */
-BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
+bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename)
 {
 	char *p;
@@ -209,11 +209,11 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	return False;
 }
 
-static BOOL torture_open_connection_share(struct cli_state **c,
+static bool torture_open_connection_share(struct cli_state **c,
 				   const char *hostname, 
 				   const char *sharename)
 {
-	BOOL retry;
+	bool retry;
 	int flags = 0;
 	NTSTATUS status;
 
@@ -247,11 +247,11 @@ void torture_open_connection_free_unclist(char **unc_list)
 	}
 }
 
-BOOL torture_open_connection(struct cli_state **c, int conn_index)
+bool torture_open_connection(struct cli_state **c, int conn_index)
 {
 	char **unc_list = NULL;
 	int num_unc_names = 0;
-	BOOL result;
+	bool result;
 
 	if (use_multishare_conn==True) {
 		char *h, *s;
@@ -279,12 +279,12 @@ BOOL torture_open_connection(struct cli_state **c, int conn_index)
 	return torture_open_connection_share(c, host, share);
 }
 
-BOOL torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
+bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 {
 	uint16 old_vuid = cli->vuid;
 	fstring old_user_name;
 	size_t passlen = strlen(password);
-	BOOL ret;
+	bool ret;
 
 	fstrcpy(old_user_name, cli->user_name);
 	cli->vuid = 0;
@@ -299,9 +299,9 @@ BOOL torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 }
 
 
-BOOL torture_close_connection(struct cli_state *c)
+bool torture_close_connection(struct cli_state *c)
 {
-	BOOL ret = True;
+	bool ret = True;
 	if (!cli_tdis(c)) {
 		printf("tdis failed (%s)\n", cli_errstr(c));
 		ret = False;
@@ -314,7 +314,7 @@ BOOL torture_close_connection(struct cli_state *c)
 
 
 /* check if the server produced the expected error code */
-static BOOL check_error(int line, struct cli_state *c, 
+static bool check_error(int line, struct cli_state *c, 
 			uint8 eclass, uint32 ecode, NTSTATUS nterr)
 {
         if (cli_is_dos_error(c)) {
@@ -351,7 +351,7 @@ static BOOL check_error(int line, struct cli_state *c,
 }
 
 
-static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
+static bool wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
 	while (!cli_lock(c, fnum, offset, len, -1, WRITE_LOCK)) {
 		if (!check_error(__LINE__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
@@ -360,7 +360,7 @@ static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 }
 
 
-static BOOL rw_torture(struct cli_state *c)
+static bool rw_torture(struct cli_state *c)
 {
 	const char *lockfname = "\\torture.lck";
 	fstring fname;
@@ -369,7 +369,7 @@ static BOOL rw_torture(struct cli_state *c)
 	pid_t pid2, pid = getpid();
 	int i, j;
 	char buf[1024];
-	BOOL correct = True;
+	bool correct = True;
 
 	memset(buf, '\0', sizeof(buf));
 
@@ -451,10 +451,10 @@ static BOOL rw_torture(struct cli_state *c)
 	return correct;
 }
 
-static BOOL run_torture(int dummy)
+static bool run_torture(int dummy)
 {
 	struct cli_state *cli;
-        BOOL ret;
+        bool ret;
 
 	cli = current_cli;
 
@@ -469,7 +469,7 @@ static BOOL run_torture(int dummy)
 	return ret;
 }
 
-static BOOL rw_torture3(struct cli_state *c, char *lockfname)
+static bool rw_torture3(struct cli_state *c, char *lockfname)
 {
 	int fnum = -1;
 	unsigned int i = 0;
@@ -478,7 +478,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 	unsigned count;
 	unsigned countprev = 0;
 	ssize_t sent = 0;
-	BOOL correct = True;
+	bool correct = True;
 
 	srandom(1);
 	for (i = 0; i < sizeof(buf); i += sizeof(uint32))
@@ -568,7 +568,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 	return correct;
 }
 
-static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
+static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 {
 	const char *lockfname = "\\torture2.lck";
 	int fnum1;
@@ -576,7 +576,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	int i;
 	char buf[131072];
 	char buf_rd[131072];
-	BOOL correct = True;
+	bool correct = True;
 	ssize_t bytes_read;
 
 	if (!cli_unlink(c1, lockfname)) {
@@ -647,10 +647,10 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	return correct;
 }
 
-static BOOL run_readwritetest(int dummy)
+static bool run_readwritetest(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
-	BOOL test1, test2 = False;
+	bool test1, test2 = False;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -679,10 +679,10 @@ static BOOL run_readwritetest(int dummy)
 	return (test1 && test2);
 }
 
-static BOOL run_readwritemulti(int dummy)
+static bool run_readwritemulti(int dummy)
 {
 	struct cli_state *cli;
-	BOOL test;
+	bool test;
 
 	cli = current_cli;
 
@@ -698,14 +698,14 @@ static BOOL run_readwritemulti(int dummy)
 	return test;
 }
 
-static BOOL run_readwritelarge(int dummy)
+static bool run_readwritelarge(int dummy)
 {
 	static struct cli_state *cli1;
 	int fnum1;
 	const char *lockfname = "\\large.dat";
 	SMB_OFF_T fsize;
 	char buf[126*1024];
-	BOOL correct = True;
+	bool correct = True;
  
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
@@ -806,7 +806,7 @@ int nbio_id;
 #define ival(s) strtol(s, NULL, 0)
 
 /* run a test that simulates an approximate netbench client load */
-static BOOL run_netbench(int client)
+static bool run_netbench(int client)
 {
 	struct cli_state *cli;
 	int i;
@@ -814,7 +814,7 @@ static BOOL run_netbench(int client)
 	char cname[20];
 	FILE *f;
 	const char *params[20];
-	BOOL correct = True;
+	bool correct = True;
 
 	cli = current_cli;
 
@@ -903,10 +903,10 @@ static BOOL run_netbench(int client)
 
 
 /* run a test that simulates an approximate netbench client load */
-static BOOL run_nbench(int dummy)
+static bool run_nbench(int dummy)
 {
 	double t;
-	BOOL correct = True;
+	bool correct = True;
 
 	nbio_shmem(nprocs);
 
@@ -930,7 +930,7 @@ static BOOL run_nbench(int dummy)
      must not use posix semantics)
   2) support for lock timeouts
  */
-static BOOL run_locktest1(int dummy)
+static bool run_locktest1(int dummy)
 {
 	struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt1.lck";
@@ -1043,7 +1043,7 @@ static BOOL run_locktest1(int dummy)
   this checks to see if a secondary tconx can use open files from an
   earlier tconx
  */
-static BOOL run_tcon_test(int dummy)
+static bool run_tcon_test(int dummy)
 {
 	static struct cli_state *cli;
 	const char *fname = "\\tcontest.tmp";
@@ -1051,7 +1051,7 @@ static BOOL run_tcon_test(int dummy)
 	uint16 cnum1, cnum2, cnum3;
 	uint16 vuid1, vuid2;
 	char buf[4];
-	BOOL ret = True;
+	bool ret = True;
 
 	memset(buf, '\0', sizeof(buf));
 
@@ -1150,7 +1150,7 @@ static BOOL run_tcon_test(int dummy)
 /*
  checks for old style tcon support
  */
-static BOOL run_tcon2_test(int dummy)
+static bool run_tcon2_test(int dummy)
 {
 	static struct cli_state *cli;
 	uint16 cnum, max_xmit;
@@ -1183,13 +1183,13 @@ static BOOL run_tcon2_test(int dummy)
 	return True;
 }
 
-static BOOL tcon_devtest(struct cli_state *cli,
+static bool tcon_devtest(struct cli_state *cli,
 			 const char *myshare, const char *devtype,
 			 const char *return_devtype,
 			 NTSTATUS expected_error)
 {
-	BOOL status;
-	BOOL ret;
+	bool status;
+	bool ret;
 
 	status = cli_send_tconX(cli, myshare, devtype,
 				password, strlen(password)+1);
@@ -1234,13 +1234,13 @@ static BOOL tcon_devtest(struct cli_state *cli,
 /*
  checks for correct tconX support
  */
-static BOOL run_tcon_devtype_test(int dummy)
+static bool run_tcon_devtype_test(int dummy)
 {
 	static struct cli_state *cli1 = NULL;
-	BOOL retry;
+	bool retry;
 	int flags = 0;
 	NTSTATUS status;
-	BOOL ret = True;
+	bool ret = True;
 
 	status = cli_full_connection(&cli1, myname,
 				     host, NULL, port_to_use,
@@ -1303,12 +1303,12 @@ static BOOL run_tcon_devtype_test(int dummy)
 
   3) the server denies unlock requests by an incorrect client PID
 */
-static BOOL run_locktest2(int dummy)
+static bool run_locktest2(int dummy)
 {
 	static struct cli_state *cli;
 	const char *fname = "\\lockt2.lck";
 	int fnum1, fnum2, fnum3;
-	BOOL correct = True;
+	bool correct = True;
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
@@ -1439,13 +1439,13 @@ static BOOL run_locktest2(int dummy)
 
   1) the server supports the full offset range in lock requests
 */
-static BOOL run_locktest3(int dummy)
+static bool run_locktest3(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt3.lck";
 	int fnum1, fnum2, i;
 	uint32 offset;
-	BOOL correct = True;
+	bool correct = True;
 
 #define NEXT_OFFSET offset += (~(uint32)0) / torture_numops
 
@@ -1564,14 +1564,14 @@ static BOOL run_locktest3(int dummy)
 /*
   looks at overlapping locks
 */
-static BOOL run_locktest4(int dummy)
+static bool run_locktest4(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt4.lck";
 	int fnum1, fnum2, f;
-	BOOL ret;
+	bool ret;
 	char buf[1000];
-	BOOL correct = True;
+	bool correct = True;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -1735,14 +1735,14 @@ static BOOL run_locktest4(int dummy)
 /*
   looks at lock upgrade/downgrade.
 */
-static BOOL run_locktest5(int dummy)
+static bool run_locktest5(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt5.lck";
 	int fnum1, fnum2, fnum3;
-	BOOL ret;
+	bool ret;
 	char buf[1000];
-	BOOL correct = True;
+	bool correct = True;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -1859,7 +1859,7 @@ static BOOL run_locktest5(int dummy)
 /*
   tries the unusual lockingX locktype bits
 */
-static BOOL run_locktest6(int dummy)
+static bool run_locktest6(int dummy)
 {
 	static struct cli_state *cli;
 	const char *fname[1] = { "\\lock6.txt" };
@@ -1899,13 +1899,13 @@ static BOOL run_locktest6(int dummy)
 	return True;
 }
 
-static BOOL run_locktest7(int dummy)
+static bool run_locktest7(int dummy)
 {
 	struct cli_state *cli1;
 	const char *fname = "\\lockt7.lck";
 	int fnum1;
 	char buf[200];
-	BOOL correct = False;
+	bool correct = False;
 
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
@@ -2036,7 +2036,7 @@ fail:
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
-static BOOL run_fdpasstest(int dummy)
+static bool run_fdpasstest(int dummy)
 {
 	struct cli_state *cli1, *cli2;
 	const char *fname = "\\fdpass.tst";
@@ -2084,7 +2084,7 @@ static BOOL run_fdpasstest(int dummy)
 	return True;
 }
 
-static BOOL run_fdsesstest(int dummy)
+static bool run_fdsesstest(int dummy)
 {
 	struct cli_state *cli;
 	uint16 new_vuid;
@@ -2096,7 +2096,7 @@ static BOOL run_fdsesstest(int dummy)
 	int fnum1;
 	int fnum2;
 	pstring buf;
-	BOOL ret = True;
+	bool ret = True;
 
 	if (!torture_open_connection(&cli, 0))
 		return False;
@@ -2173,12 +2173,12 @@ static BOOL run_fdsesstest(int dummy)
 
   1) the server does not allow an unlink on a file that is open
 */
-static BOOL run_unlinktest(int dummy)
+static bool run_unlinktest(int dummy)
 {
 	struct cli_state *cli;
 	const char *fname = "\\unlink.tst";
 	int fnum;
-	BOOL correct = True;
+	bool correct = True;
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
@@ -2222,14 +2222,14 @@ static BOOL run_unlinktest(int dummy)
 /*
 test how many open files this server supports on the one socket
 */
-static BOOL run_maxfidtest(int dummy)
+static bool run_maxfidtest(int dummy)
 {
 	struct cli_state *cli;
 	const char *ftemplate = "\\maxfid.%d.%d";
 	fstring fname;
 	int fnums[0x11000], i;
 	int retries=4;
-	BOOL correct = True;
+	bool correct = True;
 
 	cli = current_cli;
 
@@ -2285,11 +2285,11 @@ static void rand_buf(char *buf, int len)
 }
 
 /* send smb negprot commands, not reading the response */
-static BOOL run_negprot_nowait(int dummy)
+static bool run_negprot_nowait(int dummy)
 {
 	int i;
 	static struct cli_state *cli;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting negprot nowait test\n");
 
@@ -2312,7 +2312,7 @@ static BOOL run_negprot_nowait(int dummy)
 
 
 /* send random IPC commands */
-static BOOL run_randomipc(int dummy)
+static bool run_randomipc(int dummy)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -2320,7 +2320,7 @@ static BOOL run_randomipc(int dummy)
 	pstring param;
 	int api, param_len, i;
 	struct cli_state *cli;
-	BOOL correct = True;
+	bool correct = True;
 	int count = 50000;
 
 	printf("starting random ipc test\n");
@@ -2371,10 +2371,10 @@ static void browse_callback(const char *sname, uint32 stype,
   This test checks the browse list code
 
 */
-static BOOL run_browsetest(int dummy)
+static bool run_browsetest(int dummy)
 {
 	static struct cli_state *cli;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting browse test\n");
 
@@ -2406,13 +2406,13 @@ static BOOL run_browsetest(int dummy)
 /*
   This checks how the getatr calls works
 */
-static BOOL run_attrtest(int dummy)
+static bool run_attrtest(int dummy)
 {
 	struct cli_state *cli;
 	int fnum;
 	time_t t, t2;
 	const char *fname = "\\attrib123456789.tst";
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting attrib test\n");
 
@@ -2470,7 +2470,7 @@ static BOOL run_attrtest(int dummy)
 /*
   This checks a couple of trans2 calls
 */
-static BOOL run_trans2test(int dummy)
+static bool run_trans2test(int dummy)
 {
 	struct cli_state *cli;
 	int fnum;
@@ -2481,7 +2481,7 @@ static BOOL run_trans2test(int dummy)
 	const char *dname = "\\trans2";
 	const char *fname2 = "\\trans2\\trans2.tst";
 	pstring pname;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting trans2 test\n");
 
@@ -2607,11 +2607,11 @@ static BOOL run_trans2test(int dummy)
   This checks new W2K calls.
 */
 
-static BOOL new_trans(struct cli_state *pcli, int fnum, int level)
+static bool new_trans(struct cli_state *pcli, int fnum, int level)
 {
 	char *buf = NULL;
 	uint32 len;
-	BOOL correct = True;
+	bool correct = True;
 
 	if (!cli_qfileinfo_test(pcli, fnum, level, &buf, &len)) {
 		printf("ERROR: qfileinfo (%d) failed (%s)\n", level, cli_errstr(pcli));
@@ -2625,13 +2625,13 @@ static BOOL new_trans(struct cli_state *pcli, int fnum, int level)
 	return correct;
 }
 
-static BOOL run_w2ktest(int dummy)
+static bool run_w2ktest(int dummy)
 {
 	struct cli_state *cli;
 	int fnum;
 	const char *fname = "\\w2ktest\\w2k.tst";
 	int level;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting w2k test\n");
 
@@ -2661,12 +2661,12 @@ static BOOL run_w2ktest(int dummy)
 /*
   this is a harness for some oplock tests
  */
-static BOOL run_oplock1(int dummy)
+static bool run_oplock1(int dummy)
 {
 	struct cli_state *cli1;
 	const char *fname = "\\lockt1.lck";
 	int fnum1;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting oplock test 1\n");
 
@@ -2710,17 +2710,17 @@ static BOOL run_oplock1(int dummy)
 	return correct;
 }
 
-static BOOL run_oplock2(int dummy)
+static bool run_oplock2(int dummy)
 {
 	struct cli_state *cli1, *cli2;
 	const char *fname = "\\lockt2.lck";
 	int fnum1, fnum2;
 	int saved_use_oplocks = use_oplocks;
 	char buf[4];
-	BOOL correct = True;
-	volatile BOOL *shared_correct;
+	bool correct = True;
+	volatile bool *shared_correct;
 
-	shared_correct = (volatile BOOL *)shm_setup(sizeof(BOOL));
+	shared_correct = (volatile bool *)shm_setup(sizeof(bool));
 	*shared_correct = True;
 
 	use_level_II_oplocks = True;
@@ -2846,23 +2846,23 @@ static BOOL run_oplock2(int dummy)
 }
 
 /* handler for oplock 3 tests */
-static BOOL oplock3_handler(struct cli_state *cli, int fnum, unsigned char level)
+static bool oplock3_handler(struct cli_state *cli, int fnum, unsigned char level)
 {
 	printf("got oplock break fnum=%d level=%d\n",
 	       fnum, level);
 	return cli_oplock_ack(cli, fnum, level);
 }
 
-static BOOL run_oplock3(int dummy)
+static bool run_oplock3(int dummy)
 {
 	struct cli_state *cli;
 	const char *fname = "\\oplockt3.dat";
 	int fnum;
 	char buf[4] = "abcd";
-	BOOL correct = True;
-	volatile BOOL *shared_correct;
+	bool correct = True;
+	volatile bool *shared_correct;
 
-	shared_correct = (volatile BOOL *)shm_setup(sizeof(BOOL));
+	shared_correct = (volatile bool *)shm_setup(sizeof(bool));
 	*shared_correct = True;
 
 	printf("starting oplock test 3\n");
@@ -2907,14 +2907,14 @@ static BOOL run_oplock3(int dummy)
 /*
   Test delete on close semantics.
  */
-static BOOL run_deletetest(int dummy)
+static bool run_deletetest(int dummy)
 {
 	struct cli_state *cli1 = NULL;
 	struct cli_state *cli2 = NULL;
 	const char *fname = "\\delete.file";
 	int fnum1 = -1;
 	int fnum2 = -1;
-	BOOL correct = True;
+	bool correct = True;
 	
 	printf("starting delete test\n");
 	
@@ -3390,10 +3390,10 @@ static BOOL run_deletetest(int dummy)
 /*
   print out server properties
  */
-static BOOL run_properties(int dummy)
+static bool run_properties(int dummy)
 {
 	static struct cli_state *cli;
-	BOOL correct = True;
+	bool correct = True;
 	
 	printf("starting properties test\n");
 	
@@ -3438,11 +3438,11 @@ static BOOL run_properties(int dummy)
 /*
   Test ntcreate calls made by xcopy
  */
-static BOOL run_xcopy(int dummy)
+static bool run_xcopy(int dummy)
 {
 	static struct cli_state *cli1;
 	const char *fname = "\\test.txt";
-	BOOL correct = True;
+	bool correct = True;
 	int fnum1, fnum2;
 
 	printf("starting xcopy test\n");
@@ -3480,12 +3480,12 @@ static BOOL run_xcopy(int dummy)
 /*
   Test rename on files open with share delete and no share delete.
  */
-static BOOL run_rename(int dummy)
+static bool run_rename(int dummy)
 {
 	static struct cli_state *cli1;
 	const char *fname = "\\test.txt";
 	const char *fname1 = "\\test1.txt";
-	BOOL correct = True;
+	bool correct = True;
 	int fnum1;
 
 	printf("starting rename test\n");
@@ -3668,7 +3668,7 @@ static BOOL run_rename(int dummy)
 	return correct;
 }
 
-static BOOL run_pipe_number(int dummy)
+static bool run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
 	const char *pipe_name = "\\SPOOLSS";
@@ -3701,7 +3701,7 @@ static BOOL run_pipe_number(int dummy)
 /*
   Test open mode returns on read-only files.
  */
-static BOOL run_opentest(int dummy)
+static bool run_opentest(int dummy)
 {
 	static struct cli_state *cli1;
 	static struct cli_state *cli2;
@@ -3709,7 +3709,7 @@ static BOOL run_opentest(int dummy)
 	int fnum1, fnum2;
 	char buf[20];
 	SMB_OFF_T fsize;
-	BOOL correct = True;
+	bool correct = True;
 	char *tmp_path;
 
 	printf("starting open test\n");
@@ -4151,12 +4151,12 @@ static struct trunc_open_results attr_results[] = {
 	{ 249, FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM, FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM }
 };
 
-static BOOL run_openattrtest(int dummy)
+static bool run_openattrtest(int dummy)
 {
 	static struct cli_state *cli1;
 	const char *fname = "\\openattr.file";
 	int fnum1;
-	BOOL correct = True;
+	bool correct = True;
 	uint16 attr;
 	unsigned int i, j, k, l;
 
@@ -4264,13 +4264,13 @@ static void list_fn(const char *mnt, file_info *finfo, const char *name, void *s
 /*
   test directory listing speed
  */
-static BOOL run_dirtest(int dummy)
+static bool run_dirtest(int dummy)
 {
 	int i;
 	static struct cli_state *cli;
 	int fnum;
 	double t1;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting directory test\n");
 
@@ -4338,7 +4338,7 @@ static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *st
 /*
   sees what IOCTLs are supported
  */
-BOOL torture_ioctl_test(int dummy)
+bool torture_ioctl_test(int dummy)
 {
 	static struct cli_state *cli;
 	uint16 device, function;
@@ -4393,11 +4393,11 @@ BOOL torture_ioctl_test(int dummy)
 /*
   tries varients of chkpath
  */
-BOOL torture_chkpath_test(int dummy)
+bool torture_chkpath_test(int dummy)
 {
 	static struct cli_state *cli;
 	int fnum;
-	BOOL ret;
+	bool ret;
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
@@ -4472,11 +4472,11 @@ BOOL torture_chkpath_test(int dummy)
 	return ret;
 }
 
-static BOOL run_eatest(int dummy)
+static bool run_eatest(int dummy)
 {
 	static struct cli_state *cli;
 	const char *fname = "\\eatest.txt";
-	BOOL correct = True;
+	bool correct = True;
 	int fnum, i;
 	size_t num_eas;
 	struct ea_struct *ea_list = NULL;
@@ -4592,12 +4592,12 @@ static BOOL run_eatest(int dummy)
 	return correct;
 }
 
-static BOOL run_dirtest1(int dummy)
+static bool run_dirtest1(int dummy)
 {
 	int i;
 	static struct cli_state *cli;
 	int fnum, num_seen;
-	BOOL correct = True;
+	bool correct = True;
 
 	printf("starting directory test\n");
 
@@ -4673,7 +4673,7 @@ static BOOL run_dirtest1(int dummy)
 	return correct;
 }
 
-static BOOL run_error_map_extract(int dummy) {
+static bool run_error_map_extract(int dummy) {
 	
 	static struct cli_state *c_dos;
 	static struct cli_state *c_nt;
@@ -4799,7 +4799,7 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	return result;
 }
 
-static BOOL run_local_substitute(int dummy)
+static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
 
@@ -4820,7 +4820,7 @@ static BOOL run_local_substitute(int dummy)
 	return ok;
 }
 
-static BOOL run_local_gencache(int dummy)
+static bool run_local_gencache(int dummy)
 {
 	char *val;
 	time_t tm;
@@ -4920,11 +4920,11 @@ static BOOL run_local_gencache(int dummy)
 	return True;
 }
 
-static double create_procs(BOOL (*fn)(int), BOOL *result)
+static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
 	volatile pid_t *child_status;
-	volatile BOOL *child_status_out;
+	volatile bool *child_status_out;
 	int synccount;
 	int tries = 8;
 
@@ -4936,7 +4936,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 		return -1;
 	}
 
-	child_status_out = (volatile BOOL *)shm_setup(sizeof(BOOL)*nprocs);
+	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
@@ -5017,7 +5017,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 static struct {
 	const char *name;
-	BOOL (*fn)(int);
+	bool (*fn)(int);
 	unsigned flags;
 } torture_ops[] = {
 	{"FDPASS", run_fdpasstest, 0},
@@ -5079,11 +5079,11 @@ static struct {
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
-static BOOL run_test(const char *name)
+static bool run_test(const char *name)
 {
-	BOOL ret = True;
-	BOOL result = True;
-	BOOL found = False;
+	bool ret = True;
+	bool result = True;
+	bool found = False;
 	int i;
 	double t;
 	if (strequal(name,"ALL")) {
@@ -5174,7 +5174,7 @@ static void usage(void)
 	char *p;
 	int gotuser = 0;
 	int gotpass = 0;
-	BOOL correct = True;
+	bool correct = True;
 
 	dbf = x_stdout;
 

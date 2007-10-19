@@ -269,7 +269,7 @@ on subnet %s\n", name, subrec->subnet_name));
   Dump a copy of the workgroup database into the log file.
   **************************************************************************/
 
-void dump_workgroups(BOOL force_write)
+void dump_workgroups(bool force_write)
 {
 	struct subnet_record *subrec;
 	int debuglevel = force_write ? 0 : 4;

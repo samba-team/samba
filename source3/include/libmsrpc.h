@@ -184,7 +184,7 @@ typedef struct _CACLOOKUPRIDSRECORD {
    uint32 type;
    
    /*if the name or RID was looked up, then found = True*/
-   BOOL found;
+   bool found;
 } CacLookupRidsRecord;
 
 typedef struct _CACUSERINFO {
@@ -228,7 +228,7 @@ typedef struct _CACUSERINFO {
    uint16 logon_count;
 
    /**Change password at next logon?*/
-   BOOL pass_must_change;
+   bool pass_must_change;
 
    /**Username*/
    char *username;
@@ -464,7 +464,7 @@ void cac_Init(int debug);
  * @return - un-initialized server handle
  *         - NULL if no memory could be allocated
  */
-CacServerHandle * cac_NewServerHandle(BOOL allocate_fields);
+CacServerHandle * cac_NewServerHandle(bool allocate_fields);
 
 /**
  * Specifies the smbc_get_auth_data_fn to use if you do not want to use the default.
@@ -553,7 +553,7 @@ struct LsaOpenPolicy {
       uint32 access;
 
       /**Use security quality of service? (True/False)*/
-      BOOL security_qos;
+      bool security_qos;
    } in;
 
    /**Outputs*/
@@ -1238,7 +1238,7 @@ struct RegDeleteKey {
       char *name;
 
       /**delete recursively. WARNING: this might not always work as planned*/
-      BOOL recursive;
+      bool recursive;
    } in;
 
 };
@@ -1576,10 +1576,10 @@ struct Shutdown {
       uint32 timeout;
 
       /**False = shutdown, True = reboot*/
-      BOOL reboot;
+      bool reboot;
       
       /**force the*/
-      BOOL force;
+      bool force;
 
       /*FIXME: make this useful*/
       uint32 reason;
@@ -1776,7 +1776,7 @@ struct SamEnumUsers {
       /**Array storing the names of all the users returned*/
       char **names;
 
-      BOOL done;
+      bool done;
    } out;
 };
 
@@ -2068,7 +2068,7 @@ struct SamEnumGroups {
       /**Array storing the descriptions of all the groups returned*/
       char **descriptions;
 
-      BOOL done;
+      bool done;
    } out;
 };
 
@@ -2104,7 +2104,7 @@ struct SamEnumAliases {
       /**Array storing the descriptions of all the groups returned*/
       char **descriptions;
 
-      BOOL done;
+      bool done;
    } out;
 };
 
@@ -2634,7 +2634,7 @@ struct SamGetDisplayInfo {
       /**Internal value. Do not modify.*/
       uint32 loop_count;
 
-      BOOL done;
+      bool done;
    } out;
 };
 

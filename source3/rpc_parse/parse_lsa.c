@@ -27,8 +27,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
-static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, int depth);
-static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn, prs_struct *ps, int depth);
+static bool lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, int depth);
+static bool lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn, prs_struct *ps, int depth);
 
 /*******************************************************************
  Inits a LSA_TRANS_NAME structure.
@@ -47,7 +47,7 @@ void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
  Reads or writes a LSA_TRANS_NAME structure.
 ********************************************************************/
 
-static BOOL lsa_io_trans_name(const char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, 
+static bool lsa_io_trans_name(const char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, 
 			      int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_trans_name");
@@ -87,7 +87,7 @@ void init_lsa_trans_name2(LSA_TRANS_NAME2 *trn, UNISTR2 *uni_name,
  Reads or writes a LSA_TRANS_NAME2 structure.
 ********************************************************************/
 
-static BOOL lsa_io_trans_name2(const char *desc, LSA_TRANS_NAME2 *trn, prs_struct *ps, 
+static bool lsa_io_trans_name2(const char *desc, LSA_TRANS_NAME2 *trn, prs_struct *ps, 
 			      int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_trans_name2");
@@ -115,7 +115,7 @@ static BOOL lsa_io_trans_name2(const char *desc, LSA_TRANS_NAME2 *trn, prs_struc
  Reads or writes a DOM_R_REF structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_r_ref(const char *desc, DOM_R_REF *dom, prs_struct *ps, int depth)
+static bool lsa_io_dom_r_ref(const char *desc, DOM_R_REF *dom, prs_struct *ps, int depth)
 {
 	unsigned int i;
 
@@ -193,7 +193,7 @@ void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff)
  Reads or writes an LSA_SEC_QOS structure.
 ********************************************************************/
 
-static BOOL lsa_io_sec_qos(const char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, 
+static bool lsa_io_sec_qos(const char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, 
 			   int depth)
 {
 	uint32 start;
@@ -253,7 +253,7 @@ static void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS
  Reads or writes an LSA_OBJ_ATTR structure.
 ********************************************************************/
 
-static BOOL lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, 
+static bool lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, 
 			    int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_obj_attr");
@@ -314,7 +314,7 @@ void init_q_open_pol(LSA_Q_OPEN_POL *in, uint16 system_name,
  Reads or writes an LSA_Q_OPEN_POL structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_pol(const char *desc, LSA_Q_OPEN_POL *in, prs_struct *ps, 
+bool lsa_io_q_open_pol(const char *desc, LSA_Q_OPEN_POL *in, prs_struct *ps, 
 		       int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_pol");
@@ -340,7 +340,7 @@ BOOL lsa_io_q_open_pol(const char *desc, LSA_Q_OPEN_POL *in, prs_struct *ps,
  Reads or writes an LSA_R_OPEN_POL structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_pol(const char *desc, LSA_R_OPEN_POL *out, prs_struct *ps, 
+bool lsa_io_r_open_pol(const char *desc, LSA_R_OPEN_POL *out, prs_struct *ps, 
 		       int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol");
@@ -379,7 +379,7 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *in, const char *server_name,
  Reads or writes an LSA_Q_OPEN_POL2 structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_pol2(const char *desc, LSA_Q_OPEN_POL2 *in, prs_struct *ps, 
+bool lsa_io_q_open_pol2(const char *desc, LSA_Q_OPEN_POL2 *in, prs_struct *ps, 
 			int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_pol2");
@@ -403,7 +403,7 @@ BOOL lsa_io_q_open_pol2(const char *desc, LSA_Q_OPEN_POL2 *in, prs_struct *ps,
  Reads or writes an LSA_R_OPEN_POL2 structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_pol2(const char *desc, LSA_R_OPEN_POL2 *out, prs_struct *ps, 
+bool lsa_io_r_open_pol2(const char *desc, LSA_R_OPEN_POL2 *out, prs_struct *ps, 
 			int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol2");
@@ -437,7 +437,7 @@ void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *in, const POLICY_HND *hnd,
  Reads or writes an LSA_Q_QUERY_SEC_OBJ structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_sec_obj(const char *desc, LSA_Q_QUERY_SEC_OBJ *in, 
+bool lsa_io_q_query_sec_obj(const char *desc, LSA_Q_QUERY_SEC_OBJ *in, 
 			    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_query_sec_obj");
@@ -456,7 +456,7 @@ BOOL lsa_io_q_query_sec_obj(const char *desc, LSA_Q_QUERY_SEC_OBJ *in,
  Reads or writes a LSA_R_QUERY_SEC_OBJ structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query_sec_obj(const char *desc, LSA_R_QUERY_SEC_OBJ *out, prs_struct *ps, int depth)
+bool lsa_io_r_query_sec_obj(const char *desc, LSA_R_QUERY_SEC_OBJ *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_query_sec_obj");
 	depth++;
@@ -495,7 +495,7 @@ void init_q_query(LSA_Q_QUERY_INFO *in, POLICY_HND *hnd, uint16 info_class)
  Reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query(const char *desc, LSA_Q_QUERY_INFO *in, prs_struct *ps, 
+bool lsa_io_q_query(const char *desc, LSA_Q_QUERY_INFO *in, prs_struct *ps, 
 		    int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_query");
@@ -513,7 +513,7 @@ BOOL lsa_io_q_query(const char *desc, LSA_Q_QUERY_INFO *in, prs_struct *ps,
 /*******************************************************************
 makes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
-BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
+bool init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
 			   uint32 enum_context, uint32 preferred_len)
 {
 	DEBUG(5, ("init_q_enum_trust_dom\n"));
@@ -529,7 +529,7 @@ BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
  Reads or writes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-BOOL lsa_io_q_enum_trust_dom(const char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
+bool lsa_io_q_enum_trust_dom(const char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
 			     prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_enum_trust_dom");
@@ -611,7 +611,7 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_domain_list( const char *desc, prs_struct *ps, int depth, DOMAIN_LIST *domlist )
+bool lsa_io_domain_list( const char *desc, prs_struct *ps, int depth, DOMAIN_LIST *domlist )
 {
 	int i;
 	
@@ -654,7 +654,7 @@ BOOL lsa_io_domain_list( const char *desc, prs_struct *ps, int depth, DOMAIN_LIS
  Reads or writes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out, 
+bool lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out, 
 			     prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_trust_dom");
@@ -679,7 +679,7 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out,
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_1(const char *desc, DOM_QUERY_1 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_1(const char *desc, DOM_QUERY_1 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -712,7 +712,7 @@ static BOOL lsa_io_dom_query_1(const char *desc, DOM_QUERY_1 *d_q, prs_struct *p
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -760,7 +760,7 @@ static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *p
 reads or writes a dom query structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -801,7 +801,7 @@ static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *p
  Reads or writes a dom query structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_5(const char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_5(const char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
 {
 	return lsa_io_dom_query_3("", d_q, ps, depth);
 }
@@ -810,7 +810,7 @@ static BOOL lsa_io_dom_query_5(const char *desc, DOM_QUERY_5 *d_q, prs_struct *p
  Reads or writes a dom query structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_6(const char *desc, DOM_QUERY_6 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_6(const char *desc, DOM_QUERY_6 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -828,7 +828,7 @@ static BOOL lsa_io_dom_query_6(const char *desc, DOM_QUERY_6 *d_q, prs_struct *p
  Reads or writes a dom query structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_10(const char *desc, DOM_QUERY_10 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_10(const char *desc, DOM_QUERY_10 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -846,7 +846,7 @@ static BOOL lsa_io_dom_query_10(const char *desc, DOM_QUERY_10 *d_q, prs_struct 
  Reads or writes a dom query structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query_11(const char *desc, DOM_QUERY_11 *d_q, prs_struct *ps, int depth)
+static bool lsa_io_dom_query_11(const char *desc, DOM_QUERY_11 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
@@ -868,7 +868,7 @@ static BOOL lsa_io_dom_query_11(const char *desc, DOM_QUERY_11 *d_q, prs_struct 
  Reads or writes an LSA_DNS_DOM_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, int depth)
+bool lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_dom_query_12");
 	depth++;
@@ -929,7 +929,7 @@ void init_q_set(LSA_Q_SET_INFO *in, POLICY_HND *hnd, uint16 info_class, LSA_INFO
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR2 *ctr)
+static bool lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR2 *ctr)
 {
 	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr2");
 	depth++;
@@ -984,7 +984,7 @@ static BOOL lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, 
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR *ctr)
+static bool lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR *ctr)
 {
 	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr");
 	depth++;
@@ -1037,7 +1037,7 @@ static BOOL lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, L
  Reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int depth)
+bool lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "lsa_io_r_query");
@@ -1068,7 +1068,7 @@ BOOL lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int
  Reads or writes an LSA_Q_SET_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps, 
+bool lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps, 
 		  int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_set");
@@ -1093,7 +1093,7 @@ BOOL lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps,
  Reads or writes an LSA_R_SET_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_r_set(const char *desc, LSA_R_SET_INFO *out, prs_struct *ps, int depth)
+bool lsa_io_r_set(const char *desc, LSA_R_SET_INFO *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_set");
 	depth++;
@@ -1148,7 +1148,7 @@ static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
  Reads or writes a LSA_SID_ENUM structure.
 ********************************************************************/
 
-static BOOL lsa_io_sid_enum(const char *desc, LSA_SID_ENUM *sen, prs_struct *ps, 
+static bool lsa_io_sid_enum(const char *desc, LSA_SID_ENUM *sen, prs_struct *ps, 
 			    int depth)
 {
 	unsigned int i;
@@ -1234,7 +1234,7 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
  Reads or writes a LSA_Q_LOOKUP_SIDS structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps,
+bool lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps,
 			  int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids");
@@ -1265,7 +1265,7 @@ BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *
  Reads or writes a LSA_Q_LOOKUP_SIDS2 structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_sids2(const char *desc, LSA_Q_LOOKUP_SIDS2 *q_s, prs_struct *ps,
+bool lsa_io_q_lookup_sids2(const char *desc, LSA_Q_LOOKUP_SIDS2 *q_s, prs_struct *ps,
 			  int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids2");
@@ -1300,7 +1300,7 @@ BOOL lsa_io_q_lookup_sids2(const char *desc, LSA_Q_LOOKUP_SIDS2 *q_s, prs_struct
  Reads or writes a LSA_Q_LOOKUP_SIDS3 structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_sids3(const char *desc, LSA_Q_LOOKUP_SIDS3 *q_s, prs_struct *ps,
+bool lsa_io_q_lookup_sids3(const char *desc, LSA_Q_LOOKUP_SIDS3 *q_s, prs_struct *ps,
 			  int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids3");
@@ -1334,7 +1334,7 @@ BOOL lsa_io_q_lookup_sids3(const char *desc, LSA_Q_LOOKUP_SIDS3 *q_s, prs_struct
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
+static bool lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
                 prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -1396,7 +1396,7 @@ static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn,
+static bool lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn,
                 prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -1459,7 +1459,7 @@ static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s, 
+bool lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s, 
 			  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids");
@@ -1494,7 +1494,7 @@ BOOL lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_sids2(const char *desc, LSA_R_LOOKUP_SIDS2 *r_s, 
+bool lsa_io_r_lookup_sids2(const char *desc, LSA_R_LOOKUP_SIDS2 *r_s, 
 			  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids2");
@@ -1530,7 +1530,7 @@ BOOL lsa_io_r_lookup_sids2(const char *desc, LSA_R_LOOKUP_SIDS2 *r_s,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_sids3(const char *desc, LSA_R_LOOKUP_SIDS3 *r_s, 
+bool lsa_io_r_lookup_sids3(const char *desc, LSA_R_LOOKUP_SIDS3 *r_s, 
 			  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids3");
@@ -1605,7 +1605,7 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
+bool lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
 			   prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -1669,7 +1669,7 @@ BOOL lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct *ps, int depth)
+bool lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct *ps, int depth)
 {
 	unsigned int i;
 
@@ -1726,7 +1726,7 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_names2(const char *desc, LSA_Q_LOOKUP_NAMES2 *q_r, 
+bool lsa_io_q_lookup_names2(const char *desc, LSA_Q_LOOKUP_NAMES2 *q_r, 
 			   prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -1794,7 +1794,7 @@ BOOL lsa_io_q_lookup_names2(const char *desc, LSA_Q_LOOKUP_NAMES2 *q_r,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names2(const char *desc, LSA_R_LOOKUP_NAMES2 *out, prs_struct *ps, int depth)
+bool lsa_io_r_lookup_names2(const char *desc, LSA_R_LOOKUP_NAMES2 *out, prs_struct *ps, int depth)
 {
 	unsigned int i;
 
@@ -1852,7 +1852,7 @@ BOOL lsa_io_r_lookup_names2(const char *desc, LSA_R_LOOKUP_NAMES2 *out, prs_stru
  Following pass must read DOM_SID2 types.
 ********************************************************************/
 
-BOOL smb_io_lsa_translated_sids3(const char *desc, LSA_TRANSLATED_SID3 *q_r, 
+bool smb_io_lsa_translated_sids3(const char *desc, LSA_TRANSLATED_SID3 *q_r, 
 			   prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_lsa_translated_sids3");
@@ -1879,7 +1879,7 @@ BOOL smb_io_lsa_translated_sids3(const char *desc, LSA_TRANSLATED_SID3 *q_r,
  Identical to lsa_io_q_lookup_names2.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_names3(const char *desc, LSA_Q_LOOKUP_NAMES3 *q_r, 
+bool lsa_io_q_lookup_names3(const char *desc, LSA_Q_LOOKUP_NAMES3 *q_r, 
 			   prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -1947,7 +1947,7 @@ BOOL lsa_io_q_lookup_names3(const char *desc, LSA_Q_LOOKUP_NAMES3 *q_r,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names3(const char *desc, LSA_R_LOOKUP_NAMES3 *out, prs_struct *ps, int depth)
+bool lsa_io_r_lookup_names3(const char *desc, LSA_R_LOOKUP_NAMES3 *out, prs_struct *ps, int depth)
 {
 	unsigned int i;
 
@@ -2013,7 +2013,7 @@ BOOL lsa_io_r_lookup_names3(const char *desc, LSA_R_LOOKUP_NAMES3 *out, prs_stru
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_names4(const char *desc, LSA_Q_LOOKUP_NAMES4 *q_r, 
+bool lsa_io_q_lookup_names4(const char *desc, LSA_Q_LOOKUP_NAMES4 *q_r, 
 			   prs_struct *ps, int depth)
 {
 	unsigned int i;
@@ -2076,7 +2076,7 @@ BOOL lsa_io_q_lookup_names4(const char *desc, LSA_Q_LOOKUP_NAMES4 *q_r,
  Identical to lsa_io_r_lookup_names3.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_struct *ps, int depth)
+bool lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_struct *ps, int depth)
 {
 	unsigned int i;
 
@@ -2143,7 +2143,7 @@ BOOL lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_stru
  Reads or writes an LSA_Q_OPEN_SECRET structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_secret(const char *desc, LSA_Q_OPEN_SECRET *in, prs_struct *ps, int depth)
+bool lsa_io_q_open_secret(const char *desc, LSA_Q_OPEN_SECRET *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_secret");
 	depth++;
@@ -2169,7 +2169,7 @@ BOOL lsa_io_q_open_secret(const char *desc, LSA_Q_OPEN_SECRET *in, prs_struct *p
  Reads or writes an LSA_R_OPEN_SECRET structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_secret(const char *desc, LSA_R_OPEN_SECRET *out, prs_struct *ps, int depth)
+bool lsa_io_r_open_secret(const char *desc, LSA_R_OPEN_SECRET *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_secret");
 	depth++;
@@ -2203,7 +2203,7 @@ void init_q_enum_privs(LSA_Q_ENUM_PRIVS *in, POLICY_HND *hnd, uint32 enum_contex
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_q_enum_privs(const char *desc, LSA_Q_ENUM_PRIVS *in, prs_struct *ps, int depth)
+bool lsa_io_q_enum_privs(const char *desc, LSA_Q_ENUM_PRIVS *in, prs_struct *ps, int depth)
 {
 	if (in == NULL)
 		return False;
@@ -2225,7 +2225,7 @@ BOOL lsa_io_q_enum_privs(const char *desc, LSA_Q_ENUM_PRIVS *in, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL lsa_io_priv_entries(const char *desc, LSA_PRIV_ENTRY *entries, uint32 count, prs_struct *ps, int depth)
+static bool lsa_io_priv_entries(const char *desc, LSA_PRIV_ENTRY *entries, uint32 count, prs_struct *ps, int depth)
 {
 	uint32 i;
 
@@ -2280,7 +2280,7 @@ void init_lsa_r_enum_privs(LSA_R_ENUM_PRIVS *out, uint32 enum_context,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_r_enum_privs(const char *desc, LSA_R_ENUM_PRIVS *out, prs_struct *ps, int depth)
+bool lsa_io_r_enum_privs(const char *desc, LSA_R_ENUM_PRIVS *out, prs_struct *ps, int depth)
 {
 	if (out == NULL)
 		return False;
@@ -2332,7 +2332,7 @@ void init_lsa_priv_get_dispname(LSA_Q_PRIV_GET_DISPNAME *trn, POLICY_HND *hnd, c
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_q_priv_get_dispname(const char *desc, LSA_Q_PRIV_GET_DISPNAME *in, prs_struct *ps, int depth)
+bool lsa_io_q_priv_get_dispname(const char *desc, LSA_Q_PRIV_GET_DISPNAME *in, prs_struct *ps, int depth)
 {
 	if (in == NULL)
 		return False;
@@ -2363,7 +2363,7 @@ BOOL lsa_io_q_priv_get_dispname(const char *desc, LSA_Q_PRIV_GET_DISPNAME *in, p
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_r_priv_get_dispname(const char *desc, LSA_R_PRIV_GET_DISPNAME *out, prs_struct *ps, int depth)
+bool lsa_io_r_priv_get_dispname(const char *desc, LSA_R_PRIV_GET_DISPNAME *out, prs_struct *ps, int depth)
 {
 	if (out == NULL)
 		return False;
@@ -2413,7 +2413,7 @@ void init_lsa_q_enum_accounts(LSA_Q_ENUM_ACCOUNTS *trn, POLICY_HND *hnd, uint32 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_q_enum_accounts(const char *desc, LSA_Q_ENUM_ACCOUNTS *in, prs_struct *ps, int depth)
+bool lsa_io_q_enum_accounts(const char *desc, LSA_Q_ENUM_ACCOUNTS *in, prs_struct *ps, int depth)
 {
 	if (in == NULL)
 		return False;
@@ -2456,7 +2456,7 @@ void init_lsa_r_enum_accounts(LSA_R_ENUM_ACCOUNTS *out, uint32 enum_context)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_r_enum_accounts(const char *desc, LSA_R_ENUM_ACCOUNTS *out, prs_struct *ps, int depth)
+bool lsa_io_r_enum_accounts(const char *desc, LSA_R_ENUM_ACCOUNTS *out, prs_struct *ps, int depth)
 {
 	if (out == NULL)
 		return False;
@@ -2487,7 +2487,7 @@ BOOL lsa_io_r_enum_accounts(const char *desc, LSA_R_ENUM_ACCOUNTS *out, prs_stru
  Reads or writes an LSA_Q_UNK_GET_CONNUSER structure.
 ********************************************************************/
 
-BOOL lsa_io_q_unk_get_connuser(const char *desc, LSA_Q_UNK_GET_CONNUSER *in, prs_struct *ps, int depth)
+bool lsa_io_q_unk_get_connuser(const char *desc, LSA_Q_UNK_GET_CONNUSER *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_unk_get_connuser");
 	depth++;
@@ -2519,7 +2519,7 @@ BOOL lsa_io_q_unk_get_connuser(const char *desc, LSA_Q_UNK_GET_CONNUSER *in, prs
  Reads or writes an LSA_R_UNK_GET_CONNUSER structure.
 ********************************************************************/
 
-BOOL lsa_io_r_unk_get_connuser(const char *desc, LSA_R_UNK_GET_CONNUSER *out, prs_struct *ps, int depth)
+bool lsa_io_r_unk_get_connuser(const char *desc, LSA_R_UNK_GET_CONNUSER *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_unk_get_connuser");
 	depth++;
@@ -2569,7 +2569,7 @@ void init_lsa_q_create_account(LSA_Q_CREATEACCOUNT *trn, POLICY_HND *hnd, DOM_SI
  Reads or writes an LSA_Q_CREATEACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_q_create_account(const char *desc, LSA_Q_CREATEACCOUNT *out, prs_struct *ps, int depth)
+bool lsa_io_q_create_account(const char *desc, LSA_Q_CREATEACCOUNT *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_create_account");
 	depth++;
@@ -2593,7 +2593,7 @@ BOOL lsa_io_q_create_account(const char *desc, LSA_Q_CREATEACCOUNT *out, prs_str
  Reads or writes an LSA_R_CREATEACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_r_create_account(const char *desc, LSA_R_CREATEACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_r_create_account(const char *desc, LSA_R_CREATEACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
 	depth++;
@@ -2623,7 +2623,7 @@ void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *s
  Reads or writes an LSA_Q_OPENACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_account(const char *desc, LSA_Q_OPENACCOUNT *out, prs_struct *ps, int depth)
+bool lsa_io_q_open_account(const char *desc, LSA_Q_OPENACCOUNT *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_account");
 	depth++;
@@ -2647,7 +2647,7 @@ BOOL lsa_io_q_open_account(const char *desc, LSA_Q_OPENACCOUNT *out, prs_struct 
  Reads or writes an LSA_R_OPENACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_account(const char *desc, LSA_R_OPENACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_r_open_account(const char *desc, LSA_R_OPENACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
 	depth++;
@@ -2675,7 +2675,7 @@ void init_lsa_q_enum_privsaccount(LSA_Q_ENUMPRIVSACCOUNT *trn, POLICY_HND *hnd)
  Reads or writes an LSA_Q_ENUMPRIVSACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_q_enum_privsaccount(const char *desc, LSA_Q_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
+bool lsa_io_q_enum_privsaccount(const char *desc, LSA_Q_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_enum_privsaccount");
 	depth++;
@@ -2693,7 +2693,7 @@ BOOL lsa_io_q_enum_privsaccount(const char *desc, LSA_Q_ENUMPRIVSACCOUNT *out, p
  Reads or writes an LUID structure.
 ********************************************************************/
 
-static BOOL lsa_io_luid(const char *desc, LUID *out, prs_struct *ps, int depth)
+static bool lsa_io_luid(const char *desc, LUID *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_luid");
 	depth++;
@@ -2714,7 +2714,7 @@ static BOOL lsa_io_luid(const char *desc, LUID *out, prs_struct *ps, int depth)
  Reads or writes an LUID_ATTR structure.
 ********************************************************************/
 
-static BOOL lsa_io_luid_attr(const char *desc, LUID_ATTR *out, prs_struct *ps, int depth)
+static bool lsa_io_luid_attr(const char *desc, LUID_ATTR *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_luid_attr");
 	depth++;
@@ -2735,7 +2735,7 @@ static BOOL lsa_io_luid_attr(const char *desc, LUID_ATTR *out, prs_struct *ps, i
  Reads or writes an PRIVILEGE_SET structure.
 ********************************************************************/
 
-static BOOL lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *out, prs_struct *ps, int depth)
+static bool lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *out, prs_struct *ps, int depth)
 {
 	uint32 i, dummy;
 
@@ -2782,7 +2782,7 @@ NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUN
  Reads or writes an LSA_R_ENUMPRIVSACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
+bool lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_privsaccount");
 	depth++;
@@ -2824,7 +2824,7 @@ BOOL lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *out, p
  Reads or writes an  LSA_Q_GETSYSTEMACCOUNTstructure.
 ********************************************************************/
 
-BOOL lsa_io_q_getsystemaccount(const char *desc, LSA_Q_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_q_getsystemaccount(const char *desc, LSA_Q_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_getsystemaccount");
 	depth++;
@@ -2842,7 +2842,7 @@ BOOL lsa_io_q_getsystemaccount(const char *desc, LSA_Q_GETSYSTEMACCOUNT  *out, p
  Reads or writes an  LSA_R_GETSYSTEMACCOUNTstructure.
 ********************************************************************/
 
-BOOL lsa_io_r_getsystemaccount(const char *desc, LSA_R_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_r_getsystemaccount(const char *desc, LSA_R_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_getsystemaccount");
 	depth++;
@@ -2864,7 +2864,7 @@ BOOL lsa_io_r_getsystemaccount(const char *desc, LSA_R_GETSYSTEMACCOUNT  *out, p
  Reads or writes an LSA_Q_SETSYSTEMACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_q_setsystemaccount(const char *desc, LSA_Q_SETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_q_setsystemaccount(const char *desc, LSA_Q_SETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_setsystemaccount");
 	depth++;
@@ -2885,7 +2885,7 @@ BOOL lsa_io_q_setsystemaccount(const char *desc, LSA_Q_SETSYSTEMACCOUNT  *out, p
  Reads or writes an LSA_R_SETSYSTEMACCOUNT structure.
 ********************************************************************/
 
-BOOL lsa_io_r_setsystemaccount(const char *desc, LSA_R_SETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
+bool lsa_io_r_setsystemaccount(const char *desc, LSA_R_SETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_setsystemaccount");
 	depth++;
@@ -2912,7 +2912,7 @@ void init_lsa_q_lookup_priv_value(LSA_Q_LOOKUP_PRIV_VALUE *q_u, POLICY_HND *hnd,
 	init_lsa_string( &q_u->privname, name );
 }
 
-BOOL smb_io_lsa_string( const char *desc, LSA_STRING *string, prs_struct *ps, int depth )
+bool smb_io_lsa_string( const char *desc, LSA_STRING *string, prs_struct *ps, int depth )
 {
 	prs_debug(ps, depth, desc, "smb_io_lsa_string");
 	depth++;
@@ -2929,7 +2929,7 @@ BOOL smb_io_lsa_string( const char *desc, LSA_STRING *string, prs_struct *ps, in
  Reads or writes an LSA_Q_LOOKUP_PRIV_VALUE  structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_priv_value(const char *desc, LSA_Q_LOOKUP_PRIV_VALUE  *out, prs_struct *ps, int depth)
+bool lsa_io_q_lookup_priv_value(const char *desc, LSA_Q_LOOKUP_PRIV_VALUE  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_priv_value");
 	depth++;
@@ -2949,7 +2949,7 @@ BOOL lsa_io_q_lookup_priv_value(const char *desc, LSA_Q_LOOKUP_PRIV_VALUE  *out,
  Reads or writes an  LSA_R_LOOKUP_PRIV_VALUE structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_priv_value(const char *desc, LSA_R_LOOKUP_PRIV_VALUE  *out, prs_struct *ps, int depth)
+bool lsa_io_r_lookup_priv_value(const char *desc, LSA_R_LOOKUP_PRIV_VALUE  *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_priv_value");
 	depth++;
@@ -2971,7 +2971,7 @@ BOOL lsa_io_r_lookup_priv_value(const char *desc, LSA_R_LOOKUP_PRIV_VALUE  *out,
  Reads or writes an LSA_Q_ADDPRIVS structure.
 ********************************************************************/
 
-BOOL lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *out, prs_struct *ps, int depth)
+bool lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_addprivs");
 	depth++;
@@ -3003,7 +3003,7 @@ BOOL lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *out, prs_struct *ps, in
  Reads or writes an LSA_R_ADDPRIVS structure.
 ********************************************************************/
 
-BOOL lsa_io_r_addprivs(const char *desc, LSA_R_ADDPRIVS *out, prs_struct *ps, int depth)
+bool lsa_io_r_addprivs(const char *desc, LSA_R_ADDPRIVS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_addprivs");
 	depth++;
@@ -3021,7 +3021,7 @@ BOOL lsa_io_r_addprivs(const char *desc, LSA_R_ADDPRIVS *out, prs_struct *ps, in
  Reads or writes an LSA_Q_REMOVEPRIVS structure.
 ********************************************************************/
 
-BOOL lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *out, prs_struct *ps, int depth)
+bool lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_removeprivs");
 	depth++;
@@ -3066,7 +3066,7 @@ BOOL lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *out, prs_struct *
  Reads or writes an LSA_R_REMOVEPRIVS structure.
 ********************************************************************/
 
-BOOL lsa_io_r_removeprivs(const char *desc, LSA_R_REMOVEPRIVS *out, prs_struct *ps, int depth)
+bool lsa_io_r_removeprivs(const char *desc, LSA_R_REMOVEPRIVS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_removeprivs");
 	depth++;
@@ -3080,7 +3080,7 @@ BOOL lsa_io_r_removeprivs(const char *desc, LSA_R_REMOVEPRIVS *out, prs_struct *
 	return True;
 }
 
-BOOL policy_handle_is_valid(const POLICY_HND *hnd)
+bool policy_handle_is_valid(const POLICY_HND *hnd)
 {
 	POLICY_HND zero_pol;
 
@@ -3105,7 +3105,7 @@ void init_q_query2(LSA_Q_QUERY_INFO2 *in, POLICY_HND *hnd, uint16 info_class)
  Reads or writes an LSA_Q_QUERY_DNSDOMINFO structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_info2(const char *desc, LSA_Q_QUERY_INFO2 *in, prs_struct *ps, int depth)
+bool lsa_io_q_query_info2(const char *desc, LSA_Q_QUERY_INFO2 *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_query_info2");
 	depth++;
@@ -3126,7 +3126,7 @@ BOOL lsa_io_q_query_info2(const char *desc, LSA_Q_QUERY_INFO2 *in, prs_struct *p
  Reads or writes an LSA_R_QUERY_DNSDOMINFO structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *out,
+bool lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *out,
 			  prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_query_info2");
@@ -3201,7 +3201,7 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *out, PRIVILEGE_SET *pr
 /*******************************************************************
 reads or writes a LSA_Q_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *in, prs_struct *ps, int depth)
+bool lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *in, prs_struct *ps, int depth)
 {
 	
 	if (in == NULL)
@@ -3223,7 +3223,7 @@ BOOL lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *in, prs
 /*******************************************************************
 reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *out, prs_struct *ps, int depth)
+bool lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_acct_rights");
 	depth++;
@@ -3269,7 +3269,7 @@ void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *in, POLICY_HND *hnd,
 /*******************************************************************
 reads or writes a LSA_Q_ADD_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *in, prs_struct *ps, int depth)
+bool lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_add_acct_rights");
 	depth++;
@@ -3292,7 +3292,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *in, prs_s
 /*******************************************************************
 reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *out, prs_struct *ps, int depth)
+bool lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_add_acct_rights");
 	depth++;
@@ -3335,7 +3335,7 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in,
 reads or writes a LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
 
-BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in, prs_struct *ps, int depth)
+bool lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_remove_acct_rights");
 	depth++;
@@ -3361,7 +3361,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in,
 /*******************************************************************
 reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *out, prs_struct *ps, int depth)
+bool lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_remove_acct_rights");
 	depth++;
@@ -3388,7 +3388,7 @@ void init_lsa_q_open_trusted_domain(LSA_Q_OPEN_TRUSTED_DOMAIN *q, POLICY_HND *hn
 ********************************************************************/
 
 #if 0 /* jerry, I think this not correct - gd */
-BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *in, prs_struct *ps, int depth)
+bool lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain");
 	depth++;
@@ -3433,7 +3433,7 @@ void init_lsa_q_open_trusted_domain_by_name(LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q
  Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q_o, prs_struct *ps, int depth)
+bool lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q_o, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain_by_name");
 	depth++;
@@ -3463,7 +3463,7 @@ BOOL lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_D
  Reads or writes an LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME *out, prs_struct *ps, int depth)
+bool lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_domain_by_name");
 	depth++;
@@ -3483,7 +3483,7 @@ BOOL lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_D
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q_o, prs_struct *ps, int depth)
+bool lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q_o, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain");
 	depth++;
@@ -3507,7 +3507,7 @@ BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q
  Reads or writes an LSA_R_OPEN_TRUSTED_DOMAIN structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_trusted_domain(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN *out, prs_struct *ps, int depth)
+bool lsa_io_r_open_trusted_domain(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_domain");
 	depth++;
@@ -3527,7 +3527,7 @@ BOOL lsa_io_r_open_trusted_domain(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN *o
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_create_trusted_domain(const char *desc, LSA_Q_CREATE_TRUSTED_DOMAIN *in, prs_struct *ps, int depth)
+bool lsa_io_q_create_trusted_domain(const char *desc, LSA_Q_CREATE_TRUSTED_DOMAIN *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_create_trusted_domain");
 	depth++;
@@ -3552,7 +3552,7 @@ BOOL lsa_io_q_create_trusted_domain(const char *desc, LSA_Q_CREATE_TRUSTED_DOMAI
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_r_create_trusted_domain(const char *desc, LSA_R_CREATE_TRUSTED_DOMAIN *out, prs_struct *ps, int depth)
+bool lsa_io_r_create_trusted_domain(const char *desc, LSA_R_CREATE_TRUSTED_DOMAIN *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_create_trusted_domain");
 	depth++;
@@ -3572,7 +3572,7 @@ BOOL lsa_io_r_create_trusted_domain(const char *desc, LSA_R_CREATE_TRUSTED_DOMAI
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_create_secret(const char *desc, LSA_Q_CREATE_SECRET *in, prs_struct *ps, int depth)
+bool lsa_io_q_create_secret(const char *desc, LSA_Q_CREATE_SECRET *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_create_secret");
 	depth++;
@@ -3597,7 +3597,7 @@ BOOL lsa_io_q_create_secret(const char *desc, LSA_Q_CREATE_SECRET *in, prs_struc
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_r_create_secret(const char *desc, LSA_R_CREATE_SECRET *out, prs_struct *ps, int depth)
+bool lsa_io_r_create_secret(const char *desc, LSA_R_CREATE_SECRET *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_create_secret");
 	depth++;
@@ -3619,7 +3619,7 @@ BOOL lsa_io_r_create_secret(const char *desc, LSA_R_CREATE_SECRET *out, prs_stru
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_data_blob( const char *desc, prs_struct *ps, int depth, LSA_DATA_BLOB *blob )
+static bool lsa_io_data_blob( const char *desc, prs_struct *ps, int depth, LSA_DATA_BLOB *blob )
 {
 	prs_debug(ps, depth, desc, "lsa_io_data_blob");
 	depth++;
@@ -3638,7 +3638,7 @@ static BOOL lsa_io_data_blob( const char *desc, prs_struct *ps, int depth, LSA_D
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_set_secret(const char *desc, LSA_Q_SET_SECRET *in, prs_struct *ps, int depth)
+bool lsa_io_q_set_secret(const char *desc, LSA_Q_SET_SECRET *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_set_secret");
 	depth++;
@@ -3664,7 +3664,7 @@ BOOL lsa_io_q_set_secret(const char *desc, LSA_Q_SET_SECRET *in, prs_struct *ps,
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_r_set_secret(const char *desc, LSA_R_SET_SECRET *out, prs_struct *ps, int depth)
+bool lsa_io_r_set_secret(const char *desc, LSA_R_SET_SECRET *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_set_secret");
 	depth++;
@@ -3678,7 +3678,7 @@ BOOL lsa_io_r_set_secret(const char *desc, LSA_R_SET_SECRET *out, prs_struct *ps
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_q_delete_object(const char *desc, LSA_Q_DELETE_OBJECT *in, prs_struct *ps, int depth)
+bool lsa_io_q_delete_object(const char *desc, LSA_Q_DELETE_OBJECT *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_delete_object");
 	depth++;
@@ -3695,7 +3695,7 @@ BOOL lsa_io_q_delete_object(const char *desc, LSA_Q_DELETE_OBJECT *in, prs_struc
 /*******************************************************************
 ********************************************************************/
 
-BOOL lsa_io_r_delete_object(const char *desc, LSA_R_DELETE_OBJECT *out, prs_struct *ps, int depth)
+bool lsa_io_r_delete_object(const char *desc, LSA_R_DELETE_OBJECT *out, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_delete_object");
 	depth++;
@@ -3753,7 +3753,7 @@ void init_q_query_trusted_domain_info_by_sid(LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_
  Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_trusted_domain_info(const char *desc, 
+bool lsa_io_q_query_trusted_domain_info(const char *desc, 
 					LSA_Q_QUERY_TRUSTED_DOMAIN_INFO *q_q,
 					prs_struct *ps, int depth)
 {
@@ -3777,7 +3777,7 @@ BOOL lsa_io_q_query_trusted_domain_info(const char *desc,
  Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_trusted_domain_info_by_sid(const char *desc, 
+bool lsa_io_q_query_trusted_domain_info_by_sid(const char *desc, 
 					       LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID *q_q,
 					       prs_struct *ps, int depth)
 {
@@ -3806,7 +3806,7 @@ BOOL lsa_io_q_query_trusted_domain_info_by_sid(const char *desc,
  Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_trusted_domain_info_by_name(const char *desc, 
+bool lsa_io_q_query_trusted_domain_info_by_name(const char *desc, 
 					        LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME *q_q,
 					        prs_struct *ps, int depth)
 {
@@ -3834,7 +3834,7 @@ BOOL lsa_io_q_query_trusted_domain_info_by_name(const char *desc,
 /*******************************************************************
 ********************************************************************/
 
-static BOOL smb_io_lsa_data_buf_hdr(const char *desc, LSA_DATA_BUF_HDR *buf_hdr, 
+static bool smb_io_lsa_data_buf_hdr(const char *desc, LSA_DATA_BUF_HDR *buf_hdr, 
 			  	    prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_lsa_data_buf_hdr");
@@ -3858,7 +3858,7 @@ static BOOL smb_io_lsa_data_buf_hdr(const char *desc, LSA_DATA_BUF_HDR *buf_hdr,
 /*******************************************************************
 ********************************************************************/
 
-static BOOL smb_io_lsa_data_buf(const char *desc, LSA_DATA_BUF *buf, 
+static bool smb_io_lsa_data_buf(const char *desc, LSA_DATA_BUF *buf, 
 				prs_struct *ps, int depth, int length, int size)
 {
 	prs_debug(ps, depth, desc, "smb_io_lsa_data_buf");
@@ -3887,7 +3887,7 @@ static BOOL smb_io_lsa_data_buf(const char *desc, LSA_DATA_BUF *buf,
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_trustdom_query_1(const char *desc, TRUSTED_DOMAIN_INFO_NAME *name, 
+static bool lsa_io_trustdom_query_1(const char *desc, TRUSTED_DOMAIN_INFO_NAME *name, 
 				    prs_struct *ps, int depth)
 {
 	if (!smb_io_lsa_string("netbios_name", &name->netbios_name, ps, depth))
@@ -3899,7 +3899,7 @@ static BOOL lsa_io_trustdom_query_1(const char *desc, TRUSTED_DOMAIN_INFO_NAME *
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_trustdom_query_3(const char *desc, TRUSTED_DOMAIN_INFO_POSIX_OFFSET *posix, 
+static bool lsa_io_trustdom_query_3(const char *desc, TRUSTED_DOMAIN_INFO_POSIX_OFFSET *posix, 
 				    prs_struct *ps, int depth)
 {
 	if(!prs_uint32("posix_offset", ps, depth, &posix->posix_offset))
@@ -3911,7 +3911,7 @@ static BOOL lsa_io_trustdom_query_3(const char *desc, TRUSTED_DOMAIN_INFO_POSIX_
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_trustdom_query_4(const char *desc, TRUSTED_DOMAIN_INFO_PASSWORD *password, 
+static bool lsa_io_trustdom_query_4(const char *desc, TRUSTED_DOMAIN_INFO_PASSWORD *password, 
 				    prs_struct *ps, int depth)
 {
 	if(!prs_align(ps))
@@ -3949,7 +3949,7 @@ static BOOL lsa_io_trustdom_query_4(const char *desc, TRUSTED_DOMAIN_INFO_PASSWO
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_trustdom_query_6(const char *desc, TRUSTED_DOMAIN_INFO_EX *info_ex, 
+static bool lsa_io_trustdom_query_6(const char *desc, TRUSTED_DOMAIN_INFO_EX *info_ex, 
 				    prs_struct *ps, int depth)
 {
 	uint32 dom_sid_ptr;
@@ -3987,7 +3987,7 @@ static BOOL lsa_io_trustdom_query_6(const char *desc, TRUSTED_DOMAIN_INFO_EX *in
 /*******************************************************************
 ********************************************************************/
 
-static BOOL lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, LSA_TRUSTED_DOMAIN_INFO *info)
+static bool lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, LSA_TRUSTED_DOMAIN_INFO *info)
 {
 	prs_debug(ps, depth, desc, "lsa_io_trustdom_query");
 	depth++;
@@ -4027,7 +4027,7 @@ static BOOL lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, L
  Reads or writes an LSA_R_QUERY_TRUSTED_DOMAIN_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query_trusted_domain_info(const char *desc, 
+bool lsa_io_r_query_trusted_domain_info(const char *desc, 
 					LSA_R_QUERY_TRUSTED_DOMAIN_INFO *r_q, 
 					prs_struct *ps, int depth)
 {
@@ -4068,7 +4068,7 @@ void init_q_query_dom_info(LSA_Q_QUERY_DOM_INFO_POLICY *in, POLICY_HND *hnd, uin
  Reads or writes an LSA_Q_QUERY_DOM_INFO_POLICY structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_dom_info(const char *desc, LSA_Q_QUERY_DOM_INFO_POLICY *in, prs_struct *ps, int depth)
+bool lsa_io_q_query_dom_info(const char *desc, LSA_Q_QUERY_DOM_INFO_POLICY *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_query_dom_info");
 	depth++;
@@ -4089,7 +4089,7 @@ BOOL lsa_io_q_query_dom_info(const char *desc, LSA_Q_QUERY_DOM_INFO_POLICY *in, 
  Reads or writes an LSA_R_QUERY_DOM_INFO_POLICY structure.
 ********************************************************************/
 
-static BOOL lsa_io_dominfo_query_3(const char *desc, LSA_DOM_INFO_POLICY_KERBEROS *krb_policy, 
+static bool lsa_io_dominfo_query_3(const char *desc, LSA_DOM_INFO_POLICY_KERBEROS *krb_policy, 
 				   prs_struct *ps, int depth)
 {
 	if (!prs_align_uint64(ps))
@@ -4134,7 +4134,7 @@ static BOOL lsa_io_dominfo_query_3(const char *desc, LSA_DOM_INFO_POLICY_KERBERO
 	return True;
 }
 
-static BOOL lsa_io_dom_info_query(const char *desc, prs_struct *ps, int depth, LSA_DOM_INFO_UNION *info)
+static bool lsa_io_dom_info_query(const char *desc, prs_struct *ps, int depth, LSA_DOM_INFO_UNION *info)
 {
 	prs_debug(ps, depth, desc, "lsa_io_dom_info_query");
 	depth++;
@@ -4160,7 +4160,7 @@ static BOOL lsa_io_dom_info_query(const char *desc, prs_struct *ps, int depth, L
 }
 
 
-BOOL lsa_io_r_query_dom_info(const char *desc, LSA_R_QUERY_DOM_INFO_POLICY *out,
+bool lsa_io_r_query_dom_info(const char *desc, LSA_R_QUERY_DOM_INFO_POLICY *out,
 			     prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_query_dom_info");

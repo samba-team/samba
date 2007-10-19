@@ -29,7 +29,7 @@
 **********************************************************************/
 
 #ifdef HAVE_KRB5
-static BOOL is_our_primary_domain(const char *domain)
+static bool is_our_primary_domain(const char *domain)
 {
 	int role = lp_server_role();
 
@@ -46,7 +46,7 @@ static BOOL is_our_primary_domain(const char *domain)
  Find the name and IP address for a server in the realm/domain
  *************************************************************************/
  
-static BOOL ads_dc_name(const char *domain,
+static bool ads_dc_name(const char *domain,
 			const char *realm,
 			struct in_addr *dc_ip,
 			fstring srv_name)
@@ -148,7 +148,7 @@ static BOOL ads_dc_name(const char *domain,
  valid since we have already done a name_status_find on it 
  ***************************************************************************/
 
-static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+static bool rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	struct ip_service *ip_list = NULL;
 	struct in_addr dc_ip, exclude_ip;
@@ -206,11 +206,11 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
  wrapper around ads and rpc methods of finds DC's
 **********************************************************************/
 
-BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct in_addr *ip_out)
+bool get_dc_name(const char *domain, const char *realm, fstring srv_name, struct in_addr *ip_out)
 {
 	struct in_addr dc_ip;
-	BOOL ret;
-	BOOL our_domain = False;
+	bool ret;
+	bool our_domain = False;
 
 	zero_ip_v4(&dc_ip);
 

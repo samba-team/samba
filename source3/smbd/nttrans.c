@@ -271,7 +271,7 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
  Is it an NTFS stream name ?
 ****************************************************************************/
 
-BOOL is_ntfs_stream_name(const char *fname)
+bool is_ntfs_stream_name(const char *fname)
 {
 	if (lp_posix_pathnames()) {
 		return False;
@@ -281,9 +281,9 @@ BOOL is_ntfs_stream_name(const char *fname)
 
 struct case_semantics_state {
 	connection_struct *conn;
-	BOOL case_sensitive;
-	BOOL case_preserve;
-	BOOL short_case_preserve;
+	bool case_sensitive;
+	bool case_preserve;
+	bool short_case_preserve;
 };
 
 /****************************************************************************
@@ -516,7 +516,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
-	BOOL extended_oplock_granted = False;
+	bool extended_oplock_granted = False;
 	NTSTATUS status;
 	struct case_semantics_state *case_state = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1271,7 +1271,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	int info = 0;
 	files_struct *fsp = NULL;
 	char *p = NULL;
-	BOOL extended_oplock_granted = False;
+	bool extended_oplock_granted = False;
 	uint32 flags;
 	uint32 access_mask;
 	uint32 file_attributes;
@@ -1994,8 +1994,8 @@ void reply_ntrename(connection_struct *conn, struct smb_request *req)
 	char *newname = NULL;
 	char *p;
 	NTSTATUS status;
-	BOOL src_has_wcard = False;
-	BOOL dest_has_wcard = False;
+	bool src_has_wcard = False;
+	bool dest_has_wcard = False;
 	uint32 attrs;
 	uint16 rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -2149,7 +2149,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 	files_struct *fsp;
 	uint32 filter;
 	NTSTATUS status;
-	BOOL recursive;
+	bool recursive;
 
 	if(setup_count < 6) {
 		reply_doserror(req, ERRDOS, ERRbadfunc);
@@ -2245,8 +2245,8 @@ static void call_nt_transact_rename(connection_struct *conn,
 	char *params = *ppparams;
 	char *new_name = NULL;
 	files_struct *fsp = NULL;
-	BOOL replace_if_exists = False;
-	BOOL dest_has_wcard = False;
+	bool replace_if_exists = False;
+	bool dest_has_wcard = False;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -2514,7 +2514,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	files_struct *fsp;
 	uint8 isFSctl;
 	uint8 compfilter;
-	static BOOL logged_message;
+	static bool logged_message;
 	char *pdata = *ppdata;
 
 	if (setup_count != 8) {
@@ -2606,7 +2606,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 */
 		SHADOW_COPY_DATA *shadow_data = NULL;
 		TALLOC_CTX *shadow_mem_ctx = NULL;
-		BOOL labels = False;
+		bool labels = False;
 		uint32 labels_data_count = 0;
 		uint32 i;
 		char *cur_pdata;
@@ -2810,7 +2810,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	uint16 level = 0;
 	size_t sid_len;
 	DOM_SID sid;
-	BOOL start_enum = True;
+	bool start_enum = True;
 	SMB_NTQUOTA_STRUCT qt;
 	SMB_NTQUOTA_LIST *tmp_list;
 	SMB_NTQUOTA_HANDLE *qt_handle = NULL;

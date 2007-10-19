@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_initshutdown.h"
 
-static BOOL api_initshutdown_Init(pipes_struct *p)
+static bool api_initshutdown_Init(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -77,7 +77,7 @@ static BOOL api_initshutdown_Init(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_initshutdown_Abort(pipes_struct *p)
+static bool api_initshutdown_Abort(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -148,7 +148,7 @@ static BOOL api_initshutdown_Abort(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_initshutdown_InitEx(pipes_struct *p)
+static bool api_initshutdown_InitEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

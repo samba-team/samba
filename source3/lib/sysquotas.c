@@ -402,7 +402,7 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 {
 	int ret = -1;
 	int i;
-	BOOL ready = False;
+	bool ready = False;
 	char *mntpath = NULL;
 	char *bdev = NULL;
 	char *fs = NULL;
@@ -467,7 +467,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 {
 	int ret = -1;
 	int i;
-	BOOL ready = False;
+	bool ready = False;
 	char *mntpath = NULL;
 	char *bdev = NULL;
 	char *fs = NULL;

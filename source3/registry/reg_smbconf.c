@@ -30,7 +30,7 @@ static int smbconf_fetch_keys( const char *key, REGSUBKEY_CTR *subkey_ctr )
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
 
-static BOOL smbconf_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool smbconf_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return regdb_ops.store_subkeys(key, subkeys);
 }
@@ -93,7 +93,7 @@ static REGISTRY_VALUE *smbconf_canonicalize_regval(TALLOC_CTX *mem_ctx,
 	size_t len;
 	const char *canon_valname;
 	const char *canon_valstr;
-	BOOL inverse;
+	bool inverse;
 	struct registry_value *value;
 	WERROR err;
 	TALLOC_CTX *tmp_ctx;
@@ -160,7 +160,7 @@ done:
 	return newval;
 }
 
-static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
+static bool smbconf_store_values( const char *key, REGVAL_CTR *val )
 {
 	int i;
 	int num_values = regval_ctr_numvals(val);
@@ -235,7 +235,7 @@ static BOOL smbconf_store_values( const char *key, REGVAL_CTR *val )
 	return regdb_ops.store_values(key, new_val_ctr);
 }
 
-static BOOL smbconf_reg_access_check(const char *keyname, uint32 requested,
+static bool smbconf_reg_access_check(const char *keyname, uint32 requested,
 				     uint32 *granted,
 				     const struct nt_user_token *token)
 {

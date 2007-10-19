@@ -63,7 +63,7 @@ static void sig_cld_leave_status(int signum)
  Block sigs.
 ********************************************************************/
 
-void BlockSignals(BOOL block,int signum)
+void BlockSignals(bool block,int signum)
 {
 #ifdef HAVE_SIGPROCMASK
 	sigset_t set;

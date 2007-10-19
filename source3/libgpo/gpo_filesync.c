@@ -106,7 +106,7 @@ static NTSTATUS gpo_copy_dir(const char *unix_path)
  sync files
 ****************************************************************/
 
-static BOOL gpo_sync_files(struct sync_context *ctx)
+static bool gpo_sync_files(struct sync_context *ctx)
 {
 	DEBUG(3,("calling cli_list with mask: %s\n", ctx->mask));
 

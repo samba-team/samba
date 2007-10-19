@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static BOOL client_can_access_ccache_entry(uid_t client_uid,
+static bool client_can_access_ccache_entry(uid_t client_uid,
 					struct WINBINDD_MEMORY_CREDS *entry)
 {
 	if (client_uid == entry->uid || client_uid == 0) {
@@ -122,7 +122,7 @@ done:
 	return status;
 }
 
-static BOOL check_client_uid(struct winbindd_cli_state *state, uid_t uid)
+static bool check_client_uid(struct winbindd_cli_state *state, uid_t uid)
 {
 	int ret;
 	uid_t ret_uid;

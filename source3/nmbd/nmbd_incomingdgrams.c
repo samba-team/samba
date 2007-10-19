@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-extern BOOL found_lm_clients;
+extern bool found_lm_clients;
 
 #if 0
 

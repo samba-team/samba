@@ -68,7 +68,7 @@ typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_resp
  PAM error handler.
  *********************************************************************/
 
-static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char *msg, int dbglvl)
+static bool smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char *msg, int dbglvl)
 {
 
 	if( pam_error != PAM_SUCCESS) {
@@ -85,7 +85,7 @@ static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char 
  failure as sucess.
 *********************************************************************/
 
-static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
+static bool smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
 					    const char *msg, int dbglvl, 
 					    NTSTATUS *nt_status)
 {
@@ -270,7 +270,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
 	struct chat_struct *pw_chat= make_pw_chat(lp_passwd_chat());
 	struct chat_struct *t;
-	BOOL found; 
+	bool found; 
 	*resp = NULL;
 	
 	DEBUG(10,("smb_pam_passchange_conv: starting converstation for %d messages\n", num_msg));
@@ -430,7 +430,7 @@ static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, c
  * PAM Closing out cleanup handler
  */
 
-static BOOL smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
+static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 {
 	int pam_error;
 
@@ -451,7 +451,7 @@ static BOOL smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
  * Start PAM authentication for specified account
  */
 
-static BOOL smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
+static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
 	const char *our_rhost;
@@ -624,7 +624,7 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 /*
  * PAM Internal Session Handler
  */
-static BOOL smb_internal_pam_session(pam_handle_t *pamh, const char *user, const char *tty, BOOL flag)
+static bool smb_internal_pam_session(pam_handle_t *pamh, const char *user, const char *tty, bool flag)
 {
 	int pam_error;
 
@@ -652,7 +652,7 @@ static BOOL smb_internal_pam_session(pam_handle_t *pamh, const char *user, const
  * Internal PAM Password Changer.
  */
 
-static BOOL smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
+static bool smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
 
@@ -706,7 +706,7 @@ static BOOL smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
  * PAM Externally accessible Session handler
  */
 
-BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
+bool smb_pam_claim_session(char *user, char *tty, char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
@@ -734,7 +734,7 @@ BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Session handler
  */
 
-BOOL smb_pam_close_session(char *user, char *tty, char *rhost)
+bool smb_pam_close_session(char *user, char *tty, char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
@@ -834,7 +834,7 @@ NTSTATUS smb_pam_passcheck(const char * user, const char * password)
  * PAM Password Change Suite
  */
 
-BOOL smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword)
+bool smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword)
 {
 	/* Appropriate quantities of root should be obtained BEFORE calling this function */
 	struct pam_conv *pconv = NULL;
@@ -864,13 +864,13 @@ NTSTATUS smb_pam_accountcheck(const char * user)
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
-BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
+bool smb_pam_claim_session(char *user, char *tty, char *rhost)
 {
 	return True;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
-BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
+bool smb_pam_close_session(char *in_user, char *tty, char *rhost)
 {
 	return True;
 }

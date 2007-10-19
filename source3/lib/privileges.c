@@ -37,7 +37,7 @@ typedef struct {
 } PRIV_SID_LIST;
 
 
-static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
+static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
@@ -76,7 +76,7 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
  Store the privilege mask (set) for a given SID
 ****************************************************************************/
 
-static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
+static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
@@ -109,11 +109,11 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
  get a list of all privileges for all sids in the list
 *********************************************************************/
 
-BOOL get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
+bool get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
 {
 	SE_PRIV mask;
 	int i;
-	BOOL found = False;
+	bool found = False;
 
 	se_priv_copy( privileges, &se_priv_none );
 	
@@ -252,7 +252,7 @@ NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
  Add privilege to sid
 ****************************************************************************/
 
-BOOL grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
+bool grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 {
 	SE_PRIV old_mask, new_mask;
 	
@@ -281,7 +281,7 @@ BOOL grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
  Add a privilege based on its name
 *********************************************************************/
 
-BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
+bool grant_privilege_by_name(DOM_SID *sid, const char *name)
 {
 	SE_PRIV mask;
 
@@ -298,7 +298,7 @@ BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
  Remove privilege from sid
 ****************************************************************************/
 
-BOOL revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
+bool revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 {
 	SE_PRIV mask;
 	
@@ -324,7 +324,7 @@ BOOL revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
  Revoke all privileges
 *********************************************************************/
 
-BOOL revoke_all_privileges( DOM_SID *sid )
+bool revoke_all_privileges( DOM_SID *sid )
 {
 	return revoke_privilege( sid, &se_priv_all );
 }
@@ -333,7 +333,7 @@ BOOL revoke_all_privileges( DOM_SID *sid )
  Add a privilege based on its name
 *********************************************************************/
 
-BOOL revoke_privilege_by_name(DOM_SID *sid, const char *name)
+bool revoke_privilege_by_name(DOM_SID *sid, const char *name)
 {
 	SE_PRIV mask;
 
@@ -439,7 +439,7 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 /*******************************************************************
 *******************************************************************/
 
-BOOL is_privileged_sid( const DOM_SID *sid )
+bool is_privileged_sid( const DOM_SID *sid )
 {
 	SE_PRIV mask;
 	
@@ -449,7 +449,7 @@ BOOL is_privileged_sid( const DOM_SID *sid )
 /*******************************************************************
 *******************************************************************/
 
-BOOL grant_all_privileges( const DOM_SID *sid )
+bool grant_all_privileges( const DOM_SID *sid )
 {
 	SE_PRIV mask;
 

@@ -42,7 +42,7 @@ void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
  Read/write a RPC_BUFFER struct.
 ********************************************************************/  
 
-BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buffer)
+bool prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buffer)
 {
 	prs_debug(ps, depth, desc, "prs_rpcbuffer");
 	depth++;
@@ -77,7 +77,7 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
 		return True;
 	}
 	else {
-		BOOL ret = False;
+		bool ret = False;
 
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			goto out;
@@ -99,7 +99,7 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
  Read/write an RPC_BUFFER* struct.(allocate memory if unmarshalling)
 ********************************************************************/  
 
-BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **buffer)
+bool prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **buffer)
 {
 	uint32 data_p;
 
@@ -132,7 +132,7 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
  Allocate more memory for a RPC_BUFFER.
 ****************************************************************************/
 
-BOOL rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
+bool rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
 {
 	prs_struct *ps;
 	uint32 extra_space;
@@ -227,7 +227,7 @@ uint32 rpcbuf_get_size(RPC_BUFFER *buffer)
  *
  ********************************************************************/
 
-BOOL smb_io_relstr(const char *desc, RPC_BUFFER *buffer, int depth, UNISTR *string)
+bool smb_io_relstr(const char *desc, RPC_BUFFER *buffer, int depth, UNISTR *string)
 {
 	prs_struct *ps=&buffer->prs;
 	
@@ -289,7 +289,7 @@ BOOL smb_io_relstr(const char *desc, RPC_BUFFER *buffer, int depth, UNISTR *stri
  * used by 2 RPC structs
  ********************************************************************/
 
-BOOL smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 **string)
+bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 **string)
 {
 	UNISTR chaine;
 	
@@ -416,7 +416,7 @@ BOOL smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
-BOOL smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC **secdesc)
+bool smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC **secdesc)
 {
 	prs_struct *ps= &buffer->prs;
 

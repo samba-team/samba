@@ -470,7 +470,7 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR		result;
 	uint32 		info_level = 2;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername,
 			servername,
@@ -536,7 +536,7 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR		result;
 	uint32 		info_level = 2;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername,
 			servername,
@@ -601,7 +601,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          result;
 	uint32 		info_level = 1;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername,
 			servername,
@@ -737,7 +737,7 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR          result;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	fstring 	printername,
 			servername,
 			user;
@@ -802,7 +802,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR          result;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	fstring 	printername,
 			servername,
 			user;
@@ -924,7 +924,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	fstring defaultdatatype = "";
 	
 	int length=0;
-	BOOL valid = True;
+	bool valid = True;
 	
 	if (i1 == NULL)
 		return;
@@ -981,13 +981,13 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          werror;
 	uint32		info_level = 3;
-	BOOL 		opened_hnd = False;
+	bool 		opened_hnd = False;
 	PRINTER_DRIVER_CTR 	ctr;
 	fstring 	printername, 
 			servername, 
 			user;
 	uint32		i;
-	BOOL		success = False;
+	bool		success = False;
 
 	if ((argc == 1) || (argc > 3)) 
 	{
@@ -1243,7 +1243,7 @@ static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files> 
  *******************************************************************************/
-static BOOL init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info, 
+static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info, 
                                       char *args )
 {
 	char	*str, *str2;
@@ -1425,7 +1425,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	POLICY_HND		pol;
 	WERROR                  result;
 	uint32			level = 2;
-	BOOL			opened_hnd = False;
+	bool			opened_hnd = False;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
 	fstring			servername,
@@ -1638,7 +1638,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
 	FORM form;
-	BOOL got_handle = False;
+	bool got_handle = False;
 	
 	/* Parse the command arguements */
 
@@ -1698,7 +1698,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
 	FORM form;
-	BOOL got_handle = False;
+	bool got_handle = False;
 	
 	/* Parse the command arguements */
 
@@ -1795,7 +1795,7 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
 	FORM_1 form;
-	BOOL got_handle = False;
+	bool got_handle = False;
 	
 	/* Parse the command arguements */
 
@@ -1848,7 +1848,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	POLICY_HND handle;
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
-	BOOL got_handle = False;
+	bool got_handle = False;
 	
 	/* Parse the command arguements */
 
@@ -1896,7 +1896,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	POLICY_HND handle;
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
-	BOOL got_handle = False;
+	bool got_handle = False;
 	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
 	
@@ -1957,7 +1957,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	WERROR result;
 	fstring servername, printername, user;
 	POLICY_HND pol;
-	BOOL opened_hnd = False;
+	bool opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	PRINTER_INFO_0 info;
 	REGISTRY_VALUE value;
@@ -2162,7 +2162,7 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 level = 1, num_jobs, i;
-	BOOL got_hnd = False;
+	bool got_hnd = False;
 	pstring printername;
 	fstring servername, user;
 	POLICY_HND hnd;
@@ -2232,7 +2232,7 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i=0, val_needed, data_needed;
-	BOOL got_hnd = False;
+	bool got_hnd = False;
 	pstring printername;
 	fstring servername, user;
 	POLICY_HND hnd;
@@ -2292,7 +2292,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i;
-	BOOL got_hnd = False;
+	bool got_hnd = False;
 	pstring printername;
 	fstring servername, user;
 	const char *keyname = NULL;
@@ -2355,7 +2355,7 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 					     const char **argv)
 {
 	WERROR result;
-	BOOL got_hnd = False;
+	bool got_hnd = False;
 	pstring printername;
 	fstring servername, user;
 	const char *keyname = NULL;
@@ -2425,7 +2425,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 {
 	fstring servername, printername;
 	POLICY_HND hnd;
-	BOOL got_hnd = False;
+	bool got_hnd = False;
 	WERROR result;
 	SPOOL_NOTIFY_OPTION option;
 
@@ -2504,7 +2504,7 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
+static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
                              struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
 {
 	PRINTER_INFO_CTR ctr1, ctr2;
@@ -2537,14 +2537,14 @@ static BOOL compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
+static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
                                      struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
 {
 	PRINTER_INFO_CTR ctr1, ctr2;
 	WERROR werror;
 	TALLOC_CTX *mem_ctx = talloc_init("compare_printer_secdesc");
 	SEC_DESC *sd1, *sd2;
-	BOOL result = True;
+	bool result = True;
 
 
 	printf("Retreiving printer security for %s...", cli1->cli->desthost);

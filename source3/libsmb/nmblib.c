@@ -152,8 +152,8 @@ void debug_nmb_packet(struct packet_struct *p)
  Handle "compressed" name pointers.
 ******************************************************************/
 
-static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
-			     BOOL *got_pointer,int *ret)
+static bool handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
+			     bool *got_pointer,int *ret)
 {
 	int loop_count=0;
 
@@ -180,7 +180,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 	int m,n=0;
 	unsigned char *ubuf = (unsigned char *)inbuf;
 	int ret = 0;
-	BOOL got_pointer=False;
+	bool got_pointer=False;
 	int loop_count=0;
 	int offset = ofs;
 
@@ -367,7 +367,7 @@ char *nmb_namestr(const struct nmb_name *n)
  Allocate and parse some resource records.
 ******************************************************************/
 
-static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
+static bool parse_alloc_res_rec(char *inbuf,int *offset,int length,
 				struct res_rec **recs, int count)
 {
 	int i;
@@ -467,7 +467,7 @@ static int put_compressed_name_ptr(unsigned char *buf,
  This is documented in section 4.4.1 of RFC1002.
 ******************************************************************/
 
-static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
+static bool parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
 {
 	int offset;
 	int flags;
@@ -521,7 +521,7 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
  or is invalid for some reason, True otherwise.
 ******************************************************************/
 
-static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
+static bool parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 {
 	int nm_flags,offset;
 
@@ -735,7 +735,7 @@ struct packet_struct *parse_packet(char *buf,int length,
 				   int port)
 {
 	struct packet_struct *p;
-	BOOL ok=False;
+	bool ok=False;
 
 	p = SMB_MALLOC_P(struct packet_struct);
 	if (!p)
@@ -807,9 +807,9 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
  Send a udp packet on a already open socket.
 ******************************************************************/
 
-static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
+static bool send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 {
-	BOOL ret = False;
+	bool ret = False;
 	int i;
 	struct sockaddr_in sock_out;
 
@@ -913,7 +913,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
   Compare two nmb names
 ******************************************************************/
 
-BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
+bool nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
 {
 	return ((n1->name_type == n2->name_type) &&
 		strequal(n1->name ,n2->name ) &&
@@ -1072,7 +1072,7 @@ int build_packet(char *buf, size_t buflen, struct packet_struct *p)
  Send a packet_struct.
 ******************************************************************/
 
-BOOL send_packet(struct packet_struct *p)
+bool send_packet(struct packet_struct *p)
 {
 	char buf[1024];
 	int len=0;
@@ -1169,7 +1169,7 @@ struct packet_struct *receive_dgram_packet(int fd, int t,
  See if a datagram has the right mailslot name.
 ***************************************************************************/
 
-BOOL match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
+bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	char *buf;

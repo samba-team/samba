@@ -25,7 +25,7 @@
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_get_version(const char *desc, NTSVCS_Q_GET_VERSION *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_get_version(const char *desc, NTSVCS_Q_GET_VERSION *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -42,7 +42,7 @@ BOOL ntsvcs_io_q_get_version(const char *desc, NTSVCS_Q_GET_VERSION *q_u, prs_st
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_get_version(const char *desc, NTSVCS_R_GET_VERSION *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_get_version(const char *desc, NTSVCS_R_GET_VERSION *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -65,7 +65,7 @@ BOOL ntsvcs_io_r_get_version(const char *desc, NTSVCS_R_GET_VERSION *r_u, prs_st
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_get_device_list_size(const char *desc, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_get_device_list_size(const char *desc, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -91,7 +91,7 @@ BOOL ntsvcs_io_q_get_device_list_size(const char *desc, NTSVCS_Q_GET_DEVICE_LIST
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_get_device_list_size(const char *desc, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_get_device_list_size(const char *desc, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -115,7 +115,7 @@ BOOL ntsvcs_io_r_get_device_list_size(const char *desc, NTSVCS_R_GET_DEVICE_LIST
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -143,7 +143,7 @@ BOOL ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -171,7 +171,7 @@ BOOL ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_validate_device_instance(const char *desc, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_validate_device_instance(const char *desc, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -197,7 +197,7 @@ BOOL ntsvcs_io_q_validate_device_instance(const char *desc, NTSVCS_Q_VALIDATE_DE
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_validate_device_instance(const char *desc, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_validate_device_instance(const char *desc, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -214,7 +214,7 @@ BOOL ntsvcs_io_r_validate_device_instance(const char *desc, NTSVCS_R_VALIDATE_DE
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -248,7 +248,7 @@ BOOL ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_R
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -282,7 +282,7 @@ BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_R
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_get_hw_profile_info(const char *desc, NTSVCS_Q_GET_HW_PROFILE_INFO *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_get_hw_profile_info(const char *desc, NTSVCS_Q_GET_HW_PROFILE_INFO *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -321,7 +321,7 @@ BOOL ntsvcs_io_q_get_hw_profile_info(const char *desc, NTSVCS_Q_GET_HW_PROFILE_I
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_INFO *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_INFO *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -355,7 +355,7 @@ BOOL ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_I
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_q_hw_profile_flags(const char *desc, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, prs_struct *ps, int depth)
+bool ntsvcs_io_q_hw_profile_flags(const char *desc, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -398,7 +398,7 @@ BOOL ntsvcs_io_q_hw_profile_flags(const char *desc, NTSVCS_Q_HW_PROFILE_FLAGS *q
 /*******************************************************************
 ********************************************************************/
 
-BOOL ntsvcs_io_r_hw_profile_flags(const char *desc, NTSVCS_R_HW_PROFILE_FLAGS *r_u, prs_struct *ps, int depth)
+bool ntsvcs_io_r_hw_profile_flags(const char *desc, NTSVCS_R_HW_PROFILE_FLAGS *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;

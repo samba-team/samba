@@ -40,7 +40,7 @@ static fstring this_crypted;
 /*******************************************************************
 check on AFS authentication
 ********************************************************************/
-static BOOL afs_auth(char *user, char *password)
+static bool afs_auth(char *user, char *password)
 {
 	long password_expires = 0;
 	char *reason;
@@ -89,7 +89,7 @@ int dcelogin_atmost_once = 0;
 /*******************************************************************
 check on a DCE/DFS authentication
 ********************************************************************/
-static BOOL dfs_auth(char *user, char *password)
+static bool dfs_auth(char *user, char *password)
 {
 	struct tm *t;
 	error_status_t err;
@@ -495,7 +495,7 @@ static NTSTATUS password_check(const char *password)
 	return smb_pam_passcheck(this_user, password);
 #else
 
-	BOOL ret;
+	bool ret;
 
 #ifdef WITH_AFS
 	if (afs_auth(this_user, password))
@@ -597,7 +597,7 @@ return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
 NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
-		    int pwlen, BOOL (*fn) (const char *, const char *), BOOL run_cracker)
+		    int pwlen, bool (*fn) (const char *, const char *), bool run_cracker)
 {
 	pstring pass2;
 	int level = lp_passwordlevel();

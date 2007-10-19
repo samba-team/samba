@@ -119,9 +119,9 @@ typedef struct {
 	/* functions for enumerating subkeys and values */	
 	int 	(*fetch_subkeys)( const char *key, REGSUBKEY_CTR *subkeys);
 	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values)( const char *key, REGVAL_CTR *val );
-	BOOL	(*reg_access_check)( const char *keyname, uint32 requested,
+	bool 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
+	bool 	(*store_values)( const char *key, REGVAL_CTR *val );
+	bool	(*reg_access_check)( const char *keyname, uint32 requested,
 				     uint32 *granted,
 				     const NT_USER_TOKEN *token );
 	WERROR (*get_secdesc)(TALLOC_CTX *mem_ctx, const char *key,

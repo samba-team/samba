@@ -79,7 +79,7 @@ static void gotalarm_sig(void)
  seconds.
 ****************************************************************/
 
-static BOOL do_file_lock(int fd, int waitsecs, int type)
+static bool do_file_lock(int fd, int waitsecs, int type)
 {
 	SMB_STRUCT_FLOCK lock;
 	int             ret;
@@ -113,7 +113,7 @@ static BOOL do_file_lock(int fd, int waitsecs, int type)
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
+static bool pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
 	if (fd < 0) {
 		return False;
@@ -136,9 +136,9 @@ static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-static BOOL pw_file_unlock(int fd, int *plock_depth)
+static bool pw_file_unlock(int fd, int *plock_depth)
 {
-	BOOL ret=True;
+	bool ret=True;
 
 	if (fd == 0 || *plock_depth == 0) {
 		return True;
@@ -728,7 +728,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  override = True, override XXXXXXXX'd out password or NO PASS
 ************************************************************************/
 
-static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const struct smb_passwd* pwd)
+static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const struct smb_passwd* pwd)
 {
 	/* Static buffers we will return. */
 	pstring user_name;
@@ -744,8 +744,8 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	FILE *fp;
 	int lockfd;
 	const char *pfile = smbpasswd_state->smbpasswd_file;
-	BOOL found_entry = False;
-	BOOL got_pass_last_set_time = False;
+	bool found_entry = False;
+	bool got_pass_last_set_time = False;
 
 	SMB_OFF_T pwd_seekpos = 0;
 
@@ -1088,7 +1088,7 @@ This is no longer supported.!\n", pwd->smb_name));
  Routine to delete an entry in the smbpasswd file by name.
 *************************************************************************/
 
-static BOOL del_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const char *name)
+static bool del_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const char *name)
 {
 	const char *pfile = smbpasswd_state->smbpasswd_file;
 	pstring pfile2;
@@ -1191,7 +1191,7 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  should only stay around as long as the struct samu does.
  ********************************************************************/
 
-static BOOL build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampass)
+static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampass)
 {
 	uint32 rid;
 
@@ -1234,7 +1234,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
  Create a struct samu from a smb_passwd struct
  ********************************************************************/
 
-static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, 
+static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state, 
 			      struct samu *sam_pass, const struct smb_passwd *pw_buf)
 {
 	struct passwd *pwfile;
@@ -1272,7 +1272,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
  Functions to be implemented by the new passdb API 
  ****************************************************************/
 
-static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
+static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, bool update, uint32 acb_mask)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	
@@ -1317,7 +1317,7 @@ static NTSTATUS smbpasswd_getsampwent(struct pdb_methods *my_methods, struct sam
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *pw_buf=NULL;
-	BOOL done = False;
+	bool done = False;
 
 	DEBUG(5,("pdb_getsampwent\n"));
 
@@ -1513,7 +1513,7 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 {
 	pstring rename_script;
 	struct samu *new_acct = NULL;
-	BOOL interim_account = False;
+	bool interim_account = False;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
 	if (!*(lp_renameuser_script()))
@@ -1574,7 +1574,7 @@ done:
 	return (ret);	
 }
 
-static BOOL smbpasswd_rid_algorithm(struct pdb_methods *methods)
+static bool smbpasswd_rid_algorithm(struct pdb_methods *methods)
 {
 	return True;
 }

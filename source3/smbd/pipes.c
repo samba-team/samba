@@ -196,7 +196,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 	size_t numtowrite = SVAL(req->inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(req->inbuf, smb_vwv11);
-	BOOL pipe_start_message_raw =
+	bool pipe_start_message_raw =
 		((SVAL(req->inbuf, smb_vwv7)
 		  & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
@@ -266,7 +266,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	int smb_mincnt = SVAL(req->inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
-	BOOL unused;
+	bool unused;
 
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of

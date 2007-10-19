@@ -22,7 +22,7 @@
 static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 			void *state)
 {
-	BOOL *parseable = (BOOL *)state;
+	bool *parseable = (bool *)state;
 	struct sessionid sessionid;
 
 	if (dbuf.dsize != sizeof(sessionid))
@@ -52,7 +52,7 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 static int net_status_sessions(int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
-	BOOL parseable;
+	bool parseable;
 
 	if (argc == 0) {
 		parseable = False;
@@ -140,7 +140,7 @@ static int show_share_parseable(struct db_record *rec,
 {
 	struct sessionids *ids = (struct sessionids *)state;
 	int i;
-	BOOL guest = True;
+	bool guest = True;
 
 	if (crec->cnum == -1)
 		return 0;

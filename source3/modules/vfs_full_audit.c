@@ -78,7 +78,7 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 static void smb_full_audit_disconnect(vfs_handle_struct *handle);
 static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
 				    const char *path,
-				    BOOL small_query, SMB_BIG_UINT *bsize, 
+				    bool small_query, SMB_BIG_UINT *bsize, 
 				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
@@ -88,7 +88,7 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 			   SMB_DISK_QUOTA *qt);
 static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
                                 struct files_struct *fsp,
-                                SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
+                                SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 				const char *path,
 				struct vfs_statvfs_struct *statbuf);
@@ -156,14 +156,14 @@ static int smb_full_audit_ntimes(vfs_handle_struct *handle,
 		       const char *path, const struct timespec ts[2]);
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   int fd, SMB_OFF_T len);
-static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp, int fd,
 				       uint32 share_mode);
 static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 					int fd, int leasetype);
-static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 static int smb_full_audit_symlink(vfs_handle_struct *handle,
 			 const char *oldpath, const char *newpath);
@@ -689,7 +689,7 @@ static char *audit_prefix(connection_struct *conn)
 	return prefix;
 }
 
-static BOOL log_success(vfs_handle_struct *handle, vfs_op_type op)
+static bool log_success(vfs_handle_struct *handle, vfs_op_type op)
 {
 	struct vfs_full_audit_private_data *pd = NULL;
 
@@ -704,7 +704,7 @@ static BOOL log_success(vfs_handle_struct *handle, vfs_op_type op)
 	return bitmap_query(pd->success_ops, op);
 }
 
-static BOOL log_failure(vfs_handle_struct *handle, vfs_op_type op)
+static bool log_failure(vfs_handle_struct *handle, vfs_op_type op)
 {
 	struct vfs_full_audit_private_data *pd = NULL;
 
@@ -720,7 +720,7 @@ static BOOL log_failure(vfs_handle_struct *handle, vfs_op_type op)
 
 static void init_bitmap(struct bitmap **bm, const char **ops)
 {
-	BOOL log_all = False;
+	bool log_all = False;
 
 	if (*bm != NULL)
 		return;
@@ -735,7 +735,7 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 
 	while (*ops != NULL) {
 		int i;
-		BOOL found = False;
+		bool found = False;
 
 		if (strequal(*ops, "all")) {
 			log_all = True;
@@ -780,7 +780,7 @@ static const char *audit_opname(vfs_op_type op)
 	return vfs_op_names[op].name;
 }
 
-static void do_log(vfs_op_type op, BOOL success, vfs_handle_struct *handle,
+static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		   const char *format, ...)
 {
 	fstring err_msg;
@@ -881,7 +881,7 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 
 static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
 				    const char *path,
-				    BOOL small_query, SMB_BIG_UINT *bsize, 
+				    bool small_query, SMB_BIG_UINT *bsize, 
 				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	SMB_BIG_UINT result;
@@ -925,7 +925,7 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 
 static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
-				SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+				SHADOW_COPY_DATA *shadow_copy_data, bool labels)
 {
 	int result;
 
@@ -1329,10 +1329,10 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 	return result;
 }
 
-static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	BOOL result;
+	bool result;
 
 	result = SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 
@@ -1368,10 +1368,10 @@ static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct
         return result;
 }
 
-static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
-	BOOL result;
+	bool result;
 
 	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
 

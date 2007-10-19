@@ -30,7 +30,7 @@
 static TDB_CONTEXT *tdb;
 
 /* Urrrg. global.... */
-BOOL global_machine_password_needs_changing;
+bool global_machine_password_needs_changing;
 
 /**
  * Use a TDB to store an incrementing random seed.
@@ -49,7 +49,7 @@ static void get_rand_seed(int *new_seed)
 }
 
 /* open up the secrets database */
-BOOL secrets_init(void)
+bool secrets_init(void)
 {
 	pstring fname;
 	unsigned char dummy;
@@ -98,7 +98,7 @@ void *secrets_fetch(const char *key, size_t *size)
 
 /* store a secrets entry
  */
-BOOL secrets_store(const char *key, const void *data, size_t size)
+bool secrets_store(const char *key, const void *data, size_t size)
 {
 	secrets_init();
 	if (!tdb)
@@ -111,7 +111,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 
 /* delete a secets database entry
  */
-BOOL secrets_delete(const char *key)
+bool secrets_delete(const char *key)
 {
 	secrets_init();
 	if (!tdb)
@@ -119,10 +119,10 @@ BOOL secrets_delete(const char *key)
 	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
 }
 
-BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
+bool secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 {
 	fstring key;
-	BOOL ret;
+	bool ret;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper_m(key);
@@ -134,7 +134,7 @@ BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 	return ret;
 }
 
-BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
+bool secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
 	fstring key;
@@ -157,7 +157,7 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(const char *domain, struct GUID *guid)
+bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
 	fstring key;
 
@@ -166,7 +166,7 @@ BOOL secrets_store_domain_guid(const char *domain, struct GUID *guid)
 	return secrets_store(key, guid, sizeof(struct GUID));
 }
 
-BOOL secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
+bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 {
 	struct GUID *dyn_guid;
 	fstring key;
@@ -239,7 +239,7 @@ static char *trustdom_keystr(const char *domain)
  Lock the trust password entry.
 ************************************************************************/
 
-BOOL secrets_lock_trust_account_password(const char *domain, BOOL dolock)
+bool secrets_lock_trust_account_password(const char *domain, bool dolock)
 {
 	if (!tdb)
 		return False;
@@ -271,7 +271,7 @@ uint32 get_default_sec_channel(void)
  the above secrets_lock_trust_account_password().
 ************************************************************************/
 
-BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
+bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time,
 					  uint32 *channel)
 {
@@ -454,7 +454,7 @@ static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
  Routine to get account password to trusted domain
 ************************************************************************/
 
-BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
+bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            DOM_SID *sid, time_t *pass_last_set_time)
 {
 	struct trusted_dom_pass pass;
@@ -503,7 +503,7 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
  Routine to set the trust account password for a domain.
 ************************************************************************/
 
-BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
+bool secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
 {
 	struct machine_acct_pass pass;
 
@@ -523,7 +523,7 @@ BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
  * @return true if succeeded
  **/
 
-BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
+bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
                                            const DOM_SID *sid)
 {
 	smb_ucs2_t *uni_dom_name;
@@ -566,10 +566,10 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
 
-BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
+bool secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
 	char *key = NULL;
-	BOOL ret;
+	bool ret;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
 
@@ -658,7 +658,7 @@ char *secrets_fetch_machine_password(const char *domain,
  Routine to delete the machine trust account password file for a domain.
 ************************************************************************/
 
-BOOL trust_password_delete(const char *domain)
+bool trust_password_delete(const char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
@@ -667,15 +667,15 @@ BOOL trust_password_delete(const char *domain)
  Routine to delete the password for trusted domain
 ************************************************************************/
 
-BOOL trusted_domain_password_delete(const char *domain)
+bool trusted_domain_password_delete(const char *domain)
 {
 	return secrets_delete(trustdom_keystr(domain));
 }
 
-BOOL secrets_store_ldap_pw(const char* dn, char* pw)
+bool secrets_store_ldap_pw(const char* dn, char* pw)
 {
 	char *key = NULL;
-	BOOL ret;
+	bool ret;
 
 	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, dn) < 0) {
 		DEBUG(0, ("secrets_store_ldap_pw: asprintf failed!\n"));
@@ -692,7 +692,7 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
  Find the ldap password.
 ******************************************************************/
 
-BOOL fetch_ldap_pw(char **dn, char** pw)
+bool fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
 	size_t size = 0;
@@ -876,7 +876,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
  between smbd instances.
 *******************************************************************************/
 
-BOOL secrets_named_mutex(const char *name, unsigned int timeout)
+bool secrets_named_mutex(const char *name, unsigned int timeout)
 {
 	int ret = 0;
 
@@ -904,7 +904,7 @@ void secrets_named_mutex_release(const char *name)
  Store a complete AFS keyfile into secrets.tdb.
 *******************************************************************************/
 
-BOOL secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile)
+bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile)
 {
 	fstring key;
 
@@ -921,7 +921,7 @@ BOOL secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfi
 /*******************************************************************************
  Fetch the current (highest) AFS key from secrets.tdb
 *******************************************************************************/
-BOOL secrets_fetch_afs_key(const char *cell, struct afs_key *result)
+bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 {
 	fstring key;
 	struct afs_keyfile *keyfile;
@@ -1047,13 +1047,13 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
  Note we must be root here.
 *******************************************************************************/
 
-BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
+bool secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 				const char *remote_machine,
 				const struct dcinfo *pdc)
 {
 	TDB_CONTEXT *tdb_sc = NULL;
 	TDB_DATA value;
-	BOOL ret;
+	bool ret;
 	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
 				remote_machine);
 	if (!keystr) {
@@ -1114,7 +1114,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
  Note we must be root here.
 *******************************************************************************/
 
-BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
+bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				const char *remote_machine,
 				struct dcinfo **ppdc)
 {
@@ -1211,10 +1211,10 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL secrets_store_generic(const char *owner, const char *key, const char *secret)
+bool secrets_store_generic(const char *owner, const char *key, const char *secret)
 {
 	char *tdbkey = NULL;
-	BOOL ret;
+	bool ret;
 
 	if (asprintf(&tdbkey, "SECRETS/GENERIC/%s/%s", owner, key) < 0) {
 		DEBUG(0, ("asprintf failed!\n"));

@@ -20,12 +20,6 @@
 #ifndef ADT_TREE_H
 #define ADT_TREE_H
 
-#ifndef _UPPER_BOOL
-typedef int BOOL;
-#define _UPPER_BOOL  
-#endif
-
-
 /* data structure used to build the tree */
 
 typedef struct _tree_node {
@@ -53,7 +47,7 @@ SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
 
 /* add a new path component */
 
-BOOL          pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
+bool          pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
 
 /* search path */
 

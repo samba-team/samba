@@ -31,7 +31,7 @@ typedef struct asn1_data {
 	size_t length;
 	off_t ofs;
 	struct nesting *nesting;
-	BOOL has_error;
+	bool has_error;
 } ASN1_DATA;
 
 

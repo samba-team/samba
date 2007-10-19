@@ -39,7 +39,7 @@ struct idmap_ldap_context {
 	char *suffix;
 	char *user_dn;
 	uint32_t filter_low_id, filter_high_id;		/* Filter range */
-	BOOL anon;
+	bool anon;
 };
 
 struct idmap_ldap_alloc_context {
@@ -78,7 +78,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	char *secret = NULL;
 	const char *tmp = NULL;
 	char *user_dn = NULL;
-	BOOL anon = False;
+	bool anon = False;
 
 	/* assume anonymous if we don't have a specified user */
 
@@ -897,7 +897,7 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 	const char *gidNumber;
 	const char **attr_list;
 	char *filter = NULL;
-	BOOL multi = False;
+	bool multi = False;
 	int idx = 0;
 	int bidx = 0;
 	int count;
@@ -1127,7 +1127,7 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom,
 	const char *gidNumber;
 	const char **attr_list;
 	char *filter = NULL;
-	BOOL multi = False;
+	bool multi = False;
 	int idx = 0;
 	int bidx = 0;
 	int count;

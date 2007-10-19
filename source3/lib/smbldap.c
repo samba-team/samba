@@ -261,7 +261,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  Search an attribute and return the first value found.
 ******************************************************************/
 
- BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+ bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				    const char *attribute, char *value,
 				    int max_len)
 {
@@ -292,7 +292,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return True;
 }
 
- BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+ bool smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
 				  const char *attribute, pstring value)
 {
 	return smbldap_get_single_attribute(ldap_struct, entry,
@@ -472,7 +472,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		      const char *attribute, const char *newval)
 {
 	char oldval[2048]; /* current largest allowed value is mungeddial */
-	BOOL existed;
+	bool existed;
 
 	if (attribute == NULL) {
 		/* This can actually happen for ldapsam_compat where we for
@@ -1005,7 +1005,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 static int smbldap_open(struct smbldap_state *ldap_state)
 {
 	int rc, opt_rc;
-	BOOL reopen = False;
+	bool reopen = False;
 	SMB_ASSERT(ldap_state);
 		
 #ifndef NO_LDAP_SECURITY
@@ -1097,7 +1097,7 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	return NT_STATUS_OK;
 }
 
-static BOOL got_alarm;
+static bool got_alarm;
 
 static void (*old_handler)(int);
 
@@ -1294,7 +1294,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	BerElement 	*cookie_be = NULL;
 	struct berval 	*cookie_bv = NULL;
 	int		tmp = 0, i, rc;
-	BOOL 		critical = True;
+	bool 		critical = True;
 
 	*res = NULL;
 
@@ -1675,13 +1675,13 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
  Check if root-dse has a certain Control or Extension
 ********************************************************************/
 
-static BOOL smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *value) 
+static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *value) 
 {
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry = NULL;
 	char **values = NULL;
 	int rc, num_result, num_values, i;
-	BOOL result = False;
+	bool result = False;
 
 	if (!attrs[0]) {
 		DEBUG(3,("smbldap_check_root_dse: nothing to look for\n"));
@@ -1751,7 +1751,7 @@ static BOOL smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *val
  Check if LDAP-Server supports a certain Control (OID in string format)
 ********************************************************************/
 
-BOOL smbldap_has_control(LDAP *ld, const char *control)
+bool smbldap_has_control(LDAP *ld, const char *control)
 {
 	const char *attrs[] = { "supportedControl", NULL };
 	return smbldap_check_root_dse(ld, attrs, control);
@@ -1761,7 +1761,7 @@ BOOL smbldap_has_control(LDAP *ld, const char *control)
  Check if LDAP-Server supports a certain Extension (OID in string format)
 ********************************************************************/
 
-BOOL smbldap_has_extension(LDAP *ld, const char *extension)
+bool smbldap_has_extension(LDAP *ld, const char *extension)
 {
 	const char *attrs[] = { "supportedExtension", NULL };
 	return smbldap_check_root_dse(ld, attrs, extension);
@@ -1771,13 +1771,13 @@ BOOL smbldap_has_extension(LDAP *ld, const char *extension)
  Check if LDAP-Server holds a given namingContext
 ********************************************************************/
 
-BOOL smbldap_has_naming_context(LDAP *ld, const char *naming_context)
+bool smbldap_has_naming_context(LDAP *ld, const char *naming_context)
 {
 	const char *attrs[] = { "namingContexts", NULL };
 	return smbldap_check_root_dse(ld, attrs, naming_context);
 }
 
-BOOL smbldap_set_creds(struct smbldap_state *ldap_state, BOOL anon, const char *dn, const char *secret)
+bool smbldap_set_creds(struct smbldap_state *ldap_state, bool anon, const char *dn, const char *secret)
 {
 	ldap_state->anonymous = anon;
 

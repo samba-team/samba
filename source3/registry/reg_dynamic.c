@@ -229,7 +229,7 @@ int fetch_dynamic_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 /***********************************************************************
 ***********************************************************************/
 
-BOOL check_dynamic_reg_values( REGISTRY_KEY *key )
+bool check_dynamic_reg_values( REGISTRY_KEY *key )
 {
 	int i;
 	pstring path;

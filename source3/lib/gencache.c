@@ -32,7 +32,7 @@
 #define BLOB_TYPE_LEN 9
 
 static TDB_CONTEXT *cache;
-static BOOL cache_readonly;
+static bool cache_readonly;
 
 /**
  * @file gencache.c
@@ -50,7 +50,7 @@ static BOOL cache_readonly;
  *         false on failure
  **/
 
-BOOL gencache_init(void)
+bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	
@@ -87,7 +87,7 @@ BOOL gencache_init(void)
  *         false on failure during cache shutdown
  **/
  
-BOOL gencache_shutdown(void)
+bool gencache_shutdown(void)
 {
 	int ret;
 	/* tdb_close routine returns -1 on error */
@@ -112,7 +112,7 @@ BOOL gencache_shutdown(void)
  * @retval false on failure
  **/
  
-BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
+bool gencache_set(const char *keystr, const char *value, time_t timeout)
 {
 	int ret;
 	TDB_DATA databuf;
@@ -152,7 +152,7 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
  * @retval false in case of failure
  **/
 
-BOOL gencache_del(const char *keystr)
+bool gencache_del(const char *keystr)
 {
 	int ret;
 	
@@ -185,7 +185,7 @@ BOOL gencache_del(const char *keystr)
  * @retval False for failure
  **/
 
-BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
+bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
 	TDB_DATA databuf;
 	time_t t;
@@ -250,19 +250,19 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
  *
  * @param keystr string that represents a key of this entry
  * @param blob DATA_BLOB that is filled with entry's blob
- * @param expired pointer to a BOOL that indicates whether the entry is expired
+ * @param expired pointer to a bool that indicates whether the entry is expired
  *
  * @retval true when entry is successfuly fetched
  * @retval False for failure
  **/
 
-BOOL gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, BOOL *expired)
+bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, bool *expired)
 {
 	TDB_DATA databuf;
 	time_t t;
 	char *blob_type;
 	unsigned char *buf = NULL;
-	BOOL ret = False;
+	bool ret = False;
 	fstring valstr;
 	int buflen = 0, len = 0, blob_len = 0;
 	unsigned char *blob_buf = NULL;
@@ -335,9 +335,9 @@ BOOL gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, BOOL *expired)
  * @retval false on failure
  **/
 
-BOOL gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
+bool gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
 {
-	BOOL ret = False;
+	bool ret = False;
 	int tdb_ret;
 	TDB_DATA databuf;
 	char *valstr = NULL;

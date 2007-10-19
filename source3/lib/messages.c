@@ -144,7 +144,7 @@ static int traverse_fn(struct db_record *rec,
  *
  * @retval True for success.
  **/
-BOOL message_send_all(struct messaging_context *msg_ctx,
+bool message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
 		      const void *buf, size_t len,
 		      int *n_sent)

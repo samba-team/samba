@@ -35,7 +35,7 @@ struct aio_extra {
 	struct aio_extra *next, *prev;
 	SMB_STRUCT_AIOCB acb;
 	files_struct *fsp;
-	BOOL read_req;
+	bool read_req;
 	uint16 mid;
 	char *inbuf;
 	char *outbuf;
@@ -163,7 +163,7 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
  Is there a signal waiting ?
 *****************************************************************************/
 
-BOOL aio_finished(void)
+bool aio_finished(void)
 {
 	return (signals_received != 0);
 }
@@ -192,7 +192,7 @@ void initialize_async_io_handler(void)
  Set up an aio request from a SMBreadX call.
 *****************************************************************************/
 
-BOOL schedule_aio_read_and_X(connection_struct *conn,
+bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
@@ -272,7 +272,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
  Set up an aio request from a SMBwriteX call.
 *****************************************************************************/
 
-BOOL schedule_aio_write_and_X(connection_struct *conn,
+bool schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
@@ -281,7 +281,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t inbufsize, outbufsize;
-	BOOL write_through = BITSETW(req->inbuf+smb_vwv7,0);
+	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
 	if (!min_aio_write_size || (numtowrite < min_aio_write_size)) {
@@ -495,7 +495,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		UNIXERROR(ERRHRD,ERRdiskfull);
 		ret = errno;
         } else {
-		BOOL write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
+		bool write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
 		NTSTATUS status;
 
         	SSVAL(outbuf,smb_vwv2,nwritten);
@@ -534,7 +534,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
  was non-zero), False if not.
 *****************************************************************************/
 
-static BOOL handle_aio_completed(struct aio_extra *aio_ex, int *perr)
+static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 {
 	int err;
 
@@ -747,7 +747,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 }
 
 #else
-BOOL aio_finished(void)
+bool aio_finished(void)
 {
 	return False;
 }
@@ -761,7 +761,7 @@ int process_aio_queue(void)
 	return False;
 }
 
-BOOL schedule_aio_read_and_X(connection_struct *conn,
+bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
@@ -769,7 +769,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	return False;
 }
 
-BOOL schedule_aio_write_and_X(connection_struct *conn,
+bool schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
@@ -782,8 +782,8 @@ void cancel_aio_by_fsp(files_struct *fsp)
 {
 }
 
-BOOL wait_for_aio_completion(files_struct *fsp)
+int wait_for_aio_completion(files_struct *fsp)
 {
-	return True;
+	return ENOSYS;
 }
 #endif

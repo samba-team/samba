@@ -39,7 +39,7 @@ static const uint8 *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlms
  *
  * @return If the effective challenge used by the auth subsystem may be modified
  */
-static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
 		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
@@ -83,7 +83,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
 	auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
-	BOOL username_was_mapped;
+	bool username_was_mapped;
 
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */

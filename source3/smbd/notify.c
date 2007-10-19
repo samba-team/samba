@@ -46,7 +46,7 @@ struct notify_mid_map {
 	uint16 mid;
 };
 
-static BOOL notify_change_record_identical(struct notify_change *c1,
+static bool notify_change_record_identical(struct notify_change *c1,
 					struct notify_change *c2)
 {
 	/* Note this is deliberately case sensitive. */
@@ -57,7 +57,7 @@ static BOOL notify_change_record_identical(struct notify_change *c1,
 	return False;
 }
 
-static BOOL notify_marshall_changes(int num_changes,
+static bool notify_marshall_changes(int num_changes,
 				uint32 max_offset,
 				struct notify_change *changes,
 				prs_struct *ps)
@@ -210,7 +210,7 @@ static void notify_callback(void *private_data, const struct notify_event *e)
 }
 
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
-			      BOOL recursive)
+			      bool recursive)
 {
 	char *fullpath;
 	struct notify_entry e;
@@ -243,7 +243,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 }
 
 NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
-				   uint32 filter, BOOL recursive,
+				   uint32 filter, bool recursive,
 				   struct files_struct *fsp)
 {
 	struct notify_change_request *request = NULL;

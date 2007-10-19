@@ -56,7 +56,7 @@ char *stdin_new_passwd( void)
  Used if the '-s' (smbpasswd) or '-t' (pdbedit) option is set
  to silently get passwords to enable scripting.
 *************************************************************/
-char *get_pass( const char *prompt, BOOL stdin_get)
+char *get_pass( const char *prompt, bool stdin_get)
 {
 	char *p;
 	if (stdin_get) {

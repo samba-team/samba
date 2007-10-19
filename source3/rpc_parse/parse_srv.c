@@ -43,7 +43,7 @@ void init_srv_share_info0_str(SH_INFO_0_STR *sh0, const char *net_name)
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info0_str(const char *desc, SH_INFO_0_STR *sh0, prs_struct *ps, int depth)
+static bool srv_io_share_info0_str(const char *desc, SH_INFO_0_STR *sh0, prs_struct *ps, int depth)
 {
 	if (sh0 == NULL)
 		return False;
@@ -75,7 +75,7 @@ void init_srv_share_info0(SH_INFO_0 *sh0, const char *net_name)
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info0(const char *desc, SH_INFO_0 *sh0, prs_struct *ps, int depth)
+static bool srv_io_share_info0(const char *desc, SH_INFO_0 *sh0, prs_struct *ps, int depth)
 {
 	if (sh0 == NULL)
 		return False;
@@ -108,7 +108,7 @@ void init_srv_share_info1_str(SH_INFO_1_STR *sh1, const char *net_name, const ch
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1_str(const char *desc, SH_INFO_1_STR *sh1, prs_struct *ps, int depth)
+static bool srv_io_share_info1_str(const char *desc, SH_INFO_1_STR *sh1, prs_struct *ps, int depth)
 {
 	if (sh1 == NULL)
 		return False;
@@ -150,7 +150,7 @@ void init_srv_share_info1(SH_INFO_1 *sh1, const char *net_name, uint32 type, con
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1(const char *desc, SH_INFO_1 *sh1, prs_struct *ps, int depth)
+static bool srv_io_share_info1(const char *desc, SH_INFO_1 *sh1, prs_struct *ps, int depth)
 {
 	if (sh1 == NULL)
 		return False;
@@ -191,7 +191,7 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info2_str(const char *desc, SH_INFO_2 *sh, SH_INFO_2_STR *sh2, prs_struct *ps, int depth)
+static bool srv_io_share_info2_str(const char *desc, SH_INFO_2 *sh, SH_INFO_2_STR *sh2, prs_struct *ps, int depth)
 {
 	if (sh2 == NULL)
 		return False;
@@ -249,7 +249,7 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info2(const char *desc, SH_INFO_2 *sh2, prs_struct *ps, int depth)
+static bool srv_io_share_info2(const char *desc, SH_INFO_2 *sh2, prs_struct *ps, int depth)
 {
 	if (sh2 == NULL)
 		return False;
@@ -314,7 +314,7 @@ void init_srv_share_info501(SH_INFO_501 *sh501, const char *net_name, uint32 typ
  Reads of writes a structure.
 *******************************************************************/
 
-static BOOL srv_io_share_info501(const char *desc, SH_INFO_501 *sh501, prs_struct *ps, int depth)
+static bool srv_io_share_info501(const char *desc, SH_INFO_501 *sh501, prs_struct *ps, int depth)
 {
 	if (sh501 == NULL)
 		return False;
@@ -341,7 +341,7 @@ static BOOL srv_io_share_info501(const char *desc, SH_INFO_501 *sh501, prs_struc
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info501_str(const char *desc, SH_INFO_501_STR *sh501, prs_struct *ps, int depth)
+static bool srv_io_share_info501_str(const char *desc, SH_INFO_501_STR *sh501, prs_struct *ps, int depth)
 {
 	if (sh501 == NULL)
 		return False;
@@ -392,7 +392,7 @@ void init_srv_share_info502(SH_INFO_502 *sh502,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info502(const char *desc, SH_INFO_502 *sh502, prs_struct *ps, int depth)
+static bool srv_io_share_info502(const char *desc, SH_INFO_502 *sh502, prs_struct *ps, int depth)
 {
 	if (sh502 == NULL)
 		return False;
@@ -450,7 +450,7 @@ void init_srv_share_info502_str(SH_INFO_502_STR *sh502str,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info502_str(const char *desc, SH_INFO_502_STR *sh502, prs_struct *ps, int depth)
+static bool srv_io_share_info502_str(const char *desc, SH_INFO_502_STR *sh502, prs_struct *ps, int depth)
 {
 	if (sh502 == NULL)
 		return False;
@@ -545,7 +545,7 @@ void init_srv_share_info1004_str(SH_INFO_1004_STR *sh1004, const char *remark)
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1004_str(const char *desc, SH_INFO_1004_STR *sh1004, prs_struct *ps, int depth)
+static bool srv_io_share_info1004_str(const char *desc, SH_INFO_1004_STR *sh1004, prs_struct *ps, int depth)
 {
 	if (sh1004 == NULL)
 		return False;
@@ -577,7 +577,7 @@ void init_srv_share_info1004(SH_INFO_1004 *sh1004, const char *remark)
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1004(const char *desc, SH_INFO_1004 *sh1004, prs_struct *ps, int depth)
+static bool srv_io_share_info1004(const char *desc, SH_INFO_1004 *sh1004, prs_struct *ps, int depth)
 {
 	if (sh1004 == NULL)
 		return False;
@@ -598,7 +598,7 @@ static BOOL srv_io_share_info1004(const char *desc, SH_INFO_1004 *sh1004, prs_st
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1005(const char* desc, SRV_SHARE_INFO_1005* sh1005, prs_struct* ps, int depth)
+static bool srv_io_share_info1005(const char* desc, SRV_SHARE_INFO_1005* sh1005, prs_struct* ps, int depth)
 {
 	if(sh1005 == NULL)
 		return False;
@@ -620,7 +620,7 @@ static BOOL srv_io_share_info1005(const char* desc, SRV_SHARE_INFO_1005* sh1005,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1006(const char* desc, SRV_SHARE_INFO_1006* sh1006, prs_struct* ps, int depth)
+static bool srv_io_share_info1006(const char* desc, SRV_SHARE_INFO_1006* sh1006, prs_struct* ps, int depth)
 {
 	if(sh1006 == NULL)
 		return False;
@@ -652,7 +652,7 @@ void init_srv_share_info1007_str(SH_INFO_1007_STR *sh1007, const char *alternate
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1007_str(const char *desc, SH_INFO_1007_STR *sh1007, prs_struct *ps, int depth)
+static bool srv_io_share_info1007_str(const char *desc, SH_INFO_1007_STR *sh1007, prs_struct *ps, int depth)
 {
 	if (sh1007 == NULL)
 		return False;
@@ -685,7 +685,7 @@ void init_srv_share_info1007(SH_INFO_1007 *sh1007, uint32 flags, const char *alt
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1007(const char *desc, SH_INFO_1007 *sh1007, prs_struct *ps, int depth)
+static bool srv_io_share_info1007(const char *desc, SH_INFO_1007 *sh1007, prs_struct *ps, int depth)
 {
 	if (sh1007 == NULL)
 		return False;
@@ -708,7 +708,7 @@ static BOOL srv_io_share_info1007(const char *desc, SH_INFO_1007 *sh1007, prs_st
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info1501(const char* desc, SRV_SHARE_INFO_1501* sh1501,
+static bool srv_io_share_info1501(const char* desc, SRV_SHARE_INFO_1501* sh1501,
 				  prs_struct* ps, int depth)
 {
 	if(sh1501 == NULL)
@@ -730,7 +730,7 @@ static BOOL srv_io_share_info1501(const char* desc, SRV_SHARE_INFO_1501* sh1501,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct *ps, int depth)
+static bool srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -1052,7 +1052,7 @@ void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_share_enum(const char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_share_enum(const char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1087,7 +1087,7 @@ BOOL srv_io_q_net_share_enum(const char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_st
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_share_enum(const char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_share_enum(const char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1117,7 +1117,7 @@ BOOL srv_io_r_net_share_enum(const char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_st
  initialises a structure.
 ********************************************************************/
 
-BOOL init_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n, const char *srv_name, const char *share_name, uint32 info_level)
+bool init_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n, const char *srv_name, const char *share_name, uint32 info_level)
 {
 
 	uint32 ptr_share_name;
@@ -1136,7 +1136,7 @@ BOOL init_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n, const char *sr
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_share_get_info(const char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_share_get_info(const char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1168,7 +1168,7 @@ BOOL srv_io_q_net_share_get_info(const char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_share_info(const char *desc, prs_struct *ps, int depth, SRV_SHARE_INFO *r_n)
+static bool srv_io_srv_share_info(const char *desc, prs_struct *ps, int depth, SRV_SHARE_INFO *r_n)
 {
 	if (r_n == NULL)
 		return False;
@@ -1279,7 +1279,7 @@ static BOOL srv_io_srv_share_info(const char *desc, prs_struct *ps, int depth, S
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_share_get_info(const char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_share_get_info(const char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1306,7 +1306,7 @@ BOOL srv_io_r_net_share_get_info(const char *desc, SRV_R_NET_SHARE_GET_INFO *r_n
  intialises a structure.
 ********************************************************************/
 
-BOOL init_srv_q_net_share_set_info(SRV_Q_NET_SHARE_SET_INFO *q_n, 
+bool init_srv_q_net_share_set_info(SRV_Q_NET_SHARE_SET_INFO *q_n, 
 				   const char *srv_name, 
 				   const char *share_name, 
 				   uint32 info_level, 
@@ -1334,7 +1334,7 @@ BOOL init_srv_q_net_share_set_info(SRV_Q_NET_SHARE_SET_INFO *q_n,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_share_set_info(const char *desc, SRV_Q_NET_SHARE_SET_INFO *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_share_set_info(const char *desc, SRV_Q_NET_SHARE_SET_INFO *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1381,7 +1381,7 @@ BOOL srv_io_q_net_share_set_info(const char *desc, SRV_Q_NET_SHARE_SET_INFO *q_n
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_share_set_info(const char *desc, SRV_R_NET_SHARE_SET_INFO *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_share_set_info(const char *desc, SRV_R_NET_SHARE_SET_INFO *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1412,7 +1412,7 @@ BOOL srv_io_r_net_share_set_info(const char *desc, SRV_R_NET_SHARE_SET_INFO *r_n
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_share_add(const char *desc, SRV_Q_NET_SHARE_ADD *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_share_add(const char *desc, SRV_Q_NET_SHARE_ADD *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1494,7 +1494,7 @@ void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, const char *srvname,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_share_add(const char *desc, SRV_R_NET_SHARE_ADD *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_share_add(const char *desc, SRV_R_NET_SHARE_ADD *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1536,7 +1536,7 @@ void init_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL *del, const char *srvname,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_share_del(const char *desc, SRV_Q_NET_SHARE_DEL *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_share_del(const char *desc, SRV_Q_NET_SHARE_DEL *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1567,7 +1567,7 @@ BOOL srv_io_q_net_share_del(const char *desc, SRV_Q_NET_SHARE_DEL *q_n, prs_stru
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_share_del(const char *desc, SRV_R_NET_SHARE_DEL *q_n, prs_struct *ps, int depth)
+bool srv_io_r_net_share_del(const char *desc, SRV_R_NET_SHARE_DEL *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1605,7 +1605,7 @@ void init_srv_sess_info0( SESS_INFO_0 *ss0, const char *name )
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_sess_info_0(const char *desc, SRV_SESS_INFO_0 *ss0, prs_struct *ps, int depth)
+static bool srv_io_srv_sess_info_0(const char *desc, SRV_SESS_INFO_0 *ss0, prs_struct *ps, int depth)
 {
 	if (ss0 == NULL)
 		return False;
@@ -1692,7 +1692,7 @@ void init_srv_sess_info1( SESS_INFO_1 *ss1, const char *name, const char *user,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_sess_info_1(const char *desc, SRV_SESS_INFO_1 *ss1, prs_struct *ps, int depth)
+static bool srv_io_srv_sess_info_1(const char *desc, SRV_SESS_INFO_1 *ss1, prs_struct *ps, int depth)
 {
 	if (ss1 == NULL)
 		return False;
@@ -1760,7 +1760,7 @@ static BOOL srv_io_srv_sess_info_1(const char *desc, SRV_SESS_INFO_1 *ss1, prs_s
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_sess_ctr(const char *desc, SRV_SESS_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
+static bool srv_io_srv_sess_ctr(const char *desc, SRV_SESS_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
 	SRV_SESS_INFO_CTR *ctr = *pp_ctr;
 
@@ -1808,7 +1808,7 @@ static BOOL srv_io_srv_sess_ctr(const char *desc, SRV_SESS_INFO_CTR **pp_ctr, pr
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_sess_enum(const char *desc, SRV_Q_NET_SESS_ENUM *q_u, prs_struct *ps, int depth)
+bool srv_io_q_net_sess_enum(const char *desc, SRV_Q_NET_SESS_ENUM *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1861,7 +1861,7 @@ BOOL srv_io_q_net_sess_enum(const char *desc, SRV_Q_NET_SESS_ENUM *q_u, prs_stru
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_sess_enum(const char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_sess_enum(const char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1908,7 +1908,7 @@ void init_srv_q_net_sess_del(SRV_Q_NET_SESS_DEL *q_n, const char *srv_name,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_sess_del(const char *desc, SRV_Q_NET_SESS_DEL *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_sess_del(const char *desc, SRV_Q_NET_SESS_DEL *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -1946,7 +1946,7 @@ BOOL srv_io_q_net_sess_del(const char *desc, SRV_Q_NET_SESS_DEL *q_n, prs_struct
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_sess_del(const char *desc, SRV_R_NET_SESS_DEL *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_sess_del(const char *desc, SRV_R_NET_SESS_DEL *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -1978,7 +1978,7 @@ void init_srv_conn_info0(CONN_INFO_0 *ss0, uint32 id)
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_conn_info0(const char *desc, CONN_INFO_0 *ss0, prs_struct *ps, int depth)
+static bool srv_io_conn_info0(const char *desc, CONN_INFO_0 *ss0, prs_struct *ps, int depth)
 {
 	if (ss0 == NULL)
 		return False;
@@ -1999,7 +1999,7 @@ static BOOL srv_io_conn_info0(const char *desc, CONN_INFO_0 *ss0, prs_struct *ps
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_conn_info_0(const char *desc, SRV_CONN_INFO_0 *ss0, prs_struct *ps, int depth)
+static bool srv_io_srv_conn_info_0(const char *desc, SRV_CONN_INFO_0 *ss0, prs_struct *ps, int depth)
 {
 	if (ss0 == NULL)
 		return False;
@@ -2054,7 +2054,7 @@ void init_srv_conn_info1_str(CONN_INFO_1_STR *ss1, const char *usr_name, const c
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_conn_info1_str(const char *desc, CONN_INFO_1_STR *ss1, prs_struct *ps, int depth)
+static bool srv_io_conn_info1_str(const char *desc, CONN_INFO_1_STR *ss1, prs_struct *ps, int depth)
 {
 	if (ss1 == NULL)
 		return False;
@@ -2098,7 +2098,7 @@ void init_srv_conn_info1(CONN_INFO_1 *ss1,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_conn_info1(const char *desc, CONN_INFO_1 *ss1, prs_struct *ps, int depth)
+static bool srv_io_conn_info1(const char *desc, CONN_INFO_1 *ss1, prs_struct *ps, int depth)
 {
 	if (ss1 == NULL)
 		return False;
@@ -2132,7 +2132,7 @@ static BOOL srv_io_conn_info1(const char *desc, CONN_INFO_1 *ss1, prs_struct *ps
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_conn_info_1(const char *desc, SRV_CONN_INFO_1 *ss1, prs_struct *ps, int depth)
+static bool srv_io_srv_conn_info_1(const char *desc, SRV_CONN_INFO_1 *ss1, prs_struct *ps, int depth)
 {
 	if (ss1 == NULL)
 		return False;
@@ -2180,7 +2180,7 @@ static BOOL srv_io_srv_conn_info_1(const char *desc, SRV_CONN_INFO_1 *ss1, prs_s
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_conn_ctr(const char *desc, SRV_CONN_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
+static bool srv_io_srv_conn_ctr(const char *desc, SRV_CONN_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
 	SRV_CONN_INFO_CTR *ctr = *pp_ctr;
 
@@ -2251,7 +2251,7 @@ void init_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_conn_enum(const char *desc, SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_conn_enum(const char *desc, SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -2299,7 +2299,7 @@ BOOL srv_io_q_net_conn_enum(const char *desc, SRV_Q_NET_CONN_ENUM *q_n, prs_stru
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_conn_enum(const char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_conn_enum(const char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -2332,7 +2332,7 @@ BOOL srv_io_r_net_conn_enum(const char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_str
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_file_info3_str(const char *desc, FILE_INFO_3 *sh1, prs_struct *ps, int depth)
+static bool srv_io_file_info3_str(const char *desc, FILE_INFO_3 *sh1, prs_struct *ps, int depth)
 {
 	if (sh1 == NULL)
 		return False;
@@ -2386,7 +2386,7 @@ void init_srv_file_info3( FILE_INFO_3 *fl3, uint32 id, uint32 perms, uint32 num_
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_file_info3(const char *desc, FILE_INFO_3 *fl3, prs_struct *ps, int depth)
+static bool srv_io_file_info3(const char *desc, FILE_INFO_3 *fl3, prs_struct *ps, int depth)
 {
 	uint32 uni_p;
 
@@ -2431,7 +2431,7 @@ static BOOL srv_io_file_info3(const char *desc, FILE_INFO_3 *fl3, prs_struct *ps
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_srv_file_ctr(const char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
+static bool srv_io_srv_file_ctr(const char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2538,7 +2538,7 @@ void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_file_enum(const char *desc, SRV_Q_NET_FILE_ENUM *q_u, prs_struct *ps, int depth)
+bool srv_io_q_net_file_enum(const char *desc, SRV_Q_NET_FILE_ENUM *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -2588,7 +2588,7 @@ BOOL srv_io_q_net_file_enum(const char *desc, SRV_Q_NET_FILE_ENUM *q_u, prs_stru
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_file_enum(const char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_file_enum(const char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -2633,7 +2633,7 @@ void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, const char *name
  Reads or writes a SRV_INFO_101 structure.
  ********************************************************************/
 
-static BOOL srv_io_info_100(const char *desc, SRV_INFO_100 *sv100, prs_struct *ps, int depth)
+static bool srv_io_info_100(const char *desc, SRV_INFO_100 *sv100, prs_struct *ps, int depth)
 {
 	if (sv100 == NULL)
 		return False;
@@ -2678,7 +2678,7 @@ void init_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, const char *name
  Reads or writes a SRV_INFO_101 structure.
  ********************************************************************/
 
-static BOOL srv_io_info_101(const char *desc, SRV_INFO_101 *sv101, prs_struct *ps, int depth)
+static bool srv_io_info_101(const char *desc, SRV_INFO_101 *sv101, prs_struct *ps, int depth)
 {
 	if (sv101 == NULL)
 		return False;
@@ -2748,7 +2748,7 @@ void init_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, const char *name
  Reads or writes a SRV_INFO_102 structure.
  ********************************************************************/
 
-static BOOL srv_io_info_102(const char *desc, SRV_INFO_102 *sv102, prs_struct *ps, int depth)
+static bool srv_io_info_102(const char *desc, SRV_INFO_102 *sv102, prs_struct *ps, int depth)
 {
 	if (sv102 == NULL)
 		return False;
@@ -2807,7 +2807,7 @@ static BOOL srv_io_info_102(const char *desc, SRV_INFO_102 *sv102, prs_struct *p
  Reads or writes a SRV_INFO_102 structure.
  ********************************************************************/
 
-static BOOL srv_io_info_ctr(const char *desc, SRV_INFO_CTR *ctr, prs_struct *ps, int depth)
+static bool srv_io_info_ctr(const char *desc, SRV_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
 	if (ctr == NULL)
 		return False;
@@ -2867,7 +2867,7 @@ void init_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_srv_get_info(const char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_srv_get_info(const char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -2931,7 +2931,7 @@ void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_srv_set_info(const char *desc, SRV_Q_NET_SRV_SET_INFO *q_n, 
+bool srv_io_q_net_srv_set_info(const char *desc, SRV_Q_NET_SRV_SET_INFO *q_n, 
 			       prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "srv_io_q_net_srv_set_info");
@@ -2968,7 +2968,7 @@ BOOL srv_io_q_net_srv_set_info(const char *desc, SRV_Q_NET_SRV_SET_INFO *q_n,
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_r_net_srv_get_info(const char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_srv_get_info(const char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -2992,7 +2992,7 @@ BOOL srv_io_r_net_srv_get_info(const char *desc, SRV_R_NET_SRV_GET_INFO *r_n, pr
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_r_net_srv_set_info(const char *desc, SRV_R_NET_SRV_SET_INFO *r_n, 
+bool srv_io_r_net_srv_set_info(const char *desc, SRV_R_NET_SRV_SET_INFO *r_n, 
 			       prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "srv_io_r_net_srv_set_info");
@@ -3014,7 +3014,7 @@ BOOL srv_io_r_net_srv_set_info(const char *desc, SRV_R_NET_SRV_SET_INFO *r_n,
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_q_net_remote_tod(const char *desc, SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_remote_tod(const char *desc, SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -3037,7 +3037,7 @@ BOOL srv_io_q_net_remote_tod(const char *desc, SRV_Q_NET_REMOTE_TOD *q_n, prs_st
  Reads or writes a TIME_OF_DAY_INFO structure.
  ********************************************************************/
 
-static BOOL srv_io_time_of_day_info(const char *desc, TIME_OF_DAY_INFO *tod, prs_struct *ps, int depth)
+static bool srv_io_time_of_day_info(const char *desc, TIME_OF_DAY_INFO *tod, prs_struct *ps, int depth)
 {
 	if (tod == NULL)
 		return False;
@@ -3106,7 +3106,7 @@ void init_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_r_net_remote_tod(const char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_remote_tod(const char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -3133,7 +3133,7 @@ BOOL srv_io_r_net_remote_tod(const char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_st
  initialises a structure.
  ********************************************************************/
 
-BOOL init_srv_q_net_disk_enum(SRV_Q_NET_DISK_ENUM *q_n,
+bool init_srv_q_net_disk_enum(SRV_Q_NET_DISK_ENUM *q_n,
 			      const char *srv_name,
 			      uint32 preferred_len,
 			      ENUM_HND *enum_hnd
@@ -3158,7 +3158,7 @@ BOOL init_srv_q_net_disk_enum(SRV_Q_NET_DISK_ENUM *q_n,
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_q_net_disk_enum(const char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_disk_enum(const char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -3202,7 +3202,7 @@ BOOL srv_io_q_net_disk_enum(const char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_stru
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth)
 {
 
 	unsigned int i;
@@ -3272,7 +3272,7 @@ BOOL srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_stru
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_q_net_name_validate(const char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_name_validate(const char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -3309,7 +3309,7 @@ BOOL srv_io_q_net_name_validate(const char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, 
  Reads or writes a structure.
  ********************************************************************/
 
-BOOL srv_io_r_net_name_validate(const char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_name_validate(const char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -3330,7 +3330,7 @@ BOOL srv_io_r_net_name_validate(const char *desc, SRV_R_NET_NAME_VALIDATE *r_n, 
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_file_query_secdesc(const char *desc, SRV_Q_NET_FILE_QUERY_SECDESC *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_file_query_secdesc(const char *desc, SRV_Q_NET_FILE_QUERY_SECDESC *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -3378,7 +3378,7 @@ BOOL srv_io_q_net_file_query_secdesc(const char *desc, SRV_Q_NET_FILE_QUERY_SECD
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_file_query_secdesc(const char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_file_query_secdesc(const char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;
@@ -3417,7 +3417,7 @@ BOOL srv_io_r_net_file_query_secdesc(const char *desc, SRV_R_NET_FILE_QUERY_SECD
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_q_net_file_set_secdesc(const char *desc, SRV_Q_NET_FILE_SET_SECDESC *q_n, prs_struct *ps, int depth)
+bool srv_io_q_net_file_set_secdesc(const char *desc, SRV_Q_NET_FILE_SET_SECDESC *q_n, prs_struct *ps, int depth)
 {
 	if (q_n == NULL)
 		return False;
@@ -3474,7 +3474,7 @@ BOOL srv_io_q_net_file_set_secdesc(const char *desc, SRV_Q_NET_FILE_SET_SECDESC 
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL srv_io_r_net_file_set_secdesc(const char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, prs_struct *ps, int depth)
+bool srv_io_r_net_file_set_secdesc(const char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, prs_struct *ps, int depth)
 {
 	if (r_n == NULL)
 		return False;

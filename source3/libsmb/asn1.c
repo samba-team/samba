@@ -34,7 +34,7 @@ void asn1_free(ASN1_DATA *data)
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
-BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
+bool asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
@@ -52,13 +52,13 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 }
 
 /* useful fn for writing a uint8 */
-BOOL asn1_write_uint8(ASN1_DATA *data, uint8 v)
+bool asn1_write_uint8(ASN1_DATA *data, uint8 v)
 {
 	return asn1_write(data, &v, 1);
 }
 
 /* push a tag onto the asn1 data buffer. Used for nested structures */
-BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
+bool asn1_push_tag(ASN1_DATA *data, uint8 tag)
 {
 	struct nesting *nesting;
 
@@ -76,7 +76,7 @@ BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
 }
 
 /* pop a tag */
-BOOL asn1_pop_tag(ASN1_DATA *data)
+bool asn1_pop_tag(ASN1_DATA *data)
 {
 	struct nesting *nesting;
 	size_t len;
@@ -127,7 +127,7 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 
 
 /* write an integer */
-BOOL asn1_write_Integer(ASN1_DATA *data, int i)
+bool asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
 	do {
@@ -138,7 +138,7 @@ BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 }
 
 /* write an object ID to a ASN1 buffer */
-BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
+bool asn1_write_OID(ASN1_DATA *data, const char *OID)
 {
 	unsigned v, v2;
 	const char *p = (const char *)OID;
@@ -167,7 +167,7 @@ BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 }
 
 /* write an octet string */
-BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
+bool asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
 {
 	asn1_push_tag(data, ASN1_OCTET_STRING);
 	asn1_write(data, p, length);
@@ -176,7 +176,7 @@ BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
 }
 
 /* write a general string */
-BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
+bool asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 {
 	asn1_push_tag(data, ASN1_GENERAL_STRING);
 	asn1_write(data, s, strlen(s));
@@ -185,7 +185,7 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 }
 
 /* write a BOOLEAN */
-BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
+bool asn1_write_BOOLEAN(ASN1_DATA *data, bool v)
 {
 	asn1_write_uint8(data, ASN1_BOOLEAN);
 	asn1_write_uint8(data, v);
@@ -194,7 +194,7 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 
 /* write a BOOLEAN - hmm, I suspect this one is the correct one, and the 
    above boolean is bogus. Need to check */
-BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
+bool asn1_write_BOOLEAN2(ASN1_DATA *data, bool v)
 {
 	asn1_push_tag(data, ASN1_BOOLEAN);
 	asn1_write_uint8(data, v);
@@ -203,7 +203,7 @@ BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
 }
 
 /* check a BOOLEAN */
-BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
+bool asn1_check_BOOLEAN(ASN1_DATA *data, bool v)
 {
 	uint8 b = 0;
 
@@ -222,7 +222,7 @@ BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 
 
 /* load a ASN1_DATA structure with a lump of data, ready to be parsed */
-BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
+bool asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
 	data->data = (unsigned char *)memdup(blob.data, blob.length);
@@ -235,7 +235,7 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 }
 
 /* read from a ASN1 buffer, advancing the buffer pointer */
-BOOL asn1_read(ASN1_DATA *data, void *p, int len)
+bool asn1_read(ASN1_DATA *data, void *p, int len)
 {
 	if (data->has_error)
 		return False;
@@ -255,13 +255,13 @@ BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 }
 
 /* read a uint8 from a ASN1 buffer */
-BOOL asn1_read_uint8(ASN1_DATA *data, uint8 *v)
+bool asn1_read_uint8(ASN1_DATA *data, uint8 *v)
 {
 	return asn1_read(data, v, 1);
 }
 
 /* start reading a nested asn1 structure */
-BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
+bool asn1_start_tag(ASN1_DATA *data, uint8 tag)
 {
 	uint8 b;
 	struct nesting *nesting;
@@ -310,7 +310,7 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 
 
 /* stop reading a tag */
-BOOL asn1_end_tag(ASN1_DATA *data)
+bool asn1_end_tag(ASN1_DATA *data)
 {
 	struct nesting *nesting;
 
@@ -346,7 +346,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 }
 
 /* read an object ID from a ASN1 buffer */
-BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
+bool asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8 b;
 	pstring oid_str;
@@ -385,7 +385,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 }
 
 /* check that the next object ID is correct */
-BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
+bool asn1_check_OID(ASN1_DATA *data, const char *OID)
 {
 	char *id;
 
@@ -402,7 +402,7 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 }
 
 /* read a GeneralString from a ASN1 buffer */
-BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
+bool asn1_read_GeneralString(ASN1_DATA *data, char **s)
 {
 	int len;
 	char *str;
@@ -433,7 +433,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 }
 
 /* read a octet string blob */
-BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
+bool asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
@@ -450,7 +450,7 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 }
 
 /* read an interger */
-BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
+bool asn1_read_Integer(ASN1_DATA *data, int *i)
 {
 	uint8 b;
 	*i = 0;
@@ -465,7 +465,7 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 }
 
 /* check a enumarted value is correct */
-BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
+bool asn1_check_enumerated(ASN1_DATA *data, int v)
 {
 	uint8 b;
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
@@ -479,7 +479,7 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 }
 
 /* write an enumarted value to the stream */
-BOOL asn1_write_enumerated(ASN1_DATA *data, uint8 v)
+bool asn1_write_enumerated(ASN1_DATA *data, uint8 v)
 {
 	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;
 	asn1_write_uint8(data, v);

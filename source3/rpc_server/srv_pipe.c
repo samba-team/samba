@@ -55,7 +55,7 @@ static DATA_BLOB generic_session_key(void)
  Handle NTLMSSP.
  ********************************************************************/
 
-static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
+static bool create_next_pdu_ntlmssp(pipes_struct *p)
 {
 	RPC_HDR_RESP hdr_resp;
 	uint32 ss_padding_len = 0;
@@ -272,7 +272,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
  Return an schannel authenticated fragment.
  ********************************************************************/
 
-static BOOL create_next_pdu_schannel(pipes_struct *p)
+static bool create_next_pdu_schannel(pipes_struct *p)
 {
 	RPC_HDR_RESP hdr_resp;
 	uint32 ss_padding_len = 0;
@@ -450,7 +450,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
  No authentication done.
 ********************************************************************/
 
-static BOOL create_next_pdu_noauth(pipes_struct *p)
+static bool create_next_pdu_noauth(pipes_struct *p)
 {
 	RPC_HDR_RESP hdr_resp;
 	uint32 data_len;
@@ -571,7 +571,7 @@ static BOOL create_next_pdu_noauth(pipes_struct *p)
  Generate the next PDU to be returned from the data in p->rdata. 
 ********************************************************************/
 
-BOOL create_next_pdu(pipes_struct *p)
+bool create_next_pdu(pipes_struct *p)
 {
 	switch(p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_NONE:
@@ -604,7 +604,7 @@ BOOL create_next_pdu(pipes_struct *p)
  the pipe struct.
 *******************************************************************/
 
-static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
+static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 {
 	DATA_BLOB reply;
 	NTSTATUS status;
@@ -725,7 +725,7 @@ static int rpc_lookup_size;
  This is the "stage3" NTLMSSP response after a bind request and reply.
 *******************************************************************/
 
-BOOL api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_AUTH auth_info;
 	uint32 pad;
@@ -797,7 +797,7 @@ BOOL api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
  Marshall a bind_nak pdu.
 *******************************************************************/
 
-static BOOL setup_bind_nak(pipes_struct *p)
+static bool setup_bind_nak(pipes_struct *p)
 {
 	prs_struct outgoing_rpc;
 	RPC_HDR nak_hdr;
@@ -859,7 +859,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
+bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -930,7 +930,7 @@ BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
  We should probably check the auth-verifier here.
 *******************************************************************/
 
-BOOL setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
+bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR ack_reply_hdr;
@@ -978,7 +978,7 @@ BOOL setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
  Used to reject unknown binds from Win2k.
 *******************************************************************/
 
-BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
+bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
                     RPC_IFACE* transfer, uint32 context_id)
 {
 	char *pipe_name = p->name;
@@ -1089,7 +1089,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
  Handle a SPNEGO krb5 bind auth.
 *******************************************************************/
 
-static BOOL pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info,
+static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info,
 		DATA_BLOB *psecblob, prs_struct *pout_auth)
 {
 	return False;
@@ -1099,7 +1099,7 @@ static BOOL pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p
  Handle the first part of a SPNEGO bind auth.
 *******************************************************************/
 
-static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	DATA_BLOB blob;
@@ -1109,7 +1109,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	char *OIDs[ASN1_MAX_OIDS];
         int i;
 	NTSTATUS status;
-        BOOL got_kerberos_mechanism = False;
+        bool got_kerberos_mechanism = False;
 	AUTH_NTLMSSP_STATE *a = NULL;
 	RPC_HDR_AUTH auth_info;
 
@@ -1147,7 +1147,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
-		BOOL ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
+		bool ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
 		data_blob_free(&secblob);
 		data_blob_free(&blob);
 		return ret;
@@ -1220,7 +1220,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
  Handle the second part of a SPNEGO bind auth.
 *******************************************************************/
 
-static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
@@ -1310,13 +1310,13 @@ static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
  Handle an schannel bind auth.
 *******************************************************************/
 
-static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
 	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
-	BOOL ret;
+	bool ret;
 	struct dcinfo *pdcinfo;
 	uint32 flags;
 
@@ -1410,7 +1410,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
  Handle an NTLMSSP bind auth.
 *******************************************************************/
 
-static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
@@ -1491,7 +1491,7 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
  Respond to a pipe bind request.
 *******************************************************************/
 
-BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
 	RPC_HDR_RB hdr_rb;
@@ -1771,7 +1771,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
  SPNEGO calls.
 ****************************************************************************/
 
-BOOL api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
 	RPC_HDR_RB hdr_rb;
@@ -1962,7 +1962,7 @@ BOOL api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
  Deal with NTLMSSP sign & seal processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
+bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 					uint32 *p_ss_padding_len, NTSTATUS *pstatus)
 {
 	RPC_HDR_AUTH auth_info;
@@ -2078,7 +2078,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
  Deal with schannel processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len)
+bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len)
 {
 	uint32 data_len;
 	uint32 auth_len;
@@ -2230,10 +2230,10 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
  before doing the call.
 ****************************************************************************/
 
-BOOL api_pipe_request(pipes_struct *p)
+bool api_pipe_request(pipes_struct *p)
 {
-	BOOL ret = False;
-	BOOL changed_user = False;
+	bool ret = False;
+	bool changed_user = False;
 	PIPE_RPC_FNS *pipe_fns;
 	
 	if (p->pipe_bound &&
@@ -2273,7 +2273,7 @@ BOOL api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name, 
+bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
 		const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;

@@ -396,7 +396,7 @@ int cli_errno(struct cli_state *cli)
 
 /* Return true if the last packet was in error */
 
-BOOL cli_is_error(struct cli_state *cli)
+bool cli_is_error(struct cli_state *cli)
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
 
@@ -419,7 +419,7 @@ BOOL cli_is_error(struct cli_state *cli)
 
 /* Return true if the last error was an NT error */
 
-BOOL cli_is_nt_error(struct cli_state *cli)
+bool cli_is_nt_error(struct cli_state *cli)
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
 
@@ -433,7 +433,7 @@ BOOL cli_is_nt_error(struct cli_state *cli)
 
 /* Return true if the last error was a DOS error */
 
-BOOL cli_is_dos_error(struct cli_state *cli)
+bool cli_is_dos_error(struct cli_state *cli)
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
 

@@ -173,13 +173,13 @@ static int net_idmap_set(int argc, const char **argv)
 	d_printf("Not Implemented yet\n");
 	return -1;
 }
-BOOL idmap_store_secret(const char *backend, bool alloc,
+bool idmap_store_secret(const char *backend, bool alloc,
 			const char *domain, const char *identity,
 			const char *secret)
 {
 	char *tmp;
 	int r;
-	BOOL ret;
+	bool ret;
 
 	if (alloc) {
 		r = asprintf(&tmp, "IDMAP_ALLOC_%s", backend);
@@ -205,7 +205,7 @@ static int net_idmap_secret(int argc, const char **argv)
 	char *domain;
 	char *backend;
 	char *opt = NULL;
-	BOOL ret;
+	bool ret;
 
 	if (argc != 2) {
 		return net_help_idmap(argc, argv);

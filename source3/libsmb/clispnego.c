@@ -122,12 +122,12 @@ DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob)
   parse a negTokenInit packet giving a GUID, a list of supported
   OIDs (the mechanisms) and a principal name string 
 */
-BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
+bool spnego_parse_negTokenInit(DATA_BLOB blob,
 			       char *OIDs[ASN1_MAX_OIDS], 
 			       char **principal)
 {
 	int i;
-	BOOL ret;
+	bool ret;
 	ASN1_DATA data;
 
 	asn1_load(&data, blob);
@@ -224,7 +224,7 @@ DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 /*
   parse a negTokenTarg packet giving a list of OIDs and a security blob
 */
-BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
+bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
 {
 	int i;
 	ASN1_DATA data;
@@ -301,9 +301,9 @@ DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
+bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 {
-	BOOL ret;
+	bool ret;
 	ASN1_DATA data;
 	int data_remaining;
 
@@ -373,10 +373,10 @@ int spnego_gen_negTokenTarg(const char *principal, int time_offset,
 /*
   parse a spnego NTLMSSP challenge packet giving two security blobs
 */
-BOOL spnego_parse_challenge(const DATA_BLOB blob,
+bool spnego_parse_challenge(const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
-	BOOL ret;
+	bool ret;
 	ASN1_DATA data;
 
 	ZERO_STRUCTP(chal1);
@@ -448,7 +448,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
+bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 {
 	ASN1_DATA data;
 
@@ -519,7 +519,7 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
+bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,
 				DATA_BLOB *auth)
 {

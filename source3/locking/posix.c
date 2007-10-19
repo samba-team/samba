@@ -78,7 +78,7 @@ static const char *posix_lock_type_name(int lock_type)
  False if not.
 ****************************************************************************/
 
-static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
+static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 				SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
 	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
@@ -182,9 +182,9 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
  broken NFS implementations.
 ****************************************************************************/
 
-static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	BOOL ret;
+	bool ret;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
 
@@ -225,10 +225,10 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
  broken NFS implementations.
 ****************************************************************************/
 
-static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
+static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
 {
 	pid_t pid;
-	BOOL ret;
+	bool ret;
 
 	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
 		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
@@ -270,7 +270,7 @@ static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
  region is locked, False otherwise.
 ****************************************************************************/
 
-BOOL is_posix_locked(files_struct *fsp,
+bool is_posix_locked(files_struct *fsp,
 			SMB_BIG_UINT *pu_offset,
 			SMB_BIG_UINT *pu_count,
 			enum brl_type *plock_type,
@@ -374,7 +374,7 @@ static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp)
  Create the in-memory POSIX lock databases.
 ********************************************************************/
 
-BOOL posix_locking_init(int read_only)
+bool posix_locking_init(int read_only)
 {
 	if (posix_pending_close_tdb) {
 		return True;
@@ -396,7 +396,7 @@ BOOL posix_locking_init(int read_only)
  Delete the in-memory POSIX lock databases.
 ********************************************************************/
 
-BOOL posix_locking_end(void)
+bool posix_locking_end(void)
 {
 	if (posix_pending_close_tdb && tdb_close(posix_pending_close_tdb) != 0) {
 		return False;
@@ -951,7 +951,7 @@ lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (
  lock could be granted, False if not.
 ****************************************************************************/
 
-BOOL set_posix_lock_windows_flavour(files_struct *fsp,
+bool set_posix_lock_windows_flavour(files_struct *fsp,
 			SMB_BIG_UINT u_offset,
 			SMB_BIG_UINT u_count,
 			enum brl_type lock_type,
@@ -963,7 +963,7 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
-	BOOL ret = True;
+	bool ret = True;
 	size_t lock_count;
 	TALLOC_CTX *l_ctx = NULL;
 	struct lock_list *llist = NULL;
@@ -1088,7 +1088,7 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
  lock could be released, False if not.
 ****************************************************************************/
 
-BOOL release_posix_lock_windows_flavour(files_struct *fsp,
+bool release_posix_lock_windows_flavour(files_struct *fsp,
 				SMB_BIG_UINT u_offset,
 				SMB_BIG_UINT u_count,
 				enum brl_type deleted_lock_type,
@@ -1098,7 +1098,7 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
-	BOOL ret = True;
+	bool ret = True;
 	TALLOC_CTX *ul_ctx = NULL;
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
@@ -1211,7 +1211,7 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
  upper layer would have refused it.
 ****************************************************************************/
 
-BOOL set_posix_lock_posix_flavour(files_struct *fsp,
+bool set_posix_lock_posix_flavour(files_struct *fsp,
 			SMB_BIG_UINT u_offset,
 			SMB_BIG_UINT u_count,
 			enum brl_type lock_type,
@@ -1251,14 +1251,14 @@ BOOL set_posix_lock_posix_flavour(files_struct *fsp,
  have a different lock context.
 ****************************************************************************/
 
-BOOL release_posix_lock_posix_flavour(files_struct *fsp,
+bool release_posix_lock_posix_flavour(files_struct *fsp,
 				SMB_BIG_UINT u_offset,
 				SMB_BIG_UINT u_count,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks)
 {
-	BOOL ret = True;
+	bool ret = True;
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	TALLOC_CTX *ul_ctx = NULL;

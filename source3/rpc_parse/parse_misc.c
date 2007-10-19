@@ -29,7 +29,7 @@
  Reads or writes a UTIME type.
 ********************************************************************/
 
-static BOOL smb_io_utime(const char *desc, UTIME *t, prs_struct *ps, int depth)
+static bool smb_io_utime(const char *desc, UTIME *t, prs_struct *ps, int depth)
 {
 	if (t == NULL)
 		return False;
@@ -50,7 +50,7 @@ static BOOL smb_io_utime(const char *desc, UTIME *t, prs_struct *ps, int depth)
  Reads or writes an NTTIME structure.
 ********************************************************************/
 
-BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
+bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 {
 	uint32 low, high;
 	if (nttime == NULL)
@@ -83,7 +83,7 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
  Reads or writes an NTTIME structure.
 ********************************************************************/
 
-BOOL smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
+bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
 {
 	return smb_io_time( desc, nttime, ps, depth );
 }
@@ -113,7 +113,7 @@ void init_enum_hnd(ENUM_HND *enh, uint32 hnd)
  Reads or writes an ENUM_HND structure.
 ********************************************************************/
 
-BOOL smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth)
+bool smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth)
 {
 	if (hnd == NULL)
 		return False;
@@ -139,7 +139,7 @@ BOOL smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth)
  Reads or writes a DOM_SID structure.
 ********************************************************************/
 
-BOOL smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
+bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -187,7 +187,7 @@ void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
  Reads or writes a DOM_SID2 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2)
+bool smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2)
 {
 	uint32 data_p;
 
@@ -214,7 +214,7 @@ BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **s
  Reads or writes a DOM_SID2 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
+bool smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 {
 	if (sid == NULL)
 		return False;
@@ -238,7 +238,7 @@ BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
  Reads or writes a struct GUID
 ********************************************************************/
 
-BOOL smb_io_uuid(const char *desc, struct GUID *uuid, 
+bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth)
 {
 	if (uuid == NULL)
@@ -277,7 +277,7 @@ void init_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer)
  Reads or writes a STRHDR structure.
 ********************************************************************/
 
-BOOL smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
+bool smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
 {
 	if (hdr == NULL)
 		return False;
@@ -312,7 +312,7 @@ void init_uni_hdr(UNIHDR *hdr, UNISTR2 *str2)
  Reads or writes a UNIHDR structure.
 ********************************************************************/
 
-BOOL smb_io_unihdr(const char *desc, UNIHDR *hdr, prs_struct *ps, int depth)
+bool smb_io_unihdr(const char *desc, UNIHDR *hdr, prs_struct *ps, int depth)
 {
 	if (hdr == NULL)
 		return False;
@@ -348,7 +348,7 @@ void init_buf_hdr(BUFHDR *hdr, int max_len, int len)
  uint16 should be stored, or gets the size if reading.
  ********************************************************************/
 
-BOOL smb_io_hdrbuf_pre(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset)
+bool smb_io_hdrbuf_pre(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset)
 {
 	(*offset) = prs_offset(ps);
 	if (ps->io) {
@@ -374,7 +374,7 @@ BOOL smb_io_hdrbuf_pre(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth,
  Does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
 
-BOOL smb_io_hdrbuf_post(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
+bool smb_io_hdrbuf_post(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
 				uint32 ptr_hdrbuf, uint32 max_len, uint32 len)
 {
 	if (!ps->io) {
@@ -399,7 +399,7 @@ BOOL smb_io_hdrbuf_post(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth
  Reads or writes a BUFHDR structure.
 ********************************************************************/
 
-BOOL smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
+bool smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 {
 	if (hdr == NULL)
 		return False;
@@ -449,7 +449,7 @@ reads or writes a UNISTR structure.
 XXXX NOTE: UNISTR structures NEED to be null-terminated.
 ********************************************************************/
 
-BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
+bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 {
 	if (uni == NULL)
 		return False;
@@ -541,7 +541,7 @@ void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len)
 reads or writes a BUFFER5 structure.
 the buf_len member tells you how large the buffer is.
 ********************************************************************/
-BOOL smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
+bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_buffer5");
 	depth++;
@@ -590,7 +590,7 @@ void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
    the uni_str_len member tells you how much of the buffer is really used.
 ********************************************************************/
 
-BOOL smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2)
+bool smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2)
 {
 
 	prs_debug(ps, depth, desc, "smb_io_regval_buffer");
@@ -701,7 +701,7 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
    the str_max_len member tells you how large the buffer is.
 ********************************************************************/
 
-BOOL smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth)
+bool smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth)
 {
 	if (str2 == NULL)
 		return False;
@@ -940,7 +940,7 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
  See SPOOL_USER_1 in include/rpc_spoolss.h for an example.
 ********************************************************************/
 
-BOOL prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2)
+bool prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2)
 {
 	uint32 data_p;
 
@@ -969,7 +969,7 @@ BOOL prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni
  not UNISTR2.buffer) has been allocated previously by prs_unistr2_p()
 ********************************************************************/
 
-BOOL prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
+bool prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
 {
 	/* just return true if there is no pointer to deal with.
 	   the memory must have been previously allocated on unmarshalling
@@ -991,7 +991,7 @@ BOOL prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
    the uni_max_len member tells you how large the buffer is.
 ********************************************************************/
 
-BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth)
+bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth)
 {
 	if (uni2 == NULL)
 		return False;
@@ -1031,7 +1031,7 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
  now read/write UNISTR4
 ********************************************************************/
 
-BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+bool prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
 	void *ptr;
 	prs_debug(ps, depth, desc, "prs_unistr4");
@@ -1056,7 +1056,7 @@ BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
  now read/write UNISTR4 header
 ********************************************************************/
 
-BOOL prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+bool prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
 	prs_debug(ps, depth, desc, "prs_unistr4_hdr");
 	depth++;
@@ -1075,7 +1075,7 @@ BOOL prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
  now read/write UNISTR4 string
 ********************************************************************/
 
-BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+bool prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
 	prs_debug(ps, depth, desc, "prs_unistr4_str");
 	depth++;
@@ -1090,7 +1090,7 @@ BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
  Reads or writes a UNISTR4_ARRAY structure.
 ********************************************************************/
 
-BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )
+bool prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )
 {
 	unsigned int i;
 
@@ -1128,7 +1128,7 @@ BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRA
   initialise a UNISTR_ARRAY from a char**
 ********************************************************************/
 
-BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings )
+bool init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings )
 {
 	unsigned int i;
 
@@ -1149,7 +1149,7 @@ BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **string
 	return True;
 }
 
-BOOL smb_io_lockout_string_hdr(const char *desc, HDR_LOCKOUT_STRING *hdr_account_lockout, prs_struct *ps, int depth)
+bool smb_io_lockout_string_hdr(const char *desc, HDR_LOCKOUT_STRING *hdr_account_lockout, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_lockout_string_hdr");
 	depth++;
@@ -1167,7 +1167,7 @@ BOOL smb_io_lockout_string_hdr(const char *desc, HDR_LOCKOUT_STRING *hdr_account
 	return True;
 }
 
-BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockout, uint32 buffer, prs_struct *ps, int depth)
+bool smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockout, uint32 buffer, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_account_lockout_string");
 	depth++;
@@ -1211,7 +1211,7 @@ void init_dom_rid(DOM_RID *prid, uint32 rid, uint16 type, uint32 idx)
  Reads or writes a DOM_RID structure.
 ********************************************************************/
 
-BOOL smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
+bool smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
 {
 	if (rid == NULL)
 		return False;
@@ -1238,7 +1238,7 @@ BOOL smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
  Reads or writes a DOM_RID2 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth)
+bool smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth)
 {
 	if (rid == NULL)
 		return False;
@@ -1281,7 +1281,7 @@ void init_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type)
 reads or writes a DOM_RID3 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_rid3(const char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth)
+bool smb_io_dom_rid3(const char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth)
 {
 	if (rid3 == NULL)
 		return False;
@@ -1345,7 +1345,7 @@ void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv,
  Inits or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
+bool smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
 {
 	if (logcln == NULL)
 		return False;
@@ -1401,7 +1401,7 @@ void init_log_info(DOM_LOG_INFO *loginfo, const char *logon_srv, const char *acc
  Reads or writes a DOM_LOG_INFO structure.
 ********************************************************************/
 
-BOOL smb_io_log_info(const char *desc, DOM_LOG_INFO *loginfo, prs_struct *ps, int depth)
+bool smb_io_log_info(const char *desc, DOM_LOG_INFO *loginfo, prs_struct *ps, int depth)
 {
 	if (loginfo == NULL)
 		return False;
@@ -1433,7 +1433,7 @@ BOOL smb_io_log_info(const char *desc, DOM_LOG_INFO *loginfo, prs_struct *ps, in
  Reads or writes a DOM_CHAL structure.
 ********************************************************************/
 
-BOOL smb_io_chal(const char *desc, DOM_CHAL *chal, prs_struct *ps, int depth)
+bool smb_io_chal(const char *desc, DOM_CHAL *chal, prs_struct *ps, int depth)
 {
 	if (chal == NULL)
 		return False;
@@ -1451,7 +1451,7 @@ BOOL smb_io_chal(const char *desc, DOM_CHAL *chal, prs_struct *ps, int depth)
  Reads or writes a DOM_CRED structure.
 ********************************************************************/
 
-BOOL smb_io_cred(const char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
+bool smb_io_cred(const char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
 {
 	if (cred == NULL)
 		return False;
@@ -1495,7 +1495,7 @@ void init_clnt_info2(DOM_CLNT_INFO2 *clnt,
  Reads or writes a DOM_CLNT_INFO2 structure.
 ********************************************************************/
 
-BOOL smb_io_clnt_info2(const char *desc, DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth)
+bool smb_io_clnt_info2(const char *desc, DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth)
 {
 	if (clnt == NULL)
 		return False;
@@ -1539,7 +1539,7 @@ void init_clnt_info(DOM_CLNT_INFO *clnt,
  Reads or writes a DOM_CLNT_INFO structure.
 ********************************************************************/
 
-BOOL smb_io_clnt_info(const char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth)
+bool smb_io_clnt_info(const char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth)
 {
 	if (clnt == NULL)
 		return False;
@@ -1574,7 +1574,7 @@ void init_logon_id(DOM_LOGON_ID *logonid, uint32 log_id_low, uint32 log_id_high)
  Reads or writes a DOM_LOGON_ID structure.
 ********************************************************************/
 
-BOOL smb_io_logon_id(const char *desc, DOM_LOGON_ID *logonid, prs_struct *ps, int depth)
+bool smb_io_logon_id(const char *desc, DOM_LOGON_ID *logonid, prs_struct *ps, int depth)
 {
 	if (logonid == NULL)
 		return False;
@@ -1611,7 +1611,7 @@ void init_owf_info(OWF_INFO *hash, const uint8 data[16])
  Reads or writes an OWF_INFO structure.
 ********************************************************************/
 
-BOOL smb_io_owf_info(const char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
+bool smb_io_owf_info(const char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
 {
 	if (hash == NULL)
 		return False;
@@ -1632,7 +1632,7 @@ BOOL smb_io_owf_info(const char *desc, OWF_INFO *hash, prs_struct *ps, int depth
  Reads or writes a DOM_GID structure.
 ********************************************************************/
 
-BOOL smb_io_gid(const char *desc,  DOM_GID *gid, prs_struct *ps, int depth)
+bool smb_io_gid(const char *desc,  DOM_GID *gid, prs_struct *ps, int depth)
 {
 	if (gid == NULL)
 		return False;
@@ -1655,7 +1655,7 @@ BOOL smb_io_gid(const char *desc,  DOM_GID *gid, prs_struct *ps, int depth)
  Reads or writes an POLICY_HND structure.
 ********************************************************************/
 
-BOOL smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
+bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
 {
 	if (pol == NULL)
 		return False;
@@ -1706,7 +1706,7 @@ void init_unistr3(UNISTR3 *str, const char *buf)
  Reads or writes a UNISTR3 structure.
 ********************************************************************/
 
-BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
+bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 {
 	if (name == NULL)
 		return False;
@@ -1737,7 +1737,7 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 /*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
-BOOL prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
+bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 {
 	if (UNMARSHALLING(ps)) {
 		uint32 high, low;
@@ -1761,7 +1761,7 @@ BOOL prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 /*******************************************************************
 reads or writes a BUFHDR2 structure.
 ********************************************************************/
-BOOL smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
+bool smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_bufhdr2");
 	depth++;
@@ -1777,7 +1777,7 @@ BOOL smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a BUFHDR4 structure.
 ********************************************************************/
-BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
+bool smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_bufhdr4");
 	depth++;
@@ -1793,7 +1793,7 @@ BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 reads or writes a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-BOOL smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth)
+bool smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_rpc_blob");
 	depth++;
@@ -1822,7 +1822,7 @@ BOOL smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int 
 creates a UNIHDR structure.
 ********************************************************************/
 
-BOOL make_uni_hdr(UNIHDR *hdr, int len)
+bool make_uni_hdr(UNIHDR *hdr, int len)
 {
 	if (hdr == NULL)
 	{
@@ -1838,7 +1838,7 @@ BOOL make_uni_hdr(UNIHDR *hdr, int len)
 /*******************************************************************
 creates a BUFHDR2 structure.
 ********************************************************************/
-BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
+bool make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 {
 	hdr->info_level = info_level;
 	hdr->length     = length;

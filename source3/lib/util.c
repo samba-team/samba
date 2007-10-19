@@ -84,7 +84,7 @@ static char **smb_my_netbios_names;
  Allocate and set myname. Ensure upper case.
 ***********************************************************************/
 
-BOOL set_global_myname(const char *myname)
+bool set_global_myname(const char *myname)
 {
 	SAFE_FREE(smb_myname);
 	smb_myname = SMB_STRDUP(myname);
@@ -103,7 +103,7 @@ const char *global_myname(void)
  Allocate and set myworkgroup. Ensure upper case.
 ***********************************************************************/
 
-BOOL set_global_myworkgroup(const char *myworkgroup)
+bool set_global_myworkgroup(const char *myworkgroup)
 {
 	SAFE_FREE(smb_myworkgroup);
 	smb_myworkgroup = SMB_STRDUP(myworkgroup);
@@ -122,7 +122,7 @@ const char *lp_workgroup(void)
  Allocate and set scope. Ensure upper case.
 ***********************************************************************/
 
-BOOL set_global_scope(const char *scope)
+bool set_global_scope(const char *scope)
 {
 	SAFE_FREE(smb_scope);
 	smb_scope = SMB_STRDUP(scope);
@@ -154,7 +154,7 @@ static void free_netbios_names_array(void)
 	smb_num_netbios_names = 0;
 }
 
-static BOOL allocate_my_netbios_names_array(size_t number)
+static bool allocate_my_netbios_names_array(size_t number)
 {
 	free_netbios_names_array();
 
@@ -168,7 +168,7 @@ static BOOL allocate_my_netbios_names_array(size_t number)
 	return True;
 }
 
-static BOOL set_my_netbios_names(const char *name, int i)
+static bool set_my_netbios_names(const char *name, int i)
 {
 	SAFE_FREE(smb_my_netbios_names[i]);
 
@@ -209,7 +209,7 @@ const char *my_netbios_names(int i)
 	return smb_my_netbios_names[i];
 }
 
-BOOL set_netbios_aliases(const char **str_array)
+bool set_netbios_aliases(const char **str_array)
 {
 	size_t namecount;
 
@@ -235,7 +235,7 @@ BOOL set_netbios_aliases(const char **str_array)
 		size_t i;
 		for ( i = 0; str_array[i] != NULL; i++) {
 			size_t n;
-			BOOL duplicate = False;
+			bool duplicate = False;
 
 			/* Look for duplicates */
 			for( n=0; n<namecount; n++ ) {
@@ -258,7 +258,7 @@ BOOL set_netbios_aliases(const char **str_array)
   Common name initialization code.
 ****************************************************************************/
 
-BOOL init_names(void)
+bool init_names(void)
 {
 	char *p;
 	int n;
@@ -306,7 +306,7 @@ const char *tmpdir(void)
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
-BOOL add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids)
 {
 	int i;
@@ -390,7 +390,7 @@ const char *get_numlist(const char *p, uint32 **num, int *count)
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
 
-BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
+bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 	if (!sbuf)
@@ -420,10 +420,10 @@ time_t file_modtime(const char *fname)
  Check if a directory exists.
 ********************************************************************/
 
-BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
+bool directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
-	BOOL ret;
+	bool ret;
 
 	if (!st)
 		st = &st2;
@@ -532,7 +532,7 @@ void smb_setlen(char *buf,int len)
  Setup the word count and byte count for a smb message.
 ********************************************************************/
 
-int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
+int set_message(char *buf,int num_words,int num_bytes,bool zero)
 {
 	if (zero && (num_words || num_bytes)) {
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
@@ -670,7 +670,7 @@ void clean_name(char *s)
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
 
-void close_low_fds(BOOL stderr_too)
+void close_low_fds(bool stderr_too)
 {
 #ifndef VALGRIND
 	int fd;
@@ -750,7 +750,7 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
   if BSD use FNDELAY
 ****************************************************************************/
 
-int set_blocking(int fd, BOOL set)
+int set_blocking(int fd, bool set)
 {
 	int val;
 #ifdef O_NONBLOCK
@@ -888,7 +888,7 @@ void smb_msleep(unsigned int t)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-void become_daemon(BOOL Fork, BOOL no_process_group)
+void become_daemon(bool Fork, bool no_process_group)
 {
 	if (Fork) {
 		if (sys_fork()) {
@@ -918,7 +918,7 @@ void become_daemon(BOOL Fork, BOOL no_process_group)
  Put up a yes/no prompt.
 ****************************************************************************/
 
-BOOL yesno(char *p)
+bool yesno(char *p)
 {
 	pstring ans;
 	printf("%s",p);
@@ -1059,7 +1059,7 @@ void *calloc_array(size_t size, size_t nmemb)
  Changes were instigated by Coverity error checking. JRA.
 ****************************************************************************/
 
-void *Realloc(void *p, size_t size, BOOL free_old_on_error)
+void *Realloc(void *p, size_t size, bool free_old_on_error)
 {
 	void *ret=NULL;
 
@@ -1099,7 +1099,7 @@ void *Realloc(void *p, size_t size, BOOL free_old_on_error)
  Type-safe realloc.
 ****************************************************************************/
 
-void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_on_error)
+void *realloc_array(void *p, size_t el_size, unsigned int count, bool free_old_on_error)
 {
 	if (count >= MAX_ALLOC_SIZE/el_size) {
 		if (free_old_on_error) {
@@ -1180,7 +1180,7 @@ void safe_free(void *p)
  Get my own name and IP.
 ****************************************************************************/
 
-BOOL get_myname(char *my_name)
+bool get_myname(char *my_name)
 {
 	fstring hostname;
 
@@ -1212,7 +1212,7 @@ BOOL get_myname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-BOOL get_mydnsdomname(fstring my_domname)
+bool get_mydnsdomname(fstring my_domname)
 {
 	fstring domname;
 	char *p;
@@ -1383,7 +1383,7 @@ char *automount_lookup(const char *user_name)
  Check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(const struct server_id pid)
+bool process_exists(const struct server_id pid)
 {
 	if (procid_is_me(&pid)) {
 		return True;
@@ -1401,7 +1401,7 @@ BOOL process_exists(const struct server_id pid)
 #endif
 }
 
-BOOL process_exists_by_pid(pid_t pid)
+bool process_exists_by_pid(pid_t pid)
 {
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
@@ -1709,7 +1709,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensitive)
+bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive)
 {
 	const char *last_component;
 
@@ -1860,7 +1860,7 @@ void free_namearray(name_compare_entry *name_array)
  Returns True if the lock was granted, False otherwise.
 ****************************************************************************/
 
-BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	SMB_STRUCT_FLOCK lock;
 	int ret;
@@ -1897,7 +1897,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
  F_UNLCK in *ptype if the region is unlocked). False if the call failed.
 ****************************************************************************/
 
-BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	SMB_STRUCT_FLOCK lock;
 	int ret;
@@ -1939,10 +1939,10 @@ BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
  Returns true if it is equal, false otherwise.
 ********************************************************************/
 
-BOOL is_myname(const char *s)
+bool is_myname(const char *s)
 {
 	int n;
-	BOOL ret = False;
+	bool ret = False;
 
 	for (n=0; my_netbios_names(n); n++) {
 		if (strequal(my_netbios_names(n), s)) {
@@ -1959,9 +1959,9 @@ BOOL is_myname(const char *s)
  Returns true if it is equal, false otherwise.
 ********************************************************************/
 
-BOOL is_myworkgroup(const char *s)
+bool is_myworkgroup(const char *s)
 {
-	BOOL ret = False;
+	bool ret = False;
 
 	if (strequal(s, lp_workgroup())) {
 		ret=True;
@@ -2462,7 +2462,7 @@ char *parent_dirname(const char *path)
 	return parent;
 }
 
-BOOL parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
+bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
 			   char **parent, const char **name)
 {
 	char *p;
@@ -2498,7 +2498,7 @@ BOOL parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
  Determine if a pattern contains any Microsoft wildcard characters.
 *******************************************************************/
 
-BOOL ms_has_wild(const char *s)
+bool ms_has_wild(const char *s)
 {
 	char c;
 
@@ -2520,7 +2520,7 @@ BOOL ms_has_wild(const char *s)
 	return False;
 }
 
-BOOL ms_has_wild_w(const smb_ucs2_t *s)
+bool ms_has_wild_w(const smb_ucs2_t *s)
 {
 	smb_ucs2_t c;
 	if (!s) return False;
@@ -2542,7 +2542,7 @@ BOOL ms_has_wild_w(const smb_ucs2_t *s)
  of the ".." name.
 *******************************************************************/
 
-BOOL mask_match(const char *string, const char *pattern, BOOL is_case_sensitive)
+bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";
@@ -2558,7 +2558,7 @@ BOOL mask_match(const char *string, const char *pattern, BOOL is_case_sensitive)
  pattern translation.
 *******************************************************************/
 
-BOOL mask_match_search(const char *string, const char *pattern, BOOL is_case_sensitive)
+bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive)
 {
 	if (strcmp(string,"..") == 0)
 		string = ".";
@@ -2573,7 +2573,7 @@ BOOL mask_match_search(const char *string, const char *pattern, BOOL is_case_sen
  on each.  Returns True if any of the patterns match.
 *******************************************************************/
 
-BOOL mask_match_list(const char *string, char **list, int listLen, BOOL is_case_sensitive)
+bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive)
 {
        while (listLen-- > 0) {
                if (mask_match(string, *list++, is_case_sensitive))
@@ -2886,7 +2886,7 @@ struct server_id server_id_self(void)
 	return procid_self();
 }
 
-BOOL procid_equal(const struct server_id *p1, const struct server_id *p2)
+bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	if (p1->pid != p2->pid)
 		return False;
@@ -2897,13 +2897,13 @@ BOOL procid_equal(const struct server_id *p1, const struct server_id *p2)
 	return True;
 }
 
-BOOL cluster_id_equal(const struct server_id *id1,
+bool cluster_id_equal(const struct server_id *id1,
 		      const struct server_id *id2)
 {
 	return procid_equal(id1, id2);
 }
 
-BOOL procid_is_me(const struct server_id *pid)
+bool procid_is_me(const struct server_id *pid)
 {
 	if (pid->pid != sys_getpid())
 		return False;
@@ -2958,12 +2958,12 @@ char *procid_str_static(const struct server_id *pid)
 	return procid_str(talloc_tos(), pid);
 }
 
-BOOL procid_valid(const struct server_id *pid)
+bool procid_valid(const struct server_id *pid)
 {
 	return (pid->pid != -1);
 }
 
-BOOL procid_is_local(const struct server_id *pid)
+bool procid_is_local(const struct server_id *pid)
 {
 #ifdef CLUSTER_SUPPORT
 	return pid->vnn == my_vnn;
@@ -2995,7 +2995,7 @@ int this_is_smp(void)
  pointer ptr+off.
 ****************************************************************/
 
-BOOL is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off)
+bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off)
 {
 	const char *end_base = buf_base + buf_len;
 	char *end_ptr = ptr + off;

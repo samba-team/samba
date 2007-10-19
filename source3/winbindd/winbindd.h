@@ -49,13 +49,13 @@ struct fd_event {
 	void (*handler)(struct fd_event *fde, int flags);
 	void *data;
 	size_t length, done;
-	void (*finished)(void *private_data, BOOL success);
+	void (*finished)(void *private_data, bool success);
 	void *private_data;
 };
 
 struct sid_ctr {
 	DOM_SID *sid;
-	BOOL finished;
+	bool finished;
 	const char *domain;
 	const char *name;
 	enum lsa_SidType type;
@@ -66,17 +66,17 @@ struct winbindd_cli_state {
 	int sock;                                 /* Open socket from client */
 	struct fd_event fd_event;
 	pid_t pid;                                /* pid of client */
-	BOOL finished;                            /* Can delete from list */
-	BOOL write_extra_data;                    /* Write extra_data field */
+	bool finished;                            /* Can delete from list */
+	bool write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
-	BOOL privileged;                           /* Is the client 'privileged' */
+	bool privileged;                           /* Is the client 'privileged' */
 
 	TALLOC_CTX *mem_ctx;			  /* memory per request */
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
-	BOOL getpwent_initialized;                /* Has getpwent_state been
+	bool getpwent_initialized;                /* Has getpwent_state been
 						   * initialized? */
-	BOOL getgrent_initialized;                /* Has getgrent_state been
+	bool getgrent_initialized;                /* Has getgrent_state been
 						   * initialized? */
 	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
@@ -88,7 +88,7 @@ struct getent_state {
 	struct getent_state *prev, *next;
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
-	BOOL got_sam_entries;
+	bool got_sam_entries;
 	fstring domain_name;
 };
 
@@ -156,14 +156,14 @@ struct winbindd_domain {
 	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */	
 	uint32 domain_type;                    /* Domain type from rpc_ds.h */	
 	uint32 domain_trust_attribs;           /* Trust attribs from rpc_ds.h */
-	BOOL initialized;		       /* Did we already ask for the domain mode? */
-	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
-	BOOL active_directory;                 /* is this a win2k active directory ? */
-	BOOL primary;                          /* is this our primary domain ? */
-	BOOL internal;                         /* BUILTIN and member SAM */
-	BOOL online;			       /* is this domain available ? */
+	bool initialized;		       /* Did we already ask for the domain mode? */
+	bool native_mode;                      /* is this a win2k domain in native mode ? */
+	bool active_directory;                 /* is this a win2k active directory ? */
+	bool primary;                          /* is this our primary domain ? */
+	bool internal;                         /* BUILTIN and member SAM */
+	bool online;			       /* is this domain available ? */
 	time_t startup_time;		       /* When we set "startup" true. */
-	BOOL startup;                          /* are we in the first 30 seconds after startup_time ? */
+	bool startup;                          /* are we in the first 30 seconds after startup_time ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -209,7 +209,7 @@ struct winbindd_domain {
 struct winbindd_methods {
 	/* does this backend provide a consistent view of the data? (ie. is the primary group
 	   always correct) */
-	BOOL consistent;
+	bool consistent;
 
 	/* get a list of users, returning a WINBIND_USERINFO for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
@@ -318,16 +318,16 @@ typedef struct {
 /* Filled out by IDMAP backends */
 struct winbindd_idmap_methods {
   /* Called when backend is first loaded */
-  BOOL (*init)(void);
+  bool (*init)(void);
 
-  BOOL (*get_sid_from_uid)(uid_t uid, DOM_SID *sid);
-  BOOL (*get_sid_from_gid)(gid_t gid, DOM_SID *sid);
+  bool (*get_sid_from_uid)(uid_t uid, DOM_SID *sid);
+  bool (*get_sid_from_gid)(gid_t gid, DOM_SID *sid);
 
-  BOOL (*get_uid_from_sid)(DOM_SID *sid, uid_t *uid);
-  BOOL (*get_gid_from_sid)(DOM_SID *sid, gid_t *gid);
+  bool (*get_uid_from_sid)(DOM_SID *sid, uid_t *uid);
+  bool (*get_gid_from_sid)(DOM_SID *sid, gid_t *gid);
 
   /* Called when backend is unloaded */
-  BOOL (*close)(void);
+  bool (*close)(void);
   /* Called to dump backend status */
   void (*status)(void);
 };

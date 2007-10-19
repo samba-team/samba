@@ -64,7 +64,7 @@ run a command being careful about uid/gid handling and putting the output in
 outfd (or discard it if outfd is NULL).
 ****************************************************************************/
 
-static int smbrun_internal(const char *cmd, int *outfd, BOOL sanitize)
+static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 {
 	pid_t pid;
 	uid_t uid = current_user.ut.uid;

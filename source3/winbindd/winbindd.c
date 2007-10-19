@@ -28,10 +28,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-BOOL opt_nocache = False;
-static BOOL interactive = False;
+bool opt_nocache = False;
+static bool interactive = False;
 
-extern BOOL override_logfile;
+extern bool override_logfile;
 
 struct event_context *winbind_event_context(void)
 {
@@ -56,9 +56,9 @@ struct messaging_context *winbind_messaging_context(void)
 
 /* Reload configuration */
 
-static BOOL reload_services_file(void)
+static bool reload_services_file(void)
 {
-	BOOL ret;
+	bool ret;
 
 	if (lp_loaded()) {
 		pstring fname;
@@ -153,7 +153,7 @@ static void terminate(void)
 	exit(0);
 }
 
-static BOOL do_sigterm;
+static bool do_sigterm;
 
 static void termination_handler(int signum)
 {
@@ -161,7 +161,7 @@ static void termination_handler(int signum)
 	sys_select_signal(signum);
 }
 
-static BOOL do_sigusr2;
+static bool do_sigusr2;
 
 static void sigusr2_handler(int signum)
 {
@@ -169,7 +169,7 @@ static void sigusr2_handler(int signum)
 	sys_select_signal(SIGUSR2);
 }
 
-static BOOL do_sighup;
+static bool do_sighup;
 
 static void sighup_handler(int signum)
 {
@@ -177,7 +177,7 @@ static void sighup_handler(int signum)
 	sys_select_signal(SIGHUP);
 }
 
-static BOOL do_sigchld;
+static bool do_sigchld;
 
 static void sigchld_handler(int signum)
 {
@@ -478,7 +478,7 @@ static void rw_callback(struct fd_event *event, int flags)
  */
 
 void setup_async_read(struct fd_event *event, void *data, size_t length,
-		      void (*finished)(void *private_data, BOOL success),
+		      void (*finished)(void *private_data, bool success),
 		      void *private_data)
 {
 	SMB_ASSERT(event->flags == 0);
@@ -492,7 +492,7 @@ void setup_async_read(struct fd_event *event, void *data, size_t length,
 }
 
 void setup_async_write(struct fd_event *event, void *data, size_t length,
-		       void (*finished)(void *private_data, BOOL success),
+		       void (*finished)(void *private_data, bool success),
 		       void *private_data)
 {
 	SMB_ASSERT(event->flags == 0);
@@ -515,15 +515,15 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
  * to call request_finished which schedules sending the response.
  */
 
-static void request_len_recv(void *private_data, BOOL success);
-static void request_recv(void *private_data, BOOL success);
-static void request_main_recv(void *private_data, BOOL success);
+static void request_len_recv(void *private_data, bool success);
+static void request_recv(void *private_data, bool success);
+static void request_main_recv(void *private_data, bool success);
 static void request_finished(struct winbindd_cli_state *state);
-void request_finished_cont(void *private_data, BOOL success);
-static void response_main_sent(void *private_data, BOOL success);
-static void response_extra_sent(void *private_data, BOOL success);
+void request_finished_cont(void *private_data, bool success);
+static void response_main_sent(void *private_data, bool success);
+static void response_extra_sent(void *private_data, bool success);
 
-static void response_extra_sent(void *private_data, BOOL success)
+static void response_extra_sent(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -545,7 +545,7 @@ static void response_extra_sent(void *private_data, BOOL success)
 			 request_len_recv, state);
 }
 
-static void response_main_sent(void *private_data, BOOL success)
+static void response_main_sent(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -591,7 +591,7 @@ void request_ok(struct winbindd_cli_state *state)
 	request_finished(state);
 }
 
-void request_finished_cont(void *private_data, BOOL success)
+void request_finished_cont(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -602,7 +602,7 @@ void request_finished_cont(void *private_data, BOOL success)
 		request_error(state);
 }
 
-static void request_len_recv(void *private_data, BOOL success)
+static void request_len_recv(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -624,7 +624,7 @@ static void request_len_recv(void *private_data, BOOL success)
 			 request_main_recv, state);
 }
 
-static void request_main_recv(void *private_data, BOOL success)
+static void request_main_recv(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -665,7 +665,7 @@ static void request_main_recv(void *private_data, BOOL success)
 			 state->request.extra_len, request_recv, state);
 }
 
-static void request_recv(void *private_data, BOOL success)
+static void request_recv(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
@@ -680,7 +680,7 @@ static void request_recv(void *private_data, BOOL success)
 
 /* Process a new connection by adding it to the client connection list */
 
-static void new_connection(int listen_sock, BOOL privileged)
+static void new_connection(int listen_sock, bool privileged)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
@@ -764,7 +764,7 @@ static void remove_client(struct winbindd_cli_state *state)
 
 /* Shutdown client connection which has been idle for the longest time */
 
-static BOOL remove_idle_client(void)
+static bool remove_idle_client(void)
 {
 	struct winbindd_cli_state *state, *remove_state = NULL;
 	time_t last_access = 0;
@@ -984,10 +984,10 @@ static void process_loop(void)
 int main(int argc, char **argv, char **envp)
 {
 	pstring logfile;
-	static BOOL is_daemon = False;
-	static BOOL Fork = True;
-	static BOOL log_stdout = False;
-	static BOOL no_process_group = False;
+	static bool is_daemon = False;
+	static bool Fork = True;
+	static bool log_stdout = False;
+	static bool no_process_group = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },

@@ -20,8 +20,8 @@
 
 #include "includes.h"
 
-BOOL status_profile_dump(BOOL be_verbose);
-BOOL status_profile_rates(BOOL be_verbose);
+bool status_profile_dump(bool be_verbose);
+bool status_profile_rates(bool be_verbose);
 
 #ifdef WITH_PROFILE
 static void profile_separator(const char * title)
@@ -43,7 +43,7 @@ static void profile_separator(const char * title)
 /*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
-BOOL status_profile_dump(BOOL verbose)
+bool status_profile_dump(bool verbose)
 {
 #ifdef WITH_PROFILE
 	if (!profile_setup(NULL, True)) {
@@ -471,7 +471,7 @@ static int print_count_samples(
 static struct profile_stats	sample_data[2];
 static SMB_BIG_UINT		sample_time[2];
 
-BOOL status_profile_rates(BOOL verbose)
+bool status_profile_rates(bool verbose)
 {
 	SMB_BIG_UINT remain_usec;
 	SMB_BIG_UINT next_usec;
@@ -533,7 +533,7 @@ BOOL status_profile_rates(BOOL verbose)
 
 #else /* WITH_PROFILE */
 
-BOOL status_profile_rates(BOOL verbose)
+bool status_profile_rates(bool verbose)
 {
 	fprintf(stderr, "Profile data unavailable\n");
 	return False;

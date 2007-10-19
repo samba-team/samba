@@ -301,7 +301,7 @@ failed:
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
 
-BOOL idmap_cache_is_negative(const char *val)
+bool idmap_cache_is_negative(const char *val)
 {
 	if ( ! strcmp("IDMAP/NEGATIVE", val)) {
 		return True;

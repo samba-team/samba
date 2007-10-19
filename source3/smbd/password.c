@@ -81,7 +81,7 @@ user_struct *get_valid_user_struct(uint16 vuid)
 			SERVER_ALLOCATED_REQUIRED_YES);
 }
 
-BOOL is_partial_auth_vuid(uint16 vuid)
+bool is_partial_auth_vuid(uint16 vuid)
 {
 	if (vuid == UID_FIELD_INVALID) {
 		return False;
@@ -453,7 +453,7 @@ const char *get_session_workgroup(void)
  try lower case.
 ****************************************************************************/
 
-BOOL user_in_netgroup(const char *user, const char *ngname)
+bool user_in_netgroup(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *mydomain = NULL;
@@ -500,7 +500,7 @@ BOOL user_in_netgroup(const char *user, const char *ngname)
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(const char *user,const char **list)
+bool user_in_list(const char *user,const char **list)
 {
 	if (!list || !*list)
 		return False;
@@ -581,10 +581,10 @@ BOOL user_in_list(const char *user,const char **list)
  Check if a username is valid.
 ****************************************************************************/
 
-static BOOL user_ok(const char *user, int snum)
+static bool user_ok(const char *user, int snum)
 {
 	char **valid, **invalid;
-	BOOL ret;
+	bool ret;
 
 	valid = invalid = NULL;
 	ret = True;
@@ -730,10 +730,10 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
  Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
 
-BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
-		     BOOL *guest)
+bool authorise_login(int snum, fstring user, DATA_BLOB password,
+		     bool *guest)
 {
-	BOOL ok = False;
+	bool ok = False;
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on "

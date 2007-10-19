@@ -29,7 +29,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static BOOL proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
+static bool proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
 {
 	struct api_struct *fns;
 	int n_fns;
@@ -50,7 +50,7 @@ static BOOL proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
  api_srv_net_srv_get_info
 ********************************************************************/
 
-static BOOL api_srv_net_srv_get_info(pipes_struct *p)
+static bool api_srv_net_srv_get_info(pipes_struct *p)
 {
 	SRV_Q_NET_SRV_GET_INFO q_u;
 	SRV_R_NET_SRV_GET_INFO r_u;
@@ -77,7 +77,7 @@ static BOOL api_srv_net_srv_get_info(pipes_struct *p)
  api_srv_net_srv_get_info
 ********************************************************************/
 
-static BOOL api_srv_net_srv_set_info(pipes_struct *p)
+static bool api_srv_net_srv_set_info(pipes_struct *p)
 {
 	SRV_Q_NET_SRV_SET_INFO q_u;
 	SRV_R_NET_SRV_SET_INFO r_u;
@@ -104,7 +104,7 @@ static BOOL api_srv_net_srv_set_info(pipes_struct *p)
  api_srv_net_file_enum
 ********************************************************************/
 
-static BOOL api_srv_net_file_enum(pipes_struct *p)
+static bool api_srv_net_file_enum(pipes_struct *p)
 {
 	SRV_Q_NET_FILE_ENUM q_u;
 	SRV_R_NET_FILE_ENUM r_u;
@@ -131,7 +131,7 @@ static BOOL api_srv_net_file_enum(pipes_struct *p)
  api_srv_net_conn_enum
 ********************************************************************/
 
-static BOOL api_srv_net_conn_enum(pipes_struct *p)
+static bool api_srv_net_conn_enum(pipes_struct *p)
 {
 	SRV_Q_NET_CONN_ENUM q_u;
 	SRV_R_NET_CONN_ENUM r_u;
@@ -158,7 +158,7 @@ static BOOL api_srv_net_conn_enum(pipes_struct *p)
  Enumerate sessions.
 ********************************************************************/
 
-static BOOL api_srv_net_sess_enum(pipes_struct *p)
+static bool api_srv_net_sess_enum(pipes_struct *p)
 {
 	SRV_Q_NET_SESS_ENUM q_u;
 	SRV_R_NET_SESS_ENUM r_u;
@@ -186,7 +186,7 @@ static BOOL api_srv_net_sess_enum(pipes_struct *p)
  Delete session.
 ********************************************************************/
 
-static BOOL api_srv_net_sess_del(pipes_struct *p)
+static bool api_srv_net_sess_del(pipes_struct *p)
 {
 	SRV_Q_NET_SESS_DEL q_u;
 	SRV_R_NET_SESS_DEL r_u;
@@ -214,7 +214,7 @@ static BOOL api_srv_net_sess_del(pipes_struct *p)
  RPC to enumerate shares.
 ********************************************************************/
 
-static BOOL api_srv_net_share_enum_all(pipes_struct *p)
+static bool api_srv_net_share_enum_all(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_ENUM q_u;
 	SRV_R_NET_SHARE_ENUM r_u;
@@ -244,7 +244,7 @@ static BOOL api_srv_net_share_enum_all(pipes_struct *p)
  RPC to enumerate shares.
 ********************************************************************/
 
-static BOOL api_srv_net_share_enum(pipes_struct *p)
+static bool api_srv_net_share_enum(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_ENUM q_u;
 	SRV_R_NET_SHARE_ENUM r_u;
@@ -274,7 +274,7 @@ static BOOL api_srv_net_share_enum(pipes_struct *p)
  RPC to return share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_get_info(pipes_struct *p)
+static bool api_srv_net_share_get_info(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_GET_INFO q_u;
 	SRV_R_NET_SHARE_GET_INFO r_u;
@@ -304,7 +304,7 @@ static BOOL api_srv_net_share_get_info(pipes_struct *p)
  RPC to set share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_set_info(pipes_struct *p)
+static bool api_srv_net_share_set_info(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_SET_INFO q_u;
 	SRV_R_NET_SHARE_SET_INFO r_u;
@@ -334,7 +334,7 @@ static BOOL api_srv_net_share_set_info(pipes_struct *p)
  RPC to add share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_add(pipes_struct *p)
+static bool api_srv_net_share_add(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_ADD q_u;
 	SRV_R_NET_SHARE_ADD r_u;
@@ -364,7 +364,7 @@ static BOOL api_srv_net_share_add(pipes_struct *p)
  RPC to delete share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_del(pipes_struct *p)
+static bool api_srv_net_share_del(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_DEL q_u;
 	SRV_R_NET_SHARE_DEL r_u;
@@ -394,7 +394,7 @@ static BOOL api_srv_net_share_del(pipes_struct *p)
  RPC to delete share information.
 ********************************************************************/
 
-static BOOL api_srv_net_share_del_sticky(pipes_struct *p)
+static bool api_srv_net_share_del_sticky(pipes_struct *p)
 {
 	SRV_Q_NET_SHARE_DEL q_u;
 	SRV_R_NET_SHARE_DEL r_u;
@@ -424,7 +424,7 @@ static BOOL api_srv_net_share_del_sticky(pipes_struct *p)
  api_srv_net_remote_tod
 ********************************************************************/
 
-static BOOL api_srv_net_remote_tod(pipes_struct *p)
+static bool api_srv_net_remote_tod(pipes_struct *p)
 {
 	SRV_Q_NET_REMOTE_TOD q_u;
 	SRV_R_NET_REMOTE_TOD r_u;
@@ -451,7 +451,7 @@ static BOOL api_srv_net_remote_tod(pipes_struct *p)
  RPC to enumerate disks available on a server e.g. C:, D: ...
 *******************************************************************/
 
-static BOOL api_srv_net_disk_enum(pipes_struct *p) 
+static bool api_srv_net_disk_enum(pipes_struct *p) 
 {
 	SRV_Q_NET_DISK_ENUM q_u;
 	SRV_R_NET_DISK_ENUM r_u;
@@ -481,7 +481,7 @@ static BOOL api_srv_net_disk_enum(pipes_struct *p)
  NetValidateName (opnum 0x21) 
 *******************************************************************/
 
-static BOOL api_srv_net_name_validate(pipes_struct *p) 
+static bool api_srv_net_name_validate(pipes_struct *p) 
 {
 	SRV_Q_NET_NAME_VALIDATE q_u;
 	SRV_R_NET_NAME_VALIDATE r_u;
@@ -511,7 +511,7 @@ static BOOL api_srv_net_name_validate(pipes_struct *p)
  NetFileQuerySecdesc (opnum 0x27)
 *******************************************************************/
 
-static BOOL api_srv_net_file_query_secdesc(pipes_struct *p)
+static bool api_srv_net_file_query_secdesc(pipes_struct *p)
 {
 	SRV_Q_NET_FILE_QUERY_SECDESC q_u;
 	SRV_R_NET_FILE_QUERY_SECDESC r_u;
@@ -541,7 +541,7 @@ static BOOL api_srv_net_file_query_secdesc(pipes_struct *p)
  NetFileSetSecdesc (opnum 0x28)
 *******************************************************************/
 
-static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
+static bool api_srv_net_file_set_secdesc(pipes_struct *p)
 {
 	SRV_Q_NET_FILE_SET_SECDESC q_u;
 	SRV_R_NET_FILE_SET_SECDESC r_u;
@@ -570,7 +570,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 /*******************************************************************
 *******************************************************************/
 
-static BOOL api_srv_net_file_close(pipes_struct *p)
+static bool api_srv_net_file_close(pipes_struct *p)
 {
 	return proxy_srvsvc_call( p, NDR_SRVSVC_NETFILECLOSE );
 }

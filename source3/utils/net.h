@@ -100,10 +100,10 @@ extern int opt_timeout;
 extern const char *opt_host;
 extern const char *opt_user_name;
 extern const char *opt_password;
-extern BOOL opt_user_specified;
+extern bool opt_user_specified;
 
-extern BOOL opt_localgroup;
-extern BOOL opt_domaingroup;
+extern bool opt_localgroup;
+extern bool opt_domaingroup;
 extern const char *opt_newntname;
 extern int opt_rid;
 extern int opt_acls;
@@ -111,9 +111,9 @@ extern int opt_attrs;
 extern int opt_timestamps;
 extern const char *opt_exclude;
 extern const char *opt_destination;
-extern BOOL opt_testmode;
+extern bool opt_testmode;
 
-extern BOOL opt_have_ip;
+extern bool opt_have_ip;
 extern struct in_addr opt_dest_ip;
 
 extern const char *share_type[];

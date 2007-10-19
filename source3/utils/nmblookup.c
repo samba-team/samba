@@ -21,22 +21,22 @@
 
 #include "includes.h"
 
-extern BOOL AllowDebugChange;
+extern bool AllowDebugChange;
 
-static BOOL give_flags = False;
-static BOOL use_bcast = True;
-static BOOL got_bcast = False;
+static bool give_flags = False;
+static bool use_bcast = True;
+static bool got_bcast = False;
 static struct in_addr bcast_addr;
-static BOOL recursion_desired = False;
-static BOOL translate_addresses = False;
+static bool recursion_desired = False;
+static bool translate_addresses = False;
 static int ServerFD= -1;
 static int RootPort = False;
-static BOOL find_status=False;
+static bool find_status=False;
 
 /****************************************************************************
   open the socket communication
   **************************************************************************/
-static BOOL open_sockets(void)
+static bool open_sockets(void)
 {
   ServerFD = open_socket_in( SOCK_DGRAM,
                              (RootPort ? 137 : 0),
@@ -130,7 +130,7 @@ static void do_node_status(int fd, const char *name, int type, struct in_addr ip
 /****************************************************************************
 send out one query
 ****************************************************************************/
-static BOOL query_one(const char *lookup, unsigned int lookup_type)
+static bool query_one(const char *lookup, unsigned int lookup_type)
 {
 	int j, count, flags = 0;
 	struct in_addr *ip_list=NULL;
@@ -193,8 +193,8 @@ int main(int argc,char *argv[])
   int opt;
   unsigned int lookup_type = 0x0;
   fstring lookup;
-  static BOOL find_master=False;
-  static BOOL lookup_by_ip = False;
+  static bool find_master=False;
+  static bool lookup_by_ip = False;
   poptContext pc;
   TALLOC_CTX *frame = talloc_stackframe();
 

@@ -342,9 +342,9 @@ done:
 /*
  * check if a subkey of KEY_SMBCONF of a given name exists
  */
-static BOOL smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
+static bool smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
 {
-	BOOL ret = False;
+	bool ret = False;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx;
 	struct registry_key *key;
@@ -364,10 +364,10 @@ done:
 	return ret;
 }
 
-static BOOL smbconf_value_exists(TALLOC_CTX *ctx, struct registry_key *key,
+static bool smbconf_value_exists(TALLOC_CTX *ctx, struct registry_key *key,
 				 const char *param)
 {
-	BOOL ret = False;
+	bool ret = False;
 	WERROR werr = WERR_OK;
 	struct registry_value *value = NULL;
 
@@ -479,10 +479,10 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 		valstr = talloc_asprintf(ctx, "%s", (char *)ptr);
 		break;
 	case P_BOOL:
-		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(*(BOOL *)ptr));
+		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(*(bool *)ptr));
 		break;
 	case P_BOOLREV:
-		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(BOOL *)ptr));
+		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(bool *)ptr));
 		break;
 	case P_ENUM:
         	for (i = 0; parm->enum_list[i].name; i++) {
@@ -600,7 +600,7 @@ done:
 }
 
 /* return True iff there are nondefault globals */
-static BOOL globals_exist(void)
+static bool globals_exist(void)
 {
 	int i = 0;
 	struct parm_struct *parm;
@@ -695,7 +695,7 @@ int net_conf_import(int argc, const char **argv)
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
-	BOOL service_found = False;
+	bool service_found = False;
 	TALLOC_CTX *ctx;
 	struct share_iterator *shares;
 	struct share_params *share;

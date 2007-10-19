@@ -302,7 +302,7 @@ static NTSTATUS DsGetDcName_cache_store(TALLOC_CTX *mem_ctx,
 {
 	time_t expire_time;
 	char *key;
-	BOOL ret = False;
+	bool ret = False;
 	DATA_BLOB blob;
 	unsigned char *buf = NULL;
 	int len = 0;
@@ -374,7 +374,7 @@ static NTSTATUS DsGetDcName_cache_refresh(TALLOC_CTX *mem_ctx,
 
 #define RETURN_ON_FALSE(x) if (!x) return False;
 
-static BOOL check_cldap_reply_required_flags(uint32_t ret_flags,
+static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
 {
 	if (req_flags & DS_PDC_REQUIRED)
@@ -411,7 +411,7 @@ static NTSTATUS DsGetDcName_cache_fetch(TALLOC_CTX *mem_ctx,
 					uint32_t flags,
 					const char *site_name,
 					struct DS_DOMAIN_CONTROLLER_INFO **info,
-					BOOL *expired)
+					bool *expired)
 {
 	char *key;
 	DATA_BLOB blob;
@@ -463,7 +463,7 @@ static NTSTATUS DsGetDcName_cached(TALLOC_CTX *mem_ctx,
 				   struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	NTSTATUS status;
-	BOOL expired = False;
+	bool expired = False;
 
 	status = DsGetDcName_cache_fetch(mem_ctx, domain_name, domain_guid,
 					 flags, site_name, info, &expired);
@@ -492,7 +492,7 @@ static NTSTATUS DsGetDcName_cached(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static BOOL check_allowed_required_flags(uint32_t flags)
+static bool check_allowed_required_flags(uint32_t flags)
 {
 	uint32_t return_type = flags & (DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME);
 	uint32_t offered_type = flags & (DS_IS_FLAT_NAME|DS_IS_DNS_NAME);
@@ -740,7 +740,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	int i = 0;
-	BOOL valid_dc = False;
+	bool valid_dc = False;
 	struct cldap_netlogon_reply r;
 	const char *dc_hostname, *dc_domain_name;
 	const char *dc_address;

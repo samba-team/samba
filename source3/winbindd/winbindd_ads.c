@@ -273,7 +273,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	LDAPMessage *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	const char *filter;
-	BOOL enum_dom_local_groups = False;
+	bool enum_dom_local_groups = False;
 
 	*num_entries = 0;
 

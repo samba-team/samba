@@ -33,7 +33,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 			      uint32 dst_vnn, uint64 dst_srvid,
 			      struct messaging_rec *msg);
 
-BOOL ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn,
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn,
 			  pid_t pid);
 
 char *ctdbd_dbpath(struct ctdbd_connection *conn,

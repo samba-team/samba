@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "utils/net.h"
 
-BOOL is_valid_policy_hnd(const POLICY_HND *hnd)
+bool is_valid_policy_hnd(const POLICY_HND *hnd)
 {
 	POLICY_HND tmp;
 	ZERO_STRUCT(tmp);

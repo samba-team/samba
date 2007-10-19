@@ -71,7 +71,7 @@ static void remove_permanent_name_from_unicast( struct subnet_record *subrec,
 ******************************************************************/
 
 static void reset_workgroup_state( struct subnet_record *subrec, const char *workgroup_name,
-                                   BOOL force_new_election )
+                                   bool force_new_election )
 {
 	struct work_record *work;
 	struct server_record *servrec;
@@ -133,10 +133,10 @@ static void unbecome_local_master_success(struct subnet_record *subrec,
                              struct nmb_name *released_name,
                              struct in_addr released_ip)
 { 
-	BOOL force_new_election = False;
+	bool force_new_election = False;
 	unstring relname;
 
-	memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
+	memcpy((char *)&force_new_election, userdata->data, sizeof(bool));
 
 	DEBUG(3,("unbecome_local_master_success: released name %s.\n",
 		nmb_namestr(released_name)));
@@ -164,10 +164,10 @@ static void unbecome_local_master_fail(struct subnet_record *subrec, struct resp
 {
 	struct name_record *namerec;
 	struct userdata_struct *userdata = rrec->userdata;
-	BOOL force_new_election = False;
+	bool force_new_election = False;
 	unstring failname;
 
-	memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
+	memcpy((char *)&force_new_election, userdata->data, sizeof(bool));
 
 	DEBUG(0,("unbecome_local_master_fail: failed to release name %s. \
 Removing from namelist anyway.\n", nmb_namestr(fail_name)));
@@ -195,7 +195,7 @@ Removing from namelist anyway.\n", nmb_namestr(fail_name)));
 ******************************************************************/
 
 static void release_1d_name( struct subnet_record *subrec, const char *workgroup_name,
-                             BOOL force_new_election)
+                             bool force_new_election)
 {
 	struct nmb_name nmbname;
 	struct name_record *namerec;
@@ -203,7 +203,7 @@ static void release_1d_name( struct subnet_record *subrec, const char *workgroup
 	make_nmb_name(&nmbname, workgroup_name, 0x1d);
 	if((namerec = find_name_on_subnet( subrec, &nmbname, FIND_SELF_NAME))!=NULL) {
 		struct userdata_struct *userdata;
-		size_t size = sizeof(struct userdata_struct) + sizeof(BOOL);
+		size_t size = sizeof(struct userdata_struct) + sizeof(bool);
 
 		if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
 			DEBUG(0,("release_1d_name: malloc fail.\n"));
@@ -212,8 +212,8 @@ static void release_1d_name( struct subnet_record *subrec, const char *workgroup
 
 		userdata->copy_fn = NULL;
 		userdata->free_fn = NULL;
-		userdata->userdata_len = sizeof(BOOL);
-		memcpy((char *)userdata->data, &force_new_election, sizeof(BOOL));
+		userdata->userdata_len = sizeof(bool);
+		memcpy((char *)userdata->data, &force_new_election, sizeof(bool));
 
 		release_name(subrec, namerec,
 			unbecome_local_master_success,
@@ -268,7 +268,7 @@ static void release_msbrowse_name_fail( struct subnet_record *subrec,
 ******************************************************************/
 
 void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
-                                   BOOL force_new_election)
+                                   bool force_new_election)
 {
 	struct name_record *namerec;
 	struct nmb_name nmbname;

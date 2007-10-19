@@ -32,7 +32,7 @@ NSS_STATUS winbindd_request_response(int req_type,
 
 /* Call winbindd to convert a name to a sid */
 
-BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
+bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
                          enum lsa_SidType *name_type)
 {
 	struct winbindd_request request;
@@ -62,7 +62,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 /* Call winbindd to convert sid to name */
 
-BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
+bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 			const char **domain, const char **name,
                         enum lsa_SidType *name_type)
 {
@@ -111,7 +111,7 @@ BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	return True;
 }
 
-BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
+bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const DOM_SID *domain_sid,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
@@ -223,7 +223,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 
 /* Call winbindd to convert SID to uid */
 
-BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
+bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -256,7 +256,7 @@ BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 
 /* Call winbindd to convert uid to sid */
 
-BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
+bool winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -290,7 +290,7 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 
 /* Call winbindd to convert SID to gid */
 
-BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
+bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -323,7 +323,7 @@ BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 
 /* Call winbindd to convert gid to sid */
 
-BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
+bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -357,7 +357,7 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 
 /* Call winbindd to convert SID to uid */
 
-BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
+bool winbind_sids_to_unixids(struct id_map *ids, int num_ids)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -405,7 +405,7 @@ BOOL winbind_sids_to_unixids(struct id_map *ids, int num_ids)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
+bool winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -423,7 +423,7 @@ BOOL winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_allocate_uid(uid_t *uid)
+bool winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -448,7 +448,7 @@ BOOL winbind_allocate_uid(uid_t *uid)
 	return True;
 }
 
-BOOL winbind_allocate_gid(gid_t *gid)
+bool winbind_allocate_gid(gid_t *gid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -473,7 +473,7 @@ BOOL winbind_allocate_gid(gid_t *gid)
 	return True;
 }
 
-BOOL winbind_set_mapping(const struct id_map *map)
+bool winbind_set_mapping(const struct id_map *map)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -495,7 +495,7 @@ BOOL winbind_set_mapping(const struct id_map *map)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_set_uid_hwm(unsigned long id)
+bool winbind_set_uid_hwm(unsigned long id)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -516,7 +516,7 @@ BOOL winbind_set_uid_hwm(unsigned long id)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_set_gid_hwm(unsigned long id)
+bool winbind_set_gid_hwm(unsigned long id)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -541,7 +541,7 @@ BOOL winbind_set_gid_hwm(unsigned long id)
  simple wrapper function to see if winbindd is alive
 **********************************************************************/
 
-BOOL winbind_ping( void )
+bool winbind_ping( void )
 {
 	NSS_STATUS result;
 

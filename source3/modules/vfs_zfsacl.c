@@ -94,7 +94,7 @@ static size_t zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 }
 
 /* call-back function processing the NT acl -> ZFS acl using NFSv4 conv. */
-static BOOL zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	int naces = smb_get_naces(smbacl), i;
 	ace_t *acebuf;

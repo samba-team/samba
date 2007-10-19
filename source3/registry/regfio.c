@@ -146,7 +146,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 /*******************************************************************
 *******************************************************************/
 
-static BOOL write_hbin_block( REGF_FILE *file, REGF_HBIN *hbin )
+static bool write_hbin_block( REGF_FILE *file, REGF_HBIN *hbin )
 {
 	if ( !hbin->dirty )
 		return True;
@@ -172,7 +172,7 @@ static BOOL write_hbin_block( REGF_FILE *file, REGF_HBIN *hbin )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_block_close( REGF_FILE *file, REGF_HBIN *hbin )
+static bool hbin_block_close( REGF_FILE *file, REGF_HBIN *hbin )
 {
 	REGF_HBIN *p;
 
@@ -196,7 +196,7 @@ static BOOL hbin_block_close( REGF_FILE *file, REGF_HBIN *hbin )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FILE *file )
+static bool prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FILE *file )
 {
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
@@ -256,7 +256,7 @@ static BOOL prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HBIN *hbin )
+static bool prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HBIN *hbin )
 {
 	uint32 block_size2;
 
@@ -291,7 +291,7 @@ static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
 {
 	uint16 class_length, name_length;
 	uint32 start;
@@ -418,7 +418,7 @@ static uint32 regf_block_checksum( prs_struct *ps )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL read_regf_block( REGF_FILE *file )
+static bool read_regf_block( REGF_FILE *file )
 {
 	prs_struct ps;
 	uint32 checksum;
@@ -539,7 +539,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
  block for it
 *******************************************************************/
 
-static BOOL hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
+static bool hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
 {
 	if ( !hbin )
 		return False;
@@ -594,7 +594,7 @@ static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32 offset )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_hash_rec( const char *desc, prs_struct *ps, int depth, REGF_HASH_REC *hash )
+static bool prs_hash_rec( const char *desc, prs_struct *ps, int depth, REGF_HASH_REC *hash )
 {
 	prs_debug(ps, depth, desc, "prs_hash_rec");
 	depth++;
@@ -610,7 +610,7 @@ static BOOL prs_hash_rec( const char *desc, prs_struct *ps, int depth, REGF_HASH
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
+static bool hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
 {
 	int i;
 	REGF_LF_REC *lf = &nk->subkeys;
@@ -674,7 +674,7 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
+static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
 {
 	prs_struct *ps = &hbin->ps;
 	uint16 tag = 0xFFFF;
@@ -729,7 +729,7 @@ static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_VK_REC *vk, REGF_FILE *file )
+static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_VK_REC *vk, REGF_FILE *file )
 {
 	uint32 offset;
 	uint16 name_length;
@@ -785,7 +785,7 @@ static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	/* get the data if necessary */
 
 	if ( vk->data_size != 0 ) {
-		BOOL charmode = False;
+		bool charmode = False;
 
 		if ( (vk->type == REG_SZ) || (vk->type == REG_MULTI_SZ) )
 			charmode = True;
@@ -846,7 +846,7 @@ static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
  in the prs_struct *ps.
 *******************************************************************/
 
-static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk, REGF_FILE *file )
+static bool hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk, REGF_FILE *file )
 {
 	int i;
 	uint32 record_size;
@@ -945,7 +945,7 @@ static REGF_SK_REC* find_sk_record_by_sec_desc( REGF_FILE *file, SEC_DESC *sd )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
+static bool hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
 	int depth = 0;
 	REGF_HBIN *sub_hbin;
@@ -1024,12 +1024,12 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_record( REGF_HBIN *hbin, const char *hdr, BOOL *eob )
+static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 {
 	uint8 header[REC_HDR_SIZE];
 	uint32 record_size;
 	uint32 curr_off, block_size;
-	BOOL found = False;
+	bool found = False;
 	prs_struct *ps = &hbin->ps;
 	
 	curr_off = prs_offset( ps );
@@ -1087,7 +1087,7 @@ static BOOL next_record( REGF_HBIN *hbin, const char *hdr, BOOL *eob )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk, BOOL *eob )
+static bool next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk, bool *eob )
 {
 	if ( next_record( hbin, "nk", eob ) && hbin_prs_key( file, hbin, nk ) )
 		return True;
@@ -1100,10 +1100,10 @@ static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk, B
  block header to disk 
 *******************************************************************/
 
-static BOOL init_regf_block( REGF_FILE *file )
+static bool init_regf_block( REGF_FILE *file )
 {	
 	prs_struct ps;
-	BOOL result = True;
+	bool result = True;
 	
 	if ( !prs_init( &ps, REGF_BLOCKSIZE, file->mem_ctx, MARSHALL ) )
 		return False;
@@ -1310,8 +1310,8 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	REGF_NK_REC *nk;
 	REGF_HBIN   *hbin;
 	uint32      offset = REGF_BLOCKSIZE;
-	BOOL        found = False;
-	BOOL        eob;
+	bool        found = False;
+	bool        eob;
 	
 	if ( !file )
 		return NULL;
@@ -1457,7 +1457,7 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 {
 	REGF_HBIN *hbin, *p_hbin;
 	uint32 block_off;
-	BOOL cached;
+	bool cached;
 
 	/* check open block list */
 
@@ -1636,7 +1636,7 @@ static uint32 nk_record_data_size( REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *value )
+static bool create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *value )
 {
 	char *name = regval_name(value);
 	REGF_HBIN *data_hbin;

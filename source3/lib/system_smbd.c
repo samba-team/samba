@@ -117,7 +117,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	int retval;
-	BOOL winbind_env;
+	bool winbind_env;
 
 	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
 
@@ -143,7 +143,7 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	return retval;
 }
 
-BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
+bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 			 gid_t primary_gid,
 			 gid_t **ret_groups, size_t *p_ngroups)
 {

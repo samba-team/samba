@@ -42,13 +42,13 @@ struct do_async_state {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	void (*cont)(TALLOC_CTX *mem_ctx,
-		     BOOL success,
+		     bool success,
 		     struct winbindd_response *response,
 		     void *c, void *private_data);
 	void *c, *private_data;
 };
 
-static void do_async_recv(void *private_data, BOOL success)
+static void do_async_recv(void *private_data, bool success)
 {
 	struct do_async_state *state =
 		talloc_get_type_abort(private_data, struct do_async_state);
@@ -59,7 +59,7 @@ static void do_async_recv(void *private_data, BOOL success)
 
 static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		     const struct winbindd_request *request,
-		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+		     void (*cont)(TALLOC_CTX *mem_ctx, bool success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data),
 		     void *c, void *private_data)
@@ -86,7 +86,7 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 
 void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		     const struct winbindd_request *request,
-		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+		     void (*cont)(TALLOC_CTX *mem_ctx, bool success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data),
 		     void *c, void *private_data)
@@ -111,11 +111,11 @@ void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			     &state->response, do_async_recv, state);
 }
 
-static void winbindd_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_set_mapping_recv(TALLOC_CTX *mem_ctx, bool success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ) = (void (*)(void *, BOOL))c;
+	void (*cont)(void *priv, bool succ) = (void (*)(void *, bool))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger idmap_set_mapping\n"));
@@ -133,7 +133,7 @@ static void winbindd_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_set_mapping_async(TALLOC_CTX *mem_ctx, const struct id_map *map,
-			     void (*cont)(void *private_data, BOOL success),
+			     void (*cont)(void *private_data, bool success),
 			     void *private_data)
 {
 	struct winbindd_request request;
@@ -168,11 +168,11 @@ enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-static void winbindd_set_hwm_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_set_hwm_recv(TALLOC_CTX *mem_ctx, bool success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ) = (void (*)(void *, BOOL))c;
+	void (*cont)(void *priv, bool succ) = (void (*)(void *, bool))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger idmap_set_hwm\n"));
@@ -190,7 +190,7 @@ static void winbindd_set_hwm_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_set_hwm_async(TALLOC_CTX *mem_ctx, const struct unixid *xid,
-			     void (*cont)(void *private_data, BOOL success),
+			     void (*cont)(void *private_data, bool success),
 			     void *private_data)
 {
 	struct winbindd_request request;
@@ -227,12 +227,12 @@ enum winbindd_result winbindd_dual_set_hwm(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-static void winbindd_sids2xids_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_sids2xids_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, void *, int) =
-		(void (*)(void *, BOOL, void *, int))c;
+	void (*cont)(void *priv, bool succ, void *, int) =
+		(void (*)(void *, bool, void *, int))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger sids2xids\n"));
@@ -250,7 +250,7 @@ static void winbindd_sids2xids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 			 
 void winbindd_sids2xids_async(TALLOC_CTX *mem_ctx, void *sids, int size,
-			 void (*cont)(void *private_data, BOOL success, void *data, int len),
+			 void (*cont)(void *private_data, bool success, void *data, int len),
 			 void *private_data)
 {
 	struct winbindd_request request;
@@ -329,12 +329,12 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, uid_t uid) =
-		(void (*)(void *, BOOL, uid_t))c;
+	void (*cont)(void *priv, bool succ, uid_t uid) =
+		(void (*)(void *, bool, uid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger sid2uid\n"));
@@ -352,7 +352,7 @@ static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 			 
 void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			 void (*cont)(void *private_data, BOOL success, uid_t uid),
+			 void (*cont)(void *private_data, bool success, uid_t uid),
 			 void *private_data)
 {
 	struct winbindd_request request;
@@ -386,12 +386,12 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 }
 
 #if 0	/* not used */
-static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void uid2name_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data);
 
 void winbindd_uid2name_async(TALLOC_CTX *mem_ctx, uid_t uid,
-			     void (*cont)(void *private_data, BOOL success,
+			     void (*cont)(void *private_data, bool success,
 					  const char *name),
 			     void *private_data)
 {
@@ -424,12 +424,12 @@ enum winbindd_result winbindd_dual_uid2name(struct winbindd_domain *domain,
 }
 
 #if 0	/* not used */
-static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void uid2name_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *name) =
-		(void (*)(void *, BOOL, const char *))c;
+	void (*cont)(void *priv, bool succ, const char *name) =
+		(void (*)(void *, bool, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger uid2name\n"));
@@ -446,12 +446,12 @@ static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	cont(private_data, True, response->data.name.name);
 }
 
-static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void name2uid_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data);
 
 static void winbindd_name2uid_async(TALLOC_CTX *mem_ctx, const char *name,
-				    void (*cont)(void *private_data, BOOL success,
+				    void (*cont)(void *private_data, bool success,
 						 uid_t uid),
 				    void *private_data)
 {
@@ -486,12 +486,12 @@ enum winbindd_result winbindd_dual_name2uid(struct winbindd_domain *domain,
 }
 
 #if 0	/* not used */
-static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void name2uid_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, uid_t uid) =
-		(void (*)(void *, BOOL, uid_t))c;
+	void (*cont)(void *priv, bool succ, uid_t uid) =
+		(void (*)(void *, bool, uid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger name2uid\n"));
@@ -509,12 +509,12 @@ static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 #endif	/* not used */
 
-static void winbindd_sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_sid2gid_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, gid_t gid) =
-		(void (*)(void *, BOOL, gid_t))c;
+	void (*cont)(void *priv, bool succ, gid_t gid) =
+		(void (*)(void *, bool, gid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger sid2gid\n"));
@@ -532,7 +532,7 @@ static void winbindd_sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 			 
 void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			 void (*cont)(void *private_data, BOOL success, gid_t gid),
+			 void (*cont)(void *private_data, bool success, gid_t gid),
 			 void *private_data)
 {
 	struct winbindd_request request;
@@ -571,12 +571,12 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void gid2name_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *name) =
-		(void (*)(void *, BOOL, const char *))c;
+	void (*cont)(void *priv, bool succ, const char *name) =
+		(void (*)(void *, bool, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger gid2name\n"));
@@ -594,7 +594,7 @@ static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_gid2name_async(TALLOC_CTX *mem_ctx, gid_t gid,
-			     void (*cont)(void *private_data, BOOL success,
+			     void (*cont)(void *private_data, bool success,
 					  const char *name),
 			     void *private_data)
 {
@@ -623,12 +623,12 @@ enum winbindd_result winbindd_dual_gid2name(struct winbindd_domain *domain,
 }
 
 #if 0	/* not used */
-static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void name2gid_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data);
 
 static void winbindd_name2gid_async(TALLOC_CTX *mem_ctx, const char *name,
-				    void (*cont)(void *private_data, BOOL success,
+				    void (*cont)(void *private_data, bool success,
 						 gid_t gid),
 				    void *private_data)
 {
@@ -663,12 +663,12 @@ enum winbindd_result winbindd_dual_name2gid(struct winbindd_domain *domain,
 }
 
 #if 0	/* not used */
-static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void name2gid_recv(TALLOC_CTX *mem_ctx, bool success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, gid_t gid) =
-		(void (*)(void *, BOOL, gid_t))c;
+	void (*cont)(void *priv, bool succ, gid_t gid) =
+		(void (*)(void *, bool, gid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger name2gid\n"));
@@ -692,13 +692,13 @@ struct lookupsid_state {
 };
 
 
-static void lookupsid_recv2(TALLOC_CTX *mem_ctx, BOOL success,
+static void lookupsid_recv2(TALLOC_CTX *mem_ctx, bool success,
 			   struct winbindd_response *response,
 			   void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *dom_name,
+	void (*cont)(void *priv, bool succ, const char *dom_name,
 		     const char *name, enum lsa_SidType type) =
-		(void (*)(void *, BOOL, const char *, const char *,
+		(void (*)(void *, bool, const char *, const char *,
 			  enum lsa_SidType))c;
 	struct lookupsid_state *s = talloc_get_type_abort(private_data, 
 							  struct lookupsid_state);
@@ -720,13 +720,13 @@ static void lookupsid_recv2(TALLOC_CTX *mem_ctx, BOOL success,
 	     (enum lsa_SidType)response->data.name.type);
 }
 
-static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void lookupsid_recv(TALLOC_CTX *mem_ctx, bool success,
 			   struct winbindd_response *response,
 			   void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *dom_name,
+	void (*cont)(void *priv, bool succ, const char *dom_name,
 		     const char *name, enum lsa_SidType type) =
-		(void (*)(void *, BOOL, const char *, const char *,
+		(void (*)(void *, bool, const char *, const char *,
 			  enum lsa_SidType))c;
 	struct lookupsid_state *s = talloc_get_type_abort(private_data, 
 							  struct lookupsid_state);
@@ -764,7 +764,7 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			      void (*cont)(void *private_data, BOOL success,
+			      void (*cont)(void *private_data, bool success,
 					   const char *dom_name,
 					   const char *name,
 					   enum lsa_SidType type),
@@ -850,13 +850,13 @@ struct lookupname_state {
 };
 
 
-static void lookupname_recv2(TALLOC_CTX *mem_ctx, BOOL success,
+static void lookupname_recv2(TALLOC_CTX *mem_ctx, bool success,
 			    struct winbindd_response *response,
 			    void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
+	void (*cont)(void *priv, bool succ, const DOM_SID *sid,
 		     enum lsa_SidType type) =
-		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
+		(void (*)(void *, bool, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
 	struct lookupname_state *s = talloc_get_type_abort( private_data, 
 							    struct lookupname_state );
@@ -889,13 +889,13 @@ static void lookupname_recv2(TALLOC_CTX *mem_ctx, BOOL success,
  This is the first callback after contacting our own domain 
 ********************************************************************/
 
-static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
 			    struct winbindd_response *response,
 			    void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
+	void (*cont)(void *priv, bool succ, const DOM_SID *sid,
 		     enum lsa_SidType type) =
-		(void (*)(void *, BOOL, const DOM_SID *, enum lsa_SidType))c;
+		(void (*)(void *, bool, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
 	struct lookupname_state *s = talloc_get_type_abort( private_data, 
 							    struct lookupname_state );	
@@ -948,7 +948,7 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
 void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 			       const char *dom_name, const char *name,
-			       void (*cont)(void *private_data, BOOL success,
+			       void (*cont)(void *private_data, bool success,
 					    const DOM_SID *sid,
 					    enum lsa_SidType type),
 			       enum winbindd_cmd orig_cmd,
@@ -1024,7 +1024,7 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len)
 {
 	size_t i;
@@ -1044,7 +1044,7 @@ BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+static bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 			  DOM_SID **sids, size_t *num_sids)
 {
 	char *p, *q;
@@ -1074,7 +1074,7 @@ static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 	return True;
 }
 
-static BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
+static bool parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
 			  uint32 **rids, size_t *num_rids)
 {
 	char *p;
@@ -1158,13 +1158,13 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void getsidaliases_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ,
+	void (*cont)(void *priv, bool succ,
 		     DOM_SID *aliases, size_t num_aliases) =
-		(void (*)(void *, BOOL, DOM_SID *, size_t))c;
+		(void (*)(void *, bool, DOM_SID *, size_t))c;
 	char *aliases_str;
 	DOM_SID *sids = NULL;
 	size_t num_sids = 0;
@@ -1204,7 +1204,7 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *sids, size_t num_sids,
 			 	  void (*cont)(void *private_data,
-				 	       BOOL success,
+				 	       bool success,
 					       const DOM_SID *aliases,
 					       size_t num_aliases),
 				  void *private_data)
@@ -1324,20 +1324,20 @@ struct gettoken_state {
 	struct winbindd_domain *builtin_domain;
 	DOM_SID *sids;
 	size_t num_sids;
-	void (*cont)(void *private_data, BOOL success, DOM_SID *sids, size_t num_sids);
+	void (*cont)(void *private_data, bool success, DOM_SID *sids, size_t num_sids);
 	void *private_data;
 };
 
-static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
+static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, bool success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data);
-static void gettoken_recvaliases(void *private_data, BOOL success,
+static void gettoken_recvaliases(void *private_data, bool success,
 				 const DOM_SID *aliases,
 				 size_t num_aliases);
 				 
 
 void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
-			     void (*cont)(void *private_data, BOOL success,
+			     void (*cont)(void *private_data, bool success,
 					  DOM_SID *sids, size_t num_sids),
 			     void *private_data)
 {
@@ -1376,7 +1376,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 			NULL, state);
 }
 
-static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
+static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, bool success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
 {
@@ -1434,7 +1434,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 				     gettoken_recvaliases, state);
 }
 
-static void gettoken_recvaliases(void *private_data, BOOL success,
+static void gettoken_recvaliases(void *private_data, bool success,
 				 const DOM_SID *aliases,
 				 size_t num_aliases)
 {
@@ -1479,14 +1479,14 @@ static void gettoken_recvaliases(void *private_data, BOOL success,
 	state->cont(state->private_data, True, state->sids, state->num_sids);
 }
 
-static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void query_user_recv(TALLOC_CTX *mem_ctx, bool success,
 			    struct winbindd_response *response,
 			    void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *acct_name,
+	void (*cont)(void *priv, bool succ, const char *acct_name,
 		     const char *full_name, const char *homedir, 
 		     const char *shell, uint32 gid, uint32 group_rid) =
-		(void (*)(void *, BOOL, const char *, const char *,
+		(void (*)(void *, bool, const char *, const char *,
 			  const char *, const char *, uint32, uint32))c;
 
 	if (!success) {
@@ -1511,7 +1511,7 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
 void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      const DOM_SID *sid,
-		      void (*cont)(void *private_data, BOOL success,
+		      void (*cont)(void *private_data, bool success,
 				   const char *acct_name,
 				   const char *full_name,
 				   const char *homedir,
@@ -1531,12 +1531,12 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 /* The following uid2sid/gid2sid functions has been contributed by
  * Keith Reynolds <Keith.Reynolds@centrify.com> */
 
-static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, bool success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *sid) =
-		(void (*)(void *, BOOL, const char *))c;
+	void (*cont)(void *priv, bool succ, const char *sid) =
+		(void (*)(void *, bool, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger uid2sid\n"));
@@ -1554,7 +1554,7 @@ static void winbindd_uid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_uid2sid_async(TALLOC_CTX *mem_ctx, uid_t uid,
-			    void (*cont)(void *private_data, BOOL success, const char *sid),
+			    void (*cont)(void *private_data, bool success, const char *sid),
 			    void *private_data)
 {
 	struct winbindd_request request;
@@ -1588,12 +1588,12 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 	return WINBINDD_ERROR;
 }
 
-static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, bool success,
 				  struct winbindd_response *response,
 				  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *sid) =
-		(void (*)(void *, BOOL, const char *))c;
+	void (*cont)(void *priv, bool succ, const char *sid) =
+		(void (*)(void *, bool, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger gid2sid\n"));
@@ -1611,7 +1611,7 @@ static void winbindd_gid2sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 
 void winbindd_gid2sid_async(TALLOC_CTX *mem_ctx, gid_t gid,
-			    void (*cont)(void *private_data, BOOL success, const char *sid),
+			    void (*cont)(void *private_data, bool success, const char *sid),
 			    void *private_data)
 {
 	struct winbindd_request request;
@@ -1648,12 +1648,12 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 	return WINBINDD_ERROR;
 }
 
-static void winbindd_dump_id_maps_recv(TALLOC_CTX *mem_ctx, BOOL success,
+static void winbindd_dump_id_maps_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ) =
-		(void (*)(void *, BOOL))c;
+	void (*cont)(void *priv, bool succ) =
+		(void (*)(void *, bool))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger a map dump\n"));
@@ -1671,7 +1671,7 @@ static void winbindd_dump_id_maps_recv(TALLOC_CTX *mem_ctx, BOOL success,
 }
 			 
 void winbindd_dump_maps_async(TALLOC_CTX *mem_ctx, void *data, int size,
-			 void (*cont)(void *private_data, BOOL success),
+			 void (*cont)(void *private_data, bool success),
 			 void *private_data)
 {
 	struct winbindd_request request;

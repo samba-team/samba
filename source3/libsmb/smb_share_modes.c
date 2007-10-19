@@ -41,7 +41,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx, uint64_t dev,
 				uint64_t ino, const struct smb_share_mode_entry *new_entry,
 				const char *sharepath, const char *filename);
 
-static BOOL sharemodes_procid_equal(const struct server_id *p1, const struct server_id *p2)
+static bool sharemodes_procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	return (p1->pid == p2->pid);
 }

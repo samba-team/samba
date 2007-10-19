@@ -94,10 +94,10 @@ done:
   see if an ip is on the dead list
 */
 
-BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
+bool wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 {
 	char *keystr = wins_srv_keystr(wins_ip, src_ip);
-	BOOL result;
+	bool result;
 
 	/* If the key exists then the WINS server has been marked as dead */
 

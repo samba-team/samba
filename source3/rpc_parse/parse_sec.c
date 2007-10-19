@@ -30,7 +30,7 @@
  Reads or writes a SEC_ACCESS structure.
 ********************************************************************/
 
-BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
+bool sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 {
 	if (t == NULL)
 		return False;
@@ -48,7 +48,7 @@ BOOL sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
  Reads or writes a SEC_ACE structure.
 ********************************************************************/
 
-BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
+bool sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
@@ -130,7 +130,7 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
  for you as it reads them.
 ********************************************************************/
 
-BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
+bool sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 {
 	unsigned int i;
 	uint32 old_offset;
@@ -222,7 +222,7 @@ BOOL sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
  If reading and the *ppsd = NULL, allocates the structure.
 ********************************************************************/
 
-BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
+bool sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
@@ -392,7 +392,7 @@ BOOL sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
  Reads or writes a SEC_DESC_BUF structure.
 ********************************************************************/
 
-BOOL sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth)
+bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth)
 {
 	uint32 off_len;
 	uint32 off_max_len;

@@ -468,7 +468,7 @@ static time_t ldapsam_get_entry_timestamp( struct ldapsam_privates *ldap_state, 
  (Based on init_sam_from_buffer in pdb_tdb.c)
 *********************************************************************/
 
-static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state, 
+static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state, 
 				struct samu * sampass,
 				LDAPMessage * entry)
 {
@@ -494,7 +494,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint32 		user_rid; 
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
-	BOOL 		use_samba_attrs = True;
+	bool 		use_samba_attrs = True;
 	uint32 		acct_ctrl = 0;
 	uint16		logon_divs;
 	uint16 		bad_password_count = 0, 
@@ -505,7 +505,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	LOGIN_CACHE	*cache_entry = NULL;
 	uint32 		pwHistLen;
 	pstring		tmpstring;
-	BOOL expand_explicit = lp_passdb_expand_explicit();
+	bool expand_explicit = lp_passdb_expand_explicit();
 
 	/*
 	 * do a little initialization
@@ -804,7 +804,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 						  history_string, sizeof(history_string))) {
 			/* leave as default - zeros */
 		} else {
-			BOOL hex_failed = False;
+			bool hex_failed = False;
 			for (i = 0; i < pwHistLen; i++){
 				/* Get the 16 byte salt. */
 				if (!pdb_gethexpwd(&history_string[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
@@ -937,10 +937,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
  (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
 
-static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
+static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
 				LDAPMessage *existing,
 				LDAPMod *** mods, struct samu * sampass,
-				BOOL (*need_update)(const struct samu *,
+				bool (*need_update)(const struct samu *,
 						    enum pdb_elements))
 {
 	pstring temp;
@@ -1259,13 +1259,13 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
  Connect to LDAP server for password enumeration.
 *********************************************************************/
 
-static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
+static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, bool update, uint32 acb_mask)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	pstring filter, suffix;
 	const char **attr_list;
-	BOOL machine_mask = False, user_mask = False;
+	bool machine_mask = False, user_mask = False;
 
 	pstr_sprintf( filter, "(&%s%s)", "(uid=%u)", 
 		get_objclass_filter(ldap_state->schema_ver));
@@ -1332,7 +1332,7 @@ static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods,
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)my_methods->private_data;
-	BOOL bret = False;
+	bool bret = False;
 
 	while (!bret) {
 		if (!ldap_state->entry)
@@ -1528,7 +1528,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods, 
 				     struct samu *newpwd, char *dn,
 				     LDAPMod **mods, int ldap_op, 
-				     BOOL (*need_update)(const struct samu *, enum pdb_elements))
+				     bool (*need_update)(const struct samu *, enum pdb_elements))
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -1732,7 +1732,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
  we need LDAP modification.
 *********************************************************************/
 
-static BOOL element_is_changed(const struct samu *sampass,
+static bool element_is_changed(const struct samu *sampass,
 			       enum pdb_elements element)
 {
 	return IS_SAM_CHANGED(sampass, element);
@@ -1890,7 +1890,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
  we need LDAP modification.
  *********************************************************************/
 
-static BOOL element_is_set_or_changed(const struct samu *sampass,
+static bool element_is_set_or_changed(const struct samu *sampass,
 				      enum pdb_elements element)
 {
 	return (IS_SAM_SET(sampass, element) ||
@@ -2137,7 +2137,7 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 /**********************************************************************
  *********************************************************************/
 
-static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
+static bool init_group_from_ldap(struct ldapsam_privates *ldap_state,
 				 GROUP_MAP *map, LDAPMessage *entry)
 {
 	pstring temp;
@@ -2316,7 +2316,7 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	return ldapsam_getgroup(methods, filter, map);
 }
 
-static BOOL ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
+static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 					   LDAPMessage *entry,
 					   const DOM_SID *domain_sid,
 					   uint32 *rid)
@@ -3077,7 +3077,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
-				    BOOL update)
+				    bool update)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)my_methods->private_data;
@@ -3131,7 +3131,7 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)my_methods->private_data;
-	BOOL bret = False;
+	bool bret = False;
 
 	while (!bret) {
 		if (!ldap_state->entry)
@@ -3156,7 +3156,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   const DOM_SID *domsid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap,
 					   size_t *p_num_entries,
-					   BOOL unix_only)
+					   bool unix_only)
 {
 	GROUP_MAP map;
 	size_t entries = 0;
@@ -3701,7 +3701,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	NTSTATUS result = NT_STATUS_NO_MEMORY;
 	TALLOC_CTX *mem_ctx;
 	LDAP *ld;
-	BOOL is_builtin;
+	bool is_builtin;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -3970,13 +3970,13 @@ struct ldap_search_state {
 	void *pagedresults_cookie;
 
 	LDAPMessage *entries, *current_entry;
-	BOOL (*ldap2displayentry)(struct ldap_search_state *state,
+	bool (*ldap2displayentry)(struct ldap_search_state *state,
 				  TALLOC_CTX *mem_ctx,
 				  LDAP *ld, LDAPMessage *entry,
 				  struct samr_displayentry *result);
 };
 
-static BOOL ldapsam_search_firstpage(struct pdb_search *search)
+static bool ldapsam_search_firstpage(struct pdb_search *search)
 {
 	struct ldap_search_state *state =
 		(struct ldap_search_state *)search->private_data;
@@ -4029,7 +4029,7 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 	return True;
 }
 
-static BOOL ldapsam_search_nextpage(struct pdb_search *search)
+static bool ldapsam_search_nextpage(struct pdb_search *search)
 {
 	struct ldap_search_state *state =
 		(struct ldap_search_state *)search->private_data;
@@ -4059,12 +4059,12 @@ static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 	return True;
 }
 
-static BOOL ldapsam_search_next_entry(struct pdb_search *search,
+static bool ldapsam_search_next_entry(struct pdb_search *search,
 				      struct samr_displayentry *entry)
 {
 	struct ldap_search_state *state =
 		(struct ldap_search_state *)search->private_data;
-	BOOL result;
+	bool result;
 
  retry:
 	if ((state->entries == NULL) && (state->pagedresults_cookie == NULL))
@@ -4127,7 +4127,7 @@ static void ldapsam_search_end(struct pdb_search *search)
 	return;
 }
 
-static BOOL ldapuser2displayentry(struct ldap_search_state *state,
+static bool ldapuser2displayentry(struct ldap_search_state *state,
 				  TALLOC_CTX *mem_ctx,
 				  LDAP *ld, LDAPMessage *entry,
 				  struct samr_displayentry *result)
@@ -4211,7 +4211,7 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 }
 
 
-static BOOL ldapsam_search_users(struct pdb_methods *methods,
+static bool ldapsam_search_users(struct pdb_methods *methods,
 				 struct pdb_search *search,
 				 uint32 acct_flags)
 {
@@ -4259,7 +4259,7 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 	return ldapsam_search_firstpage(search);
 }
 
-static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
+static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				   TALLOC_CTX *mem_ctx,
 				   LDAP *ld, LDAPMessage *entry,
 				   struct samr_displayentry *result)
@@ -4369,7 +4369,7 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	return True;
 }
 
-static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
+static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 				     struct pdb_search *search,
                                      const DOM_SID *sid,
 				     enum lsa_SidType type)
@@ -4414,20 +4414,20 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	return ldapsam_search_firstpage(search);
 }
 
-static BOOL ldapsam_search_groups(struct pdb_methods *methods,
+static bool ldapsam_search_groups(struct pdb_methods *methods,
 				  struct pdb_search *search)
 {
 	return ldapsam_search_grouptype(methods, search, get_global_sam_sid(), SID_NAME_DOM_GRP);
 }
 
-static BOOL ldapsam_search_aliases(struct pdb_methods *methods,
+static bool ldapsam_search_aliases(struct pdb_methods *methods,
 				   struct pdb_search *search,
 				   const DOM_SID *sid)
 {
 	return ldapsam_search_grouptype(methods, search, sid, SID_NAME_ALIAS);
 }
 
-static BOOL ldapsam_rid_algorithm(struct pdb_methods *methods)
+static bool ldapsam_rid_algorithm(struct pdb_methods *methods)
 {
 	return False;
 }
@@ -4551,13 +4551,13 @@ static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32 *ri
 	return NT_STATUS_ACCESS_DENIED;
 }
 
-static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+static bool ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
 {
 	NTSTATUS result = ldapsam_new_rid_internal(methods, rid);
 	return NT_STATUS_IS_OK(result) ? True : False;
 }
 
-static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
+static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			      const DOM_SID *sid,
 			      union unid_t *id, enum lsa_SidType *type)
 {
@@ -4568,7 +4568,7 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 				NULL };
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
-	BOOL ret = False;
+	bool ret = False;
 	char *value;
 	int rc;
 
@@ -4668,8 +4668,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
 	uint32 num_result;
-	BOOL is_machine = False;
-	BOOL add_posix = False;
+	bool is_machine = False;
+	bool add_posix = False;
 	LDAPMod **mods = NULL;
 	struct samu *user;
 	char *filter;
@@ -4957,7 +4957,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
 	uint32 num_result;
-	BOOL is_new_entry = False;
+	bool is_new_entry = False;
 	LDAPMod **mods = NULL;
 	char *filter;
 	char *groupsidstr;
@@ -5482,7 +5482,7 @@ static char *trusteddom_dn(struct ldapsam_privates *ldap_state,
 			       ldap_state->domain_dn);
 }
 
-static BOOL get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
+static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 				  const char *domain, LDAPMessage **entry)
 {
 	int rc;
@@ -5535,7 +5535,7 @@ static BOOL get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 	return True;
 }
 
-static BOOL ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
+static bool ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
 				      const char *domain,
 				      char** pwd,
 				      DOM_SID *sid,
@@ -5599,7 +5599,7 @@ static BOOL ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
 	return True;
 }
 
-static BOOL ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
+static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 				      const char* domain,
 				      const char* pwd,
 	        	  	      const DOM_SID *sid)
@@ -5661,7 +5661,7 @@ static BOOL ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 	return True;
 }
 
-static BOOL ldapsam_del_trusteddom_pw(struct pdb_methods *methods,
+static bool ldapsam_del_trusteddom_pw(struct pdb_methods *methods,
 				      const char *domain)
 {
 	int rc;
@@ -6006,7 +6006,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_USER_SID), 
 		    domain_sid_string)) {
-		BOOL found_sid;
+		bool found_sid;
 		if (!string_to_sid(&ldap_domain_sid, domain_sid_string)) {
 			DEBUG(1, ("pdb_init_ldapsam: SID [%s] could not be "
 				  "read as a valid SID\n", domain_sid_string));

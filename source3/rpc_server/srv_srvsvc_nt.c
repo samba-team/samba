@@ -452,7 +452,7 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
  True if it ends in '$'.
  ********************************************************************/
 
-static BOOL is_hidden_share(int snum)
+static bool is_hidden_share(int snum)
 {
 	const char *net_name = lp_servicename(snum);
 
@@ -463,8 +463,8 @@ static BOOL is_hidden_share(int snum)
  Fill in a share info structure.
  ********************************************************************/
 
-static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
-	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
+static bool init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
+	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, bool all_shares)
 {
 	int num_entries = 0;
 	int num_services = 0;
@@ -703,7 +703,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n,
-				      uint32 info_level, uint32 resume_hnd, BOOL all)  
+				      uint32 info_level, uint32 resume_hnd, bool all)  
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
@@ -886,7 +886,7 @@ static void init_srv_sess_info_1(pipes_struct *p, SRV_SESS_INFO_1 *ss1, uint32 *
 		uint32 num_files;
 		uint32 connect_time;
 		struct passwd *pw = sys_getpwnam(session_list[*snum].username);
-		BOOL guest;
+		bool guest;
 			
 		if ( !pw ) {
 			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
@@ -1336,7 +1336,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 	int num_sessions, snum;
 	fstring username;
 	fstring machine;
-	BOOL not_root = False;
+	bool not_root = False;
 
 	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
 	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
@@ -1500,7 +1500,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	char *path;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
-	BOOL is_disk_op = False;
+	bool is_disk_op = False;
 	int max_connections = 0;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
@@ -1690,7 +1690,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	char *path;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
-	BOOL is_disk_op;
+	bool is_disk_op;
 	int max_connections = 0;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
@@ -1843,7 +1843,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	int ret;
 	int snum;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
-	BOOL is_disk_op;
+	bool is_disk_op;
 	struct share_params *params;	
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
@@ -1986,7 +1986,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
-	BOOL became_user = False;
+	bool became_user = False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);
@@ -2103,7 +2103,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
-	BOOL became_user = False;
+	bool became_user = False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(st);

@@ -284,7 +284,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
  Check if an ccache entry exists.
 ****************************************************************/
 
-BOOL ccache_entry_exists(const char *username)
+bool ccache_entry_exists(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
 	return (entry != NULL);
@@ -294,7 +294,7 @@ BOOL ccache_entry_exists(const char *username)
  Ensure we're changing the correct entry.
 ****************************************************************/
 
-BOOL ccache_entry_identical(const char *username,
+bool ccache_entry_identical(const char *username,
 			    uid_t uid,
 			    const char *ccname)
 {
@@ -327,7 +327,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			    time_t create_time,
 			    time_t ticket_end,
 			    time_t renew_until,
-			    BOOL postponed_request)
+			    bool postponed_request)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = NULL;
 	struct timeval t;

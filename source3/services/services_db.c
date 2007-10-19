@@ -178,7 +178,7 @@ static char* cleanup_string( const char *string )
 /********************************************************************
 ********************************************************************/
 
-static BOOL read_init_file( const char *servicename, struct rcinit_file_information **service_info )
+static bool read_init_file( const char *servicename, struct rcinit_file_information **service_info )
 {
 	struct rcinit_file_information *info;
 	pstring filepath, str;
@@ -516,14 +516,14 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
  Wrapper to make storing a Service sd easier
 ********************************************************************/
 
-BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
+bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
 {
 	REGISTRY_KEY *key;
 	WERROR wresult;
 	pstring path;
 	REGVAL_CTR *values;
 	prs_struct ps;
-	BOOL ret = False;
+	bool ret = False;
 	
 	/* now add the security descriptor */
 

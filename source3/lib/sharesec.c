@@ -37,7 +37,7 @@ static const struct generic_mapping file_generic_mapping = {
 };
 
 
-BOOL share_info_db_init(void)
+bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
@@ -151,11 +151,11 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
  Store a security descriptor in the share db.
  ********************************************************************/
 
-BOOL set_share_security(const char *share_name, SEC_DESC *psd)
+bool set_share_security(const char *share_name, SEC_DESC *psd)
 {
 	TALLOC_CTX *frame;
 	char *key;
-	BOOL ret = False;
+	bool ret = False;
 	TDB_DATA blob;
 	NTSTATUS status;
 
@@ -197,7 +197,7 @@ BOOL set_share_security(const char *share_name, SEC_DESC *psd)
  Delete a security descriptor.
 ********************************************************************/
 
-BOOL delete_share_security(const char *servicename)
+bool delete_share_security(const char *servicename)
 {
 	TDB_DATA kbuf;
 	char *key;
@@ -221,7 +221,7 @@ BOOL delete_share_security(const char *servicename)
  Can this user access with share with the required permissions ?
 ********************************************************************/
 
-BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 			uint32 desired_access)
 {
 	uint32 granted;
@@ -229,7 +229,7 @@ BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	BOOL ret = True;
+	bool ret = True;
 
 	if (!(mem_ctx = talloc_init("share_access_check"))) {
 		return False;
@@ -252,7 +252,7 @@ BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
  Parse the contents of an acl string from a usershare file.
 ***************************************************************************/
 
-BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
+bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 {
 	size_t s_size = 0;
 	const char *pacl = acl_str;

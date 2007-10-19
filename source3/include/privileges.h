@@ -94,14 +94,9 @@ typedef struct {
 	uint32 attr;
 } LUID_ATTR;
 
-#ifndef _UPPER_BOOL
-typedef int BOOL;
-#define _UPPER_BOOL
-#endif
-
 typedef struct {
 	TALLOC_CTX *mem_ctx;
-	BOOL ext_ctx;
+	bool ext_ctx;
 	uint32 count;
 	uint32 control;
 	LUID_ATTR *set;

@@ -12,9 +12,9 @@
 struct _SMBCSRV {
 	struct cli_state *cli;
 	dev_t dev;
-	BOOL no_pathinfo;
-	BOOL no_pathinfo2;
-        BOOL no_nt_session;
+	bool no_pathinfo;
+	bool no_pathinfo2;
+        bool no_nt_session;
 
 	SMBCSRV *next, *prev;
 	
@@ -37,7 +37,7 @@ struct _SMBCFILE {
 	char *fname;
 	SMB_OFF_T offset;
 	struct _SMBCSRV *srv;
-	BOOL file;
+	bool file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
 	int dir_type, dir_error;
 
@@ -50,7 +50,7 @@ struct smbc_internal_data {
 	/*
          * Is this handle initialized ? 
 	 */
-	BOOL    _initialized;
+	bool    _initialized;
 
         /* dirent pointer location
          *
@@ -78,7 +78,7 @@ struct smbc_internal_data {
         /*
          * Log to standard error instead of the more typical standard output
          */
-        BOOL _debug_stderr;
+        bool _debug_stderr;
 
         /*
          * Support "Create Time" in get/set with the *xattr() functions, if
@@ -87,7 +87,7 @@ struct smbc_internal_data {
          * CREATE_TIME.  Default is FALSE, i.e.  to use the old-style shorter
          * names and to not support CREATE time, for backward compatibility.
          */
-        BOOL _full_time_names;
+        bool _full_time_names;
 
         /*
          * The share mode of a file being opened.  To match POSIX semantics

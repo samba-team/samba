@@ -23,7 +23,7 @@
 /************************************************************************
 ************************************************************************/
 
-static BOOL ds_io_dominfobasic(const char *desc, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **basic, prs_struct *ps, int depth)
+static bool ds_io_dominfobasic(const char *desc, DSROLE_PRIMARY_DOMAIN_INFO_BASIC **basic, prs_struct *ps, int depth)
 {
 	DSROLE_PRIMARY_DOMAIN_INFO_BASIC *p = *basic;
 	
@@ -75,7 +75,7 @@ static BOOL ds_io_dominfobasic(const char *desc, DSROLE_PRIMARY_DOMAIN_INFO_BASI
 /************************************************************************
 ************************************************************************/
 
-BOOL ds_io_q_getprimdominfo( const char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_struct *ps, int depth)
+bool ds_io_q_getprimdominfo( const char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_q_getprimdominfo");
 	depth++;
@@ -92,7 +92,7 @@ BOOL ds_io_q_getprimdominfo( const char *desc, DS_Q_GETPRIMDOMINFO *q_u, prs_str
 /************************************************************************
 ************************************************************************/
 
-BOOL ds_io_r_getprimdominfo( const char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_struct *ps, int depth)
+bool ds_io_r_getprimdominfo( const char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_r_getprimdominfo");
 	depth++;
@@ -135,7 +135,7 @@ BOOL ds_io_r_getprimdominfo( const char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_str
  initialize a DS_ENUM_DOM_TRUSTS structure
 ************************************************************************/
 
-BOOL init_q_ds_enum_domain_trusts( DS_Q_ENUM_DOM_TRUSTS *q, const char *server, uint32 flags )
+bool init_q_ds_enum_domain_trusts( DS_Q_ENUM_DOM_TRUSTS *q, const char *server, uint32 flags )
 {
 	q->flags = flags;
 	
@@ -152,7 +152,7 @@ BOOL init_q_ds_enum_domain_trusts( DS_Q_ENUM_DOM_TRUSTS *q, const char *server, 
 /************************************************************************
 ************************************************************************/
 
-static BOOL ds_io_domain_trusts( const char *desc, DS_DOMAIN_TRUSTS *trust, prs_struct *ps, int depth)
+static bool ds_io_domain_trusts( const char *desc, DS_DOMAIN_TRUSTS *trust, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_dom_trusts_ctr");
 	depth++;
@@ -187,7 +187,7 @@ static BOOL ds_io_domain_trusts( const char *desc, DS_DOMAIN_TRUSTS *trust, prs_
 /************************************************************************
 ************************************************************************/
 
-static BOOL ds_io_dom_trusts_ctr( const char *desc, DS_DOMAIN_TRUSTS_CTR *ctr, prs_struct *ps, int depth)
+static bool ds_io_dom_trusts_ctr( const char *desc, DS_DOMAIN_TRUSTS_CTR *ctr, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -247,7 +247,7 @@ static BOOL ds_io_dom_trusts_ctr( const char *desc, DS_DOMAIN_TRUSTS_CTR *ctr, p
  initialize a DS_ENUM_DOM_TRUSTS request
 ************************************************************************/
 
-BOOL ds_io_q_enum_domain_trusts( const char *desc, DS_Q_ENUM_DOM_TRUSTS *q_u, prs_struct *ps, int depth)
+bool ds_io_q_enum_domain_trusts( const char *desc, DS_Q_ENUM_DOM_TRUSTS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_q_enum_domain_trusts");
 	depth++;
@@ -273,7 +273,7 @@ BOOL ds_io_q_enum_domain_trusts( const char *desc, DS_Q_ENUM_DOM_TRUSTS *q_u, pr
 /************************************************************************
 ************************************************************************/
 
-BOOL ds_io_r_enum_domain_trusts( const char *desc, DS_R_ENUM_DOM_TRUSTS *r_u, prs_struct *ps, int depth)
+bool ds_io_r_enum_domain_trusts( const char *desc, DS_R_ENUM_DOM_TRUSTS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "ds_io_r_enum_domain_trusts");
 	depth++;

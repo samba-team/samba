@@ -23,7 +23,7 @@
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 
-extern BOOL in_client;
+extern bool in_client;
 extern pstring user_socket_options;
 extern char *optarg;
 extern int optind;
@@ -38,20 +38,20 @@ static pstring service;
 static pstring options;
 
 static struct in_addr dest_ip;
-static BOOL have_ip;
+static bool have_ip;
 static int smb_port = 0;
-static BOOL got_user;
-static BOOL got_pass;
+static bool got_user;
+static bool got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
 static unsigned mount_fmask;
 static unsigned mount_dmask;
-static BOOL use_kerberos;
+static bool use_kerberos;
 /* TODO: Add code to detect smbfs version in kernel */
-static BOOL status32_smbfs = False;
-static BOOL smbfs_has_unicode = False;
-static BOOL smbfs_has_lfs = False;
+static bool status32_smbfs = False;
+static bool smbfs_has_unicode = False;
+static bool smbfs_has_lfs = False;
 
 static void usage(void);
 
@@ -549,7 +549,7 @@ static void get_password_file(void)
 {
 	int fd = -1;
 	char *p;
-	BOOL close_it = False;
+	bool close_it = False;
 	pstring spec;
 	char pass[128];
 

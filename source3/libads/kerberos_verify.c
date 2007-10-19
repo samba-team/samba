@@ -37,7 +37,7 @@ const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
  ads_keytab_add_entry function for details.
 ***********************************************************************************/
 
-static BOOL ads_keytab_verify_ticket(krb5_context context,
+static bool ads_keytab_verify_ticket(krb5_context context,
 					krb5_auth_context auth_context,
 					const DATA_BLOB *ticket,
 					krb5_ticket **pp_tkt,
@@ -45,7 +45,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context,
 					krb5_error_code *perr)
 {
 	krb5_error_code ret = 0;
-	BOOL auth_ok = False;
+	bool auth_ok = False;
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
@@ -210,7 +210,7 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 						krb5_error_code *perr)
 {
 	krb5_error_code ret = 0;
-	BOOL auth_ok = False;
+	bool auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
 	krb5_enctype enctypes[] = { 
@@ -312,7 +312,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key,
-			   BOOL use_replay_cache)
+			   bool use_replay_cache)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	NTSTATUS pac_ret;
@@ -329,9 +329,9 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	krb5_principal host_princ = NULL;
 	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
-	BOOL auth_ok = False;
-	BOOL got_replay_mutex = False;
-	BOOL got_auth_data = False;
+	bool auth_ok = False;
+	bool got_replay_mutex = False;
+	bool got_auth_data = False;
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(auth_data);

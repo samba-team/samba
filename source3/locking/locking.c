@@ -75,7 +75,7 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
  Called in the read/write codepath.
 ****************************************************************************/
 
-BOOL is_locked(files_struct *fsp,
+bool is_locked(files_struct *fsp,
 		uint32 smbpid,
 		SMB_BIG_UINT count,
 		SMB_BIG_UINT offset, 
@@ -83,7 +83,7 @@ BOOL is_locked(files_struct *fsp,
 {
 	int strict_locking = lp_strict_locking(fsp->conn->params);
 	enum brl_flavour lock_flav = lp_posix_cifsu_locktype(fsp);
-	BOOL ret = True;
+	bool ret = True;
 	
 	if (count == 0) {
 		return False;
@@ -188,7 +188,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
-			BOOL blocking_lock,
+			bool blocking_lock,
 			NTSTATUS *perr,
 			uint32 *plock_pid)
 {
@@ -255,7 +255,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			SMB_BIG_UINT offset,
 			enum brl_flavour lock_flav)
 {
-	BOOL ok = False;
+	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
 	
 	if (!fsp->can_lock) {
@@ -308,7 +308,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			SMB_BIG_UINT offset,
 			enum brl_flavour lock_flav)
 {
-	BOOL ok = False;
+	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
 	
 	if (!fsp->can_lock) {
@@ -387,7 +387,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 
 static int open_read_only;
 
-BOOL locking_init(int read_only)
+bool locking_init(int read_only)
 {
 	brl_init(read_only);
 
@@ -417,7 +417,7 @@ BOOL locking_init(int read_only)
  Deinitialize the share_mode management.
 ******************************************************************/
 
-BOOL locking_end(void)
+bool locking_end(void)
 {
 	brl_shutdown(open_read_only);
 	if (lock_db) {
@@ -487,7 +487,7 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
+static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 {
 	struct locking_data *data;
 	int i;
@@ -734,7 +734,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	return 0;
 }
 
-static BOOL fill_share_mode_lock(struct share_mode_lock *lck,
+static bool fill_share_mode_lock(struct share_mode_lock *lck,
 				 struct file_id id,
 				 const char *servicepath,
 				 const char *fname,
@@ -844,7 +844,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
  Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
 ********************************************************************/
 
-BOOL rename_share_filename(struct messaging_context *msg_ctx,
+bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			const char *servicepath,
 			const char *newname)
@@ -916,9 +916,9 @@ BOOL rename_share_filename(struct messaging_context *msg_ctx,
 	return True;
 }
 
-BOOL get_delete_on_close_flag(struct file_id id)
+bool get_delete_on_close_flag(struct file_id id)
 {
-	BOOL result;
+	bool result;
 	struct share_mode_lock *lck;
   
 	if (!(lck = fetch_share_mode_unlocked(NULL, id, NULL, NULL))) {
@@ -929,7 +929,7 @@ BOOL get_delete_on_close_flag(struct file_id id)
 	return result;
 }
 
-BOOL is_valid_share_mode_entry(const struct share_mode_entry *e)
+bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 {
 	int num_props = 0;
 
@@ -949,12 +949,12 @@ BOOL is_valid_share_mode_entry(const struct share_mode_entry *e)
 	return (num_props != 0);
 }
 
-BOOL is_deferred_open_entry(const struct share_mode_entry *e)
+bool is_deferred_open_entry(const struct share_mode_entry *e)
 {
 	return (e->op_type == DEFERRED_OPEN_ENTRY);
 }
 
-BOOL is_unused_share_mode_entry(const struct share_mode_entry *e)
+bool is_unused_share_mode_entry(const struct share_mode_entry *e)
 {
 	return (e->op_type == UNUSED_SHARE_MODE_ENTRY);
 }
@@ -1019,7 +1019,7 @@ static void add_share_mode_entry(struct share_mode_lock *lck,
 }
 
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-			uid_t uid, uint16 mid, uint16 op_type, BOOL initial_delete_on_close_allowed)
+			uid_t uid, uint16 mid, uint16 op_type, bool initial_delete_on_close_allowed)
 {
 	struct share_mode_entry entry;
 	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
@@ -1044,7 +1044,7 @@ void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
  not automatically a logic error if they are identical. JRA.)
 ********************************************************************/
 
-static BOOL share_modes_identical(struct share_mode_entry *e1,
+static bool share_modes_identical(struct share_mode_entry *e1,
 				  struct share_mode_entry *e2)
 {
 	/* We used to check for e1->share_access == e2->share_access here
@@ -1057,7 +1057,7 @@ static BOOL share_modes_identical(struct share_mode_entry *e1,
 		e1->share_file_id == e2->share_file_id );
 }
 
-static BOOL deferred_open_identical(struct share_mode_entry *e1,
+static bool deferred_open_identical(struct share_mode_entry *e1,
 				    struct share_mode_entry *e2)
 {
 	return (procid_equal(&e1->pid, &e2->pid) &&
@@ -1091,7 +1091,7 @@ static struct share_mode_entry *find_share_mode_entry(struct share_mode_lock *lc
  entries left.
 ********************************************************************/
 
-BOOL del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
+bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
@@ -1128,7 +1128,7 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint16 mid)
  Remove an oplock mid and mode entry from a share mode.
 ********************************************************************/
 
-BOOL remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
+bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
@@ -1150,7 +1150,7 @@ BOOL remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
  Downgrade a oplock type from exclusive to level II.
 ********************************************************************/
 
-BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
+bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
@@ -1173,7 +1173,7 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
  open_file_ntcreate. JRA.
 ****************************************************************************/
 
-NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
+NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 				 uint32 dosmode)
 {
 	if (!delete_on_close) {
@@ -1227,7 +1227,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
  Do we have an open file handle that created this entry ?
 ****************************************************************************/
 
-BOOL can_set_initial_delete_on_close(const struct share_mode_lock *lck)
+bool can_set_initial_delete_on_close(const struct share_mode_lock *lck)
 {
 	int i;
 
@@ -1299,7 +1299,7 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
  lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
 
-void set_delete_on_close_lck(struct share_mode_lock *lck, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
+void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok)
 {
 	if (lck->delete_on_close != delete_on_close) {
 		set_delete_on_close_token(lck, tok);
@@ -1311,7 +1311,7 @@ void set_delete_on_close_lck(struct share_mode_lock *lck, BOOL delete_on_close, 
 	}
 }
 
-BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok)
 {
 	struct share_mode_lock *lck;
 	
@@ -1343,7 +1343,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKE
  Sets the allow initial delete on close flag for this share mode.
 ****************************************************************************/
 
-BOOL set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct *fsp, BOOL delete_on_close)
+bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct *fsp, bool delete_on_close)
 {
 	struct share_mode_entry entry, *e;
 

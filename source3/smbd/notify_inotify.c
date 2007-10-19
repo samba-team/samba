@@ -95,7 +95,7 @@ static int inotify_destructor(struct inotify_private *in)
   see if a particular event from inotify really does match a requested
   notify event in SMB
 */
-static BOOL filter_match(struct inotify_watch_context *w,
+static bool filter_match(struct inotify_watch_context *w,
 			 struct inotify_event *e)
 {
 	DEBUG(10, ("filter_match: e->mask=%x, w->mask=%x, w->filter=%x\n",

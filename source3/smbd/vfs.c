@@ -106,7 +106,7 @@ static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
 	((void **)(void *)&vfs->ops)[which] = op;
 }
 
-BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
+bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
 	vfs_op_tuple *ops;
 	char *module_name = NULL;
@@ -256,7 +256,7 @@ void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
  Generic VFS init.
 ******************************************************************/
 
-BOOL smbd_vfs_init(connection_struct *conn)
+bool smbd_vfs_init(connection_struct *conn)
 {
 	const char **vfs_objects;
 	unsigned int i = 0;
@@ -287,10 +287,10 @@ BOOL smbd_vfs_init(connection_struct *conn)
  Check if directory exists.
 ********************************************************************/
 
-BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st)
+bool vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
-	BOOL ret;
+	bool ret;
 
 	if (!st)
 		st = &st2;
@@ -309,7 +309,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
  Check if an object exists in the vfs.
 ********************************************************************/
 
-BOOL vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf)
+bool vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 
@@ -327,7 +327,7 @@ BOOL vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT 
  Check if a file exists in the vfs.
 ********************************************************************/
 
-BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
+bool vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 
@@ -682,10 +682,10 @@ static struct {
 	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
 	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
 	char *path; /* The pathname. */
-	BOOL valid;
+	bool valid;
 } ino_list[MAX_GETWDCACHE];
 
-extern BOOL use_getwd_cache;
+extern bool use_getwd_cache;
 
 /****************************************************************************
  Prompte a ptr (to make it recently used)
@@ -723,7 +723,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 #else
 	pstring s;
 #endif
-	static BOOL getwd_cache_init = False;
+	static bool getwd_cache_init = False;
 	SMB_STRUCT_STAT st, st2;
 	int i;
 	char *ret = NULL;
@@ -835,14 +835,14 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 {
 #ifdef REALPATH_TAKES_NULL
-	BOOL free_resolved_name = True;
+	bool free_resolved_name = True;
 #else
 #ifdef PATH_MAX
         char resolved_name_buf[PATH_MAX+1];
 #else
         pstring resolved_name_buf;
 #endif
-	BOOL free_resolved_name = False;
+	bool free_resolved_name = False;
 #endif
 	char *resolved_name = NULL;
 	size_t con_path_len = strlen(conn->connectpath);

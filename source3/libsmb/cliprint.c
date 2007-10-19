@@ -235,7 +235,7 @@ int cli_spl_open(struct cli_state *cli, const char *fname, int flags, int share_
  Close a file.
 ****************************************************************************/
 
-BOOL cli_spl_close(struct cli_state *cli, int fnum)
+bool cli_spl_close(struct cli_state *cli, int fnum)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);

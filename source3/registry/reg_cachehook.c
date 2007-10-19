@@ -33,7 +33,7 @@ static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
  Initialize the cache tree
  *********************************************************************/
 
-BOOL reghook_cache_init( void )
+bool reghook_cache_init( void )
 {
 	cache_tree = pathtree_init( &default_hook, NULL );
 
@@ -45,7 +45,7 @@ BOOL reghook_cache_init( void )
  is not in the exact format that a SORTED_TREE expects.
  *********************************************************************/
 
-BOOL reghook_cache_add( REGISTRY_HOOK *hook )
+bool reghook_cache_add( REGISTRY_HOOK *hook )
 {
 	pstring key;
 	

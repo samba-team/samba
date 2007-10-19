@@ -37,9 +37,9 @@ static fstring smb_user_name;
  * @param if this is the 'final' name for us, not be be changed again
  */
 
-void set_local_machine_name(const char* local_name, BOOL perm)
+void set_local_machine_name(const char* local_name, bool perm)
 {
-	static BOOL already_perm = False;
+	static bool already_perm = False;
 	fstring tmp_local_machine;
 
 	fstrcpy(tmp_local_machine,local_name);
@@ -70,9 +70,9 @@ void set_local_machine_name(const char* local_name, BOOL perm)
  * @param if this is the 'final' name for them, not be be changed again
  */
 
-void set_remote_machine_name(const char* remote_name, BOOL perm)
+void set_remote_machine_name(const char* remote_name, bool perm)
 {
-	static BOOL already_perm = False;
+	static bool already_perm = False;
 	fstring tmp_remote_machine;
 
 	if (already_perm)
@@ -108,7 +108,7 @@ void sub_set_smb_name(const char *name)
 {
 	fstring tmp;
 	int len;
-	BOOL is_machine_account = False;
+	bool is_machine_account = False;
 
 	/* don't let anonymous logins override the name */
 	if (! *name)

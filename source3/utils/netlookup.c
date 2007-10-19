@@ -27,7 +27,7 @@
 ********************************************************/
 
 struct con_struct {
-	BOOL failed_connect;
+	bool failed_connect;
 	NTSTATUS err;
 	struct cli_state *cli;
 	struct rpc_pipe_client *lsapipe;

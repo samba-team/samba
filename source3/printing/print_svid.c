@@ -34,7 +34,7 @@
 #include "includes.h"
 
 #if defined(SYSV) || defined(HPUX)
-BOOL sysv_cache_reload(void)
+bool sysv_cache_reload(void)
 {
 	char **lines;
 	int i;

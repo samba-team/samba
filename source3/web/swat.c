@@ -30,10 +30,10 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-static BOOL demo_mode = False;
-static BOOL passwd_only = False;
-static BOOL have_write_access = False;
-static BOOL have_read_access = False;
+static bool demo_mode = False;
+static bool passwd_only = False;
+static bool have_write_access = False;
+static bool have_read_access = False;
 static int iNumNonAutoPrintServices = 0;
 
 /*
@@ -287,20 +287,20 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_BOOL:
 		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
-		printf("<option %s>Yes", (*(BOOL *)ptr)?"selected":"");
-		printf("<option %s>No", (*(BOOL *)ptr)?"":"selected");
+		printf("<option %s>Yes", (*(bool *)ptr)?"selected":"");
+		printf("<option %s>No", (*(bool *)ptr)?"":"selected");
 		printf("</select>");
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
-			_("Set Default"), make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?0:1);
+			_("Set Default"), make_parm_name(parm->label),(bool)(parm->def.bvalue)?0:1);
 		break;
 
 	case P_BOOLREV:
 		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
-		printf("<option %s>Yes", (*(BOOL *)ptr)?"":"selected");
-		printf("<option %s>No", (*(BOOL *)ptr)?"selected":"");
+		printf("<option %s>Yes", (*(bool *)ptr)?"":"selected");
+		printf("<option %s>No", (*(bool *)ptr)?"selected":"");
 		printf("</select>");
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
-			_("Set Default"), make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?1:0);
+			_("Set Default"), make_parm_name(parm->label),(bool)(parm->def.bvalue)?1:0);
 		break;
 
 	case P_INTEGER:
@@ -385,7 +385,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 
 				case P_BOOL:
 				case P_BOOLREV:
-					if (*(BOOL *)ptr == (BOOL)(parm->def.bvalue)) continue;
+					if (*(bool *)ptr == (bool)(parm->def.bvalue)) continue;
 					break;
 
 				case P_INTEGER:
@@ -419,7 +419,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 /****************************************************************************
   load the smb.conf file into loadparm.
 ****************************************************************************/
-static BOOL load_config(BOOL save_def)
+static bool load_config(bool save_def)
 {
 	lp_resetnumservices();
 	return lp_load(dyn_CONFIGFILE,False,save_def,False,True);
@@ -428,7 +428,7 @@ static BOOL load_config(BOOL save_def)
 /****************************************************************************
   write a config file 
 ****************************************************************************/
-static void write_config(FILE *f, BOOL show_defaults)
+static void write_config(FILE *f, bool show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
@@ -982,7 +982,7 @@ static void shares_page(void)
 /*************************************************************
 change a password either locally or remotely
 *************************************************************/
-static BOOL change_password(const char *remote_machine, const char *user_name, 
+static bool change_password(const char *remote_machine, const char *user_name, 
 			    const char *old_passwd, const char *new_passwd, 
 				int local_flags)
 {
@@ -1025,7 +1025,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 static void chg_passwd(void)
 {
 	const char *host;
-	BOOL rslt;
+	bool rslt;
 	int local_flags = 0;
 
 	/* Make sure users name has been specified */

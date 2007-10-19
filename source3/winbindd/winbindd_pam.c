@@ -444,7 +444,7 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx, 
 					const char *type,
 					uid_t uid,
-					BOOL *internal_ccache)
+					bool *internal_ccache)
 {
 	/* accept FILE and WRFILE as krb5_cc_type from the client and then
 	 * build the full ccname string based on the user's uid here -
@@ -545,7 +545,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	uid_t uid = -1;
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
-	BOOL internal_ccache = True;
+	bool internal_ccache = True;
 
 	ZERO_STRUCTP(info3);
 
@@ -695,7 +695,7 @@ failed:
 /****************************************************************
 ****************************************************************/
 
-static BOOL check_request_flags(uint32_t flags)
+static bool check_request_flags(uint32_t flags)
 {
 	uint32_t flags_edata = WBFLAG_PAM_AFS_TOKEN |
 			       WBFLAG_PAM_UNIX_NAME |
@@ -846,7 +846,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	const uint8 *cached_salt;
 	NET_USER_INFO_3 *my_info3;
 	time_t kickoff_time, must_change_time;
-	BOOL password_good = False;
+	bool password_good = False;
 #ifdef HAVE_KRB5
 	struct winbindd_tdc_domain *tdc_domain = NULL;
 #endif
@@ -967,7 +967,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			char *realm = NULL;
 			const char *principal_s = NULL;
 			const char *service = NULL;
-			BOOL internal_ccache = False;
+			bool internal_ccache = False;
 
 			uid = get_uid_from_state(state);
 			if (uid == -1) {
@@ -1161,7 +1161,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	unsigned char local_nt_response[24];
 	struct winbindd_domain *contact_domain;
 	fstring name_domain, name_user;
-	BOOL retry;
+	bool retry;
 	NTSTATUS result;
 	NET_USER_INFO_3 *my_info3;
 
@@ -1707,7 +1707,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *workstation;
 	struct winbindd_domain *contact_domain;
 	int attempts = 0;
-	BOOL retry;
+	bool retry;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -1927,7 +1927,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	char *newpass = NULL;
 	POLICY_HND dom_pol;
 	struct rpc_pipe_client *cli;
-	BOOL got_info = False;
+	bool got_info = False;
 	SAM_UNK_INFO_1 info;
 	SAMR_CHANGE_REJECT reject;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

@@ -35,7 +35,7 @@ static struct notify_queue {
 } *notify_queue_head = NULL;
 
 
-static BOOL create_send_ctx(void)
+static bool create_send_ctx(void)
 {
 	if (!send_ctx)
 		send_ctx = talloc_init("print notify queue");
@@ -62,7 +62,7 @@ int print_queue_snum(const char *qname)
  Used to decide if we need a short select timeout.
 *******************************************************************/
 
-BOOL print_notify_messages_pending(void)
+bool print_notify_messages_pending(void)
 {
 	return (notify_queue_head != NULL);
 }
@@ -71,7 +71,7 @@ BOOL print_notify_messages_pending(void)
  Flatten data into a message.
 *******************************************************************/
 
-static BOOL flatten_message(struct notify_queue *q)
+static bool flatten_message(struct notify_queue *q)
 {
 	struct spoolss_notify_msg *msg = q->msg;
 	uint8 *buf = NULL;
@@ -218,7 +218,7 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
  deep copy a SPOOLSS_NOTIFY_MSG structure using a TALLOC_CTX
  *********************************************************************/
  
-static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
+static bool copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 {
 
 	if ( !to || !from )
@@ -510,12 +510,12 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
  messages on this print queue. Used in printing/notify to send the messages.
 ****************************************************************************/
 
-BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
+bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
 {
 	struct tdb_print_db *pdb = NULL;
 	TDB_CONTEXT *tdb = NULL;
 	TDB_DATA data;
-	BOOL ret = True;
+	bool ret = True;
 	size_t i, num_pids, offset;
 	pid_t *pid_list;
 

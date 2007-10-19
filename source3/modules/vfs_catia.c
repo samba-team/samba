@@ -199,13 +199,13 @@ static int catia_ntimes(vfs_handle_struct *handle,
         return SMB_VFS_NEXT_NTIMES(handle, path, ts);
 }
 
-static BOOL catia_symlink(vfs_handle_struct *handle,
+static bool catia_symlink(vfs_handle_struct *handle,
 			  const char *oldpath, const char *newpath)
 {
         return SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
 }
 
-static BOOL catia_readlink(vfs_handle_struct *handle,
+static bool catia_readlink(vfs_handle_struct *handle,
 			   const char *path, char *buf, size_t bufsiz)
 {
         return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);

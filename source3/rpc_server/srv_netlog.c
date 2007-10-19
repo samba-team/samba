@@ -32,7 +32,7 @@
  api_net_req_chal:
  *************************************************************************/
 
-static BOOL api_net_req_chal(pipes_struct *p)
+static bool api_net_req_chal(pipes_struct *p)
 {
 	NET_Q_REQ_CHAL q_u;
 	NET_R_REQ_CHAL r_u;
@@ -63,7 +63,7 @@ static BOOL api_net_req_chal(pipes_struct *p)
  api_net_auth:
  *************************************************************************/
 
-static BOOL api_net_auth(pipes_struct *p)
+static bool api_net_auth(pipes_struct *p)
 {
 	NET_Q_AUTH q_u;
 	NET_R_AUTH r_u;
@@ -94,7 +94,7 @@ static BOOL api_net_auth(pipes_struct *p)
  api_net_auth_2:
  *************************************************************************/
 
-static BOOL api_net_auth_2(pipes_struct *p)
+static bool api_net_auth_2(pipes_struct *p)
 {
 	NET_Q_AUTH_2 q_u;
 	NET_R_AUTH_2 r_u;
@@ -125,7 +125,7 @@ static BOOL api_net_auth_2(pipes_struct *p)
  api_net_srv_pwset:
  *************************************************************************/
 
-static BOOL api_net_srv_pwset(pipes_struct *p)
+static bool api_net_srv_pwset(pipes_struct *p)
 {
 	NET_Q_SRV_PWSET q_u;
 	NET_R_SRV_PWSET r_u;
@@ -156,7 +156,7 @@ static BOOL api_net_srv_pwset(pipes_struct *p)
  api_net_sam_logoff:
  *************************************************************************/
 
-static BOOL api_net_sam_logoff(pipes_struct *p)
+static bool api_net_sam_logoff(pipes_struct *p)
 {
 	NET_Q_SAM_LOGOFF q_u;
 	NET_R_SAM_LOGOFF r_u;
@@ -186,7 +186,7 @@ static BOOL api_net_sam_logoff(pipes_struct *p)
  api_net_sam_logon:
  *************************************************************************/
 
-static BOOL api_net_sam_logon(pipes_struct *p)
+static bool api_net_sam_logon(pipes_struct *p)
 {
 	NET_Q_SAM_LOGON q_u;
 	NET_R_SAM_LOGON r_u;
@@ -216,7 +216,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
  api_net_trust_dom_list:
  *************************************************************************/
 
-static BOOL api_net_trust_dom_list(pipes_struct *p)
+static bool api_net_trust_dom_list(pipes_struct *p)
 {
 	NET_Q_TRUST_DOM_LIST q_u;
 	NET_R_TRUST_DOM_LIST r_u;
@@ -248,7 +248,7 @@ static BOOL api_net_trust_dom_list(pipes_struct *p)
  api_net_logon_ctrl2:
  *************************************************************************/
 
-static BOOL api_net_logon_ctrl2(pipes_struct *p)
+static bool api_net_logon_ctrl2(pipes_struct *p)
 {
 	NET_Q_LOGON_CTRL2 q_u;
 	NET_R_LOGON_CTRL2 r_u;
@@ -279,7 +279,7 @@ static BOOL api_net_logon_ctrl2(pipes_struct *p)
  api_net_logon_ctrl:
  *************************************************************************/
 
-static BOOL api_net_logon_ctrl(pipes_struct *p)
+static bool api_net_logon_ctrl(pipes_struct *p)
 {
 	NET_Q_LOGON_CTRL q_u;
 	NET_R_LOGON_CTRL r_u;
@@ -309,7 +309,7 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
  api_net_sam_logon_ex:
  *************************************************************************/
 
-static BOOL api_net_sam_logon_ex(pipes_struct *p)
+static bool api_net_sam_logon_ex(pipes_struct *p)
 {
 	NET_Q_SAM_LOGON_EX q_u;
 	NET_R_SAM_LOGON_EX r_u;
@@ -341,7 +341,7 @@ static BOOL api_net_sam_logon_ex(pipes_struct *p)
  *************************************************************************/
 
 #if 0 	/* JERRY */
-static BOOL api_ds_enum_dom_trusts(pipes_struct *p)
+static bool api_ds_enum_dom_trusts(pipes_struct *p)
 {
 	DS_Q_ENUM_DOM_TRUSTS q_u;
 	DS_R_ENUM_DOM_TRUSTS r_u;

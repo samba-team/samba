@@ -48,7 +48,7 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	uint16 lmnttoken = 0;
 	uint16 lm20token = 0;
 	uint32 domainsidsize;
-	BOOL short_request = False;
+	bool short_request = False;
 	char *getdc;
 	char *uniuser; /* Unicode user name. */
 	pstring ascuser;

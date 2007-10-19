@@ -25,7 +25,7 @@
 /********************************************************************
 ********************************************************************/
 
-BOOL prs_ev_open_unknown0( const char *desc, prs_struct *ps, int depth, EVENTLOG_OPEN_UNKNOWN0 *u )
+bool prs_ev_open_unknown0( const char *desc, prs_struct *ps, int depth, EVENTLOG_OPEN_UNKNOWN0 *u )
 {
 	if ( !u )
 		return False;
@@ -41,7 +41,7 @@ BOOL prs_ev_open_unknown0( const char *desc, prs_struct *ps, int depth, EVENTLOG
 /********************************************************************
 ********************************************************************/
 
-BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u,
+bool eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u,
 				 prs_struct *ps, int depth)
 {
 	if(q_u == NULL)
@@ -74,7 +74,7 @@ BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u
 	return True;
 }
 
-BOOL eventlog_io_r_open_eventlog(const char *desc, EVENTLOG_R_OPEN_EVENTLOG *r_u,
+bool eventlog_io_r_open_eventlog(const char *desc, EVENTLOG_R_OPEN_EVENTLOG *r_u,
 				 prs_struct *ps, int depth)
 {
 	if(r_u == NULL)
@@ -95,7 +95,7 @@ BOOL eventlog_io_r_open_eventlog(const char *desc, EVENTLOG_R_OPEN_EVENTLOG *r_u
 	return True;
 }
 
-BOOL eventlog_io_q_get_num_records(const char *desc, EVENTLOG_Q_GET_NUM_RECORDS *q_u,
+bool eventlog_io_q_get_num_records(const char *desc, EVENTLOG_Q_GET_NUM_RECORDS *q_u,
 				   prs_struct *ps, int depth)
 {
 	if(q_u == NULL)
@@ -113,7 +113,7 @@ BOOL eventlog_io_q_get_num_records(const char *desc, EVENTLOG_Q_GET_NUM_RECORDS 
 	return True;
 }
 
-BOOL eventlog_io_r_get_num_records(const char *desc, EVENTLOG_R_GET_NUM_RECORDS *r_u,
+bool eventlog_io_r_get_num_records(const char *desc, EVENTLOG_R_GET_NUM_RECORDS *r_u,
 				   prs_struct *ps, int depth)
 {
 	if(r_u == NULL)
@@ -134,7 +134,7 @@ BOOL eventlog_io_r_get_num_records(const char *desc, EVENTLOG_R_GET_NUM_RECORDS 
 	return True;
 }
 
-BOOL eventlog_io_q_get_oldest_entry(const char *desc, EVENTLOG_Q_GET_OLDEST_ENTRY *q_u,
+bool eventlog_io_q_get_oldest_entry(const char *desc, EVENTLOG_Q_GET_OLDEST_ENTRY *q_u,
 				    prs_struct *ps, int depth)
 {
 	if(q_u == NULL)
@@ -152,7 +152,7 @@ BOOL eventlog_io_q_get_oldest_entry(const char *desc, EVENTLOG_Q_GET_OLDEST_ENTR
 	return True;
 }
 
-BOOL eventlog_io_r_get_oldest_entry(const char *desc, EVENTLOG_R_GET_OLDEST_ENTRY *r_u,
+bool eventlog_io_r_get_oldest_entry(const char *desc, EVENTLOG_R_GET_OLDEST_ENTRY *r_u,
 				    prs_struct *ps, int depth)
 {
 	if(r_u == NULL)
@@ -173,7 +173,7 @@ BOOL eventlog_io_r_get_oldest_entry(const char *desc, EVENTLOG_R_GET_OLDEST_ENTR
 	return True;
 }
 
-BOOL eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u,
+bool eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u,
 				 prs_struct *ps, int depth)
 {
 	if(q_u == NULL)
@@ -206,7 +206,7 @@ BOOL eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u
    DWORD sent_size -- sum of EVENTLOGRECORD lengths if records returned, 0 otherwise
    DWORD real_size -- 0 if records returned, otherwise length of next record to be returned
    WERROR status */
-BOOL eventlog_io_r_read_eventlog(const char *desc,
+bool eventlog_io_r_read_eventlog(const char *desc,
 				 EVENTLOG_Q_READ_EVENTLOG *q_u,
 				 EVENTLOG_R_READ_EVENTLOG *r_u,
 				 prs_struct *ps,
@@ -354,7 +354,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
    I'm not sure where the \?? is coming from, or why the ${CWD} of the client process
    would be added in given that the backup file gets written on the server side. */
 
-BOOL eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q_u,
+bool eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q_u,
 				  prs_struct *ps, int depth)
 {
 	if(q_u == NULL)
@@ -375,7 +375,7 @@ BOOL eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q
 
 }
 
-BOOL eventlog_io_r_clear_eventlog(const char *desc, EVENTLOG_R_CLEAR_EVENTLOG *r_u,
+bool eventlog_io_r_clear_eventlog(const char *desc, EVENTLOG_R_CLEAR_EVENTLOG *r_u,
 				  prs_struct *ps, int depth)
 {
 	if(r_u == NULL)
