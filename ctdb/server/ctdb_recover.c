@@ -773,7 +773,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	}
 	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(0,("Unable to open %s - (%s)\n", 
+		DEBUG(0,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 
 			 ctdb->recovery_lock_file, strerror(errno)));
 		return false;
 	}
@@ -789,6 +789,9 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
+		if (keep) {
+			DEBUG(0,("ctdb_recovery_lock: Failed to get recovery lock on '%s'\n", ctdb->recovery_lock_file));
+		}
 		return false;
 	}
 
@@ -796,6 +799,8 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
 	}
+
+	DEBUG(0,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
 
 	return true;
 }
