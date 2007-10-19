@@ -3038,6 +3038,7 @@ AC_TRY_COMPILE([
 [
 struct sockaddr_storage sa_store;
 struct addrinfo *ai = NULL;
+struct in6_addr in6addr;
 int s = socket(AF_INET6, SOCK_STREAM, 0);
 int ret = getaddrinfo(NULL, NULL, NULL, &ai);
 if (ret != 0) {

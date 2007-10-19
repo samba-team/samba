@@ -525,7 +525,7 @@ static bool sys_utmp_fill(struct utmp *u,
 #if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(u->ut_host, hostname, sizeof(u->ut_host));
 #endif
-#if defined(AF_INET6) && defined(HAVE_UT_UT_ADDR_V6)
+#if defined(HAVE_IPV6) && defined(HAVE_UT_UT_ADDR_V6)
 	memset(&u->ut_addr_v6, '\0', sizeof(u->ut_addr_v6));
 	if (ip_addr_str) {
 		struct in6_addr addr;

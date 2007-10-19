@@ -52,7 +52,7 @@ bool is_ipaddress(const char *str)
 {
 	int ret = -1;
 
-#if defined(AF_INET6)
+#if defined(HAVE_IPV6)
 	struct in6_addr dest6;
 
 	ret = inet_pton(AF_INET6, str, &dest6);
@@ -212,7 +212,7 @@ bool is_loopback_ip_v4(struct in_addr ip)
 
 bool is_loopback_addr(const struct sockaddr_storage *pss)
 {
-#if defined(AF_INET6)
+#if defined(HAVE_IPV6)
 	if (pss->ss_family == AF_INET) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
@@ -243,7 +243,7 @@ bool is_zero_ip_v4(struct in_addr ip)
 
 bool is_zero_addr(const struct sockaddr_storage *pss)
 {
-#if defined(AF_INET6)
+#if defined(HAVE_IPV6)
 	if (pss->ss_family == AF_INET) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
@@ -302,7 +302,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 	sa->sin_addr = ip;
 }
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 /*******************************************************************
  Convert an IPv6 struct in_addr to a struct sockaddr_storage.
 ********************************************************************/
@@ -330,7 +330,7 @@ bool same_net(const struct sockaddr_storage *ip1,
 		return false;
 	}
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 	if (ip1->ss_family == AF_INET6) {
 		struct sockaddr_in6 ip1_6 = *(struct sockaddr_in6 *)ip1;
 		struct sockaddr_in6 ip2_6 = *(struct sockaddr_in6 *)ip2;
@@ -370,7 +370,7 @@ bool addr_equal(const struct sockaddr_storage *ip1,
 		return false;
 	}
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 	if (ip1->ss_family == AF_INET6) {
 		return (memcmp(&((const struct sockaddr_in6 *)ip1)->sin6_addr,
 				&((const struct sockaddr_in6 *)ip2)->sin6_addr,
@@ -392,7 +392,7 @@ bool addr_equal(const struct sockaddr_storage *ip1,
 
 bool is_address_any(const struct sockaddr_storage *psa)
 {
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 	if (psa->ss_family == AF_INET6) {
 		struct sockaddr_in6 *si6 = (struct sockaddr_in6 *)psa;
 		if (memcmp(&in6addr_any,
@@ -494,7 +494,7 @@ static int get_socket_port(int fd)
 		return -1;
 	}
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 	if (sa.ss_family == AF_INET6) {
 		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
 	}

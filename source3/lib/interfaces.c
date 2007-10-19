@@ -128,7 +128,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 		if (ifptr->ifa_addr->sa_family == AF_INET6) {
 			copy_size = sizeof(struct sockaddr_in6);
 		}
@@ -496,7 +496,7 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 {
 	int r;
 
-#ifdef AF_INET6
+#if defined(HAVE_IPV6)
 	/*
 	 * If we have IPv6 - sort these interfaces lower
 	 * than any IPv4 ones.
