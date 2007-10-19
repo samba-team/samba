@@ -28,7 +28,7 @@ static char *capencode(char *to, const char *from);
 static char *capdecode(char *to, const char *from);
 
 static SMB_BIG_UINT cap_disk_free(vfs_handle_struct *handle, const char *path,
-	BOOL small_query, SMB_BIG_UINT *bsize,
+	bool small_query, SMB_BIG_UINT *bsize,
 	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
         pstring cappath;
@@ -145,7 +145,7 @@ static int cap_ntimes(vfs_handle_struct *handle, const char *path, const struct 
 }
 
 
-static BOOL cap_symlink(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
+static bool cap_symlink(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 {
         pstring capoldpath, capnewpath;
         capencode(capoldpath, oldpath);
@@ -153,7 +153,7 @@ static BOOL cap_symlink(vfs_handle_struct *handle, const char *oldpath, const ch
 	return SMB_VFS_NEXT_SYMLINK(handle, capoldpath, capnewpath);
 }
 
-static BOOL cap_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
+static bool cap_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
 {
         pstring cappath;
 	capencode(cappath, path);

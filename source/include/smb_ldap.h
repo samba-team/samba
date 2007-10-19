@@ -114,7 +114,7 @@ struct ldap_SearchRequest {
 	enum ldap_deref deref;
 	uint32 timelimit;
 	uint32 sizelimit;
-	BOOL attributesonly;
+	bool attributesonly;
 	char *filter;
 	int num_attributes;
 	const char **attributes;
@@ -162,7 +162,7 @@ struct ldap_DelRequest {
 struct ldap_ModifyDNRequest {
 	const char *dn;
 	const char *newrdn;
-	BOOL deleteolddn;
+	bool deleteolddn;
 	const char *newsuperior;
 };
 
@@ -212,7 +212,7 @@ union ldap_Request {
 
 struct ldap_Control {
 	const char *oid;
-	BOOL        critical;
+	bool        critical;
 	DATA_BLOB   value;
 };
 
@@ -237,7 +237,7 @@ struct ldap_connection {
 	int next_msgid;
 	char *host;
 	uint16 port;
-	BOOL ldaps;
+	bool ldaps;
 
 	const char *auth_dn;
 	const char *simple_pw;

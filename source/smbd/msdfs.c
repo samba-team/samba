@@ -43,9 +43,9 @@ extern uint32 global_client_caps;
 **********************************************************************/
 
 static NTSTATUS parse_dfs_path(const char *pathname,
-				BOOL allow_wcards,
+				bool allow_wcards,
 				struct dfs_path *pdp, /* MUST BE TALLOCED */
-				BOOL *ppath_contains_wcard)
+				bool *ppath_contains_wcard)
 {
 	char *pathname_local;
 	char *p,*temp;
@@ -268,7 +268,7 @@ static NTSTATUS create_conn_struct(connection_struct *conn,
  server we're referring to understands posix paths.
  **********************************************************************/
 
-static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
+static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 				const char *target,
 				struct referral **preflist,
 				int *refcount)
@@ -349,7 +349,7 @@ static BOOL parse_msdfs_symlink(TALLOC_CTX *ctx,
  returns the target string from inside the link.
 **********************************************************************/
 
-static BOOL is_msdfs_link_internal(TALLOC_CTX *ctx,
+static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *path,
 			char **pp_link_target,
@@ -418,7 +418,7 @@ static BOOL is_msdfs_link_internal(TALLOC_CTX *ctx,
  Returns true if the unix path is a valid msdfs symlink.
 **********************************************************************/
 
-BOOL is_msdfs_link(connection_struct *conn,
+bool is_msdfs_link(connection_struct *conn,
 		const char *path,
 		SMB_STRUCT_STAT *sbufp)
 {
@@ -449,7 +449,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		const char *dfspath, /* Incoming complete dfs path */
 		const struct dfs_path *pdp, /* Parsed out
 					       server+share+extrapath. */
-		BOOL search_flag, /* Called from a findfirst ? */
+		bool search_flag, /* Called from a findfirst ? */
 		int *consumedcntp,
 		char **pp_targetpath)
 {
@@ -587,9 +587,9 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *path_in,
-			BOOL search_wcard_flag,
+			bool search_wcard_flag,
 			char **pp_path_out,
-			BOOL *ppath_contains_wcard)
+			bool *ppath_contains_wcard)
 {
 	NTSTATUS status;
 	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
@@ -687,7 +687,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
-			BOOL *self_referralp)
+			bool *self_referralp)
 {
 	struct referral *ref;
 
@@ -718,14 +718,14 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
-			BOOL *self_referralp)
+			bool *self_referralp)
 {
 	struct connection_struct conns;
 	struct connection_struct *conn = &conns;
 	char *targetpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
-	BOOL dummy;
+	bool dummy;
 	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
 
 	if (!pdp) {
@@ -884,7 +884,7 @@ static int setup_ver2_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
 				int consumedcnt,
-				BOOL self_referral)
+				bool self_referral)
 {
 	char* pdata = *ppdata;
 
@@ -993,7 +993,7 @@ static int setup_ver3_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
 				int consumedcnt,
-				BOOL self_referral)
+				bool self_referral)
 {
 	char *pdata = *ppdata;
 
@@ -1095,7 +1095,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 {
 	struct junction_map *junction = NULL;
 	int consumedcnt = 0;
-	BOOL self_referral = False;
+	bool self_referral = False;
 	int reply_size = 0;
 	char *pathnamep = NULL;
 	char *local_dfs_path = NULL;
@@ -1209,12 +1209,12 @@ int setup_dfs_referral(connection_struct *orig_conn,
  Creates a junction structure from a DFS pathname
 **********************************************************************/
 
-BOOL create_junction(TALLOC_CTX *ctx,
+bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
 		struct junction_map *jucn)
 {
 	int snum;
-	BOOL dummy;
+	bool dummy;
 	struct dfs_path *pdp = TALLOC_P(ctx,struct dfs_path);
 	NTSTATUS status;
 
@@ -1260,7 +1260,7 @@ BOOL create_junction(TALLOC_CTX *ctx,
  Forms a valid Unix pathname from the junction
  **********************************************************************/
 
-static BOOL junction_to_local_path(const struct junction_map *jucn,
+static bool junction_to_local_path(const struct junction_map *jucn,
 				char **pp_path_out,
 				connection_struct *conn_out)
 {
@@ -1285,16 +1285,16 @@ static BOOL junction_to_local_path(const struct junction_map *jucn,
 	return True;
 }
 
-BOOL create_msdfs_link(const struct junction_map *jucn,
-		BOOL exists)
+bool create_msdfs_link(const struct junction_map *jucn,
+		bool exists)
 {
 	char *path = NULL;
 	char *msdfs_link = NULL;
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	int i=0;
-	BOOL insert_comma = False;
-	BOOL ret = False;
+	bool insert_comma = False;
+	bool ret = False;
 
 	ZERO_STRUCT(conns);
 
@@ -1360,12 +1360,12 @@ out:
 	return ret;
 }
 
-BOOL remove_msdfs_link(const struct junction_map *jucn)
+bool remove_msdfs_link(const struct junction_map *jucn)
 {
 	char *path = NULL;
 	connection_struct conns;
  	connection_struct *conn = &conns;
-	BOOL ret = False;
+	bool ret = False;
 
 	ZERO_STRUCT(conns);
 
@@ -1604,12 +1604,12 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 
 NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
 			connection_struct *conn,
-			BOOL dfs_pathnames,
+			bool dfs_pathnames,
 			const char *name_in,
 			char **pp_name_out)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	BOOL dummy;
+	bool dummy;
 	if (dfs_pathnames) {
 		status = dfs_redirect(ctx,
 					conn,
@@ -1630,17 +1630,17 @@ NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
 
 /******************************************************************************
  Core function to resolve a dfs pathname possibly containing a wildcard.
- This function is identical to the above except for the BOOL param to
+ This function is identical to the above except for the bool param to
  dfs_redirect but I need this to be separate so it's really clear when
  we're allowing wildcards and when we're not. JRA.
 ******************************************************************************/
 
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
-				BOOL dfs_pathnames,
+				bool dfs_pathnames,
 				const char *name_in,
 				char **pp_name_out,
-				BOOL *ppath_contains_wcard)
+				bool *ppath_contains_wcard)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	if (dfs_pathnames) {

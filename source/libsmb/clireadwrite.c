@@ -23,10 +23,10 @@
 Issue a single SMBread and don't wait for a reply.
 ****************************************************************************/
 
-static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
+static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
-	BOOL bigoffset = False;
+	bool bigoffset = False;
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -66,7 +66,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	size_t readsize;
 	ssize_t total = 0;
 	/* We can only do direct reads if not signing. */
-	BOOL direct_reads = !client_is_signing_on(cli);
+	bool direct_reads = !client_is_signing_on(cli);
 
 	if (size == 0) 
 		return 0;
@@ -108,7 +108,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                    errors. */
 
                 if (cli_is_error(cli)) {
-			BOOL recoverable_error = False;
+			bool recoverable_error = False;
                         NTSTATUS status = NT_STATUS_OK;
                         uint8 eclass = 0;
 			uint32 ecode = 0;
@@ -191,7 +191,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 Issue a single SMBreadraw and don't wait for a reply.
 ****************************************************************************/
 
-static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
+static bool cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
 
@@ -284,12 +284,12 @@ ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
 
-static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, 
+static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset, 
 			    uint16 mode, const char *buf,
 			    size_t size, int i)
 {
 	char *p;
-	BOOL large_writex = False;
+	bool large_writex = False;
 
 	if (size > cli->bufsize) {
 		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);

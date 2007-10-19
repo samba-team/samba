@@ -40,7 +40,7 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, BOOL small_query, SMB_BIG_UINT *bsize,
+static SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, bool small_query, SMB_BIG_UINT *bsize,
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	SMB_BIG_UINT result;
@@ -79,7 +79,7 @@ static int vfswrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_T
 #endif
 }
 
-static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
 {
 	errno = ENOSYS;
 	return -1;  /* Not implemented. */
@@ -138,7 +138,7 @@ static void vfswrap_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 static int vfswrap_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
 {
 	int result;
-	BOOL has_dacl = False;
+	bool has_dacl = False;
 
 	START_PROFILE(syscall_mkdir);
 
@@ -786,9 +786,9 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	return result;
 }
 
-static BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	BOOL result;
+	bool result;
 
 	START_PROFILE(syscall_fcntl_lock);
 	result =  fcntl_lock(fd, op, offset, count, type);
@@ -805,9 +805,9 @@ static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, in
 	return 0;
 }
 
-static BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
-	BOOL result;
+	bool result;
 
 	START_PROFILE(syscall_fcntl_getlock);
 	result =  fcntl_getlock(fd, poffset, pcount, ptype, ppid);

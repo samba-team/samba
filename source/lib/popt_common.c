@@ -34,8 +34,8 @@
  */
 
 extern pstring user_socket_options;
-extern BOOL AllowDebugChange;
-extern BOOL override_logfile;
+extern bool AllowDebugChange;
+extern bool override_logfile;
 
 struct user_auth_info cmdline_auth_info;
 
@@ -57,7 +57,7 @@ static void set_logfile(poptContext con, const char * arg)
 	lp_set_logfile(logfile);
 }
 
-static BOOL PrintSambaVersionString;
+static bool PrintSambaVersionString;
 
 static void popt_common_callback(poptContext con,
 			   enum poptCallbackReason reason,
@@ -290,7 +290,7 @@ static void get_password_file(struct user_auth_info *a)
 {
 	int fd = -1;
 	char *p;
-	BOOL close_it = False;
+	bool close_it = False;
 	pstring spec;
 	char pass[128];
 

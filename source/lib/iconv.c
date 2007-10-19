@@ -116,7 +116,7 @@ NTSTATUS smb_register_charset(struct charset_functions *funcs)
 
 static void lazy_initialize_iconv(void)
 {
-	static BOOL initialized;
+	static bool initialized;
 	int i;
 
 	if (!initialized) {
@@ -189,7 +189,7 @@ size_t smb_iconv(smb_iconv_t cd,
 }
 
 
-static BOOL is_utf16(const char *name)
+static bool is_utf16(const char *name)
 {
 	return strcasecmp(name, "UCS-2LE") == 0 ||
 		strcasecmp(name, "UTF-16LE") == 0;

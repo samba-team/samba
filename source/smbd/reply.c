@@ -33,7 +33,7 @@ unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
 extern struct current_user current_user;
-extern BOOL global_encrypted_passwords_negotiated;
+extern bool global_encrypted_passwords_negotiated;
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -47,13 +47,13 @@ extern BOOL global_encrypted_passwords_negotiated;
 #define IS_PATH_SEP(c,posix_only) ((c) == '/' || (!(posix_only) && (c) == '\\'))
 
 static NTSTATUS check_path_syntax_internal(char *path,
-					   BOOL posix_path,
-					   BOOL *p_last_component_contains_wcard)
+					   bool posix_path,
+					   bool *p_last_component_contains_wcard)
 {
 	char *d = path;
 	const char *s = path;
 	NTSTATUS ret = NT_STATUS_OK;
-	BOOL start_of_name_component = True;
+	bool start_of_name_component = True;
 
 	*p_last_component_contains_wcard = False;
 
@@ -177,7 +177,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 NTSTATUS check_path_syntax(char *path)
 {
-	BOOL ignore;
+	bool ignore;
 	return check_path_syntax_internal(path, False, &ignore);
 }
 
@@ -187,7 +187,7 @@ NTSTATUS check_path_syntax(char *path)
  a wildcard.
 ****************************************************************************/
 
-NTSTATUS check_path_syntax_wcard(char *path, BOOL *p_contains_wcard)
+NTSTATUS check_path_syntax_wcard(char *path, bool *p_contains_wcard)
 {
 	return check_path_syntax_internal(path, False, p_contains_wcard);
 }
@@ -200,7 +200,7 @@ NTSTATUS check_path_syntax_wcard(char *path, BOOL *p_contains_wcard)
 
 NTSTATUS check_path_syntax_posix(char *path)
 {
-	BOOL ignore;
+	bool ignore;
 	return check_path_syntax_internal(path, True, &ignore);
 }
 
@@ -216,7 +216,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags,
 			NTSTATUS *err,
-			BOOL *contains_wcard)
+			bool *contains_wcard)
 {
 	size_t ret;
 
@@ -325,7 +325,7 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
  Check if we have a correct fsp pointing to a file. Basic check for open fsp.
 ****************************************************************************/
 
-BOOL check_fsp_open(connection_struct *conn, struct smb_request *req,
+bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp, struct current_user *user)
 {
 	if (!(fsp) || !(conn)) {
@@ -344,7 +344,7 @@ BOOL check_fsp_open(connection_struct *conn, struct smb_request *req,
  CHECK_FSP macro.
 ****************************************************************************/
 
-BOOL check_fsp(connection_struct *conn, struct smb_request *req,
+bool check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp, struct current_user *user)
 {
 	if (!check_fsp_open(conn, req, fsp, user)) {
@@ -366,7 +366,7 @@ BOOL check_fsp(connection_struct *conn, struct smb_request *req,
  Check if we have a correct fsp. Replacement for the FSP_BELONGS_CONN macro
 ****************************************************************************/
 
-BOOL fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
+bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
 		      files_struct *fsp, struct current_user *user)
 {
 	if ((fsp) && (conn) && ((conn)==(fsp)->conn)
@@ -396,7 +396,7 @@ void reply_special(char *inbuf)
 	 */
 	char outbuf[smb_size];
 	
-	static BOOL already_got_session = False;
+	static bool already_got_session = False;
 
 	*name1 = *name2 = 0;
 	
@@ -1202,17 +1202,17 @@ void reply_search(connection_struct *conn, struct smb_request *req)
 	uint32 dirtype;
 	unsigned int numentries = 0;
 	unsigned int maxentries = 0;
-	BOOL finished = False;
+	bool finished = False;
 	char *p;
 	int status_len;
 	char *path = NULL;
 	char status[21];
 	int dptr_num= -1;
-	BOOL check_descend = False;
-	BOOL expect_close = False;
+	bool check_descend = False;
+	bool expect_close = False;
 	NTSTATUS nt_status;
-	BOOL mask_contains_wcard = False;
-	BOOL allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
+	bool mask_contains_wcard = False;
+	bool allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsearch);
@@ -1501,7 +1501,7 @@ void reply_fclose(connection_struct *conn, struct smb_request *req)
 	char *p;
 	char *path = NULL;
 	NTSTATUS err;
-	BOOL path_contains_wcard = False;
+	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBfclose);
@@ -2379,7 +2379,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32 dirtype, const char *name_in, BOOL has_wild)
+			  uint32 dirtype, const char *name_in, bool has_wild)
 {
 	const char *directory = NULL;
 	char *mask = NULL;
@@ -2543,7 +2543,7 @@ void reply_unlink(connection_struct *conn, struct smb_request *req)
 	char *name = NULL;
 	uint32 dirtype;
 	NTSTATUS status;
-	BOOL path_contains_wcard = False;
+	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBunlink);
@@ -3288,7 +3288,7 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 	files_struct *fsp;
 	SMB_OFF_T startpos;
 	size_t smb_maxcnt;
-	BOOL big_readX = False;
+	bool big_readX = False;
 #if 0
 	size_t smb_mincnt = SVAL(req->inbuf,smb_vwv6);
 #endif
@@ -3422,7 +3422,7 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	size_t tcount;
 	SMB_OFF_T startpos;
 	char *data=NULL;
-	BOOL write_through;
+	bool write_through;
 	files_struct *fsp;
 	NTSTATUS status;
 
@@ -3849,12 +3849,12 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	files_struct *fsp;
 	SMB_OFF_T startpos;
 	size_t numtowrite;
-	BOOL write_through;
+	bool write_through;
 	ssize_t nwritten;
 	unsigned int smb_doff;
 	unsigned int smblen;
 	char *data;
-	BOOL large_writeX;
+	bool large_writeX;
 	NTSTATUS status;
 
 	START_PROFILE(SMBwriteX);
@@ -4825,12 +4825,12 @@ void reply_mkdir(connection_struct *conn, struct smb_request *req)
  tree recursively. Return True on ok, False on fail.
 ****************************************************************************/
 
-static BOOL recursive_rmdir(TALLOC_CTX *ctx,
+static bool recursive_rmdir(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			char *directory)
 {
 	const char *dname = NULL;
-	BOOL ret = True;
+	bool ret = True;
 	long offset = 0;
 	struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
 
@@ -5079,7 +5079,7 @@ void reply_rmdir(connection_struct *conn, struct smb_request *req)
  Resolve wildcards in a filename rename.
 ********************************************************************/
 
-static BOOL resolve_wildcards(TALLOC_CTX *ctx,
+static bool resolve_wildcards(TALLOC_CTX *ctx,
 				const char *name1,
 				const char *name2,
 				char **pp_newname)
@@ -5212,7 +5212,7 @@ static void rename_open_files(connection_struct *conn,
 			      const char *newname)
 {
 	files_struct *fsp;
-	BOOL did_rename = False;
+	bool did_rename = False;
 
 	for(fsp = file_find_di_first(lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
@@ -5251,7 +5251,7 @@ static void rename_open_files(connection_struct *conn,
  report from <AndyLiebman@aol.com>.
 ****************************************************************************/
 
-static BOOL rename_path_prefix_equal(const char *src, const char *dest)
+static bool rename_path_prefix_equal(const char *src, const char *dest)
 {
 	const char *psrc = src;
 	const char *pdst = dest;
@@ -5273,7 +5273,7 @@ static BOOL rename_path_prefix_equal(const char *src, const char *dest)
  * Do the notify calls from a rename
  */
 
-static void notify_rename(connection_struct *conn, BOOL is_dir,
+static void notify_rename(connection_struct *conn, bool is_dir,
 			  const char *oldpath, const char *newpath)
 {
 	char *olddir, *newdir;
@@ -5320,13 +5320,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			char *newname,
 			const char *newname_last_component,
 			uint32 attrs,
-			BOOL replace_if_exists)
+			bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	SMB_STRUCT_STAT sbuf, sbuf1;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
-	BOOL dst_exists;
+	bool dst_exists;
 
 	ZERO_STRUCT(sbuf);
 
@@ -5508,9 +5508,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			const char *name_in,
 			const char *newname_in,
 			uint32 attrs,
-			BOOL replace_if_exists,
-			BOOL src_has_wild,
-			BOOL dest_has_wild)
+			bool replace_if_exists,
+			bool src_has_wild,
+			bool dest_has_wild)
 {
 	char *directory = NULL;
 	char *mask = NULL;
@@ -5593,7 +5593,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = mangle_is_8_3(name, True, conn->params);
+		bool is_short_name = mangle_is_8_3(name, True, conn->params);
 
 		/* Add a terminating '/' to the directory name. */
 		directory = talloc_asprintf_append(directory,
@@ -5696,7 +5696,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		files_struct *fsp = NULL;
 		char *fname = NULL;
 		char *destname = NULL;
-		BOOL sysdir_entry = False;
+		bool sysdir_entry = False;
 
 		/* Quick check for "." and ".." */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
@@ -5801,8 +5801,8 @@ void reply_mv(connection_struct *conn, struct smb_request *req)
 	char *p;
 	uint32 attrs;
 	NTSTATUS status;
-	BOOL src_has_wcard = False;
-	BOOL dest_has_wcard = False;
+	bool src_has_wcard = False;
+	bool dest_has_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBmv);
@@ -5903,7 +5903,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			const char *dest1,
 			int ofun,
 			int count,
-			BOOL target_is_directory)
+			bool target_is_directory)
 {
 	SMB_STRUCT_STAT src_sbuf, sbuf2;
 	SMB_OFF_T ret=-1;
@@ -6038,9 +6038,9 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 	int tid2;
 	int ofun;
 	int flags;
-	BOOL target_is_directory=False;
-	BOOL source_has_wild = False;
-	BOOL dest_has_wild = False;
+	bool target_is_directory=False;
+	bool source_has_wild = False;
+	bool dest_has_wild = False;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -6355,7 +6355,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
  Get a lock pid, dealing with large count requests.
 ****************************************************************************/
 
-uint32 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
+uint32 get_lock_pid( char *data, int data_offset, bool large_file_format)
 {
 	if(!large_file_format)
 		return (uint32)SVAL(data,SMB_LPID_OFFSET(data_offset));
@@ -6367,7 +6367,7 @@ uint32 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
-SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format)
+SMB_BIG_UINT get_lock_count( char *data, int data_offset, bool large_file_format)
 {
 	SMB_BIG_UINT count = 0;
 
@@ -6439,7 +6439,7 @@ static uint32 map_lock_offset(uint32 high, uint32 low)
  Get a lock offset, dealing with large offset requests.
 ****************************************************************************/
 
-SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err)
 {
 	SMB_BIG_UINT offset = 0;
 
@@ -6500,8 +6500,8 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 	int32 lock_timeout;
 	int i;
 	char *data;
-	BOOL large_file_format;
-	BOOL err;
+	bool large_file_format;
+	bool err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	START_PROFILE(SMBlockingX);
@@ -6541,8 +6541,8 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 	*/
 	if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE)) {
 		/* Client can insist on breaking to none. */
-		BOOL break_to_none = (oplocklevel == 0);
-		BOOL result;
+		bool break_to_none = (oplocklevel == 0);
+		bool result;
 
 		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client "
 			 "for fnum = %d\n", (unsigned int)oplocklevel,
@@ -6720,8 +6720,8 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 						offset,
 						WINDOWS_LOCK);
 		} else {
-			BOOL blocking_lock = lock_timeout ? True : False;
-			BOOL defer_lock = False;
+			bool blocking_lock = lock_timeout ? True : False;
+			bool defer_lock = False;
 			struct byte_range_lock *br_lck;
 			uint32 block_smbpid;
 

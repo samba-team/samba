@@ -764,8 +764,8 @@ struct profile_header {
 
 extern struct profile_header *profile_h;
 extern struct profile_stats *profile_p;
-extern BOOL do_profile_flag;
-extern BOOL do_profile_times;
+extern bool do_profile_flag;
+extern bool do_profile_times;
 
 #ifdef WITH_PROFILE
 

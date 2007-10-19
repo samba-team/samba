@@ -301,12 +301,6 @@ TXT             16 text strings
 
 typedef long HANDLE;
 
-#ifndef _UPPER_BOOL
-typedef int BOOL;
-#define _UPPER_BOOL
-#endif
-
-
 enum dns_ServerType { DNS_SRV_ANY, DNS_SRV_WIN2000, DNS_SRV_WIN2003 };
 
 struct dns_domain_label {

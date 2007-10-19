@@ -52,8 +52,8 @@
 
 #include "includes.h"
 
-BOOL in_client = False;		/* Not in the client by default */
-BOOL bLoaded = False;
+bool in_client = False;		/* Not in the client by default */
+bool bLoaded = False;
 
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
@@ -80,7 +80,7 @@ extern userdom_struct current_user_info;
 #endif
 
 static int regdb_last_seqnum = 0;
-static BOOL include_registry_globals = False;
+static bool include_registry_globals = False;
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
@@ -89,11 +89,11 @@ static BOOL include_registry_globals = False;
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
 
-BOOL use_getwd_cache = True;
+bool use_getwd_cache = True;
 
 extern int extra_time_offset;
 
-static BOOL defaults_saved = False;
+static bool defaults_saved = False;
 
 typedef struct _param_opt_struct param_opt_struct;
 struct _param_opt_struct {
@@ -174,24 +174,24 @@ typedef struct {
 	char *szWINSHook;
 	char *szUtmpDir;
 	char *szWtmpDir;
-	BOOL bUtmp;
+	bool bUtmp;
 	char *szIdmapUID;
 	char *szIdmapGID;
-	BOOL bPassdbExpandExplicit;
+	bool bPassdbExpandExplicit;
 	int AlgorithmicRidBase;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
-	BOOL bWinbindEnumUsers;
-	BOOL bWinbindEnumGroups;
-	BOOL bWinbindUseDefaultDomain;
-	BOOL bWinbindTrustedDomainsOnly;
-	BOOL bWinbindNestedGroups;
-	int  winbind_expand_groups;	
-	BOOL bWinbindRefreshTickets;
-	BOOL bWinbindOfflineLogon;
-	BOOL bWinbindNormalizeNames;
-	BOOL bWinbindRpcOnly;
+	bool bWinbindEnumUsers;
+	bool bWinbindEnumGroups;
+	bool bWinbindUseDefaultDomain;
+	bool bWinbindTrustedDomainsOnly;
+	bool bWinbindNestedGroups;
+	int  winbind_expand_groups;
+	bool bWinbindRefreshTickets;
+	bool bWinbindOfflineLogon;
+	bool bWinbindNormalizeNames;
+	bool bWinbindRpcOnly;
 	char **szIdmapDomains;
 	char **szIdmapBackend; /* deprecated */
 	char *szIdmapAllocBackend;
@@ -220,11 +220,11 @@ typedef struct {
 	int minprotocol;
 	int security;
 	char **AuthMethods;
-	BOOL paranoid_server_security;
+	bool paranoid_server_security;
 	int maxdisksize;
 	int lpqcachetime;
 	int iMaxSmbdProcesses;
-	BOOL bDisableSpoolss;
+	bool bDisableSpoolss;
 	int syslog;
 	int os_level;
 	int enhanced_browsing;
@@ -253,73 +253,73 @@ typedef struct {
 	char *szIPrintServer;
 	char *ctdbdSocket;
 	char **szClusterAddresses;
-	BOOL clustering;
-	int ldap_passwd_sync; 
+	bool clustering;
+	int ldap_passwd_sync;
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
 	int ldap_page_size;
-	BOOL ldap_delete_dn;
-	BOOL bMsAddPrinterWizard;
-	BOOL bDNSproxy;
-	BOOL bWINSsupport;
-	BOOL bWINSproxy;
-	BOOL bLocalMaster;
-	BOOL bPreferredMaster;
-	BOOL bDomainMaster;
-	BOOL bDomainLogons;
-	BOOL bEncryptPasswords;
-	BOOL bUpdateEncrypt;
+	bool ldap_delete_dn;
+	bool bMsAddPrinterWizard;
+	bool bDNSproxy;
+	bool bWINSsupport;
+	bool bWINSproxy;
+	bool bLocalMaster;
+	int  iPreferredMaster;
+	int iDomainMaster;
+	bool bDomainLogons;
+	bool bEncryptPasswords;
+	bool bUpdateEncrypt;
 	int  clientSchannel;
 	int  serverSchannel;
-	BOOL bNullPasswords;
-	BOOL bObeyPamRestrictions;
-	BOOL bLoadPrinters;
+	bool bNullPasswords;
+	bool bObeyPamRestrictions;
+	bool bLoadPrinters;
 	int PrintcapCacheTime;
-	BOOL bLargeReadwrite;
-	BOOL bReadRaw;
-	BOOL bWriteRaw;
-	BOOL bSyslogOnly;
-	BOOL bBrowseList;
-	BOOL bNISHomeMap;
-	BOOL bTimeServer;
-	BOOL bBindInterfacesOnly;
-	BOOL bPamPasswordChange;
-	BOOL bUnixPasswdSync;
-	BOOL bPasswdChatDebug;
+	bool bLargeReadwrite;
+	bool bReadRaw;
+	bool bWriteRaw;
+	bool bSyslogOnly;
+	bool bBrowseList;
+	bool bNISHomeMap;
+	bool bTimeServer;
+	bool bBindInterfacesOnly;
+	bool bPamPasswordChange;
+	bool bUnixPasswdSync;
+	bool bPasswdChatDebug;
 	int iPasswdChatTimeout;
-	BOOL bTimestampLogs;
-	BOOL bNTSmbSupport;
-	BOOL bNTPipeSupport;
-	BOOL bNTStatusSupport;
-	BOOL bStatCache;
+	bool bTimestampLogs;
+	bool bNTSmbSupport;
+	bool bNTPipeSupport;
+	bool bNTStatusSupport;
+	bool bStatCache;
 	int iMaxStatCacheSize;
-	BOOL bKernelOplocks;
-	BOOL bAllowTrustedDomains;
-	BOOL bLanmanAuth;
-	BOOL bNTLMAuth;
-	BOOL bUseSpnego;
-	BOOL bClientLanManAuth;
-	BOOL bClientNTLMv2Auth;
-	BOOL bClientPlaintextAuth;
-	BOOL bClientUseSpnego;
-	BOOL bDebugPrefixTimestamp;
-	BOOL bDebugHiresTimestamp;
-	BOOL bDebugPid;
-	BOOL bDebugUid;
-	BOOL bDebugClass;
-	BOOL bEnableCoreFiles;
-	BOOL bHostMSDfs;
-	BOOL bUseMmap;
-	BOOL bHostnameLookups;
-	BOOL bUnixExtensions;
-	BOOL bDisableNetbios;
-	BOOL bUseKerberosKeytab;
-	BOOL bDeferSharingViolations;
-	BOOL bEnablePrivileges;
-	BOOL bASUSupport;
-	BOOL bUsershareOwnerOnly;
-	BOOL bUsershareAllowGuests;
-	BOOL bRegistryShares;
+	bool bKernelOplocks;
+	bool bAllowTrustedDomains;
+	bool bLanmanAuth;
+	bool bNTLMAuth;
+	bool bUseSpnego;
+	bool bClientLanManAuth;
+	bool bClientNTLMv2Auth;
+	bool bClientPlaintextAuth;
+	bool bClientUseSpnego;
+	bool bDebugPrefixTimestamp;
+	bool bDebugHiresTimestamp;
+	bool bDebugPid;
+	bool bDebugUid;
+	bool bDebugClass;
+	bool bEnableCoreFiles;
+	bool bHostMSDfs;
+	bool bUseMmap;
+	bool bHostnameLookups;
+	bool bUnixExtensions;
+	bool bDisableNetbios;
+	bool bUseKerberosKeytab;
+	bool bDeferSharingViolations;
+	bool bEnablePrivileges;
+	bool bASUSupport;
+	bool bUsershareOwnerOnly;
+	bool bUsershareAllowGuests;
+	bool bRegistryShares;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -329,7 +329,7 @@ typedef struct {
 	int iIdmapCacheTime;
 	int iIdmapNegativeCacheTime;
 
-	BOOL bResetOnZeroVC;
+	bool bResetOnZeroVC;
 	int iKeepalive;
 	param_opt_struct *param_opt;
 } global;
@@ -340,8 +340,8 @@ static global Globals;
  * This structure describes a single service. 
  */
 typedef struct {
-	BOOL valid;
-	BOOL autoloaded;
+	bool valid;
+	bool autoloaded;
 	int usershare;
 	time_t usershare_last_mod;
 	char *szService;
@@ -405,69 +405,69 @@ typedef struct {
 	int iCSCPolicy;
 	int iBlock_size;
 	int iDfreeCacheTime;
-	BOOL bPreexecClose;
-	BOOL bRootpreexecClose;
+	bool bPreexecClose;
+	bool bRootpreexecClose;
 	int  iCaseSensitive;
-	BOOL bCasePreserve;
-	BOOL bShortCasePreserve;
-	BOOL bHideDotFiles;
-	BOOL bHideSpecialFiles;
-	BOOL bHideUnReadable;
-	BOOL bHideUnWriteableFiles;
-	BOOL bBrowseable;
-	BOOL bAvailable;
-	BOOL bRead_only;
-	BOOL bNo_set_dir;
-	BOOL bGuest_only;
-	BOOL bGuest_ok;
-	BOOL bPrint_ok;
-	BOOL bMap_system;
-	BOOL bMap_hidden;
-	BOOL bMap_archive;
-	BOOL bStoreDosAttributes;
-	BOOL bDmapiSupport;
-	BOOL bLocking;
+	bool bCasePreserve;
+	bool bShortCasePreserve;
+	bool bHideDotFiles;
+	bool bHideSpecialFiles;
+	bool bHideUnReadable;
+	bool bHideUnWriteableFiles;
+	bool bBrowseable;
+	bool bAvailable;
+	bool bRead_only;
+	bool bNo_set_dir;
+	bool bGuest_only;
+	bool bGuest_ok;
+	bool bPrint_ok;
+	bool bMap_system;
+	bool bMap_hidden;
+	bool bMap_archive;
+	bool bStoreDosAttributes;
+	bool bDmapiSupport;
+	bool bLocking;
 	int iStrictLocking;
-	BOOL bPosixLocking;
-	BOOL bShareModes;
-	BOOL bOpLocks;
-	BOOL bLevel2OpLocks;
-	BOOL bOnlyUser;
-	BOOL bMangledNames;
-	BOOL bWidelinks;
-	BOOL bSymlinks;
-	BOOL bSyncAlways;
-	BOOL bStrictAllocate;
-	BOOL bStrictSync;
+	bool bPosixLocking;
+	bool bShareModes;
+	bool bOpLocks;
+	bool bLevel2OpLocks;
+	bool bOnlyUser;
+	bool bMangledNames;
+	bool bWidelinks;
+	bool bSymlinks;
+	bool bSyncAlways;
+	bool bStrictAllocate;
+	bool bStrictSync;
 	char magic_char;
-	BOOL *copymap;
-	BOOL bDeleteReadonly;
-	BOOL bFakeOplocks;
-	BOOL bDeleteVetoFiles;
-	BOOL bDosFilemode;
-	BOOL bDosFiletimes;
-	BOOL bDosFiletimeResolution;
-	BOOL bFakeDirCreateTimes;
-	BOOL bBlockingLocks;
-	BOOL bInheritPerms;
-	BOOL bInheritACLS;
-	BOOL bInheritOwner;
-	BOOL bMSDfsRoot;
-	BOOL bUseClientDriver;
-	BOOL bDefaultDevmode;
-	BOOL bForcePrintername;
-	BOOL bNTAclSupport;
-	BOOL bForceUnknownAclUser;
-	BOOL bUseSendfile;
-	BOOL bProfileAcls;
-	BOOL bMap_acl_inherit;
-	BOOL bAfs_Share;
-	BOOL bEASupport;
-	BOOL bAclCheckPermissions;
-	BOOL bAclMapFullControl;
-	BOOL bAclGroupControl;
-	BOOL bChangeNotify;
-	BOOL bKernelChangeNotify;
+	bool *copymap;
+	bool bDeleteReadonly;
+	bool bFakeOplocks;
+	bool bDeleteVetoFiles;
+	bool bDosFilemode;
+	bool bDosFiletimes;
+	bool bDosFiletimeResolution;
+	bool bFakeDirCreateTimes;
+	bool bBlockingLocks;
+	bool bInheritPerms;
+	bool bInheritACLS;
+	bool bInheritOwner;
+	bool bMSDfsRoot;
+	bool bUseClientDriver;
+	bool bDefaultDevmode;
+	bool bForcePrintername;
+	bool bNTAclSupport;
+	bool bForceUnknownAclUser;
+	bool bUseSendfile;
+	bool bProfileAcls;
+	bool bMap_acl_inherit;
+	bool bAfs_Share;
+	bool bEASupport;
+	bool bAclCheckPermissions;
+	bool bAclMapFullControl;
+	bool bAclGroupControl;
+	bool bChangeNotify;
+	bool bKernelChangeNotify;
 	int iallocation_roundup_size;
 	int iAioReadSize;
 	int iAioWriteSize;
@@ -630,25 +630,25 @@ static int iServiceIndex = 0;
 static TDB_CONTEXT *ServiceHash;
 static int *invalid_services = NULL;
 static int num_invalid_services = 0;
-static BOOL bInGlobalSection = True;
-static BOOL bGlobalOnly = False;
+static bool bInGlobalSection = True;
+static bool bGlobalOnly = False;
 static int server_role;
 static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_include( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_copy( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_workgroup( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
+static bool handle_include( int snum, const char *pszParmValue, char **ptr);
+static bool handle_copy( int snum, const char *pszParmValue, char **ptr);
+static bool handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
+static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
+static bool handle_workgroup( int snum, const char *pszParmValue, char **ptr );
+static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
+static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
+static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
+static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -1161,10 +1161,10 @@ static struct parm_struct parm_table[] = {
 	{"os level", P_INTEGER, P_GLOBAL, &Globals.os_level, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"lm announce", P_ENUM, P_GLOBAL, &Globals.lm_announce, NULL, enum_bool_auto, FLAG_ADVANCED}, 
 	{"lm interval", P_INTEGER, P_GLOBAL, &Globals.lm_interval, NULL, NULL, FLAG_ADVANCED}, 
-	{"preferred master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
-	{"prefered master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE}, 
+	{"preferred master", P_ENUM, P_GLOBAL, &Globals.iPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
+	{"prefered master", P_ENUM, P_GLOBAL, &Globals.iPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE}, 
 	{"local master", P_BOOL, P_GLOBAL, &Globals.bLocalMaster, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED}, 
-	{"domain master", P_ENUM, P_GLOBAL, &Globals.bDomainMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
+	{"domain master", P_ENUM, P_GLOBAL, &Globals.iDomainMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"browse list", P_BOOL, P_GLOBAL, &Globals.bBrowseList, NULL, NULL, FLAG_ADVANCED}, 
 	{"browseable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"browsable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_HIDE}, 
@@ -1416,9 +1416,9 @@ static void init_printer_values(service *pService)
  Initialise the global parameter structure.
 ***************************************************************************/
 
-static void init_globals(BOOL first_time_only)
+static void init_globals(bool first_time_only)
 {
-	static BOOL done_init = False;
+	static bool done_init = False;
 	pstring s;
 
         /* If requested to initialize only once and we've already done it... */
@@ -1636,10 +1636,9 @@ static void init_globals(BOOL first_time_only)
 */
 
 	Globals.bMsAddPrinterWizard = True;
-	Globals.bPreferredMaster = Auto;	/* depending on bDomainMaster */
 	Globals.os_level = 20;
 	Globals.bLocalMaster = True;
-	Globals.bDomainMaster = Auto;	/* depending on bDomainLogons */
+	Globals.iDomainMaster = Auto;	/* depending on bDomainLogons */
 	Globals.bDomainLogons = False;
 	Globals.bBrowseList = True;
 	Globals.bWINSsupport = False;
@@ -1757,7 +1756,7 @@ static char *lp_string(const char *s)
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  const char **fn_name(void) {return(*(const char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
- BOOL fn_name(void) {return(*(BOOL *)(ptr));}
+ bool fn_name(void) {return(*(bool *)(ptr));}
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
 #define FN_GLOBAL_INTEGER(fn_name,ptr) \
@@ -1770,12 +1769,12 @@ static char *lp_string(const char *s)
 #define FN_LOCAL_LIST(fn_name,val) \
  const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ bool fn_name(int i) {return(bool)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
 #define FN_LOCAL_PARM_BOOL(fn_name,val) \
- BOOL fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+ bool fn_name(const struct share_params *p) {return(bool)(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_INTEGER(fn_name,val) \
  int fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_STRING(fn_name,val) \
@@ -2171,28 +2170,28 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 /* local prototypes */
 
 static int map_parameter(const char *pszParmName);
-static int map_parameter_canonical(const char *pszParmName, BOOL *inverse);
-static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
-static const char *get_boolean(BOOL bool_value);
+static int map_parameter_canonical(const char *pszParmName, bool *inverse);
+static bool set_boolean(bool *pb, const char *pszParmValue);
+static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
-			 service * pserviceSource, BOOL *pcopymapDest);
-static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
-static BOOL do_section(const char *pszSectionName);
+			 service * pserviceSource, bool *pcopymapDest);
+static bool do_parameter(const char *pszParmName, const char *pszParmValue);
+static bool do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
-static BOOL hash_a_service(const char *name, int number);
+static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static char * canonicalize_servicename(const char *name);
 static void show_parameter(int parmIndex);
-static BOOL is_synonym_of(int parm1, int parm2, BOOL *inverse);
+static bool is_synonym_of(int parm1, int parm2, bool *inverse);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
 static param_opt_struct *get_parametrics(int snum, const char *type, const char *option)
 {
-	BOOL global_section = False;
+	bool global_section = False;
 	char* param_key;
         param_opt_struct *data;
 	
@@ -2272,9 +2271,9 @@ static unsigned long lp_ulong(const char *s)
 /*******************************************************************
 convenience routine to return boolean parameters.
 ********************************************************************/
-static BOOL lp_bool(const char *s)
+static bool lp_bool(const char *s)
 {
-	BOOL ret = False;
+	bool ret = False;
 
 	if (!s || !*s) {
 		MISSING_PARAMETER(lp_bool);
@@ -2400,7 +2399,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
-BOOL lp_parm_bool(int snum, const char *type, const char *option, BOOL def)
+bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 {
 	param_opt_struct *data = get_parametrics(snum, type, option);
 	
@@ -2619,7 +2618,7 @@ static char *canonicalize_servicename(const char *src)
   Add a name/index pair for the services array to the hash table.
 ***************************************************************************/
 
-static BOOL hash_a_service(const char *name, int idx)
+static bool hash_a_service(const char *name, int idx)
 {
 	char *canon_name;
 
@@ -2649,7 +2648,7 @@ static BOOL hash_a_service(const char *name, int idx)
  from service ifrom.
 ***************************************************************************/
 
-BOOL lp_add_home(const char *pszHomename, int iDefaultService, 
+bool lp_add_home(const char *pszHomename, int iDefaultService, 
 		 const char *user, const char *pszHomedir)
 {
 	int i;
@@ -2702,7 +2701,7 @@ int lp_add_service(const char *pszService, int iDefaultService)
  Add the IPC service.
 ***************************************************************************/
 
-static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
+static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 {
 	pstring comment;
 	int i = add_a_service(&sDefault, ipc_name);
@@ -2734,7 +2733,7 @@ static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
  Add a new printer service, with defaults coming from service iFrom.
 ***************************************************************************/
 
-BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
+bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 {
 	const char *comment = "From Printcap";
 	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
@@ -2774,7 +2773,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
  Parametric options (names containing a colon) are considered valid.
 ***************************************************************************/
 
-BOOL lp_parameter_is_valid(const char *pszParmName)
+bool lp_parameter_is_valid(const char *pszParmName)
 {
 	return ((map_parameter(pszParmName) != -1) ||
 		(strchr(pszParmName, ':') != NULL));
@@ -2787,7 +2786,7 @@ BOOL lp_parameter_is_valid(const char *pszParmName)
  and strings not belonging to any option.
 ***************************************************************************/
 
-BOOL lp_parameter_is_global(const char *pszParmName)
+bool lp_parameter_is_global(const char *pszParmName)
 {
 	int num = map_parameter(pszParmName);
 
@@ -2804,7 +2803,7 @@ BOOL lp_parameter_is_global(const char *pszParmName)
  For parametric options, True is returned.
 **************************************************************************/
 
-BOOL lp_parameter_is_canonical(const char *parm_name)
+bool lp_parameter_is_canonical(const char *parm_name)
 {
 	if (!lp_parameter_is_valid(parm_name)) {
 		return False;
@@ -2820,8 +2819,8 @@ BOOL lp_parameter_is_canonical(const char *parm_name)
  "usual" synonym.
 **************************************************************************/
 
-BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
-			       BOOL *inverse)
+bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
+			       bool *inverse)
 {
 	int num;
 
@@ -2853,13 +2852,13 @@ BOOL lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
  Return false in all other cases.
 **************************************************************************/
 
-BOOL lp_canonicalize_parameter_with_value(const char *parm_name,
+bool lp_canonicalize_parameter_with_value(const char *parm_name,
 					  const char *val,
 					  const char **canon_parm,
 					  const char **canon_val)
 {
 	int num;
-	BOOL inverse;
+	bool inverse;
 
 	if (!lp_parameter_is_valid(parm_name)) {
 		*canon_parm = NULL;
@@ -2918,10 +2917,10 @@ static int map_parameter(const char *pszParmName)
  Returns -1 if the parameter string is not recognised.
 ***************************************************************************/
 
-static int map_parameter_canonical(const char *pszParmName, BOOL *inverse)
+static int map_parameter_canonical(const char *pszParmName, bool *inverse)
 {
 	int parm_num, canon_num;
-	BOOL loc_inverse = False;
+	bool loc_inverse = False;
 
 	parm_num = map_parameter(pszParmName);
 	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_HIDE)) {
@@ -2950,7 +2949,7 @@ done:
  False otherwise.
 ***************************************************************************/
 
-static BOOL is_synonym_of(int parm1, int parm2, BOOL *inverse)
+static bool is_synonym_of(int parm1, int parm2, bool *inverse)
 {
 	if ((parm_table[parm1].ptr == parm_table[parm2].ptr) &&
 	    (parm_table[parm1].flags & FLAG_HIDE) &&
@@ -2979,9 +2978,9 @@ static void show_parameter(int parmIndex)
 {
 	int enumIndex, flagIndex;
 	int parmIndex2;
-	BOOL hadFlag;
-	BOOL hadSyn;
-	BOOL inverse;
+	bool hadFlag;
+	bool hadSyn;
+	bool inverse;
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
 		"P_UGSTRING", "P_ENUM", "P_SEP"};
@@ -3065,10 +3064,10 @@ void show_parameter_list(void)
  represent a boolean.
 ***************************************************************************/
 
-static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
+static bool set_boolean(bool *pb, const char *pszParmValue)
 {
-	BOOL bRetval;
-	BOOL value;
+	bool bRetval;
+	bool value;
 
 	bRetval = True;
 	value = False;
@@ -3099,7 +3098,7 @@ static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
  Check if a given string correctly represents a boolean value.
 ***************************************************************************/
 
-BOOL lp_string_is_valid_boolean(const char *parm_value)
+bool lp_string_is_valid_boolean(const char *parm_value)
 {
 	return set_boolean(NULL, parm_value);
 }
@@ -3108,7 +3107,7 @@ BOOL lp_string_is_valid_boolean(const char *parm_value)
  Get the standard string representation of a boolean value ("yes" or "no")
 ***************************************************************************/
 
-static const char *get_boolean(BOOL bool_value)
+static const char *get_boolean(bool bool_value)
 {
 	static const char *yes_str = "yes";
 	static const char *no_str = "no";
@@ -3122,9 +3121,9 @@ static const char *get_boolean(BOOL bool_value)
  represent a boolean.
 ***************************************************************************/
 
-BOOL lp_invert_boolean(const char *str, const char **inverse_str)
+bool lp_invert_boolean(const char *str, const char **inverse_str)
 {
-	BOOL val;
+	bool val;
 
 	if (!set_boolean(&val, str)) {
 		return False;
@@ -3140,9 +3139,9 @@ BOOL lp_invert_boolean(const char *str, const char **inverse_str)
  not correctly represent a boolean.
 ***************************************************************************/
 
-BOOL lp_canonicalize_boolean(const char *str, const char**canon_str)
+bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 {
-	BOOL val;
+	bool val;
 
 	if (!set_boolean(&val, str)) {
 		return False;
@@ -3184,12 +3183,12 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service * pserviceDest, service * pserviceSource, BOOL *pcopymapDest)
+static void copy_service(service * pserviceDest, service * pserviceSource, bool *pcopymapDest)
 {
 	int i;
-	BOOL bcopyall = (pcopymapDest == NULL);
+	bool bcopyall = (pcopymapDest == NULL);
 	param_opt_struct *data, *pdata, *paramo;
-	BOOL not_added;
+	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
@@ -3205,7 +3204,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			switch (parm_table[i].type) {
 				case P_BOOL:
 				case P_BOOLREV:
-					*(BOOL *)dest_ptr = *(BOOL *)src_ptr;
+					*(bool *)dest_ptr = *(bool *)src_ptr;
 					break;
 
 				case P_INTEGER:
@@ -3242,7 +3241,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 		if (pserviceSource->copymap)
 			memcpy((void *)pserviceDest->copymap,
 			       (void *)pserviceSource->copymap,
-			       sizeof(BOOL) * NUMPARAMETERS);
+			       sizeof(bool) * NUMPARAMETERS);
 	}
 	
 	data = pserviceSource->param_opt;
@@ -3277,9 +3276,9 @@ Check a service for consistency. Return False if the service is in any way
 incomplete or faulty, else True.
 ***************************************************************************/
 
-BOOL service_ok(int iService)
+bool service_ok(int iService)
 {
-	BOOL bRetval;
+	bool bRetval;
 
 	bRetval = True;
 	if (ServicePtrs[iService]->szService[0] == '\0') {
@@ -3371,9 +3370,9 @@ done:
  * and regdb_unpack_values, circumventing any fancy stuff, to
  * give us access to the registry globals.
  */
-static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
+static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
-	BOOL ret = False;
+	bool ret = False;
 	struct tdb_wrap *reg_tdb = NULL;
 	WERROR err;
 	char *keystr;
@@ -3484,9 +3483,9 @@ done:
  * using the reg_api functions...
  * 
  */
-static BOOL process_registry_globals(BOOL (*pfunc)(const char *, const char *))
+static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
-	BOOL ret = False;
+	bool ret = False;
 	TALLOC_CTX *ctx = NULL;
 	char *regpath = NULL;
 	WERROR werr = WERR_OK;
@@ -3606,7 +3605,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
  Check if a config file has changed date.
 ********************************************************************/
 
-BOOL lp_file_list_changed(void)
+bool lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
 	struct tdb_wrap *reg_tdb = NULL;
@@ -3658,9 +3657,9 @@ BOOL lp_file_list_changed(void)
  Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
-static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
+static bool handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 {
-	BOOL ret;
+	bool ret;
 	pstring netbios_name;
 
 	pstrcpy(netbios_name, pszParmValue);
@@ -3677,7 +3676,7 @@ static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
+static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
 {
 	if (strcmp(*ptr, pszParmValue) != 0) {
 		string_set(ptr, pszParmValue);
@@ -3688,9 +3687,9 @@ static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
 
 
 
-static BOOL handle_workgroup(int snum, const char *pszParmValue, char **ptr)
+static bool handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 {
-	BOOL ret;
+	bool ret;
 	
 	ret = set_global_myworkgroup(pszParmValue);
 	string_set(&Globals.szWorkgroup,lp_workgroup());
@@ -3698,9 +3697,9 @@ static BOOL handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
+static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 {
-	BOOL ret;
+	bool ret;
 	
 	ret = set_global_scope(pszParmValue);
 	string_set(&Globals.szNetbiosScope,global_scope());
@@ -3708,7 +3707,7 @@ static BOOL handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static BOOL handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
+static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	str_list_free(&Globals.szNetbiosAliases);
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
@@ -3719,7 +3718,7 @@ static BOOL handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
  Handle the include operation.
 ***************************************************************************/
 
-static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
+static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
@@ -3754,9 +3753,9 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static BOOL handle_copy(int snum, const char *pszParmValue, char **ptr)
+static bool handle_copy(int snum, const char *pszParmValue, char **ptr)
 {
-	BOOL bRetval;
+	bool bRetval;
 	int iTemp;
 	service serviceTemp;
 
@@ -3805,7 +3804,7 @@ static BOOL handle_copy(int snum, const char *pszParmValue, char **ptr)
 static uid_t idmap_uid_low, idmap_uid_high;
 static gid_t idmap_gid_low, idmap_gid_high;
 
-BOOL lp_idmap_uid(uid_t *low, uid_t *high)
+bool lp_idmap_uid(uid_t *low, uid_t *high)
 {
         if (idmap_uid_low == 0 || idmap_uid_high == 0)
                 return False;
@@ -3819,7 +3818,7 @@ BOOL lp_idmap_uid(uid_t *low, uid_t *high)
         return True;
 }
 
-BOOL lp_idmap_gid(gid_t *low, gid_t *high)
+bool lp_idmap_gid(gid_t *low, gid_t *high)
 {
         if (idmap_gid_low == 0 || idmap_gid_high == 0)
                 return False;
@@ -3835,7 +3834,7 @@ BOOL lp_idmap_gid(gid_t *low, gid_t *high)
 
 /* Do some simple checks on "idmap [ug]id" parameter values */
 
-static BOOL handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
+static bool handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -3852,7 +3851,7 @@ static BOOL handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
+static bool handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
@@ -3873,7 +3872,7 @@ static BOOL handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static BOOL handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
+static bool handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
 
@@ -3953,7 +3952,7 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 /***************************************************************************
 ***************************************************************************/
 
-static BOOL handle_printing(int snum, const char *pszParmValue, char **ptr)
+static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
 	service *s;
@@ -3982,7 +3981,7 @@ static void init_copymap(service * pservice)
 {
 	int i;
 	SAFE_FREE(pservice->copymap);
-	pservice->copymap = SMB_MALLOC_ARRAY(BOOL,NUMPARAMETERS);
+	pservice->copymap = SMB_MALLOC_ARRAY(bool,NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
@@ -4007,7 +4006,7 @@ void *lp_local_ptr(int snum, void *ptr)
  then assume we are in the globals.
 ***************************************************************************/
 
-BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
+bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum, i, slen;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
@@ -4015,7 +4014,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	pstring param_key;
 	char *sep;
 	param_opt_struct *paramo, *data;
-	BOOL not_added;
+	bool not_added;
 
 	parmnum = map_parameter(pszParmName);
 
@@ -4104,11 +4103,11 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL:
-			*(BOOL *)parm_ptr = lp_bool(pszParmValue);
+			*(bool *)parm_ptr = lp_bool(pszParmValue);
 			break;
 
 		case P_BOOLREV:
-			*(BOOL *)parm_ptr = !lp_bool(pszParmValue);
+			*(bool *)parm_ptr = !lp_bool(pszParmValue);
 			break;
 
 		case P_INTEGER:
@@ -4163,7 +4162,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
  Process a parameter.
 ***************************************************************************/
 
-static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
+static bool do_parameter(const char *pszParmName, const char *pszParmValue)
 {
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
@@ -4194,11 +4193,11 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_BOOL:
-			fprintf(f, "%s", BOOLSTR(*(BOOL *)ptr));
+			fprintf(f, "%s", BOOLSTR(*(bool *)ptr));
 			break;
 
 		case P_BOOLREV:
-			fprintf(f, "%s", BOOLSTR(!*(BOOL *)ptr));
+			fprintf(f, "%s", BOOLSTR(!*(bool *)ptr));
 			break;
 
 		case P_INTEGER:
@@ -4249,12 +4248,12 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
  Check if two parameters are equal.
 ***************************************************************************/
 
-static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
+static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
 		case P_BOOLREV:
-			return (*((BOOL *)ptr1) == *((BOOL *)ptr2));
+			return (*((bool *)ptr1) == *((bool *)ptr2));
 
 		case P_INTEGER:
 		case P_ENUM:
@@ -4308,10 +4307,10 @@ void init_locals(void)
  Returns True on success, False on failure. 
 ***************************************************************************/
 
-static BOOL do_section(const char *pszSectionName)
+static bool do_section(const char *pszSectionName)
 {
-	BOOL bRetval;
-	BOOL isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
+	bool bRetval;
+	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
 	bRetval = False;
 
@@ -4358,7 +4357,7 @@ static BOOL do_section(const char *pszSectionName)
  Determine if a partcular base parameter is currentl set to the default value.
 ***************************************************************************/
 
-static BOOL is_default(int i)
+static bool is_default(int i)
 {
 	if (!defaults_saved)
 		return False;
@@ -4377,7 +4376,7 @@ static BOOL is_default(int i)
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
-				*(BOOL *)parm_table[i].ptr;
+				*(bool *)parm_table[i].ptr;
 		case P_CHAR:
 			return parm_table[i].def.cvalue ==
 				*(char *)parm_table[i].ptr;
@@ -4427,7 +4426,7 @@ static void dump_globals(FILE *f)
  Return True if a local parameter is currently set to the global default.
 ***************************************************************************/
 
-BOOL lp_is_default(int snum, struct parm_struct *parm)
+bool lp_is_default(int snum, struct parm_struct *parm)
 {
 	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
 
@@ -4490,10 +4489,10 @@ static void dump_a_service(service * pService, FILE * f)
  Display the contents of a parameter of a single services record.
 ***************************************************************************/
 
-BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
+bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 {
 	int i;
-	BOOL result = False;
+	bool result = False;
 	parm_class p_class;
 	unsigned flag = 0;
 	fstring local_parm_name;
@@ -4636,7 +4635,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 /***************************************************************************
  Display the contents of a single copy structure.
 ***************************************************************************/
-static void dump_copy_map(BOOL *pcopymap)
+static void dump_copy_map(bool *pcopymap)
 {
 	int i;
 	if (!pcopymap)
@@ -4658,7 +4657,7 @@ static void dump_copy_map(BOOL *pcopymap)
  Return TRUE if the passed service number is within range.
 ***************************************************************************/
 
-BOOL lp_snum_ok(int iService)
+bool lp_snum_ok(int iService)
 {
 	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
@@ -4716,7 +4715,7 @@ void lp_add_one_printer(char *name, char *comment)
  Have we loaded a services file yet?
 ***************************************************************************/
 
-BOOL lp_loaded(void)
+bool lp_loaded(void)
 {
 	return (bLoaded);
 }
@@ -4725,7 +4724,7 @@ BOOL lp_loaded(void)
  Unload unused services.
 ***************************************************************************/
 
-void lp_killunused(BOOL (*snumused) (int))
+void lp_killunused(bool (*snumused) (int))
 {
 	int i;
 	for (i = 0; i < iNumServices; i++) {
@@ -4791,7 +4790,7 @@ static void lp_save_defaults(void)
 			case P_BOOL:
 			case P_BOOLREV:
 				parm_table[i].def.bvalue =
-					*(BOOL *)parm_table[i].ptr;
+					*(bool *)parm_table[i].ptr;
 				break;
 			case P_CHAR:
 				parm_table[i].def.cvalue =
@@ -4869,7 +4868,7 @@ static void set_server_role(void)
 		case SEC_USER:
 			if (lp_domain_logons()) {
 
-				if (Globals.bDomainMaster) /* auto or yes */ 
+				if (Globals.iDomainMaster) /* auto or yes */ 
 					server_role = ROLE_DOMAIN_PDC;
 				else
 					server_role = ROLE_DOMAIN_BDC;
@@ -4916,7 +4915,7 @@ static void set_allowed_client_auth(void)
  get their sorry ass fired.
 ***************************************************************************/
 
-static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
+static bool check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	if (!S_ISREG(psbuf->st_mode)) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
@@ -4958,7 +4957,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			pstring sharepath,
 			pstring comment,
 			SEC_DESC **ppsd,
-			BOOL *pallow_guest)
+			bool *pallow_guest)
 {
 	const char **prefixallowlist = lp_usershare_prefix_allow_list();
 	const char **prefixdenylist = lp_usershare_prefix_deny_list();
@@ -5127,7 +5126,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	int iService = -1;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC *psd = NULL;
-	BOOL guest_ok = False;
+	bool guest_ok = False;
 
 	/* Ensure share name doesn't contain invalid characters. */
 	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
@@ -5284,7 +5283,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
  Checks if a usershare entry has been modified since last load.
 ***************************************************************************/
 
-static BOOL usershare_exists(int iService, time_t *last_mod)
+static bool usershare_exists(int iService, time_t *last_mod)
 {
 	SMB_STRUCT_STAT lsbuf;
 	const char *usersharepath = Globals.szUsersharePath;
@@ -5584,14 +5583,14 @@ void gfree_loadparm(void)
  False on failure.
 ***************************************************************************/
 
-BOOL lp_load(const char *pszFname,
-             BOOL global_only,
-             BOOL save_defaults,
-	     BOOL add_ipc,
-             BOOL initialize_globals)
+bool lp_load(const char *pszFname,
+             bool global_only,
+             bool save_defaults,
+	     bool add_ipc,
+             bool initialize_globals)
 {
 	pstring n2;
-	BOOL bRetval;
+	bool bRetval;
 	param_opt_struct *data, *pdata;
 
 	pstrcpy(n2, pszFname);
@@ -5688,7 +5687,7 @@ int lp_numservices(void)
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
 
-void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
+void lp_dump(FILE *f, bool show_defaults, int maxtoprint)
 {
 	int iService;
 
@@ -5709,7 +5708,7 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 Display the contents of one service in human-readable form.
 ***************************************************************************/
 
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum)
+void lp_dump_one(FILE * f, bool show_defaults, int snum)
 {
 	if (VALID(snum)) {
 		if (ServicePtrs[snum]->szService[0] == '\0')
@@ -5779,7 +5778,7 @@ int lp_servicenumber(const char *pszServiceName)
 	return (iService);
 }
 
-BOOL share_defined(const char *service_name)
+bool share_defined(const char *service_name)
 {
 	return (lp_servicenumber(service_name) != -1);
 }
@@ -5959,24 +5958,24 @@ int lp_server_role(void)
  If we are PDC then prefer us as DMB
 ************************************************************/
 
-BOOL lp_domain_master(void)
+bool lp_domain_master(void)
 {
-	if (Globals.bDomainMaster == Auto)
+	if (Globals.iDomainMaster == Auto)
 		return (lp_server_role() == ROLE_DOMAIN_PDC);
 
-	return Globals.bDomainMaster;
+	return (bool)Globals.iDomainMaster;
 }
 
 /***********************************************************
  If we are DMB then prefer us as LMB
 ************************************************************/
 
-BOOL lp_preferred_master(void)
+bool lp_preferred_master(void)
 {
-	if (Globals.bPreferredMaster == Auto)
+	if (Globals.iPreferredMaster == Auto)
 		return (lp_local_master() && lp_domain_master());
 
-	return Globals.bPreferredMaster;
+	return (bool)Globals.iPreferredMaster;
 }
 
 /*******************************************************************
@@ -6019,7 +6018,7 @@ int lp_default_server_announce(void)
 
 int lp_major_announce_version(void)
 {
-	static BOOL got_major = False;
+	static bool got_major = False;
 	static int major_version = DEFAULT_MAJOR_VERSION;
 	char *vers;
 	char *p;
@@ -6041,7 +6040,7 @@ int lp_major_announce_version(void)
 
 int lp_minor_announce_version(void)
 {
-	static BOOL got_minor = False;
+	static bool got_minor = False;
 	static int minor_version = DEFAULT_MINOR_VERSION;
 	char *vers;
 	char *p;
@@ -6129,7 +6128,7 @@ const char *lp_printcapname(void)
 
 static uint32 spoolss_state;
 
-BOOL lp_disable_spoolss( void )
+bool lp_disable_spoolss( void )
 {
 	if ( spoolss_state == SVCCTL_STATE_UNKNOWN )
 		spoolss_state = _lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
@@ -6153,7 +6152,7 @@ uint32 lp_get_spoolss_state( void )
  Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
-BOOL lp_use_sendfile(int snum)
+bool lp_use_sendfile(int snum)
 {
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
@@ -6166,7 +6165,7 @@ BOOL lp_use_sendfile(int snum)
  Turn off sendfile if we find the underlying OS doesn't support it.
 ********************************************************************/
 
-void set_use_sendfile(int snum, BOOL val)
+void set_use_sendfile(int snum, bool val)
 {
 	if (LP_SNUM_OK(snum))
 		ServicePtrs[snum]->bUseSendfile = val;
@@ -6178,7 +6177,7 @@ void set_use_sendfile(int snum, BOOL val)
  Turn off storing DOS attributes if this share doesn't support it.
 ********************************************************************/
 
-void set_store_dos_attributes(int snum, BOOL val)
+void set_store_dos_attributes(int snum, bool val)
 {
 	if (!LP_SNUM_OK(snum))
 		return;
@@ -6194,9 +6193,9 @@ void lp_set_mangling_method(const char *new_method)
  Global state for POSIX pathname processing.
 ********************************************************************/
 
-static BOOL posix_pathnames;
+static bool posix_pathnames;
 
-BOOL lp_posix_pathnames(void)
+bool lp_posix_pathnames(void)
 {
 	return posix_pathnames;
 }
@@ -6215,7 +6214,7 @@ void lp_set_posix_pathnames(void)
  Global state for POSIX lock processing - CIFS unix extensions.
 ********************************************************************/
 
-BOOL posix_default_lock_was_set;
+bool posix_default_lock_was_set;
 static enum brl_flavour posix_cifsx_locktype; /* By default 0 == WINDOWS_LOCK */
 
 enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp)

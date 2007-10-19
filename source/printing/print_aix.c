@@ -27,7 +27,7 @@
 #include "includes.h"
 
 #ifdef AIX
-BOOL aix_cache_reload(void)
+bool aix_cache_reload(void)
 {
 	int iEtat;
 	XFILE *pfile;

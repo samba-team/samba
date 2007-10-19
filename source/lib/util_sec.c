@@ -39,7 +39,7 @@
 
 #define DEBUG(x, y) printf y
 #define smb_panic(x) exit(1)
-#define BOOL int
+#define bool int
 #endif
 
 /* are we running as non-root? This is used by the regresison test code,
@@ -82,7 +82,7 @@ gid_t sec_initial_gid(void)
 /****************************************************************************
 are we running in non-root mode?
 ****************************************************************************/
-BOOL non_root_mode(void)
+bool non_root_mode(void)
 {
 	return (initial_uid != (uid_t)0);
 }
@@ -476,7 +476,7 @@ main()
 /****************************************************************************
 Check if we are setuid root.  Used in libsmb and smbpasswd paranoia checks.
 ****************************************************************************/
-BOOL is_setuid_root(void) 
+bool is_setuid_root(void) 
 {
 	return (geteuid() == (uid_t)0) && (getuid() != (uid_t)0);
 }

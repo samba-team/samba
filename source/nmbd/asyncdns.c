@@ -166,7 +166,7 @@ void start_async_dns(void)
 /***************************************************************************
 check if a particular name is already being queried
   ****************************************************************************/
-static BOOL query_current(struct query_record *r)
+static bool query_current(struct query_record *r)
 {
 	return dns_current &&
 		nmb_name_equal(&r->name, 
@@ -177,7 +177,7 @@ static BOOL query_current(struct query_record *r)
 /***************************************************************************
   write a query to the child process
   ****************************************************************************/
-static BOOL write_child(struct packet_struct *p)
+static bool write_child(struct packet_struct *p)
 {
 	struct query_record r;
 
@@ -285,7 +285,7 @@ void run_dns_queue(void)
 queue a DNS query
   ****************************************************************************/
 
-BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
+bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 {
 	if (in_dns || fd_in == -1)
 		return False;
@@ -317,7 +317,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
   we use this when we can't do async DNS lookups
   ****************************************************************************/
 
-BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
+bool queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 {
 	struct name_record *namerec = NULL;
 	struct in_addr dns_ip;

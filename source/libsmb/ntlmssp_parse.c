@@ -39,7 +39,7 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-BOOL msrpc_gen(DATA_BLOB *blob,
+bool msrpc_gen(DATA_BLOB *blob,
 	       const char *format, ...)
 {
 	int i, n;
@@ -182,7 +182,7 @@ if ((head_ofs + amount) > blob->length) { \
   C = constant ascii string
  */
 
-BOOL msrpc_parse(const DATA_BLOB *blob,
+bool msrpc_parse(const DATA_BLOB *blob,
 		 const char *format, ...)
 {
 	int i;

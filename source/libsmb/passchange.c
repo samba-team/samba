@@ -33,7 +33,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	struct in_addr ip;
 
 	NTSTATUS result;
-	BOOL pass_must_change = False;
+	bool pass_must_change = False;
 
 	*err_str = '\0';
 

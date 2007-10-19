@@ -135,7 +135,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
 	char *domain_name = NULL;
-	static BOOL got_domain_sid;
+	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID *dom_sid = NULL;
 	struct rpc_pipe_client *lsapipe = NULL;

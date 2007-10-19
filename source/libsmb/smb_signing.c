@@ -25,7 +25,7 @@ struct outstanding_packet_lookup {
 	struct outstanding_packet_lookup *prev, *next;
 	uint16 mid;
 	uint32 reply_seq_num;
-	BOOL can_delete; /* Set to False in trans state. */
+	bool can_delete; /* Set to False in trans state. */
 };
 
 struct smb_basic_signing_context {
@@ -34,7 +34,7 @@ struct smb_basic_signing_context {
 	struct outstanding_packet_lookup *outstanding_packet_list;
 };
 
-static BOOL store_sequence_for_reply(struct outstanding_packet_lookup **list, 
+static bool store_sequence_for_reply(struct outstanding_packet_lookup **list, 
 				     uint16 mid, uint32 reply_seq_num)
 {
 	struct outstanding_packet_lookup *t;
@@ -68,7 +68,7 @@ static BOOL store_sequence_for_reply(struct outstanding_packet_lookup **list,
 	return True;
 }
 
-static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
+static bool get_sequence_for_reply(struct outstanding_packet_lookup **list,
 				   uint16 mid, uint32 *reply_seq_num)
 {
 	struct outstanding_packet_lookup *t;
@@ -88,7 +88,7 @@ static BOOL get_sequence_for_reply(struct outstanding_packet_lookup **list,
 	return False;
 }
 
-static BOOL set_sequence_can_delete_flag(struct outstanding_packet_lookup **list, uint16 mid, BOOL can_delete_entry)
+static bool set_sequence_can_delete_flag(struct outstanding_packet_lookup **list, uint16 mid, bool can_delete_entry)
 {
 	struct outstanding_packet_lookup *t;
 
@@ -105,7 +105,7 @@ static BOOL set_sequence_can_delete_flag(struct outstanding_packet_lookup **list
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
 
-static BOOL cli_set_smb_signing_common(struct cli_state *cli) 
+static bool cli_set_smb_signing_common(struct cli_state *cli) 
 {
 	if (!cli->sign_info.allow_smb_signing) {
 		return False;
@@ -134,7 +134,7 @@ static BOOL cli_set_smb_signing_common(struct cli_state *cli)
  SMB signing - Common code for 'real' implementations
 ************************************************************/
 
-static BOOL set_smb_signing_real_common(struct smb_sign_info *si)
+static bool set_smb_signing_real_common(struct smb_sign_info *si)
 {
 	if (si->mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
@@ -170,9 +170,9 @@ static void null_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - NULL implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL null_check_incoming_message(const char *inbuf,
+static bool null_check_incoming_message(const char *inbuf,
 					struct smb_sign_info *si,
-					BOOL must_be_ok)
+					bool must_be_ok)
 {
 	return True;
 }
@@ -193,7 +193,7 @@ static void null_free_signing_context(struct smb_sign_info *si)
        shut down a real signing mechanism
 */
 
-static BOOL null_set_signing(struct smb_sign_info *si)
+static bool null_set_signing(struct smb_sign_info *si)
 {
 	si->signing_context = NULL;
 	
@@ -219,8 +219,8 @@ static void free_signing_context(struct smb_sign_info *si)
 }
 
 
-static BOOL signing_good(const char *inbuf, struct smb_sign_info *si,
-			 BOOL good, uint32 seq, BOOL must_be_ok)
+static bool signing_good(const char *inbuf, struct smb_sign_info *si,
+			 bool good, uint32 seq, bool must_be_ok)
 {
 	if (good) {
 
@@ -378,11 +378,11 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - Client implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL client_check_incoming_message(const char *inbuf,
+static bool client_check_incoming_message(const char *inbuf,
 					  struct smb_sign_info *si,
-					  BOOL must_be_ok)
+					  bool must_be_ok)
 {
-	BOOL good;
+	bool good;
 	uint32 reply_seq_number;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
@@ -465,7 +465,7 @@ static void simple_free_signing_context(struct smb_sign_info *si)
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_simple_set_signing(struct cli_state *cli,
+bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
 			    const DATA_BLOB response)
 {
@@ -536,8 +536,8 @@ static void temp_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL temp_check_incoming_message(const char *inbuf,
-					struct smb_sign_info *si, BOOL foo)
+static bool temp_check_incoming_message(const char *inbuf,
+					struct smb_sign_info *si, bool foo)
 {
 	return True;
 }
@@ -555,7 +555,7 @@ static void temp_free_signing_context(struct smb_sign_info *si)
  SMB signing - NULL implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_null_set_signing(struct cli_state *cli)
+bool cli_null_set_signing(struct cli_state *cli)
 {
 	return null_set_signing(&cli->sign_info);
 }
@@ -564,7 +564,7 @@ BOOL cli_null_set_signing(struct cli_state *cli)
  SMB signing - temp implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_temp_set_signing(struct cli_state *cli)
+bool cli_temp_set_signing(struct cli_state *cli)
 {
 	if (!cli_set_smb_signing_common(cli)) {
 		return False;
@@ -599,7 +599,7 @@ void cli_calculate_sign_mac(struct cli_state *cli)
  *         which had a bad checksum, True otherwise.
  */
  
-BOOL cli_check_sign_mac(struct cli_state *cli) 
+bool cli_check_sign_mac(struct cli_state *cli) 
 {
 	if (!cli->sign_info.check_incoming_message(cli->inbuf, &cli->sign_info, True)) {
 		free_signing_context(&cli->sign_info);	
@@ -612,7 +612,7 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
  Enter trans/trans2/nttrans state.
 ************************************************************/
 
-BOOL client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
+bool client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
 {
 	struct smb_sign_info *si = &cli->sign_info;
 	struct smb_basic_signing_context *data = (struct smb_basic_signing_context *)si->signing_context;
@@ -636,7 +636,7 @@ BOOL client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid)
  Leave trans/trans2/nttrans state.
 ************************************************************/
 
-BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
+bool client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
 {
 	uint32 reply_seq_num;
 	struct smb_sign_info *si = &cli->sign_info;
@@ -666,7 +666,7 @@ BOOL client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid)
  Is client signing on ?
 ************************************************************/
 
-BOOL client_is_signing_on(struct cli_state *cli)
+bool client_is_signing_on(struct cli_state *cli)
 {
 	struct smb_sign_info *si = &cli->sign_info;
 	return si->doing_signing;
@@ -718,11 +718,11 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
  SMB signing - Server implementation - check a MAC sent by server.
 ************************************************************/
 
-static BOOL srv_check_incoming_message(const char *inbuf,
+static bool srv_check_incoming_message(const char *inbuf,
 				       struct smb_sign_info *si,
-				       BOOL must_be_ok)
+				       bool must_be_ok)
 {
-	BOOL good;
+	bool good;
 	struct smb_basic_signing_context *data =
 		(struct smb_basic_signing_context *)si->signing_context;
 	uint32 reply_seq_number = data->send_seq_num;
@@ -801,9 +801,9 @@ static struct smb_sign_info srv_sign_info = {
  Turn signing off or on for oplock break code.
 ************************************************************/
 
-BOOL srv_oplock_set_signing(BOOL onoff)
+bool srv_oplock_set_signing(bool onoff)
 {
-	BOOL ret = srv_sign_info.doing_signing;
+	bool ret = srv_sign_info.doing_signing;
 	srv_sign_info.doing_signing = onoff;
 	return ret;
 }
@@ -812,7 +812,7 @@ BOOL srv_oplock_set_signing(BOOL onoff)
  Called to validate an incoming packet from the client.
 ************************************************************/
 
-BOOL srv_check_sign_mac(const char *inbuf, BOOL must_be_ok)
+bool srv_check_sign_mac(const char *inbuf, bool must_be_ok)
 {
 	/* Check if it's a session keepalive. */
 	if(CVAL(inbuf,0) == SMBkeepalive) {
@@ -908,7 +908,7 @@ void srv_set_signing_negotiated(void)
  reads/writes if it is.
 ************************************************************/
 
-BOOL srv_is_signing_active(void)
+bool srv_is_signing_active(void)
 {
 	return srv_sign_info.doing_signing;
 }
@@ -919,7 +919,7 @@ BOOL srv_is_signing_active(void)
  in the negprot.  
 ************************************************************/
 
-BOOL srv_is_signing_negotiated(void)
+bool srv_is_signing_negotiated(void)
 {
 	return srv_sign_info.negotiated_smb_signing;
 }
@@ -928,7 +928,7 @@ BOOL srv_is_signing_negotiated(void)
  Returns whether signing is actually happening
 ************************************************************/
 
-BOOL srv_signing_started(void)
+bool srv_signing_started(void)
 {
 	struct smb_basic_signing_context *data;
 

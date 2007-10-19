@@ -47,7 +47,7 @@ struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_S
 /*
   return True if two file_id structures are equal
  */
-BOOL file_id_equal(const struct file_id *id1, const struct file_id *id2)
+bool file_id_equal(const struct file_id *id1, const struct file_id *id2)
 {
 	return id1->inode == id2->inode && id1->devid == id2->devid;
 }

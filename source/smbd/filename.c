@@ -26,14 +26,14 @@
 
 #include "includes.h"
 
-static BOOL scan_directory(connection_struct *conn, const char *path,
+static bool scan_directory(connection_struct *conn, const char *path,
 			   char *name, char **found_name);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
 
-static BOOL mangled_equal(const char *name1,
+static bool mangled_equal(const char *name1,
 			const char *name2,
 			const struct share_params *p)
 {
@@ -50,7 +50,7 @@ static BOOL mangled_equal(const char *name1,
 ****************************************************************************/
 
 static NTSTATUS determine_path_error(const char *name,
-			BOOL allow_wcard_last_component)
+			bool allow_wcard_last_component)
 {
 	const char *p;
 
@@ -110,7 +110,7 @@ for nlinks = 0, which can never be true for any file).
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *orig_path,
-			BOOL allow_wcard_last_component,
+			bool allow_wcard_last_component,
 			char **pp_conv_path,
 			char **pp_saved_last_component,
 			SMB_STRUCT_STAT *pst)
@@ -119,8 +119,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *start, *end;
 	char *dirpath = NULL;
 	char *name = NULL;
-	BOOL component_was_mangled = False;
-	BOOL name_has_wildcard = False;
+	bool component_was_mangled = False;
+	bool name_has_wildcard = False;
 	NTSTATUS result;
 
 	SET_STAT_INVALID(*pst);
@@ -702,8 +702,8 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
 
-static BOOL fname_equal(const char *name1, const char *name2,
-		BOOL case_sensitive)
+static bool fname_equal(const char *name1, const char *name2,
+		bool case_sensitive)
 {
 	/* Normal filename handling */
 	if (case_sensitive) {
@@ -718,12 +718,12 @@ static BOOL fname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(connection_struct *conn, const char *path,
+static bool scan_directory(connection_struct *conn, const char *path,
 			   char *name, char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname;
-	BOOL mangled;
+	bool mangled;
 	char *unmangled_name = NULL;
 	long curpos;
 	TALLOC_CTX *ctx = talloc_tos();

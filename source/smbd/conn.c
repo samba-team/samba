@@ -52,7 +52,7 @@ int conn_num_open(void)
 /****************************************************************************
 check if a snum is in use
 ****************************************************************************/
-BOOL conn_snum_used(int snum)
+bool conn_snum_used(int snum)
 {
 	connection_struct *conn;
 	for (conn=Connections;conn;conn=conn->next) {
@@ -186,7 +186,7 @@ void conn_close_all(void)
  Idle inactive connections.
 ****************************************************************************/
 
-BOOL conn_idle_all(time_t t)
+bool conn_idle_all(time_t t)
 {
 	int deadtime = lp_deadtime()*60;
 	pipes_struct *plist = NULL;

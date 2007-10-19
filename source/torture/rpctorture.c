@@ -53,7 +53,7 @@ void rpcclient_init(void)
 /****************************************************************************
 make smb client connection
 ****************************************************************************/
-static BOOL rpcclient_connect(struct client_info *info)
+static bool rpcclient_connect(struct client_info *info)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -222,7 +222,7 @@ enum client_action
 	extern char *optarg;
 	extern int optind;
 	pstring term_code;
-	BOOL got_pass = False;
+	bool got_pass = False;
 	char *cmd_str="";
 	enum client_action cli_action = CLIENT_NONE;
 	int nprocs = 1;

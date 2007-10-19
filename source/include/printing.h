@@ -34,8 +34,8 @@ struct printjob {
 	int status; /* the status of this job */
 	size_t size; /* the size of the job so far */
 	int page_count;	/* then number of pages so far */
-	BOOL spooled; /* has it been sent to the spooler yet? */
-	BOOL smbjob; /* set if the job is a SMB job */
+	bool spooled; /* has it been sent to the spooler yet? */
+	bool smbjob; /* set if the job is a SMB job */
 	fstring filename; /* the filename used to spool the file */
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */

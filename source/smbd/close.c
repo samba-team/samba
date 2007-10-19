@@ -162,7 +162,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	BOOL delete_file = False;
+	bool delete_file = False;
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
@@ -189,7 +189,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if (fsp->initial_delete_on_close && (lck->delete_token == NULL)) {
-		BOOL became_user = False;
+		bool became_user = False;
 
 		/* Initial delete on close was set and no one else
 		 * wrote a real delete on close. */
@@ -432,7 +432,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_type)
 {
 	struct share_mode_lock *lck = 0;
-	BOOL delete_dir = False;
+	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
 
 	/*
@@ -452,7 +452,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	}
 
 	if (fsp->initial_delete_on_close) {
-		BOOL became_user = False;
+		bool became_user = False;
 
 		/* Initial delete on close was set - for
 		 * directories we don't care if anyone else

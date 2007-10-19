@@ -107,7 +107,7 @@ int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
  Check for the existance of a key
  **********************************************************************/
 
-BOOL regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
+bool regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
 {
 	int 	i;
 
@@ -260,7 +260,7 @@ REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
  Check for the existance of a value
  **********************************************************************/
 
-BOOL regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
+bool regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
 {
 	int 	i;
 

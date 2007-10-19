@@ -18,7 +18,7 @@
 
 #include "includes.h"
 
-extern BOOL AllowDebugChange;
+extern bool AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -28,8 +28,8 @@ extern char *optarg;
 extern int optind;
 
 /* forced running in root-mode */
-static BOOL got_username = False;
-static BOOL stdin_passwd_get = False;
+static bool got_username = False;
+static bool stdin_passwd_get = False;
 static fstring user_name;
 static char *new_passwd = NULL;
 static const char *remote_machine = NULL;
@@ -199,7 +199,7 @@ static int process_options(int argc, char **argv, int local_flags)
 /*************************************************************
  Utility function to prompt for new password.
 *************************************************************/
-static char *prompt_for_new_password(BOOL stdin_get)
+static char *prompt_for_new_password(bool stdin_get)
 {
 	char *p;
 	fstring new_pw;
@@ -263,7 +263,7 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 /*******************************************************************
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
-static BOOL store_ldap_admin_pw (char* pw)
+static bool store_ldap_admin_pw (char* pw)
 {	
 	if (!pw) 
 		return False;

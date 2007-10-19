@@ -75,7 +75,7 @@ void load_lmhosts_file(const char *fname)
   subnet it will be found by normal name query processing.
 ****************************************************************************/
 
-BOOL find_name_in_lmhosts(struct nmb_name *nmbname, struct name_record **namerecp)
+bool find_name_in_lmhosts(struct nmb_name *nmbname, struct name_record **namerecp)
 {
 	struct name_record *namerec;
 

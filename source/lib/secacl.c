@@ -74,7 +74,7 @@ SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
  Compares two SEC_ACL structures
 ********************************************************************/
 
-BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
+bool sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 {
 	unsigned int i, j;
 
@@ -101,7 +101,7 @@ BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 	   each ACE in s2. */
 
 	for (i = 0; i < s1->num_aces; i++) {
-		BOOL found = False;
+		bool found = False;
 
 		for (j = 0; j < s2->num_aces; j++) {
 			if (sec_ace_equal(&s1->aces[i], &s2->aces[j])) {

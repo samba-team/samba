@@ -59,7 +59,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		struct group *gr;
 		const char *name;
 		enum lsa_SidType type;
-		BOOL ret;
+		bool ret;
 		
 		switch (ids[i]->xid.type) {
 		case ID_TYPE_UID:
@@ -150,7 +150,7 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		enum lsa_SidType type;
 		const char *dom_name = NULL;
 		const char *name = NULL;
-		BOOL ret;
+		bool ret;
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */

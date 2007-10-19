@@ -188,14 +188,14 @@ void event_fd_set_not_readable(struct fd_event *fde)
  * Return if there's something in the queue
  */
 
-BOOL event_add_to_select_args(struct event_context *event_ctx,
+bool event_add_to_select_args(struct event_context *event_ctx,
 			      const struct timeval *now,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd)
 {
 	struct fd_event *fde;
 	struct timeval diff;
-	BOOL ret = False;
+	bool ret = False;
 
 	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
 		if (fde->flags & EVENT_FD_READ) {
@@ -223,7 +223,7 @@ BOOL event_add_to_select_args(struct event_context *event_ctx,
 	return True;
 }
 
-BOOL events_pending(struct event_context *event_ctx)
+bool events_pending(struct event_context *event_ctx)
 {
 	struct fd_event *fde;
 
@@ -238,10 +238,10 @@ BOOL events_pending(struct event_context *event_ctx)
 	return False;
 }
 
-BOOL run_events(struct event_context *event_ctx,
+bool run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
-	BOOL fired = False;
+	bool fired = False;
 	struct fd_event *fde, *next;
 
 	/* Run all events that are pending, not just one (as we

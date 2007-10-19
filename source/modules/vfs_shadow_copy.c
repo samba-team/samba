@@ -61,7 +61,7 @@ typedef struct {
 	SMB_STRUCT_DIRENT *dirs;
 } shadow_copy_Dir;
 
-static BOOL shadow_copy_match_name(const char *name)
+static bool shadow_copy_match_name(const char *name)
 {
 	if (strncmp(SHADOW_COPY_PREFIX,name, sizeof(SHADOW_COPY_PREFIX)-1)==0 &&
 		(strlen(SHADOW_COPY_SAMPLE) == strlen(name))) {
@@ -160,7 +160,7 @@ static int shadow_copy_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *_dirp
 	return 0;	
 }
 
-static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
 {
 	SMB_STRUCT_DIR *p = SMB_VFS_NEXT_OPENDIR(handle,fsp->conn->connectpath,NULL,0);
 

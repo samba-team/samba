@@ -83,7 +83,7 @@ typedef struct _SMB_NTQUOTA_LIST {
 } SMB_NTQUOTA_LIST;
 
 typedef struct _SMB_NTQUOTA_HANDLE {
-	BOOL valid;
+	bool valid;
 	SMB_NTQUOTA_LIST *quota_list;
 	SMB_NTQUOTA_LIST *tmp_list;
 } SMB_NTQUOTA_HANDLE;

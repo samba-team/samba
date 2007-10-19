@@ -57,7 +57,7 @@ static int smb_krb5_kt_add_entry( krb5_context context, krb5_keytab keytab,
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		DEBUG(3,("smb_krb5_kt_add_entry: Will try to delete old keytab entries\n"));
 		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
-			BOOL compare_name_ok = False;
+			bool compare_name_ok = False;
 
 			ret = smb_krb5_unparse_name(context, kt_entry.principal, &ktprinc);
 			if (ret) {

@@ -42,9 +42,9 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 {
 	struct junction_map *jn = NULL;
 	struct referral *old_referral_list = NULL;
-	BOOL self_ref = False;
+	bool self_ref = False;
 	int consumedcnt = 0;
-	BOOL exists = False;
+	bool exists = False;
 	char *altpath = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -113,9 +113,9 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 {
 	struct junction_map *jn = NULL;
-	BOOL self_ref = False;
+	bool self_ref = False;
 	int consumedcnt = 0;
-	BOOL found = False;
+	bool found = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *altpath = NULL;
 
@@ -195,7 +195,7 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 	return WERR_OK;
 }
 
-static BOOL init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,struct dfs_Info1* dfs1)
+static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,struct dfs_Info1* dfs1)
 {
 	dfs1->path = talloc_asprintf(mem_ctx,
 				"\\\\%s\\%s\\%s", global_myname(),
@@ -207,7 +207,7 @@ static BOOL init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,st
 	return True;
 }
 
-static BOOL init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info2* dfs2)
+static bool init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info2* dfs2)
 {
 	dfs2->path = talloc_asprintf(mem_ctx,
 			"\\\\%s\\%s\\%s", global_myname(), j->service_name, j->volume_name);
@@ -219,7 +219,7 @@ static BOOL init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	return True;
 }
 
-static BOOL init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info3* dfs3)
+static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info3* dfs3)
 {
 	int ii;
 	if (j->volume_name[0] == '\0')
@@ -271,7 +271,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	return True;
 }
 
-static BOOL init_reply_dfs_info_100(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info100* dfs100)
+static bool init_reply_dfs_info_100(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info100* dfs100)
 {
 	dfs100->comment = talloc_strdup(mem_ctx, j->comment);
 	return True;
@@ -355,9 +355,9 @@ WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 {
 	int consumedcnt = strlen(r->in.dfs_entry_path);
 	struct junction_map *jn = NULL;
-	BOOL self_ref = False;
+	bool self_ref = False;
 	TALLOC_CTX *ctx = talloc_tos();
-	BOOL ret;
+	bool ret;
 
 	jn = TALLOC_ZERO_P(ctx, struct junction_map);
 	if (!jn) {

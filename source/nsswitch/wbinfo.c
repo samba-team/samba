@@ -28,10 +28,10 @@
 
 extern int winbindd_fd;
 
-static char winbind_separator_int(BOOL strict)
+static char winbind_separator_int(bool strict)
 {
 	struct winbindd_response response;
-	static BOOL got_sep;
+	static bool got_sep;
 	static char sep;
 
 	if (got_sep)
@@ -97,7 +97,7 @@ static const char *get_winbind_domain(void)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, 
+static bool parse_wbinfo_domain_user(const char *domuser, fstring domain, 
 				     fstring user)
 {
 
@@ -126,7 +126,7 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain,
 
 /* pull pwent info for a given user */
 
-static BOOL wbinfo_get_userinfo(char *user)
+static bool wbinfo_get_userinfo(char *user)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -157,7 +157,7 @@ static BOOL wbinfo_get_userinfo(char *user)
 }
 
 /* pull pwent info for a given uid */
-static BOOL wbinfo_get_uidinfo(int uid)
+static bool wbinfo_get_uidinfo(int uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -186,7 +186,7 @@ static BOOL wbinfo_get_uidinfo(int uid)
 }
 
 /* pull grent for a given group */
-static BOOL wbinfo_get_groupinfo(char *group)
+static bool wbinfo_get_groupinfo(char *group)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -215,7 +215,7 @@ static BOOL wbinfo_get_groupinfo(char *group)
 
 /* List groups a user is a member of */
 
-static BOOL wbinfo_get_usergroups(char *user)
+static bool wbinfo_get_usergroups(char *user)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -244,7 +244,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 
 
 /* List group SIDs a user SID is a member of */
-static BOOL wbinfo_get_usersids(char *user_sid)
+static bool wbinfo_get_usersids(char *user_sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -274,7 +274,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	return True;
 }
 
-static BOOL wbinfo_get_userdomgroups(const char *user_sid)
+static bool wbinfo_get_userdomgroups(const char *user_sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -302,7 +302,7 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 
 /* Convert NetBIOS name to IP */
 
-static BOOL wbinfo_wins_byname(char *name)
+static bool wbinfo_wins_byname(char *name)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -328,7 +328,7 @@ static BOOL wbinfo_wins_byname(char *name)
 
 /* Convert IP to NetBIOS name */
 
-static BOOL wbinfo_wins_byip(char *ip)
+static bool wbinfo_wins_byip(char *ip)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -354,7 +354,7 @@ static BOOL wbinfo_wins_byip(char *ip)
 
 /* List trusted domains */
 
-static BOOL wbinfo_list_domains(BOOL list_all_domains)
+static bool wbinfo_list_domains(bool list_all_domains)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -396,7 +396,7 @@ static BOOL wbinfo_list_domains(BOOL list_all_domains)
 
 /* List own domain */
 
-static BOOL wbinfo_list_own_domain(void)
+static bool wbinfo_list_own_domain(void)
 {
 	d_printf("%s\n", get_winbind_domain());
 
@@ -404,7 +404,7 @@ static BOOL wbinfo_list_own_domain(void)
 }
 
 /* show sequence numbers */
-static BOOL wbinfo_show_sequence(const char *domain)
+static bool wbinfo_show_sequence(const char *domain)
 {
 	struct winbindd_request  request;
 	struct winbindd_response response;
@@ -441,7 +441,7 @@ static BOOL wbinfo_show_sequence(const char *domain)
 
 /* Show domain info */
 
-static BOOL wbinfo_domain_info(const char *domain_name)
+static bool wbinfo_domain_info(const char *domain_name)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -479,7 +479,7 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 }
 
 /* Get a foreign DC's name */
-static BOOL wbinfo_getdcname(const char *domain_name)
+static bool wbinfo_getdcname(const char *domain_name)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -505,7 +505,7 @@ static BOOL wbinfo_getdcname(const char *domain_name)
 }
 
 /* Find a DC */
-static BOOL wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
+static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -535,7 +535,7 @@ static BOOL wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 
 /* Check trust account password */
 
-static BOOL wbinfo_check_secret(void)
+static bool wbinfo_check_secret(void)
 {
         struct winbindd_response response;
         NSS_STATUS result;
@@ -557,7 +557,7 @@ static BOOL wbinfo_check_secret(void)
 
 /* Convert uid to sid */
 
-static BOOL wbinfo_uid_to_sid(uid_t uid)
+static bool wbinfo_uid_to_sid(uid_t uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -582,7 +582,7 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 
 /* Convert gid to sid */
 
-static BOOL wbinfo_gid_to_sid(gid_t gid)
+static bool wbinfo_gid_to_sid(gid_t gid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -607,7 +607,7 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 
 /* Convert sid to uid */
 
-static BOOL wbinfo_sid_to_uid(char *sid)
+static bool wbinfo_sid_to_uid(char *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -630,7 +630,7 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	return True;
 }
 
-static BOOL wbinfo_sid_to_gid(char *sid)
+static bool wbinfo_sid_to_gid(char *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -653,7 +653,7 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	return True;
 }
 
-static BOOL wbinfo_allocate_uid(void)
+static bool wbinfo_allocate_uid(void)
 {
 	uid_t uid;
 
@@ -665,7 +665,7 @@ static BOOL wbinfo_allocate_uid(void)
 	return True;
 }
 
-static BOOL wbinfo_allocate_gid(void)
+static bool wbinfo_allocate_gid(void)
 {
 	gid_t gid;
 
@@ -679,7 +679,7 @@ static BOOL wbinfo_allocate_gid(void)
 
 /* Convert sid to string */
 
-static BOOL wbinfo_lookupsid(char *sid)
+static bool wbinfo_lookupsid(char *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -706,7 +706,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 
 /* Lookup a list of RIDs */
 
-static BOOL wbinfo_lookuprids(char *domain, char *arg)
+static bool wbinfo_lookuprids(char *domain, char *arg)
 {
 	size_t i;
 	DOM_SID sid;
@@ -782,7 +782,7 @@ static BOOL wbinfo_lookuprids(char *domain, char *arg)
 
 /* Convert string to sid */
 
-static BOOL wbinfo_lookupname(char *name)
+static bool wbinfo_lookupname(char *name)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -808,7 +808,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 /* Authenticate a user with a plaintext password */
 
-static BOOL wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
+static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -869,7 +869,7 @@ static BOOL wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 
 /* Authenticate a user with a plaintext password */
 
-static BOOL wbinfo_auth(char *username)
+static bool wbinfo_auth(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -909,7 +909,7 @@ static BOOL wbinfo_auth(char *username)
 
 /* Authenticate a user with a challenge/response */
 
-static BOOL wbinfo_auth_crap(char *username)
+static bool wbinfo_auth_crap(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -1009,7 +1009,7 @@ static BOOL wbinfo_auth_crap(char *username)
 
 /* Authenticate a user with a plaintext password and set a token */
 
-static BOOL wbinfo_klog(char *username)
+static bool wbinfo_klog(char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -1067,7 +1067,7 @@ static BOOL wbinfo_klog(char *username)
 
 /* Print domain users */
 
-static BOOL print_domain_users(const char *domain)
+static bool print_domain_users(const char *domain)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -1108,7 +1108,7 @@ static BOOL print_domain_users(const char *domain)
 
 /* Print domain groups */
 
-static BOOL print_domain_groups(const char *domain)
+static bool print_domain_groups(const char *domain)
 {
 	struct winbindd_request  request;
 	struct winbindd_response response;
@@ -1146,7 +1146,7 @@ static BOOL print_domain_groups(const char *domain)
 
 /* Set the authorised user for winbindd access in secrets.tdb */
 
-static BOOL wbinfo_set_auth_user(char *username)
+static bool wbinfo_set_auth_user(char *username)
 {
 	const char *password;
 	char *p;
@@ -1236,7 +1236,7 @@ static void wbinfo_get_auth_user(void)
 	SAFE_FREE(password);
 }
 
-static BOOL wbinfo_ping(void)
+static bool wbinfo_ping(void)
 {
         NSS_STATUS result;
 
@@ -1519,7 +1519,7 @@ int main(int argc, char **argv, char **envp)
 			}
 			break;
 		case 'a': {
-				BOOL got_error = False;
+				bool got_error = False;
 
 				if (!wbinfo_auth(string_arg)) {
 					d_fprintf(stderr, "Could not authenticate user %s with "

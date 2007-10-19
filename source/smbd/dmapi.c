@@ -27,7 +27,7 @@
 
 int dmapi_init_session(void) { return -1; }
 uint32 dmapi_file_flags(const char * const path) { return 0; }
-BOOL dmapi_have_session(void) { return False; }
+bool dmapi_have_session(void) { return False; }
 
 #else /* USE_DMAPI */
 
@@ -73,7 +73,7 @@ static int init_dmapi_service(void)
 	return 0;
 }
 
-BOOL dmapi_have_session(void)
+bool dmapi_have_session(void)
 {
 	return dmapi_session != DM_NO_SESSION;
 }

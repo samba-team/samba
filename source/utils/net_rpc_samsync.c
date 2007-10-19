@@ -583,7 +583,7 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	DOM_SID group_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	BOOL insert = True;
+	bool insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name));
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment));
@@ -714,7 +714,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	unix_members = grp->gr_mem;
 
 	while (*unix_members) {
-		BOOL is_nt_member = False;
+		bool is_nt_member = False;
 		for (i=0; i<delta->num_members; i++) {
 			if (nt_members[i] == NULL) {
 				/* This was a primary group */
@@ -736,7 +736,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	}
 
 	for (i=0; i<delta->num_members; i++) {
-		BOOL is_unix_member = False;
+		bool is_unix_member = False;
 
 		if (nt_members[i] == NULL) {
 			/* This was the primary group */
@@ -774,7 +774,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	DOM_SID alias_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	BOOL insert = True;
+	bool insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name));
 	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment));
@@ -1338,7 +1338,7 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	va_list ap;
 	char *value, *p, *base64;
 	DATA_BLOB base64_blob;
-	BOOL do_base64 = False;
+	bool do_base64 = False;
 	int res;
 
 	va_start(ap, fmt);
@@ -1355,7 +1355,7 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	}
 
 	if (!do_base64) {
-		BOOL only_whitespace = True;
+		bool only_whitespace = True;
 		for (p=value; *p; p++) {
 			/*
 			 * I know that this not multibyte safe, but we break

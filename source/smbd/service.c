@@ -21,7 +21,7 @@
 
 extern userdom_struct current_user_info;
 
-static BOOL canonicalize_path(connection_struct *conn, pstring path)
+static bool canonicalize_path(connection_struct *conn, pstring path)
 {
 #ifdef REALPATH_TAKES_NULL
 	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
@@ -57,7 +57,7 @@ void set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	pstring destname;
 	char *d = destname;
 	const char *s = connectpath;
-        BOOL start_of_name_component = True;
+        bool start_of_name_component = True;
 
 	*d++ = '/'; /* Always start with root. */
 
@@ -161,7 +161,7 @@ void set_conn_connectpath(connection_struct *conn, const char *connectpath)
  Load parameters specific to a connection/service.
 ****************************************************************************/
 
-BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
+bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 {
 	static connection_struct *last_conn;
 	static uint16 last_flags;
@@ -503,7 +503,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS find_forced_user(connection_struct *conn, BOOL vuser_is_guest, fstring username)
+static NTSTATUS find_forced_user(connection_struct *conn, bool vuser_is_guest, fstring username)
 {
 	int snum = conn->params->service;
 	char *fuser, *found_username;
@@ -535,7 +535,7 @@ static NTSTATUS find_forced_user(connection_struct *conn, BOOL vuser_is_guest, f
  * one found.
  */
 
-static NTSTATUS find_forced_group(BOOL force_user,
+static NTSTATUS find_forced_group(bool force_user,
 				  int snum, const char *username,
 				  DOM_SID *pgroup_sid,
 				  gid_t *pgid)
@@ -545,7 +545,7 @@ static NTSTATUS find_forced_group(BOOL force_user,
 	DOM_SID group_sid;
 	enum lsa_SidType type;
 	char *groupname;
-	BOOL user_must_be_member = False;
+	bool user_must_be_member = False;
 	gid_t gid;
 
 	ZERO_STRUCTP(pgroup_sid);
@@ -636,7 +636,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       NTSTATUS *status)
 {
 	struct passwd *pass = NULL;
-	BOOL guest = False;
+	bool guest = False;
 	connection_struct *conn;
 	SMB_STRUCT_STAT st;
 	fstring user;
@@ -773,7 +773,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		 * insensitive for now. */
 		conn->case_sensitive = False;
 	} else {
-		conn->case_sensitive = (BOOL)lp_casesensitive(snum);
+		conn->case_sensitive = (bool)lp_casesensitive(snum);
 	}
 
 	conn->case_preserve = lp_preservecase(snum);
@@ -908,7 +908,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	{
-		BOOL can_write = False;
+		bool can_write = False;
 		NT_USER_TOKEN *token = conn->nt_user_token ?
 			conn->nt_user_token :
 			(vuser ? vuser->nt_user_token : NULL);

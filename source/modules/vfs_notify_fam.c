@@ -62,7 +62,7 @@ struct fam_watch_context {
  * We want one FAM connection per smbd, not one per tcon.
  */
 static FAMConnection fam_connection;
-static BOOL fam_connection_initialized = False;
+static bool fam_connection_initialized = False;
 
 static struct fam_watch_context *fam_notify_list;
 static void fam_handler(struct event_context *event_ctx,

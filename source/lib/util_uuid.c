@@ -89,9 +89,9 @@ const char *smb_uuid_string_static(const struct GUID uu)
 	return out;
 }
 
-BOOL smb_string_to_uuid(const char *in, struct GUID* uu)
+bool smb_string_to_uuid(const char *in, struct GUID* uu)
 {
-	BOOL ret = False;
+	bool ret = False;
 	const char *ptr = in;
 	char *end = (char *)in;
 	int i;

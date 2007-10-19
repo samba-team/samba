@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_netlogon.h"
 
-static BOOL api_netr_LogonUasLogon(pipes_struct *p)
+static bool api_netr_LogonUasLogon(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_netr_LogonUasLogon(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
+static bool api_netr_LogonUasLogoff(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -162,7 +162,7 @@ static BOOL api_netr_LogonUasLogoff(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonSamLogon(pipes_struct *p)
+static bool api_netr_LogonSamLogon(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -247,7 +247,7 @@ static BOOL api_netr_LogonSamLogon(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
+static bool api_netr_LogonSamLogoff(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -320,7 +320,7 @@ static BOOL api_netr_LogonSamLogoff(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
+static bool api_netr_ServerReqChallenge(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -393,7 +393,7 @@ static BOOL api_netr_ServerReqChallenge(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
+static bool api_netr_ServerAuthenticate(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -466,7 +466,7 @@ static BOOL api_netr_ServerAuthenticate(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
+static bool api_netr_ServerPasswordSet(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -544,7 +544,7 @@ static BOOL api_netr_ServerPasswordSet(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
+static bool api_netr_DatabaseDeltas(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -624,7 +624,7 @@ static BOOL api_netr_DatabaseDeltas(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DatabaseSync(pipes_struct *p)
+static bool api_netr_DatabaseSync(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -704,7 +704,7 @@ static BOOL api_netr_DatabaseSync(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_AccountDeltas(pipes_struct *p)
+static bool api_netr_AccountDeltas(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -801,7 +801,7 @@ static BOOL api_netr_AccountDeltas(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_AccountSync(pipes_struct *p)
+static bool api_netr_AccountSync(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -899,7 +899,7 @@ static BOOL api_netr_AccountSync(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_GetDcName(pipes_struct *p)
+static bool api_netr_GetDcName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -977,7 +977,7 @@ static BOOL api_netr_GetDcName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonControl(pipes_struct *p)
+static bool api_netr_LogonControl(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1055,7 +1055,7 @@ static BOOL api_netr_LogonControl(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_GetAnyDCName(pipes_struct *p)
+static bool api_netr_GetAnyDCName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1133,7 +1133,7 @@ static BOOL api_netr_GetAnyDCName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonControl2(pipes_struct *p)
+static bool api_netr_LogonControl2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1211,7 +1211,7 @@ static BOOL api_netr_LogonControl2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
+static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1285,7 +1285,7 @@ static BOOL api_netr_ServerAuthenticate2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DatabaseSync2(pipes_struct *p)
+static bool api_netr_DatabaseSync2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1365,7 +1365,7 @@ static BOOL api_netr_DatabaseSync2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DatabaseRedo(pipes_struct *p)
+static bool api_netr_DatabaseRedo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1444,7 +1444,7 @@ static BOOL api_netr_DatabaseRedo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
+static bool api_netr_LogonControl2Ex(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1522,7 +1522,7 @@ static BOOL api_netr_LogonControl2Ex(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
+static bool api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1593,7 +1593,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DsRGetDCName(pipes_struct *p)
+static bool api_netr_DsRGetDCName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1671,7 +1671,7 @@ static BOOL api_netr_DsRGetDCName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
+static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1742,7 +1742,7 @@ static BOOL api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
+static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1813,7 +1813,7 @@ static BOOL api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
+static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1884,7 +1884,7 @@ static BOOL api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
+static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1955,7 +1955,7 @@ static BOOL api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
+static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2026,7 +2026,7 @@ static BOOL api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
+static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2106,7 +2106,7 @@ static BOOL api_netr_ServerAuthenticate3(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
+static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2184,7 +2184,7 @@ static BOOL api_netr_DsRGetDCNameEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
+static bool api_netr_DsRGetSiteName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2262,7 +2262,7 @@ static BOOL api_netr_DsRGetSiteName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
+static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2341,7 +2341,7 @@ static BOOL api_netr_LogonGetDomainInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
+static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2419,7 +2419,7 @@ static BOOL api_netr_ServerPasswordSet2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
+static bool api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2490,7 +2490,7 @@ static BOOL api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
+static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2561,7 +2561,7 @@ static BOOL api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
+static bool api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2632,7 +2632,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
+static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2710,7 +2710,7 @@ static BOOL api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
+static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2781,7 +2781,7 @@ static BOOL api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
+static bool api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2852,7 +2852,7 @@ static BOOL api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
+static bool api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2923,7 +2923,7 @@ static BOOL api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
+static bool api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2994,7 +2994,7 @@ static BOOL api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
+static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3079,7 +3079,7 @@ static BOOL api_netr_LogonSamLogonEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
+static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3163,7 +3163,7 @@ static BOOL api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
+static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3234,7 +3234,7 @@ static BOOL api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
+static bool api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3305,7 +3305,7 @@ static BOOL api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
+static bool api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3376,7 +3376,7 @@ static BOOL api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
+static bool api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3447,7 +3447,7 @@ static BOOL api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
+static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3533,7 +3533,7 @@ static BOOL api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
+static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

@@ -54,11 +54,11 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-static BOOL smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx, 
+static bool smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx, 
 				    DATA_BLOB *edata_blob, 
 				    KRB5_EDATA_NTSTATUS *edata)
 {
-	BOOL ret = False;
+	bool ret = False;
 	prs_struct ps;
 
 	if (!mem_ctx || !edata_blob || !edata) 
@@ -88,7 +88,7 @@ static BOOL smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
- static BOOL smb_krb5_get_ntstatus_from_krb5_error(krb5_error *error,
+ static bool smb_krb5_get_ntstatus_from_krb5_error(krb5_error *error,
 						   NTSTATUS *nt_status)
 {
 	DATA_BLOB edata;
@@ -137,11 +137,11 @@ static BOOL smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
- static BOOL smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(krb5_context ctx, 
+ static bool smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(krb5_context ctx, 
  								  krb5_get_init_creds_opt *opt, 
 								  NTSTATUS *nt_status)
 {
-	BOOL ret = False;
+	bool ret = False;
 	krb5_error *error = NULL;
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR
@@ -186,8 +186,8 @@ int kerberos_kinit_password_ext(const char *principal,
 				time_t *expire_time,
 				time_t *renew_till_time,
 				const char *cache_name,
-				BOOL request_pac,
-				BOOL add_netbios_addr,
+				bool request_pac,
+				bool add_netbios_addr,
 				time_t renewable_time,
 				NTSTATUS *ntstatus)
 {
@@ -443,10 +443,10 @@ static char* des_salt_key( void )
 /************************************************************************
 ************************************************************************/
 
-BOOL kerberos_secrets_store_des_salt( const char* salt )
+bool kerberos_secrets_store_des_salt( const char* salt )
 {
 	char* key;
-	BOOL ret;
+	bool ret;
 
 	if ( (key = des_salt_key()) == NULL ) {
 		DEBUG(0,("kerberos_secrets_store_des_salt: failed to generate key!\n"));
@@ -535,12 +535,12 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
  Setting principal to NULL deletes this entry.
  ************************************************************************/
 
-BOOL kerberos_secrets_store_salting_principal(const char *service,
+bool kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
 					      const char *principal)
 {
 	char *key = NULL;
-	BOOL ret = False;
+	bool ret = False;
 	krb5_context context = NULL;
 	krb5_principal princ = NULL;
 	char *princ_s = NULL;
@@ -700,7 +700,7 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
  run as root or will fail (which is a good thing :-).
 ************************************************************************/
 
-BOOL create_local_private_krb5_conf_for_domain(const char *realm, const char *domain,
+bool create_local_private_krb5_conf_for_domain(const char *realm, const char *domain,
 					const char *sitename, struct in_addr ip)
 {
 	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());

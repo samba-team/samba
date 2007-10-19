@@ -25,7 +25,7 @@
 /*******************************************************************
 ********************************************************************/
 
-static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
+static bool svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
 {
 
 	prs_debug(ps, depth, desc, "svcctl_io_service_status");
@@ -58,7 +58,7 @@ static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, 
 /*******************************************************************
 ********************************************************************/
 
-static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, prs_struct *ps, int depth )
+static bool svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, prs_struct *ps, int depth )
 {
 
 	prs_debug(ps, depth, desc, "svcctl_io_service_config");
@@ -103,7 +103,7 @@ static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth )
+bool svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth )
 {
 	prs_struct *ps=&buffer->prs;
 	
@@ -124,7 +124,7 @@ BOOL svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enu
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth )
+bool svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth )
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -198,7 +198,7 @@ uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config )
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -228,7 +228,7 @@ BOOL svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_open_scmanager(const char *desc, SVCCTL_R_OPEN_SCMANAGER *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_open_scmanager(const char *desc, SVCCTL_R_OPEN_SCMANAGER *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -251,7 +251,7 @@ BOOL svcctl_io_r_open_scmanager(const char *desc, SVCCTL_R_OPEN_SCMANAGER *r_u, 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -280,7 +280,7 @@ BOOL svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q
 /*******************************************************************
 ********************************************************************/
 
-BOOL init_svcctl_r_get_display_name( SVCCTL_R_GET_DISPLAY_NAME *r_u, const char *displayname )
+bool init_svcctl_r_get_display_name( SVCCTL_R_GET_DISPLAY_NAME *r_u, const char *displayname )
 {
 	r_u->display_name_len = strlen(displayname);
 	init_unistr2( &r_u->displayname, displayname, UNI_STR_TERMINATE );
@@ -291,7 +291,7 @@ BOOL init_svcctl_r_get_display_name( SVCCTL_R_GET_DISPLAY_NAME *r_u, const char 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -322,7 +322,7 @@ BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -351,7 +351,7 @@ BOOL svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -374,7 +374,7 @@ BOOL svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -394,7 +394,7 @@ BOOL svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -417,7 +417,7 @@ BOOL svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -447,7 +447,7 @@ BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_S
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -481,7 +481,7 @@ BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -507,7 +507,7 @@ BOOL svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, pr
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -525,7 +525,7 @@ BOOL svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, pr
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -550,7 +550,7 @@ BOOL svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDE
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -581,7 +581,7 @@ BOOL svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDE
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_control_service(const char *desc, SVCCTL_Q_CONTROL_SERVICE *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_control_service(const char *desc, SVCCTL_Q_CONTROL_SERVICE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -604,7 +604,7 @@ BOOL svcctl_io_q_control_service(const char *desc, SVCCTL_Q_CONTROL_SERVICE *q_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_control_service(const char *desc, SVCCTL_R_CONTROL_SERVICE *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_control_service(const char *desc, SVCCTL_R_CONTROL_SERVICE *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -628,7 +628,7 @@ BOOL svcctl_io_r_control_service(const char *desc, SVCCTL_R_CONTROL_SERVICE *r_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -651,7 +651,7 @@ BOOL svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_C
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -679,7 +679,7 @@ BOOL svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_C
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -715,7 +715,7 @@ void init_service_description_buffer(SERVICE_DESCRIPTION *desc, const char *serv
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_service_description( const char *desc, SERVICE_DESCRIPTION *description, RPC_BUFFER *buffer, int depth )
+bool svcctl_io_service_description( const char *desc, SERVICE_DESCRIPTION *description, RPC_BUFFER *buffer, int depth )
 {
         prs_struct *ps = &buffer->prs;
 
@@ -745,7 +745,7 @@ uint32 svcctl_sizeof_service_description( SERVICE_DESCRIPTION *desc )
 /*******************************************************************
 ********************************************************************/
 
-static BOOL svcctl_io_action( const char *desc, SC_ACTION *action, prs_struct *ps, int depth )
+static bool svcctl_io_action( const char *desc, SC_ACTION *action, prs_struct *ps, int depth )
 {
 
 	prs_debug(ps, depth, desc, "svcctl_io_action");
@@ -762,7 +762,7 @@ static BOOL svcctl_io_action( const char *desc, SC_ACTION *action, prs_struct *p
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BUFFER *buffer, int depth )
+bool svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BUFFER *buffer, int depth )
 {
         prs_struct *ps = &buffer->prs;
 	int i;
@@ -821,7 +821,7 @@ uint32 svcctl_sizeof_service_fa( SERVICE_FAILURE_ACTIONS *fa)
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -850,7 +850,7 @@ BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -877,7 +877,7 @@ BOOL svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVIC
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -903,7 +903,7 @@ BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVIC
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_lock_service_db(const char *desc, SVCCTL_Q_LOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_lock_service_db(const char *desc, SVCCTL_Q_LOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -924,7 +924,7 @@ BOOL svcctl_io_q_lock_service_db(const char *desc, SVCCTL_Q_LOCK_SERVICE_DB *q_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_lock_service_db(const char *desc, SVCCTL_R_LOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_lock_service_db(const char *desc, SVCCTL_R_LOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -947,7 +947,7 @@ BOOL svcctl_io_r_lock_service_db(const char *desc, SVCCTL_R_LOCK_SERVICE_DB *r_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_unlock_service_db(const char *desc, SVCCTL_Q_UNLOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_unlock_service_db(const char *desc, SVCCTL_Q_UNLOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -968,7 +968,7 @@ BOOL svcctl_io_q_unlock_service_db(const char *desc, SVCCTL_Q_UNLOCK_SERVICE_DB 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_unlock_service_db(const char *desc, SVCCTL_R_UNLOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_unlock_service_db(const char *desc, SVCCTL_R_UNLOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -988,7 +988,7 @@ BOOL svcctl_io_r_unlock_service_db(const char *desc, SVCCTL_R_UNLOCK_SERVICE_DB 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_query_service_sec(const char *desc, SVCCTL_Q_QUERY_SERVICE_SEC *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_query_service_sec(const char *desc, SVCCTL_Q_QUERY_SERVICE_SEC *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1013,7 +1013,7 @@ BOOL svcctl_io_q_query_service_sec(const char *desc, SVCCTL_Q_QUERY_SERVICE_SEC 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_query_service_sec(const char *desc, SVCCTL_R_QUERY_SERVICE_SEC *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_query_service_sec(const char *desc, SVCCTL_R_QUERY_SERVICE_SEC *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
@@ -1039,7 +1039,7 @@ BOOL svcctl_io_r_query_service_sec(const char *desc, SVCCTL_R_QUERY_SERVICE_SEC 
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_q_set_service_sec(const char *desc, SVCCTL_Q_SET_SERVICE_SEC *q_u, prs_struct *ps, int depth)
+bool svcctl_io_q_set_service_sec(const char *desc, SVCCTL_Q_SET_SERVICE_SEC *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1071,7 +1071,7 @@ BOOL svcctl_io_q_set_service_sec(const char *desc, SVCCTL_Q_SET_SERVICE_SEC *q_u
 /*******************************************************************
 ********************************************************************/
 
-BOOL svcctl_io_r_set_service_sec(const char *desc, SVCCTL_R_SET_SERVICE_SEC *r_u, prs_struct *ps, int depth)
+bool svcctl_io_r_set_service_sec(const char *desc, SVCCTL_R_SET_SERVICE_SEC *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;

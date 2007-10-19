@@ -23,17 +23,17 @@ static fstring password[2];
 static fstring username[2];
 static int got_user;
 static int got_pass;
-static BOOL use_kerberos;
+static bool use_kerberos;
 static int numops = 1000;
-static BOOL showall;
-static BOOL analyze;
-static BOOL hide_unlock_fails;
-static BOOL use_oplocks;
+static bool showall;
+static bool analyze;
+static bool hide_unlock_fails;
+static bool use_oplocks;
 static unsigned lock_range = 100;
 static unsigned lock_base = 0;
 static unsigned min_length = 0;
-static BOOL exact_error_codes;
-static BOOL zero_zero;
+static bool exact_error_codes;
+static bool zero_zero;
 
 extern char *optarg;
 extern int optind;
@@ -295,7 +295,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 
 
 
-static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
 		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
@@ -305,7 +305,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	SMB_BIG_UINT len = rec->len;
 	enum brl_type op = rec->lock_type;
 	int server;
-	BOOL ret[NSERVERS];
+	bool ret[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
 	switch (rec->lock_op) {

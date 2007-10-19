@@ -55,9 +55,9 @@ done:
  * for use in places where not the whole registry is needed,
  * e.g. utils/net_conf.c and loadparm.c
  */
-BOOL registry_init_regdb(void)
+bool registry_init_regdb(void)
 {
-	BOOL ret = False;
+	bool ret = False;
 	int saved_errno = 0;
 	static REGISTRY_HOOK smbconf_reg_hook = {KEY_SMBCONF, &smbconf_reg_ops};
 

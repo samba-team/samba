@@ -88,7 +88,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end))
 {
 	char *ret;
-	BOOL interactive;
+	bool interactive;
 
 	interactive = isatty(x_fileno(x_stdin)) || getenv("CLI_FORCE_INTERACTIVE");
 	if (!interactive) {

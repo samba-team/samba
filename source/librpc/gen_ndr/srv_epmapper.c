@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_epmapper.h"
 
-static BOOL api_epm_Insert(pipes_struct *p)
+static bool api_epm_Insert(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -77,7 +77,7 @@ static BOOL api_epm_Insert(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_Delete(pipes_struct *p)
+static bool api_epm_Delete(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -148,7 +148,7 @@ static BOOL api_epm_Delete(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_Lookup(pipes_struct *p)
+static bool api_epm_Lookup(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -233,7 +233,7 @@ static BOOL api_epm_Lookup(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_Map(pipes_struct *p)
+static bool api_epm_Map(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -318,7 +318,7 @@ static BOOL api_epm_Map(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_LookupHandleFree(pipes_struct *p)
+static bool api_epm_LookupHandleFree(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -391,7 +391,7 @@ static BOOL api_epm_LookupHandleFree(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_InqObject(pipes_struct *p)
+static bool api_epm_InqObject(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -462,7 +462,7 @@ static BOOL api_epm_InqObject(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_MgmtDelete(pipes_struct *p)
+static bool api_epm_MgmtDelete(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -533,7 +533,7 @@ static BOOL api_epm_MgmtDelete(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_epm_MapAuth(pipes_struct *p)
+static bool api_epm_MapAuth(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

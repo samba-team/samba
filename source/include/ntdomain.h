@@ -29,14 +29,14 @@
  */
  
 typedef struct _prs_struct {
-	BOOL io; /* parsing in or out of data stream */
+	bool io; /* parsing in or out of data stream */
 	/* 
 	 * If the (incoming) data is big-endian. On output we are
 	 * always little-endian.
 	 */ 
-	BOOL bigendian_data;
+	bool bigendian_data;
 	uint8 align; /* data alignment */
-	BOOL is_dynamic; /* Do we own this memory or not ? */
+	bool is_dynamic; /* Do we own this memory or not ? */
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current allocated size of the buffer. */
 	uint32 grow_size; /* size requested via prs_grow() calls */
@@ -147,8 +147,8 @@ struct dcinfo {
 	fstring remote_machine;  /* Machine name we've authenticated. */
 	fstring domain;
 
-	BOOL challenge_sent;
-	BOOL authenticated;
+	bool challenge_sent;
+	bool authenticated;
 };
 
 typedef struct pipe_rpc_fns {
@@ -251,31 +251,31 @@ typedef struct pipes_struct {
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
 	
-	BOOL pipe_bound;
+	bool pipe_bound;
 	
 	/*
 	 * Set to true when we should return fault PDU's for everything.
 	 */
 	
-	BOOL fault_state;
+	bool fault_state;
 
 	/*
 	 * Set to true when we should return fault PDU's for a bad handle.
 	 */
 
-	BOOL bad_handle_fault_state;
+	bool bad_handle_fault_state;
 
 	/*
 	 * Set to true when the backend does not support a call.
 	 */
 
-	BOOL rng_fault_state;
+	bool rng_fault_state;
 	
 	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
 	 */
 	
-	BOOL endian;
+	bool endian;
 	
 	/*
 	 * Struct to deal with multiple pdu inputs.
@@ -303,7 +303,7 @@ typedef struct smb_np_struct {
 	int pnum;
 	connection_struct *conn;
 	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
-	BOOL open; /* open connection */
+	bool open; /* open connection */
 	uint16 device_state;
 	uint16 priority;
 	fstring name;
@@ -341,7 +341,7 @@ typedef struct smb_np_struct {
 	ssize_t  (*namedpipe_transact)(void *np_state,
 	                               char *data, int len,
 	                               char *rdata, int rlen,
-	                               BOOL *pipe_outstanding);
+	                               bool *pipe_outstanding);
 
 	/* call to perform a write namedpipe operation
 	 */
@@ -361,7 +361,7 @@ typedef struct smb_np_struct {
 	 */
 	ssize_t  (*namedpipe_read)(void * np_state,
 	                           char *data, size_t max_len,
-	                           BOOL *pipe_outstanding);
+	                           bool *pipe_outstanding);
 
 	/* call to close a namedpipe.
 	 * function is expected to perform all cleanups
@@ -370,14 +370,14 @@ typedef struct smb_np_struct {
 	 * returns True if cleanup was successful (not that
 	 * we particularly care).
 	 */
-	BOOL     (*namedpipe_close)(void * np_state);
+	bool     (*namedpipe_close)(void * np_state);
 
 } smb_np_struct;
 
 struct api_struct {  
 	const char *name;
 	uint8 opnum;
-	BOOL (*fn) (pipes_struct *);
+	bool (*fn) (pipes_struct *);
 };
 
 typedef struct {  

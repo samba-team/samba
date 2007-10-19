@@ -84,7 +84,7 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 void send_trans_reply(struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
-		      BOOL buffer_too_large)
+		      bool buffer_too_large)
 {
 	int this_ldata,this_lparam;
 	int tot_data_sent = 0;
@@ -190,7 +190,7 @@ void send_trans_reply(struct smb_request *req,
 
 static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
 {
-	BOOL is_data_outstanding;
+	bool is_data_outstanding;
 	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
 	int data_len;
 
@@ -294,7 +294,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			 int suwcnt, int tdscnt, int tpscnt,
 			 int mdrcnt, int mprcnt)
 {
-	BOOL reply = False;
+	bool reply = False;
 	smb_np_struct *p = NULL;
 	int pnum;
 	int subcommand;

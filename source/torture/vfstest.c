@@ -336,7 +336,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 static NTSTATUS process_cmd(struct vfs_state *vfs, char *cmd)
 {
 	struct cmd_list *temp_list;
-	BOOL found = False;
+	bool found = False;
 	pstring buf;
 	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
@@ -431,9 +431,9 @@ void reload_printers(void)
  Reload the services file.
 **************************************************************************/
 
-BOOL reload_services(BOOL test)
+bool reload_services(bool test)
 {
-	BOOL ret;
+	bool ret;
 	
 	if (lp_loaded()) {
 		pstring fname;

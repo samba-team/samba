@@ -61,7 +61,7 @@ struct dfs_path {
 	char *hostname;
 	char *servicename;
 	char *reqpath;
-	BOOL posix_path;
+	bool posix_path;
 };
 
 #define init_dfsroot(conn, inbuf, outbuf)                    	\

@@ -535,7 +535,7 @@ NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
   retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
 NTSTATUS ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
-				   comparison_fn_t _cmp_fn, BOOL _remove_tok)
+				   comparison_fn_t _cmp_fn, bool _remove_tok)
 {
 	struct ndr_token_list *tok;
 	for (tok=*list;tok;tok=tok->next) {

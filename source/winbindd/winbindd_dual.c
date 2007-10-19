@@ -33,7 +33,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern BOOL override_logfile;
+extern bool override_logfile;
 
 /* Read some data from a client connection */
 
@@ -94,22 +94,22 @@ struct winbindd_async_request {
 	struct winbindd_child *child;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private_data, BOOL success);
+	void (*continuation)(void *private_data, bool success);
 	struct timed_event *reply_timeout_event;
 	pid_t child_pid; /* pid of the child we're waiting on. Used to detect
 			    a restart of the child (child->pid != child_pid). */
 	void *private_data;
 };
 
-static void async_main_request_sent(void *private_data, BOOL success);
-static void async_request_sent(void *private_data, BOOL success);
-static void async_reply_recv(void *private_data, BOOL success);
+static void async_main_request_sent(void *private_data, bool success);
+static void async_request_sent(void *private_data, bool success);
+static void async_reply_recv(void *private_data, bool success);
 static void schedule_async_request(struct winbindd_child *child);
 
 void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		   struct winbindd_request *request,
 		   struct winbindd_response *response,
-		   void (*continuation)(void *private_data, BOOL success),
+		   void (*continuation)(void *private_data, bool success),
 		   void *private_data)
 {
 	struct winbindd_async_request *state;
@@ -138,7 +138,7 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	return;
 }
 
-static void async_main_request_sent(void *private_data, BOOL success)
+static void async_main_request_sent(void *private_data, bool success)
 {
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data, struct winbindd_async_request);
@@ -211,7 +211,7 @@ static void async_request_fail(struct winbindd_async_request *state)
 	state->continuation(state->private_data, False);
 }
 
-static void async_request_sent(void *private_data_data, BOOL success)
+static void async_request_sent(void *private_data_data, bool success)
 {
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data_data, struct winbindd_async_request);
@@ -247,7 +247,7 @@ static void async_request_sent(void *private_data_data, BOOL success)
 	}
 }
 
-static void async_reply_recv(void *private_data, BOOL success)
+static void async_reply_recv(void *private_data, bool success)
 {
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data, struct winbindd_async_request);
@@ -278,7 +278,7 @@ static void async_reply_recv(void *private_data, BOOL success)
 	state->continuation(state->private_data, True);
 }
 
-static BOOL fork_domain_child(struct winbindd_child *child);
+static bool fork_domain_child(struct winbindd_child *child);
 
 static void schedule_async_request(struct winbindd_child *child)
 {
@@ -319,17 +319,17 @@ struct domain_request_state {
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private_data_data, BOOL success);
+	void (*continuation)(void *private_data_data, bool success);
 	void *private_data_data;
 };
 
-static void domain_init_recv(void *private_data_data, BOOL success);
+static void domain_init_recv(void *private_data_data, bool success);
 
 void async_domain_request(TALLOC_CTX *mem_ctx,
 			  struct winbindd_domain *domain,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response,
-			  void (*continuation)(void *private_data_data, BOOL success),
+			  void (*continuation)(void *private_data_data, bool success),
 			  void *private_data_data)
 {
 	struct domain_request_state *state;
@@ -357,7 +357,7 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 	init_child_connection(domain, domain_init_recv, state);
 }
 
-static void domain_init_recv(void *private_data_data, BOOL success)
+static void domain_init_recv(void *private_data_data, bool success)
 {
 	struct domain_request_state *state =
 		talloc_get_type_abort(private_data_data, struct domain_request_state);
@@ -373,7 +373,7 @@ static void domain_init_recv(void *private_data_data, BOOL success)
 		      state->continuation, state->private_data_data);
 }
 
-static void recvfrom_child(void *private_data_data, BOOL success)
+static void recvfrom_child(void *private_data_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data_data, struct winbindd_cli_state);
@@ -920,7 +920,7 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 }
 
 
-static BOOL fork_domain_child(struct winbindd_child *child)
+static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;

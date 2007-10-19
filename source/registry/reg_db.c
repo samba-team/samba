@@ -83,7 +83,7 @@ static struct builtin_regkey_value builtin_registry_values[] = {
  Open the registry data in the tdb
  ***********************************************************************/
  
-static BOOL init_registry_data( void )
+static bool init_registry_data( void )
 {
 	pstring path, base, remaining;
 	fstring keyname, subkeyname;
@@ -222,7 +222,7 @@ static BOOL init_registry_data( void )
  Open the registry database
  ***********************************************************************/
  
-BOOL regdb_init( void )
+bool regdb_init( void )
 {
 	const char *vstring = "INFO/version";
 	uint32 vers_id;
@@ -327,13 +327,13 @@ int regdb_get_seqnum(void)
  fstrings
  ***********************************************************************/
  
-static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
+static bool regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA dbuf;
 	uint8 *buffer;
 	int i = 0;
 	uint32 len, buflen;
-	BOOL ret = True;
+	bool ret = True;
 	uint32 num_subkeys = regsubkey_ctr_numkeys( ctr );
 	pstring keyname;
 	
@@ -392,7 +392,7 @@ done:
  do not currently exist
  ***********************************************************************/
 
-BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
+bool regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
@@ -686,7 +686,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 	return regval_ctr_numvals(values);
 }
 
-BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
+bool regdb_store_values( const char *key, REGVAL_CTR *values )
 {
 	TDB_DATA old_data, data;
 	pstring keystr;

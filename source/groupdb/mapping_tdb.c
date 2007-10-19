@@ -25,14 +25,14 @@
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
-static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
-			       size_t *p_num_entries, BOOL unix_only);
-static BOOL group_map_remove(const DOM_SID *sid);
+static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+			       size_t *p_num_entries, bool unix_only);
+static bool group_map_remove(const DOM_SID *sid);
 	
 /****************************************************************************
  Open the group mapping tdb.
 ****************************************************************************/
-static BOOL init_group_mapping(void)
+static bool init_group_mapping(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
@@ -88,7 +88,7 @@ static BOOL init_group_mapping(void)
 
 /****************************************************************************
 ****************************************************************************/
-static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA dbuf;
 	pstring key, buf;
@@ -117,7 +117,7 @@ static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	TDB_DATA dbuf;
 	pstring key;
@@ -152,7 +152,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
+static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -197,7 +197,7 @@ static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
+static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -242,7 +242,7 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
  Remove a group mapping entry.
 ****************************************************************************/
 
-static BOOL group_map_remove(const DOM_SID *sid)
+static bool group_map_remove(const DOM_SID *sid)
 {
 	TDB_DATA dbuf;
 	pstring key;
@@ -269,8 +269,8 @@ static BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-static BOOL enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
-			size_t *p_num_entries, BOOL unix_only)
+static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+			size_t *p_num_entries, bool unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -411,7 +411,7 @@ static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
 	return NT_STATUS_OK;
 }
 
-static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static bool is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	DOM_SID *sids;
 	size_t i, num;
@@ -561,7 +561,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	NTSTATUS result;
 	DOM_SID *sids;
 	size_t i, num;
-	BOOL found = False;
+	bool found = False;
 	char *member_string;
 	TDB_DATA dbuf;
 	pstring key;

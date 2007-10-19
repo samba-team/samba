@@ -71,7 +71,7 @@ typedef struct pcap_cache {
 
 static pcap_cache_t *pcap_cache = NULL;
 
-BOOL pcap_cache_add(const char *name, const char *comment)
+bool pcap_cache_add(const char *name, const char *comment)
 {
 	pcap_cache_t *p;
 
@@ -100,7 +100,7 @@ static void pcap_cache_destroy(pcap_cache_t *cache)
 	}
 }
 
-BOOL pcap_cache_loaded(void)
+bool pcap_cache_loaded(void)
 {
 	return (pcap_cache != NULL);
 }
@@ -108,7 +108,7 @@ BOOL pcap_cache_loaded(void)
 void pcap_cache_reload(void)
 {
 	const char *pcap_name = lp_printcapname();
-	BOOL pcap_reloaded = False;
+	bool pcap_reloaded = False;
 	pcap_cache_t *tmp_cache = NULL;
 	XFILE *pcap_file;
 	char *pcap_line;
@@ -175,7 +175,7 @@ void pcap_cache_reload(void)
 		 * this is pure guesswork, but it's better than nothing
 		 */
 		for (*name = *comment = 0, p = pcap_line; p != NULL; p = q) {
-			BOOL has_punctuation;
+			bool has_punctuation;
 
 			if ((q = strchr_m(p, '|')) != NULL)
 				*q++ = 0;
@@ -232,7 +232,7 @@ done:
 }
 
 
-BOOL pcap_printername_ok(const char *printername)
+bool pcap_printername_ok(const char *printername)
 {
 	pcap_cache_t *p;
 

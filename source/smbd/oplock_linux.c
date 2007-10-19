@@ -162,7 +162,7 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
  Attempt to set an kernel oplock on a file.
 ****************************************************************************/
 
-static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
+static bool linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
 	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
@@ -218,7 +218,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
  See if a oplock message is waiting.
 ****************************************************************************/
 
-static BOOL linux_oplock_msg_waiting(fd_set *fds)
+static bool linux_oplock_msg_waiting(fd_set *fds)
 {
 	return signals_received != 0;
 }
@@ -227,7 +227,7 @@ static BOOL linux_oplock_msg_waiting(fd_set *fds)
  See if the kernel supports oplocks.
 ****************************************************************************/
 
-static BOOL linux_oplocks_available(void)
+static bool linux_oplocks_available(void)
 {
 	int fd, ret;
 	fd = open("/dev/null", O_RDONLY);

@@ -41,7 +41,7 @@ extern int last_message;
 extern int smb_read_error;
 SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
-extern BOOL global_machine_password_needs_changing;
+extern bool global_machine_password_needs_changing;
 extern int max_send;
 
 /*
@@ -95,7 +95,7 @@ static struct pending_message_list *deferred_open_queue;
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(struct smb_request *req,
+static bool push_queued_message(struct smb_request *req,
 				struct timeval request_time,
 				struct timeval end_time,
 				char *private_data, size_t private_len)
@@ -191,7 +191,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
  Return true if this mid is on the deferred queue.
 ****************************************************************************/
 
-BOOL open_was_deferred(uint16 mid)
+bool open_was_deferred(uint16 mid)
 {
 	struct pending_message_list *pml;
 
@@ -224,7 +224,7 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
  messages ready for processing.
 ****************************************************************************/
 
-BOOL push_deferred_smb_message(struct smb_request *req,
+bool push_deferred_smb_message(struct smb_request *req,
 			       struct timeval request_time,
 			       struct timeval timeout,
 			       char *private_data, size_t priv_len)
@@ -247,7 +247,7 @@ struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
 	char *name;
-	BOOL (*handler)(const struct timeval *now, void *private_data);
+	bool (*handler)(const struct timeval *now, void *private_data);
 	void *private_data;
 };
 
@@ -280,7 +280,7 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 				  TALLOC_CTX *mem_ctx,
 				  struct timeval interval,
 				  const char *name,
-				  BOOL (*handler)(const struct timeval *now,
+				  bool (*handler)(const struct timeval *now,
 						  void *private_data),
 				  void *private_data)
 {
@@ -382,7 +382,7 @@ static int select_on_fd(int fd, int maxfd, fd_set *fds)
 The timeout is in milliseconds
 ****************************************************************************/
 
-static BOOL receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
+static bool receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 				   size_t *buffer_len, int timeout)
 {
 	fd_set r_fds, w_fds;
@@ -415,7 +415,7 @@ static BOOL receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	 * and it's time to schedule.
 	 */
   	if(deferred_open_queue != NULL) {
-		BOOL pop_message = False;
+		bool pop_message = False;
 		struct pending_message_list *msg = deferred_open_queue;
 
 		if (timeval_is_zero(&msg->end_time)) {
@@ -1515,7 +1515,7 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int *select_timeout,
+static bool timeout_processing(int *select_timeout,
 			       time_t *last_timeout_processing_time)
 {
 	time_t t;

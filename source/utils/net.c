@@ -59,7 +59,7 @@ const char *opt_requester_name = NULL;
 const char *opt_host = NULL; 
 const char *opt_password = NULL;
 const char *opt_user_name = NULL;
-BOOL opt_user_specified = False;
+bool opt_user_specified = False;
 const char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
 int opt_reboot = 0;
@@ -74,9 +74,9 @@ int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
-BOOL opt_localgroup = False;
-BOOL opt_domaingroup = False;
-static BOOL do_talloc_report=False;
+bool opt_localgroup = False;
+bool opt_domaingroup = False;
+static bool do_talloc_report=False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
@@ -84,12 +84,12 @@ int opt_attrs = 0;
 int opt_timestamps = 0;
 const char *opt_exclude = NULL;
 const char *opt_destination = NULL;
-BOOL opt_testmode = False;
+bool opt_testmode = False;
 
-BOOL opt_have_ip = False;
+bool opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
-extern BOOL AllowDebugChange;
+extern bool AllowDebugChange;
 
 uint32 get_sec_channel_type(const char *param) 
 {
@@ -381,7 +381,7 @@ int net_use_machine_account(void)
 	return 0;
 }
 
-BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_ip, char **server_name)
+bool net_find_server(const char *domain, unsigned flags, struct in_addr *server_ip, char **server_name)
 {
 	const char *d = domain ? domain : opt_target_workgroup;
 
@@ -449,7 +449,7 @@ BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_
 }
 
 
-BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+bool net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	if (get_pdc_ip(domain_name, server_ip)) {
 		if (is_zero_ip_v4(*server_ip))
@@ -809,7 +809,7 @@ static int net_afs(int argc, const char **argv)
 
 #endif /* WITH_FAKE_KASERVER */
 
-static BOOL search_maxrid(struct pdb_search *search, const char *type,
+static bool search_maxrid(struct pdb_search *search, const char *type,
 			  uint32 *max_rid)
 {
 	struct samr_displayentry *entries;

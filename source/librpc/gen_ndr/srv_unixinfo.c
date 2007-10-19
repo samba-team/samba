@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_unixinfo.h"
 
-static BOOL api_unixinfo_SidToUid(pipes_struct *p)
+static bool api_unixinfo_SidToUid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_unixinfo_SidToUid(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_unixinfo_UidToSid(pipes_struct *p)
+static bool api_unixinfo_UidToSid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -162,7 +162,7 @@ static BOOL api_unixinfo_UidToSid(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_unixinfo_SidToGid(pipes_struct *p)
+static bool api_unixinfo_SidToGid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -240,7 +240,7 @@ static BOOL api_unixinfo_SidToGid(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_unixinfo_GidToSid(pipes_struct *p)
+static bool api_unixinfo_GidToSid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -318,7 +318,7 @@ static BOOL api_unixinfo_GidToSid(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_unixinfo_GetPWUid(pipes_struct *p)
+static bool api_unixinfo_GetPWUid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

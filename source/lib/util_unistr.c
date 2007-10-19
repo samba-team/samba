@@ -30,9 +30,9 @@
 static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
 static uint8 *valid_table;
-static BOOL upcase_table_use_unmap;
-static BOOL lowcase_table_use_unmap;
-static BOOL valid_table_use_unmap;
+static bool upcase_table_use_unmap;
+static bool lowcase_table_use_unmap;
+static bool valid_table_use_unmap;
 
 /**
  * This table says which Unicode characters are valid dos
@@ -271,7 +271,7 @@ void init_valid_table(void)
  null termination if applied
 ********************************************************************/
 
-size_t dos_PutUniCode(char *dst,const char *src, size_t len, BOOL null_terminate)
+size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate)
 {
 	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
 				   : STR_UNICODE|STR_NOALIGN;
@@ -435,7 +435,7 @@ smb_ucs2_t tolower_w( smb_ucs2_t val )
  Determine if a character is lowercase.
 ********************************************************************/
 
-BOOL islower_w(smb_ucs2_t c)
+bool islower_w(smb_ucs2_t c)
 {
 	return upcase_table[SVAL(&c,0)] != c;
 }
@@ -444,7 +444,7 @@ BOOL islower_w(smb_ucs2_t c)
  Determine if a character is uppercase.
 ********************************************************************/
 
-BOOL isupper_w(smb_ucs2_t c)
+bool isupper_w(smb_ucs2_t c)
 {
 	return lowcase_table[SVAL(&c,0)] != c;
 }
@@ -453,7 +453,7 @@ BOOL isupper_w(smb_ucs2_t c)
  Determine if a character is valid in a 8.3 name.
 ********************************************************************/
 
-BOOL isvalid83_w(smb_ucs2_t c)
+bool isvalid83_w(smb_ucs2_t c)
 {
 	return valid_table[SVAL(&c,0)] != 0;
 }
@@ -594,10 +594,10 @@ smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
  return True if any char is converted
 ********************************************************************/
 
-BOOL strlower_w(smb_ucs2_t *s)
+bool strlower_w(smb_ucs2_t *s)
 {
 	smb_ucs2_t cp;
-	BOOL ret = False;
+	bool ret = False;
 
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = tolower_w(cp);
@@ -615,10 +615,10 @@ BOOL strlower_w(smb_ucs2_t *s)
  return True if any char is converted
 ********************************************************************/
 
-BOOL strupper_w(smb_ucs2_t *s)
+bool strupper_w(smb_ucs2_t *s)
 {
 	smb_ucs2_t cp;
-	BOOL ret = False;
+	bool ret = False;
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = toupper_w(cp);
 		if (v != cp) {
@@ -706,7 +706,7 @@ int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
  Compare 2 strings.
 ********************************************************************/
 
-BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+bool strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
 {
 	if (s1 == s2) {
 		return(True);
@@ -722,7 +722,7 @@ BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
  Compare 2 strings up to and including the nth char.
 ******************************************************************/
 
-BOOL strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
+bool strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
 {
 	if (s1 == s2) {
 		return(True);
@@ -849,10 +849,10 @@ void string_replace_w(smb_ucs2_t *s, smb_ucs2_t oldc, smb_ucs2_t newc)
  Trim unicode string.
 ********************************************************************/
 
-BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
+bool trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
 				  const smb_ucs2_t *back)
 {
-	BOOL ret = False;
+	bool ret = False;
 	size_t len, front_len, back_len;
 
 	if (!s) {
@@ -951,7 +951,7 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 	return NULL;
 }
 
-BOOL trim_string_wa(smb_ucs2_t *s, const char *front,
+bool trim_string_wa(smb_ucs2_t *s, const char *front,
 				  const char *back)
 {
 	wpstring f, b;

@@ -163,7 +163,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	const char *domain = NULL;
 	char *sitename = NULL;
 	int count, i;
-	BOOL sec_ads = (lp_security() == SEC_ADS);
+	bool sec_ads = (lp_security() == SEC_ADS);
 
 	if (sec_ads) {
 		domain = lp_realm();

@@ -711,8 +711,8 @@ int sys_chroot(const char *dname)
  * from the inheritable set, because there is no circumstance in which our
  * children should inherit our elevated privileges.
  */
-static BOOL set_process_capability(enum smbd_capability capability,
-				   BOOL	enable)
+static bool set_process_capability(enum smbd_capability capability,
+				   bool enable)
 {
 	cap_value_t cap_vals[2] = {0};
 	int num_cap_vals = 0;

@@ -305,7 +305,7 @@ static int iprint_cache_add_printer(http_t *http,
 	return(0);
 }
 
-BOOL iprint_cache_reload(void)
+bool iprint_cache_reload(void)
 {
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -313,7 +313,7 @@ BOOL iprint_cache_reload(void)
 	ipp_attribute_t	*attr;			/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
 	int		i;
-	BOOL ret = False;
+	bool ret = False;
 
 	DEBUG(5, ("reloading iprint printcap cache\n"));
 

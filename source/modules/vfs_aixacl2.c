@@ -27,7 +27,7 @@
 
 extern struct current_user current_user;
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-extern BOOL unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
+extern bool unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
 	uint32 security_info_sent, SEC_DESC *psd);
 
 extern SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
@@ -98,8 +98,8 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	return acl;
 }
 
-static BOOL aixjfs2_get_nfs4_acl(files_struct *fsp,
-	SMB4ACL_T **ppacl, BOOL *pretryPosix)
+static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
+	SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
 	
@@ -162,8 +162,8 @@ static size_t aixjfs2_get_nt_acl_common(files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
-	BOOL	result;
-	BOOL	retryPosix = False;
+	bool	result;
+	bool	retryPosix = False;
 
 	*ppdesc = NULL;
 	result = aixjfs2_get_nfs4_acl(fsp, &pacl, &retryPosix);
@@ -290,7 +290,7 @@ static int aixjfs2_query_acl_support(
 	return 1; /* haven't found that ACL type. */
 }
 
-static BOOL aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	SMB4ACE_T	*smbace;
 	TALLOC_CTX	*mem_ctx;

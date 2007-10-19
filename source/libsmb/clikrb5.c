@@ -271,7 +271,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 }
 #endif
 
-BOOL unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx, 
+bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx, 
 			   DATA_BLOB *edata, 
 			   DATA_BLOB *edata_out)
 {
@@ -310,7 +310,7 @@ BOOL unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
+bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
 {
 	DATA_BLOB pac_contents;
 	ASN1_DATA data;
@@ -347,10 +347,10 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 	return True;
 }
 
- BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt)
+ bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 	DATA_BLOB auth_data_wrapped;
-	BOOL got_auth_data_pac = False;
+	bool got_auth_data_pac = False;
 	int i;
 	
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
@@ -540,7 +540,7 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 #endif
 }
 
- BOOL kerberos_compatible_enctypes(krb5_context context,
+ bool kerberos_compatible_enctypes(krb5_context context,
 				  krb5_enctype enctype1,
 				  krb5_enctype enctype2)
 {
@@ -554,7 +554,7 @@ BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 #endif
 }
 
-static BOOL ads_cleanup_expired_creds(krb5_context context, 
+static bool ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)
 {
@@ -607,7 +607,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_creds 		* credsp;
 	krb5_creds 		  creds;
 	krb5_data in_data;
-	BOOL creds_ready = False;
+	bool creds_ready = False;
 	int i = 0, maxtries = 3;
 	
 	retval = smb_krb5_parse_name(context, principal, &server);
@@ -759,11 +759,11 @@ failed:
 	return retval;
 }
 
- BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote)
+ bool get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, bool remote)
  {
 	krb5_keyblock *skey;
 	krb5_error_code err;
-	BOOL ret = False;
+	bool ret = False;
 
 	if (remote)
 		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
@@ -1095,7 +1095,7 @@ out:
 	return smb_krb5_parse_name(context, name, principal);
 }
 
- BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
+ bool smb_krb5_principal_compare_any_realm(krb5_context context, 
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2)
 {
@@ -1383,7 +1383,7 @@ done:
 					krb5_data *packet)
 {
 	krb5_error_code ret;
-	BOOL got_error_code = False;
+	bool got_error_code = False;
 
 	DEBUG(10,("handle_krberror_packet: got error packet\n"));
 	
@@ -1548,7 +1548,7 @@ done:
  * allows to process non-default keytab names.
  * @param context krb5_context 
  * @param keytab_name_req string
- * @param write_access BOOL if writable keytab is required
+ * @param write_access bool if writable keytab is required
  * @param krb5_keytab pointer to krb5_keytab (close with krb5_kt_close())
  * @return krb5_error_code
 **********************************************************************/
@@ -1560,13 +1560,13 @@ done:
 
  krb5_error_code smb_krb5_open_keytab(krb5_context context,
 				      const char *keytab_name_req,
-				      BOOL write_access,
+				      bool write_access,
 				      krb5_keytab *keytab)
 {
 	krb5_error_code ret = 0;
 	TALLOC_CTX *mem_ctx;
 	char keytab_string[MAX_KEYTAB_NAME_LEN];
-	BOOL found_valid_name = False;
+	bool found_valid_name = False;
 	const char *pragma = "FILE";
 	const char *tmp = NULL;
 

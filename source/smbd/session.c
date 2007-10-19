@@ -44,7 +44,7 @@ static struct db_context *session_db_ctx(void)
 	return ctx;
 }
 
-BOOL session_init(void)
+bool session_init(void)
 {
 	if (session_db_ctx() == NULL) {
 		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
@@ -58,7 +58,7 @@ BOOL session_init(void)
  called when a session is created
 ********************************************************************/
 
-BOOL session_claim(user_struct *vuser)
+bool session_claim(user_struct *vuser)
 {
 	TDB_DATA key, data;
 	int i = 0;
@@ -254,7 +254,7 @@ void session_yield(user_struct *vuser)
 /********************************************************************
 ********************************************************************/
 
-static BOOL session_traverse(int (*fn)(struct db_record *db,
+static bool session_traverse(int (*fn)(struct db_record *db,
 				       void *private_data),
 			     void *private_data)
 {

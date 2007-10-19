@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_wkssvc.h"
 
-static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
+static bool api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
+static bool api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -157,7 +157,7 @@ static BOOL api_wkssvc_NetWkstaSetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
+static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -243,7 +243,7 @@ static BOOL api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
+static bool api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -314,7 +314,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
+static bool api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -385,7 +385,7 @@ static BOOL api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
+static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -466,7 +466,7 @@ static BOOL api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
+static bool api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -537,7 +537,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
+static bool api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -608,7 +608,7 @@ static BOOL api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
+static bool api_WKSSVC_NETRUSEADD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -679,7 +679,7 @@ static BOOL api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
+static bool api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -750,7 +750,7 @@ static BOOL api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
+static bool api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -821,7 +821,7 @@ static BOOL api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
+static bool api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -892,7 +892,7 @@ static BOOL api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
+static bool api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -963,7 +963,7 @@ static BOOL api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
+static bool api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1034,7 +1034,7 @@ static BOOL api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
+static bool api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1105,7 +1105,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
+static bool api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1176,7 +1176,7 @@ static BOOL api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
+static bool api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1247,7 +1247,7 @@ static BOOL api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
+static bool api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1318,7 +1318,7 @@ static BOOL api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
+static bool api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1389,7 +1389,7 @@ static BOOL api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
+static bool api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1460,7 +1460,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
+static bool api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1531,7 +1531,7 @@ static BOOL api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
+static bool api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1602,7 +1602,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
+static bool api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1673,7 +1673,7 @@ static BOOL api_wkssvc_NetrJoinDomain2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
+static bool api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1744,7 +1744,7 @@ static BOOL api_wkssvc_NetrUnjoinDomain2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
+static bool api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1815,7 +1815,7 @@ static BOOL api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
+static bool api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1886,7 +1886,7 @@ static BOOL api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
+static bool api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1957,7 +1957,7 @@ static BOOL api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
+static bool api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2028,7 +2028,7 @@ static BOOL api_wkssvc_NetrAddAlternateComputerName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
+static bool api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2099,7 +2099,7 @@ static BOOL api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
+static bool api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2170,7 +2170,7 @@ static BOOL api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
+static bool api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

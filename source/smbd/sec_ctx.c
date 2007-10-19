@@ -36,7 +36,7 @@ static int sec_ctx_stack_ndx;
  Become the specified uid.
 ****************************************************************************/
 
-static BOOL become_uid(uid_t uid)
+static bool become_uid(uid_t uid)
 {
 	/* Check for dodgy uid values */
 
@@ -63,7 +63,7 @@ static BOOL become_uid(uid_t uid)
  Become the specified gid.
 ****************************************************************************/
 
-static BOOL become_gid(gid_t gid)
+static bool become_gid(gid_t gid)
 {
 	/* Check for dodgy gid values */
 
@@ -88,7 +88,7 @@ static BOOL become_gid(gid_t gid)
  Become the specified uid and gid.
 ****************************************************************************/
 
-static BOOL become_id(uid_t uid, gid_t gid)
+static bool become_id(uid_t uid, gid_t gid)
 {
 	return become_gid(gid) && become_uid(uid);
 }
@@ -183,7 +183,7 @@ fail:
  one.  User changes are done using the set_sec_ctx() function.
 ****************************************************************************/
 
-BOOL push_sec_ctx(void)
+bool push_sec_ctx(void)
 {
 	struct sec_ctx *ctx_p;
 
@@ -367,7 +367,7 @@ void set_root_sec_ctx(void)
  Pop a security context from the stack.
 ****************************************************************************/
 
-BOOL pop_sec_ctx(void)
+bool pop_sec_ctx(void)
 {
 	struct sec_ctx *ctx_p;
 	struct sec_ctx *prev_ctx_p;

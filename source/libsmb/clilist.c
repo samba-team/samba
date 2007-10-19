@@ -168,7 +168,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	char *dirlist = NULL;
 	int dirlist_len = 0;
 	int total_received = -1;
-	BOOL First = True;
+	bool First = True;
 	int ff_searchcount=0;
 	int ff_eos=0;
 	int ff_dir_handle=0;
@@ -401,7 +401,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 {
 	char *p;
 	int received = 0;
-	BOOL first = True;
+	bool first = True;
 	char status[21];
 	int num_asked = (cli->max_xmit - 100)/DIR_STRUCT_SIZE;
 	int num_received = 0;

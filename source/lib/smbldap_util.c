@@ -230,7 +230,7 @@ Search for the domain info entry
 
 NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
                                     LDAPMessage ** result, const char *domain_name,
-                                    BOOL try_add)
+                                    bool try_add)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	pstring filter;

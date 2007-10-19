@@ -71,7 +71,7 @@ typedef struct regf_hbin {
 
 	prs_struct ps;			/* data */
 
-	BOOL dirty;			/* has this hbin block been modified? */
+	bool dirty;			/* has this hbin block been modified? */
 } REGF_HBIN;
 
 /* ??? List -- list of key offsets and hashed names for consistency */

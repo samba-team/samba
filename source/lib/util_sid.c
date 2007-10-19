@@ -224,7 +224,7 @@ char *sid_string_tos(const DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
    
-BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
+bool string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
 	const char *p;
 	char *q;
@@ -295,7 +295,7 @@ DOM_SID *string_sid_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
  Add a rid to the end of a sid
 *****************************************************************/  
 
-BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
+bool sid_append_rid(DOM_SID *sid, uint32 rid)
 {
 	if (sid->num_auths < MAXSUBAUTHS) {
 		sid->sub_auths[sid->num_auths++] = rid;
@@ -304,7 +304,7 @@ BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
 	return False;
 }
 
-BOOL sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
+bool sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
 {
 	sid_copy(dst, domain_sid);
 	return sid_append_rid(dst, rid);
@@ -314,7 +314,7 @@ BOOL sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
  Removes the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
+bool sid_split_rid(DOM_SID *sid, uint32 *rid)
 {
 	if (sid->num_auths > 0) {
 		sid->num_auths--;
@@ -328,7 +328,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
  Return the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_peek_rid(const DOM_SID *sid, uint32 *rid)
+bool sid_peek_rid(const DOM_SID *sid, uint32 *rid)
 {
 	if (!sid || !rid)
 		return False;		
@@ -345,7 +345,7 @@ BOOL sid_peek_rid(const DOM_SID *sid, uint32 *rid)
  and check the sid against the exp_dom_sid  
 *****************************************************************/  
 
-BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid)
+bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid)
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
@@ -385,7 +385,7 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
  Write a sid out into on-the-wire format.
 *****************************************************************/  
 
-BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
+bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 {
 	size_t i;
 
@@ -405,7 +405,7 @@ BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
  Parse a on-the-wire SID to a DOM_SID.
 *****************************************************************/  
 
-BOOL sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
+bool sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
 {
 	int i;
 	if (len < 8)
@@ -496,7 +496,7 @@ int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
  Compare two sids.
 *****************************************************************/  
 
-BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;
 }
@@ -517,7 +517,7 @@ size_t sid_size(const DOM_SID *sid)
  Returns true if SID is internal (and non-mappable).
 *****************************************************************/
 
-BOOL non_mappable_sid(DOM_SID *sid)
+bool non_mappable_sid(DOM_SID *sid)
 {
 	DOM_SID dom;
 	uint32 rid;
@@ -592,7 +592,7 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-BOOL add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
+bool add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 		      DOM_SID **sids, size_t *num)
 {
 	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
@@ -613,7 +613,7 @@ BOOL add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Add SID to an array SIDs ensuring that it is not already there
 ********************************************************************/
 
-BOOL add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			     DOM_SID **sids, size_t *num_sids)
 {
 	size_t i;
@@ -655,7 +655,7 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 	return;
 }
 
-BOOL add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
+bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num)
 {
 	size_t i;
@@ -677,7 +677,7 @@ BOOL add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL is_null_sid(const DOM_SID *sid)
+bool is_null_sid(const DOM_SID *sid)
 {
 	static const DOM_SID null_sid = {0};
 	return sid_equal(sid, &null_sid);
@@ -687,7 +687,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const NET_USER_INFO_3 *info3,
 			      DOM_SID **user_sids,
 			      size_t *num_user_sids,
-			      BOOL include_user_group_rid)
+			      bool include_user_group_rid)
 {
 	DOM_SID sid;
 	DOM_SID *sid_array = NULL;

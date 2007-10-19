@@ -27,7 +27,7 @@
 /*******************************************************************
  ********************************************************************/
 
-static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
+static bool api_dsrole_get_primary_dominfo(pipes_struct *p)
 {
 	DS_Q_GETPRIMDOMINFO q_u;
 	DS_R_GETPRIMDOMINFO r_u;
@@ -54,7 +54,7 @@ static BOOL api_dsrole_get_primary_dominfo(pipes_struct *p)
  stub functions for unimplemented RPC
 *******************************************************************/
 
-static BOOL api_dsrole_stub( pipes_struct *p )
+static bool api_dsrole_stub( pipes_struct *p )
 {
 	DEBUG(0,("api_dsrole_stub:  Hmmm....didn't know this RPC existed...\n"));
 

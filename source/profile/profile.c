@@ -27,18 +27,18 @@
 
 #ifdef WITH_PROFILE
 static int shm_id;
-static BOOL read_only;
+static bool read_only;
 #if defined(HAVE_CLOCK_GETTIME)
 clockid_t __profile_clock;
-BOOL have_profiling_clock = False;
+bool have_profiling_clock = False;
 #endif
 #endif
 
 struct profile_header *profile_h;
 struct profile_stats *profile_p;
 
-BOOL do_profile_flag = False;
-BOOL do_profile_times = False;
+bool do_profile_flag = False;
+bool do_profile_times = False;
 
 /****************************************************************************
 Set a profiling level.
@@ -196,7 +196,7 @@ static void init_clock_gettime(void)
 }
 #endif
 
-BOOL profile_setup(struct messaging_context *msg_ctx, BOOL rdonly)
+bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
 	struct shmid_ds shm_ds;
 

@@ -62,7 +62,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
                                DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
                                DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
                                DATA_BLOB *plaintext, 
-                               BOOL encrypted)
+                               bool encrypted)
 {
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
@@ -141,11 +141,11 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  			    DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
  			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
 			    DATA_BLOB *plaintext, 
-			    BOOL encrypted)
+			    bool encrypted)
 {
 	const char *domain;
 	NTSTATUS result;
-	BOOL was_mapped;
+	bool was_mapped;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
 	was_mapped = map_username(internal_username); 
@@ -186,7 +186,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
@@ -196,7 +196,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     const uchar *nt_network_pwd,
 				     int nt_pwd_len)
 {
-	BOOL ret;
+	bool ret;
 	NTSTATUS status;
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
@@ -224,7 +224,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
@@ -286,7 +286,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	ZERO_STRUCT(key);
 
 	{
-		BOOL ret;
+		bool ret;
 		NTSTATUS nt_status;
 		DATA_BLOB local_lm_blob;
 		DATA_BLOB local_nt_blob;
@@ -337,7 +337,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
+bool make_user_info_for_reply(auth_usersupplied_info **user_info, 
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const uint8 chal[8],
@@ -413,7 +413,7 @@ NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
  Create a guest user_info blob, for anonymous authenticaion.
 ****************************************************************************/
 
-BOOL make_user_info_guest(auth_usersupplied_info **user_info) 
+bool make_user_info_guest(auth_usersupplied_info **user_info) 
 {
 	NTSTATUS nt_status;
 
@@ -680,7 +680,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
  */
 
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
-				    BOOL is_guest,
+				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
 				    struct nt_user_token **token)
@@ -721,7 +721,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	}
 
 	if (sid_check_is_in_our_domain(&user_sid)) {
-		BOOL ret;
+		bool ret;
 
 		/* This is a passdb user, so ask passdb */
 
@@ -900,14 +900,14 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
  member of a particular group.
 ***************************************************************************/
 
-BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
+bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 {
 	NTSTATUS status;
 	uid_t uid;
 	gid_t gid;
 	char *found_username;
 	struct nt_user_token *token;
-	BOOL result;
+	bool result;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -933,11 +933,11 @@ BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
 	
 }
 
-BOOL user_in_group(const char *username, const char *groupname)
+bool user_in_group(const char *username, const char *groupname)
 {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID group_sid;
-	BOOL ret;
+	bool ret;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -1078,7 +1078,7 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	NTSTATUS status;
 	struct samu *sampass = NULL;
 	DOM_SID guest_sid;
-	BOOL ret;
+	bool ret;
 	static const char zeros[16] = { 0, };
 
 	if ( !(sampass = samu_new( NULL )) ) {
@@ -1177,7 +1177,7 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 
 static auth_serversupplied_info *guest_info = NULL;
 
-BOOL init_guest_info(void)
+bool init_guest_info(void)
 {
 	if (guest_info != NULL)
 		return True;
@@ -1191,7 +1191,7 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
-BOOL copy_current_user(struct current_user *dst, struct current_user *src)
+bool copy_current_user(struct current_user *dst, struct current_user *src)
 {
 	gid_t *groups;
 	NT_USER_TOKEN *nt_token;
@@ -1218,7 +1218,7 @@ BOOL copy_current_user(struct current_user *dst, struct current_user *src)
 	return True;
 }
 
-BOOL set_current_user_guest(struct current_user *dst)
+bool set_current_user_guest(struct current_user *dst)
 {
 	gid_t *groups;
 	NT_USER_TOKEN *nt_token;
@@ -1261,7 +1261,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 char **found_username,
 				 uid_t *uid, gid_t *gid,
 				 struct samu *account,
-				 BOOL *username_was_mapped)
+				 bool *username_was_mapped)
 {
 	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
@@ -1308,7 +1308,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
  ****************************************************************************/
  
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
-			     fstring save_username, BOOL create )
+			     fstring save_username, bool create )
 {
 	struct passwd *pw = NULL;
 	char *p;
@@ -1405,7 +1405,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	struct samu *sam_account = NULL;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
-	BOOL username_was_mapped;
+	bool username_was_mapped;
 
 	uid_t uid;
 	gid_t gid;
@@ -1655,7 +1655,7 @@ void free_user_info(auth_usersupplied_info **user_info)
  Make an auth_methods struct
 ***************************************************************************/
 
-BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) 
+bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) 
 {
 	if (!auth_context) {
 		smb_panic("no auth_context supplied to "
@@ -1685,10 +1685,10 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
  *         false if otherwise
  **/
 
-BOOL is_trusted_domain(const char* dom_name)
+bool is_trusted_domain(const char* dom_name)
 {
 	DOM_SID trustdom_sid;
-	BOOL ret;
+	bool ret;
 
 	/* no trusted domains for a standalone server */
 

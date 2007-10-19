@@ -56,7 +56,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 						const uchar *whole_pdu, size_t pdu_length,
 						enum ntlmssp_direction direction,
 						DATA_BLOB *sig,
-						BOOL encrypt_sig)
+						bool encrypt_sig)
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		HMACMD5Context ctx;

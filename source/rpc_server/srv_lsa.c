@@ -29,7 +29,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static BOOL proxy_lsa_call(pipes_struct *p, uint8 opnum)
+static bool proxy_lsa_call(pipes_struct *p, uint8 opnum)
 {
 	struct api_struct *fns;
 	int n_fns;
@@ -50,7 +50,7 @@ static BOOL proxy_lsa_call(pipes_struct *p, uint8 opnum)
  api_lsa_open_policy2
  ***************************************************************************/
 
-static BOOL api_lsa_open_policy2(pipes_struct *p)
+static bool api_lsa_open_policy2(pipes_struct *p)
 {
 	LSA_Q_OPEN_POL2 q_u;
 	LSA_R_OPEN_POL2 r_u;
@@ -81,7 +81,7 @@ static BOOL api_lsa_open_policy2(pipes_struct *p)
 api_lsa_open_policy
  ***************************************************************************/
 
-static BOOL api_lsa_open_policy(pipes_struct *p)
+static bool api_lsa_open_policy(pipes_struct *p)
 {
 	LSA_Q_OPEN_POL q_u;
 	LSA_R_OPEN_POL r_u;
@@ -112,7 +112,7 @@ static BOOL api_lsa_open_policy(pipes_struct *p)
  api_lsa_enum_trust_dom
  ***************************************************************************/
 
-static BOOL api_lsa_enum_trust_dom(pipes_struct *p)
+static bool api_lsa_enum_trust_dom(pipes_struct *p)
 {
 	LSA_Q_ENUM_TRUST_DOM q_u;
 	LSA_R_ENUM_TRUST_DOM r_u;
@@ -140,7 +140,7 @@ static BOOL api_lsa_enum_trust_dom(pipes_struct *p)
  api_lsa_query_info
  ***************************************************************************/
 
-static BOOL api_lsa_query_info(pipes_struct *p)
+static bool api_lsa_query_info(pipes_struct *p)
 {
 	LSA_Q_QUERY_INFO q_u;
 	LSA_R_QUERY_INFO r_u;
@@ -171,7 +171,7 @@ static BOOL api_lsa_query_info(pipes_struct *p)
  api_lsa_lookup_sids
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_sids(pipes_struct *p)
+static bool api_lsa_lookup_sids(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_SIDS q_u;
 	LSA_R_LOOKUP_SIDS r_u;
@@ -201,7 +201,7 @@ static BOOL api_lsa_lookup_sids(pipes_struct *p)
  api_lsa_lookup_names
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names(pipes_struct *p)
+static bool api_lsa_lookup_names(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_NAMES q_u;
 	LSA_R_LOOKUP_NAMES r_u;
@@ -232,7 +232,7 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
  api_lsa_close.
  ***************************************************************************/
 
-static BOOL api_lsa_close(pipes_struct *p)
+static bool api_lsa_close(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_CLOSE);
 }
@@ -241,7 +241,7 @@ static BOOL api_lsa_close(pipes_struct *p)
  api_lsa_open_secret.
  ***************************************************************************/
 
-static BOOL api_lsa_open_secret(pipes_struct *p)
+static bool api_lsa_open_secret(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_OPENSECRET);
 }
@@ -250,7 +250,7 @@ static BOOL api_lsa_open_secret(pipes_struct *p)
  api_lsa_open_secret.
  ***************************************************************************/
 
-static BOOL api_lsa_enum_privs(pipes_struct *p)
+static bool api_lsa_enum_privs(pipes_struct *p)
 {
 	LSA_Q_ENUM_PRIVS q_u;
 	LSA_R_ENUM_PRIVS r_u;
@@ -280,7 +280,7 @@ static BOOL api_lsa_enum_privs(pipes_struct *p)
  api_lsa_open_secret.
  ***************************************************************************/
 
-static BOOL api_lsa_priv_get_dispname(pipes_struct *p)
+static bool api_lsa_priv_get_dispname(pipes_struct *p)
 {
 	LSA_Q_PRIV_GET_DISPNAME q_u;
 	LSA_R_PRIV_GET_DISPNAME r_u;
@@ -310,7 +310,7 @@ static BOOL api_lsa_priv_get_dispname(pipes_struct *p)
  api_lsa_open_secret.
  ***************************************************************************/
 
-static BOOL api_lsa_enum_accounts(pipes_struct *p)
+static bool api_lsa_enum_accounts(pipes_struct *p)
 {
 	LSA_Q_ENUM_ACCOUNTS q_u;
 	LSA_R_ENUM_ACCOUNTS r_u;
@@ -340,7 +340,7 @@ static BOOL api_lsa_enum_accounts(pipes_struct *p)
  api_lsa_UNK_GET_CONNUSER
  ***************************************************************************/
 
-static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
+static bool api_lsa_unk_get_connuser(pipes_struct *p)
 {
 	LSA_Q_UNK_GET_CONNUSER q_u;
 	LSA_R_UNK_GET_CONNUSER r_u;
@@ -371,7 +371,7 @@ static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
  api_lsa_create_user
  ***************************************************************************/
 
-static BOOL api_lsa_create_account(pipes_struct *p)
+static bool api_lsa_create_account(pipes_struct *p)
 {
 	LSA_Q_CREATEACCOUNT q_u;
 	LSA_R_CREATEACCOUNT r_u;
@@ -402,7 +402,7 @@ static BOOL api_lsa_create_account(pipes_struct *p)
  api_lsa_open_user
  ***************************************************************************/
 
-static BOOL api_lsa_open_account(pipes_struct *p)
+static bool api_lsa_open_account(pipes_struct *p)
 {
 	LSA_Q_OPENACCOUNT q_u;
 	LSA_R_OPENACCOUNT r_u;
@@ -433,7 +433,7 @@ static BOOL api_lsa_open_account(pipes_struct *p)
  api_lsa_get_privs
  ***************************************************************************/
 
-static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
+static bool api_lsa_enum_privsaccount(pipes_struct *p)
 {
 	LSA_Q_ENUMPRIVSACCOUNT q_u;
 	LSA_R_ENUMPRIVSACCOUNT r_u;
@@ -464,7 +464,7 @@ static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
  api_lsa_getsystemaccount
  ***************************************************************************/
 
-static BOOL api_lsa_getsystemaccount(pipes_struct *p)
+static bool api_lsa_getsystemaccount(pipes_struct *p)
 {
 	LSA_Q_GETSYSTEMACCOUNT q_u;
 	LSA_R_GETSYSTEMACCOUNT r_u;
@@ -496,7 +496,7 @@ static BOOL api_lsa_getsystemaccount(pipes_struct *p)
  api_lsa_setsystemaccount
  ***************************************************************************/
 
-static BOOL api_lsa_setsystemaccount(pipes_struct *p)
+static bool api_lsa_setsystemaccount(pipes_struct *p)
 {
 	LSA_Q_SETSYSTEMACCOUNT q_u;
 	LSA_R_SETSYSTEMACCOUNT r_u;
@@ -527,7 +527,7 @@ static BOOL api_lsa_setsystemaccount(pipes_struct *p)
  api_lsa_addprivs
  ***************************************************************************/
 
-static BOOL api_lsa_addprivs(pipes_struct *p)
+static bool api_lsa_addprivs(pipes_struct *p)
 {
 	LSA_Q_ADDPRIVS q_u;
 	LSA_R_ADDPRIVS r_u;
@@ -558,7 +558,7 @@ static BOOL api_lsa_addprivs(pipes_struct *p)
  api_lsa_removeprivs
  ***************************************************************************/
 
-static BOOL api_lsa_removeprivs(pipes_struct *p)
+static bool api_lsa_removeprivs(pipes_struct *p)
 {
 	LSA_Q_REMOVEPRIVS q_u;
 	LSA_R_REMOVEPRIVS r_u;
@@ -589,7 +589,7 @@ static BOOL api_lsa_removeprivs(pipes_struct *p)
  api_lsa_query_secobj
  ***************************************************************************/
 
-static BOOL api_lsa_query_secobj(pipes_struct *p)
+static bool api_lsa_query_secobj(pipes_struct *p)
 {
 	LSA_Q_QUERY_SEC_OBJ q_u;
 	LSA_R_QUERY_SEC_OBJ r_u;
@@ -620,7 +620,7 @@ static BOOL api_lsa_query_secobj(pipes_struct *p)
  api_lsa_add_acct_rights
  ***************************************************************************/
 
-static BOOL api_lsa_add_acct_rights(pipes_struct *p)
+static bool api_lsa_add_acct_rights(pipes_struct *p)
 {
 	LSA_Q_ADD_ACCT_RIGHTS q_u;
 	LSA_R_ADD_ACCT_RIGHTS r_u;
@@ -651,7 +651,7 @@ static BOOL api_lsa_add_acct_rights(pipes_struct *p)
  api_lsa_remove_acct_rights
  ***************************************************************************/
 
-static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
+static bool api_lsa_remove_acct_rights(pipes_struct *p)
 {
 	LSA_Q_REMOVE_ACCT_RIGHTS q_u;
 	LSA_R_REMOVE_ACCT_RIGHTS r_u;
@@ -682,7 +682,7 @@ static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
  api_lsa_enum_acct_rights
  ***************************************************************************/
 
-static BOOL api_lsa_enum_acct_rights(pipes_struct *p)
+static bool api_lsa_enum_acct_rights(pipes_struct *p)
 {
 	LSA_Q_ENUM_ACCT_RIGHTS q_u;
 	LSA_R_ENUM_ACCT_RIGHTS r_u;
@@ -713,7 +713,7 @@ static BOOL api_lsa_enum_acct_rights(pipes_struct *p)
  api_lsa_lookup_priv_value
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_priv_value(pipes_struct *p)
+static bool api_lsa_lookup_priv_value(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_PRIV_VALUE q_u;
 	LSA_R_LOOKUP_PRIV_VALUE r_u;
@@ -743,7 +743,7 @@ static BOOL api_lsa_lookup_priv_value(pipes_struct *p)
 /***************************************************************************
  ***************************************************************************/
 
-static BOOL api_lsa_open_trust_dom(pipes_struct *p)
+static bool api_lsa_open_trust_dom(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_OPENTRUSTEDDOMAIN);
 }
@@ -751,7 +751,7 @@ static BOOL api_lsa_open_trust_dom(pipes_struct *p)
 /***************************************************************************
  ***************************************************************************/
 
-static BOOL api_lsa_create_trust_dom(pipes_struct *p)
+static bool api_lsa_create_trust_dom(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_CREATETRUSTEDDOMAIN);
 }
@@ -759,7 +759,7 @@ static BOOL api_lsa_create_trust_dom(pipes_struct *p)
 /***************************************************************************
  ***************************************************************************/
 
-static BOOL api_lsa_create_secret(pipes_struct *p)
+static bool api_lsa_create_secret(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_CREATESECRET);
 }
@@ -767,7 +767,7 @@ static BOOL api_lsa_create_secret(pipes_struct *p)
 /***************************************************************************
  ***************************************************************************/
 
-static BOOL api_lsa_set_secret(pipes_struct *p)
+static bool api_lsa_set_secret(pipes_struct *p)
 {
 	return proxy_lsa_call(p, NDR_LSA_SETSECRET);
 }
@@ -775,7 +775,7 @@ static BOOL api_lsa_set_secret(pipes_struct *p)
 /***************************************************************************
  ***************************************************************************/
 
-static BOOL api_lsa_delete_object(pipes_struct *p)
+static bool api_lsa_delete_object(pipes_struct *p)
 {
 	LSA_Q_DELETE_OBJECT q_u;
 	LSA_R_DELETE_OBJECT r_u;
@@ -806,7 +806,7 @@ static BOOL api_lsa_delete_object(pipes_struct *p)
  api_lsa_lookup_sids2
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_sids2(pipes_struct *p)
+static bool api_lsa_lookup_sids2(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_SIDS2 q_u;
 	LSA_R_LOOKUP_SIDS2 r_u;
@@ -836,7 +836,7 @@ static BOOL api_lsa_lookup_sids2(pipes_struct *p)
  api_lsa_lookup_sids3
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_sids3(pipes_struct *p)
+static bool api_lsa_lookup_sids3(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_SIDS3 q_u;
 	LSA_R_LOOKUP_SIDS3 r_u;
@@ -866,7 +866,7 @@ static BOOL api_lsa_lookup_sids3(pipes_struct *p)
  api_lsa_lookup_names2
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names2(pipes_struct *p)
+static bool api_lsa_lookup_names2(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_NAMES2 q_u;
 	LSA_R_LOOKUP_NAMES2 r_u;
@@ -897,7 +897,7 @@ static BOOL api_lsa_lookup_names2(pipes_struct *p)
  api_lsa_lookup_names3
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names3(pipes_struct *p)
+static bool api_lsa_lookup_names3(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_NAMES3 q_u;
 	LSA_R_LOOKUP_NAMES3 r_u;
@@ -928,7 +928,7 @@ static BOOL api_lsa_lookup_names3(pipes_struct *p)
  api_lsa_lookup_names4
  ***************************************************************************/
 
-static BOOL api_lsa_lookup_names4(pipes_struct *p)
+static bool api_lsa_lookup_names4(pipes_struct *p)
 {
 	LSA_Q_LOOKUP_NAMES4 q_u;
 	LSA_R_LOOKUP_NAMES4 r_u;
@@ -961,7 +961,7 @@ static BOOL api_lsa_lookup_names4(pipes_struct *p)
  api_lsa_query_info2
  ***************************************************************************/
 
-static BOOL api_lsa_query_info2(pipes_struct *p)
+static bool api_lsa_query_info2(pipes_struct *p)
 {
 	LSA_Q_QUERY_INFO2 q_u;
 	LSA_R_QUERY_INFO2 r_u;

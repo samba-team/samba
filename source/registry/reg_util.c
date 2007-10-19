@@ -32,7 +32,7 @@
  WARNING!!  Does modify the original string!
  ***********************************************************************/
 
-BOOL reg_split_path( char *path, char **base, char **new_path )
+bool reg_split_path( char *path, char **base, char **new_path )
 {
 	char *p;
 	
@@ -62,7 +62,7 @@ BOOL reg_split_path( char *path, char **base, char **new_path )
  WARNING!!  Does modify the original string!
  ***********************************************************************/
 
-BOOL reg_split_key( char *path, char **base, char **key )
+bool reg_split_key( char *path, char **base, char **key )
 {
 	char *p;
 	

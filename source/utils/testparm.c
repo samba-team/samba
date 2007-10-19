@@ -33,7 +33,7 @@
 
 #include "includes.h"
 
-extern BOOL AllowDebugChange;
+extern bool AllowDebugChange;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
@@ -199,8 +199,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 {
 	const char *config_file = dyn_CONFIGFILE;
 	int s;
-	static BOOL silent_mode = False;
-	static BOOL show_all_parameters = False;
+	static bool silent_mode = False;
+	static bool show_all_parameters = False;
 	int ret = 0;
 	poptContext pc;
 	static const char *term_code = "";
@@ -356,7 +356,7 @@ print command parameter is ignored when using CUPS libraries.\n",
 			getc(stdin);
 		}
 		if (parameter_name || section_name) {
-			BOOL isGlobal = False;
+			bool isGlobal = False;
 			s = GLOBAL_SECTION_SNUM;
 
 			if (!section_name) {

@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static BOOL fillup_pw_field(const char *lp_template, 
+static bool fillup_pw_field(const char *lp_template, 
 			    const char *username, 
 			    const char *domname,
 			    uid_t uid,
@@ -67,7 +67,7 @@ static BOOL fillup_pw_field(const char *lp_template,
 }
 /* Fill a pwent structure with information we have obtained */
 
-static BOOL winbindd_fill_pwent(char *dom_name, char *user_name, 
+static bool winbindd_fill_pwent(char *dom_name, char *user_name, 
 				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, char *homedir, char *shell,
 				struct winbindd_pw *pw)
@@ -178,15 +178,15 @@ struct getpwsid_state {
 	gid_t gid;
 };
 
-static void getpwsid_queryuser_recv(void *private_data, BOOL success,
+static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *acct_name,
 				    const char *full_name, 
 				    const char *homedir,
 				    const char *shell,
 				    uint32 gid,
 				    uint32 group_rid);
-static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid);
-static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
+static void getpwsid_sid2uid_recv(void *private_data, bool success, uid_t uid);
+static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid);
 
 static void winbindd_getpwsid(struct winbindd_cli_state *state,
 			      const DOM_SID *sid)
@@ -217,7 +217,7 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 	request_error(state);
 }
 	
-static void getpwsid_queryuser_recv(void *private_data, BOOL success,
+static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *acct_name,
 				    const char *full_name, 
 				    const char *homedir,
@@ -282,7 +282,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 			       getpwsid_sid2uid_recv, s);
 }
 
-static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
+static void getpwsid_sid2uid_recv(void *private_data, bool success, uid_t uid)
 {
 	struct getpwsid_state *s =
 		talloc_get_type_abort(private_data, struct getpwsid_state);
@@ -299,7 +299,7 @@ static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 			       getpwsid_sid2gid_recv, s);
 }
 
-static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
+static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 {
 	struct getpwsid_state *s =
 		talloc_get_type_abort(private_data, struct getpwsid_state);
@@ -357,7 +357,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 
 /* Return a password structure from a username.  */
 
-static void getpwnam_name2sid_recv(void *private_data, BOOL success,
+static void getpwnam_name2sid_recv(void *private_data, bool success,
 				   const DOM_SID *sid, enum lsa_SidType type);
 
 void winbindd_getpwnam(struct winbindd_cli_state *state)
@@ -409,7 +409,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 				  state);
 }
 
-static void getpwnam_name2sid_recv(void *private_data, BOOL success,
+static void getpwnam_name2sid_recv(void *private_data, bool success,
 				   const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct winbindd_cli_state *state =
@@ -438,7 +438,7 @@ static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 	winbindd_getpwsid(state, sid);
 }
 
-static void getpwuid_recv(void *private_data, BOOL success, const char *sid)
+static void getpwuid_recv(void *private_data, bool success, const char *sid)
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
@@ -475,7 +475,7 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 
 /* Rewind file pointer for ntdom passwd database */
 
-static BOOL winbindd_setpwent_internal(struct winbindd_cli_state *state)
+static bool winbindd_setpwent_internal(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
         
@@ -568,7 +568,7 @@ void winbindd_endpwent(struct winbindd_cli_state *state)
    field is incremented to the index of the next user to fetch.  Return True if
    some users were returned, False otherwise. */
 
-static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
+static bool get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	uint32 num_entries;

@@ -58,9 +58,9 @@ void process_name_release_request(struct subnet_record *subrec,
 	struct in_addr owner_ip;
 	struct nmb_name *question = &nmb->question.question_name;
 	unstring qname;
-	BOOL bcast = nmb->header.nm_flags.bcast;
+	bool bcast = nmb->header.nm_flags.bcast;
 	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
-	BOOL group = (nb_flags & NB_GROUP) ? True : False;
+	bool group = (nb_flags & NB_GROUP) ? True : False;
 	struct name_record *namerec;
 	int rcode = 0;
   
@@ -153,7 +153,7 @@ void process_name_refresh_request(struct subnet_record *subrec,
 {    
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
-	BOOL bcast = nmb->header.nm_flags.bcast;
+	bool bcast = nmb->header.nm_flags.bcast;
 	struct in_addr from_ip;
   
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
@@ -190,9 +190,9 @@ void process_name_registration_request(struct subnet_record *subrec,
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
-	BOOL bcast = nmb->header.nm_flags.bcast;
+	bool bcast = nmb->header.nm_flags.bcast;
 	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
-	BOOL group = (nb_flags & NB_GROUP) ? True : False;
+	bool group = (nb_flags & NB_GROUP) ? True : False;
 	struct name_record *namerec = NULL;
 	int ttl = nmb->additional->ttl;
 	struct in_addr from_ip;
@@ -439,12 +439,12 @@ void process_name_query_request(struct subnet_record *subrec, struct packet_stru
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	int name_type = question->name_type;
-	BOOL bcast = nmb->header.nm_flags.bcast;
+	bool bcast = nmb->header.nm_flags.bcast;
 	int ttl=0;
 	int rcode = 0;
 	char *prdata = NULL;
 	char rdata[6];
-	BOOL success = False;
+	bool success = False;
 	struct name_record *namerec = NULL;
 	int reply_data_len = 0;
 	int i;

@@ -80,7 +80,7 @@ void mangle_change_to_posix(void)
 /*
   see if a filename has come out of our mangling code
 */
-BOOL mangle_is_mangled(const char *s, const struct share_params *p)
+bool mangle_is_mangled(const char *s, const struct share_params *p)
 {
 	return mangle_fns->is_mangled(s, p);
 }
@@ -88,19 +88,19 @@ BOOL mangle_is_mangled(const char *s, const struct share_params *p)
 /*
   see if a filename matches the rules of a 8.3 filename
 */
-BOOL mangle_is_8_3(const char *fname, BOOL check_case,
+bool mangle_is_8_3(const char *fname, bool check_case,
 		   const struct share_params *p)
 {
 	return mangle_fns->is_8_3(fname, check_case, False, p);
 }
 
-BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case,
+bool mangle_is_8_3_wildcards(const char *fname, bool check_case,
 			     const struct share_params *p)
 {
 	return mangle_fns->is_8_3(fname, check_case, True, p);
 }
 
-BOOL mangle_must_mangle(const char *fname,
+bool mangle_must_mangle(const char *fname,
 		   const struct share_params *p)
 {
 	if (!lp_manglednames(p)) {
@@ -115,7 +115,7 @@ BOOL mangle_must_mangle(const char *fname,
   looking for a matching name if it doesn't. It should succeed most of the time
   or there will be a huge performance penalty
 */
-BOOL mangle_lookup_name_from_8_3(TALLOC_CTX *ctx,
+bool mangle_lookup_name_from_8_3(TALLOC_CTX *ctx,
 			const char *in,
 			char **out, /* talloced on the given context. */
 			const struct share_params *p)
@@ -130,9 +130,9 @@ BOOL mangle_lookup_name_from_8_3(TALLOC_CTX *ctx,
    JRA.
  */
 
-BOOL name_to_8_3(const char *in,
+bool name_to_8_3(const char *in,
 		char out[13],
-		BOOL cache83,
+		bool cache83,
 		const struct share_params *p)
 {
 	memset(out,'\0',13);

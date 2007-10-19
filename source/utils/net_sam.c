@@ -26,7 +26,7 @@
  */
 
 static int net_sam_userset(int argc, const char **argv, const char *field,
-			   BOOL (*fn)(struct samu *, const char *,
+			   bool (*fn)(struct samu *, const char *,
 				      enum pdb_value_state))
 {
 	struct samu *sam_acct = NULL;
@@ -1108,7 +1108,7 @@ static int net_sam_listmem(int argc, const char **argv)
 static int net_sam_do_list(int argc, const char **argv,
 			   struct pdb_search *search, const char *what)
 {
-	BOOL verbose = (argc == 1);
+	bool verbose = (argc == 1);
 
 	if ((argc > 1) ||
 	    ((argc == 1) && !strequal(argv[0], "verbose"))) {

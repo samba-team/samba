@@ -39,8 +39,8 @@
 /* PRINTFLIKE1 */
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 /* PRINTFLIKE1 */
-BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-BOOL dbghdr( int level, int cls, const char *file, const char *func, int line );
+bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+bool dbghdr( int level, int cls, const char *file, const char *func, int line );
 
 #if defined(sgi) && (_COMPILER_VERSION >= 730)
 #pragma mips_frequency_hint NEVER Debug1
@@ -110,7 +110,7 @@ extern int DEBUGLEVEL;
 #endif
 
 extern int  *DEBUGLEVEL_CLASS;
-extern BOOL *DEBUGLEVEL_CLASS_ISSET;
+extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 /* Debugging macros
  *

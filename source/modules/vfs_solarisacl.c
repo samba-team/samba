@@ -39,22 +39,22 @@ typedef o_mode_t SOLARIS_PERM_T;
 /* prototypes for private functions */
 
 static SOLARIS_ACL_T solaris_acl_init(int count);
-static BOOL smb_acl_to_solaris_acl(SMB_ACL_T smb_acl, 
+static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl, 
 		SOLARIS_ACL_T *solariacl, int *count, 
 		SMB_ACL_TYPE_T type);
 static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solarisacl, int count,
 		SMB_ACL_TYPE_T type);
 static SOLARIS_ACL_TAG_T smb_tag_to_solaris_tag(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T solaris_tag_to_smb_tag(SOLARIS_ACL_TAG_T solaris_tag);
-static BOOL solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
+static bool solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
 		SOLARIS_ACL_T add_acl, int add_count, SMB_ACL_TYPE_T type);
-static BOOL solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solarisacl, 
+static bool solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solarisacl, 
 		int *count);
-static BOOL solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solarisacl, int *count);
-static BOOL solaris_acl_sort(SOLARIS_ACL_T acl, int count);
+static bool solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solarisacl, int *count);
+static bool solaris_acl_sort(SOLARIS_ACL_T acl, int count);
 static SMB_ACL_PERM_T solaris_perm_to_smb_perm(const SOLARIS_PERM_T perm);
 static SOLARIS_PERM_T smb_perm_to_solaris_perm(const SMB_ACL_PERM_T perm);
-static BOOL solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
+static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
 
 
 /* public functions - the api */
@@ -342,11 +342,11 @@ static SOLARIS_ACL_T solaris_acl_init(int count)
  * Convert the SMB acl to the ACCESS or DEFAULT part of a 
  * solaris ACL, as desired.
  */
-static BOOL smb_acl_to_solaris_acl(SMB_ACL_T smb_acl, 
+static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl, 
 				   SOLARIS_ACL_T *solaris_acl, int *count, 
 				   SMB_ACL_TYPE_T type)
 {
-	BOOL ret = False;
+	bool ret = False;
 	int i;
 	int check_which, check_rc;
 
@@ -573,10 +573,10 @@ static SOLARIS_PERM_T smb_perm_to_solaris_perm(const SMB_ACL_PERM_T perm)
 }
 
 
-static BOOL solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solaris_acl, 
+static bool solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solaris_acl, 
 				 int *count)
 {
-	BOOL result = False;
+	bool result = False;
 
 	DEBUG(10, ("solaris_acl_get_file called for file '%s'\n", name));
 	
@@ -610,9 +610,9 @@ static BOOL solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solaris_acl,
 }
 
 
-static BOOL solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solaris_acl, int *count)
+static bool solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solaris_acl, int *count)
 {
-	BOOL ret = False;
+	bool ret = False;
 
 	DEBUG(10, ("entering solaris_acl_get_fd\n"));
 
@@ -661,7 +661,7 @@ static BOOL solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solaris_acl, int *count)
  * should become necessary to add all of an ACL, one would have
  * to replace this parameter by another type.
  */
-static BOOL solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
+static bool solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
 			       SOLARIS_ACL_T add_acl, int add_count, 
 			       SMB_ACL_TYPE_T type)
 {
@@ -707,7 +707,7 @@ static BOOL solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
  * happen aclsort() will fail and return an error and someone will
  * have to fix it...)
  */
-static BOOL solaris_acl_sort(SOLARIS_ACL_T solaris_acl, int count)
+static bool solaris_acl_sort(SOLARIS_ACL_T solaris_acl, int count)
 {
 	int fixmask = (count <= 4);
 
@@ -724,7 +724,7 @@ static BOOL solaris_acl_sort(SOLARIS_ACL_T solaris_acl, int count)
  *   concrete error messages for debugging...
  *   (acl sort just says that the acl is invalid...)
  */
-static BOOL solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count)
+static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count)
 {
 	int check_rc;
 	int check_which;

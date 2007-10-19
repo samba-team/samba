@@ -365,7 +365,7 @@ typedef struct {
 	uint32 dblspool;
 	fstring ipaddr;
 	uint32 port;
-	BOOL enable_snmp;
+	bool enable_snmp;
 	uint32 snmp_index;
 } NT_PORT_DATA_1;
 
@@ -448,10 +448,10 @@ typedef struct {
 /* that's the central struct */
 typedef struct _Printer{
 	struct _Printer *prev, *next;
-	BOOL document_started;
-	BOOL page_started;
+	bool document_started;
+	bool page_started;
 	uint32 jobid; /* jobid in printing backend */
-	BOOL printer_type;
+	int printer_type;
 	TALLOC_CTX *ctx;
 	fstring servername;
 	fstring sharename;
@@ -464,10 +464,10 @@ typedef struct _Printer{
 		uint32 printerlocal;
 		SPOOL_NOTIFY_OPTION *option;
 		POLICY_HND client_hnd;
-		BOOL client_connected;
+		bool client_connected;
 		uint32 change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
-		BOOL fnpcn;
+		bool fnpcn;
 	} notify;
 	struct {
 		fstring machine;

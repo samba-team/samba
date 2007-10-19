@@ -30,7 +30,7 @@ static TDB_CONTEXT *netsamlogon_tdb = NULL;
  open the tdb
  ***********************************************************************/
  
-BOOL netsamlogon_cache_init(void)
+bool netsamlogon_cache_init(void)
 {
 	if (!netsamlogon_tdb) {
 		netsamlogon_tdb = tdb_open_log(lock_path(NETSAMLOGON_TDB), 0,
@@ -45,7 +45,7 @@ BOOL netsamlogon_cache_init(void)
  Shutdown samlogon_cache database
 ***********************************************************************/
 
-BOOL netsamlogon_cache_shutdown(void)
+bool netsamlogon_cache_shutdown(void)
 {
 	if(netsamlogon_tdb)
 		return (tdb_close(netsamlogon_tdb) == 0);
@@ -58,7 +58,7 @@ BOOL netsamlogon_cache_shutdown(void)
 ***********************************************************************/
 void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 {
-	BOOL got_tdb = False;
+	bool got_tdb = False;
 	DOM_SID sid;
 	fstring key_str, sid_string;
 
@@ -104,12 +104,12 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
  username should be in UTF-8 format
 ***********************************************************************/
 
-BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
+bool netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 {
 	TDB_DATA 	data;
         fstring 	keystr;
 	prs_struct 	ps;
-	BOOL 		result = False;
+	bool 		result = False;
 	DOM_SID		user_sid;
 	time_t		t = time(NULL);
 	TALLOC_CTX 	*mem_ctx;
@@ -234,11 +234,11 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	return user;
 }
 
-BOOL netsamlogon_cache_have(const DOM_SID *user_sid)
+bool netsamlogon_cache_have(const DOM_SID *user_sid)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("netsamlogon_cache_have");
 	NET_USER_INFO_3 *user = NULL;
-	BOOL result;
+	bool result;
 
 	if (!mem_ctx)
 		return False;

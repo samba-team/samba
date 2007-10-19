@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-static struct db_context *connections_db_ctx(BOOL rw)
+static struct db_context *connections_db_ctx(bool rw)
 {
 	static struct db_context *db_ctx;
 
@@ -120,7 +120,7 @@ int connections_forall(int (*fn)(struct db_record *rec,
 	return connections_traverse(conn_traverse_fn, (void *)&state);
 }
 
-BOOL connections_init(BOOL rw)
+bool connections_init(bool rw)
 {
 	return (connections_db_ctx(rw) != NULL);
 }

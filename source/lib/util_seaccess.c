@@ -87,7 +87,7 @@ static uint32 check_ace(SEC_ACE *ace, const NT_USER_TOKEN *token, uint32 acc_des
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
+static bool get_max_access( SEC_ACL *the_acl, const NT_USER_TOKEN *token, uint32 *granted, 
 			    uint32 desired, 
 			    NTSTATUS *status)
 {
@@ -209,7 +209,7 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
  "Access-Checking" document in MSDN.
 *****************************************************************************/ 
 
-BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
+bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {

@@ -150,7 +150,7 @@ static unsigned int mangle_hash(const char *key, unsigned int length)
 /* 
    initialise (ie. allocate) the prefix cache
  */
-static BOOL cache_init(void)
+static bool cache_init(void)
 {
 	if (prefix_cache) {
 		return True;
@@ -208,7 +208,7 @@ static const char *cache_lookup(unsigned int hash)
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
  */
-static BOOL is_mangled_component(const char *name, size_t len)
+static bool is_mangled_component(const char *name, size_t len)
 {
 	unsigned int i;
 
@@ -268,7 +268,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
    directory separators. It should return true if any component is
    mangled
  */
-static BOOL is_mangled(const char *name, const struct share_params *parm)
+static bool is_mangled(const char *name, const struct share_params *parm)
 {
 	const char *p;
 	const char *s;
@@ -293,7 +293,7 @@ static BOOL is_mangled(const char *name, const struct share_params *parm)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, const struct share_params *p)
+static bool is_8_3(const char *name, bool check_case, bool allow_wildcards, const struct share_params *p)
 {
 	int len, i;
 	char *dot_p;
@@ -370,7 +370,7 @@ static void mangle_reset(void)
   try to find a 8.3 name in the cache, and if found then
   replace the string with the original long name.
 */
-static BOOL lookup_name_from_8_3(TALLOC_CTX *ctx,
+static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 			const char *name,
 			char **pp_out, /* talloced on the given context. */
 			const struct share_params *p)
@@ -432,7 +432,7 @@ static BOOL lookup_name_from_8_3(TALLOC_CTX *ctx,
 /*
   look for a DOS reserved name
 */
-static BOOL is_reserved_name(const char *name)
+static bool is_reserved_name(const char *name)
 {
 	if (FLAG_CHECK(name[0], FLAG_POSSIBLE1) &&
 	    FLAG_CHECK(name[1], FLAG_POSSIBLE2) &&
@@ -459,10 +459,10 @@ static BOOL is_reserved_name(const char *name)
  A filename ending in ' ' is not legal either. See bug id #2769.
 */
 
-static BOOL is_legal_name(const char *name)
+static bool is_legal_name(const char *name)
 {
 	const char *dot_pos = NULL;
-	BOOL alldots = True;
+	bool alldots = True;
 	size_t numdots = 0;
 
 	while (*name) {
@@ -510,7 +510,7 @@ static BOOL is_legal_name(const char *name)
 	return True;
 }
 
-static BOOL must_mangle(const char *name,
+static bool must_mangle(const char *name,
 			const struct share_params *p)
 {
 	if (is_reserved_name(name)) {
@@ -526,9 +526,9 @@ static BOOL must_mangle(const char *name,
   if cache83 is not set then we don't cache the result
 
 */
-static BOOL hash2_name_to_8_3(const char *name,
+static bool hash2_name_to_8_3(const char *name,
 			char new_name[13],
-			BOOL cache83,
+			bool cache83,
 			int default_case,
 			const struct share_params *p)
 {
@@ -738,25 +738,25 @@ struct mangle_fns *mangle_hash2_init(void)
 static void posix_mangle_reset(void)
 {;}
 
-static BOOL posix_is_mangled(const char *s, const struct share_params *p)
+static bool posix_is_mangled(const char *s, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_must_mangle(const char *s, const struct share_params *p)
+static bool posix_must_mangle(const char *s, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_is_8_3(const char *fname,
-			BOOL check_case,
-			BOOL allow_wildcards,
+static bool posix_is_8_3(const char *fname,
+			bool check_case,
+			bool allow_wildcards,
 			const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_lookup_name_from_8_3(TALLOC_CTX *ctx,
+static bool posix_lookup_name_from_8_3(TALLOC_CTX *ctx,
 				const char *in,
 				char **out, /* talloced on the given context. */
 				const struct share_params *p)
@@ -764,9 +764,9 @@ static BOOL posix_lookup_name_from_8_3(TALLOC_CTX *ctx,
 	return False;
 }
 
-static BOOL posix_name_to_8_3(const char *in,
+static bool posix_name_to_8_3(const char *in,
 				char out[13],
-				BOOL cache83,
+				bool cache83,
 				int default_case,
 				const struct share_params *p)
 {

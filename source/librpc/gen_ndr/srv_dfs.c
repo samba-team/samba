@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_dfs.h"
 
-static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
+static bool api_dfs_GetManagerVersion(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Add(pipes_struct *p)
+static bool api_dfs_Add(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -155,7 +155,7 @@ static BOOL api_dfs_Add(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Remove(pipes_struct *p)
+static bool api_dfs_Remove(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -226,7 +226,7 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_SetInfo(pipes_struct *p)
+static bool api_dfs_SetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -297,7 +297,7 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_GetInfo(pipes_struct *p)
+static bool api_dfs_GetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -375,7 +375,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Enum(pipes_struct *p)
+static bool api_dfs_Enum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -449,7 +449,7 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Rename(pipes_struct *p)
+static bool api_dfs_Rename(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -520,7 +520,7 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Move(pipes_struct *p)
+static bool api_dfs_Move(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -591,7 +591,7 @@ static BOOL api_dfs_Move(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
+static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -662,7 +662,7 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
+static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -733,7 +733,7 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_AddFtRoot(pipes_struct *p)
+static bool api_dfs_AddFtRoot(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -806,7 +806,7 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
+static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -879,7 +879,7 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_AddStdRoot(pipes_struct *p)
+static bool api_dfs_AddStdRoot(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -950,7 +950,7 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
+static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1021,7 +1021,7 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
+static bool api_dfs_ManagerInitialize(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1092,7 +1092,7 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
+static bool api_dfs_AddStdRootForced(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1163,7 +1163,7 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_GetDcAddress(pipes_struct *p)
+static bool api_dfs_GetDcAddress(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1234,7 +1234,7 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_SetDcAddress(pipes_struct *p)
+static bool api_dfs_SetDcAddress(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1305,7 +1305,7 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_FlushFtTable(pipes_struct *p)
+static bool api_dfs_FlushFtTable(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1376,7 +1376,7 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Add2(pipes_struct *p)
+static bool api_dfs_Add2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1447,7 +1447,7 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_Remove2(pipes_struct *p)
+static bool api_dfs_Remove2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1518,7 +1518,7 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_EnumEx(pipes_struct *p)
+static bool api_dfs_EnumEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1592,7 +1592,7 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_dfs_SetInfo2(pipes_struct *p)
+static bool api_dfs_SetInfo2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

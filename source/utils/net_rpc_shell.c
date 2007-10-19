@@ -45,7 +45,7 @@ static char **completion_fn(const char *text, int start, int end)
 	ADD_TO_ARRAY(NULL, char *, SMB_STRDUP(text), &cmds, &n_cmds);
 
 	for (c = this_ctx->cmds; c->name != NULL; c++) {
-		BOOL match = (strncmp(text, c->name, strlen(text)) == 0);
+		bool match = (strncmp(text, c->name, strlen(text)) == 0);
 
 		if (match) {
 			ADD_TO_ARRAY(NULL, char *, SMB_STRDUP(c->name),
@@ -92,7 +92,7 @@ static NTSTATUS net_sh_run(struct rpc_sh_ctx *ctx, struct rpc_sh_cmd *cmd,
 	return status;
 }
 
-static BOOL net_sh_process(struct rpc_sh_ctx *ctx,
+static bool net_sh_process(struct rpc_sh_ctx *ctx,
 			   int argc, const char **argv)
 {
 	struct rpc_sh_cmd *c;

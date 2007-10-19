@@ -55,12 +55,12 @@ struct dptr_struct {
 	uint16 spid;
 	struct connection_struct *conn;
 	struct smb_Dir *dir_hnd;
-	BOOL expect_close;
+	bool expect_close;
 	char *wcard;
 	uint32 attr;
 	char *path;
-	BOOL has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
-	BOOL did_stat; /* Optimisation for non-wcard searches. */
+	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
+	bool did_stat; /* Optimisation for non-wcard searches. */
 };
 
 static struct bitmap *dptr_bmap;
@@ -73,14 +73,14 @@ static int dirhandles_open = 0;
  Make a dir struct.
 ****************************************************************************/
 
-BOOL make_dir_struct(TALLOC_CTX *ctx,
+bool make_dir_struct(TALLOC_CTX *ctx,
 			char *buf,
 			const char *mask,
 			const char *fname,
 			SMB_OFF_T size,
 			uint32 mode,
 			time_t date,
-			BOOL uc)
+			bool uc)
 {
 	char *p;
 	char *mask2 = talloc_strdup(ctx, mask);
@@ -121,7 +121,7 @@ BOOL make_dir_struct(TALLOC_CTX *ctx,
 
 void init_dptrs(void)
 {
-	static BOOL dptrs_init=False;
+	static bool dptrs_init=False;
 
 	if (dptrs_init)
 		return;
@@ -182,7 +182,7 @@ static void dptr_idleoldest(void)
  Get the struct dptr_struct for a dir index.
 ****************************************************************************/
 
-static struct dptr_struct *dptr_get(int key, BOOL forclose)
+static struct dptr_struct *dptr_get(int key, bool forclose)
 {
 	struct dptr_struct *dptr;
 
@@ -354,7 +354,7 @@ void dptr_closepath(char *path,uint16 spid)
  finished with that one.
 ****************************************************************************/
 
-static void dptr_close_oldest(BOOL old)
+static void dptr_close_oldest(bool old)
 {
 	struct dptr_struct *dptr;
 
@@ -393,8 +393,8 @@ static void dptr_close_oldest(BOOL old)
  wcard must not be zero.
 ****************************************************************************/
 
-NTSTATUS dptr_create(connection_struct *conn, const char *path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		const char *wcard, BOOL wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
+NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
+		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
@@ -546,7 +546,7 @@ long dptr_TellDir(struct dptr_struct *dptr)
 	return TellDir(dptr->dir_hnd);
 }
 
-BOOL dptr_has_wild(struct dptr_struct *dptr)
+bool dptr_has_wild(struct dptr_struct *dptr)
 {
 	return dptr->has_wild;
 }
@@ -663,7 +663,7 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
  Search for a file by name, skipping veto'ed and not visible files.
 ****************************************************************************/
 
-BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
+bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
 {
 	SET_STAT_INVALID(*pst);
 
@@ -689,7 +689,7 @@ void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset)
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 
-BOOL dptr_fill(char *buf1,unsigned int key)
+bool dptr_fill(char *buf1,unsigned int key)
 {
 	unsigned char *buf = (unsigned char *)buf1;
 	struct dptr_struct *dptr = dptr_get(key, False);
@@ -754,7 +754,7 @@ struct dptr_struct *dptr_fetch_lanman2(int dptr_num)
  Check that a file matches a particular file type.
 ****************************************************************************/
 
-BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
+bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 {
 	uint32 mask;
 
@@ -776,7 +776,7 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	return True;
 }
 
-static BOOL mangle_mask_match(connection_struct *conn,
+static bool mangle_mask_match(connection_struct *conn,
 		const char *filename,
 		const char *mask)
 {
@@ -792,7 +792,7 @@ static BOOL mangle_mask_match(connection_struct *conn,
  Get an 8.3 directory entry.
 ****************************************************************************/
 
-BOOL get_dir_entry(TALLOC_CTX *ctx,
+bool get_dir_entry(TALLOC_CTX *ctx,
 		connection_struct *conn,
 		const char *mask,
 		uint32 dirtype,
@@ -800,14 +800,14 @@ BOOL get_dir_entry(TALLOC_CTX *ctx,
 		SMB_OFF_T *size,
 		uint32 *mode,
 		time_t *date,
-		BOOL check_descend)
+		bool check_descend)
 {
 	const char *dname = NULL;
-	BOOL found = False;
+	bool found = False;
 	SMB_STRUCT_STAT sbuf;
 	char *pathreal = NULL;
 	const char *filename = NULL;
-	BOOL needslash;
+	bool needslash;
 
 	*pp_fname_out = NULL;
 
@@ -908,7 +908,7 @@ BOOL get_dir_entry(TALLOC_CTX *ctx,
  use it for anything security sensitive.
 ********************************************************************/
 
-static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
@@ -971,7 +971,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
  use it for anything security sensitive.
 ********************************************************************/
 
-static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
@@ -1030,7 +1030,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
   Is a file a "special" type ?
 ********************************************************************/
 
-static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
 	/*
 	 * If user is a member of the Admin group
@@ -1054,11 +1054,11 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
  Should the file be seen by the client ?
 ********************************************************************/
 
-BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, BOOL use_veto)
+bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
 {
-	BOOL hide_unreadable = lp_hideunreadable(SNUM(conn));
-	BOOL hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
-	BOOL hide_special = lp_hide_special_files(SNUM(conn));
+	bool hide_unreadable = lp_hideunreadable(SNUM(conn));
+	bool hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
+	bool hide_special = lp_hide_special_files(SNUM(conn));
 
 	SET_STAT_INVALID(*pst);
 
@@ -1309,7 +1309,7 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
  Don't check for veto or invisible files.
 ********************************************************************/
 
-BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
+bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 {
 	int i;
 	const char *entry;

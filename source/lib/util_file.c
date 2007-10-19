@@ -34,7 +34,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	char *s=s2;
 	int len = 0;
 	int c;
-	BOOL start_of_line = True;
+	bool start_of_line = True;
 
 	if (x_feof(f)) {
 		return(NULL);
@@ -208,7 +208,7 @@ char *file_load(const char *fname, size_t *size, size_t maxsize)
  unmap or free memory
 *******************************************************************/
 
-BOOL unmap_file(void* start, size_t size)
+bool unmap_file(void* start, size_t size)
 {
 #ifdef HAVE_MMAP
 	if ( munmap( start, size ) != 0 ) {
@@ -409,7 +409,7 @@ void file_lines_slashcont(char **lines)
  Save a lump of data into a file. Mostly used for debugging.
 ****************************************************************************/
 
-BOOL file_save(const char *fname, void *packet, size_t length)
+bool file_save(const char *fname, void *packet, size_t length)
 {
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);

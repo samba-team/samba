@@ -194,7 +194,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
-	BOOL ret;
+	bool ret;
 	uint32 acct_ctrl;
 
 #if 0
@@ -498,7 +498,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 {
 	fstring remote_machine;
 	struct samu *sampass=NULL;
-	BOOL ret = False;
+	bool ret = False;
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
@@ -654,7 +654,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
-		BOOL ret;
+		bool ret;
 
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
@@ -728,7 +728,7 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 					NET_Q_SAM_LOGON *q_u,
 					NET_R_SAM_LOGON *r_u,
-					BOOL process_creds)
+					bool process_creds)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
@@ -784,7 +784,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
-			BOOL ret;
+			bool ret;
 
 			become_root();
 			ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,

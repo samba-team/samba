@@ -24,7 +24,7 @@
 
 /* check to see if winbind is running by pinging it */
 
-BOOL winbindd_running(void)
+bool winbindd_running(void)
 {
 	return winbind_ping();
 }	
@@ -32,7 +32,7 @@ BOOL winbindd_running(void)
 
 /* check to see if nmbd is running on localhost by looking for a __SAMBA__
    response */
-BOOL nmbd_running(void)
+bool nmbd_running(void)
 {
 	struct in_addr loopback_ip;
 	int fd, count, flags;
@@ -58,7 +58,7 @@ BOOL nmbd_running(void)
 
 /* check to see if smbd is running on localhost by trying to open a connection
    then closing it */
-BOOL smbd_running(void)
+bool smbd_running(void)
 {
 	struct in_addr loopback_ip;
 	NTSTATUS status;

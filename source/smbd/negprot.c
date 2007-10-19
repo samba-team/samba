@@ -24,8 +24,8 @@ extern fstring remote_proto;
 extern enum protocol_types Protocol;
 extern int max_recv;
 
-BOOL global_encrypted_passwords_negotiated = False;
-BOOL global_spnego_negotiated = False;
+bool global_encrypted_passwords_negotiated = False;
+bool global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
 
 static void get_challenge(uint8 buff[8])
@@ -252,7 +252,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	int secword=0;
 	char *p, *q;
-	BOOL negotiate_spnego = False;
+	bool negotiate_spnego = False;
 	time_t t = time(NULL);
 	ssize_t ret;
 
@@ -517,7 +517,7 @@ void reply_negprot(connection_struct *conn, struct smb_request *req)
 	char **cliprotos;
 	int i;
 
-	static BOOL done_negprot = False;
+	static bool done_negprot = False;
 
 	START_PROFILE(SMBnegprot);
 

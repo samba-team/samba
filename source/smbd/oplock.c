@@ -25,7 +25,7 @@
 /* Current number of oplocks we have outstanding. */
 static int32 exclusive_oplocks_open = 0;
 static int32 level_II_oplocks_open = 0;
-BOOL global_client_failed_oplock_break = False;
+bool global_client_failed_oplock_break = False;
 
 extern uint32 global_client_caps;
 extern int smb_read_error;
@@ -45,7 +45,7 @@ int32 get_number_of_exclusive_open_oplocks(void)
  Return True if an oplock message is pending.
 ****************************************************************************/
 
-BOOL oplock_message_waiting(fd_set *fds)
+bool oplock_message_waiting(fd_set *fds)
 {
 	if (koplocks && koplocks->msg_waiting(fds)) {
 		return True;
@@ -103,7 +103,7 @@ void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds)
  disabled (just sets flags). Returns True if oplock set.
 ****************************************************************************/
 
-BOOL set_file_oplock(files_struct *fsp, int oplock_type)
+bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
 	if (koplocks && !koplocks->set_oplock(fsp, oplock_type)) {
 		return False;
@@ -176,9 +176,9 @@ static void downgrade_file_oplock(files_struct *fsp)
  to none even if a "break-to-level II" was sent.
 ****************************************************************************/
 
-BOOL remove_oplock(files_struct *fsp)
+bool remove_oplock(files_struct *fsp)
 {
-	BOOL ret;
+	bool ret;
 	struct share_mode_lock *lck;
 
 	/* Remove the oplock flag from the sharemode. */
@@ -202,9 +202,9 @@ BOOL remove_oplock(files_struct *fsp)
 /*
  * Deal with a reply when a break-to-level II was sent.
  */
-BOOL downgrade_oplock(files_struct *fsp)
+bool downgrade_oplock(files_struct *fsp)
 {
-	BOOL ret;
+	bool ret;
 	struct share_mode_lock *lck;
 
 	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
@@ -389,7 +389,7 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	char *break_msg;
-	BOOL sign_state;
+	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -476,8 +476,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	char *break_msg;
-	BOOL break_to_level2 = False;
-	BOOL sign_state;
+	bool break_to_level2 = False;
+	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -588,7 +588,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	unsigned long file_id;
 	files_struct *fsp;
 	char *break_msg;
-	BOOL sign_state;
+	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -862,7 +862,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
  Setup oplocks for this process.
 ****************************************************************************/
 
-BOOL init_oplocks(struct messaging_context *msg_ctx)
+bool init_oplocks(struct messaging_context *msg_ctx)
 {
 	DEBUG(3,("init_oplocks: initializing messages.\n"));
 

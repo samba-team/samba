@@ -136,7 +136,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 					   krb5_data *ap_req,
 					   const char *princ,
 					   const char *passwd,
-					   BOOL use_tcp,
+					   bool use_tcp,
 					   krb5_data *packet)
 {
 	krb5_error_code ret;
@@ -267,7 +267,7 @@ static krb5_error_code setpw_result_code_string(krb5_context context,
 	}
 }
 static krb5_error_code parse_setpw_reply(krb5_context context,
-					 BOOL use_tcp,
+					 bool use_tcp,
 					 krb5_auth_context auth_context,
 					 krb5_data *packet)
 {
@@ -404,7 +404,7 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	struct sockaddr remote_addr, local_addr;
 	struct in_addr *addr = interpret_addr2(kdc_host);
 	krb5_address local_kaddr, remote_kaddr;
-	BOOL	use_tcp = False;
+	bool use_tcp = False;
 
 
 	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,

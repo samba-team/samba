@@ -22,7 +22,7 @@
 /* prototypes for private functions first - for clarity */
 
 static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl);
-static BOOL tru64_ace_to_smb_ace(acl_entry_t tru64_ace, 
+static bool tru64_ace_to_smb_ace(acl_entry_t tru64_ace, 
 				struct smb_acl_entry *smb_ace);
 static acl_t smb_acl_to_tru64_acl(const SMB_ACL_T smb_acl);
 static acl_tag_t smb_tag_to_tru64(SMB_ACL_TAG_T smb_tag);
@@ -194,7 +194,7 @@ fail:
 	return NULL;
 }
 
-static BOOL tru64_ace_to_smb_ace(acl_entry_t tru64_ace, 
+static bool tru64_ace_to_smb_ace(acl_entry_t tru64_ace, 
 				struct smb_acl_entry *smb_ace) 
 {
 	acl_tag_t tru64_tag;

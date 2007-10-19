@@ -22,9 +22,9 @@
 
 #include "includes.h"
 
-static BOOL samu_correct(struct samu *s1, struct samu *s2)
+static bool samu_correct(struct samu *s1, struct samu *s2)
 {
-	BOOL ret = True;
+	bool ret = True;
 	uint32 s1_len, s2_len;
 	const char *s1_buf, *s2_buf;
 	const uint8 *d1_buf, *d2_buf;
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 	NTSTATUS rv;
 	int i;
 	struct timeval tv;
-	BOOL error = False;
+	bool error = False;
 	struct passwd *pwd;
 	uint8 *buf;
 	uint32 expire, min_age, history;

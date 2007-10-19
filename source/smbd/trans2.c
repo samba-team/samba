@@ -94,7 +94,7 @@ SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, con
  Refuse to allow clients to overwrite our private xattrs.
 ****************************************************************************/
 
-static BOOL samba_private_attr_name(const char *unix_ea_name)
+static bool samba_private_attr_name(const char *unix_ea_name)
 {
 	static const char *prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,
@@ -115,7 +115,7 @@ static BOOL samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
+static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
 				const char *fname, char *ea_name, struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
@@ -597,7 +597,7 @@ void send_trans2_replies(struct smb_request *req,
 	int params_sent_thistime, data_sent_thistime, total_sent_thistime;
 	int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
 	int data_alignment_offset = 0;
-	BOOL overflow = False;
+	bool overflow = False;
 
 	/* Modify the data_to_send and datasize and set the error if
 	   we're trying to send more than max_data_bytes. We still send
@@ -774,9 +774,9 @@ static void call_trans2open(connection_struct *conn,
 	char *pdata = *ppdata;
 	int deny_mode;
 	int32 open_attr;
-	BOOL oplock_request;
+	bool oplock_request;
 #if 0
-	BOOL return_additional_info;
+	bool return_additional_info;
 	int16 open_sattr;
 	time_t open_time;
 #endif
@@ -1008,7 +1008,7 @@ static void call_trans2open(connection_struct *conn,
  Case can be significant or not.
 **********************************************************/
 
-static BOOL exact_match(connection_struct *conn,
+static bool exact_match(connection_struct *conn,
 		const char *str,
 		const char *mask)
 {
@@ -1136,25 +1136,25 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
-static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
+static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				uint16 flags2,
 				const char *path_mask,
 				uint32 dirtype,
 				int info_level,
 				int requires_resume_key,
-				BOOL dont_descend,
+				bool dont_descend,
 				char **ppdata,
 				char *base_data,
 				char *end_data,
 				int space_remaining,
-				BOOL *out_of_space,
-				BOOL *got_exact_match,
+				bool *out_of_space,
+				bool *got_exact_match,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
 	const char *dname;
-	BOOL found = False;
+	bool found = False;
 	SMB_STRUCT_STAT sbuf;
 	const char *mask = NULL;
 	char *pathreal = NULL;
@@ -1170,10 +1170,10 @@ static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
-	BOOL was_8_3;
+	bool was_8_3;
 	uint32 nt_extmode; /* Used for NT connections instead of mode */
-	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
-	BOOL check_mangled_names = lp_manglednames(conn->params);
+	bool needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+	bool check_mangled_names = lp_manglednames(conn->params);
 	char mangled_name[13]; /* mangled 8.3 name. */
 
 	*out_of_space = False;
@@ -1199,8 +1199,8 @@ static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	}
 
 	while (!found) {
-		BOOL got_match;
-		BOOL ms_dfs_link = False;
+		bool got_match;
+		bool ms_dfs_link = False;
 
 		/* Needed if we run out of space */
 		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
@@ -1262,7 +1262,7 @@ static BOOL get_lanman2_dir_entry(TALLOC_CTX *ctx,
 		}
 
 		if (got_match) {
-			BOOL isdots = (ISDOT(dname) || ISDOTDOT(dname));
+			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
 
 			if (dont_descend && !isdots) {
 				continue;
@@ -1782,9 +1782,9 @@ static void call_trans2findfirst(connection_struct *conn,
 	uint32 dirtype;
 	int maxentries;
 	uint16 findfirst_flags;
-	BOOL close_after_first;
-	BOOL close_if_end;
-	BOOL requires_resume_key;
+	bool close_after_first;
+	bool close_if_end;
+	bool requires_resume_key;
 	int info_level;
 	char *directory = NULL;
 	const char *mask = NULL;
@@ -1793,11 +1793,11 @@ static void call_trans2findfirst(connection_struct *conn,
 	int dptr_num = -1;
 	int numentries = 0;
 	int i;
-	BOOL finished = False;
-	BOOL dont_descend = False;
-	BOOL out_of_space = False;
+	bool finished = False;
+	bool dont_descend = False;
+	bool out_of_space = False;
 	int space_remaining;
-	BOOL mask_contains_wcard = False;
+	bool mask_contains_wcard = False;
 	SMB_STRUCT_STAT sbuf;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
@@ -1984,7 +1984,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	out_of_space = False;
 
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
-		BOOL got_exact_match = False;
+		bool got_exact_match = False;
 
 		/* this is a heuristic to avoid seeking the dirptr except when 
 			absolutely necessary. It allows for a filename of about 40 chars */
@@ -2113,11 +2113,11 @@ static void call_trans2findnext(connection_struct *conn,
 	uint16 info_level;
 	uint32 resume_key;
 	uint16 findnext_flags;
-	BOOL close_after_request;
-	BOOL close_if_end;
-	BOOL requires_resume_key;
-	BOOL continue_bit;
-	BOOL mask_contains_wcard = False;
+	bool close_after_request;
+	bool close_if_end;
+	bool requires_resume_key;
+	bool continue_bit;
+	bool mask_contains_wcard = False;
 	char *resume_name = NULL;
 	const char *mask = NULL;
 	const char *directory = NULL;
@@ -2125,9 +2125,9 @@ static void call_trans2findnext(connection_struct *conn,
 	uint16 dirtype;
 	int numentries = 0;
 	int i, last_entry_off=0;
-	BOOL finished = False;
-	BOOL dont_descend = False;
-	BOOL out_of_space = False;
+	bool finished = False;
+	bool dont_descend = False;
+	bool out_of_space = False;
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
@@ -2326,7 +2326,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
-		BOOL got_exact_match = False;
+		bool got_exact_match = False;
 
 		/* this is a heuristic to avoid seeking the dirptr except when 
 			absolutely necessary. It allows for a filename of about 40 chars */
@@ -3110,7 +3110,7 @@ static unsigned int count_acl_entries(connection_struct *conn, SMB_ACL_T posix_a
  Utility function to marshall a POSIX acl into wire format.
 ****************************************************************************/
 
-static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_STAT *pst, SMB_ACL_T posix_acl)
+static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_STAT *pst, SMB_ACL_T posix_acl)
 {
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
@@ -3309,7 +3309,7 @@ static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
 #endif /* HAVE_STAT_ST_FLAGS */
 }
 
-static BOOL map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
+static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 				const uint32 smb_fflags,
 				const uint32 smb_fmask,
 				int *stat_fflags)
@@ -3475,7 +3475,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	char *base_name;
 	char *p;
 	SMB_OFF_T pos = 0;
-	BOOL delete_pending = False;
+	bool delete_pending = False;
 	int len;
 	time_t create_time, mtime, atime;
 	struct timespec create_time_ts, mtime_ts, atime_ts;
@@ -4684,7 +4684,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				SMB_STRUCT_STAT *psbuf)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	BOOL delete_on_close;
+	bool delete_on_close;
 	uint32 dosmode = 0;
 
 	if (total_data < 1) {
@@ -4901,12 +4901,12 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					    files_struct *fsp,
 					    const char *fname)
 {
-	BOOL overwrite;
+	bool overwrite;
 	uint32 root_fid;
 	uint32 len;
 	char *newname = NULL;
 	char *base_name = NULL;
-	BOOL dest_has_wcard = False;
+	bool dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -5019,8 +5019,8 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	uint16 posix_acl_version;
 	uint16 num_file_acls;
 	uint16 num_def_acls;
-	BOOL valid_file_acls = True;
-	BOOL valid_def_acls = True;
+	bool valid_file_acls = True;
+	bool valid_def_acls = True;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5081,7 +5081,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	SMB_BIG_UINT count;
 	SMB_BIG_UINT offset;
 	uint32 lock_pid;
-	BOOL blocking_lock = False;
+	bool blocking_lock = False;
 	enum brl_type lock_type;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -5522,7 +5522,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
-	BOOL delete_on_fail = False;
+	bool delete_on_fail = False;
 	enum perm_type ptype;
 
 	if (total_data < 100) {
@@ -5847,7 +5847,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 				SMB_STRUCT_STAT *psbuf,
 				int *pdata_return_size)
 {
-	BOOL extended_oplock_granted = False;
+	bool extended_oplock_granted = False;
 	char *pdata = *ppdata;
 	uint32 flags = 0;
 	uint32 wire_open_mode = 0;

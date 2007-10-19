@@ -70,7 +70,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
  bitmask.
 ****************************************************************************/
                                                                                                               
-static BOOL logon_hours_ok(struct samu *sampass)
+static bool logon_hours_ok(struct samu *sampass)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
 	const uint8 *hours;
@@ -187,7 +187,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 
 	if (*workstation_list) {
-		BOOL invalid_ws = True;
+		bool invalid_ws = True;
 		fstring tok;
 		const char *s = workstation_list;
 
@@ -251,12 +251,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   auth_serversupplied_info **server_info)
 {
 	struct samu *sampass=NULL;
-	BOOL ret;
+	bool ret;
 	NTSTATUS nt_status;
 	NTSTATUS update_login_attempts_status;
 	DATA_BLOB user_sess_key = data_blob_null;
 	DATA_BLOB lm_sess_key = data_blob_null;
-	BOOL updated_autolock = False, updated_badpw = False;
+	bool updated_autolock = False, updated_badpw = False;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -395,7 +395,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 					 const auth_usersupplied_info *user_info, 
 					 auth_serversupplied_info **server_info)
 {
-	BOOL is_local_name, is_my_domain;
+	bool is_local_name, is_my_domain;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;

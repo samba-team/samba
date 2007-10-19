@@ -104,32 +104,32 @@ struct hpux_acl_types {
 /* prototypes for private functions */
 
 static HPUX_ACL_T hpux_acl_init(int count);
-static BOOL smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
+static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
 		HPUX_ACL_T *solariacl, int *count, 
 		SMB_ACL_TYPE_T type);
 static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpuxacl, int count,
 		SMB_ACL_TYPE_T type);
 static HPUX_ACL_TAG_T smb_tag_to_hpux_tag(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag);
-static BOOL hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
+static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
 		HPUX_ACL_T add_acl, int add_count, SMB_ACL_TYPE_T type);
-static BOOL hpux_acl_get_file(const char *name, HPUX_ACL_T *hpuxacl, 
+static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpuxacl, 
 		int *count);
 static SMB_ACL_PERM_T hpux_perm_to_smb_perm(const HPUX_PERM_T perm);
 static HPUX_PERM_T smb_perm_to_hpux_perm(const SMB_ACL_PERM_T perm);
 #if 0
-static BOOL hpux_acl_check(HPUX_ACL_T hpux_acl, int count);
+static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count);
 #endif
 /* aclsort (internal) and helpers: */
-static BOOL hpux_acl_sort(HPUX_ACL_T acl, int count);
+static bool hpux_acl_sort(HPUX_ACL_T acl, int count);
 static int hpux_internal_aclsort(int acl_count, int calclass, HPUX_ACL_T aclp);
 static void hpux_count_obj(int acl_count, HPUX_ACL_T aclp, 
 		struct hpux_acl_types *acl_type_count);
 static void hpux_swap_acl_entries(HPUX_ACE_T *aclp0, HPUX_ACE_T *aclp1);
-static BOOL hpux_prohibited_duplicate_type(int acl_type);
+static bool hpux_prohibited_duplicate_type(int acl_type);
 
-static BOOL hpux_acl_call_present(void);
-static BOOL hpux_aclsort_call_present(void);
+static bool hpux_acl_call_present(void);
+static bool hpux_aclsort_call_present(void);
 
 
 /* public functions - the api */
@@ -404,11 +404,11 @@ static HPUX_ACL_T hpux_acl_init(int count)
  * Convert the SMB acl to the ACCESS or DEFAULT part of a 
  * hpux ACL, as desired.
  */
-static BOOL smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
+static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl, 
 				   HPUX_ACL_T *hpux_acl, int *count, 
 				   SMB_ACL_TYPE_T type)
 {
-	BOOL ret = False;
+	bool ret = False;
 	int i;
 	int check_which, check_rc;
 
@@ -640,10 +640,10 @@ static HPUX_PERM_T smb_perm_to_hpux_perm(const SMB_ACL_PERM_T perm)
 }
 
 
-static BOOL hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl, 
+static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl, 
 				 int *count)
 {
-	BOOL result = False;
+	bool result = False;
 	static HPUX_ACE_T dummy_ace;
 
 	DEBUG(10, ("hpux_acl_get_file called for file '%s'\n", name));
@@ -703,7 +703,7 @@ static BOOL hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
  * time. If it should become necessary to add all of an ACL, one 
  * would have to replace this parameter by another type.
  */
-static BOOL hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
+static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
 			       HPUX_ACL_T add_acl, int add_count, 
 			       SMB_ACL_TYPE_T type)
 {
@@ -749,7 +749,7 @@ static BOOL hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
  * happen aclsort() will fail and return an error and someone will
  * have to fix it...)
  */
-static BOOL hpux_acl_sort(HPUX_ACL_T hpux_acl, int count)
+static bool hpux_acl_sort(HPUX_ACL_T hpux_acl, int count)
 {
 	int fixmask = (count <= 4);
 
@@ -871,7 +871,7 @@ static void hpux_swap_acl_entries(HPUX_ACE_T *aclp0, HPUX_ACE_T *aclp1)
  * False - If the ACL type doesn't match any of the prohibited types.
  */ 
 
-static BOOL hpux_prohibited_duplicate_type(int acl_type)
+static bool hpux_prohibited_duplicate_type(int acl_type)
 {
 	switch(acl_type) {
 		case USER:
@@ -1054,13 +1054,13 @@ or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
  * calls if it isn't there.                            
  */
 
-static BOOL hpux_acl_call_present(void)
+static bool hpux_acl_call_present(void)
 {
 
 	shl_t handle = NULL;
 	void *value;
 	int ret_val=0;
-	static BOOL already_checked = False;
+	static bool already_checked = False;
 
 	if(already_checked)
 		return True;
@@ -1089,12 +1089,12 @@ static BOOL hpux_acl_call_present(void)
  * a dispatcher function could be handy...
  */
 
-static BOOL hpux_aclsort_call_present(void) 
+static bool hpux_aclsort_call_present(void) 
 {
 	shl_t handle = NULL;
 	void *value;
 	int ret_val = 0;
-	static BOOL already_checked = False;
+	static bool already_checked = False;
 
 	if (already_checked) {
 		return True;
@@ -1122,7 +1122,7 @@ static BOOL hpux_aclsort_call_present(void)
  *   concrete error messages for debugging...
  *   (acl sort just says that the acl is invalid...)
  */
-static BOOL hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
+static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 {
 	int check_rc;
 	int check_which;

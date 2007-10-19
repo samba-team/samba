@@ -102,7 +102,7 @@ Modified to handle file names with spaces, like the parse_lpq_lprng code
 further below.
 ****************************************************************************/
 
-static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 {
 #ifdef	OSF1
 #define	RANKTOK	0
@@ -239,7 +239,7 @@ static time_t LPRng_time(char *time_string)
 
 ****************************************************************************/
 
-static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_lprng(char *line,print_queue_struct *buf,bool first)
 {
 #define	LPRNG_RANKTOK	0
 #define	LPRNG_USERTOK	1
@@ -329,7 +329,7 @@ lazer   lazer RUNNING   537 6297doc.A          kvintus@IE    0 10  2445   1   1
               QUEUED    541 P.ps               root@IEDVB            22   1   5
 ********************************************************************/
 
-static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_aix(char *line,print_queue_struct *buf,bool first)
 {
 	fstring tok[11];
 	int count=0;
@@ -421,10 +421,10 @@ ljplus-2154         user           priority 0  Jan 19 08:14 from client
       (standard input)                          7551 bytes
 ****************************************************************************/
 
-static BOOL parse_lpq_hpux(char *line, print_queue_struct *buf, BOOL first)
+static bool parse_lpq_hpux(char *line, print_queue_struct *buf, bool first)
 {
 	/* must read two lines to process, therefore keep some values static */
-	static BOOL header_line_ok=False, base_prio_reset=False;
+	static bool header_line_ok=False, base_prio_reset=False;
 	static fstring jobuser;
 	static int jobid;
 	static int jobprio;
@@ -547,7 +547,7 @@ dcslw-897               tridge            4712   Dec 20 10:30:30 being held
 
 ****************************************************************************/
 
-static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_sysv(char *line,print_queue_struct *buf,bool first)
 {
 	fstring tok[9];
 	int count=0;
@@ -630,7 +630,7 @@ Printer: txt        (ready)
 0002:     root	[job #3    ]    ready 1146 bytes	-- standard input --
 ****************************************************************************/
 
-static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_qnx(char *line,print_queue_struct *buf,bool first)
 {
 	fstring tok[7];
 	int count=0;
@@ -697,7 +697,7 @@ Local  Printer 'lp2' (fjall):
 
 ****************************************************************************/
 
-static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_plp(char *line,print_queue_struct *buf,bool first)
 {
 	fstring tok[11];
 	int count=0;
@@ -774,7 +774,7 @@ jmcd        Waiting   Re: Samba Open Sour     26     32476      1      1
 
 ********************************************************************/
 
-static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_nt(char *line,print_queue_struct *buf,bool first)
 {
 #define LPRNT_OWNSIZ 11
 #define LPRNT_STATSIZ 9
@@ -857,7 +857,7 @@ JobID  File Name          Rank      Size        Status          Comment
 
 ********************************************************************/
 
-static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_os2(char *line,print_queue_struct *buf,bool first)
 {
 #define LPROS2_IDSIZ 5
 #define LPROS2_JOBSIZ 15
@@ -937,7 +937,7 @@ static const char *stat2_strings[] = { "jam", "paper", "error", "responding", "n
 parse a vlp line
 ****************************************************************************/
 
-static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
+static bool parse_lpq_vlp(char *line,print_queue_struct *buf,bool first)
 {
 	int toknum = 0;
 	fstring tok;
@@ -982,11 +982,11 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 parse a lpq line. Choose printing style
 ****************************************************************************/
 
-BOOL parse_lpq_entry(enum printing_types printing_type,char *line,
+bool parse_lpq_entry(enum printing_types printing_type,char *line,
 		     print_queue_struct *buf,
-		     print_status_struct *status,BOOL first)
+		     print_status_struct *status,bool first)
 {
-	BOOL ret;
+	bool ret;
 
 	switch (printing_type) {
 		case PRINT_SYSV:

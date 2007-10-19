@@ -45,7 +45,7 @@ static void * g_readbuf = NULL;
  * per-fsp data to make sure we only ever do this once. If pread is being
  * emulated by seek/read/seek, when this will suck quite a lot.
  */
-static BOOL prime_cache(
+static bool prime_cache(
             struct vfs_handle_struct *  handle,
 			files_struct *		        fsp,
 			int			                fd,

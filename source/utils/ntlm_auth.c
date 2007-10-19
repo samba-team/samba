@@ -100,7 +100,7 @@ static const char *require_membership_of_sid;
 static char winbind_separator(void)
 {
 	struct winbindd_response response;
-	static BOOL got_sep;
+	static bool got_sep;
 	static char sep;
 
 	if (got_sep)
@@ -193,7 +193,7 @@ DATA_BLOB get_challenge(void)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static BOOL parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
+static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
 				     fstring user)
 {
 
@@ -211,7 +211,7 @@ static BOOL parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 	return True;
 }
 
-static BOOL get_require_membership_sid(void) {
+static bool get_require_membership_sid(void) {
 	struct winbindd_request request;
 	struct winbindd_response response;
 
@@ -252,8 +252,8 @@ static BOOL get_require_membership_sid(void) {
 }
 /* Authenticate a user with a plaintext password */
 
-static BOOL check_plaintext_auth(const char *user, const char *pass, 
-				 BOOL stdout_diagnostics)
+static bool check_plaintext_auth(const char *user, const char *pass, 
+				 bool stdout_diagnostics)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -682,7 +682,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
 	static char* want_feature_list = NULL;
 	static uint32 neg_flags = 0;
-	static BOOL have_session_key = False;
+	static bool have_session_key = False;
 	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
@@ -804,11 +804,11 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	static DATA_BLOB initial_message;
 	static char* want_feature_list = NULL;
 	static uint32 neg_flags = 0;
-	static BOOL have_session_key = False;
+	static bool have_session_key = False;
 	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
-	BOOL first = False;
+	bool first = False;
 	
 	if (!opt_username || !*opt_username) {
 		x_fprintf(x_stderr, "username must be specified!\n\n");
@@ -1272,7 +1272,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 static NTLMSSP_STATE *client_ntlmssp_state = NULL;
 
-static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
+static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 {
 	NTSTATUS status;
 	DATA_BLOB null_blob = data_blob_null;
@@ -1393,7 +1393,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 
 #ifdef HAVE_KRB5
 
-static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
+static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	char *principal;
 	DATA_BLOB tkt, to_server;
@@ -1652,8 +1652,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	static char *username;
 	static char *domain;
 	static char *plaintext_password;
-	static BOOL ntlm_server_1_user_session_key;
-	static BOOL ntlm_server_1_lm_session_key;
+	static bool ntlm_server_1_user_session_key;
+	static bool ntlm_server_1_lm_session_key;
 	
 	if (strequal(buf, ".")) {
 		if (!full_username && !username) {	
@@ -2049,7 +2049,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 	char buf[SQUID_BUFFER_SIZE+1];
 	int length;
 	char *c;
-	static BOOL err;
+	static bool err;
 
 	/* this is not a typo - x_fgets doesn't work too well under squid */
 	if (fgets(buf, sizeof(buf)-1, stdin) == NULL) {
@@ -2101,7 +2101,7 @@ static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_functio
 
 /* Authenticate a user with a challenge/response */
 
-static BOOL check_auth_crap(void)
+static bool check_auth_crap(void)
 {
 	NTSTATUS nt_status;
 	uint32 flags = 0;

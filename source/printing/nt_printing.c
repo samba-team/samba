@@ -267,7 +267,7 @@ static TDB_DATA make_printers_secdesc_tdbkey( const char* sharename  )
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL upgrade_to_version_3(void)
+static bool upgrade_to_version_3(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
  
@@ -454,7 +454,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 /*******************************************************************
 *******************************************************************/
 
-static BOOL upgrade_to_version_4(void)
+static bool upgrade_to_version_4(void)
 {
 	TALLOC_CTX *ctx;
 	int result;
@@ -520,7 +520,7 @@ static int normalize_printers_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 /*******************************************************************
 *******************************************************************/
 
-static BOOL upgrade_to_version_5(void)
+static bool upgrade_to_version_5(void)
 {
 	TALLOC_CTX *ctx;
 	int result;
@@ -541,7 +541,7 @@ static BOOL upgrade_to_version_5(void)
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
 
-BOOL nt_printing_init(struct messaging_context *msg_ctx)
+bool nt_printing_init(struct messaging_context *msg_ctx)
 {
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
@@ -697,7 +697,7 @@ static int traverse_counting_printers(TDB_CONTEXT *t, TDB_DATA key,
  each add or delete printer RPC. Only Microsoft knows why... JRR020119
 ********************************************************************/
 
-uint32 update_c_setprinter(BOOL initialize)
+uint32 update_c_setprinter(bool initialize)
 {
 	int32 c_setprinter;
 	int32 printer_count = 0;
@@ -756,7 +756,7 @@ int get_builtin_ntforms(nt_forms_struct **list)
  get a builtin form struct
 ****************************************************************************/
 
-BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
+bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
 {
 	int i,count;
 	fstring form_name;
@@ -849,10 +849,10 @@ int write_ntforms(nt_forms_struct **list, int number)
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
+bool add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 {
 	int n=0;
-	BOOL update;
+	bool update;
 	fstring form_name;
 
 	/*
@@ -898,7 +898,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
  Delete a named form struct.
 ****************************************************************************/
 
-BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
+bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
 {
 	pstring key;
 	int n=0;
@@ -1268,7 +1268,7 @@ the modification date). Otherwise chose the numerically larger version number.
 
 static int file_version_is_newer(connection_struct *conn, fstring new_file, fstring old_file)
 {
-	BOOL   use_version = True;
+	bool   use_version = True;
 	pstring filepath;
 
 	uint32 new_major;
@@ -2891,7 +2891,7 @@ static void map_dword_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 }
 
 static void map_bool_into_ctr(REGVAL_CTR *ctr, const char *val_name,
-			      BOOL b)
+			      bool b)
 {
 	uint8 bin_bool = (b ? 1 : 0);
 	regval_ctr_delvalue(ctr, val_name);
@@ -2929,10 +2929,10 @@ static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
  * Map the NT_PRINTER_INFO_LEVEL_2 data into DsSpooler keys for publishing.
  *
  * @param info2 NT_PRINTER_INFO_LEVEL_2 describing printer - gets modified
- * @return BOOL indicating success or failure
+ * @return bool indicating success or failure
  ***************************************************************************/
 
-static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
+static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 {
 	REGVAL_CTR *ctr = NULL;
 	fstring longname;
@@ -3291,7 +3291,7 @@ WERROR check_published_printers(void)
 	return WERR_OK;
 }
 
-BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
+bool is_printer_published(Printer_entry *print_hnd, int snum, 
 			  struct GUID *guid)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -3299,7 +3299,7 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 	REGISTRY_VALUE *guid_val;
 	WERROR win_rc;
 	int i;
-	BOOL ret = False;
+	bool ret = False;
 
 	win_rc = get_a_printer(print_hnd, &printer, 2, lp_servicename(snum));
 
@@ -3355,7 +3355,7 @@ WERROR check_published_printers(void)
 	return WERR_OK;
 }
 
-BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
+bool is_printer_published(Printer_entry *print_hnd, int snum, 
 			  struct GUID *guid)
 {
 	return False;
@@ -3656,7 +3656,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 
 static void map_to_os2_driver(fstring drivername)
 {
-	static BOOL initialised=False;
+	static bool initialised=False;
 	static fstring last_from,last_to;
 	char *mapfile = lp_os2_driver_map();
 	char **lines = NULL;
@@ -4077,7 +4077,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 
-static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
+static bool set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 {
 	int                     len = 0;
 	pstring                 key;
@@ -4166,9 +4166,9 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
  is bound to the new printer.
 ****************************************************************************/
 
-BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+bool set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
-	BOOL result = False;
+	bool result = False;
 	
 	switch (level) {
 		case 2:
@@ -4188,7 +4188,7 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  Delete driver init data stored for a specified driver
 ****************************************************************************/
 
-BOOL del_driver_init(char *drivername)
+bool del_driver_init(char *drivername)
 {
 	pstring key;
 
@@ -4286,9 +4286,9 @@ static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  got to keep the endians happy :).
 ****************************************************************************/
 
-static BOOL convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uint8 *data, uint32 data_len )
+static bool convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uint8 *data, uint32 data_len )
 {
-	BOOL       result = False;
+	bool       result = False;
 	prs_struct ps;
 	DEVICEMODE devmode;
 
@@ -4627,12 +4627,12 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
   to a printer
 ****************************************************************************/
 
-BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
+bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 {
 	int snum;
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	BOOL in_use = False;
+	bool in_use = False;
 
 	if ( !info_3 ) 
 		return False;
@@ -4703,7 +4703,7 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
  Check to see if a ogiven file is in use by *info
  *********************************************************************/
  
-static BOOL drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
+static bool drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 {
 	int i = 0;
 	
@@ -4761,10 +4761,10 @@ static void trim_dependent_file( fstring files[], int idx )
  Check if any of the files used by src are also used by drv 
  *********************************************************************/
 
-static BOOL trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
+static bool trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
 				       NT_PRINTER_DRIVER_INFO_LEVEL_3 *drv )
 {
-	BOOL 	in_use = False;
+	bool 	in_use = False;
 	int 	i = 0;
 	
 	if ( !src || !drv )
@@ -4824,7 +4824,7 @@ static BOOL trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src,
   which are not in use
 ****************************************************************************/
 
-BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
+bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 {
 	int 				i;
 	int 				ndrivers;
@@ -4893,7 +4893,7 @@ BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
   this.
 ****************************************************************************/
 
-static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user )
+static bool delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user )
 {
 	int i = 0;
 	char *s;
@@ -5007,7 +5007,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
  ***************************************************************************/
 
 WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
-                              uint32 version, BOOL delete_files )
+                              uint32 version, bool delete_files )
 {
 	pstring 	key;
 	const char     *arch;
@@ -5250,7 +5250,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
+bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	TDB_DATA kbuf;
@@ -5431,12 +5431,12 @@ void map_printer_permissions(SEC_DESC *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-BOOL print_access_check(struct current_user *user, int snum, int access_type)
+bool print_access_check(struct current_user *user, int snum, int access_type)
 {
 	SEC_DESC_BUF *secdesc = NULL;
 	uint32 access_granted;
 	NTSTATUS status;
-	BOOL result;
+	bool result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -5530,10 +5530,10 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-BOOL print_time_access_check(const char *servicename)
+bool print_time_access_check(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	BOOL ok = False;
+	bool ok = False;
 	time_t now = time(NULL);
 	struct tm *t;
 	uint32 mins;

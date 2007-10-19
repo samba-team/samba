@@ -97,7 +97,7 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
  Note that P should be valid & hnd should already have space
  *******************************************************************/
 
-static BOOL close_registry_key(pipes_struct *p, POLICY_HND *hnd)
+static bool close_registry_key(pipes_struct *p, POLICY_HND *hnd)
 {
 	struct registry_key *regkey = find_regkey_by_hnd(p, hnd);
 	
@@ -228,8 +228,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	uint32_t outbuf_size;
 
 	DATA_BLOB val_blob;
-	BOOL free_buf = False;
-	BOOL free_prs = False;
+	bool free_buf = False;
+	bool free_prs = False;
 
 	if ( !regkey )
 		return WERR_BADFID;
@@ -502,7 +502,7 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 	fstring reboot;
 	fstring f;
 	int ret;
-	BOOL can_shutdown;
+	bool can_shutdown;
 	
 
  	pstrcpy(shutdown_script, lp_shutdown_script());
@@ -567,7 +567,7 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShu
 {
 	pstring abort_shutdown_script;
 	int ret;
-	BOOL can_shutdown;
+	bool can_shutdown;
 
 	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
 

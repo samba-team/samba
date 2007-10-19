@@ -225,7 +225,7 @@ matching record.\n", id));
   Check if a refresh is queued for a particular name on a particular subnet.
   **************************************************************************/
    
-BOOL is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec)
+bool is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec)
 {  
 	struct response_record *rrec = NULL;
    

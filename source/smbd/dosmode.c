@@ -200,7 +200,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
  Get DOS attributes from an EA.
 ****************************************************************************/
 
-static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf, uint32 *pattr)
+static bool get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf, uint32 *pattr)
 {
 	ssize_t sizeret;
 	fstring attrstr;
@@ -256,11 +256,11 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
  Set DOS attributes in an EA.
 ****************************************************************************/
 
-static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, uint32 dosmode)
+static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, uint32 dosmode)
 {
 	fstring attrstr;
 	files_struct *fsp = NULL;
-	BOOL ret = False;
+	bool ret = False;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return False;
@@ -587,7 +587,7 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-BOOL set_filetime(connection_struct *conn, const char *fname,
+bool set_filetime(connection_struct *conn, const char *fname,
 		const struct timespec mtime)
 {
 	struct timespec ts[2];

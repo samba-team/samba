@@ -79,7 +79,7 @@ static ssize_t client_receive_smb(int fd,char *buffer, unsigned int timeout, siz
  Recv an smb.
 ****************************************************************************/
 
-BOOL cli_receive_smb(struct cli_state *cli)
+bool cli_receive_smb(struct cli_state *cli)
 {
 	ssize_t len;
 
@@ -166,7 +166,7 @@ ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
  Read a smb readX header.
 ****************************************************************************/
 
-BOOL cli_receive_smb_readX_header(struct cli_state *cli)
+bool cli_receive_smb_readX_header(struct cli_state *cli)
 {
 	ssize_t len, offset;
 
@@ -267,7 +267,7 @@ static ssize_t write_socket(int fd, const char *buf, size_t len)
  Send an smb to a fd.
 ****************************************************************************/
 
-BOOL cli_send_smb(struct cli_state *cli)
+bool cli_send_smb(struct cli_state *cli)
 {
 	size_t len;
 	size_t nwritten=0;
@@ -469,9 +469,9 @@ struct cli_state *cli_initialise(void)
  Returns False if the cli_close call failed.
  ****************************************************************************/
 
-BOOL cli_rpc_pipe_close(struct rpc_pipe_client *cli)
+bool cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
-	BOOL ret;
+	bool ret;
 
 	if (!cli) {
 		return False;
@@ -584,9 +584,9 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
  Set the case sensitivity flag on the packets. Returns old state.
 ****************************************************************************/
 
-BOOL cli_set_case_sensitive(struct cli_state *cli, BOOL case_sensitive)
+bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 {
-	BOOL ret = cli->case_sensitive;
+	bool ret = cli->case_sensitive;
 	cli->case_sensitive = case_sensitive;
 	return ret;
 }
@@ -595,7 +595,7 @@ BOOL cli_set_case_sensitive(struct cli_state *cli, BOOL case_sensitive)
 Send a keepalive packet to the server
 ****************************************************************************/
 
-BOOL cli_send_keepalive(struct cli_state *cli)
+bool cli_send_keepalive(struct cli_state *cli)
 {
         if (cli->fd == -1) {
                 DEBUG(3, ("cli_send_keepalive: fd == -1\n"));
@@ -614,7 +614,7 @@ BOOL cli_send_keepalive(struct cli_state *cli)
  Send/receive a SMBecho command: ping the server
 ****************************************************************************/
 
-BOOL cli_echo(struct cli_state *cli, uint16 num_echos,
+bool cli_echo(struct cli_state *cli, uint16 num_echos,
 	      unsigned char *data, size_t length)
 {
 	char *p;

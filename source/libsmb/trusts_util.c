@@ -140,7 +140,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
  Enumerate the list of trusted domains from a DC
 *********************************************************************/
 
-BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
+bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
                                      char ***domain_names, uint32 *num_domains,
 				     DOM_SID **sids )
 {
@@ -151,7 +151,7 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	uint32 		enum_ctx = 0;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *lsa_pipe;
-	BOOL 		retry;
+	bool 		retry;
 
 	*domain_names = NULL;
 	*num_domains = 0;

@@ -110,7 +110,7 @@ static void insert_refresh_name_into_unicast( struct subnet_record *subrec,
   Also add the magic Samba names.
 **************************************************************************/
 
-BOOL register_my_workgroup_and_names(void)
+bool register_my_workgroup_and_names(void)
 {
 	struct subnet_record *subrec;
 	int i;

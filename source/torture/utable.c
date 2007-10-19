@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-BOOL torture_utable(int dummy)
+bool torture_utable(int dummy)
 {
 	struct cli_state *cli;
 	fstring fname, alt_name;
@@ -110,7 +110,7 @@ static char *form_name(int c)
 	return fname;
 }
 
-BOOL torture_casetable(int dummy)
+bool torture_casetable(int dummy)
 {
 	static struct cli_state *cli;
 	char *fname;

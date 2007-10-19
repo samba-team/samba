@@ -72,7 +72,7 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 /* Create a ClearToken and an encrypted ticket. ClearToken has not yet the
  * ViceId set, this should be set by the caller. */
 
-static BOOL afs_createtoken(const char *username, const char *cell,
+static bool afs_createtoken(const char *username, const char *cell,
 			    DATA_BLOB *ticket, struct ClearToken *ct)
 {
 	fstring clear_ticket;
@@ -208,14 +208,14 @@ char *afs_createtoken_str(const char *username, const char *cell)
   For the comments "Alice" is the User to be auth'ed, and "Bob" is the
   AFS server.  */
 
-BOOL afs_login(connection_struct *conn)
+bool afs_login(connection_struct *conn)
 {
 	extern userdom_struct current_user_info;
 	extern struct current_user current_user;
 	DATA_BLOB ticket;
 	pstring afs_username;
 	char *cell;
-	BOOL result;
+	bool result;
 	char *ticket_str;
 	const DOM_SID *user_sid;
 
@@ -268,7 +268,7 @@ BOOL afs_login(connection_struct *conn)
 
 #else
 
-BOOL afs_login(connection_struct *conn)
+bool afs_login(connection_struct *conn)
 {
 	return True;
 }

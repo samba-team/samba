@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-extern BOOL torture_showall;
+extern bool torture_showall;
 
 enum deny_result {A_0=0, A_X=1, A_R=2, A_W=3, A_RW=5};
 
@@ -1403,12 +1403,12 @@ static void progress_bar(unsigned i, unsigned total)
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
-BOOL torture_denytest1(int dummy)
+bool torture_denytest1(int dummy)
 {
 	struct cli_state *cli1;
 	int fnum1, fnum2;
 	int i;
-	BOOL correct = True;
+	bool correct = True;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 
 	if (!torture_open_connection(&cli1, 0)) {
@@ -1489,12 +1489,12 @@ BOOL torture_denytest1(int dummy)
 /*
   this produces a matrix of deny mode behaviour with 2 connections
  */
-BOOL torture_denytest2(int dummy)
+bool torture_denytest2(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
 	int fnum1, fnum2;
 	int i;
-	BOOL correct = True;
+	bool correct = True;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {

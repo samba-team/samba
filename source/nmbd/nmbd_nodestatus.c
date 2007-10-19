@@ -77,7 +77,7 @@ static void node_status_timeout_response(struct subnet_record *subrec,
  Try and do a node status to a name - given the name & IP address.
 ****************************************************************************/
  
-BOOL node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
+bool node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
                  struct in_addr send_ip, node_status_success_function success_fn, 
                  node_status_fail_function fail_fn, struct userdata_struct *userdata)
 {

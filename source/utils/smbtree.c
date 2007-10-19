@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static BOOL use_bcast;
+static bool use_bcast;
 
 /* How low can we go? */
 
@@ -67,7 +67,7 @@ static void add_name(const char *machine_name, uint32 server_type,
 /****************************************************************************
   display tree of smb workgroups, servers and shares
 ****************************************************************************/
-static BOOL get_workgroups(struct user_auth_info *user_info)
+static bool get_workgroups(struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         struct in_addr server_ip;
@@ -103,7 +103,7 @@ static BOOL get_workgroups(struct user_auth_info *user_info)
 
 /* Retrieve the list of servers for a given workgroup */
 
-static BOOL get_servers(char *workgroup, struct user_auth_info *user_info)
+static bool get_servers(char *workgroup, struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         struct in_addr server_ip;
@@ -126,7 +126,7 @@ static BOOL get_servers(char *workgroup, struct user_auth_info *user_info)
         return True;
 }
 
-static BOOL get_rpc_shares(struct cli_state *cli, 
+static bool get_rpc_shares(struct cli_state *cli, 
 			   void (*fn)(const char *, uint32, const char *, void *),
 			   void *state)
 {
@@ -180,7 +180,7 @@ static BOOL get_rpc_shares(struct cli_state *cli,
 }
 
 
-static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
+static bool get_shares(char *server_name, struct user_auth_info *user_info)
 {
         struct cli_state *cli;
 
@@ -196,7 +196,7 @@ static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
         return True;
 }
 
-static BOOL print_tree(struct user_auth_info *user_info)
+static bool print_tree(struct user_auth_info *user_info)
 {
         struct name_list *wg, *sv, *sh;
 

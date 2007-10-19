@@ -45,7 +45,7 @@
  * Declare here, define at end: reduces likely "include" interaction problems.
  *	David Lee <T.D.Lee@durham.ac.uk>
  */
-BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 #endif /* VXFS_QUOTA */
 
@@ -205,7 +205,7 @@ static int get_smb_linux_gen_quota(char *path, uid_t euser_id, gid_t egrp_id, LI
  Try to get the disk space from disk quotas (LINUX version).
 ****************************************************************************/
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	int r;
 	SMB_STRUCT_STAT S;
@@ -306,7 +306,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 try to get the disk space from disk quotas (CRAY VERSION)
 ****************************************************************************/
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   struct mntent *mnt;
   FILE *fd;
@@ -467,7 +467,7 @@ static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 }
 
 /* Restricted to SUNOS5 for the moment, I haven`t access to others to test. */ 
-static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+static bool nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	uid_t uid = euser_id;
 	struct dqblk D;
@@ -479,7 +479,7 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	int len;
 	static struct timeval timeout = {2,0};
 	enum clnt_stat clnt_stat;
-	BOOL ret = True;
+	bool ret = True;
 
 	*bsize = *dfree = *dsize = (SMB_BIG_UINT)0;
 
@@ -587,7 +587,7 @@ try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	uid_t euser_id;
 	int ret;
@@ -670,7 +670,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 #if defined(SUNOS5)
 	if ( strcmp( mnt.mnt_fstype, "nfs" ) == 0) {
-		BOOL retval;
+		bool retval;
 		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n", mnt.mnt_special));
 		retval = nfs_quotas(mnt.mnt_special, euser_id, bsize, dfree, dsize);
 		unbecome_root();
@@ -702,7 +702,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 		set_effective_uid(euser_id);
 		DEBUG(5,("disk_quotas: mount type \"%s\"\n", mnt.mnt_fstype));
 		if ( 0 == strcmp ( mnt.mnt_fstype, "vxfs" )) {
-			BOOL retval;
+			bool retval;
 			retval = disk_quotas_vxfs(name, path, bsize, dfree, dsize);
 			return(retval);
 		}
@@ -748,7 +748,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 try to get the disk space from disk quotas - OSF1 version
 ****************************************************************************/
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   int r, save_errno;
   struct dqblk D;
@@ -814,7 +814,7 @@ try to get the disk space from disk quotas (IRIX 6.2 version)
 #include <sys/quota.h>
 #include <mntent.h>
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t euser_id;
   int r;
@@ -1007,7 +1007,7 @@ static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 }
 
 /* Works on FreeBSD, too. :-) */
-static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+static bool nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	uid_t uid = euser_id;
 	struct dqblk D;
@@ -1019,7 +1019,7 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	int len;
 	static struct timeval timeout = {2,0};
 	enum clnt_stat clnt_stat;
-	BOOL ret = True;
+	bool ret = True;
 
 	*bsize = *dfree = *dsize = (SMB_BIG_UINT)0;
 
@@ -1132,7 +1132,7 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 try to get the disk space from disk quotas - default version
 ****************************************************************************/
 
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   int r;
   struct dqblk D;
@@ -1199,7 +1199,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
     if (strcmp(mnts[i].f_fstypename,"nfs") == 0) {
-        BOOL retval;
+        bool retval;
         retval = nfs_quotas(mnts[i].f_mntfromname,euser_id,bsize,dfree,dsize);
         unbecome_root();
         return retval;
@@ -1351,7 +1351,7 @@ Hints for porting:
 #include <sys/fs/vx_aioctl.h>
 #include <sys/fs/vx_ioctl.h>
 
-BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t user_id, euser_id;
   int ret;
@@ -1432,7 +1432,7 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 
 #else /* WITH_QUOTAS */
 
-BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
   (*bsize) = 512; /* This value should be ignored */
 
@@ -1450,7 +1450,7 @@ BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BI
 /* wrapper to the new sys_quota interface 
    this file should be removed later
    */
-BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int r;
 	SMB_DISK_QUOTA D;

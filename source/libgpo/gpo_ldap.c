@@ -23,11 +23,11 @@
  parse the raw extension string into a GP_EXT structure
 ****************************************************************/
 
-BOOL ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
+bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		      const char *extension_raw,
 		      struct GP_EXT **gp_ext)
 {
-	BOOL ret = False;
+	bool ret = False;
 	struct GP_EXT *ext = NULL;
 	char **ext_list = NULL;
 	char **ext_strings = NULL;
@@ -553,7 +553,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 					 const char *link_dn,
 					 struct GP_LINK *gp_link,
 					 enum GPO_LINK_TYPE link_type,
-					 BOOL only_add_forced_gpos,
+					 bool only_add_forced_gpos,
 					 const struct nt_user_token *token)
 {
 	ADS_STATUS status;
@@ -714,7 +714,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
 	const char *parent_dn, *site_dn, *tmp_dn;
-	BOOL add_only_forced_gpos = False;
+	bool add_only_forced_gpos = False;
 
 	ZERO_STRUCTP(gpo_list);
 

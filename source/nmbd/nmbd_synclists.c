@@ -63,7 +63,7 @@ static void callback(const char *sname, uint32 stype,
 
 static void sync_child(char *name, int nm_type, 
 		       char *workgroup,
-		       struct in_addr ip, BOOL local, BOOL servers,
+		       struct in_addr ip, bool local, bool servers,
 		       char *fname)
 {
 	fstring unix_workgroup;
@@ -141,7 +141,7 @@ static void sync_child(char *name, int nm_type,
 
 void sync_browse_lists(struct work_record *work,
 		       char *name, int nm_type, 
-		       struct in_addr ip, BOOL local, BOOL servers)
+		       struct in_addr ip, bool local, bool servers)
 {
 	struct sync_record *s;
 	static int counter;

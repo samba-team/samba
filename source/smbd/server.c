@@ -169,7 +169,7 @@ static void msg_sam_sync(struct messaging_context *msg,
  Open the socket communication - inetd.
 ****************************************************************************/
 
-static BOOL open_sockets_inetd(void)
+static bool open_sockets_inetd(void)
 {
 	/* Started from inetd. fd 0 is the socket. */
 	/* We will abort gracefully when the client or remote system 
@@ -282,7 +282,7 @@ static void remove_child_pid(pid_t pid)
  Have we reached the process limit ?
 ****************************************************************************/
 
-static BOOL allowable_number_of_smbd_processes(void)
+static bool allowable_number_of_smbd_processes(void)
 {
 	int max_processes = lp_max_smbd_processes();
 
@@ -296,7 +296,7 @@ static BOOL allowable_number_of_smbd_processes(void)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
+static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_ports)
 {
 	int num_interfaces = iface_count();
 	int num_sockets = 0;
@@ -681,9 +681,9 @@ void reload_printers(void)
  Reload the services file.
 **************************************************************************/
 
-BOOL reload_services(BOOL test)
+bool reload_services(bool test)
 {
-	BOOL ret;
+	bool ret;
 	
 	if (lp_loaded()) {
 		pstring fname;
@@ -816,7 +816,7 @@ void exit_server_fault(void)
  Initialise connect, service and file structs.
 ****************************************************************************/
 
-static BOOL init_structs(void )
+static bool init_structs(void )
 {
 	/*
 	 * Set the machine NETBIOS name if not already
@@ -843,7 +843,7 @@ static BOOL init_structs(void )
 /*
  * Send keepalive packets to our client
  */
-static BOOL keepalive_fn(const struct timeval *now, void *private_data)
+static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
 	if (!send_keepalive(smbd_server_fd())) {
 		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
@@ -855,7 +855,7 @@ static BOOL keepalive_fn(const struct timeval *now, void *private_data)
 /*
  * Do the recurring check if we're idle
  */
-static BOOL deadtime_fn(const struct timeval *now, void *private_data)
+static bool deadtime_fn(const struct timeval *now, void *private_data)
 {
 	if ((conn_num_open() == 0)
 	    || (conn_idle_all(now->tv_sec))) {
@@ -877,21 +877,21 @@ static BOOL deadtime_fn(const struct timeval *now, void *private_data)
    mkproto.h.  Mixing $(builddir) and $(srcdir) source files in the current
    prototype generation system is too complicated. */
 
-extern void build_options(BOOL screen);
+extern void build_options(bool screen);
 
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	static BOOL is_daemon = False;
-	static BOOL interactive = False;
-	static BOOL Fork = True;
-	static BOOL no_process_group = False;
-	static BOOL log_stdout = False;
+	static bool is_daemon = False;
+	static bool interactive = False;
+	static bool Fork = True;
+	static bool no_process_group = False;
+	static bool log_stdout = False;
 	static char *ports = NULL;
 	static char *profile_level = NULL;
 	int opt;
 	poptContext pc;
-	BOOL print_build_options = False;
+	bool print_build_options = False;
 
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP

@@ -69,7 +69,7 @@ static struct sid_name_map_info special_domains[] = {
 	{ &global_sid_NT_Authority, "NT Authority", nt_authority_users },
 	{ NULL, NULL, NULL }};
 
-BOOL sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name)
+bool sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name)
 {
 	int i;
 
@@ -84,7 +84,7 @@ BOOL sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name)
 	return False;
 }
 
-BOOL sid_check_is_in_wellknown_domain(const DOM_SID *sid)
+bool sid_check_is_in_wellknown_domain(const DOM_SID *sid)
 {
 	DOM_SID dom_sid;
 	uint32 rid;
@@ -99,7 +99,7 @@ BOOL sid_check_is_in_wellknown_domain(const DOM_SID *sid)
  Looks up a known username from one of the known domains.
 ***************************************************************************/
 
-BOOL lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			  const char **domain, const char **name)
 {
 	int i;
@@ -145,7 +145,7 @@ BOOL lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Try and map a name to one of the well known SIDs.
 ***************************************************************************/
 
-BOOL lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
+bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 			   DOM_SID *sid, const char **domain)
 {
 	int i, j;

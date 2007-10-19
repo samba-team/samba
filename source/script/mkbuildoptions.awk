@@ -23,14 +23,14 @@ BEGIN {
 	print "#include \"build_env.h\"";
 	print "#include \"dynconfig.h\"";
 	print "";
-	print "static void output(BOOL screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);";
-	print "void build_options(BOOL screen);";
+	print "static void output(bool screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);";
+	print "void build_options(bool screen);";
 	print "";
 	print "";
 	print "/****************************************************************************";
 	print "helper function for build_options";
 	print "****************************************************************************/";
-	print "static void output(BOOL screen, const char *format, ...)";
+	print "static void output(bool screen, const char *format, ...)";
 	print "{";
 	print "       char *ptr;";
 	print "       va_list ap;";
@@ -51,7 +51,7 @@ BEGIN {
 	print "/****************************************************************************";
 	print "options set at build time for the samba suite";
 	print "****************************************************************************/";
-	print "void build_options(BOOL screen)";
+	print "void build_options(bool screen)";
 	print "{";
 	print "       if ((DEBUGLEVEL < 4) && (!screen)) {";
 	print "	       return;";

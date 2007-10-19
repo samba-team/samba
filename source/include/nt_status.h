@@ -30,7 +30,7 @@
 /* the following rather strange looking definitions of NTSTATUS and WERROR
    and there in order to catch common coding errors where different error types
    are mixed up. This is especially important as we slowly convert Samba
-   from using BOOL for internal functions 
+   from using bool for internal functions 
 */
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)

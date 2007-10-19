@@ -119,7 +119,7 @@ static int findpty(char **slave)
 }
 
 static int dochild(int master, const char *slavedev, const struct passwd *pass,
-		   const char *passwordprogram, BOOL as_root)
+		   const char *passwordprogram, bool as_root)
 {
 	int slave;
 	struct termios stermios;
@@ -233,7 +233,7 @@ static int expect(int master, char *issue, char *expected)
 {
 	pstring buffer;
 	int attempts, timeout, nread, len;
-	BOOL match = False;
+	bool match = False;
 
 	for (attempts = 0; attempts < 2; attempts++) {
 		if (!strequal(issue, ".")) {
@@ -331,14 +331,14 @@ static int talktochild(int master, const char *seq)
 	return (count > 0);
 }
 
-static BOOL chat_with_program(char *passwordprogram, const struct passwd *pass,
-			      char *chatsequence, BOOL as_root)
+static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
+			      char *chatsequence, bool as_root)
 {
 	char *slavedev;
 	int master;
 	pid_t pid, wpid;
 	int wstat;
-	BOOL chstat = False;
+	bool chstat = False;
 
 	if (pass == NULL) {
 		DEBUG(0, ("chat_with_program: user doesn't exist in the UNIX password database.\n"));
@@ -446,8 +446,8 @@ while we were waiting\n", WTERMSIG(wstat)));
 	return (chstat);
 }
 
-BOOL chgpasswd(const char *name, const struct passwd *pass, 
-	       const char *oldpass, const char *newpass, BOOL as_root)
+bool chgpasswd(const char *name, const struct passwd *pass, 
+	       const char *oldpass, const char *newpass, bool as_root)
 {
 	pstring passwordprogram;
 	pstring chatsequence;
@@ -496,7 +496,7 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 	
 #ifdef WITH_PAM
 	if (lp_pam_password_change()) {
-		BOOL ret;
+		bool ret;
 
 		if (as_root)
 			become_root();
@@ -557,8 +557,8 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 
 #else /* ALLOW_CHANGE_PASSWORD */
 
-BOOL chgpasswd(const char *name, const struct passwd *pass, 
-	       const char *oldpass, const char *newpass, BOOL as_root)
+bool chgpasswd(const char *name, const struct passwd *pass, 
+	       const char *oldpass, const char *newpass, bool as_root)
 {
 	DEBUG(0, ("chgpasswd: Unix Password changing not compiled in (user=%s)\n", name));
 	return (False);
@@ -569,7 +569,7 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
  Code to check the lanman hashed password.
 ************************************************************/
 
-BOOL check_lanman_password(char *user, uchar * pass1,
+bool check_lanman_password(char *user, uchar * pass1,
 			   uchar * pass2, struct samu **hnd)
 {
 	uchar unenc_new_pw[16];
@@ -577,7 +577,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	struct samu *sampass = NULL;
 	uint32 acct_ctrl;
 	const uint8 *lanman_pw;
-	BOOL ret;
+	bool ret;
 
 	if ( !(sampass = samu_new(NULL)) ) {
 		DEBUG(0, ("samu_new() failed!\n"));
@@ -641,11 +641,11 @@ BOOL check_lanman_password(char *user, uchar * pass1,
  is correct before calling. JRA.
 ************************************************************/
 
-BOOL change_lanman_password(struct samu *sampass, uchar *pass2)
+bool change_lanman_password(struct samu *sampass, uchar *pass2)
 {
 	static uchar null_pw[16];
 	uchar unenc_new_pw[16];
-	BOOL ret;
+	bool ret;
 	uint32 acct_ctrl;
 	const uint8 *pwd;
 
@@ -766,10 +766,10 @@ static NTSTATUS check_oem_password(const char *user,
 	uchar new_lm_hash[16];
 	uchar verifier[16];
 	char no_pw[2];
-	BOOL ret;
+	bool ret;
 
-	BOOL nt_pass_set = (password_encrypted_with_nt_hash && old_nt_hash_encrypted);
-	BOOL lm_pass_set = (password_encrypted_with_lm_hash && old_lm_hash_encrypted);
+	bool nt_pass_set = (password_encrypted_with_nt_hash && old_nt_hash_encrypted);
+	bool lm_pass_set = (password_encrypted_with_lm_hash && old_lm_hash_encrypted);
 
 	*hnd = NULL;
 
@@ -948,13 +948,13 @@ static NTSTATUS check_oem_password(const char *user,
  found in the history list.
 ************************************************************/
 
-static BOOL check_passwd_history(struct samu *sampass, const char *plaintext)
+static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 {
 	uchar new_nt_p16[NT_HASH_LEN];
 	uchar zero_md5_nt_pw[SALTED_MD5_HASH_LEN];
 	const uint8 *nt_pw;
 	const uint8 *pwhistory;
-	BOOL found = False;
+	bool found = False;
 	int i;
 	uint32 pwHisLen, curr_pwHisLen;
 
@@ -1015,7 +1015,7 @@ static BOOL check_passwd_history(struct samu *sampass, const char *plaintext)
  is correct before calling. JRA.
 ************************************************************/
 
-NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
+NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, uint32 *samr_reject_reason)
 {
 	uint32 min_len;
 	uint32 refuse;

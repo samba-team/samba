@@ -48,7 +48,7 @@ struct ClearToken {
 	uint32 EndTimestamp;
 };
 
-static BOOL afs_decode_token(const char *string, char **cell,
+static bool afs_decode_token(const char *string, char **cell,
 			     DATA_BLOB *ticket, struct ClearToken *ct)
 {
 	DATA_BLOB blob;
@@ -151,7 +151,7 @@ static BOOL afs_decode_token(const char *string, char **cell,
   to avoid. 
 */
 
-static BOOL afs_settoken(const char *cell,
+static bool afs_settoken(const char *cell,
 			 const struct ClearToken *ctok,
 			 DATA_BLOB ticket)
 {
@@ -207,11 +207,11 @@ static BOOL afs_settoken(const char *cell,
 	return (ret == 0);
 }
 
-BOOL afs_settoken_str(const char *token_string)
+bool afs_settoken_str(const char *token_string)
 {
 	DATA_BLOB ticket;
 	struct ClearToken ct;
-	BOOL result;
+	bool result;
 	char *cell;
 
 	if (!afs_decode_token(token_string, &cell, &ticket, &ct))
@@ -230,7 +230,7 @@ BOOL afs_settoken_str(const char *token_string)
 
 #else
 
-BOOL afs_settoken_str(const char *token_string)
+bool afs_settoken_str(const char *token_string)
 {
 	return False;
 }

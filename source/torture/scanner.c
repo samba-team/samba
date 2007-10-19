@@ -109,7 +109,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static BOOL scan_trans2(struct cli_state *cli, int op, int level, 
+static bool scan_trans2(struct cli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
@@ -186,7 +186,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 }
 
 
-BOOL torture_trans2_scan(int dummy)
+bool torture_trans2_scan(int dummy)
 {
 	static struct cli_state *cli;
 	int op, level;
@@ -311,7 +311,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 /****************************************************************************
 check for existance of a nttrans call
 ****************************************************************************/
-static BOOL scan_nttrans(struct cli_state *cli, int op, int level, 
+static bool scan_nttrans(struct cli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
@@ -388,7 +388,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 }
 
 
-BOOL torture_nttrans_scan(int dummy)
+bool torture_nttrans_scan(int dummy)
 {
 	static struct cli_state *cli;
 	int op, level;

@@ -23,7 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern BOOL global_machine_password_needs_changing;
+extern bool global_machine_password_needs_changing;
 
 /**
  * Connect to a remote server for (inter)domain security authenticaion.
@@ -44,7 +44,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						const char *dc_name,
 						struct in_addr dc_ip, 
 						struct rpc_pipe_client **pipe_ret,
-						BOOL *retry)
+						bool *retry)
 {
         NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -191,7 +191,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	int i;
-	BOOL retry = True;
+	bool retry = True;
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to

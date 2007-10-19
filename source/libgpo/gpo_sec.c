@@ -22,7 +22,7 @@
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_agp_object_guid(const struct security_ace_object *object)
+static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *object)
 {
 	struct GUID ext_right_apg_guid;
 	NTSTATUS status;
@@ -58,7 +58,7 @@ static BOOL gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_agp_object(const SEC_ACE *ace)
+static bool gpo_sd_check_agp_object(const SEC_ACE *ace)
 {
 	if (!sec_ace_object(ace->type)) {
 		return False;
@@ -70,7 +70,7 @@ static BOOL gpo_sd_check_agp_object(const SEC_ACE *ace)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_agp_access_bits(uint32_t access_mask)
+static bool gpo_sd_check_agp_access_bits(uint32_t access_mask)
 {
 	return (access_mask & SEC_RIGHTS_EXTENDED);
 }
@@ -79,7 +79,7 @@ static BOOL gpo_sd_check_agp_access_bits(uint32_t access_mask)
 /****************************************************************
 ****************************************************************/
 
-static BOOL gpo_sd_check_read_access_bits(uint32_t access_mask)
+static bool gpo_sd_check_read_access_bits(uint32_t access_mask)
 {
 	uint32_t read_bits = SEC_RIGHTS_LIST_CONTENTS |
 			   SEC_RIGHTS_READ_ALL_PROP |

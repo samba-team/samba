@@ -217,7 +217,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 					      TALLOC_CTX *mem_ctx,
 					      int argc,
 					      const char **argv,
-					      BOOL enable)
+					      bool enable)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

@@ -26,22 +26,22 @@ int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-extern BOOL rescan_listen_set;
-extern BOOL global_in_nmbd;
+extern bool rescan_listen_set;
+extern bool global_in_nmbd;
 
-extern BOOL override_logfile;
+extern bool override_logfile;
 
 /* are we running as a daemon ? */
-static BOOL is_daemon;
+static bool is_daemon;
 
 /* fork or run in foreground ? */
-static BOOL Fork = True;
+static bool Fork = True;
 
 /* log to standard output ? */
-static BOOL log_stdout;
+static bool log_stdout;
 
 /* have we found LanMan clients yet? */
-BOOL found_lm_clients = False;
+bool found_lm_clients = False;
 
 /* what server type are we currently */
 
@@ -174,7 +174,7 @@ static void expire_names_and_servers(time_t t)
  Reload the list of network interfaces.
  ************************************************************************** */
 
-static BOOL reload_interfaces(time_t t)
+static bool reload_interfaces(time_t t)
 {
 	static time_t lastt;
 	int n;
@@ -286,9 +286,9 @@ static BOOL reload_interfaces(time_t t)
  Reload the services file.
  **************************************************************************** */
 
-static BOOL reload_nmbd_services(BOOL test)
+static bool reload_nmbd_services(bool test)
 {
-	BOOL ret;
+	bool ret;
 
 	set_remote_machine_name("nmbd", False);
 
@@ -317,7 +317,7 @@ static BOOL reload_nmbd_services(BOOL test)
 
 /**************************************************************************** **
  * React on 'smbcontrol nmbd reload-config' in the same way as to SIGHUP
- * We use buf here to return BOOL result to process() when reload_interfaces()
+ * We use buf here to return bool result to process() when reload_interfaces()
  * detects that there are no subnets.
  **************************************************************************** */
 
@@ -337,7 +337,7 @@ static void msg_reload_nmbd_services(struct messaging_context *msg,
 		/* If reload_interfaces() returned True */
 		/* we need to shutdown if there are no subnets... */
 		/* pass this info back to process() */
-		*((BOOL*)data->data) = reload_interfaces(0);  
+		*((bool *)data->data) = reload_interfaces(0);  
 	}
 }
 
@@ -407,8 +407,8 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 
 static void process(void)
 {
-	BOOL run_election;
-	BOOL no_subnets;
+	bool run_election;
+	bool no_subnets;
 
 	while( True ) {
 		time_t t = time(NULL);
@@ -649,7 +649,7 @@ static void process(void)
  Open the socket communication.
  **************************************************************************** */
 
-static BOOL open_sockets(BOOL isdaemon, int port)
+static bool open_sockets(bool isdaemon, int port)
 {
 	/*
 	 * The sockets opened here will be used to receive broadcast
@@ -693,10 +693,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
  int main(int argc, const char *argv[])
 {
 	pstring logfile;
-	static BOOL opt_interactive;
+	static bool opt_interactive;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
-	static BOOL no_process_group = False;
+	static bool no_process_group = False;
 	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP

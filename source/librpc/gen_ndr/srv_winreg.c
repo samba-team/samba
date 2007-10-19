@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 
-static BOOL api_winreg_OpenHKCR(pipes_struct *p)
+static bool api_winreg_OpenHKCR(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_winreg_OpenHKCR(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKCU(pipes_struct *p)
+static bool api_winreg_OpenHKCU(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -162,7 +162,7 @@ static BOOL api_winreg_OpenHKCU(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKLM(pipes_struct *p)
+static bool api_winreg_OpenHKLM(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -240,7 +240,7 @@ static BOOL api_winreg_OpenHKLM(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKPD(pipes_struct *p)
+static bool api_winreg_OpenHKPD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -318,7 +318,7 @@ static BOOL api_winreg_OpenHKPD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKU(pipes_struct *p)
+static bool api_winreg_OpenHKU(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -396,7 +396,7 @@ static BOOL api_winreg_OpenHKU(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_CloseKey(pipes_struct *p)
+static bool api_winreg_CloseKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -469,7 +469,7 @@ static BOOL api_winreg_CloseKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_CreateKey(pipes_struct *p)
+static bool api_winreg_CreateKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -548,7 +548,7 @@ static BOOL api_winreg_CreateKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_DeleteKey(pipes_struct *p)
+static bool api_winreg_DeleteKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -619,7 +619,7 @@ static BOOL api_winreg_DeleteKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_DeleteValue(pipes_struct *p)
+static bool api_winreg_DeleteValue(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -690,7 +690,7 @@ static BOOL api_winreg_DeleteValue(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_EnumKey(pipes_struct *p)
+static bool api_winreg_EnumKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -765,7 +765,7 @@ static BOOL api_winreg_EnumKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_EnumValue(pipes_struct *p)
+static bool api_winreg_EnumValue(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -842,7 +842,7 @@ static BOOL api_winreg_EnumValue(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_FlushKey(pipes_struct *p)
+static bool api_winreg_FlushKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -913,7 +913,7 @@ static BOOL api_winreg_FlushKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_GetKeySecurity(pipes_struct *p)
+static bool api_winreg_GetKeySecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -986,7 +986,7 @@ static BOOL api_winreg_GetKeySecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_LoadKey(pipes_struct *p)
+static bool api_winreg_LoadKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1057,7 +1057,7 @@ static BOOL api_winreg_LoadKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_NotifyChangeKeyValue(pipes_struct *p)
+static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1128,7 +1128,7 @@ static BOOL api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenKey(pipes_struct *p)
+static bool api_winreg_OpenKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1206,7 +1206,7 @@ static BOOL api_winreg_OpenKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
+static bool api_winreg_QueryInfoKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1327,7 +1327,7 @@ static BOOL api_winreg_QueryInfoKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_QueryValue(pipes_struct *p)
+static bool api_winreg_QueryValue(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1403,7 +1403,7 @@ static BOOL api_winreg_QueryValue(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_ReplaceKey(pipes_struct *p)
+static bool api_winreg_ReplaceKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1474,7 +1474,7 @@ static BOOL api_winreg_ReplaceKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_RestoreKey(pipes_struct *p)
+static bool api_winreg_RestoreKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1545,7 +1545,7 @@ static BOOL api_winreg_RestoreKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_SaveKey(pipes_struct *p)
+static bool api_winreg_SaveKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1616,7 +1616,7 @@ static BOOL api_winreg_SaveKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_SetKeySecurity(pipes_struct *p)
+static bool api_winreg_SetKeySecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1687,7 +1687,7 @@ static BOOL api_winreg_SetKeySecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_SetValue(pipes_struct *p)
+static bool api_winreg_SetValue(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1758,7 +1758,7 @@ static BOOL api_winreg_SetValue(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_UnLoadKey(pipes_struct *p)
+static bool api_winreg_UnLoadKey(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1829,7 +1829,7 @@ static BOOL api_winreg_UnLoadKey(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_InitiateSystemShutdown(pipes_struct *p)
+static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1900,7 +1900,7 @@ static BOOL api_winreg_InitiateSystemShutdown(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_AbortSystemShutdown(pipes_struct *p)
+static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1971,7 +1971,7 @@ static BOOL api_winreg_AbortSystemShutdown(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_GetVersion(pipes_struct *p)
+static bool api_winreg_GetVersion(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2049,7 +2049,7 @@ static BOOL api_winreg_GetVersion(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKCC(pipes_struct *p)
+static bool api_winreg_OpenHKCC(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2127,7 +2127,7 @@ static BOOL api_winreg_OpenHKCC(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKDD(pipes_struct *p)
+static bool api_winreg_OpenHKDD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2205,7 +2205,7 @@ static BOOL api_winreg_OpenHKDD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_QueryMultipleValues(pipes_struct *p)
+static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2280,7 +2280,7 @@ static BOOL api_winreg_QueryMultipleValues(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
+static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2351,7 +2351,7 @@ static BOOL api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_SaveKeyEx(pipes_struct *p)
+static bool api_winreg_SaveKeyEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2422,7 +2422,7 @@ static BOOL api_winreg_SaveKeyEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKPT(pipes_struct *p)
+static bool api_winreg_OpenHKPT(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2500,7 +2500,7 @@ static BOOL api_winreg_OpenHKPT(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_OpenHKPN(pipes_struct *p)
+static bool api_winreg_OpenHKPN(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2578,7 +2578,7 @@ static BOOL api_winreg_OpenHKPN(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_winreg_QueryMultipleValues2(pipes_struct *p)
+static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

@@ -27,10 +27,10 @@
  *  
  *  this ugly hack needs to die, but not quite yet, I think people still use it...
  **/
-static BOOL update_smbpassword_file(const char *user, const char *password)
+static bool update_smbpassword_file(const char *user, const char *password)
 {
 	struct samu 	*sampass;
-	BOOL            ret;
+	bool            ret;
 	
 	if ( !(sampass = samu_new( NULL )) ) {
 		return False;

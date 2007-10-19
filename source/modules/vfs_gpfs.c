@@ -261,7 +261,7 @@ size_t gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	return gpfsacl_get_nt_acl_common(fsp, security_info, ppdesc);
 }
 
-static BOOL gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	int ret;
 	gpfs_aclLen_t gacl_len;

@@ -114,7 +114,7 @@ PRIVS privs[] = {
  copy an SE_PRIV structure
 ****************************************************************************/
 
-BOOL se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
+bool se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
 {
 	if ( !dst || !src )
 		return False;
@@ -128,7 +128,7 @@ BOOL se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
  put all privileges into a mask
 ****************************************************************************/
 
-BOOL se_priv_put_all_privileges(SE_PRIV *mask)
+bool se_priv_put_all_privileges(SE_PRIV *mask)
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -186,7 +186,7 @@ static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
  check if 2 SE_PRIV structure are equal
 ****************************************************************************/
 
-BOOL se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
+bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 {	
 	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
 }
@@ -195,7 +195,7 @@ BOOL se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
  check if a SE_PRIV has any assigned privileges
 ****************************************************************************/
 
-static BOOL se_priv_empty( const SE_PRIV *mask )
+static bool se_priv_empty( const SE_PRIV *mask )
 {
 	SE_PRIV p1;
 	int i;
@@ -213,7 +213,7 @@ static BOOL se_priv_empty( const SE_PRIV *mask )
  Lookup the SE_PRIV value for a privilege name 
 *********************************************************************/
 
-BOOL se_priv_from_name( const char *name, SE_PRIV *mask )
+bool se_priv_from_name( const char *name, SE_PRIV *mask )
 {
 	int i;
 
@@ -248,7 +248,7 @@ void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask )
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-BOOL is_privilege_assigned(const SE_PRIV *privileges,
+bool is_privilege_assigned(const SE_PRIV *privileges,
 			   const SE_PRIV *check)
 {
 	SE_PRIV p1, p2;
@@ -280,7 +280,7 @@ BOOL is_privilege_assigned(const SE_PRIV *privileges,
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static BOOL is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
+static bool is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
 {
 	SE_PRIV p1, p2;
 
@@ -336,7 +336,7 @@ const char* get_privilege_dispname( const char *name )
  at a time here.
 *****************************************************************************/
 
-BOOL user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
+bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
 {
 	if ( !token )
 		return False;
@@ -349,7 +349,7 @@ BOOL user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
  at a time here.
 *****************************************************************************/
 
-BOOL user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
+bool user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
 {
 	if ( !token )
 		return False;
@@ -419,7 +419,7 @@ const char *luid_to_privilege_name(const LUID *set)
  add a privilege to a privilege array
  ****************************************************************************/
 
-static BOOL privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
+static bool privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 {
 	LUID_ATTR *new_set;
 
@@ -444,7 +444,7 @@ static BOOL privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 /*******************************************************************
 *******************************************************************/
 
-BOOL se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -469,7 +469,7 @@ BOOL se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL luid_to_se_priv( LUID *luid, SE_PRIV *mask )
+static bool luid_to_se_priv( LUID *luid, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -487,7 +487,7 @@ static BOOL luid_to_se_priv( LUID *luid, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
+bool privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
 {
 	int i;
 	

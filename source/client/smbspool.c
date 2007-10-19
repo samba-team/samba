@@ -35,7 +35,7 @@
  * Globals...
  */
 
-extern BOOL		in_client;	/* Boolean for client library */
+extern bool		in_client;	/* Boolean for client library */
 
 
 /*

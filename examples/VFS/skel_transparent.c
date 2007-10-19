@@ -47,7 +47,7 @@ static void skel_disconnect(vfs_handle_struct *handle)
 }
 
 static SMB_BIG_UINT skel_disk_free(vfs_handle_struct *handle,  const char *path,
-	BOOL small_query, SMB_BIG_UINT *bsize,
+	bool small_query, SMB_BIG_UINT *bsize,
 	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, 
@@ -64,7 +64,7 @@ static int skel_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype,
 	return SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, dq);
 }
 
-static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
 {
 	return SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data, labels);
 }
@@ -224,12 +224,12 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, offset);
 }
 
-static BOOL skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	return SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 }
 
-static BOOL skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	return SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
 }

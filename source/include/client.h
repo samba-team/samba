@@ -128,10 +128,10 @@ struct cli_state {
 	unsigned int bufsize;
 	int initialised;
 	int win95;
-	BOOL is_samba;
+	bool is_samba;
 	uint32 capabilities;
 	uint32 posix_capabilities;
-	BOOL dfsroot;
+	bool dfsroot;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -144,18 +144,18 @@ struct cli_state {
 	/* The list of pipes currently open on this connection. */
 	struct rpc_pipe_client *pipe_list;
 
-	BOOL use_kerberos;
-	BOOL fallback_after_kerberos;
-	BOOL use_spnego;
+	bool use_kerberos;
+	bool fallback_after_kerberos;
+	bool use_spnego;
 
-	BOOL use_oplocks; /* should we use oplocks? */
-	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
+	bool use_oplocks; /* should we use oplocks? */
+	bool use_level_II_oplocks; /* should we use level II oplocks? */
 
 	/* a oplock break request handler */
-	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
+	bool (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
 
-	BOOL force_dos_errors;
-	BOOL case_sensitive; /* False by default. */
+	bool force_dos_errors;
+	bool case_sensitive; /* False by default. */
 };
 
 typedef struct file_info {

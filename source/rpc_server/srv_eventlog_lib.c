@@ -141,8 +141,8 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
  return True if we made enough room to accommodate needed bytes
 ********************************************************************/
 
-BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
-			     BOOL whack_by_date )
+bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
+			     bool whack_by_date )
 {
 	int start_record, i, new_start;
 	int end_record;
@@ -247,7 +247,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
   calculate how many bytes we need to remove                   
 ********************************************************************/
 
-BOOL prune_eventlog( TDB_CONTEXT * tdb )
+bool prune_eventlog( TDB_CONTEXT * tdb )
 {
 	int MaxSize, Retention, CalcdSize;
 
@@ -272,7 +272,7 @@ BOOL prune_eventlog( TDB_CONTEXT * tdb )
 /********************************************************************
 ********************************************************************/
 
-BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
+bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 {
 	int calcd_size;
 	int MaxSize, Retention;
@@ -315,7 +315,7 @@ BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 /*******************************************************************
 *******************************************************************/
 
-ELOG_TDB *elog_open_tdb( char *logname, BOOL force_clear )
+ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 {
 	TDB_CONTEXT *tdb = NULL;
 	uint32 vers_id;
@@ -412,7 +412,7 @@ ELOG_TDB *elog_open_tdb( char *logname, BOOL force_clear )
  Wrapper to handle reference counts to the tdb
 *******************************************************************/
 
-int elog_close_tdb( ELOG_TDB *etdb, BOOL force_close )
+int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 {
 	TDB_CONTEXT *tdb;
 
@@ -591,7 +591,7 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
  going in.
 ********************************************************************/
 
-BOOL parse_logentry( char *line, Eventlog_entry * entry, BOOL * eor )
+bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 {
 	char *start = NULL, *stop = NULL;
 	pstring temp;

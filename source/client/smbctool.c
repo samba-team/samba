@@ -28,10 +28,10 @@
 #define REGISTER 0
 #endif
 
-extern BOOL AllowDebugChange;
-extern BOOL override_logfile;
+extern bool AllowDebugChange;
+extern bool override_logfile;
 extern char tar_type;
-extern BOOL in_client;
+extern bool in_client;
 static int port = 0;
 pstring cur_dir = "/";
 static pstring service;
@@ -39,7 +39,7 @@ static pstring desthost;
 static pstring username;
 static pstring workgroup;
 static pstring calling_name;
-static BOOL grepable=False;
+static bool grepable=False;
 static char *cmdstr = NULL;
 
 static int io_bufsize = 64512;
@@ -60,26 +60,26 @@ static int cmd_help(void);
 time_t newer_than = 0;
 static int archive_level = 0;
 
-static BOOL translation = False;
-static BOOL have_ip;
+static bool translation = False;
+static bool have_ip;
 
 /* clitar bits insert */
 extern int blocksize;
-extern BOOL tar_inc;
-extern BOOL tar_reset;
+extern bool tar_inc;
+extern bool tar_reset;
 /* clitar bits end */
  
 
-static BOOL prompt = True;
+static bool prompt = True;
 
-static BOOL recurse = False;
-BOOL lowercase = False;
+static bool recurse = False;
+bool lowercase = False;
 
 static struct in_addr dest_ip;
 
 #define SEPARATORS " \t\n\r"
 
-static BOOL abort_mget = True;
+static bool abort_mget = True;
 
 static pstring fileselection = "";
 
@@ -408,7 +408,7 @@ static int cmd_cd(void)
  Decide if a file should be operated on.
 ********************************************************************/
 
-static BOOL do_this_one(file_info *finfo)
+static bool do_this_one(file_info *finfo)
 {
 	if (finfo->mode & aDIR)
 		return(True);
@@ -474,8 +474,8 @@ static void do_du(file_info *finfo)
 	}
 }
 
-static BOOL do_list_recurse;
-static BOOL do_list_dirs;
+static bool do_list_recurse;
+static bool do_list_dirs;
 static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
@@ -628,8 +628,8 @@ static void tool_list_helper(const char *mntpoint, struct stat *f, const char *m
 int tool_list(	char *mask,
 				mode_t mode,
 				void (*fn)(char *, struct stat *),
-				BOOL rec,
-				BOOL dirs)
+				bool rec,
+				bool dirs)
 {
 	int dh;
 	pstring dentname;
@@ -727,7 +727,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
  A wrapper around cli_list that adds recursion.
 ****************************************************************************/
 
-void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
+void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec, bool dirs)
 {
 	static int in_do_list = 0;
 	struct cli_state *targetcli;
@@ -865,10 +865,10 @@ static int cmd_du(void)
  Get a file from rname to lname
 ****************************************************************************/
 
-static int do_get(char *rname, char *lname, BOOL reget)
+static int do_get(char *rname, char *lname, bool reget)
 {  
 	int handle = 0, fnum;
-	BOOL newhandle = False;
+	bool newhandle = False;
 	char *data;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
@@ -1193,7 +1193,7 @@ static int cmd_mget(void)
  Make a directory of name "name".
 ****************************************************************************/
 
-static BOOL do_mkdir(char *name)
+static bool do_mkdir(char *name)
 {
 	if (smbc_mkdir(name, 755) < 0)
 	{
@@ -1208,7 +1208,7 @@ static BOOL do_mkdir(char *name)
  Show 8.3 name of a file.
 ****************************************************************************/
 
-static BOOL do_altname(char *name)
+static bool do_altname(char *name)
 {
 	pstring altname;
 	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
@@ -1320,7 +1320,7 @@ static int cmd_altname(void)
  Put a single file.
 ****************************************************************************/
 
-static int do_put(char *rname, char *lname, BOOL reput)
+static int do_put(char *rname, char *lname, bool reput)
 {
 	int fnum;
 	XFILE *f;
@@ -1514,7 +1514,7 @@ static int cmd_put(void)
 static struct file_list {
 	struct file_list *prev, *next;
 	char *file_path;
-	BOOL isdir;
+	bool isdir;
 } *file_list;
 
 /****************************************************************************
@@ -1538,7 +1538,7 @@ static void free_file_list (struct file_list * list)
  the specified name.
 ****************************************************************************/
 
-static BOOL seek_list(struct file_list *list, char *name)
+static bool seek_list(struct file_list *list, char *name)
 {
 	while (list) {
 		trim_string(list->file_path,"./","\n");
@@ -1569,14 +1569,14 @@ static int cmd_select(void)
 ****************************************************************************/
 
 static int file_find(struct file_list **list, const char *directory, 
-			  const char *expression, BOOL match)
+			  const char *expression, bool match)
 {
 	DIR *dir;
 	struct file_list *entry;
 		struct stat statbuf;
 		int ret;
 		char *path;
-	BOOL isdir;
+	bool isdir;
 	const char *dname;
 
 		dir = opendir(directory);
@@ -2553,7 +2553,7 @@ static int cmd_prompt(void)
 static int cmd_newer(void)
 {
 	pstring buf;
-	BOOL ok;
+	bool ok;
 	SMB_STRUCT_STAT sbuf;
 
 	ok = next_token_nr(NULL,buf,NULL,sizeof(buf));
@@ -2607,7 +2607,7 @@ static int cmd_lowercase(void)
 
 static int cmd_setcase(void)
 {
-	BOOL orig_case_sensitive = cli_set_case_sensitive(cli, False);
+	bool orig_case_sensitive = cli_set_case_sensitive(cli, False);
 
 	cli_set_case_sensitive(cli, !orig_case_sensitive);
 	DEBUG(2,("filename case sensitivity is now %s\n",!orig_case_sensitive ?
@@ -2757,7 +2757,7 @@ static void browse_fn(const char *name, uint32 m,
  Try and browse available connections on a host.
 ****************************************************************************/
 
-static BOOL browse_host(BOOL sort)
+static bool browse_host(bool sort)
 {
 	int ret;
 	if (!grepable) {
@@ -2790,7 +2790,7 @@ static void server_fn(const char *name, uint32 m,
  Try and browse available connections on a host.
 ****************************************************************************/
 
-static BOOL list_servers(const char *wk_grp)
+static bool list_servers(const char *wk_grp)
 {
 	fstring state;
 
@@ -3521,7 +3521,7 @@ static int do_message_op(void)
 	pstring base_directory;
 	int opt;
 	pstring query_host;
-	BOOL message = False;
+	bool message = False;
 	pstring term_code;
 	static const char *new_name_resolve_order = NULL;
 	poptContext pc;

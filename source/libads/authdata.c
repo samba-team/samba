@@ -26,7 +26,7 @@
 
 #ifdef HAVE_KRB5
 
-static BOOL pac_io_logon_name(const char *desc, PAC_LOGON_NAME *logon_name,
+static bool pac_io_logon_name(const char *desc, PAC_LOGON_NAME *logon_name,
 			      prs_struct *ps, int depth)
 {
 	if (NULL == logon_name)
@@ -60,7 +60,7 @@ static BOOL pac_io_logon_name(const char *desc, PAC_LOGON_NAME *logon_name,
 }
 
 #if 0 /* Unused (handled now in net_io_user_info3()) - Guenther */
-static BOOL pac_io_krb_sids(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
+static bool pac_io_krb_sids(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
 			    prs_struct *ps, int depth)
 {
 	if (NULL == sid_and_attr)
@@ -84,7 +84,7 @@ static BOOL pac_io_krb_sids(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
 }
 
 
-static BOOL pac_io_krb_attrs(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
+static bool pac_io_krb_attrs(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
 			     prs_struct *ps, int depth)
 {
 	if (NULL == sid_and_attr)
@@ -101,7 +101,7 @@ static BOOL pac_io_krb_attrs(const char *desc, KRB_SID_AND_ATTRS *sid_and_attr,
 	return True;
 }
 
-static BOOL pac_io_krb_sid_and_attr_array(const char *desc, 
+static bool pac_io_krb_sid_and_attr_array(const char *desc, 
 					  KRB_SID_AND_ATTR_ARRAY *array,
 					  uint32 num,
 					  prs_struct *ps, int depth)
@@ -150,7 +150,7 @@ static BOOL pac_io_krb_sid_and_attr_array(const char *desc,
 }
 #endif
 
-static BOOL pac_io_group_membership(const char *desc, 
+static bool pac_io_group_membership(const char *desc, 
 				    GROUP_MEMBERSHIP *membership,
 				    prs_struct *ps, int depth)
 {
@@ -169,7 +169,7 @@ static BOOL pac_io_group_membership(const char *desc,
 }
 
 
-static BOOL pac_io_group_membership_array(const char *desc, 
+static bool pac_io_group_membership_array(const char *desc, 
 					  GROUP_MEMBERSHIP_ARRAY *array,
 					  uint32 num,
 					  prs_struct *ps, int depth)
@@ -211,7 +211,7 @@ static BOOL pac_io_group_membership_array(const char *desc,
 }
 
 #if 0 /* Unused, replaced using an expanded net_io_user_info3() now - Guenther */
-static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
+static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
 				  prs_struct *ps, int depth)
 {
 	uint32 garbage, i;
@@ -395,11 +395,11 @@ static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 }
 #endif
 
-static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
+static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
 				  prs_struct *ps, int depth)
 {
 	uint32 garbage;
-	BOOL kerb_validation_info = True;
+	bool kerb_validation_info = True;
 
 	if (NULL == info)
 		return False;
@@ -446,7 +446,7 @@ static BOOL pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 
 
 
-static BOOL pac_io_pac_signature_data(const char *desc, 
+static bool pac_io_pac_signature_data(const char *desc, 
 				      PAC_SIGNATURE_DATA *data, uint32 length,
 				      prs_struct *ps, int depth)
 {
@@ -487,7 +487,7 @@ static BOOL pac_io_pac_signature_data(const char *desc,
 	return True;
 }
 
-static BOOL pac_io_pac_info_hdr_ctr(const char *desc, PAC_BUFFER *hdr,
+static bool pac_io_pac_info_hdr_ctr(const char *desc, PAC_BUFFER *hdr,
 				    prs_struct *ps, int depth)
 {
 	if (NULL == hdr)
@@ -581,7 +581,7 @@ static BOOL pac_io_pac_info_hdr_ctr(const char *desc, PAC_BUFFER *hdr,
 	return True;
 }
 
-static BOOL pac_io_pac_info_hdr(const char *desc, PAC_BUFFER *hdr, 
+static bool pac_io_pac_info_hdr(const char *desc, PAC_BUFFER *hdr, 
 				prs_struct *ps, int depth)
 {
 	if (NULL == hdr)
@@ -604,7 +604,7 @@ static BOOL pac_io_pac_info_hdr(const char *desc, PAC_BUFFER *hdr,
 	return True;
 }
 
-static BOOL pac_io_pac_data(const char *desc, PAC_DATA *data, 
+static bool pac_io_pac_data(const char *desc, PAC_DATA *data, 
 			    prs_struct *ps, int depth)
 {
 	int i;
@@ -965,8 +965,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     time_t *expire_time,
 			     time_t *renew_till_time,
 			     const char *cache_name,
-			     BOOL request_pac,
-			     BOOL add_netbios_addr,
+			     bool request_pac,
+			     bool add_netbios_addr,
 			     time_t renewable_time,
 			     PAC_DATA **pac_ret)
 {
@@ -1104,8 +1104,8 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 					       time_t *expire_time,
 					       time_t *renew_till_time,
 					       const char *cache_name,
-					       BOOL request_pac,
-					       BOOL add_netbios_addr,
+					       bool request_pac,
+					       bool add_netbios_addr,
 					       time_t renewable_time,
 					       PAC_LOGON_INFO **logon_info)
 {
@@ -1154,8 +1154,8 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					time_t *expire_time,
 					time_t *renew_till_time,
 					const char *cache_name,
-					BOOL request_pac,
-					BOOL add_netbios_addr,
+					bool request_pac,
+					bool add_netbios_addr,
 					time_t renewable_time,
 					NET_USER_INFO_3 **info3)
 {

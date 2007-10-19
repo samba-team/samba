@@ -22,11 +22,6 @@
 
 #include "tdb.h"
 
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL
-#endif
-
 /* single node of a list returned by tdb_search_keys */
 typedef struct keys_node 
 {
@@ -41,11 +36,11 @@ struct tdb_wrap {
 };
 
 struct tdb_validation_status {
-	BOOL tdb_error;
-	BOOL bad_freelist;
-	BOOL bad_entry;
-	BOOL unknown_key;
-	BOOL success;
+	bool tdb_error;
+	bool bad_freelist;
+	bool bad_entry;
+	bool unknown_key;
+	bool success;
 };
 
 typedef int (*tdb_validate_data_func)(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state);
@@ -61,9 +56,9 @@ int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 					unsigned int timeout);
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 int32 tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
-int tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32 value);
+bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32 value);
 int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32 v);
-int tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32 *value);
+bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32 *value);
 int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state);
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags);
@@ -78,7 +73,7 @@ TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
 int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 		    int flag);
-BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
+bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
 			      uint32 *oldval, uint32 change_val);
 int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key,
 				unsigned int timeout);

@@ -74,7 +74,7 @@ static http_t *cups_connect(void)
 	return http;
 }
 
-BOOL cups_cache_reload(void)
+bool cups_cache_reload(void)
 {
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -88,7 +88,7 @@ BOOL cups_cache_reload(void)
 			  "printer-name",
 			  "printer-info"
 			};       
-	BOOL ret = False;
+	bool ret = False;
 
 	DEBUG(5, ("reloading cups printcap cache\n"));
 
@@ -1197,7 +1197,7 @@ struct printif	cups_printif =
 	cups_job_submit,
 };
 
-BOOL cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
+bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 {
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -1214,7 +1214,7 @@ BOOL cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 			  "printer-info",
 			  "printer-location"
 			};
-	BOOL ret = False;
+	bool ret = False;
 
 	DEBUG(5, ("pulling %s location\n", printer->sharename));
 

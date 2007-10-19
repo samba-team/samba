@@ -249,7 +249,7 @@ static void uw_pathname(pstring fname, const char *uw_name, const char *uw_defau
  Update utmp file directly.  No subroutine interface: probably a BSD system.
 ****************************************************************************/
 
-static void pututline_my(pstring uname, struct utmp *u, BOOL claim)
+static void pututline_my(pstring uname, struct utmp *u, bool claim)
 {
 	DEBUG(1,("pututline_my: not yet implemented\n"));
 	/* BSD implementor: may want to consider (or not) adjusting "lastlog" */
@@ -263,7 +263,7 @@ static void pututline_my(pstring uname, struct utmp *u, BOOL claim)
  Credit: Michail Vidiassov <master@iaas.msu.ru>
 ****************************************************************************/
 
-static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
+static void updwtmp_my(pstring wname, struct utmp *u, bool claim)
 {
 	int fd;
 	struct stat buf;
@@ -306,7 +306,7 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
  Update via utmp/wtmp (not utmpx/wtmpx).
 ****************************************************************************/
 
-static void utmp_nox_update(struct utmp *u, BOOL claim)
+static void utmp_nox_update(struct utmp *u, bool claim)
 {
 	pstring uname, wname;
 #if defined(PUTUTLINE_RETURNS_UTMP)
@@ -384,7 +384,7 @@ static void utmp_strcpy(char *dest, const char *src, size_t n)
  Update via utmpx/wtmpx (preferred) or via utmp/wtmp.
 ****************************************************************************/
 
-static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
+static void sys_utmp_update(struct utmp *u, const char *hostname, bool claim)
 {
 #if !defined(HAVE_UTMPX_H)
 	/* No utmpx stuff.  Drop to non-x stuff */
@@ -472,7 +472,7 @@ static int ut_id_encode(int i, char *fourbyte)
 /*
   fill a system utmp structure given all the info we can gather
 */
-static BOOL sys_utmp_fill(struct utmp *u,
+static bool sys_utmp_fill(struct utmp *u,
 			const char *username, const char *hostname,
 			const char *ip_addr_str,
 			const char *id_str, int id_num)

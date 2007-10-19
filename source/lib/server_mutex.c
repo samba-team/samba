@@ -30,7 +30,7 @@
 
 static char *mutex_server_name;
 
-BOOL grab_server_mutex(const char *name)
+bool grab_server_mutex(const char *name)
 {
 	mutex_server_name = SMB_STRDUP(name);
 	if (!mutex_server_name) {

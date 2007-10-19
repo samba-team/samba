@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_echo.h"
 
-static BOOL api_echo_AddOne(pipes_struct *p)
+static bool api_echo_AddOne(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -84,7 +84,7 @@ static BOOL api_echo_AddOne(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_EchoData(pipes_struct *p)
+static bool api_echo_EchoData(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -162,7 +162,7 @@ static BOOL api_echo_EchoData(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_SinkData(pipes_struct *p)
+static bool api_echo_SinkData(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -233,7 +233,7 @@ static BOOL api_echo_SinkData(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_SourceData(pipes_struct *p)
+static bool api_echo_SourceData(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -311,7 +311,7 @@ static BOOL api_echo_SourceData(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestCall(pipes_struct *p)
+static bool api_echo_TestCall(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -389,7 +389,7 @@ static BOOL api_echo_TestCall(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestCall2(pipes_struct *p)
+static bool api_echo_TestCall2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -467,7 +467,7 @@ static BOOL api_echo_TestCall2(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestSleep(pipes_struct *p)
+static bool api_echo_TestSleep(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -538,7 +538,7 @@ static BOOL api_echo_TestSleep(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestEnum(pipes_struct *p)
+static bool api_echo_TestEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -613,7 +613,7 @@ static BOOL api_echo_TestEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestSurrounding(pipes_struct *p)
+static bool api_echo_TestSurrounding(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -686,7 +686,7 @@ static BOOL api_echo_TestSurrounding(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_echo_TestDoublePointer(pipes_struct *p)
+static bool api_echo_TestDoublePointer(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

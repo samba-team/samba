@@ -119,8 +119,8 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
 	return packet_fd_read(ctx);
 }
 
-BOOL packet_handler(struct packet_context *ctx,
-		    BOOL (*full_req)(const struct data_blob *data,
+bool packet_handler(struct packet_context *ctx,
+		    bool (*full_req)(const struct data_blob *data,
 				     size_t *length,
 				     void *private_data),
 		    NTSTATUS (*callback)(const struct data_blob *data,

@@ -236,7 +236,7 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 	uint32 first_usn;
 	int num_retries = 0;
 	const char **attrs;
-	BOOL more_values = False;
+	bool more_values = False;
 
 	*num_strings = 0;
 	*strings = NULL;
@@ -289,7 +289,7 @@ ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 				      size_t *num_strings,
 				      uint32 *first_usn,
 				      int *num_retries,
-				      BOOL *more_values)
+				      bool *more_values)
 {
 	LDAPMessage *res = NULL;
 	ADS_STATUS status;

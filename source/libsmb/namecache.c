@@ -33,7 +33,7 @@
  *         false on failure
  **/
 
-BOOL namecache_enable(void)
+bool namecache_enable(void)
 {
 	/*
 	 * Check if name caching disabled by setting the name cache
@@ -68,7 +68,7 @@ BOOL namecache_enable(void)
  *         false on failure
  **/
  
-BOOL namecache_shutdown(void)
+bool namecache_shutdown(void)
 {
 	if (!gencache_shutdown()) {
 		DEBUG(2, ("namecache_shutdown: Couldn't close namecache on top of gencache.\n"));
@@ -111,13 +111,13 @@ static char* namecache_key(const char *name, int name_type)
  *        ip addresses being stored
  **/
 
-BOOL namecache_store(const char *name, int name_type,
+bool namecache_store(const char *name, int name_type,
                      int num_names, struct ip_service *ip_list)
 {
 	time_t expiry;
 	char *key, *value_string;
 	int i;
-	BOOL ret;
+	bool ret;
 
 	/*
 	 * we use gecache call to avoid annoying debug messages about
@@ -179,7 +179,7 @@ BOOL namecache_store(const char *name, int name_type,
  *         false if name isn't found in the cache or has expired
  **/
 
-BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_list,
+bool namecache_fetch(const char *name, int name_type, struct ip_service **ip_list,
                      int *num_names)
 {
 	char *key, *value;
@@ -229,9 +229,9 @@ BOOL namecache_fetch(const char *name, int name_type, struct ip_service **ip_lis
  *
  **/
 
-BOOL namecache_delete(const char *name, int name_type)
+bool namecache_delete(const char *name, int name_type)
 {
-	BOOL ret;
+	bool ret;
 	char *key;
 
 	if (!gencache_init())
@@ -298,13 +298,13 @@ static char *namecache_status_record_key(const char *name, int name_type1,
 
 /* Store a name status record. */
 
-BOOL namecache_status_store(const char *keyname, int keyname_type,
+bool namecache_status_store(const char *keyname, int keyname_type,
 		int name_type, struct in_addr keyip,
 		const char *srvname)
 {
 	char *key;
 	time_t expiry;
-	BOOL ret;
+	bool ret;
 
 	if (!gencache_init())
 		return False;
@@ -327,7 +327,7 @@ BOOL namecache_status_store(const char *keyname, int keyname_type,
 
 /* Fetch a name status record. */
 
-BOOL namecache_status_fetch(const char *keyname, int keyname_type,
+bool namecache_status_fetch(const char *keyname, int keyname_type,
 			int name_type, struct in_addr keyip, char *srvname_out)
 {
 	char *key = NULL;

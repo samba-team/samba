@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "winbindd.h"
 
-extern BOOL opt_nocache;
+extern bool opt_nocache;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -142,7 +142,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 	return;
 }
 
-static BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
+static bool fill_passdb_alias_grmem(struct winbindd_domain *domain,
 			     DOM_SID *group_sid, 
 			     size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
 {
@@ -177,7 +177,7 @@ static BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
 
 /* Fill a grent structure from various other information */
 
-static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name, 
+static bool fill_grent(struct winbindd_gr *gr, const char *dom_name, 
 		       const char *gr_name, gid_t unix_gid)
 {
 	fstring full_group_name;
@@ -203,7 +203,7 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
  if neccessaey, or parameterize the group list we do this for.
 ***********************************************************************/
 
-static BOOL fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
+static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 				     struct winbindd_domain *domain,
 				     struct winbindd_cli_state *state,
 				     DOM_SID *group_sid,
@@ -215,7 +215,7 @@ static BOOL fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 	DOM_SID *pquerying_user_sid = NULL;
 	uint32 num_groups = 0;
 	DOM_SID *user_sids = NULL;
-	BOOL u_in_group = False;
+	bool u_in_group = False;
 	NTSTATUS status;
 	int i;
 	unsigned int buf_len = 0;
@@ -437,7 +437,7 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 			if ( name_types[j] == SID_NAME_DOM_GRP ||
 			     name_types[j] == SID_NAME_ALIAS )
 			{
-				BOOL ret;
+				bool ret;
 				
 				ret = add_sid_to_array_unique( ctx, 
 							       &sid_mem[j],
@@ -468,7 +468,7 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
  Fill in the group membership field of a NT group given by group_sid
 ***********************************************************************/
 
-static BOOL fill_grent_mem(struct winbindd_domain *domain,
+static bool fill_grent_mem(struct winbindd_domain *domain,
 			   struct winbindd_cli_state *state,
 			   DOM_SID *group_sid, 
 			   enum lsa_SidType group_name_type, 
@@ -477,7 +477,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	uint32 num_names = 0;
 	unsigned int buf_len = 0, buf_ndx = 0, i;
 	char **names = NULL, *buf = NULL;
-	BOOL result = False;
+	bool result = False;
 	TALLOC_CTX *mem_ctx;
 	uint32 group_rid;
 	DOM_SID *glist = NULL;
@@ -642,7 +642,7 @@ done:
 
 static void winbindd_getgrsid( struct winbindd_cli_state *state, DOM_SID group_sid );
 
-static void getgrnam_recv( void *private_data, BOOL success, const DOM_SID *sid, 
+static void getgrnam_recv( void *private_data, bool success, const DOM_SID *sid, 
 			   enum lsa_SidType type )
 {
 	struct winbindd_cli_state *state = (struct winbindd_cli_state*)private_data;
@@ -729,7 +729,7 @@ struct getgrsid_state {
 	DOM_SID group_sid;
 };
 
-static void getgrsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
+static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	{
 	struct getgrsid_state *s =
 		(struct getgrsid_state *)private_data;
@@ -782,7 +782,7 @@ static void getgrsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	request_ok(s->state);	
 	}
 
-static void getgrsid_lookupsid_recv( void *private_data, BOOL success,
+static void getgrsid_lookupsid_recv( void *private_data, bool success,
 				     const char *dom_name, const char *name,
 				     enum lsa_SidType name_type )
 {
@@ -848,7 +848,7 @@ static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID g
 }
 
 
-static void getgrgid_recv(void *private_data, BOOL success, const char *sid)
+static void getgrgid_recv(void *private_data, bool success, const char *sid)
 {
 	struct winbindd_cli_state *state = talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	enum lsa_SidType name_type;
@@ -895,7 +895,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 
 /* "Rewind" file pointer for group database enumeration */
 
-static BOOL winbindd_setgrent_internal(struct winbindd_cli_state *state)
+static bool winbindd_setgrent_internal(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
@@ -974,13 +974,13 @@ void winbindd_endgrent(struct winbindd_cli_state *state)
    The dispinfo_ndx field is incremented to the index of the next group to 
    fetch. Return True if some groups were returned, False otherwise. */
 
-static BOOL get_sam_group_entries(struct getent_state *ent)
+static bool get_sam_group_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
 	struct acct_info *name_list = NULL;
 	TALLOC_CTX *mem_ctx;
-	BOOL result = False;
+	bool result = False;
 	struct acct_info *sam_grp_entries = NULL;
 	struct winbindd_domain *domain;
         
@@ -1443,11 +1443,11 @@ struct getgroups_state {
 	size_t num_token_gids;
 };
 
-static void getgroups_usersid_recv(void *private_data, BOOL success,
+static void getgroups_usersid_recv(void *private_data, bool success,
 				   const DOM_SID *sid, enum lsa_SidType type);
-static void getgroups_tokensids_recv(void *private_data, BOOL success,
+static void getgroups_tokensids_recv(void *private_data, bool success,
 				     DOM_SID *token_sids, size_t num_token_sids);
-static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
+static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid);
 
 void winbindd_getgroups(struct winbindd_cli_state *state)
 {
@@ -1515,7 +1515,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 				  getgroups_usersid_recv, WINBINDD_GETGROUPS, s);
 }
 
-static void getgroups_usersid_recv(void *private_data, BOOL success,
+static void getgroups_usersid_recv(void *private_data, bool success,
 				   const DOM_SID *sid, enum lsa_SidType type)
 {
 	struct getgroups_state *s =
@@ -1533,7 +1533,7 @@ static void getgroups_usersid_recv(void *private_data, BOOL success,
 				getgroups_tokensids_recv, s);
 }
 
-static void getgroups_tokensids_recv(void *private_data, BOOL success,
+static void getgroups_tokensids_recv(void *private_data, bool success,
 				     DOM_SID *token_sids, size_t num_token_sids)
 {
 	struct getgroups_state *s =
@@ -1557,7 +1557,7 @@ static void getgroups_tokensids_recv(void *private_data, BOOL success,
 	getgroups_sid2gid_recv(s, False, 0);
 }
 
-static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
+static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid)
 {
 	struct getgroups_state *s =
 		(struct getgroups_state *)private_data;
@@ -1603,7 +1603,7 @@ static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
    results.
 */
 
-static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
+static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 			     size_t num_sids);
 
 void winbindd_getusersids(struct winbindd_cli_state *state)
@@ -1631,7 +1631,7 @@ void winbindd_getusersids(struct winbindd_cli_state *state)
 				state);
 }
 
-static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
+static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 			     size_t num_sids)
 {
 	struct winbindd_cli_state *state =

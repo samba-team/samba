@@ -24,7 +24,7 @@
 static unsigned char smb_arc4_state[258];
 static uint32 counter;
 
-static BOOL done_reseed = False;
+static bool done_reseed = False;
 static void (*reseed_callback)(int *newseed);
 
 /**************************************************************** 
@@ -86,7 +86,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
  above...
 **************************************************************/
 
-static int do_reseed(BOOL use_fd, int fd)
+static int do_reseed(bool use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
 	uint32 v1, v2; struct timeval tval; pid_t mypid;

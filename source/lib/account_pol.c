@@ -166,7 +166,7 @@ int account_policy_name_to_fieldnum(const char *name)
 Get default value for account policy
 *****************************************************************************/
 
-BOOL account_policy_get_default(int account_policy, uint32 *val)
+bool account_policy_get_default(int account_policy, uint32 *val)
 {
 	int i;
 	for (i=0; account_policy_names[i].field; i++) {
@@ -184,7 +184,7 @@ BOOL account_policy_get_default(int account_policy, uint32 *val)
  Set default for a field if it is empty
 *****************************************************************************/
 
-static BOOL account_policy_set_default_on_empty(int account_policy)
+static bool account_policy_set_default_on_empty(int account_policy)
 {
 
 	uint32 value;
@@ -201,7 +201,7 @@ static BOOL account_policy_set_default_on_empty(int account_policy)
  Open the account policy tdb.
 ***`*************************************************************************/
 
-BOOL init_account_policy(void)
+bool init_account_policy(void)
 {
 
 	const char *vstring = "INFO/version";
@@ -262,7 +262,7 @@ BOOL init_account_policy(void)
 Get an account policy (from tdb) 
 *****************************************************************************/
 
-BOOL account_policy_get(int field, uint32 *value)
+bool account_policy_get(int field, uint32 *value)
 {
 	const char *name;
 	uint32 regval;
@@ -299,7 +299,7 @@ BOOL account_policy_get(int field, uint32 *value)
 Set an account policy (in tdb) 
 ****************************************************************************/
 
-BOOL account_policy_set(int field, uint32 value)
+bool account_policy_set(int field, uint32 value)
 {
 	const char *name;
 
@@ -327,12 +327,12 @@ BOOL account_policy_set(int field, uint32 value)
 Set an account policy in the cache 
 ****************************************************************************/
 
-BOOL cache_account_policy_set(int field, uint32 value)
+bool cache_account_policy_set(int field, uint32 value)
 {
 	const char *policy_name = NULL;
 	char *cache_key = NULL;
 	char *cache_value = NULL;
-	BOOL ret = False;
+	bool ret = False;
 
 	policy_name = decode_account_policy_name(field);
 	if (policy_name == NULL) {
@@ -364,12 +364,12 @@ BOOL cache_account_policy_set(int field, uint32 value)
 Get an account policy from the cache 
 *****************************************************************************/
 
-BOOL cache_account_policy_get(int field, uint32 *value)
+bool cache_account_policy_get(int field, uint32 *value)
 {
 	const char *policy_name = NULL;
 	char *cache_key = NULL;
 	char *cache_value = NULL;
-	BOOL ret = False;
+	bool ret = False;
 
 	policy_name = decode_account_policy_name(field);
 	if (policy_name == NULL) {

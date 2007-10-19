@@ -28,7 +28,7 @@ int main(void)
 {
 	int i = 0;
 	int val;
-	BOOL ok = True;
+	bool ok = True;
 
 	for (i=0; tests[i].data != NULL; i++) {
 		ASN1_DATA data;

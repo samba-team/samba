@@ -22,7 +22,7 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
-static BOOL reg_hive_key(const char *fullname, uint32 *reg_type,
+static bool reg_hive_key(const char *fullname, uint32 *reg_type,
 			 const char **key_name)
 {
 	const char *sep;
@@ -802,7 +802,7 @@ static void dump_values( REGF_NK_REC *nk )
 /********************************************************************
 ********************************************************************/
 
-static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *parent )
+static bool dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *parent )
 {
 	REGF_NK_REC *key;
 	pstring regpath;
@@ -823,7 +823,7 @@ static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 /********************************************************************
 ********************************************************************/
 
-static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk, 
+static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk, 
                                  REGF_NK_REC *parent, REGF_FILE *outfile,
 			         const char *parentpath )
 {

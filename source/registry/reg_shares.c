@@ -69,7 +69,7 @@ static char* trim_reg_path( const char *path )
 static int shares_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
-	BOOL		top_level = False;
+	bool		top_level = False;
 	int		num_subkeys = 0;
 	
 	DEBUG(10,("printing_subkey_info: key=>[%s]\n", key));
@@ -103,7 +103,7 @@ static int shares_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 static int shares_value_info( const char *key, REGVAL_CTR *val )
 {
 	char 		*path;
-	BOOL		top_level = False;
+	bool		top_level = False;
 	int		num_values = 0;
 	
 	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
@@ -134,7 +134,7 @@ static int shares_value_info( const char *key, REGVAL_CTR *val )
  (for now at least)
  *********************************************************************/
 
-static BOOL shares_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
+static bool shares_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -145,7 +145,7 @@ static BOOL shares_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
  (for now at least)
  *********************************************************************/
 
-static BOOL shares_store_value( const char *key, REGVAL_CTR *val )
+static bool shares_store_value( const char *key, REGVAL_CTR *val )
 {
 	return False;
 }

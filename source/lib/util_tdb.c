@@ -226,7 +226,7 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
+bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
 {
 	TDB_DATA data;
 
@@ -246,7 +246,7 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
+bool tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
 
@@ -258,11 +258,11 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
+bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
 {
 	TDB_DATA data;
 	uint32 v_store;
-	BOOL ret = True;
+	bool ret = True;
 
 	SIVAL(&v_store, 0, value);
 	data.dptr = (uint8 *)&v_store;
@@ -279,7 +279,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
+bool tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
 
@@ -373,10 +373,10 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldva
  Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldval, uint32 change_val)
+bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldval, uint32 change_val)
 {
 	uint32 val;
-	BOOL ret = False;
+	bool ret = False;
 
 	if (tdb_lock_bystring(tdb, keystr) == -1)
 		return False;
@@ -511,7 +511,7 @@ size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...)
 	return result;
 }
 
-BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
+bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 		     const char *fmt, ...)
 {
 	va_list ap;
@@ -1185,7 +1185,7 @@ int tdb_validate_open(const char *tdb_path, tdb_validate_data_func validate_fn)
  * the traverse-copy */
 struct tdb_copy_data {
 	struct tdb_context *dst;
-	BOOL success;
+	bool success;
 };
 
 static int traverse_copy_fn(struct tdb_context *tdb, TDB_DATA key,
@@ -1351,8 +1351,8 @@ static int rename_file_with_suffix(TALLOC_CTX *ctx, const char *path,
 static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
 		      		  const char *dst_path, int hash_size,
 				  const char *rotate_suffix,
-				  BOOL retry_norotate_if_nospc,
-				  BOOL rename_as_last_resort_if_nospc)
+				  bool retry_norotate_if_nospc,
+				  bool rename_as_last_resort_if_nospc)
 {
 	int ret;
 

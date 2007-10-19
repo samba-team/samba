@@ -23,7 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static BOOL proxy_eventlog_call(pipes_struct *p, uint8 opnum)
+static bool proxy_eventlog_call(pipes_struct *p, uint8 opnum)
 {
 	struct api_struct *fns;
 	int n_fns;
@@ -40,7 +40,7 @@ static BOOL proxy_eventlog_call(pipes_struct *p, uint8 opnum)
 	return fns[opnum].fn(p);
 }
 
-static BOOL api_eventlog_open_eventlog(pipes_struct *p)
+static bool api_eventlog_open_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_OPEN_EVENTLOG q_u;
 	EVENTLOG_R_OPEN_EVENTLOG r_u;
@@ -65,12 +65,12 @@ static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_close_eventlog(pipes_struct *p)
+static bool api_eventlog_close_eventlog(pipes_struct *p)
 {
 	return proxy_eventlog_call( p, NDR_EVENTLOG_CLOSEEVENTLOG );	
 }
 
-static BOOL api_eventlog_get_num_records(pipes_struct *p)
+static bool api_eventlog_get_num_records(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_NUM_RECORDS q_u;
 	EVENTLOG_R_GET_NUM_RECORDS r_u;
@@ -95,7 +95,7 @@ static BOOL api_eventlog_get_num_records(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_get_oldest_entry(pipes_struct *p)
+static bool api_eventlog_get_oldest_entry(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_OLDEST_ENTRY q_u;
 	EVENTLOG_R_GET_OLDEST_ENTRY r_u;
@@ -120,7 +120,7 @@ static BOOL api_eventlog_get_oldest_entry(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_read_eventlog(pipes_struct *p)
+static bool api_eventlog_read_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_READ_EVENTLOG q_u;
 	EVENTLOG_R_READ_EVENTLOG r_u;
@@ -145,7 +145,7 @@ static BOOL api_eventlog_read_eventlog(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_eventlog_clear_eventlog(pipes_struct *p)
+static bool api_eventlog_clear_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_CLEAR_EVENTLOG q_u;
 	EVENTLOG_R_CLEAR_EVENTLOG r_u;

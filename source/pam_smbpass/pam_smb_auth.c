@@ -54,7 +54,7 @@ do {								\
 } while (0)
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, struct samu *sampass, BOOL exist);
+                         const char *name, struct samu *sampass, bool exist);
 
 
 /*
@@ -72,10 +72,10 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	unsigned int ctrl;
 	int retval, *ret_data = NULL;
 	struct samu *sampass = NULL;
-	extern BOOL in_client;
+	extern bool in_client;
 	const char *name;
 	void (*oldsig_handler)(int) = NULL;
-	BOOL found;
+	bool found;
 
 	/* Points to memory managed by the PAM library. Do not free. */
 	char *p = NULL;
@@ -187,7 +187,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, struct samu *sampass, BOOL exist)
+                         const char *name, struct samu *sampass, bool exist)
 {
     pstring err_str;
     pstring msg_str;

@@ -30,7 +30,7 @@
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/
 
-BOOL nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
+bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 {
 	int i;
 	
@@ -45,7 +45,7 @@ BOOL nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 	return False;
 }
 
-BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid ) 
+bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid ) 
 {
 	DOM_SID domain_sid;
 
@@ -223,7 +223,7 @@ static NTSTATUS create_builtin_administrators( void )
 	fstring root_name;
 	enum lsa_SidType type;		
 	TALLOC_CTX *ctx;
-	BOOL ret;
+	bool ret;
 
 	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_ADMINS );
 	if ( !NT_STATUS_IS_OK(status) ) {
@@ -271,7 +271,7 @@ static NTSTATUS create_builtin_administrators( void )
 
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const DOM_SID *user_sid,
-					    BOOL is_guest,
+					    bool is_guest,
 					    int num_groupsids,
 					    const DOM_SID *groupsids)
 {

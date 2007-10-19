@@ -184,7 +184,7 @@ static int smbacl4_GetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	return 0;
 }
 
-static BOOL smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
+static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	DOM_SID *psid_owner, /* in */
 	DOM_SID *psid_group, /* in */
 	SEC_ACE **ppnt_ace_list, /* out */
@@ -310,7 +310,7 @@ enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
 
 typedef struct _smbacl4_vfs_params {
 	enum smbacl4_mode_enum mode;
-	BOOL do_chown;
+	bool do_chown;
 	enum smbacl4_acedup_enum acedup;
 } smbacl4_vfs_params;
 
@@ -490,7 +490,7 @@ static int smbacl4_MergeIgnoreReject(
 	enum smbacl4_acedup_enum acedup,
 	SMB4ACL_T *acl, /* may modify it */
 	SMB_ACE4PROP_T *ace, /* the "new" ACE */
-	BOOL	*paddNewACE,
+	bool	*paddNewACE,
 	int	i
 )
 {
@@ -539,7 +539,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 	for(i=0; i<dacl->num_aces; i++) {
 		SMB_ACE4PROP_T	ace_v4;
-		BOOL	addNewACE = True;
+		bool	addNewACE = True;
 
 		if (smbacl4_fill_ace4(mem_ctx, pparams, ownerUID, ownerGID,
 			dacl->aces + i, &ace_v4))
@@ -565,7 +565,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 {
 	smbacl4_vfs_params params;
 	SMB4ACL_T *acl = NULL;
-	BOOL	result;
+	bool	result;
 
 	SMB_STRUCT_STAT sbuf;
 	uid_t newUID = (uid_t)-1;

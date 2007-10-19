@@ -64,7 +64,7 @@ size_t sec_desc_size(SEC_DESC *psd)
  Compares two SEC_DESC structures
 ********************************************************************/
 
-BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
+bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 {
 	/* Trivial case */
 
@@ -464,7 +464,7 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
    non-container object. */
 
 SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
-				      BOOL child_container)
+				      bool child_container)
 {
 	SEC_DESC_BUF *sdb;
 	SEC_DESC *sd;
@@ -490,7 +490,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 		SEC_ACE *ace = &the_acl->aces[i];
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
 		uint8 new_flags = 0;
-		BOOL inherit = False;
+		bool inherit = False;
 		fstring sid_str;
 
 		/* The OBJECT_INHERIT_ACE flag causes the ACE to be

@@ -123,7 +123,7 @@ void normalize_dbkey(char *key)
 /*
  * check whether a given value name is forbidden in registry (smbconf)
  */
-BOOL registry_smbconf_valname_forbidden(const char *valname)
+bool registry_smbconf_valname_forbidden(const char *valname)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_valnames[] = {

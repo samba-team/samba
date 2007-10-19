@@ -28,7 +28,7 @@ int find_service(fstring service)
 	return -1;
 }
 
-BOOL conn_snum_used(int snum)
+bool conn_snum_used(int snum)
 {
 	return False;
 }

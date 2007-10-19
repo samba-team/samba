@@ -39,7 +39,7 @@ void cmd_wks_query_info(struct client_info *info)
 	WKS_INFO_100 ctr;
 	uint32 info_level = 100;
 
-	BOOL res = True;
+	bool res = True;
 
 	memset((char *)&ctr, '\0', sizeof(ctr));
 

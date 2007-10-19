@@ -188,7 +188,7 @@ struct subnet_record *make_normal_subnet(const struct interface *iface)
   Create subnet entries.
 **************************************************************************/
 
-BOOL create_subnets(void)
+bool create_subnets(void)
 {
 	/* We only count IPv4 interfaces whilst we're waiting. */
 	int num_interfaces = iface_count_v4();
@@ -323,7 +323,7 @@ BOOL create_subnets(void)
 Function to tell us if we can use the unicast subnet.
 ******************************************************************/
 
-BOOL we_are_a_wins_client(void)
+bool we_are_a_wins_client(void)
 {
 	if (wins_srv_count() > 0) {
 		return True;

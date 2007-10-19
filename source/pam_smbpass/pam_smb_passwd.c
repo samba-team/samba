@@ -101,7 +101,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     unsigned int ctrl;
     int retval;
 
-    extern BOOL in_client;
+    extern bool in_client;
 
     struct samu *sampass = NULL;
     void (*oldsig_handler)(int);

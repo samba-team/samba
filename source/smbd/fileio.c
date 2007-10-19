@@ -21,13 +21,13 @@
 
 #include "includes.h"
 
-static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
+static bool setup_write_cache(files_struct *, SMB_OFF_T);
 
 /****************************************************************************
  Read from write cache if we can.
 ****************************************************************************/
 
-static BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
+static bool read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
 	write_cache *wcp = fsp->wcp;
 
@@ -297,7 +297,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 	 */
 
 	if (wcp->data_size) {
-		BOOL cache_flush_needed = False;
+		bool cache_flush_needed = False;
 
 		if ((pos >= wcp->offset) && (pos <= wcp->offset + wcp->data_size)) {
       
@@ -739,7 +739,7 @@ void delete_write_cache(files_struct *fsp)
  Setup the write cache structure.
 ****************************************************************************/
 
-static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
+static bool setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 {
 	ssize_t alloc_size = lp_write_cache_size(SNUM(fsp->conn));
 	write_cache *wcp;
@@ -845,7 +845,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 sync a file
 ********************************************************************/
 
-NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, BOOL write_through)
+NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_through)
 {
        	if (fsp->fh->fd == -1)
 		return NT_STATUS_INVALID_HANDLE;

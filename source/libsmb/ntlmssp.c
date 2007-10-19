@@ -121,7 +121,7 @@ static const uint8 *get_challenge(const struct ntlmssp_state *ntlmssp_state)
  *
  */
    
-static BOOL may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+static bool may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	return True;
 }
@@ -400,7 +400,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 }
 
 static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
-				      uint32 neg_flags, BOOL allow_lm) {
+				      uint32 neg_flags, bool allow_lm) {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
@@ -630,7 +630,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	NTSTATUS nt_status = NT_STATUS_OK;
 
 	/* used by NTLM2 */
-	BOOL doing_ntlm2 = False;
+	bool doing_ntlm2 = False;
 
 	uchar session_nonce[16];
 	uchar session_nonce_hash[16];

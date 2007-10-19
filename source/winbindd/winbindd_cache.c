@@ -33,7 +33,7 @@
 #define WINBINDD_CACHE_VERSION_KEYSTR "WINBINDD_CACHE_VERSION"
 
 extern struct winbindd_methods reconnect_methods;
-extern BOOL opt_nocache;
+extern bool opt_nocache;
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
 #endif
@@ -57,7 +57,7 @@ static const char *non_centry_keys[] = {
  Is this key a non-centry type ?
 ************************************************************************/
 
-static BOOL is_non_centry_key(TDB_DATA kbuf)
+static bool is_non_centry_key(TDB_DATA kbuf)
 {
 	int i;
 
@@ -80,7 +80,7 @@ static BOOL is_non_centry_key(TDB_DATA kbuf)
    and sets this to true if the first query fails and there's an entry in
    the cache tdb telling us to stay offline. */
 
-static BOOL global_winbindd_offline_state;
+static bool global_winbindd_offline_state;
 
 struct winbind_cache {
 	TDB_CONTEXT *tdb;
@@ -204,7 +204,7 @@ static void centry_free(struct cache_entry *centry)
 	free(centry);
 }
 
-static BOOL centry_check_bytes(struct cache_entry *centry, size_t nbytes)
+static bool centry_check_bytes(struct cache_entry *centry, size_t nbytes)
 {
 	if (centry->len - centry->ofs < nbytes) {
 		DEBUG(0,("centry corruption? needed %u bytes, have %d\n", 
@@ -343,7 +343,7 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 /* pull a sid from a cache entry, using the supplied
    talloc context 
 */
-static BOOL centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID *sid)
+static bool centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID *sid)
 {
 	char *sid_string;
 	sid_string = centry_string(centry, mem_ctx);
@@ -367,9 +367,9 @@ static NTSTATUS centry_ntstatus(struct cache_entry *centry)
 
 
 /* the server is considered down if it can't give us a sequence number */
-static BOOL wcache_server_down(struct winbindd_domain *domain)
+static bool wcache_server_down(struct winbindd_domain *domain)
 {
-	BOOL ret;
+	bool ret;
 
 	if (!wcache->tdb)
 		return False;
@@ -458,7 +458,7 @@ static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
   then always refresh it, no matter how recently we fetched it
 */
 
-static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
+static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 {
 	NTSTATUS status;
 	unsigned time_diff;
@@ -532,7 +532,7 @@ done:
 /*
   decide if a cache entry has expired
 */
-static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
+static bool centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
 {
 	/* If we've been told to be offline - stay in that state... */
 	if (lp_winbind_offline_logon() && global_winbindd_offline_state) {
@@ -1525,8 +1525,8 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	size_t i;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	BOOL have_mapped;
-	BOOL have_unmapped;
+	bool have_mapped;
+	bool have_unmapped;
 
 	*domain_name = NULL;
 	*names = NULL;
@@ -2263,7 +2263,7 @@ void wcache_invalidate_cache(void)
 	}
 }
 
-BOOL init_wcache(void)
+bool init_wcache(void)
 {
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
@@ -2293,9 +2293,9 @@ BOOL init_wcache(void)
  only opener.
 ************************************************************************/
 
-BOOL initialize_winbindd_cache(void)
+bool initialize_winbindd_cache(void)
 {
-	BOOL cache_bad = True;
+	bool cache_bad = True;
 	uint32 vers;
 
 	if (!init_wcache()) {
@@ -2382,7 +2382,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 	return;
 }
 
-BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
+bool cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 {
 	TDB_DATA data;
 	fstring key_str;
@@ -2451,7 +2451,7 @@ void cache_cleanup_response(pid_t pid)
 }
 
 
-BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type)
 {
@@ -2487,7 +2487,7 @@ BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	return NT_STATUS_IS_OK(status);
 }
 
-BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
+bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 			const char *domain_name,
 			const char *name,
 			DOM_SID *sid,
@@ -2498,7 +2498,7 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	fstring uname;
-	BOOL original_online_state;	
+	bool original_online_state;	
 
 	domain = find_lookup_domain_from_name(domain_name);
 	if (domain == NULL) {
@@ -2744,7 +2744,7 @@ done:
 }
 
 /* Change the global online/offline state. */
-BOOL set_global_winbindd_state_offline(void)
+bool set_global_winbindd_state_offline(void)
 {
 	TDB_DATA data;
 
@@ -2805,7 +2805,7 @@ void set_global_winbindd_state_online(void)
 	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
 }
 
-BOOL get_global_winbindd_state_offline(void)
+bool get_global_winbindd_state_offline(void)
 {
 	return global_winbindd_offline_state;
 }
@@ -3413,14 +3413,14 @@ int winbindd_validate_cache_nobackup(void)
 /*********************************************************************
  ********************************************************************/
 
-static BOOL add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
+static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 				       struct winbindd_tdc_domain **domains, 
 				       size_t *num_domains )
 {
 	struct winbindd_tdc_domain *list = NULL;
 	size_t idx;
 	int i;
-	BOOL set_only = False;	
+	bool set_only = False;	
 	
 	/* don't allow duplicates */
 
@@ -3622,7 +3622,7 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 /*********************************************************************
  ********************************************************************/
 
-static BOOL wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t num_domains )
+static bool wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t num_domains )
 {
 	TDB_DATA key = make_tdc_key( lp_workgroup() );	 
 	TDB_DATA data = { NULL, 0 };
@@ -3657,7 +3657,7 @@ static BOOL wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t n
 /*********************************************************************
  ********************************************************************/
 
-BOOL wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_domains )
+bool wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_domains )
 {
 	TDB_DATA key = make_tdc_key( lp_workgroup() );
 	TDB_DATA data = { NULL, 0 };
@@ -3688,11 +3688,11 @@ BOOL wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_do
 /*********************************************************************
  ********************************************************************/
 
-BOOL wcache_tdc_add_domain( struct winbindd_domain *domain )
+bool wcache_tdc_add_domain( struct winbindd_domain *domain )
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
-	BOOL ret = False;	
+	bool ret = False;	
 
 	DEBUG(10,("wcache_tdc_add_domain: Adding domain %s (%s), SID %s, "
 		  "flags = 0x%x, attributes = 0x%x, type = 0x%x\n",

@@ -20,7 +20,7 @@
 #include "includes.h"
 
 /* nmbd.c sets this to True. */
-BOOL global_in_nmbd = False;
+bool global_in_nmbd = False;
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -46,11 +46,11 @@ static char *saf_key(const char *domain)
 /****************************************************************************
 ****************************************************************************/
 
-BOOL saf_store( const char *domain, const char *servername )
+bool saf_store( const char *domain, const char *servername )
 {
 	char *key;
 	time_t expire;
-	BOOL ret = False;
+	bool ret = False;
 	
 	if ( !domain || !servername ) {
 		DEBUG(2,("saf_store: Refusing to store empty domain or servername!\n"));
@@ -79,10 +79,10 @@ BOOL saf_store( const char *domain, const char *servername )
 	return ret;
 }
 
-BOOL saf_delete( const char *domain )
+bool saf_delete( const char *domain )
 {
 	char *key;
-	BOOL ret = False;
+	bool ret = False;
 	
 	if ( !domain ) {
 		DEBUG(2,("saf_delete: Refusing to delete empty domain\n"));		
@@ -111,7 +111,7 @@ char *saf_fetch( const char *domain )
 {
 	char *server = NULL;
 	time_t timeout;
-	BOOL ret = False;
+	bool ret = False;
 	char *key = NULL;
 
 	if ( !domain || strlen(domain) == 0) {
@@ -198,7 +198,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names,
 				      struct node_status_extra *extra)
 {
-	BOOL found=False;
+	bool found=False;
 	int retries = 2;
 	int retry_time = 2000;
 	struct timeval tval;
@@ -281,13 +281,13 @@ NODE_STATUS_STRUCT *node_status_query(int fd,struct nmb_name *name,
  a servers name given its IP. Return the matched name in *name.
 **************************************************************************/
 
-BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, fstring name)
+bool name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, fstring name)
 {
 	NODE_STATUS_STRUCT *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;
-	BOOL result = False;
+	bool result = False;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_status_find(%s#%02x): netbios is disabled\n", q_name, q_type));
@@ -471,11 +471,11 @@ static int remove_duplicate_addrs2( struct ip_service *iplist, int count )
 ****************************************************************************/
 
 struct in_addr *name_query(int fd,const char *name,int name_type, 
-			   BOOL bcast,BOOL recurse,
+			   bool bcast,bool recurse,
 			   struct in_addr to_ip, int *count, int *flags,
-			   BOOL *timed_out)
+			   bool *timed_out)
 {
-	BOOL found=False;
+	bool found=False;
 	int i, retries = 3;
 	int retry_time = bcast?250:2000;
 	struct timeval tval;
@@ -669,7 +669,7 @@ XFILE *startlmhosts(const char *fname)
  Parse the next line in the lmhosts file.
 *********************************************************/
 
-BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
+bool getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
 {
 	pstring line;
 
@@ -761,7 +761,7 @@ void endlmhosts(XFILE *fp)
  return False on failure.  Port is set to PORT_NONE;
 *********************************************************/
 
-static BOOL convert_ip2service( struct ip_service **return_iplist, struct in_addr *ip_list, int count )
+static bool convert_ip2service( struct ip_service **return_iplist, struct in_addr *ip_list, int count )
 {
 	int i;
 
@@ -895,7 +895,7 @@ NTSTATUS resolve_wins(const char *name, int name_type,
 		for (i=0; i<srv_count; i++) {
 			struct in_addr wins_ip;
 			int flags;
-			BOOL timed_out;
+			bool timed_out;
 
 			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
 
@@ -1224,9 +1224,9 @@ NTSTATUS internal_resolve_name(const char *name, int name_type,
 	pstring name_resolve_list;
 	fstring tok;
 	const char *ptr;
-	BOOL allones = (strcmp(name,"255.255.255.255") == 0);
-	BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
-	BOOL is_address = is_ipaddress_v4(name);
+	bool allones = (strcmp(name,"255.255.255.255") == 0);
+	bool allzeros = (strcmp(name,"0.0.0.0") == 0);
+	bool is_address = is_ipaddress_v4(name);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
@@ -1394,7 +1394,7 @@ NTSTATUS internal_resolve_name(const char *name, int name_type,
  smb.conf to determine the order of name resolution.
 *********************************************************/
 
-BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
+bool resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 {
 	struct ip_service *ip_list = NULL;
 	char *sitename = sitename_fetch(lp_realm()); /* wild guess */
@@ -1435,7 +1435,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
-BOOL find_master_ip(const char *group, struct in_addr *master_ip)
+bool find_master_ip(const char *group, struct in_addr *master_ip)
 {
 	struct ip_service *ip_list = NULL;
 	int count = 0;
@@ -1471,7 +1471,7 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
  for a domain.
 *********************************************************/
 
-BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
+bool get_pdc_ip(const char *domain, struct in_addr *ip)
 {
 	struct ip_service *ip_list = NULL;
 	int count = 0;
@@ -1518,7 +1518,7 @@ enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
 *********************************************************/
 
 static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_service **ip_list, 
-                            int *count, enum dc_lookup_type lookup_type, int *ordered)
+                            int *count, enum dc_lookup_type lookup_type, bool *ordered)
 {
 	fstring resolve_order;
 	char *saf_servername;
@@ -1531,7 +1531,7 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	int  local_count, i, j;
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
-	BOOL done_auto_lookup = False;
+	bool done_auto_lookup = False;
 	int auto_count = 0;
 	NTSTATUS status;
 
@@ -1713,9 +1713,9 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
  Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
 
-NTSTATUS get_sorted_dc_list( const char *domain, const char *sitename, struct ip_service **ip_list, int *count, BOOL ads_only )
+NTSTATUS get_sorted_dc_list( const char *domain, const char *sitename, struct ip_service **ip_list, int *count, bool ads_only )
 {
-	BOOL ordered;
+	bool ordered;
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
 
@@ -1748,7 +1748,7 @@ NTSTATUS get_sorted_dc_list( const char *domain, const char *sitename, struct ip
 
 NTSTATUS get_kdc_list( const char *realm, const char *sitename, struct ip_service **ip_list, int *count)
 {
-	BOOL ordered;
+	bool ordered;
 	NTSTATUS status;
 
 	*count = 0;

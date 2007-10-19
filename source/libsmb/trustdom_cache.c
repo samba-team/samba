@@ -47,7 +47,7 @@
  *         false if cache init failed
  **/
  
-BOOL trustdom_cache_enable(void)
+bool trustdom_cache_enable(void)
 {
 	/* Init trustdom cache by calling gencache initialisation */
 	if (!gencache_init()) {
@@ -67,7 +67,7 @@ BOOL trustdom_cache_enable(void)
  *         false if it failed
  **/
  
-BOOL trustdom_cache_shutdown(void)
+bool trustdom_cache_shutdown(void)
 {
 	/* Close trustdom cache by calling gencache shutdown */
 	if (!gencache_shutdown()) {
@@ -108,12 +108,12 @@ static char* trustdom_cache_key(const char* name)
  *         false if store attempt failed
  **/
  
-BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
+bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
                           time_t timeout)
 {
 	char *key, *alt_key;
 	fstring sid_string;
-	BOOL ret;
+	bool ret;
 
 	/*
 	 * we use gecache call to avoid annoying debug messages
@@ -161,7 +161,7 @@ BOOL trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
  *         false if has expired/doesn't exist
  **/
  
-BOOL trustdom_cache_fetch(const char* name, DOM_SID* sid)
+bool trustdom_cache_fetch(const char* name, DOM_SID* sid)
 {
 	char *key = NULL, *value = NULL;
 	time_t timeout;
@@ -230,7 +230,7 @@ uint32 trustdom_cache_fetch_timestamp( void )
  store the timestamp from the last update 
 *******************************************************************/
 
-BOOL trustdom_cache_store_timestamp( uint32 t, time_t timeout )
+bool trustdom_cache_store_timestamp( uint32 t, time_t timeout )
 {
 	fstring value;
 

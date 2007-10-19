@@ -34,8 +34,8 @@ static void release_name_response(struct subnet_record *subrec,
 	 * error. If we are releasing unicast, then we expect to get a response.
 	 */
 	struct nmb_packet *nmb = &p->packet.nmb;
-	BOOL bcast = nmb->header.nm_flags.bcast;
-	BOOL success = True;
+	bool bcast = nmb->header.nm_flags.bcast;
+	bool success = True;
 	struct nmb_name *question_name = &rrec->packet->packet.nmb.question.question_name;
 	struct nmb_name *answer_name = &nmb->answers->rr_name;
 	struct in_addr released_ip;
@@ -107,7 +107,7 @@ static void release_name_timeout_response(struct subnet_record *subrec,
 	   doesn't respond and someone else wants the name then the
 	   normal WACK/name query from the WINS server will cope */
 	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
-	BOOL bcast = sent_nmb->header.nm_flags.bcast;
+	bool bcast = sent_nmb->header.nm_flags.bcast;
 	struct nmb_name *question_name = &sent_nmb->question.question_name;
 	struct in_addr released_ip;
 
@@ -150,7 +150,7 @@ static void wins_release_name(struct name_record *namerec,
 		for (i = 0; i < namerec->data.num_ips; i++) {
 			struct in_addr wins_ip = wins_srv_ip_tag(wins_tags[t], namerec->data.ip[i]);
 
-			BOOL last_one = ((i==namerec->data.num_ips - 1) && !wins_tags[t+1]);
+			bool last_one = ((i==namerec->data.num_ips - 1) && !wins_tags[t+1]);
 			if (queue_release_name(unicast_subnet,
 					       release_name_response,
 					       release_name_timeout_response,

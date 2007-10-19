@@ -54,7 +54,7 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 	fstring keystr;
 	fstring dom_name;
 	TDB_DATA key2;
-	BOOL *failed = (BOOL *)state;
+	bool *failed = (bool *)state;
 
 	DEBUG(10,("Converting %s\n", (const char *)key.dptr));
 
@@ -114,11 +114,11 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
  Convert the idmap database from an older version.
 *****************************************************************************/
 
-static BOOL idmap_tdb_upgrade(const char *idmap_name)
+static bool idmap_tdb_upgrade(const char *idmap_name)
 {
 	int32 vers;
-	BOOL bigendianheader;
-	BOOL failed = False;
+	bool bigendianheader;
+	bool failed = False;
 	TDB_CONTEXT *idmap_tdb;
 
 	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
@@ -205,7 +205,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx, TDB_CONTEXT **tdbctx)
 	SMB_STRUCT_STAT stbuf;
 	char *tdbfile = NULL;
 	int32 version;
-	BOOL tdb_is_new = False;
+	bool tdb_is_new = False;
 
 	if (idmap_tdb_open_ref_count) { /* the tdb has already been opened */
 		idmap_tdb_open_ref_count++;
@@ -284,7 +284,7 @@ done:
  /* NEVER use tdb_close() except for the conversion routines that are guaranteed
  * to run only when the database is opened the first time, always use this function. */ 
 
-BOOL idmap_tdb_tdb_close(TDB_CONTEXT *tdbctx)
+bool idmap_tdb_tdb_close(TDB_CONTEXT *tdbctx)
 {
 	if (tdbctx != idmap_tdb_common_ctx) {
 		DEBUG(0, ("ERROR: Invalid tdb context!"));
@@ -408,7 +408,7 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 
 static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 {
-	BOOL ret;
+	bool ret;
 	const char *hwmkey;
 	const char *hwmtype;
 	uint32_t high_hwm;

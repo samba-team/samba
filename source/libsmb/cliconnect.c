@@ -447,7 +447,7 @@ end:
  Send a extended security session setup blob
 ****************************************************************************/
 
-static BOOL cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
+static bool cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
@@ -529,7 +529,7 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 
 #define BASE_SESSSETUP_BLOB_PACKET_SIZE (35 + 24 + 22)
 
-static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_BLOB session_key_krb5)
+static bool cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_BLOB session_key_krb5)
 {
 	int32 remaining = blob.length;
 	int32 cur = 0;
@@ -744,7 +744,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		DATA_BLOB key = data_blob(ntlmssp_state->session_key.data,
 					  ntlmssp_state->session_key.length);
 		DATA_BLOB null_blob = data_blob_null;
-		BOOL res;
+		bool res;
 
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		cli_set_session_key(cli, ntlmssp_state->session_key);
@@ -786,7 +786,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	char *principal;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
-	BOOL got_kerberos_mechanism = False;
+	bool got_kerberos_mechanism = False;
 	DATA_BLOB blob;
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
@@ -985,7 +985,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
  Send a uloggoff.
 *****************************************************************************/
 
-BOOL cli_ulogoff(struct cli_state *cli)
+bool cli_ulogoff(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,2,0,True);
@@ -1010,7 +1010,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
  Send a tconX.
 ****************************************************************************/
 
-BOOL cli_send_tconX(struct cli_state *cli, 
+bool cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
 	fstring fullshare, pword;
@@ -1113,7 +1113,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
  Send a tree disconnect.
 ****************************************************************************/
 
-BOOL cli_tdis(struct cli_state *cli)
+bool cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
@@ -1171,7 +1171,7 @@ void cli_negprot_send(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-BOOL cli_negprot(struct cli_state *cli)
+bool cli_negprot(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
@@ -1313,7 +1313,7 @@ BOOL cli_negprot(struct cli_state *cli)
  Send a session request. See rfc1002.txt 4.3 and 4.3.2.
 ****************************************************************************/
 
-BOOL cli_session_request(struct cli_state *cli,
+bool cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called)
 {
 	char *p;
@@ -1381,7 +1381,7 @@ BOOL cli_session_request(struct cli_state *cli,
 		/* Try again */
 		{
 			static int depth;
-			BOOL ret;
+			bool ret;
 			if (depth > 4) {
 				DEBUG(0,("Retarget recursion - failing\n"));
 				return False;
@@ -1462,7 +1462,7 @@ NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip
    @param dest_host The netbios name of the remote host
    @param dest_ip (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
-   @param retry BOOL. Did this connection fail with a retryable error ?
+   @param retry bool. Did this connection fail with a retryable error ?
 
 */
 NTSTATUS cli_start_connection(struct cli_state **output_cli, 
@@ -1470,7 +1470,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *dest_host, 
 			      struct in_addr *dest_ip, int port,
 			      int signing_state, int flags,
-			      BOOL *retry) 
+			      bool *retry) 
 {
 	NTSTATUS nt_status;
 	struct nmb_name calling;
@@ -1566,7 +1566,7 @@ again:
    @param user Username, unix string
    @param domain User's domain
    @param password User's password, unencrypted unix string.
-   @param retry BOOL. Did this connection fail with a retryable error ?
+   @param retry bool. Did this connection fail with a retryable error ?
 */
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
@@ -1577,7 +1577,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
 			     int signing_state,
-			     BOOL *retry) 
+			     bool *retry) 
 {
 	NTSTATUS nt_status;
 	struct cli_state *cli = NULL;
@@ -1638,7 +1638,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
+bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;

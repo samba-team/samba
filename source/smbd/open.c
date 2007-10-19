@@ -24,10 +24,10 @@
 extern const struct generic_mapping file_generic_mapping;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
-extern BOOL global_client_failed_oplock_break;
+extern bool global_client_failed_oplock_break;
 
 struct deferred_open_record {
-	BOOL delayed_for_oplocks;
+	bool delayed_for_oplocks;
 	struct file_id id;
 };
 
@@ -226,7 +226,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
-	BOOL file_existed = VALID_STAT(*psbuf);
+	bool file_existed = VALID_STAT(*psbuf);
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -409,7 +409,7 @@ static NTSTATUS open_file(files_struct *fsp,
  Return True if the filename is one of the special executable types.
 ********************************************************************/
 
-static BOOL is_executable(const char *fname)
+static bool is_executable(const char *fname)
 {
 	if ((fname = strrchr_m(fname,'.'))) {
 		if (strequal(fname,".com") ||
@@ -427,7 +427,7 @@ static BOOL is_executable(const char *fname)
  Returns True if conflict, False if not.
 ****************************************************************************/
 
-static BOOL share_conflict(struct share_mode_entry *entry,
+static bool share_conflict(struct share_mode_entry *entry,
 			   uint32 access_mask,
 			   uint32 share_access)
 {
@@ -571,7 +571,7 @@ static void validate_my_share_entries(int num,
 }
 #endif
 
-static BOOL is_stat_open(uint32 access_mask)
+static bool is_stat_open(uint32 access_mask)
 {
 	return (access_mask &&
 		((access_mask & ~(SYNCHRONIZE_ACCESS| FILE_READ_ATTRIBUTES|
@@ -592,7 +592,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options,
-				BOOL *file_existed)
+				bool *file_existed)
 {
 	int i;
 
@@ -646,7 +646,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static BOOL is_delete_request(files_struct *fsp) {
+static bool is_delete_request(files_struct *fsp) {
 	return ((fsp->access_mask == DELETE_ACCESS) &&
 		(fsp->oplock_type == NO_OPLOCK));
 }
@@ -661,7 +661,7 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(struct share_mode_lock *lck,
+static bool delay_for_oplocks(struct share_mode_lock *lck,
 			      files_struct *fsp,
 			      uint16 mid,
 			      int pass_number,
@@ -669,9 +669,9 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
-	BOOL valid_entry = False;
-	BOOL delay_it = False;
-	BOOL have_level2 = False;
+	bool valid_entry = False;
+	bool delay_it = False;
+	bool have_level2 = False;
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
@@ -772,7 +772,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 	return True;
 }
 
-static BOOL request_timed_out(struct timeval request_time,
+static bool request_timed_out(struct timeval request_time,
 			      struct timeval timeout)
 {
 	struct timeval now, end_time;
@@ -838,7 +838,7 @@ static void defer_open(struct share_mode_lock *lck,
  On overwrite open ensure that the attributes match.
 ****************************************************************************/
 
-static BOOL open_match_attributes(connection_struct *conn,
+static bool open_match_attributes(connection_struct *conn,
 				  const char *path,
 				  uint32 old_dos_attr,
 				  uint32 new_dos_attr,
@@ -950,7 +950,7 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
  Open a file with a share mode - old openX method - map into NTCreate.
 ****************************************************************************/
 
-BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
+bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
@@ -1142,10 +1142,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 {
 	int flags=0;
 	int flags2=0;
-	BOOL file_existed = VALID_STAT(*psbuf);
-	BOOL def_acl = False;
-	BOOL posix_open = False;
-	BOOL new_file_created = False;
+	bool file_existed = VALID_STAT(*psbuf);
+	bool def_acl = False;
+	bool posix_open = False;
+	bool new_file_created = False;
 	struct file_id id;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	files_struct *fsp = NULL;
@@ -1504,7 +1504,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			uint32 can_access_mask;
-			BOOL can_access = True;
+			bool can_access = True;
 
 			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
 
@@ -2084,7 +2084,7 @@ NTSTATUS open_directory(connection_struct *conn,
 			files_struct **result)
 {
 	files_struct *fsp = NULL;
-	BOOL dir_existed = VALID_STAT(*psbuf) ? True : False;
+	bool dir_existed = VALID_STAT(*psbuf) ? True : False;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 	int info = 0;

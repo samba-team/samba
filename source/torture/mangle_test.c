@@ -27,7 +27,7 @@ static TDB_CONTEXT *tdb;
 
 static unsigned total, collisions, failures;
 
-static BOOL test_one(struct cli_state *cli, const char *name)
+static bool test_one(struct cli_state *cli, const char *name)
 {
 	int fnum;
 	fstring shortname;
@@ -158,11 +158,11 @@ static void gen_name(char *name)
 }
 
 
-BOOL torture_mangle(int dummy)
+bool torture_mangle(int dummy)
 {
 	static struct cli_state *cli;
 	int i;
-	BOOL ret = True;
+	bool ret = True;
 
 	printf("starting mangle test\n");
 

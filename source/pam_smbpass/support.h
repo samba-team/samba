@@ -21,10 +21,10 @@ extern char *smbpXstrDup(const char *);
 extern void _cleanup_failures(pam_handle_t *, void *, int);
 
 /* compare 2 strings */
-extern BOOL strequal(const char *, const char *);
+extern bool strequal(const char *, const char *);
 
 extern struct smb_passwd *
-_my_get_smbpwnam(FILE *, const char *, BOOL *, BOOL *, long *);
+_my_get_smbpwnam(FILE *, const char *, bool *, bool *, long *);
 
 extern int _smb_verify_password( pam_handle_t *pamh , struct samu *sampass, 
 	const char *p, unsigned int ctrl );

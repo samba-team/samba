@@ -140,7 +140,7 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 	return ret;
 }
 
-static BOOL allready_in_quota_list(SMB_NTQUOTA_LIST *qt_list, uid_t uid)
+static bool allready_in_quota_list(SMB_NTQUOTA_LIST *qt_list, uid_t uid)
 {
 	SMB_NTQUOTA_LIST *tmp_list = NULL;
 	

@@ -23,10 +23,10 @@
  Get UNIX extensions version info.
 ****************************************************************************/
                                                                                                                    
-BOOL cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
+bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
                                         uint32 *pcaplow, uint32 *pcaphigh)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[2];
 	char *rparam=NULL, *rdata=NULL;
@@ -82,10 +82,10 @@ cleanup:
  Set UNIX extensions capabilities.
 ****************************************************************************/
                                                                                                                    
-BOOL cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
+bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
                                         uint32 caplow, uint32 caphigh)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[4];
 	char data[12];
@@ -131,9 +131,9 @@ cleanup:
 	return ret;	
 }
 
-BOOL cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
+bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[2];
 	char *rparam=NULL, *rdata=NULL;
@@ -185,9 +185,9 @@ cleanup:
 	return ret;	
 }
 
-BOOL cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number)
+bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[2];
 	char *rparam=NULL, *rdata=NULL;
@@ -241,9 +241,9 @@ cleanup:
 	return ret;	
 }
 
-BOOL cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate)
+bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate)
 {
-	BOOL ret = False;
+	bool ret = False;
 	uint16 setup;
 	char param[2];
 	char *rparam=NULL, *rdata=NULL;

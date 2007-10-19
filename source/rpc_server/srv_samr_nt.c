@@ -46,7 +46,7 @@
 
 typedef struct disp_info {
 	DOM_SID sid; /* identify which domain this is. */
-	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
+	bool builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
@@ -65,7 +65,7 @@ typedef struct disp_info {
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
-	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
+	bool builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	DISP_INFO *disp_info;
@@ -651,7 +651,7 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 /*******************************************************************
 ********************************************************************/
 
-static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol, 
+static bool get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol, 
 					DOM_SID *sid, uint32 *acc_granted,
 					DISP_INFO **ppdisp_info)
 {
@@ -682,7 +682,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 	DOM_SID pol_sid;
 	uint32 acc_granted, i;
 	SEC_ACL *dacl;
-	BOOL ret;
+	bool ret;
 	struct samu *sampass=NULL;
 	NTSTATUS status;
 
@@ -738,10 +738,10 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 /*******************************************************************
   build correct perms based on policies and password times for _samr_query_sec_obj
 *******************************************************************/
-static BOOL check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
+static bool check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
 {
 	struct samu *sampass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( !(sampass = samu_new( mem_ctx )) ) {
 		DEBUG(0,("No memory!\n"));
@@ -1663,7 +1663,7 @@ NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAM
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
-static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
+static bool make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 				  const char **names, UNIHDR **pp_hdr_name,
 				  UNISTR2 **pp_uni_name)
 {
@@ -1779,7 +1779,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	uint32    acc_granted;
 	uint32    des_access = q_u->access_mask;
 	size_t    sd_size;
-	BOOL ret;
+	bool ret;
 	NTSTATUS nt_status;
 	SE_PRIV se_rights;
 
@@ -1850,7 +1850,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_SID *user_sid)
 {
 	struct samu *smbpass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( !(smbpass = samu_new( mem_ctx )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1881,7 +1881,7 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_SID *user_sid)
 {
 	struct samu *smbpass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( !(smbpass = samu_new( mem_ctx )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1913,7 +1913,7 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_
 static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DOM_SID *user_sid)
 {
 	struct samu *smbpass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( !(smbpass = samu_new( mem_ctx )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1947,7 +1947,7 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DO
 static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_INFO_18 * id18, DOM_SID *user_sid)
 {
 	struct samu *smbpass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -1995,7 +1995,7 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 {
 	struct samu *sampass=NULL;
-	BOOL ret;
+	bool ret;
 
 	if ( !(sampass = samu_new( mem_ctx )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -2030,7 +2030,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 				 DOM_SID *user_sid, DOM_SID *domain_sid)
 {
 	struct samu *sampass=NULL;
-	BOOL ret;
+	bool ret;
 	NTSTATUS nt_status;
 
 	if ( !(sampass = samu_new( mem_ctx )) ) {
@@ -2174,9 +2174,9 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	gid_t *unix_gids;
 	size_t i, num_gids;
 	uint32 acc_granted;
-	BOOL ret;
+	bool ret;
 	NTSTATUS result;
-	BOOL success = False;
+	bool success = False;
 
 	/*
 	 * from the SID in the request:
@@ -2486,7 +2486,7 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 {
 	enum lsa_SidType type;
-	BOOL result;
+	bool result;
 
 	DEBUG(10, ("Checking whether [%s] can be created\n", new_name));
 
@@ -2537,7 +2537,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	size_t    sd_size;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL can_add_account = False;
+	bool can_add_account = False;
 	SE_PRIV se_rights;
 	DISP_INFO *disp_info = NULL;
 
@@ -2908,7 +2908,7 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 makes a SAMR_R_ENUM_DOMAINS structure.
 ********************************************************************/
 
-static BOOL make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
+static bool make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
 			UNISTR2 **pp_uni_name, uint32 num_sam_entries, fstring doms[])
 {
 	uint32 i;
@@ -3028,7 +3028,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	{
 		/* Check we actually have the requested alias */
 		enum lsa_SidType type;
-		BOOL result;
+		bool result;
 		gid_t gid;
 
 		become_root();
@@ -3105,7 +3105,7 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
  set_user_info_16
  ********************************************************************/
 
-static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
+static bool set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
 {
 	if (id16 == NULL) {
 		DEBUG(5, ("set_user_info_16: NULL id16\n"));
@@ -3133,7 +3133,7 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
  set_user_info_18
  ********************************************************************/
 
-static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
+static bool set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
 {
 
 	if (id18 == NULL) {
@@ -3168,7 +3168,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
  set_user_info_20
  ********************************************************************/
 
-static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
+static bool set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
 {
 	if (id20 == NULL) {
 		DEBUG(5, ("set_user_info_20: NULL id20\n"));
@@ -3351,7 +3351,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
+static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3481,8 +3481,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	uint32 acc_granted;
 	uint32 acc_required;
-	BOOL ret;
-	BOOL has_enough_rights = False;
+	bool ret;
+	bool has_enough_rights = False;
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
 
@@ -3651,8 +3651,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint16 switch_value = q_u->switch_value;
 	uint32 acc_granted;
 	uint32 acc_required;
-	BOOL ret;
-	BOOL has_enough_rights = False;
+	bool ret;
+	bool has_enough_rights = False;
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
 
@@ -3973,7 +3973,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	DOM_SID alias_sid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
@@ -4018,7 +4018,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	DOM_SID alias_sid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
@@ -4065,7 +4065,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	uint32 group_rid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -4113,7 +4113,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	uint32 group_rid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	/*
@@ -4164,10 +4164,10 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DOM_SID user_sid;
 	struct samu *sam_pass=NULL;
 	uint32 acc_granted;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
-	BOOL ret;
+	bool ret;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
 
@@ -4248,7 +4248,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	uint32 group_rid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
@@ -4308,7 +4308,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	DOM_SID alias_sid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
@@ -4378,7 +4378,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	struct samr_info *info;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -4456,7 +4456,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	gid_t gid;
 	NTSTATUS result;
 	SE_PRIV se_rights;
-	BOOL can_add_accounts;
+	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -4543,7 +4543,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	GROUP_MAP map;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	BOOL ret;
+	bool ret;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
@@ -4638,8 +4638,8 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
 	NTSTATUS ret;
-	BOOL result;
-	BOOL can_mod_accounts;
+	bool result;
+	bool can_mod_accounts;
 	DISP_INFO *disp_info = NULL;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info))
@@ -4701,7 +4701,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	struct acct_info info;
 	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
-	BOOL can_mod_accounts;
+	bool can_mod_accounts;
 	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
@@ -4832,7 +4832,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	size_t            sd_size;
 	NTSTATUS          status;
 	fstring sid_string;
-	BOOL ret;
+	bool ret;
 	SE_PRIV se_rights;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted, NULL)) 

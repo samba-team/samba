@@ -32,15 +32,15 @@
  Returns True if username was changed, false otherwise.
 ********************************************************************/
 
-BOOL map_username(fstring user)
+bool map_username(fstring user)
 {
-	static BOOL initialised=False;
+	static bool initialised=False;
 	static fstring last_from,last_to;
 	XFILE *f;
 	char *mapfile = lp_username_map();
 	char *s;
 	pstring buf;
-	BOOL mapped_user = False;
+	bool mapped_user = False;
 	char *cmd = lp_username_map_script();
 	
 	if (!*user)
@@ -113,7 +113,7 @@ BOOL map_username(fstring user)
 		char *unixname = s;
 		char *dosname = strchr_m(unixname,'=');
 		char **dosuserlist;
-		BOOL return_if_mapped = False;
+		bool return_if_mapped = False;
 
 		if (!dosname)
 			continue;

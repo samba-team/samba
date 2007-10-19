@@ -70,11 +70,11 @@ struct dc_name_ip {
 };
 
 extern struct winbindd_methods reconnect_methods;
-extern BOOL override_logfile;
+extern bool override_logfile;
 
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
-static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs);
 
 /****************************************************************
@@ -166,7 +166,7 @@ static void msg_try_to_go_online(struct messaging_context *msg,
  parent.
 ****************************************************************/
 
-static BOOL fork_child_dc_connect(struct winbindd_domain *domain)
+static bool fork_child_dc_connect(struct winbindd_domain *domain)
 {
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
@@ -558,7 +558,7 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
+static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 				     fstring dcname, struct in_addr *dc_ip)
 {
 	struct winbindd_domain *our_domain = NULL;
@@ -641,12 +641,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      const int sockfd,
 				      const char *controller,
 				      struct cli_state **cli,
-				      BOOL *retry)
+				      bool *retry)
 {
 	char *machine_password, *machine_krb5_principal, *machine_account;
 	char *ipc_username, *ipc_domain, *ipc_password;
 
-	BOOL got_mutex;
+	bool got_mutex;
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
@@ -890,7 +890,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	return result;
 }
 
-static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
+static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      const char *dcname, struct in_addr ip,
 			      struct dc_name_ip **dcs, int *num)
 {
@@ -910,7 +910,7 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	return True;
 }
 
-static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
+static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct in_addr ip, uint16 port,
 				  struct sockaddr_in **addrs, int *num)
 {
@@ -934,7 +934,7 @@ static void mailslot_name(struct in_addr dc_ip, fstring name)
 	fstr_sprintf(name, "\\MAILSLOT\\NET\\GETDC%X", dc_ip.s_addr);
 }
 
-static BOOL send_getdc_request(struct in_addr dc_ip,
+static bool send_getdc_request(struct in_addr dc_ip,
 			       const char *domain_name,
 			       const DOM_SID *sid)
 {
@@ -988,7 +988,7 @@ static BOOL send_getdc_request(struct in_addr dc_ip,
 				 dc_ip);
 }
 
-static BOOL receive_getdc_response(struct in_addr dc_ip,
+static bool receive_getdc_response(struct in_addr dc_ip,
 				   const char *domain_name,
 				   fstring dc_name)
 {
@@ -1060,7 +1060,7 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
  convert an ip to a name
 *******************************************************************/
 
-static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip, fstring name )
+static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip, fstring name )
 {
 	struct ip_service ip_list;
 
@@ -1148,7 +1148,7 @@ static BOOL dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
  the dcs[]  with results.
 *******************************************************************/
 
-static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
 	fstring dcname;
@@ -1156,7 +1156,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	struct  ip_service *ip_list = NULL;
 	int     iplist_size = 0;
 	int     i;
-	BOOL    is_our_domain;
+	bool    is_our_domain;
 	enum security_types sec = (enum security_types)lp_security();
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
@@ -1231,7 +1231,7 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	return True;
 }
 
-static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
+static bool find_new_dc(TALLOC_CTX *mem_ctx,
 			const struct winbindd_domain *domain,
 			fstring dcname, struct sockaddr_in *addr, int *fd)
 {
@@ -1358,7 +1358,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	for (retries = 0; retries < 3; retries++) {
 
 		int fd = -1;
-		BOOL retry = False;
+		bool retry = False;
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
@@ -1492,7 +1492,7 @@ void close_conns_after_fork(void)
 	}
 }
 
-static BOOL connection_ok(struct winbindd_domain *domain)
+static bool connection_ok(struct winbindd_domain *domain)
 {
 	if (domain->conn.cli == NULL) {
 		DEBUG(8, ("connection_ok: Connection to %s for domain %s has NULL "
@@ -1566,7 +1566,7 @@ NTSTATUS init_dc_connection(struct winbindd_domain *domain)
  Set the trust flags (direction and forest location) for a domain
 ******************************************************************************/
 
-static BOOL set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
+static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 {
 	struct winbindd_domain *our_domain;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1848,7 +1848,7 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 /**********************************************************************
 ***********************************************************************/
 
-static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
+static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 				   struct dcinfo **ppdc)
 {
 	NTSTATUS result;

@@ -26,7 +26,7 @@
 /* Load a dynamic module.  Only log a level 0 error if we are not checking 
    for the existence of a module (probling). */
 
-static NTSTATUS do_smb_load_module(const char *module_name, BOOL is_probe)
+static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 {
 	void *handle;
 	init_module_function *init;

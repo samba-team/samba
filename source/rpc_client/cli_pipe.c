@@ -1589,10 +1589,10 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
  Set the handle state.
 ****************************************************************************/
 
-static BOOL rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
+static bool rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
 				   const char *pipe_name, uint16 device_state)
 {
-	BOOL state_set = False;
+	bool state_set = False;
 	char param[2];
 	uint16 setup[2]; /* only need 2 uint16 setup parameters */
 	char *rparam = NULL;
@@ -1635,7 +1635,7 @@ static BOOL rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
  Check the rpc bind acknowledge response.
 ****************************************************************************/
 
-static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
+static bool valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	if ( pipe_idx >= PI_MAX_PIPES ) {
 		DEBUG(0,("valid_pipe_name: Programmer error!  Invalid pipe index [%d]\n",
@@ -1662,7 +1662,7 @@ static BOOL valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
  Check the rpc bind acknowledge response.
 ****************************************************************************/
 
-static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
+static bool check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
 {
 	if ( hdr_ba->addr.len == 0) {
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));

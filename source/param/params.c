@@ -80,7 +80,7 @@
 
 #include "includes.h"
 
-extern BOOL in_client;
+extern bool in_client;
 
 /* -------------------------------------------------------------------------- **
  * Constants...
@@ -235,7 +235,7 @@ static int Continuation(char *line, int pos )
  * ------------------------------------------------------------------------ **
  */
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
+static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
 {
 	int   c;
 	int   i;
@@ -341,7 +341,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
  * ------------------------------------------------------------------------ **
  */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *), int c )
+static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *), int c )
 {
 	int   i       = 0;    /* Position within bufr. */
 	int   end     = 0;    /* bufr[end] is current end-of-string. */
@@ -471,9 +471,9 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
  * ------------------------------------------------------------------------ **
  */
 
-static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(const char *),
-                   BOOL (*pfunc)(const char *, const char *) )
+static bool Parse( myFILE *InFile,
+                   bool (*sfunc)(const char *),
+                   bool (*pfunc)(const char *, const char *) )
 {
 	int    c;
 
@@ -556,9 +556,9 @@ static myFILE *OpenConfFile( const char *FileName )
  * ------------------------------------------------------------------------ **
  */
 
-BOOL pm_process( const char *FileName,
-		BOOL (*sfunc)(const char *),
-		BOOL (*pfunc)(const char *, const char *) )
+bool pm_process( const char *FileName,
+		bool (*sfunc)(const char *),
+		bool (*pfunc)(const char *, const char *) )
 {
 	int   result;
 	myFILE *InFile;

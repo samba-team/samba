@@ -24,7 +24,7 @@
 #include "gpfs_gpl.h"
 
 static void *libgpfs_handle = NULL;
-static BOOL gpfs_share_modes;
+static bool gpfs_share_modes;
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
@@ -32,7 +32,7 @@ static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
 
 
-BOOL set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
+bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
 	unsigned int allow = GPFS_SHARE_NONE;
@@ -202,7 +202,7 @@ int set_gpfs_lease(int snum, int leasetype)
 	return -1;
 }
 
-BOOL set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
+bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
 	DEBUG(0, ("VFS module - smbgpfs.so loaded, without gpfs support compiled\n"));

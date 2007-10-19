@@ -77,7 +77,7 @@ void free_domain_list(void)
 	}
 }
 
-static BOOL is_internal_domain(const DOM_SID *sid)
+static bool is_internal_domain(const DOM_SID *sid)
 {
 	if (sid == NULL)
 		return False;
@@ -88,7 +88,7 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
-static BOOL is_in_internal_domain(const DOM_SID *sid)
+static bool is_in_internal_domain(const DOM_SID *sid)
 {
 	if (sid == NULL)
 		return False;
@@ -204,12 +204,12 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 struct trustdom_state {
 	TALLOC_CTX *mem_ctx;
-	BOOL primary;	
-	BOOL forest_root;	
+	bool primary;	
+	bool forest_root;	
 	struct winbindd_response *response;
 };
 
-static void trustdom_recv(void *private_data, BOOL success);
+static void trustdom_recv(void *private_data, bool success);
 static void rescan_forest_root_trusts( void );
 static void rescan_forest_trusts( void );
 
@@ -253,7 +253,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 			     trustdom_recv, state);
 }
 
-static void trustdom_recv(void *private_data, BOOL success)
+static void trustdom_recv(void *private_data, bool success)
 {
 	struct trustdom_state *state =
 		talloc_get_type_abort(private_data, struct trustdom_state);
@@ -518,16 +518,16 @@ struct init_child_state {
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private_data, BOOL success);
+	void (*continuation)(void *private_data, bool success);
 	void *private_data;
 };
 
-static void init_child_recv(void *private_data, BOOL success);
-static void init_child_getdc_recv(void *private_data, BOOL success);
+static void init_child_recv(void *private_data, bool success);
+static void init_child_getdc_recv(void *private_data, bool success);
 
 enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 					   void (*continuation)(void *private_data,
-								BOOL success),
+								bool success),
 					   void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
@@ -585,7 +585,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	return WINBINDD_PENDING;
 }
 
-static void init_child_getdc_recv(void *private_data, BOOL success)
+static void init_child_getdc_recv(void *private_data, bool success)
 {
 	struct init_child_state *state =
 		talloc_get_type_abort(private_data, struct init_child_state);
@@ -607,7 +607,7 @@ static void init_child_getdc_recv(void *private_data, BOOL success)
 		      init_child_recv, state);
 }
 
-static void init_child_recv(void *private_data, BOOL success)
+static void init_child_recv(void *private_data, bool success)
 {
 	struct init_child_state *state =
 		talloc_get_type_abort(private_data, struct init_child_state);
@@ -681,7 +681,7 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 }
 
 /* Look up global info for the winbind daemon */
-BOOL init_domain_list(void)
+bool init_domain_list(void)
 {
 	struct winbindd_domain *domain;
 	int role = lp_server_role();
@@ -951,7 +951,7 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 
 /* Lookup a sid in a domain from a name */
 
-BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
+bool winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 				 enum winbindd_cmd orig_cmd,
 				 struct winbindd_domain *domain, 
 				 const char *domain_name,
@@ -983,7 +983,7 @@ BOOL winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
  * @retval True if the name exists, in which case @p name and @p type
  * are set, otherwise False.
  **/
-BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
+bool winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain,
 				 DOM_SID *sid,
 				 char **dom_name,
@@ -1036,7 +1036,7 @@ void free_getent_state(struct getent_state *state)
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
 
-static BOOL assume_domain(const char *domain)
+static bool assume_domain(const char *domain)
 {
 	/* never assume the domain on a standalone server */
 
@@ -1064,7 +1064,7 @@ static BOOL assume_domain(const char *domain)
 
 /* Parse a string of the form DOMAIN\user into a domain and a user */
 
-BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
+bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
 	char *p = strchr(domuser,*lp_winbind_separator());
 
@@ -1089,7 +1089,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	return True;
 }
 
-BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
+bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 			      char **domain, char **user)
 {
 	fstring fstr_domain, fstr_user;
@@ -1110,7 +1110,7 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
    really should be changed to use this instead of doing things
    by hand. JRA. */
 
-BOOL canonicalize_username(fstring username_inout, fstring domain, fstring user)
+bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
 {
 	if (!parse_domain_user(username_inout, domain, user)) {
 		return False;
@@ -1135,7 +1135,7 @@ BOOL canonicalize_username(fstring username_inout, fstring domain, fstring user)
 
     We always canonicalize as UPPERCASE DOMAIN, lowercase username.
 */
-void fill_domain_username(fstring name, const char *domain, const char *user, BOOL can_assume)
+void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume)
 {
 	fstring tmp_user;
 
@@ -1376,7 +1376,7 @@ void ws_name_return( char *name, char replace )
 /*********************************************************************
  ********************************************************************/
 
-BOOL winbindd_can_contact_domain( struct winbindd_domain *domain )
+bool winbindd_can_contact_domain( struct winbindd_domain *domain )
 {
 	/* We can contact the domain if it is our primary domain */
 
@@ -1406,7 +1406,7 @@ BOOL winbindd_can_contact_domain( struct winbindd_domain *domain )
 /*********************************************************************
  ********************************************************************/
 
-BOOL winbindd_internal_child(struct winbindd_child *child)
+bool winbindd_internal_child(struct winbindd_child *child)
 {
 	if ((child == idmap_child()) || (child == locator_child())) {
 		return True;

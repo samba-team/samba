@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/srv_srvsvc.h"
 
-static BOOL api_srvsvc_NetCharDevEnum(pipes_struct *p)
+static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -87,7 +87,7 @@ static BOOL api_srvsvc_NetCharDevEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
+static bool api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -165,7 +165,7 @@ static BOOL api_srvsvc_NetCharDevGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevControl(pipes_struct *p)
+static bool api_srvsvc_NetCharDevControl(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -236,7 +236,7 @@ static BOOL api_srvsvc_NetCharDevControl(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevQEnum(pipes_struct *p)
+static bool api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -317,7 +317,7 @@ static BOOL api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
+static bool api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -395,7 +395,7 @@ static BOOL api_srvsvc_NetCharDevQGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevQSetInfo(pipes_struct *p)
+static bool api_srvsvc_NetCharDevQSetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -468,7 +468,7 @@ static BOOL api_srvsvc_NetCharDevQSetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevQPurge(pipes_struct *p)
+static bool api_srvsvc_NetCharDevQPurge(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -539,7 +539,7 @@ static BOOL api_srvsvc_NetCharDevQPurge(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetCharDevQPurgeSelf(pipes_struct *p)
+static bool api_srvsvc_NetCharDevQPurgeSelf(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -610,7 +610,7 @@ static BOOL api_srvsvc_NetCharDevQPurgeSelf(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetConnEnum(pipes_struct *p)
+static bool api_srvsvc_NetConnEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -691,7 +691,7 @@ static BOOL api_srvsvc_NetConnEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetFileEnum(pipes_struct *p)
+static bool api_srvsvc_NetFileEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -772,7 +772,7 @@ static BOOL api_srvsvc_NetFileEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetFileGetInfo(pipes_struct *p)
+static bool api_srvsvc_NetFileGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -850,7 +850,7 @@ static BOOL api_srvsvc_NetFileGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetFileClose(pipes_struct *p)
+static bool api_srvsvc_NetFileClose(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -921,7 +921,7 @@ static BOOL api_srvsvc_NetFileClose(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSessEnum(pipes_struct *p)
+static bool api_srvsvc_NetSessEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1002,7 +1002,7 @@ static BOOL api_srvsvc_NetSessEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSessDel(pipes_struct *p)
+static bool api_srvsvc_NetSessDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1073,7 +1073,7 @@ static BOOL api_srvsvc_NetSessDel(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareAdd(pipes_struct *p)
+static bool api_srvsvc_NetShareAdd(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1146,7 +1146,7 @@ static BOOL api_srvsvc_NetShareAdd(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareEnumAll(pipes_struct *p)
+static bool api_srvsvc_NetShareEnumAll(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1227,7 +1227,7 @@ static BOOL api_srvsvc_NetShareEnumAll(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareGetInfo(pipes_struct *p)
+static bool api_srvsvc_NetShareGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1305,7 +1305,7 @@ static BOOL api_srvsvc_NetShareGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareSetInfo(pipes_struct *p)
+static bool api_srvsvc_NetShareSetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1378,7 +1378,7 @@ static BOOL api_srvsvc_NetShareSetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareDel(pipes_struct *p)
+static bool api_srvsvc_NetShareDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1449,7 +1449,7 @@ static BOOL api_srvsvc_NetShareDel(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareDelSticky(pipes_struct *p)
+static bool api_srvsvc_NetShareDelSticky(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1520,7 +1520,7 @@ static BOOL api_srvsvc_NetShareDelSticky(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareCheck(pipes_struct *p)
+static bool api_srvsvc_NetShareCheck(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1598,7 +1598,7 @@ static BOOL api_srvsvc_NetShareCheck(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSrvGetInfo(pipes_struct *p)
+static bool api_srvsvc_NetSrvGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1676,7 +1676,7 @@ static BOOL api_srvsvc_NetSrvGetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSrvSetInfo(pipes_struct *p)
+static bool api_srvsvc_NetSrvSetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1749,7 +1749,7 @@ static BOOL api_srvsvc_NetSrvSetInfo(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetDiskEnum(pipes_struct *p)
+static bool api_srvsvc_NetDiskEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1829,7 +1829,7 @@ static BOOL api_srvsvc_NetDiskEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
+static bool api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1907,7 +1907,7 @@ static BOOL api_srvsvc_NetServerStatisticsGet(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetTransportAdd(pipes_struct *p)
+static bool api_srvsvc_NetTransportAdd(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -1978,7 +1978,7 @@ static BOOL api_srvsvc_NetTransportAdd(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetTransportEnum(pipes_struct *p)
+static bool api_srvsvc_NetTransportEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2059,7 +2059,7 @@ static BOOL api_srvsvc_NetTransportEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetTransportDel(pipes_struct *p)
+static bool api_srvsvc_NetTransportDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2130,7 +2130,7 @@ static BOOL api_srvsvc_NetTransportDel(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetRemoteTOD(pipes_struct *p)
+static bool api_srvsvc_NetRemoteTOD(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2208,7 +2208,7 @@ static BOOL api_srvsvc_NetRemoteTOD(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSetServiceBits(pipes_struct *p)
+static bool api_srvsvc_NetSetServiceBits(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2279,7 +2279,7 @@ static BOOL api_srvsvc_NetSetServiceBits(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetPathType(pipes_struct *p)
+static bool api_srvsvc_NetPathType(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2357,7 +2357,7 @@ static BOOL api_srvsvc_NetPathType(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetPathCanonicalize(pipes_struct *p)
+static bool api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2436,7 +2436,7 @@ static BOOL api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetPathCompare(pipes_struct *p)
+static bool api_srvsvc_NetPathCompare(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2507,7 +2507,7 @@ static BOOL api_srvsvc_NetPathCompare(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetNameValidate(pipes_struct *p)
+static bool api_srvsvc_NetNameValidate(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2578,7 +2578,7 @@ static BOOL api_srvsvc_NetNameValidate(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p)
+static bool api_srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2649,7 +2649,7 @@ static BOOL api_srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetPRNameCompare(pipes_struct *p)
+static bool api_srvsvc_NetPRNameCompare(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2720,7 +2720,7 @@ static BOOL api_srvsvc_NetPRNameCompare(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareEnum(pipes_struct *p)
+static bool api_srvsvc_NetShareEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2801,7 +2801,7 @@ static BOOL api_srvsvc_NetShareEnum(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareDelStart(pipes_struct *p)
+static bool api_srvsvc_NetShareDelStart(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2879,7 +2879,7 @@ static BOOL api_srvsvc_NetShareDelStart(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetShareDelCommit(pipes_struct *p)
+static bool api_srvsvc_NetShareDelCommit(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -2952,7 +2952,7 @@ static BOOL api_srvsvc_NetShareDelCommit(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetGetFileSecurity(pipes_struct *p)
+static bool api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3030,7 +3030,7 @@ static BOOL api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetSetFileSecurity(pipes_struct *p)
+static bool api_srvsvc_NetSetFileSecurity(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3101,7 +3101,7 @@ static BOOL api_srvsvc_NetSetFileSecurity(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetServerTransportAddEx(pipes_struct *p)
+static bool api_srvsvc_NetServerTransportAddEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3172,7 +3172,7 @@ static BOOL api_srvsvc_NetServerTransportAddEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NetServerSetServiceBitsEx(pipes_struct *p)
+static bool api_srvsvc_NetServerSetServiceBitsEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3243,7 +3243,7 @@ static BOOL api_srvsvc_NetServerSetServiceBitsEx(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSGETVERSION(pipes_struct *p)
+static bool api_srvsvc_NETRDFSGETVERSION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3314,7 +3314,7 @@ static BOOL api_srvsvc_NETRDFSGETVERSION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p)
+static bool api_srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3385,7 +3385,7 @@ static BOOL api_srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p)
+static bool api_srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3456,7 +3456,7 @@ static BOOL api_srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p)
+static bool api_srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3527,7 +3527,7 @@ static BOOL api_srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p)
+static bool api_srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3598,7 +3598,7 @@ static BOOL api_srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p)
+static bool api_srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3669,7 +3669,7 @@ static BOOL api_srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p)
+static bool api_srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3740,7 +3740,7 @@ static BOOL api_srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p)
+static bool api_srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3811,7 +3811,7 @@ static BOOL api_srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p)
+static bool api_srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3882,7 +3882,7 @@ static BOOL api_srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p)
+static bool api_srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
@@ -3953,7 +3953,7 @@ static BOOL api_srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p)
 	return True;
 }
 
-static BOOL api_srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p)
+static bool api_srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;

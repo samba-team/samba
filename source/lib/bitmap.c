@@ -99,7 +99,7 @@ int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src)
 /****************************************************************************
 set a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_set(struct bitmap *bm, unsigned i)
+bool bitmap_set(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) {
 		DEBUG(0,("Setting invalid bitmap entry %d (of %d)\n",
@@ -113,7 +113,7 @@ BOOL bitmap_set(struct bitmap *bm, unsigned i)
 /****************************************************************************
 clear a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_clear(struct bitmap *bm, unsigned i)
+bool bitmap_clear(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) {
 		DEBUG(0,("clearing invalid bitmap entry %d (of %d)\n",
@@ -127,7 +127,7 @@ BOOL bitmap_clear(struct bitmap *bm, unsigned i)
 /****************************************************************************
 query a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_query(struct bitmap *bm, unsigned i)
+bool bitmap_query(struct bitmap *bm, unsigned i)
 {
 	if (i >= bm->n) return False;
 	if (bm->b[i/32] & (1<<(i%32))) {
