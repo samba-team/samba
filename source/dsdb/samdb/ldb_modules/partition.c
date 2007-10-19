@@ -238,7 +238,7 @@ static int partition_send_request(struct partition_context *ac, struct ldb_contr
 		}
 	}
 
-	/* Spray off search requests to all backends */
+	/* Spray off search requests the backend */
 	ret = ldb_next_request(backend, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
