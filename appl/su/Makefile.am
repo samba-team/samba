@@ -6,7 +6,7 @@ AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto)
 
 bin_PROGRAMS = su
 bin_SUIDS = su
-su_SOURCES = su.c
+su_SOURCES = su.c supaths.h
 man_MANS = su.1
 
 LDADD = $(LIB_kafs) \
