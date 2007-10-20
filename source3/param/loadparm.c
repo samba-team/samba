@@ -227,7 +227,7 @@ typedef struct {
 	bool bDisableSpoolss;
 	int syslog;
 	int os_level;
-	int enhanced_browsing;
+	bool enhanced_browsing;
 	int max_ttl;
 	int max_wins_ttl;
 	int min_wins_ttl;
@@ -1589,7 +1589,7 @@ static void init_globals(bool first_time_only)
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
-	Globals.enhanced_browsing = True; 
+	Globals.enhanced_browsing = true;
 	Globals.iLockSpinTime = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS; /* msec. */
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;
@@ -2018,7 +2018,7 @@ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
-FN_GLOBAL_INTEGER(_lp_disable_spoolss, &Globals.bDisableSpoolss)
+FN_GLOBAL_BOOL(_lp_disable_spoolss, &Globals.bDisableSpoolss)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
