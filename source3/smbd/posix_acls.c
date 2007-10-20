@@ -4126,291 +4126,82 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 }
 
 /****************************************************************************
- Check for POSIX group ACLs. If none use stat entry.
- Return -1 if no match, 0 if match and denied, 1 if match and allowed.
+ Helper function that gets a security descriptor by connection and
+ file name.
+ NOTE: This is transitional, in the sense that SMB_VFS_GET_NT_ACL really
+ should *not* get a files_struct pointer but a connection_struct ptr
+ (automatic by the vfs handle) and the file name and _use_ that!
 ****************************************************************************/
-
-static int check_posix_acl_group_access(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
+static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
+				struct connection_struct *conn,
+				const char *fname,
+				SMB_STRUCT_STAT *psbuf,
+				struct security_descriptor **psd)
 {
-	SMB_ACL_T posix_acl = NULL;
-	int entry_id = SMB_ACL_FIRST_ENTRY;
-	SMB_ACL_ENTRY_T entry;
-	int i;
-	bool seen_mask = False;
-	bool seen_owning_group = False;
-	int ret = -1;
-	gid_t cu_gid;
+	NTSTATUS status;
+	struct files_struct *fsp = NULL;
+	struct security_descriptor *secdesc = NULL;
+	size_t secdesc_size;
 
-	DEBUG(10,("check_posix_acl_group_access: requesting 0x%x on file %s\n",
-		(unsigned int)access_mask, fname ));
-
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS)) == NULL) {
-		goto check_stat;
-	}
-
-	/* First ensure the group mask allows group access. */
-	/* Also check any user entries (these take preference over group). */
-
-	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
-		SMB_ACL_TAG_T tagtype;
-		SMB_ACL_PERMSET_T permset;
-		int have_write = -1;
-		int have_read = -1;
-
-		/* get_next... */
-		if (entry_id == SMB_ACL_FIRST_ENTRY)
-			entry_id = SMB_ACL_NEXT_ENTRY;
-
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
-			goto check_stat;
-		}
-
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
-			goto check_stat;
-		}
-
-		have_read = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ);
-		if (have_read == -1) {
-			goto check_stat;
-		}
-
-		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
-		if (have_write == -1) {
-			goto check_stat;
-		}
-
-		/*
-		 * Solaris returns 2 for this if write is available.
-		 * canonicalize to 0 or 1.
-		 */	
-		have_write = (have_write ? 1 : 0);
-		have_read = (have_read ? 1 : 0);
-
-		switch(tagtype) {
-			case SMB_ACL_MASK:
-				seen_mask = True;
-				switch (access_mask) {
-					case FILE_READ_DATA:
-						if (!have_read) {
-							ret = -1;
-							DEBUG(10,("check_posix_acl_group_access: file %s "
-								"refusing read due to mask.\n", fname));
-							goto done;
-						}
-						break;
-					case FILE_WRITE_DATA:
-						if (!have_write) {
-							ret = -1;
-							DEBUG(10,("check_posix_acl_group_access: file %s "
-								"refusing write due to mask.\n", fname));
-							goto done;
-						}
-						break;
-					default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-						if (!have_write || !have_read) {
-							ret = -1;
-							DEBUG(10,("check_posix_acl_group_access: file %s "
-								"refusing read/write due to mask.\n", fname));
-							goto done;
-						}
-						break;
-				}
-				break;
-			case SMB_ACL_USER:
-			{
-				/* Check against current_user.ut.uid. */
-				uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
-				if (puid == NULL) {
-					goto check_stat;
-				}
-				if (current_user.ut.uid == *puid) {
-					/* We have a uid match but we must ensure we have seen the acl mask. */
-					switch (access_mask) {
-						case FILE_READ_DATA:
-							ret = have_read;
-							break;
-						case FILE_WRITE_DATA:
-							ret = have_write;
-							break;
-						default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-							ret = (have_write & have_read);
-							break;
-					}
-					DEBUG(10,("check_posix_acl_group_access: file %s "
-						"match on user %u -> %s.\n",
-						fname, (unsigned int)*puid,
-						ret ? "can access" : "cannot access"));
-					if (seen_mask) {
-						goto done;
-					}
-				}
-				break;
-			}
-			default:
-				continue;
+	if (!VALID_STAT(*psbuf)) {
+		if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+			return map_nt_error_from_unix(errno);
 		}
 	}
 
-	/* If ret is anything other than -1 we matched on a user entry. */
-	if (ret != -1) {
-		goto done;
+	/* fake a files_struct ptr: */
+
+	status = open_file_stat(conn, NULL, fname, psbuf, &fsp);
+	/* Perhaps it is a directory */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		status = open_directory(conn, NULL, fname, psbuf,
+					READ_CONTROL_ACCESS,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					FILE_ATTRIBUTE_DIRECTORY,
+					NULL, &fsp);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Unable to open file %s: %s\n", fname,
+			  nt_errstr(status)));
+		return status;
 	}
 
-	/* Next check all group entries. */
-	entry_id = SMB_ACL_FIRST_ENTRY;
-	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
-		SMB_ACL_TAG_T tagtype;
-		SMB_ACL_PERMSET_T permset;
-		int have_write = -1;
-		int have_read = -1;
-
-		/* get_next... */
-		if (entry_id == SMB_ACL_FIRST_ENTRY)
-			entry_id = SMB_ACL_NEXT_ENTRY;
-
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
-			goto check_stat;
-		}
-
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
-			goto check_stat;
-		}
-
-		have_read = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ);
-		if (have_read == -1) {
-			goto check_stat;
-		}
-
-		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
-		if (have_write == -1) {
-			goto check_stat;
-		}
-
-		/*
-		 * Solaris returns 2 for this if write is available.
-		 * canonicalize to 0 or 1.
-		 */	
-		have_write = (have_write ? 1 : 0);
-		have_read = (have_read ? 1 : 0);
-
-		switch(tagtype) {
-			case SMB_ACL_GROUP:
-			case SMB_ACL_GROUP_OBJ:
-			{
-				gid_t *pgid = NULL;
-
-				if (tagtype == SMB_ACL_GROUP) {
-					pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
-				} else {
-					seen_owning_group = True;
-					pgid = &psbuf->st_gid;
-				}
-				if (pgid == NULL) {
-					goto check_stat;
-				}
-
-				/*
-				 * Does it match the current effective group
-				 * or supplementary groups ?
-				 */
-				for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
-							cu_gid = get_current_user_gid_next(&i)) {
-					if (cu_gid == *pgid) {
-						switch (access_mask) {
-							case FILE_READ_DATA:
-								ret = have_read;
-								break;
-							case FILE_WRITE_DATA:
-								ret = have_write;
-								break;
-							default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-								ret = (have_write & have_read);
-								break;
-						}
-
-						DEBUG(10,("check_posix_acl_group_access: file %s "
-							"match on group %u -> can access.\n",
-							fname, (unsigned int)cu_gid ));
-
-						/* If we don't have access permission this entry doesn't
-							terminate the enumeration of the entries. */
-						if (ret) {
-							goto done;
-						}
-						/* But does terminate the group iteration. */
-						break;
-					}
-				}
-				break;
-			}
-			default:
-				continue;
-		}
+	secdesc_size = SMB_VFS_GET_NT_ACL(fsp, fname,
+					  (OWNER_SECURITY_INFORMATION |
+					   GROUP_SECURITY_INFORMATION |
+					   DACL_SECURITY_INFORMATION),
+					  &secdesc);
+	if (secdesc_size == 0) {
+		DEBUG(5, ("Unable to get NT ACL for file %s\n", fname));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* If ret is -1 here we didn't match on the user entry or
-	   supplemental group entries. */
-	
-	DEBUG(10,("check_posix_acl_group_access: ret = %d before check_stat:\n", ret));
+	*psd = talloc_move(mem_ctx, &secdesc);
+	close_file(fsp, NORMAL_CLOSE);
+	return NT_STATUS_OK;
+}
 
-  check_stat:
+static bool can_access_file_acl(struct connection_struct *conn,
+				const char * fname, SMB_STRUCT_STAT *psbuf,
+				uint32_t access_mask)
+{
+	bool result;
+	NTSTATUS status;
+	uint32_t access_granted;
+	struct security_descriptor *secdesc = NULL;
 
-	/*
-	 * We only check the S_I[RW]GRP permissions if we haven't already
-	 * seen an owning group SMB_ACL_GROUP_OBJ ace entry. If there is an
-	 * SMB_ACL_GROUP_OBJ ace entry then the group bits in st_gid are
-	 * the same as the SMB_ACL_MASK bits, not the SMB_ACL_GROUP_OBJ
-	 * bits. Thanks to Marc Cousin <mcousin@sigma.fr> for pointing
-	 * this out. JRA.
-	 */
-
-	if (!seen_owning_group) {
-		/* Do we match on the owning group entry ? */
-		/*
-		 * Does it match the current effective group
-		 * or supplementary groups ?
-		 */
-		for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
-						cu_gid = get_current_user_gid_next(&i)) {
-			if (cu_gid == psbuf->st_gid) {
-				switch (access_mask) {
-					case FILE_READ_DATA:
-						ret = (psbuf->st_mode & S_IRGRP) ? 1 : 0;
-						break;
-					case FILE_WRITE_DATA:
-						ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
-						break;
-					default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-						if ((psbuf->st_mode & (S_IWGRP|S_IRGRP)) == (S_IWGRP|S_IRGRP)) {
-							ret = 1;
-						} else {
-							ret = 0;
-						}
-						break;
-				}
-				DEBUG(10,("check_posix_acl_group_access: file %s "
-					"match on owning group %u -> %s.\n",
-					fname, (unsigned int)psbuf->st_gid,
-					ret ? "can access" : "cannot access"));
-				break;
-			}
-		}
-
-		if (cu_gid == (gid_t)-1) {
-			DEBUG(10,("check_posix_acl_group_access: file %s "
-				"failed to match on user or group in token (ret = %d).\n",
-				fname, ret ));
-		}
+	status = conn_get_nt_acl(talloc_tos(), conn, fname, psbuf, &secdesc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Could not get acl: %s\n", nt_errstr(status)));
+		return false;
 	}
 
-  done:
-
-	if (posix_acl) {
-		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
-	}
-
-	DEBUG(10,("check_posix_acl_group_access: file %s returning (ret = %d).\n", fname, ret ));
-	return ret;
+	result = se_access_check(secdesc, current_user.nt_user_token,
+				 access_mask, &access_granted, &status);
+	TALLOC_FREE(secdesc);
+	return result;
 }
 
 /****************************************************************************
@@ -4423,7 +4214,6 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dname = NULL;
-	int ret;
 
 	if (!CAN_WRITE(conn)) {
 		return False;
@@ -4439,6 +4229,9 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {
 		return False;
 	}
+
+	/* fast paths first */
+
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
@@ -4475,14 +4268,9 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 #endif
 
-	/* Check group or explicit user acl entry write access. */
-	ret = check_posix_acl_group_access(conn, dname, &sbuf, FILE_WRITE_DATA);
-	if (ret == 0 || ret == 1) {
-		return ret ? True : False;
-	}
+	/* now for ACL checks */
 
-	/* Finally check other write access. */
-	return (sbuf.st_mode & S_IWOTH) ? True : False;
+	return can_access_file(conn, dname, &sbuf, FILE_WRITE_DATA);
 }
 
 /****************************************************************************
@@ -4493,12 +4281,12 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 bool can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
 {
-	int ret;
-
 	if (!(access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))) {
 		return False;
 	}
 	access_mask &= (FILE_READ_DATA|FILE_WRITE_DATA);
+
+	/* some fast paths first */
 
 	DEBUG(10,("can_access_file: requesting 0x%x on file %s\n",
 		(unsigned int)access_mask, fname ));
@@ -4534,27 +4322,9 @@ bool can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT
 		}
 	}
 
-	/* Check group or explicit user acl entry access. */
-	ret = check_posix_acl_group_access(conn, fname, psbuf, access_mask);
-	if (ret == 0 || ret == 1) {
-		return ret ? True : False;
-	}
+	/* now for ACL checks */
 
-	/* Finally check other access. */
-	switch (access_mask) {
-		case FILE_READ_DATA:
-			return (psbuf->st_mode & S_IROTH) ? True : False;
-
-		case FILE_WRITE_DATA:
-			return (psbuf->st_mode & S_IWOTH) ? True : False;
-
-		default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-
-			if ((psbuf->st_mode & (S_IWOTH|S_IROTH)) == (S_IWOTH|S_IROTH)) {
-				return True;
-			}
-	}
-	return False;
+	return can_access_file_acl(conn, fname, psbuf, access_mask);
 }
 
 /****************************************************************************
