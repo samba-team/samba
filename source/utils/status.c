@@ -426,6 +426,19 @@ static int traverse_sessionid(struct db_record *db, void *state)
 
 	if ( show_locks ) {
 		int result;
+		struct db_context *db;
+		db = db_open(NULL, lock_path("locking.tdb"), 0,
+			     TDB_DEFAULT, O_RDONLY, 0);
+
+		if (!db) {
+			d_printf("%s not initialised\n",
+				 lock_path("locking.tdb"));
+			d_printf("This is normal if an SMB client has never "
+				 "connected to your server.\n");
+			exit(0);
+		} else {
+			TALLOC_FREE(db);
+		}
 
 		if (!locking_init(1)) {
 			d_printf("Can't initialise locking module - exiting\n");
