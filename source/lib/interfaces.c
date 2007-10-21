@@ -210,7 +210,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 		ifaces[total].flags = ifr[i].ifr_flags;
 
-		if (!(flags & IFF_UP)) {
+		if (!(ifaces[total].flags & IFF_UP)) {
 			continue;
 		}
 
