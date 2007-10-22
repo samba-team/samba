@@ -80,8 +80,9 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 		struct ctdb_tcp_node *tnode = talloc_get_type(
 			node->private_data, struct ctdb_tcp_node);
 		if (!ctdb_same_address(&ctdb->address, &node->address)) {
-			event_add_timed(ctdb->ev, tnode, timeval_zero(), 
-					ctdb_tcp_node_connect, node);
+			tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
+							    timeval_zero(), 
+							    ctdb_tcp_node_connect, node);
 		}
 	}
 
@@ -99,11 +100,10 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 
 	DEBUG(0,("Tearing down connection to dead node :%d\n", node->pnn));
 
-	tnode->fd = -1;
-	ctdb_queue_set_fd(tnode->out_queue, -1);
+	ctdb_tcp_stop_connection(node);
 
-	event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
-			ctdb_tcp_node_connect, node);
+	tnode->connect_te = event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
+					    ctdb_tcp_node_connect, node);
 }
 
 
