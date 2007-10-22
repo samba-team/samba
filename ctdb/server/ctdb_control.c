@@ -232,6 +232,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb->monitoring_mode;
 
 	case CTDB_CONTROL_SHUTDOWN:
+		ctdb_stop_recoverd(ctdb);
 		ctdb_release_all_ips(ctdb);
 		ctdb->methods->shutdown(ctdb);
 		ctdb_event_script(ctdb, "shutdown");

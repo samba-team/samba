@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "system/network.h"
+#include "system/wait.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "../include/ctdb.h"
@@ -1950,18 +1951,17 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
 	int ret;
 	int fd[2];
-	pid_t child;
 
 	if (pipe(fd) != 0) {
 		return -1;
 	}
 
-	child = fork();
-	if (child == -1) {
+	ctdb->recoverd_pid = fork();
+	if (ctdb->recoverd_pid == -1) {
 		return -1;
 	}
 	
-	if (child != 0) {
+	if (ctdb->recoverd_pid != 0) {
 		close(fd[0]);
 		return 0;
 	}
@@ -1994,4 +1994,17 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	DEBUG(0,("ERROR: ctdb_recoverd finished!?\n"));
 	return -1;
+}
+
+/*
+  shutdown the recovery daemon
+ */
+void ctdb_stop_recoverd(struct ctdb_context *ctdb)
+{
+	if (ctdb->recoverd_pid == 0) {
+		return;
+	}
+
+	DEBUG(0,("Shutting down recovery daemon\n"));
+	kill(ctdb->recoverd_pid, SIGTERM);
 }

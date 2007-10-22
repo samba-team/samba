@@ -365,6 +365,7 @@ struct ctdb_context {
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
 	const char *default_public_interface;
+	pid_t recoverd_pid;
 };
 
 struct ctdb_db_context {
@@ -1038,6 +1039,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
+void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
