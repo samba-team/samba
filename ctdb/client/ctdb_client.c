@@ -2013,6 +2013,7 @@ int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout
 	int32_t res;
 	struct ctdb_control_set_rsn_nonempty p;
 
+	memset(&p, 0, sizeof(p));
 	p.db_id = db_id;
 	p.rsn = rsn;
 
