@@ -66,7 +66,8 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
-		talloc_free(fde);
+		talloc_free(tnode->connect_fde);
+		tnode->connect_fde = NULL;
 		close(tnode->fd);
 		tnode->fd = -1;
 		event_add_timed(ctdb->ev, tnode, timeval_current_ofs(1, 0), 
