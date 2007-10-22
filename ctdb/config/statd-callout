@@ -50,7 +50,7 @@ case "$1" in
 
 	# we need these settings to make sure that no tcp connections survive
 	# across a very fast failover/failback
-	echo 10 > /proc/sys/net/ipv4/tcp_fin_timeout
+	#echo 10 > /proc/sys/net/ipv4/tcp_fin_timeout
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_tw_buckets
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_orphans
 
