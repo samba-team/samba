@@ -6,7 +6,7 @@ cd foo
 svn co .... heimdal-src
 cd heimdal-src
 ln -s packages/debian
-autoreconf -f -i
+test -f configure || autoreconf -f -i
 fakeroot debian/rules binary
 cd ..
 cp *.deb /afs/pdc.kth.se/public/ftp/pub/heimdal/binaries/$dist
