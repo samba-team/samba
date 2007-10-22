@@ -74,7 +74,8 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 		return;
 	}
 
-	talloc_free(fde);
+	talloc_free(tnode->connect_fde);
+	tnode->connect_fde = NULL;
 	
         setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one));
         setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
