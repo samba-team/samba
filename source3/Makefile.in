@@ -503,6 +503,7 @@ VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
+VFS_EA_TDB_OBJ = modules/vfs_ea_tdb.o librpc/gen_ndr/ndr_xattr.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
@@ -1060,7 +1061,7 @@ modules: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl
+	epmapper.idl messaging.idl xattr.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
@@ -1683,6 +1684,10 @@ bin/expand_msdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXPAND_MSDFS_OBJ)
 bin/afsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AFSACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
+
+bin/ea_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EA_TDB_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_EA_TDB_OBJ)
 
 bin/posixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
