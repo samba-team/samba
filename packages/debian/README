@@ -1,1 +1,3 @@
-fakeroot package/debian/rules binary
+cd heimdal-src
+ln -s package/debian
+fakeroot debian/rules binary

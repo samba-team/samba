@@ -43,7 +43,7 @@ Section: devel
 Priority: extra
 Architecture: any
 Conflicts: heimdal-clients (<< 0.4e-7), kerberos4kth-dev
-Depends: libasn1-6-heimdal (= ${Source-Version}), libkrb5-17-heimdal (= ${Source-Version}), libhdb7-heimdal (= ${Source-Version}), libkadm5srv7-heimdal (= ${Source-Version}), libkadm5clnt4-heimdal (= ${Source-Version}), libgssapi4-heimdal (= ${Source-Version}), libkafs0-heimdal (= ${Source-Version}), comerr-dev
+Depends: libasn1-8-heimdal (= ${Source-Version}), libkrb5-22-heimdal (= ${Source-Version}), libhdb9-heimdal (= ${Source-Version}), libkadm5srv8-heimdal (= ${Source-Version}), libkadm5clnt7-heimdal (= ${Source-Version}), libgssapi2-heimdal (= ${Source-Version}), libkafs0-heimdal (= ${Source-Version}), comerr-dev
 Replaces: heimdal-clients (<< 0.4e-7)
 Suggests: heimdal-docs
 Description: Development files for Heimdal Kerberos
@@ -125,7 +125,7 @@ Description: Servers for Heimdal Kerberos
  This package includes servers like telnetd and ftpd that have been
  compiled with Heimdal support.
 
-Package: libasn1-6-heimdal
+Package: libasn1-8-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -137,7 +137,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the asn1 parser required for Heimdal.
 
-Package: libkrb5-17-heimdal
+Package: libkrb5-22-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -149,7 +149,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the kerberos 5 library.
 
-Package: libhdb7-heimdal
+Package: libhdb9-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -161,7 +161,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the library for storing the KDC database.
 
-Package: libkadm5srv7-heimdal
+Package: libkadm5srv8-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -173,7 +173,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the server library for kadmin.
 
-Package: libkadm5clnt4-heimdal
+Package: libkadm5clnt7-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -185,7 +185,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the client library for kadmin.
 
-Package: libgssapi4-heimdal
+Package: libgssapi2-heimdal
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
@@ -208,7 +208,7 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the library for KAFS support.
 
-Package: libroken16-heimdal
+Package: libroken18-heimdal
 Section: libs
 Priority: extra
 Architecture: any

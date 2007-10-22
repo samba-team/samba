@@ -1,1 +1,2 @@
-usr/lib/libsl.0.*
+usr/lib/libsl.so.0.*
+usr/lib/libsl.so.0
