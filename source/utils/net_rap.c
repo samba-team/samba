@@ -123,6 +123,10 @@ static int rap_file_user(int argc, const char **argv)
 		 "\nFileId  Opened by            Perms  Locks  Path \n"
 		 "------  ---------            -----  -----  ---- \n");
 	ret = cli_NetFileEnum(cli, argv[0], NULL, file_fn);
+
+	if (ret == -1)
+		d_printf("\nOperation not supported by server!\n\n");
+
 	cli_shutdown(cli);
 	return ret;
 }
@@ -149,6 +153,10 @@ int net_rap_file(int argc, const char **argv)
 			 "\nFileId  Opened by            Perms  Locks  Path \n"
 			 "------  ---------            -----  -----  ---- \n");
 		ret = cli_NetFileEnum(cli, NULL, NULL, file_fn);
+
+		if (ret == -1)
+			d_printf("\nOperation not supported by server!\n\n");
+
 		cli_shutdown(cli);
 		return ret;
 	}
