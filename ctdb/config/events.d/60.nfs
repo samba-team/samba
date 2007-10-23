@@ -27,8 +27,9 @@ case $cmd in
 	;;
 
      shutdown)
-	service nfs stop
-	service nfslock stop
+	# shutting down nfs can take a while so put it in the background
+	service nfs stop &
+	service nfslock stop &
 	exit 0
 	;;
 
