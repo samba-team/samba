@@ -5973,18 +5973,6 @@ case "$host_os" in
 		;;
 esac
 
-AC_CHECK_LIB(pthread, pthread_mutex_lock, [WINBIND_NSS_PTHREAD="-lpthread"
-			AC_DEFINE(HAVE_PTHREAD, 1, [whether pthread exists])])
-AC_SUBST(WINBIND_NSS_PTHREAD)
-AC_SUBST(WINBIND_NSS)
-AC_SUBST(WINBIND_WINS_NSS)
-AC_SUBST(WINBIND_NSS_LDSHFLAGS)
-AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
-AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
-AC_SUBST(NSSSONAMEVERSIONSUFFIX)
-
-AC_SUBST(WINBIND_KRB5_LOCATOR)
-
 # Check the setting of --with-winbind
 
 AC_ARG_WITH(winbind,
@@ -6035,6 +6023,19 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
+
+AC_CHECK_LIB(pthread, pthread_mutex_lock, [WINBIND_NSS_PTHREAD="-lpthread"
+			AC_DEFINE(HAVE_PTHREAD, 1, [whether pthread exists])])
+
+AC_SUBST(WINBIND_NSS_PTHREAD)
+AC_SUBST(WINBIND_NSS)
+AC_SUBST(WINBIND_WINS_NSS)
+AC_SUBST(WINBIND_NSS_LDSHFLAGS)
+AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
+AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
+AC_SUBST(NSSSONAMEVERSIONSUFFIX)
+
+AC_SUBST(WINBIND_KRB5_LOCATOR)
 
 # Solaris 10 does have new member in nss_XbyY_key
 AC_CHECK_MEMBER(union nss_XbyY_key.ipnode.af_family,
