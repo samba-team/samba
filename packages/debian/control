@@ -149,6 +149,47 @@ Description: Libraries for Heimdal Kerberos
  .
  This package contains the kerberos 5 library.
 
+Package: libheimntlm-0-heimdal
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Libraries for Heimdal Kerberos
+ Heimdal is a free implementation of Kerberos 5, that aims to be
+ compatible with MIT Kerberos.
+ .
+ This package contains the NTLM library.
+
+
+Package: libheimntlm-0-heimdal
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Libraries for Heimdal Kerberos
+ Heimdal is a free implementation of Kerberos 5, that aims to be
+ compatible with MIT Kerberos.
+ .
+ This package contains the NTLM library.
+
+Package: libhx509-1-heimdal
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Libraries for Heimdal Kerberos
+ Heimdal is a free implementation of Kerberos 5, that aims to be
+ compatible with MIT Kerberos.
+ .
+ This package contains the hx509 library, and X.509 library.
+
+Package: libhcrypto-4-heimdal
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Libraries for Heimdal Kerberos
+ Heimdal is a free implementation of Kerberos 5, that aims to be
+ compatible with MIT Kerberos.
+ .
+ This package contains the hcrypto library.
+
 Package: libhdb9-heimdal
 Section: libs
 Architecture: any
