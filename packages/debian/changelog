@@ -2,6 +2,8 @@ heimdal (1.0.2RC2.dfsg.1) gutsy; urgency=low
 
   * New version
 
+  * Add new libs
+
  -- Love Hörnquist Åstrand <lha@h5l.se>  Fri, 19 Oct 2007 17:54:28 -0200
 
 heimdal (0.7.2.dfsg.1-10ubuntu2) gutsy; urgency=low
