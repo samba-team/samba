@@ -2,5 +2,5 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS=  mac
+SUBDIRS=  mac debian
 
