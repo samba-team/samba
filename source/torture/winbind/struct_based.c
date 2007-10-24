@@ -690,7 +690,6 @@ static bool get_sequence_numbers(struct torture_context *torture,
 {
 	struct winbindd_request req;
 	struct winbindd_response rep;
-	bool ok;
 	const char *extra_data;
 	fstring line;
 	uint32_t count = 0;
