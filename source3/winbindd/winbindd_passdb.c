@@ -140,7 +140,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	    !sid_check_is_in_unix_users(sid) &&
 	    !sid_check_is_unix_users(sid) &&
 	    !sid_check_is_in_unix_groups(sid) &&
-	    !sid_check_is_unix_groups(sid) )
+	    !sid_check_is_unix_groups(sid) &&
+	    !sid_check_is_in_wellknown_domain(sid))
 	{
 		DEBUG(0, ("Possible deadlock: Trying to lookup SID %s with "
 			  "passdb backend\n", sid_string_static(sid)));
