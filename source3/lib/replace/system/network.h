@@ -78,13 +78,6 @@
 #include <sys/ioctl.h>
 #endif
 
-#ifdef SOCKET_WRAPPER
-#ifndef SOCKET_WRAPPER_NOT_REPLACE
-#define SOCKET_WRAPPER_REPLACE
-#endif
-#include "lib/socket_wrapper/socket_wrapper.h"
-#endif
-
 #ifdef REPLACE_INET_NTOA
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
@@ -239,6 +232,13 @@ typedef unsigned short int sa_family_t;
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 256
+#endif
+
+#ifdef SOCKET_WRAPPER
+#ifndef SOCKET_WRAPPER_NOT_REPLACE
+#define SOCKET_WRAPPER_REPLACE
+#endif
+#include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
 #endif
