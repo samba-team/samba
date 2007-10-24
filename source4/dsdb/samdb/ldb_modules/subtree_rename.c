@@ -157,7 +157,6 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *new_req;
 	struct subtree_rename_context *ac;
 	int ret;
-	struct ldb_search_options_control *search_options;
 	if (ldb_dn_is_special(req->op.rename.olddn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
@@ -189,21 +188,6 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	/* We want to find any partitions under this entry.  That way,
-	 * if we try and rename a whole partition, the partitions
-	 * module should cause us to fail the lot */
-	search_options = talloc(ac, struct ldb_search_options_control);
-	if (!search_options) {
-		ldb_oom(ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	search_options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-
-	ret = ldb_request_add_control(new_req, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	ac->down_req = talloc_realloc(ac, ac->down_req, 
 					struct ldb_request *, ac->num_requests + 1);
 	if (!ac->down_req) {
@@ -221,7 +205,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 
 static int subtree_rename_wait_none(struct ldb_handle *handle) {
 	struct subtree_rename_context *ac;
-	int i, ret;
+	int i, ret = LDB_ERR_OPERATIONS_ERROR;
 	if (!handle || !handle->private_data) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
