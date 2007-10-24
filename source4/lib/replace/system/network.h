@@ -169,21 +169,6 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #define NI_MAXSERV	32
 #endif
 
-#ifndef HAVE_STRUCT_ADDRINFO
-
-struct addrinfo
-{
-	int			ai_flags;
-	int			ai_family;
-	int			ai_socktype;
-	int			ai_protocol;
-	size_t		ai_addrlen;
-	struct sockaddr *ai_addr;
-	char	   *ai_canonname;
-	struct addrinfo *ai_next;
-};
-#endif   /* HAVE_STRUCT_ADDRINFO */
-
 /*
  * glibc on linux doesn't seem to have MSG_WAITALL
  * defined. I think the kernel has it though..
@@ -233,6 +218,19 @@ typedef unsigned short int sa_family_t;
 #define ss_family sin_family
 #endif
 #endif
+
+#ifndef HAVE_STRUCT_ADDRINFO
+struct addrinfo {
+	int			ai_flags;
+	int			ai_family;
+	int			ai_socktype;
+	int			ai_protocol;
+	socklen_t		ai_addrlen;
+	struct sockaddr 	*ai_addr;
+	char			*ai_canonname;
+	struct addrinfo		*ai_next;
+};
+#endif   /* HAVE_STRUCT_ADDRINFO */
 
 #ifdef SOCKET_WRAPPER
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
