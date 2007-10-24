@@ -4,6 +4,9 @@ samba3_stop_sig_term() {
 	kill -USR1 `cat $PIDDIR/timelimit.nmbd.pid` >/dev/null 2>&1 || \
 		kill -ALRM `cat $PIDDIR/timelimit.nmbd.pid` || RET=$?
 
+	kill -USR1 `cat $PIDDIR/timelimit.winbindd.pid` >/dev/null 2>&1 || \
+		kill -ALRM `cat $PIDDIR/timelimit.winbindd.pid` || RET=$?
+
 	kill -USR1 `cat $PIDDIR/timelimit.smbd.pid` >/dev/null 2>&1 || \
 		kill -ALRM `cat $PIDDIR/timelimit.smbd.pid` || RET=$?
 
@@ -12,6 +15,7 @@ samba3_stop_sig_term() {
 
 samba3_stop_sig_kill() {
 	kill -ALRM `cat $PIDDIR/timelimit.nmbd.pid` >/dev/null 2>&1
+	kill -ALRM `cat $PIDDIR/timelimit.winbindd.pid` >/dev/null 2>&1
 	kill -ALRM `cat $PIDDIR/timelimit.smbd.pid` >/dev/null 2>&1
 	return 0;
 }
@@ -69,6 +73,38 @@ samba3_check_or_start() {
 		) || exit $? &) 2>/dev/null || exit $?
 		echo  "DONE"
 
+		rm -f $WINBINDD_TEST_LOG
+		echo -n "STARTING WINBINDD..."
+		((
+			if test x"$WINBINDD_MAXTIME" = x; then
+			    WINBINDD_MAXTIME=2700
+			fi
+			MAKE_TEST_BINARY=$BINDIR/winbindd
+			export MAKE_TEST_BINARY
+			timelimit $WINBINDD_MAXTIME $WINBINDD_VALGRIND $BINDIR/winbindd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $WINBINDD_TEST_LOG 2>&1 &
+			TIMELIMIT_WINBINDD_PID=$!
+			MAKE_TEST_BINARY=
+			echo $TIMELIMIT_WINBINDD_PID > $PIDDIR/timelimit.winbindd.pid
+			wait $TIMELIMIT_WINBINDD_PID
+			ret=$?;
+			rm -f $SERVER_TEST_FIFO
+			if [ -n "$SOCKET_WRAPPER_DIR" -a -d "$SOCKET_WRAPPER_DIR" ]; then
+				rm -f $SOCKET_WRAPPER_DIR/*
+			fi
+			if [ x"$ret" = x"0" ];then
+				echo "winbindd exits with status $ret";
+				echo "winbindd exits with status $ret" >>$WINBINDD_TEST_LOG;
+			elif [ x"$ret" = x"137" ];then
+				echo "winbindd got SIGXCPU and exits with status $ret!"
+				echo "winbindd got SIGXCPU and exits with status $ret!">>$WINBINDD_TEST_LOG;
+			else
+				echo "winbindd failed with status $ret!"
+				echo "winbindd failed with status $ret!">>$WINBINDD_TEST_LOG;
+			fi
+			exit $ret;
+		) || exit $? &) 2>/dev/null || exit $?
+		echo  "DONE"
+
 		rm -f $SMBD_TEST_LOG
 		echo -n "STARTING SMBD..."
 		((
@@ -107,6 +143,15 @@ samba3_check_or_start() {
 samba3_nmbd_test_log() {
 	if [ -n "$NMBD_TEST_LOG" ];then
 		if [ -r "$NMBD_TEST_LOG" ];then
+			return 0;
+		fi
+	fi
+	return 1;
+}
+
+samba3_winbindd_test_log() {
+	if [ -n "$WINBINDD_TEST_LOG" ];then
+		if [ -r "$WINBINDD_TEST_LOG" ];then
 			return 0;
 		fi
 	fi
@@ -155,6 +200,9 @@ testit() {
 	if [ -z "$nmbd_log_size" ]; then
 		nmbd_log_size=`wc -l < $NMBD_TEST_LOG`;
 	fi
+	if [ -z "$winbindd_log_size" ]; then
+		winbindd_log_size=`wc -l < $WINBINDD_TEST_LOG`;
+	fi
 	if [ -z "$smbd_log_size" ]; then
 		smbd_log_size=`wc -l < $SMBD_TEST_LOG`;
 	fi
@@ -200,6 +248,15 @@ testit() {
 			incr_log_size=`expr $new_log_size - $nmbd_log_size`;
 			tail -$incr_log_size $NMBD_TEST_LOG;
 			nmbd_log_size=$new_log_size;
+		}
+	}
+	samba3_winbindd_test_log && {
+		new_log_size=`wc -l < $WINBINDD_TEST_LOG`;
+		test "$new_log_size" = "$winbindd_log_size" || {
+			echo "WINBINDD OUTPUT:";
+			incr_log_size=`expr $new_log_size - $winbindd_log_size`;
+			tail -$incr_log_size $WINBINDD_TEST_LOG;
+			winbindd_log_size=$new_log_size;
 		}
 	}
 	samba3_smbd_test_log && {
