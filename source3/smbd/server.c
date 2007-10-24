@@ -429,7 +429,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				/* open an incoming socket */
 				if (!interpret_string_addr(&ss, sock_tok,
 						AI_NUMERICHOST|AI_PASSIVE)) {
-					return false;
+					continue;
 				}
 
 				s = open_socket_in(SOCK_STREAM, port, 0,
