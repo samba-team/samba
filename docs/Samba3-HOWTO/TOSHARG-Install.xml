@@ -213,7 +213,7 @@
 				This file stores the Workgroup/Domain/Machine SID, the LDAP directory update password, and
 				a further collection of critical environmental data that is necessary for Samba to operate
 				correctly. This file contains very sensitive information that must be protected. It is stored
-				in the PRIVARE_DIR directory.
+				in the PRIVATE_DIR directory.
 			</para></entry>
 		</row>
 		<row>
