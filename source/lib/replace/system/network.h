@@ -212,6 +212,10 @@ struct addrinfo
 #define INET6_ADDRSTRLEN 46
 #endif
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 256
+#endif
+
 #ifndef HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
@@ -228,10 +232,6 @@ typedef unsigned short int sa_family_t;
 #define sockaddr_storage sockaddr_in
 #define ss_family sin_family
 #endif
-#endif
-
-#ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 256
 #endif
 
 #ifdef SOCKET_WRAPPER
