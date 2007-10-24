@@ -1,3 +1,11 @@
+2007-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Try multiple enctypes.
+
+2007-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* java/Makefile.am: EXTRA_DIST += jaas.conf
+	
 2007-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* java/Makefile.am: Add java source code.
