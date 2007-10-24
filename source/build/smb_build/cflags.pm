@@ -32,7 +32,7 @@ sub create_cflags($$$$) {
 
 		my @sorted_cflags = @{$key->{FINAL_CFLAGS}};
 		if ($sort_available) {
-			@sorted_cflags = sort(by_path, @{$key->{FINAL_CFLAGS}});
+			@sorted_cflags = sort by_path @{$key->{FINAL_CFLAGS}};
 		}
 
 		# Rewrite CFLAGS so that both the source and the build
