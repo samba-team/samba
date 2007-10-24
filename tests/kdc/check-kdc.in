@@ -163,6 +163,12 @@ ${klist} > /dev/null || { ec=1 ; eval "${testfailed}"; }
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
+echo "Specific enctype"; > messages.log
+${kinit} --password-file=${objdir}/foopassword \
+    -e ${aesenctype} -e ${aesenctype} \
+    foo@$R || \
+	{ ec=1 ; eval "${testfailed}"; }
+
 for a in $enctypes; do
 	echo "Getting client initial tickets ($a)"; > messages.log
 	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
