@@ -53,10 +53,6 @@
 #define HAVE_VSYSLOG
 #endif
 
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-#endif
-
 #ifndef HAVE_SSIZE_T
 #define HAVE_SSIZE_T
 #endif
@@ -79,12 +75,13 @@
 #endif
 #endif
 
+#include "system/network.h"
+
 /*
  * we don't want that roken.h.in includes socket_wrapper
  * we include socket_wrapper via "system/network.h"
  */
 #undef SOCKET_WRAPPER_REPLACE
 #include "heimdal/lib/roken/roken.h.in"
-#include "system/network.h"
 
 #endif
