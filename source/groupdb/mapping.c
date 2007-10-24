@@ -724,12 +724,12 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(10,("Creating alias %s with gid %d\n", name, gid));
+	DEBUG(10,("Creating alias %s with gid %d\n", groupname, gid));
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);
 	map.sid_name_use = SID_NAME_ALIAS;
-	fstrcpy(map.nt_name, name);
+	fstrcpy(map.nt_name, groupname);
 	fstrcpy(map.comment, "");
 
 	status = pdb_add_group_mapping_entry(&map);
