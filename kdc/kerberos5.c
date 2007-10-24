@@ -479,6 +479,7 @@ get_pa_etype_info(krb5_context context,
 		    free_ETYPE_INFO(&pa);
 		    return ret;
 		}
+		break;
 	    }
 	}
     skip1:;
@@ -636,6 +637,7 @@ get_pa_etype_info2(krb5_context context,
 		    free_ETYPE_INFO2(&pa);
 		    return ret;
 		}
+		break;
 	    }
 	}
     skip1:;
