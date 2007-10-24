@@ -40,7 +40,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	fstring dc_name;
-	struct in_addr dc_ip;	
+	struct sockaddr_storage dc_ss;
 
 	DEBUG(10,("ads_cached_connection\n"));
 
@@ -66,7 +66,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads_destroy( &ads );
 			ads_kdestroy("MEMORY:winbind_ccache");
 			domain->private_data = NULL;
-		}	
+		}
 	}
 
 	/* we don't want this to affect the users ccache */
@@ -99,7 +99,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 		ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
-		/* always give preference to the alt_name in our 
+		/* always give preference to the alt_name in our
 		   primary domain if possible */
 
 		if ( !domain->primary )
@@ -116,14 +116,14 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ads->auth.renewable = WINBINDD_PAM_AUTH_KRB5_RENEW_TIME;
 
 	/* Setup the server affinity cache.  We don't reaally care
-	   about the name.  Just setup affinity and the KRB5_CONFIG 
+	   about the name.  Just setup affinity and the KRB5_CONFIG
 	   file. */
 
-	get_dc_name( ads->server.workgroup, ads->server.realm, dc_name, &dc_ip );
-	
+	get_dc_name( ads->server.workgroup, ads->server.realm, dc_name, &dc_ss );
+
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
-		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
+		DEBUG(1,("ads_connect for domain %s failed: %s\n",
 			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);
 
@@ -138,8 +138,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	/* set the flag that says we don't own the memory even 
-	   though we do so that ads_destroy() won't destroy the 
+	/* set the flag that says we don't own the memory even
+	   though we do so that ads_destroy() won't destroy the
 	   structure we pass back by reference */
 
 	ads->is_mine = False;

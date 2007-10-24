@@ -56,10 +56,14 @@ static int cs_destructor(struct con_struct *p)
 static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
 {
 	NTSTATUS nt_status;
-	struct in_addr loopback_ip;
+	struct sockaddr_storage loopback_ss;
 
-	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 	*perr = NT_STATUS_OK;
+
+	if (!interpret_string_addr(&loopback_ss, "127.0.0.1", AI_NUMERICHOST)) {
+		*perr = NT_STATUS_INVALID_PARAMETER;
+		return NULL;
+	}
 
 	if (cs) {
 		if (cs->failed_connect) {
@@ -90,7 +94,7 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
 #endif
 
 	nt_status = cli_full_connection(&cs->cli, global_myname(), global_myname(),
-					&loopback_ip, 0,
+					&loopback_ss, 0,
 					"IPC$", "IPC",
 #if 0
 					opt_user_name,

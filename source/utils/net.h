@@ -114,7 +114,7 @@ extern const char *opt_destination;
 extern int opt_testmode;
 
 extern int opt_have_ip;
-extern struct in_addr opt_dest_ip;
+extern struct sockaddr_storage opt_dest_ip;
 
 extern const char *share_type[];
 

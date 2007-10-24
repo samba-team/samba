@@ -87,7 +87,7 @@ typedef struct ads_struct {
 #ifdef HAVE_LDAP
 	struct {
 		LDAP *ld;
-		struct in_addr ip; /* the ip of the active connection, if any */
+		struct sockaddr_storage ss; /* the ip of the active connection, if any */
 		time_t last_attempt; /* last attempt to reconnect */
 		int port;
 

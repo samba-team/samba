@@ -1366,11 +1366,17 @@ bool cli_session_request(struct cli_state *cli,
 		int16 port;
 		};
 		*/
-		int port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
-		/* SESSION RETARGET */
-		putip((char *)&cli->dest_ip,cli->inbuf+4);
+		uint16_t port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
+		struct in_addr dest_ip;
 
-		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, port, LONG_CONNECT_TIMEOUT);
+		/* SESSION RETARGET */
+		putip((char *)&dest_ip,cli->inbuf+4);
+		in_addr_to_sockaddr_storage(&cli->dest_ss, dest_ip);
+
+		cli->fd = open_socket_out(SOCK_STREAM,
+				&cli->dest_ss,
+				port,
+				LONG_CONNECT_TIMEOUT);
 		if (cli->fd == -1)
 			return False;
 
@@ -1405,49 +1411,61 @@ bool cli_session_request(struct cli_state *cli,
  Open the client sockets.
 ****************************************************************************/
 
-NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
+NTSTATUS cli_connect(struct cli_state *cli,
+		const char *host,
+		struct sockaddr_storage *dest_ss)
+
 {
 	int name_type = 0x20;
 	char *p;
 
 	/* reasonable default hostname */
-	if (!host) host = "*SMBSERVER";
+	if (!host) {
+		host = "*SMBSERVER";
+	}
 
 	fstrcpy(cli->desthost, host);
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
 	if ((p = strchr(cli->desthost, '#'))) {
-		name_type = strtol(p+1, NULL, 16);		
+		name_type = strtol(p+1, NULL, 16);
 		*p = 0;
 	}
-	
-	if (!ip || is_zero_ip_v4(*ip)) {
-                if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
+
+	if (!dest_ss || is_zero_addr(dest_ss)) {
+                if (!resolve_name(cli->desthost, &cli->dest_ss, name_type)) {
 			return NT_STATUS_BAD_NETWORK_NAME;
                 }
-		if (ip) *ip = cli->dest_ip;
+		if (dest_ss) {
+			*dest_ss = cli->dest_ss;
+		}
 	} else {
-		cli->dest_ip = *ip;
+		cli->dest_ss = *dest_ss;
 	}
 
 	if (getenv("LIBSMB_PROG")) {
 		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
 	} else {
 		/* try 445 first, then 139 */
-		int port = cli->port?cli->port:445;
-		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+		uint16_t port = cli->port?cli->port:445;
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
 					  port, cli->timeout);
 		if (cli->fd == -1 && cli->port == 0) {
 			port = 139;
-			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
 						  port, cli->timeout);
 		}
-		if (cli->fd != -1)
+		if (cli->fd != -1) {
 			cli->port = port;
+		}
 	}
 	if (cli->fd == -1) {
+		char addr[INET6_ADDRSTRLEN];
+		if (dest_ss) {
+			print_sockaddr(addr, sizeof(addr), dest_ss);
+		}
 		DEBUG(1,("Error connecting to %s (%s)\n",
-			 ip?inet_ntoa(*ip):host,strerror(errno)));
+			 dest_ss?addr:host,strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -1460,7 +1478,7 @@ NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip
    establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
    @param dest_host The netbios name of the remote host
-   @param dest_ip (optional) The the destination IP, NULL for name based lookup
+   @param dest_ss (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
    @param retry bool. Did this connection fail with a retryable error ?
 
@@ -1468,7 +1486,7 @@ NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip
 NTSTATUS cli_start_connection(struct cli_state **output_cli, 
 			      const char *my_name, 
 			      const char *dest_host, 
-			      struct in_addr *dest_ip, int port,
+			      struct sockaddr_storage *dest_ss, int port,
 			      int signing_state, int flags,
 			      bool *retry) 
 {
@@ -1476,7 +1494,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	struct nmb_name calling;
 	struct nmb_name called;
 	struct cli_state *cli;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 
 	if (retry)
 		*retry = False;
@@ -1498,19 +1516,22 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 
 	cli_set_timeout(cli, 10000); /* 10 seconds. */
 
-	if (dest_ip)
-		ip = *dest_ip;
-	else
-		ZERO_STRUCT(ip);
+	if (dest_ss) {
+		ss = *dest_ss;
+	} else {
+		zero_addr(&ss, AF_INET);
+	}
 
 again:
 
 	DEBUG(3,("Connecting to host=%s\n", dest_host));
-	
-	nt_status = cli_connect(cli, dest_host, &ip);
+
+	nt_status = cli_connect(cli, dest_host, &ss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &ss);
 		DEBUG(1,("cli_start_connection: failed to connect to %s (%s). Error %s\n",
-			 nmb_namestr(&called), inet_ntoa(ip), nt_errstr(nt_status) ));
+			 nmb_namestr(&called), addr, nt_errstr(nt_status) ));
 		cli_shutdown(cli);
 		return nt_status;
 	}
@@ -1520,9 +1541,9 @@ again:
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		char *p;
-		DEBUG(1,("session request to %s failed (%s)\n", 
+		DEBUG(1,("session request to %s failed (%s)\n",
 			 called.name, cli_errstr(cli)));
-		if ((p=strchr(called.name, '.')) && !is_ipaddress_v4(called.name)) {
+		if ((p=strchr(called.name, '.')) && !is_ipaddress(called.name)) {
 			*p = 0;
 			goto again;
 		}
@@ -1572,7 +1593,7 @@ again:
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, 
 			     const char *dest_host, 
-			     struct in_addr *dest_ip, int port,
+			     struct sockaddr_storage *dest_ss, int port,
 			     const char *service, const char *service_type,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
@@ -1589,9 +1610,10 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		password = "";
 	}
 
-	nt_status = cli_start_connection(&cli, my_name, dest_host, 
-					 dest_ip, port, signing_state, flags, retry);
-	
+	nt_status = cli_start_connection(&cli, my_name, dest_host,
+					 dest_ss, port, signing_state,
+					 flags, retry);
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1615,7 +1637,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			return nt_status;
 		}
 	}
-	
+
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
 			nt_status = cli_nt_error(cli);
@@ -1639,7 +1661,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 ****************************************************************************/
 
 bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
-                                     struct in_addr *pdest_ip)
+                                     struct sockaddr_storage *pdest_ss)
 {
 	struct nmb_name calling, called;
 
@@ -1650,7 +1672,7 @@ bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 	 * then use *SMBSERVER immediately.
 	 */
 
-	if(is_ipaddress_v4(desthost)) {
+	if(is_ipaddress(desthost)) {
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
 	} else {
 		make_nmb_name(&called, desthost, 0x20);
@@ -1687,7 +1709,7 @@ with error %s.\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 
-		status = cli_connect(*ppcli, desthost, pdest_ip);
+		status = cli_connect(*ppcli, desthost, pdest_ss);
 		if (!NT_STATUS_IS_OK(status) ||
 				!cli_session_request(*ppcli, &calling, &smbservername)) {
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
@@ -1698,10 +1720,6 @@ name *SMBSERVER with error %s\n", desthost, cli_errstr(*ppcli) ));
 
 	return True;
 }
-
-
-
-
 
 /****************************************************************************
  Send an old style tcon.
@@ -1749,27 +1767,28 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 
 /* Return a cli_state pointing at the IPC$ share for the given server */
 
-struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
-                                         struct user_auth_info *user_info)
+struct cli_state *get_ipc_connect(char *server,
+				struct sockaddr_storage *server_ss,
+				struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         pstring myname;
 	NTSTATUS nt_status;
 
         get_myname(myname);
-	
-	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
+
+	nt_status = cli_full_connection(&cli, myname, server, server_ss, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
 					CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
-	} else if (is_ipaddress_v4(server)) {
+	} else if (is_ipaddress(server)) {
 	    /* windows 9* needs a correct NMB name for connections */
 	    fstring remote_name;
 
-	    if (name_status_find("*", 0, 0, *server_ip, remote_name)) {
-		cli = get_ipc_connect(remote_name, server_ip, user_info);
+	    if (name_status_find("*", 0, 0, server_ss, remote_name)) {
+		cli = get_ipc_connect(remote_name, server_ss, user_info);
 		if (cli)
 		    return cli;
 	    }
@@ -1789,14 +1808,16 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
  * entire network browse list)
  */
 
-struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring workgroup, struct user_auth_info *user_info)
+struct cli_state *get_ipc_connect_master_ip(struct ip_service *mb_ip, pstring workgroup, struct user_auth_info *user_info)
 {
+	char addr[INET6_ADDRSTRLEN];
         static fstring name;
 	struct cli_state *cli;
-	struct in_addr server_ip; 
+	struct sockaddr_storage server_ss;
 
+	print_sockaddr(addr, sizeof(addr), &mb_ip->ss);
         DEBUG(99, ("Looking up name of master browser %s\n",
-                   inet_ntoa(mb_ip->ip)));
+                   addr));
 
         /*
          * Do a name status query to find out the name of the master browser.
@@ -1809,28 +1830,27 @@ struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring w
          * the original wildcard query as the first choice and fall back to
          * MSBROWSE if the wildcard query fails.
          */
-        if (!name_status_find("*", 0, 0x1d, mb_ip->ip, name) &&
-            !name_status_find(MSBROWSE, 1, 0x1d, mb_ip->ip, name)) {
+        if (!name_status_find("*", 0, 0x1d, &mb_ip->ss, name) &&
+            !name_status_find(MSBROWSE, 1, 0x1d, &mb_ip->ss, name)) {
 
                 DEBUG(99, ("Could not retrieve name status for %s\n",
-                           inet_ntoa(mb_ip->ip)));
+                           addr));
                 return NULL;
         }
 
-        if (!find_master_ip(name, &server_ip)) {
+        if (!find_master_ip(name, &server_ss)) {
                 DEBUG(99, ("Could not find master ip for %s\n", name));
                 return NULL;
         }
 
-                pstrcpy(workgroup, name);
+	pstrcpy(workgroup, name);
 
-                DEBUG(4, ("found master browser %s, %s\n", 
-                  name, inet_ntoa(mb_ip->ip)));
+	DEBUG(4, ("found master browser %s, %s\n", name, addr));
 
-		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
+	print_sockaddr(addr, sizeof(addr), &server_ss);
+	cli = get_ipc_connect(addr, &server_ss, user_info);
 
-		return cli;
-    
+	return cli;
 }
 
 /*
@@ -1846,7 +1866,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 
         DEBUG(99, ("Do broadcast lookup for workgroups on local network\n"));
 
-        /* Go looking for workgroups by broadcasting on the local network */ 
+        /* Go looking for workgroups by broadcasting on the local network */
 
         if (!NT_STATUS_IS_OK(name_resolve_bcast(MSBROWSE, 1, &ip_list,
 						&count))) {
@@ -1855,11 +1875,13 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
         }
 
 	for (i = 0; i < count; i++) {
-            DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
+		DEBUG(99, ("Found master browser %s\n", addr));
 
-            cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, user_info);
-            if (cli)
-                    return(cli);
+		cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, user_info);
+		if (cli)
+			return(cli);
 	}
 
 	return NULL;

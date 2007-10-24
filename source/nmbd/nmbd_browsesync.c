@@ -291,7 +291,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 
   /* First check if we already have a dmb for this workgroup. */
 
-	if(!is_zero_ip_v4(work->dmb_addr) && ip_equal(work->dmb_addr, answer_ip)) {
+	if(!is_zero_ip_v4(work->dmb_addr) && ip_equal_v4(work->dmb_addr, answer_ip)) {
 		/* Do the local master browser announcement to the domain
 			master browser name and IP. */
 		announce_local_master_browser_to_domain_master_browser( work );

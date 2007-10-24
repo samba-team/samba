@@ -269,7 +269,7 @@ const struct sockaddr_storage *iface_ip(const struct sockaddr_storage *ip)
   return True if a IP is directly reachable on one of our interfaces
 */
 
-bool iface_local(struct sockaddr_storage *ip)
+bool iface_local(const struct sockaddr_storage *ip)
 {
 	return iface_find(ip, True) ? true : false;
 }
@@ -285,8 +285,7 @@ static void add_interface(const struct iface_struct *ifs)
 
 	if (iface_find(&ifs->ip, False)) {
 		DEBUG(3,("add_interface: not adding duplicate interface %s\n",
-			print_sockaddr(addr, sizeof(addr),
-				&ifs->ip, sizeof(struct sockaddr_storage)) ));
+			print_sockaddr(addr, sizeof(addr), &ifs->ip) ));
 		return;
 	}
 
@@ -317,16 +316,13 @@ static void add_interface(const struct iface_struct *ifs)
 
 	DEBUG(2,("added interface %s ip=%s ",
 		iface->name,
-		print_sockaddr(addr, sizeof(addr),
-			&iface->ip, sizeof(struct sockaddr_storage)) ));
+		print_sockaddr(addr, sizeof(addr), &iface->ip) ));
 	DEBUG(2,("bcast=%s ",
 		print_sockaddr(addr, sizeof(addr),
-			&iface->bcast,
-			sizeof(struct sockaddr_storage)) ));
+			&iface->bcast) ));
 	DEBUG(2,("netmask=%s\n",
 		print_sockaddr(addr, sizeof(addr),
-			&iface->netmask,
-			sizeof(struct sockaddr_storage)) ));
+			&iface->netmask) ));
 }
 
 /****************************************************************************

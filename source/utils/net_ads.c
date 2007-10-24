@@ -78,15 +78,17 @@ static const char *assume_own_realm(void)
 */
 static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 {
+	char addr[INET6_ADDRSTRLEN];
 	struct cldap_netlogon_reply reply;
 
-	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap.ip), ads->server.realm, &reply ) ) {
+	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+	if ( !ads_cldap_netlogon(addr, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, "CLDAP query failed!\n");
 		return -1;
 	}
 
 	d_printf("Information for Domain Controller: %s\n\n",
-		inet_ntoa(ads->ldap.ip));
+		addr);
 
 	d_printf("Response Type: ");
 	switch (reply.type) {
@@ -144,7 +146,6 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 	return 0;
 }
 
-
 /*
   this implements the CLDAP based netlogon lookup requests
   for finding the domain controller of a ADS domain
@@ -171,6 +172,7 @@ static int net_ads_lookup(int argc, const char **argv)
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
 		d_fprintf(stderr, "Didn't find the ldap server!\n");
@@ -189,7 +191,9 @@ static int net_ads_info(int argc, const char **argv)
 		d_fprintf( stderr, "Failed to get server's current time!\n");
 	}
 
-	d_printf("LDAP server: %s\n", inet_ntoa(ads->ldap.ip));
+	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+
+	d_printf("LDAP server: %s\n", addr);
 	d_printf("LDAP server name: %s\n", ads->config.ldap_server_name);
 	d_printf("Realm: %s\n", ads->config.realm);
 	d_printf("Bind Path: %s\n", ads->config.bind_path);
@@ -369,6 +373,7 @@ int net_ads_check(void)
 static int net_ads_workgroup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	char addr[INET6_ADDRSTRLEN];
 	struct cldap_netlogon_reply reply;
 
 	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
@@ -381,7 +386,8 @@ static int net_ads_workgroup(int argc, const char **argv)
 		ads->ldap.port = 389;
 	}
 
-	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap.ip), ads->server.realm, &reply ) ) {
+	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+	if ( !ads_cldap_netlogon(addr, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, "CLDAP query failed!\n");
 		return -1;
 	}
@@ -829,7 +835,7 @@ static int net_ads_leave(int argc, const char **argv)
 
 	/* make RPC calls here */
 
-	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap.ip,
+	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap.ss,
 		ads->config.ldap_server_name)) )
 	{
 		goto done;
@@ -952,14 +958,14 @@ static NTSTATUS check_ads_config( void )
  ********************************************************************/
 
 static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername,
-				struct in_addr *ip, char **domain,
+				struct sockaddr_storage *pss, char **domain,
 				DOM_SID **dom_sid,
 				const char *password)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct cli_state *cli = NULL;
 
-	ret = connect_to_ipc_krb5(&cli, ip, servername);
+	ret = connect_to_ipc_krb5(&cli, pss, servername);
 	if ( !NT_STATUS_IS_OK(ret) ) {
 		goto done;
 	}
@@ -1475,7 +1481,7 @@ int net_ads_join(int argc, const char **argv)
 	const char *create_in_ou = NULL;
 	int i;
 	fstring dc_name;
-	struct in_addr dcip;
+	struct sockaddr_storage dcss;
 	const char *os_name = NULL;
 	const char *os_version = NULL;
 
@@ -1487,7 +1493,7 @@ int net_ads_join(int argc, const char **argv)
 
 	/* find a DC to initialize the server affinity cache */
 
-	get_dc_name( lp_workgroup(), lp_realm(), dc_name, &dcip );
+	get_dc_name( lp_workgroup(), lp_realm(), dc_name, &dcss );
 
 	status = ads_startup(True, &ads);
 	if (!ADS_ERR_OK(status)) {
@@ -1566,7 +1572,7 @@ int net_ads_join(int argc, const char **argv)
 	password = talloc_strdup(ctx, tmp_password);
 
 	nt_status = net_join_domain(ctx, ads->config.ldap_server_name,
-				    &ads->ldap.ip, &short_domain_name, &domain_sid, password);
+				    &ads->ldap.ss, &short_domain_name, &domain_sid, password);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(1, ("call of net_join_domain failed: %s\n",
 			  get_friendly_nt_error_msg(nt_status)));
@@ -1602,7 +1608,7 @@ int net_ads_join(int argc, const char **argv)
 	/* Verify that everything is ok */
 
 	nt_status = net_rpc_join_ok(short_domain_name,
-				    ads->config.ldap_server_name, &ads->ldap.ip);
+				    ads->config.ldap_server_name, &ads->ldap.ss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr,
 			  "Failed to verify membership in domain: %s!\n",
@@ -1929,7 +1935,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	const char *servername, *printername;
 	struct cli_state *cli;
 	struct rpc_pipe_client *pipe_hnd;
-	struct in_addr 		server_ip;
+	struct sockaddr_storage server_ss;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
 	ADS_MODLIST mods = ads_init_mods(mem_ctx);
@@ -1957,10 +1963,10 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	/* Get printer data from SPOOLSS */
 
-	resolve_name(servername, &server_ip, 0x20);
+	resolve_name(servername, &server_ss, 0x20);
 
 	nt_status = cli_full_connection(&cli, global_myname(), servername,
-					&server_ip, 0,
+					&server_ss, 0,
 					"IPC$", "IPC",
 					opt_user_name, opt_workgroup,
 					opt_password ? opt_password : "",

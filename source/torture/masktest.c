@@ -168,7 +168,7 @@ static struct cli_state *connect_one(char *share)
 	struct nmb_name called, calling;
 	char *server_n;
 	char *server;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	NTSTATUS status;
 
 	server = share+2;
@@ -178,14 +178,14 @@ static struct cli_state *connect_one(char *share)
 	share++;
 
 	server_n = server;
-	
-        zero_ip_v4(&ip);
+
+	zero_addr(&ss, AF_INET);
 
 	make_nmb_name(&calling, "masktest", 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip_v4(&ip);
+        zero_addr(&ss, AF_INET);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise())) {
@@ -193,7 +193,7 @@ static struct cli_state *connect_one(char *share)
 		return NULL;
 	}
 
-	status = cli_connect(c, server_n, &ip);
+	status = cli_connect(c, server_n, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Connection to %s failed. Error %s\n", server_n, nt_errstr(status) ));
 		return NULL;

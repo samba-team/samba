@@ -219,7 +219,7 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
 
 	allones_ip.s_addr = htonl(INADDR_BROADCAST);
 
-	if(ismyip_v4(ip) || ip_equal(allones_ip, ip) || is_zero_ip_v4(ip)) {
+	if(ismyip_v4(ip) || ip_equal_v4(allones_ip, ip) || is_zero_ip_v4(ip)) {
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "become_domain_master_query_success():\n" );
 			dbgtext( "Our address (%s) ", inet_ntoa(ip) );

@@ -3728,7 +3728,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 
 	        /* open share source */
 		nt_status = connect_to_service(&cp_clistate.cli_share_src,
-					       &cli->dest_ip, cli->desthost,
+					       &cli->dest_ss, cli->desthost,
 					       netname, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
@@ -5590,13 +5590,13 @@ static int rpc_trustdom_del(int argc, const char **argv)
 static int rpc_trustdom_establish(int argc, const char **argv)
 {
 	struct cli_state *cli = NULL;
-	struct in_addr server_ip;
+	struct sockaddr_storage server_ss;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND connect_hnd;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
-	
+
 	char* domain_name;
 	char* domain_name_pol;
 	char* acct_name;
@@ -5617,7 +5617,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/* account name used at first is our domain's name with '$' */
 	asprintf(&acct_name, "%s$", lp_workgroup());
 	strupper_m(acct_name);
-	
+
 	/*
 	 * opt_workgroup will be used by connection functions further,
 	 * hence it should be set to remote domain name instead of ours
@@ -5625,17 +5625,17 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (opt_workgroup) {
 		opt_workgroup = smb_xstrdup(domain_name);
 	};
-	
+
 	opt_user_name = acct_name;
 
 	/* find the domain controller */
-	if (!net_find_pdc(&server_ip, pdc_name, domain_name)) {
+	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
 		DEBUG(0, ("Couldn't find domain controller for domain %s\n", domain_name));
 		return -1;
 	}
 
 	/* connect to ipc$ as username/password */
-	nt_status = connect_to_ipc(&cli, &server_ip, pdc_name);
+	nt_status = connect_to_ipc(&cli, &server_ss, pdc_name);
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 
 		/* Is it trusting domain account for sure ? */
@@ -5647,12 +5647,12 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/* store who we connected to */
 
 	saf_store( domain_name, pdc_name );
-	
+
 	/*
 	 * Connect to \\server\ipc$ again (this time anonymously)
 	 */
-	
-	nt_status = connect_to_ipc_anonymous(&cli, &server_ip, (char*)pdc_name);
+
+	nt_status = connect_to_ipc_anonymous(&cli, &server_ss, (char*)pdc_name);
 	
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
@@ -6316,23 +6316,23 @@ bool net_rpc_check(unsigned flags)
 {
 	struct cli_state *cli;
 	bool ret = False;
-	struct in_addr server_ip;
+	struct sockaddr_storage server_ss;
 	char *server_name = NULL;
 	NTSTATUS status;
 
 	/* flags (i.e. server type) may depend on command */
-	if (!net_find_server(NULL, flags, &server_ip, &server_name))
+	if (!net_find_server(NULL, flags, &server_ss, &server_name))
 		return False;
 
 	if ((cli = cli_initialise()) == NULL) {
 		return False;
 	}
 
-	status = cli_connect(cli, server_name, &server_ip);
+	status = cli_connect(cli, server_name, &server_ss);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
-	if (!attempt_netbios_session_request(&cli, global_myname(), 
-					     server_name, &server_ip))
+	if (!attempt_netbios_session_request(&cli, global_myname(),
+					     server_name, &server_ss))
 		goto done;
 	if (!cli_negprot(cli))
 		goto done;

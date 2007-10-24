@@ -709,7 +709,7 @@ out_free:
 	 * enough to release it -- we don't free the
 	 * individual strings.  rtfm. */
 	free(argv);
-	
+
 	return result;
 }
 
@@ -724,7 +724,7 @@ out_free:
 	struct cli_state	*cli;
 	static char 		*opt_ipaddr=NULL;
 	struct cmd_set 		**cmd_set;
-	struct in_addr 		server_ip;
+	struct sockaddr_storage server_ss;
 	NTSTATUS 		nt_status;
 	static int		opt_port = 0;
 	fstring new_workgroup;
@@ -745,14 +745,14 @@ out_free:
 
 	load_case_tables();
 
-	ZERO_STRUCT(server_ip);
+	zero_addr(&server_ss, AF_INET);
 
 	setlinebuf(stdout);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("rpcclient", True);
-	
+
 	/* Parse options */
 
 	pc = poptGetContext("rpcclient", argc, (const char **) argv,
@@ -762,12 +762,14 @@ out_free:
 		poptPrintHelp(pc, stderr, 0);
 		return 0;
 	}
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 
 		case 'I':
-		        if ( (server_ip.s_addr=inet_addr(opt_ipaddr)) == INADDR_NONE ) {
+			if (!interpret_string_addr(&server_ss,
+						opt_ipaddr,
+						AI_NUMERICHOST)) {
 				fprintf(stderr, "%s not a valid IP address\n",
 					opt_ipaddr);
 				return 1;
@@ -779,7 +781,7 @@ out_free:
 	   than one unparsed argument is present. */
 
 	server = poptGetArg(pc);
-	
+
 	if (!server || poptGetArg(pc)) {
 		poptPrintHelp(pc, stderr, 0);
 		return 1;
@@ -793,11 +795,11 @@ out_free:
 		return 1;
 
 	/* save the workgroup...
-	
-	   FIXME!! do we need to do this for other options as well 
-	   (or maybe a generic way to keep lp_load() from overwriting 
+
+	   FIXME!! do we need to do this for other options as well
+	   (or maybe a generic way to keep lp_load() from overwriting
 	   everything)?  */
-	
+
 	fstrcpy( new_workgroup, lp_workgroup() );
 
 	/* Load smb.conf file */
@@ -819,21 +821,21 @@ out_free:
 			pstrcpy(cmdline_auth_info.password, pass);
 		}
 	}
-	
+
 	if ((server[0] == '/' && server[1] == '/') ||
 			(server[0] == '\\' && server[1] ==  '\\')) {
 		server += 2;
 	}
 
-	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					opt_ipaddr ? &server_ip : NULL, opt_port,
-					"IPC$", "IPC",  
-					cmdline_auth_info.username, 
+	nt_status = cli_full_connection(&cli, global_myname(), server,
+					opt_ipaddr ? &server_ss : NULL, opt_port,
+					"IPC$", "IPC",
+					cmdline_auth_info.username,
 					lp_workgroup(),
-					cmdline_auth_info.password, 
+					cmdline_auth_info.password,
 					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 					cmdline_auth_info.signing_state,NULL);
-	
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		return 1;
@@ -856,19 +858,19 @@ out_free:
 	}
 
 	fetch_machine_sid(cli);
- 
+
        /* Do anything specified with -c */
         if (cmdstr && cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;
 		int result = 0;
- 
+
                 while((cmd=next_command(&p)) != NULL) {
                         NTSTATUS cmd_result = process_cmd(cli, cmd);
 			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
-		
+
 		cli_shutdown(cli);
                 return result;
         }
@@ -889,7 +891,7 @@ out_free:
 		if (line[0] != '\n')
 			process_cmd(cli, line);
 	}
-	
+
 	cli_shutdown(cli);
 	return 0;
 }

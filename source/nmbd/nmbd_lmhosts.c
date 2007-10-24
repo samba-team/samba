@@ -32,7 +32,7 @@ void load_lmhosts_file(const char *fname)
 {  
 	pstring name;
 	int name_type;
-	struct in_addr ipaddr;
+	struct sockaddr_storage ss;
 	XFILE *fp = startlmhosts( fname );
 
 	if (!fp) {
@@ -41,9 +41,16 @@ void load_lmhosts_file(const char *fname)
 		return;
 	}
    
-	while (getlmhostsent(fp, name, &name_type, &ipaddr) ) {
+	while (getlmhostsent(fp, name, &name_type, &ss) ) {
+		struct in_addr ipaddr;
 		struct subnet_record *subrec = NULL;
 		enum name_source source = LMHOSTS_NAME;
+
+		if (ss.ss_family != AF_INET) {
+			continue;
+		}
+
+		ipaddr = ((struct sockaddr_in *)&ss)->sin_addr;
 
 		/* We find a relevent subnet to put this entry on, then add it. */
 		/* Go through all the broadcast subnets and see if the mask matches. */

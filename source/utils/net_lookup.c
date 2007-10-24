@@ -1,5 +1,5 @@
-/* 
-   Samba Unix/Linux SMB client library 
+/*
+   Samba Unix/Linux SMB client library
    net lookup command
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
 
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -38,12 +38,13 @@ int net_lookup_usage(int argc, const char **argv)
 /* lookup a hostname giving an IP */
 static int net_lookup_host(int argc, const char **argv)
 {
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	int name_type = 0x20;
+	char addr[INET6_ADDRSTRLEN];
 	const char *name = argv[0];
 	char *p;
 
-	if (argc == 0) 
+	if (argc == 0)
 		return net_lookup_usage(argc, argv);
 
 	p = strchr_m(name,'#');
@@ -51,27 +52,37 @@ static int net_lookup_host(int argc, const char **argv)
 		*p = '\0';
 		sscanf(++p,"%x",&name_type);
 	}
-	
-	if (!resolve_name(name, &ip, name_type)) {
-		/* we deliberately use DEBUG() here to send it to stderr 
+
+	if (!resolve_name(name, &ss, name_type)) {
+		/* we deliberately use DEBUG() here to send it to stderr
 		   so scripts aren't mucked up */
 		DEBUG(0,("Didn't find %s#%02x\n", name, name_type));
 		return -1;
 	}
 
-	d_printf("%s\n", inet_ntoa(ip));
+	print_sockaddr(addr, sizeof(addr), &ss);
+	d_printf("%s\n", addr);
 	return 0;
 }
 
 #ifdef HAVE_ADS
 static void print_ldap_srvlist(struct dns_rr_srv *dclist, int numdcs )
 {
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	int i;
 
 	for ( i=0; i<numdcs; i++ ) {
-		if ( resolve_name(dclist[i].hostname, &ip, 0x20) ) {
-			d_printf("%s:%d\n", inet_ntoa(ip), dclist[i].port); 
+		if (resolve_name(dclist[i].hostname, &ss, 0x20) ) {
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr), &ss);
+#ifdef HAVE_IPV6
+			if (ss.ss_family == AF_INET6) {
+				d_printf("[%s]:%d\n", addr, dclist[i].port);
+			}
+#endif
+			if (ss.ss_family == AF_INET) {
+				d_printf("%s:%d\n", addr, dclist[i].port);
+			}
 		}
 	}
 }
@@ -81,13 +92,14 @@ static int net_lookup_ldap(int argc, const char **argv)
 {
 #ifdef HAVE_ADS
 	const char *domain;
-	struct in_addr addr;
-	struct hostent *hostent;
+	struct sockaddr_storage ss;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
 	char *sitename;
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
+	int ret;
+	char h_name[HOST_NAME_MAX];
 
 	if (argc > 0)
 		domain = argv[0];
@@ -113,22 +125,26 @@ static int net_lookup_ldap(int argc, const char **argv)
 	}
 
      	DEBUG(9, ("Looking up PDC for domain %s\n", domain));
-	if (!get_pdc_ip(domain, &addr)) {
+	if (!get_pdc_ip(domain, &ss)) {
 		TALLOC_FREE( ctx );
 		SAFE_FREE(sitename);
 		return -1;
 	}
 
-	hostent = gethostbyaddr((char *) &addr.s_addr, sizeof(addr.s_addr),
-				AF_INET);
-	if (!hostent) {
+	ret = getnameinfo((struct sockaddr *)&ss,
+			sizeof(struct sockaddr_storage),
+			h_name, sizeof(h_name),
+			NULL, 0,
+			NI_NAMEREQD);
+
+	if (ret) {
 		TALLOC_FREE( ctx );
 		SAFE_FREE(sitename);
 		return -1;
 	}
 
-	DEBUG(9, ("Found PDC with DNS name %s\n", hostent->h_name));
-	domain = strchr(hostent->h_name, '.');
+	DEBUG(9, ("Found PDC with DNS name %s\n", h_name));
+	domain = strchr(h_name, '.');
 	if (!domain) {
 		TALLOC_FREE( ctx );
 		SAFE_FREE(sitename);
@@ -158,11 +174,12 @@ static int net_lookup_ldap(int argc, const char **argv)
 static int net_lookup_dc(int argc, const char **argv)
 {
 	struct ip_service *ip_list;
-	struct in_addr addr;
+	struct sockaddr_storage ss;
 	char *pdc_str = NULL;
 	const char *domain = NULL;
 	char *sitename = NULL;
 	int count, i;
+	char addr[INET6_ADDRSTRLEN];
 	bool sec_ads = (lp_security() == SEC_ADS);
 
 	if (sec_ads) {
@@ -175,23 +192,25 @@ static int net_lookup_dc(int argc, const char **argv)
 		domain=argv[0];
 
 	/* first get PDC */
-	if (!get_pdc_ip(domain, &addr))
+	if (!get_pdc_ip(domain, &ss))
 		return -1;
 
-	asprintf(&pdc_str, "%s", inet_ntoa(addr));
+	print_sockaddr(addr, sizeof(addr), &ss);
+	asprintf(&pdc_str, "%s", addr);
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(domain);
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename, &ip_list, &count, sec_ads))) {
+	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename,
+					&ip_list, &count, sec_ads))) {
 		SAFE_FREE(pdc_str);
 		SAFE_FREE(sitename);
 		return 0;
 	}
 	SAFE_FREE(sitename);
 	for (i=0;i<count;i++) {
-		char *dc_str = inet_ntoa(ip_list[i].ip);
-		if (!strequal(pdc_str, dc_str))
-			d_printf("%s\n", dc_str);
+		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
+		if (!strequal(pdc_str, addr))
+			d_printf("%s\n", addr);
 	}
 	SAFE_FREE(pdc_str);
 	return 0;
@@ -199,10 +218,11 @@ static int net_lookup_dc(int argc, const char **argv)
 
 static int net_lookup_pdc(int argc, const char **argv)
 {
-	struct in_addr addr;
+	struct sockaddr_storage ss;
 	char *pdc_str = NULL;
 	const char *domain;
-	
+	char addr[INET6_ADDRSTRLEN];
+
 	if (lp_security() == SEC_ADS) {
 		domain = lp_realm();
 	} else {
@@ -213,10 +233,11 @@ static int net_lookup_pdc(int argc, const char **argv)
 		domain=argv[0];
 
 	/* first get PDC */
-	if (!get_pdc_ip(domain, &addr))
+	if (!get_pdc_ip(domain, &ss))
 		return -1;
 
-	asprintf(&pdc_str, "%s", inet_ntoa(addr));
+	print_sockaddr(addr, sizeof(addr), &ss);
+	asprintf(&pdc_str, "%s", addr);
 	d_printf("%s\n", pdc_str);
 	SAFE_FREE(pdc_str);
 	return 0;
@@ -225,15 +246,17 @@ static int net_lookup_pdc(int argc, const char **argv)
 
 static int net_lookup_master(int argc, const char **argv)
 {
-	struct in_addr master_ip;
+	struct sockaddr_storage master_ss;
 	const char *domain=opt_target_workgroup;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (argc > 0)
 		domain=argv[0];
 
-	if (!find_master_ip(domain, &master_ip))
+	if (!find_master_ip(domain, &master_ss))
 		return -1;
-	d_printf("%s\n", inet_ntoa(master_ip));
+	print_sockaddr(addr, sizeof(addr), &master_ss);
+	d_printf("%s\n", addr);
 	return 0;
 }
 

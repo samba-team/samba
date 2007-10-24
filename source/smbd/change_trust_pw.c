@@ -30,7 +30,7 @@
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct in_addr pdc_ip;
+	struct sockaddr_storage pdc_ss;
 	fstring dc_name;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -41,12 +41,12 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	if (remote_machine == NULL || !strcmp(remote_machine, "*")) {
 		/* Use the PDC *only* for this */
 	
-		if ( !get_pdc_ip(domain, &pdc_ip) ) {
+		if ( !get_pdc_ip(domain, &pdc_ss) ) {
 			DEBUG(0,("Can't get IP for PDC for domain %s\n", domain));
 			goto failed;
 		}
 
-		if ( !name_status_find( domain, 0x1b, 0x20, pdc_ip, dc_name) )
+		if ( !name_status_find( domain, 0x1b, 0x20, &pdc_ss, dc_name) )
 			goto failed;
 	} else {
 		/* supoport old deprecated "smbpasswd -j DOMAIN -r MACHINE" behavior */

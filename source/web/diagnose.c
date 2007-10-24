@@ -36,16 +36,18 @@ bool nmbd_running(void)
 {
 	struct in_addr loopback_ip;
 	int fd, count, flags;
-	struct in_addr *ip_list;
+	struct sockaddr_storage *ss_list;
+	struct sockaddr_storage ss;
 
 	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
+	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
 	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
-				 interpret_addr("127.0.0.1"), True)) != -1) {
-		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
-					  True, True, loopback_ip,
+				 &ss, True)) != -1) {
+		if ((ss_list = name_query(fd, "__SAMBA__", 0, 
+					  True, True, &ss,
 					  &count, &flags, NULL)) != NULL) {
-			SAFE_FREE(ip_list);
+			SAFE_FREE(ss_list);
 			close(fd);
 			return True;
 		}
@@ -63,13 +65,15 @@ bool smbd_running(void)
 	struct in_addr loopback_ip;
 	NTSTATUS status;
 	struct cli_state *cli;
+	struct sockaddr_storage ss;
 
 	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
+	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
 	if ((cli = cli_initialise()) == NULL)
 		return False;
 
-	status = cli_connect(cli, global_myname(), &loopback_ip);
+	status = cli_connect(cli, global_myname(), &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return False;

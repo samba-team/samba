@@ -29,19 +29,25 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 		       bool unique, const char *mailslot,
 		       uint16 priority,
 		       char *buf, int len,
-		       const char *srcname, int src_type, 
+		       const char *srcname, int src_type,
 		       const char *dstname, int dest_type,
-		       struct in_addr dest_ip)
+		       const struct sockaddr_storage *dest_ss)
 {
 	struct packet_struct p;
 	struct dgram_packet *dgram = &p.packet.dgram;
 	char *ptr, *p2;
 	char tmp[4];
 	pid_t nmbd_pid;
+	char addr[INET6_ADDRSTRLEN];
 
 	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
 		DEBUG(3, ("No nmbd found\n"));
 		return False;
+	}
+
+	if (dest_ss->ss_family != AF_INET) {
+		DEBUG(3, ("cli_send_mailslot: can't send to IPv6 address.\n"));
+		return false;
 	}
 
 	memset((char *)&p, '\0', sizeof(p));
@@ -51,7 +57,7 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 	 */
 
 	/* DIRECT GROUP or UNIQUE datagram. */
-	dgram->header.msg_type = unique ? 0x10 : 0x11; 
+	dgram->header.msg_type = unique ? 0x10 : 0x11;
 	dgram->header.flags.node_type = M_NODE;
 	dgram->header.flags.first = True;
 	dgram->header.flags.more = False;
@@ -60,7 +66,7 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 	/* source ip is filled by nmbd */
 	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
 	dgram->header.packet_offset = 0;
-  
+
 	make_nmb_name(&dgram->source_name,srcname,src_type);
 	make_nmb_name(&dgram->dest_name,dstname,dest_type);
 
@@ -93,13 +99,14 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 
 	p.packet_type = DGRAM_PACKET;
-	p.ip = dest_ip;
+	p.ip = ((const struct sockaddr_in *)&dest_ss)->sin_addr;
 	p.timestamp = time(NULL);
 
 	DEBUG(4,("send_mailslot: Sending to mailslot %s from %s ",
 		 mailslot, nmb_namestr(&dgram->source_name)));
-	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name),
-		    inet_ntoa(dest_ip)));
+	print_sockaddr(addr, sizeof(addr), dest_ss);
+
+	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), addr));
 
 	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
 						  pid_to_procid(nmbd_pid),
@@ -136,9 +143,9 @@ int cli_get_backup_list(struct messaging_context *msg_ctx,
 {
 	pstring outbuf;
 	char *p;
-	struct in_addr sendto_ip;
+	struct sockaddr_storage sendto_ss;
 
-	if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
+	if (!resolve_name(send_to_name, &sendto_ss, 0x1d)) {
 
 		DEBUG(0, ("Could not resolve name: %s<1D>\n", send_to_name));
 		return False;
@@ -161,7 +168,7 @@ int cli_get_backup_list(struct messaging_context *msg_ctx,
 
 	cli_send_mailslot(msg_ctx, True, "\\MAILSLOT\\BROWSE", 1, outbuf, 
 			  PTR_DIFF(p, outbuf), myname, 0, send_to_name, 
-			  0x1d, sendto_ip);
+			  0x1d, &sendto_ss);
 
 	/* We should check the error and return if we got one */
 

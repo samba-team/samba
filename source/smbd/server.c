@@ -311,7 +311,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		return open_sockets_inetd();
 	}
 
-		
 #ifdef HAVE_ATEXIT
 	{
 		static int atexit_set;
@@ -324,7 +323,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 	/* Stop zombies */
 	CatchSignal(SIGCLD, sig_cld);
-				
+
 	FD_ZERO(&listen_set);
 
 	/* use a reasonable default set of ports - listing on 445 and 139 */
@@ -340,50 +339,50 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		/* We have been given an interfaces line, and been 
+		/* We have been given an interfaces line, and been
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
-		
+
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			const struct in_addr *ifip;
 			fstring tok;
 			const char *ptr;
 
 			if (ifss == NULL) {
-				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
+				DEBUG(0,("open_sockets_smbd: "
+					"interface %d has NULL IP address !\n",
+					i));
 				continue;
 			}
 
-			/* For now only deal with IPv4. */
-			if (ifss->ss_family != AF_INET) {
-				continue;
-			}
-
-			ifip = &((const struct sockaddr_in *)ifss)->sin_addr;
-
-			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
+			for (ptr=ports; next_token(&ptr, tok, " \t,",
+						sizeof(tok)); ) {
 				unsigned port = atoi(tok);
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}
-				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-				if(s == -1)
-					return False;
+				s = fd_listenset[num_sockets] =
+					open_socket_in(SOCK_STREAM, port, 0,
+							ifss, True);
+				if(s == -1) {
+					return false;
+				}
 
 				/* ready to listen */
-				set_socket_options(s,"SO_KEEPALIVE"); 
+				set_socket_options(s,"SO_KEEPALIVE");
 				set_socket_options(s,user_socket_options);
-     
-				/* Set server socket to non-blocking for the accept. */
-				set_blocking(s,False); 
- 
+
+				/* Set server socket to
+				 * non-blocking for the accept. */
+				set_blocking(s,False);
+
 				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-					DEBUG(0,("listen: %s\n",strerror(errno)));
+					DEBUG(0,("open_sockets_smbd: listen: "
+						"%s\n", strerror(errno)));
 					close(s);
 					return False;
 				}
@@ -392,7 +391,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				num_sockets++;
 				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
+					DEBUG(0,("open_sockets_smbd: Too "
+						"many sockets to bind to\n"));
 					return False;
 				}
 			}
@@ -403,44 +403,71 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 		fstring tok;
 		const char *ptr;
+		const char *sock_addr = lp_socket_address();
+		fstring sock_tok;
+		const char *sock_ptr;
 
-		num_interfaces = 1;
-		
-		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
-			unsigned port = atoi(tok);
-			if (port == 0 || port > 0xffff) continue;
-			/* open an incoming socket */
-			s = open_socket_in(SOCK_STREAM, port, 0,
-					   interpret_addr(lp_socket_address()),True);
-			if (s == -1)
-				return(False);
-		
-			/* ready to listen */
-			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,user_socket_options);
-			
-			/* Set server socket to non-blocking for the accept. */
-			set_blocking(s,False); 
- 
-			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-				DEBUG(0,("open_sockets_smbd: listen: %s\n",
-					 strerror(errno)));
-				close(s);
-				return False;
-			}
+		if (strequal(sock_addr, "0.0.0.0") ||
+				strequal(sock_addr, "::")) {
+#if HAVE_IPV6
+			sock_addr = "::,0.0.0.0";
+#else
+			sock_addr = "0.0.0.0";
+#endif
+		}
 
-			fd_listenset[num_sockets] = s;
-			FD_SET(s,&listen_set);
-			maxfd = MAX( maxfd, s);
+		for (sock_ptr=sock_addr; next_token(&sock_ptr, sock_tok, " \t,",
+					sizeof(sock_tok)); ) {
+			for (ptr=ports; next_token(&ptr, tok, " \t,",
+						sizeof(tok)); ) {
+				struct sockaddr_storage ss;
 
-			num_sockets++;
+				unsigned port = atoi(tok);
+				if (port == 0 || port > 0xffff) {
+					continue;
+				}
+				/* open an incoming socket */
+				if (!interpret_string_addr(&ss, sock_tok,
+						AI_NUMERICHOST|AI_PASSIVE)) {
+					return false;
+				}
 
-			if (num_sockets >= FD_SETSIZE) {
-				DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
-				return False;
+				s = open_socket_in(SOCK_STREAM, port, 0,
+						   &ss, true);
+				if (s == -1) {
+					return false;
+				}
+
+				/* ready to listen */
+				set_socket_options(s,"SO_KEEPALIVE");
+				set_socket_options(s,user_socket_options);
+
+				/* Set server socket to non-blocking
+				 * for the accept. */
+				set_blocking(s,False);
+
+				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
+					DEBUG(0,("open_sockets_smbd: "
+						"listen: %s\n",
+						 strerror(errno)));
+					close(s);
+					return False;
+				}
+
+				fd_listenset[num_sockets] = s;
+				FD_SET(s,&listen_set);
+				maxfd = MAX( maxfd, s);
+
+				num_sockets++;
+
+				if (num_sockets >= FD_SETSIZE) {
+					DEBUG(0,("open_sockets_smbd: Too "
+						"many sockets to bind to\n"));
+					return False;
+				}
 			}
 		}
-	} 
+	}
 
 	SAFE_FREE(ports);
 
@@ -461,7 +488,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_FILE_RENAME, msg_file_was_renamed);
 	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_CONF_UPDATED, smb_conf_updated); 
+			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
 	brl_register_msgs(smbd_messaging_context());
@@ -478,7 +505,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		struct timeval now, idle_timeout;
 		fd_set r_fds, w_fds;
 		int num;
-		
+
 		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
 		message_dispatch(smbd_messaging_context());
 
@@ -493,7 +520,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 		idle_timeout = timeval_zero();
 
-		memcpy((char *)&r_fds, (char *)&listen_set, 
+		memcpy((char *)&r_fds, (char *)&listen_set,
 		       sizeof(listen_set));
 		FD_ZERO(&w_fds);
 		GetTimeOfDay(&now);
@@ -521,7 +548,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 			continue;
 		}
-		
+
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
 			continue;
 		}
@@ -548,10 +575,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			}
 
 			smbd_set_server_fd(accept(s,&addr,&in_addrlen));
-			
+
 			if (smbd_server_fd() == -1 && errno == EINTR)
 				continue;
-			
+
 			if (smbd_server_fd() == -1) {
 				DEBUG(0,("open_sockets_smbd: accept: %s\n",
 					 strerror(errno)));
@@ -563,7 +590,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
-			
+
 			if (allowable_number_of_smbd_processes() &&
 			    smbd_server_fd() != -1 &&
 			    ((child = sys_fork())==0)) {
@@ -572,24 +599,24 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				/* Stop zombies, the parent explicitly handles
 				 * them, counting worker smbds. */
 				CatchChild();
-				
+
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
 					close(fd_listenset[i]);
-				
+
 				/* close our standard file
 				   descriptors */
 				close_low_fds(False);
 				am_parent = 0;
-				
+
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 				set_socket_options(smbd_server_fd(),user_socket_options);
-				
+
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
 				set_remote_machine_name(get_peer_addr(smbd_server_fd()),
 							False);
-				
+
 				/* Reset the state of the random
 				 * number generation system, so
 				 * children do not get the same random
@@ -603,10 +630,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					smb_panic("tdb_reopen_all failed");
 				}
 
-				return True; 
+				return True;
 			}
 			/* The parent doesn't need this socket */
-			close(smbd_server_fd()); 
+			close(smbd_server_fd());
 
 			/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
 				Clear the closed fd info out of server_fd --
@@ -637,7 +664,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			 * (ca. 100kb).
 			 * */
 			force_check_log_size();
- 
+
 		} /* end for num */
 	} /* end while 1 */
 
