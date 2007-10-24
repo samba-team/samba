@@ -42,7 +42,7 @@ extern bool global_machine_password_needs_changing;
 static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						const char *domain,
 						const char *dc_name,
-						struct in_addr dc_ip, 
+						struct sockaddr_storage *dc_ss, 
 						struct rpc_pipe_client **pipe_ret,
 						bool *retry)
 {
@@ -73,7 +73,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	
 	/* Attempt connection */
 	*retry = True;
-	result = cli_full_connection(cli, global_myname(), dc_name, &dc_ip, 0, 
+	result = cli_full_connection(cli, global_myname(), dc_name, dc_ss, 0, 
 		"IPC$", "IPC", "", "", "", 0, Undefined, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -183,7 +183,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 					uchar chal[8],
 					auth_serversupplied_info **server_info, 
 					const char *dc_name,
-					struct in_addr dc_ip)
+					struct sockaddr_storage *dc_ss)
 
 {
 	NET_USER_INFO_3 info3;
@@ -207,7 +207,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		nt_status = connect_to_domain_password_server(&cli,
 							domain,
 							dc_name,
-							dc_ip,
+							dc_ss,
 							&netlogon_pipe,
 							&retry);
 	}
@@ -305,7 +305,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	const char *domain = lp_workgroup();
 	fstring dc_name;
-	struct in_addr dc_ip;
+	struct sockaddr_storage dc_ss;
 
 	if ( lp_server_role() != ROLE_DOMAIN_MEMBER ) {
 		DEBUG(0,("check_ntdomain_security: Configuration error!  Cannot use "
@@ -331,7 +331,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	/* we need our DC to send the net_sam_logon() request to */
 
-	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
+	if ( !get_dc_name(domain, NULL, dc_name, &dc_ss) ) {
 		DEBUG(5,("check_ntdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain));
 		return NT_STATUS_NO_LOGON_SERVERS;
@@ -343,7 +343,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					(uchar *)auth_context->challenge.data,
 					server_info,
 					dc_name,
-					dc_ip);
+					&dc_ss);
 		
 	return nt_status;
 }
@@ -377,7 +377,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	time_t last_change_time;
 	DOM_SID sid;
 	fstring dc_name;
-	struct in_addr dc_ip;
+	struct sockaddr_storage dc_ss;
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_trustdomain_security: Critical variables not present.  Failing.\n"));
@@ -433,7 +433,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
 	   
-	if ( !get_dc_name(user_info->domain, NULL, dc_name, &dc_ip) ) {
+	if ( !get_dc_name(user_info->domain, NULL, dc_name, &dc_ss) ) {
 		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain));
 		return NT_STATUS_NO_LOGON_SERVERS;
@@ -445,7 +445,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 					(uchar *)auth_context->challenge.data,
 					server_info,
 					dc_name,
-					dc_ip);
+					&dc_ss);
 
 	return nt_status;
 }

@@ -361,7 +361,7 @@ static void wins_next_registration(struct response_record *rrec)
 	tag = (const char *)userdata->data;
 
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
-		if (ip_equal(last_ip, subrec->myip)) {
+		if (ip_equal_v4(last_ip, subrec->myip)) {
 			subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec);
 			break;
 		}

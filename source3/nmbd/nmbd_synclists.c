@@ -70,6 +70,7 @@ static void sync_child(char *name, int nm_type,
 	struct cli_state *cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 	struct nmb_name called, calling;
+	struct sockaddr_storage ss;
 	NTSTATUS status;
 
 	/* W2K DMB's return empty browse lists on port 445. Use 139.
@@ -85,7 +86,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	status = cli_connect(cli, name, &ip);
+	in_addr_to_sockaddr_storage(&ss, ip);
+	status = cli_connect(cli, name, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}

@@ -112,7 +112,7 @@ struct cli_state {
 	struct nmb_name called;
 	struct nmb_name calling;
 	fstring full_dest_host_name;
-	struct in_addr dest_ip;
+	struct sockaddr_storage dest_ss;
 
 	DATA_BLOB secblob; /* cryptkey or negTokenInit */
 	uint32 sesskey;

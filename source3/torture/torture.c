@@ -99,14 +99,14 @@ void *shm_setup(int size)
 static struct cli_state *open_nbt_connection(void)
 {
 	struct nmb_name called, calling;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	struct cli_state *c;
 	NTSTATUS status;
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
 
-        zero_ip_v4(&ip);
+        zero_addr(&ss, AF_INET);
 
 	if (!(c = cli_initialise())) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);
@@ -115,7 +115,7 @@ static struct cli_state *open_nbt_connection(void)
 
 	c->port = port_to_use;
 
-	status = cli_connect(c, host, &ip);
+	status = cli_connect(c, host, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;
@@ -129,10 +129,10 @@ static struct cli_state *open_nbt_connection(void)
 
 	if (!cli_session_request(c, &calling, &called)) {
 		/*
-		 * Well, that failed, try *SMBSERVER ... 
+		 * Well, that failed, try *SMBSERVER ...
 		 * However, we must reconnect as well ...
 		 */
-		status = cli_connect(c, host, &ip);
+		status = cli_connect(c, host, &ss);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 			return NULL;

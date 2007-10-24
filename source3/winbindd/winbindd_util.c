@@ -1438,6 +1438,7 @@ bool winbindd_internal_child(struct winbindd_child *child)
 static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 {
 	char *var = NULL;
+	char addr[INET6_ADDRSTRLEN];
 	const char *kdc = NULL;
 	int lvl = 11;
 
@@ -1451,8 +1452,9 @@ static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	kdc = inet_ntoa(domain->dcaddr.sin_addr);
-	if (!kdc) {
+	print_sockaddr(addr, sizeof(addr), &domain->dcaddr);
+	kdc = addr;
+	if (!*kdc) {
 		DEBUG(lvl,("winbindd_set_locator_kdc_env: %s no DC IP\n",
 			domain->alt_name));
 		kdc = domain->dcname;

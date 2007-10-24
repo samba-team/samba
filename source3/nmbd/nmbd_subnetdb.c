@@ -85,13 +85,17 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 		nmb_sock = -1;
 		dgram_sock = -1;
 	} else {
+		struct sockaddr_storage ss;
+
+		in_addr_to_sockaddr_storage(&ss, myip);
+
 		/*
 		 * Attempt to open the sockets on port 137/138 for this interface
 		 * and bind them.
 		 * Fail the subnet creation if this fails.
 		 */
 
-		if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, myip.s_addr,True)) == -1) {
+		if((nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,0, &ss,true)) == -1) {
 			if( DEBUGLVL( 0 ) ) {
 				Debug1( "nmbd_subnetdb:make_subnet()\n" );
 				Debug1( "  Failed to open nmb socket on interface %s ", inet_ntoa(myip) );
@@ -101,7 +105,7 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 			return NULL;
 		}
 
-		if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, myip.s_addr,True)) == -1) {
+		if((dgram_sock = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3, &ss, true)) == -1) {
 			if( DEBUGLVL( 0 ) ) {
 				Debug1( "nmbd_subnetdb:make_subnet()\n" );
 				Debug1( "  Failed to open dgram socket on interface %s ", inet_ntoa(myip) );

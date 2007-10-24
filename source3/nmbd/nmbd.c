@@ -210,21 +210,22 @@ static bool reload_interfaces(time_t t)
 		if (is_loopback_addr(&iface->ip)) {
 			DEBUG(2,("reload_interfaces: Ignoring loopback "
 				"interface %s\n",
-				print_sockaddr(str, sizeof(str),
-					&iface->ip, sizeof(iface->ip)) ));
+				print_sockaddr(str, sizeof(str), &iface->ip) ));
 			continue;
 		}
 
 		for (subrec=subnetlist; subrec; subrec=subrec->next) {
-			if (ip_equal(ip, subrec->myip) &&
-			    ip_equal(nmask, subrec->mask_ip)) break;
+			if (ip_equal_v4(ip, subrec->myip) &&
+			    ip_equal_v4(nmask, subrec->mask_ip)) {
+				break;
+			}
 		}
 
 		if (!subrec) {
 			/* it wasn't found! add it */
-			DEBUG(2,("Found new interface %s\n", 
-				 print_sockaddr(str, sizeof(str),
-					 &iface->ip, sizeof(iface->ip)) ));
+			DEBUG(2,("Found new interface %s\n",
+				 print_sockaddr(str,
+					 sizeof(str), &iface->ip) ));
 			subrec = make_normal_subnet(iface);
 			if (subrec)
 				register_my_workgroup_one_subnet(subrec);
@@ -247,8 +248,10 @@ static bool reload_interfaces(time_t t)
 			}
 			ip = ((struct sockaddr_in *)&iface->ip)->sin_addr;
 			nmask = ((struct sockaddr_in *)&iface->netmask)->sin_addr;
-			if (ip_equal(ip, subrec->myip) &&
-			    ip_equal(nmask, subrec->mask_ip)) break;
+			if (ip_equal_v4(ip, subrec->myip) &&
+			    ip_equal_v4(nmask, subrec->mask_ip)) {
+				break;
+			}
 		}
 		if (n == -1) {
 			/* oops, an interface has disapeared. This is
@@ -257,12 +260,12 @@ static bool reload_interfaces(time_t t)
 			 instead we just wear the memory leak and
 			 remove it from the list of interfaces without
 			 freeing it */
-			DEBUG(2,("Deleting dead interface %s\n", 
+			DEBUG(2,("Deleting dead interface %s\n",
 				 inet_ntoa(subrec->myip)));
 			close_subnet(subrec);
 		}
 	}
-	
+
 	rescan_listen_set = True;
 
 	/* We need to shutdown if there are no subnets... */
@@ -376,7 +379,7 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 
 	for (subrec = FIRST_SUBNET; subrec != NULL;
 	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
-		if (ip_equal(*local_ip, subrec->myip)) {
+		if (ip_equal_v4(*local_ip, subrec->myip)) {
 			p->fd = (p->packet_type == NMB_PACKET) ?
 				subrec->nmb_sock : subrec->dgram_sock;
 			break;
@@ -642,6 +645,9 @@ static void process(void)
 
 static bool open_sockets(bool isdaemon, int port)
 {
+	struct sockaddr_storage ss;
+	const char *sock_addr = lp_socket_address();
+
 	/*
 	 * The sockets opened here will be used to receive broadcast
 	 * packets *only*. Interface specific sockets are opened in
@@ -650,19 +656,34 @@ static bool open_sockets(bool isdaemon, int port)
 	 * now deprecated.
 	 */
 
-	if ( isdaemon )
-		ClientNMB = open_socket_in(SOCK_DGRAM, port,
-					   0, interpret_addr(lp_socket_address()),
-					   True);
-	else
-		ClientNMB = 0;
-  
-	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
-					   3, interpret_addr(lp_socket_address()),
-					   True);
+	if (!interpret_string_addr(&ss, sock_addr,
+				AI_NUMERICHOST|AI_PASSIVE)) {
+		DEBUG(0,("open_sockets: unable to get socket address "
+			"from string %s", sock_addr));
+		return false;
+	}
+	if (ss.ss_family != AF_INET) {
+		DEBUG(0,("open_sockets: unable to use IPv6 socket"
+			"%s in nmbd\n",
+			sock_addr));
+		return false;
+	}
 
-	if ( ClientNMB == -1 )
-		return( False );
+	if (isdaemon) {
+		ClientNMB = open_socket_in(SOCK_DGRAM, port,
+					   0, &ss,
+					   true);
+	} else {
+		ClientNMB = 0;
+	}
+
+	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
+					   3, &ss,
+					   true);
+
+	if (ClientNMB == -1) {
+		return false;
+	}
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
@@ -744,7 +765,7 @@ static bool open_sockets(bool isdaemon, int port)
 	};
 	poptFreeContext(pc);
 
-	global_in_nmbd = True;
+	global_in_nmbd = true;
 	
 	StartupTime = time(NULL);
 	

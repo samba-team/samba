@@ -64,10 +64,10 @@ static int wins_lookup_open_socket_in(void)
 }
 
 
-static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
+static NODE_STATUS_STRUCT *lookup_byaddr_backend(const char *addr, int *count)
 {
 	int fd;
-	struct in_addr  ip;
+	struct sockaddr_storage ss;
 	struct nmb_name nname;
 	NODE_STATUS_STRUCT *status;
 
@@ -76,18 +76,21 @@ static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
 		return NULL;
 
 	make_nmb_name(&nname, "*", 0);
-	ip = *interpret_addr2(addr);
-	status = node_status_query(fd,&nname,ip, count, NULL);
+	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
+		return NULL;
+	}
+	status = node_status_query(fd, &nname, &ss, count, NULL);
 
 	close(fd);
 	return status;
 }
 
-static struct in_addr *lookup_byname_backend(const char *name, int *count)
+static struct sockaddr_storage *lookup_byname_backend(const char *name,
+					int *count)
 {
 	int fd;
 	struct ip_service *ret = NULL;
-	struct in_addr *return_ip = NULL;
+	struct sockaddr_storage *return_ss = NULL;
 	int j, i, flags = 0;
 
 	*count = 0;
@@ -96,17 +99,17 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	if (NT_STATUS_IS_OK(resolve_wins(name,0x20,&ret,count))) {
 		if ( *count == 0 )
 			return NULL;
-		if ( (return_ip = SMB_MALLOC_ARRAY(struct in_addr, *count)) == NULL ) {
+		if ( (return_ss = SMB_MALLOC_ARRAY(struct sockaddr_storage, *count)) == NULL ) {
 			free( ret );
 			return NULL;
 		}
 
 		/* copy the IP addresses */
-		for ( i=0; i<(*count); i++ ) 
-			return_ip[i] = ret[i].ip;
-		
+		for ( i=0; i<(*count); i++ )
+			return_ss[i] = ret[i].ss;
+
 		free( ret );
-		return return_ip;
+		return return_ss;
 	}
 
 	fd = wins_lookup_open_socket_in();
@@ -118,18 +121,18 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	for (j=iface_count() - 1;
 	     j >= 0;
 	     j--) {
-		const struct in_addr *bcast = iface_n_bcast_v4(j);
-		if (!bcast) {
+		const struct sockaddr_storage *bcast_ss = iface_n_bcast(j);
+		if (!bcast_ss) {
 			continue;
 		}
-		return_ip = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
-		if (return_ip) {
+		return_ss = name_query(fd,name,0x20,True,True,bcast_ss,count, &flags, NULL);
+		if (return_ss) {
 			break;
 		}
 	}
 
 	close(fd);
-	return return_ip;
+	return return_ss;
 }
 
 /* Get hostname from IP  */
@@ -184,10 +187,10 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 
 void winbindd_wins_byname(struct winbindd_cli_state *state)
 {
-	struct in_addr *ip_list;
+	struct sockaddr_storage *ip_list = NULL;
 	int i, count, maxlen, size;
 	fstring response;
-	char * addr;
+	char addr[INET6_ADDRSTRLEN];
 
 	/* Ensure null termination */
 	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
@@ -200,29 +203,30 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 
 	if ((ip_list = lookup_byname_backend(state->request.data.winsreq,&count))){
 		for (i = count; i ; i--) {
-		    addr = inet_ntoa(ip_list[i-1]);
-		    size = strlen(addr);
-		    if (size > maxlen) {
-			SAFE_FREE(ip_list);
-			request_error(state);
-			return;
-		    }
-		    if (i != 0) {
-			/* Clear out the newline character */
-		        /* But only if there is something in there, 
-			   otherwise we clobber something in the stack */
-			if (strlen(response))
-				response[strlen(response)-1] = ' '; 
-		    }
-		    fstrcat(response,addr);
-		    fstrcat(response,"\t");
+			print_sockaddr(addr, sizeof(addr), &ip_list[i-1]);
+			size = strlen(addr);
+			if (size > maxlen) {
+				SAFE_FREE(ip_list);
+				request_error(state);
+				return;
+			}
+			if (i != 0) {
+				/* Clear out the newline character */
+				/* But only if there is something in there,
+				otherwise we clobber something in the stack */
+				if (strlen(response)) {
+					response[strlen(response)-1] = ' ';
+				}
+			}
+			fstrcat(response,addr);
+			fstrcat(response,"\t");
 		}
 		size = strlen(state->request.data.winsreq) + strlen(response);
 		if (size > maxlen) {
 		    SAFE_FREE(ip_list);
 		    request_error(state);
 		    return;
-		}   
+		}
 		fstrcat(response,state->request.data.winsreq);
 		fstrcat(response,"\n");
 		SAFE_FREE(ip_list);

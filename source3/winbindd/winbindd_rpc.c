@@ -843,20 +843,20 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 
 /**********************************************************************
  Get the sequence number for a Windows AD native mode domain using
- LDAP queries. 
+ LDAP queries.
 **********************************************************************/
 
 static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	int ret = -1;
-	fstring ipstr;
+	char addr[INET6_ADDRSTRLEN];
 
-	fstrcpy( ipstr, inet_ntoa(domain->dcaddr.sin_addr));
-	if ((ret = get_ldap_seq( ipstr, LDAP_PORT, seq)) == 0) {
+	print_sockaddr(addr, sizeof(addr), &domain->dcaddr);
+	if ((ret = get_ldap_seq(addr, LDAP_PORT, seq)) == 0) {
 		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence "
-			  "number for Domain (%s) from DC (%s)\n", 
-			domain->name, ipstr));
-	} 
+			  "number for Domain (%s) from DC (%s)\n",
+			domain->name, addr));
+	}
 	return ret;
 }
 
@@ -877,7 +877,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("sequence_number: No incoming trust for domain %s\n",
 			  domain->name));
-		*seq = time(NULL);		
+		*seq = time(NULL);
 		return NT_STATUS_OK;
 	}
 

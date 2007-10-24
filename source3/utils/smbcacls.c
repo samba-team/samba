@@ -760,16 +760,17 @@ static int cacl_set(struct cli_state *cli, char *filename,
 }
 
 
-/***************************************************** 
-return a connection to a server
+/*****************************************************
+ Return a connection to a server.
 *******************************************************/
+
 static struct cli_state *connect_one(const char *share)
 {
 	struct cli_state *c;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	NTSTATUS nt_status;
-	zero_ip_v4(&ip);
-	
+	zero_addr(&ss, AF_INET);
+
 	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
@@ -779,8 +780,8 @@ static struct cli_state *connect_one(const char *share)
 	}
 
 	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname(), server, 
-							    &ip, 0,
-							    share, "?????",  
+							    &ss, 0,
+							    share, "?????",
 							    cmdline_auth_info.username, lp_workgroup(),
 							    cmdline_auth_info.password, 0,
 							    cmdline_auth_info.signing_state, NULL))) {

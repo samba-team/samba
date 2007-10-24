@@ -41,7 +41,7 @@
  *
  **/
 NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
-			 struct in_addr *ip)
+			 struct sockaddr_storage *pss)
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
@@ -65,7 +65,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 	}
 
 	/* Connect to remote machine */
-	ntret = net_make_ipc_connection_ex(domain, server, ip, conn_flags, &cli);
+	ntret = net_make_ipc_connection_ex(domain, server, pss, conn_flags, &cli);
 	if (!NT_STATUS_IS_OK(ntret)) {
 		return ntret;
 	}
@@ -425,7 +425,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* double-check, connection from scratch */
-	result = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ip);
+	result = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ss);
 	retval = NT_STATUS_IS_OK(result) ? 0 : -1;
 
 done:

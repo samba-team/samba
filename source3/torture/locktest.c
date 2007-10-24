@@ -161,7 +161,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	struct nmb_name called, calling;
 	char *server_n;
 	fstring server;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	fstring myname;
 	static int count;
 	NTSTATUS status;
@@ -173,8 +173,8 @@ static struct cli_state *connect_one(char *share, int snum)
 	share++;
 
 	server_n = server;
-	
-        zero_ip_v4(&ip);
+
+	zero_addr(&ss, AF_INET);
 
 	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
@@ -182,7 +182,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip_v4(&ip);
+        zero_addr(&ss, AF_INET);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise())) {
@@ -190,7 +190,7 @@ static struct cli_state *connect_one(char *share, int snum)
 		return NULL;
 	}
 
-	status = cli_connect(c, server_n, &ip);
+	status = cli_connect(c, server_n, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Connection to %s failed. Error %s\n", server_n, nt_errstr(status) ));
 		return NULL;

@@ -50,7 +50,7 @@ int max_protocol = PROTOCOL_NT1;
 static int port;
 static int name_type = 0x20;
 static bool have_ip;
-static struct in_addr dest_ip;
+static struct sockaddr_storage dest_ss;
 
 static struct client_connection *connections;
 
@@ -64,7 +64,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
 	const char *server_n;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	pstring servicename;
 	char *sharename;
 	fstring newserver, newshare;
@@ -83,22 +83,22 @@ static struct cli_state *do_connect( const char *server, const char *share,
 
 	server_n = server;
 	
-	zero_ip_v4(&ip);
+	zero_addr(&ss, AF_INET);
 
 	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
-	zero_ip_v4(&ip);
-	if (have_ip) 
-		ip = dest_ip;
+	zero_addr(&ss, AF_INET);
+	if (have_ip)
+		ss = dest_ss;
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
-	status = cli_connect(c, server_n, &ip);
+	status = cli_connect(c, server_n, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed (Error %s)\n", server_n, nt_errstr(status));
 		return NULL;
@@ -366,10 +366,10 @@ void cli_cm_set_dest_name_type( int type )
 /****************************************************************************
 ****************************************************************************/
 
-void cli_cm_set_dest_ip(struct in_addr ip )
+void cli_cm_set_dest_ss(struct sockaddr_storage *pss)
 {
-	dest_ip = ip;
-	have_ip = True;
+	dest_ss = *pss;
+	have_ip = true;
 }
 
 /**********************************************************************

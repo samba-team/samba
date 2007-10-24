@@ -66,7 +66,7 @@
 
 struct dc_name_ip {
 	fstring name;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 };
 
 extern struct winbindd_methods reconnect_methods;
@@ -559,7 +559,8 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 }
 
 static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
-				     fstring dcname, struct in_addr *dc_ip)
+				     fstring dcname,
+				     struct sockaddr_storage *dc_ss)
 {
 	struct winbindd_domain *our_domain = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -625,7 +626,7 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
 
-	if (!resolve_name(dcname, dc_ip, 0x20)) {
+	if (!resolve_name(dcname, dc_ss, 0x20)) {
 		return False;
 	}
 
@@ -891,7 +892,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 }
 
 static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
-			      const char *dcname, struct in_addr ip,
+			      const char *dcname, struct sockaddr_storage *pss,
 			      struct dc_name_ip **dcs, int *num)
 {
 	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname))) {
@@ -905,26 +906,23 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 		return False;
 
 	fstrcpy((*dcs)[*num].name, dcname);
-	(*dcs)[*num].ip = ip;
+	(*dcs)[*num].ss = *pss;
 	*num += 1;
 	return True;
 }
 
 static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
-				  struct in_addr ip, uint16 port,
-				  struct sockaddr_in **addrs, int *num)
+				  struct sockaddr_storage *pss, uint16 port,
+				  struct sockaddr_storage **addrs, int *num)
 {
-	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_in, (*num)+1);
+	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_storage, (*num)+1);
 
 	if (*addrs == NULL) {
 		*num = 0;
 		return False;
 	}
 
-	(*addrs)[*num].sin_family = PF_INET;
-	putip((char *)&((*addrs)[*num].sin_addr), (char *)&ip);
-	(*addrs)[*num].sin_port = htons(port);
-
+	(*addrs)[*num] = *pss;
 	*num += 1;
 	return True;
 }
@@ -934,15 +932,21 @@ static void mailslot_name(struct in_addr dc_ip, fstring name)
 	fstr_sprintf(name, "\\MAILSLOT\\NET\\GETDC%X", dc_ip.s_addr);
 }
 
-static bool send_getdc_request(struct in_addr dc_ip,
+static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 			       const char *domain_name,
 			       const DOM_SID *sid)
 {
-	pstring outbuf;
+	char outbuf[1024];
+	struct in_addr dc_ip;
 	char *p;
 	fstring my_acct_name;
 	fstring my_mailslot;
 
+	if (dc_ss->ss_family != AF_INET) {
+		return false;
+	}
+
+	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
 	mailslot_name(dc_ip, my_mailslot);
 
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -958,12 +962,22 @@ static bool send_getdc_request(struct in_addr dc_ip,
 	SIVAL(p, 0, 0); /* The sender's token ... */
 	p += 2;
 
-	p += dos_PutUniCode(p, global_myname(), sizeof(pstring), True);
+	p += dos_PutUniCode(p, global_myname(),
+			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
 	fstr_sprintf(my_acct_name, "%s$", global_myname());
-	p += dos_PutUniCode(p, my_acct_name, sizeof(pstring), True);
+	p += dos_PutUniCode(p, my_acct_name,
+			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
+
+	if (strlen(my_mailslot)+1 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+		return false;
+	}
 
 	memcpy(p, my_mailslot, strlen(my_mailslot)+1);
 	p += strlen(my_mailslot)+1;
+
+	if (sizeof(outbuf) - PTR_DIFF(p, outbuf) < 8) {
+		return false;
+	}
 
 	SIVAL(p, 0, 0x80);
 	p+=4;
@@ -972,8 +986,15 @@ static bool send_getdc_request(struct in_addr dc_ip,
 	p+=4;
 
 	p = ALIGN4(p, outbuf);
+	if (PTR_DIFF(p, outbuf) > sizeof(outbuf)) {
+		return false;
+	}
 
 	sid_linearize(p, sid_size(sid), sid);
+	if (sid_size(sid) + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+		return false;
+	}
+
 	p += sid_size(sid);
 
 	SIVAL(p, 0, 1);
@@ -985,10 +1006,10 @@ static bool send_getdc_request(struct in_addr dc_ip,
 				 False, "\\MAILSLOT\\NET\\NTLOGON", 0,
 				 outbuf, PTR_DIFF(p, outbuf),
 				 global_myname(), 0, domain_name, 0x1c,
-				 dc_ip);
+				 dc_ss);
 }
 
-static bool receive_getdc_response(struct in_addr dc_ip,
+static bool receive_getdc_response(struct sockaddr_storage *dc_ss,
 				   const char *domain_name,
 				   fstring dc_name)
 {
@@ -997,7 +1018,12 @@ static bool receive_getdc_response(struct in_addr dc_ip,
 	char *buf, *p;
 	fstring dcname, user, domain;
 	int len;
+	struct in_addr dc_ip;
 
+	if (dc_ss->ss_family != AF_INET) {
+		return false;
+	}
+	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
 	mailslot_name(dc_ip, my_mailslot);
 
 	packet = receive_unexpected(DGRAM_PACKET, 0, my_mailslot);
@@ -1060,11 +1086,13 @@ static bool receive_getdc_response(struct in_addr dc_ip,
  convert an ip to a name
 *******************************************************************/
 
-static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip, fstring name )
+static bool dcip_to_name(const struct winbindd_domain *domain,
+		struct sockaddr_storage *pss,
+		fstring name )
 {
 	struct ip_service ip_list;
 
-	ip_list.ip = ip;
+	ip_list.ss = *pss;
 	ip_list.port = 0;
 
 #ifdef WITH_ADS
@@ -1073,11 +1101,14 @@ static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 
 	if (lp_security() == SEC_ADS) {
 		ADS_STRUCT *ads;
+		char addr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addr, sizeof(addr), pss);
 
 		ads = ads_init(domain->alt_name, domain->name, NULL);
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
-		if (ads_try_connect( ads, inet_ntoa(ip) ) )  {
+		if (ads_try_connect(ads, addr)) {
 			/* We got a cldap packet. */
 			fstrcpy(name, ads->config.ldap_server_name);
 			namecache_store(name, 0x20, 1, &ip_list);
@@ -1095,7 +1126,7 @@ static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									sitename,
-									ip);
+									pss);
 
 					SAFE_FREE(sitename);
 				} else {
@@ -1103,7 +1134,7 @@ static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									NULL,
-									ip);
+									pss);
 				}
 				winbindd_set_locator_kdc_envs(domain);
 
@@ -1121,12 +1152,12 @@ static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 #endif
 
 	/* try GETDC requests next */
-	
-	if (send_getdc_request(ip, domain->name, &domain->sid)) {
+
+	if (send_getdc_request(pss, domain->name, &domain->sid)) {
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(ip, domain->name, name)) {
+			if (receive_getdc_response(pss, domain->name, name)) {
 				namecache_store(name, 0x20, 1, &ip_list);
 				return True;
 			}
@@ -1136,7 +1167,7 @@ static bool dcip_to_name(const struct winbindd_domain *domain, struct in_addr ip
 
 	/* try node status request */
 
-	if ( name_status_find(domain->name, 0x1c, 0x20, ip, name) ) {
+	if ( name_status_find(domain->name, 0x1c, 0x20, pss, name) ) {
 		namecache_store(name, 0x20, 1, &ip_list);
 		return True;
 	}
@@ -1152,7 +1183,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
 	fstring dcname;
-	struct  in_addr ip;
+	struct  sockaddr_storage ss;
 	struct  ip_service *ip_list = NULL;
 	int     iplist_size = 0;
 	int     i;
@@ -1161,12 +1192,14 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
-	if ( !is_our_domain 
-		&& get_dc_name_via_netlogon(domain, dcname, &ip) 
-		&& add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs) )
+	if ( !is_our_domain
+		&& get_dc_name_via_netlogon(domain, dcname, &ss)
+		&& add_one_dc_unique(mem_ctx, domain->name, dcname, &ss, dcs, num_dcs) )
 	{
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &ss);
 		DEBUG(10, ("Retrieved DC %s at %s via netlogon\n",
-			   dcname, inet_ntoa(ip)));
+			   dcname, addr));
 		return True;
 	}
 
@@ -1182,7 +1215,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		   We deliberately don't care about the
 		   return here. */
 
-		get_dc_name(domain->name, domain->alt_name, dcname, &ip);
+		get_dc_name(domain->name, domain->alt_name, dcname, &ss);
 
 		sitename = sitename_fetch(domain->alt_name);
 		if (sitename) {
@@ -1191,8 +1224,15 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 			get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
 
 			for ( i=0; i<iplist_size; i++ ) {
-				add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
-							ip_list[i].ip, dcs, num_dcs);
+				char addr[INET6_ADDRSTRLEN];
+				print_sockaddr(addr, sizeof(addr),
+						&ip_list[i].ss);
+				add_one_dc_unique(mem_ctx,
+						domain->name,
+						addr,
+						&ip_list[i].ss,
+						dcs,
+						num_dcs);
 			}
 
 			SAFE_FREE(ip_list);
@@ -1204,8 +1244,15 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		get_sorted_dc_list(domain->alt_name, NULL, &ip_list, &iplist_size, True);
 
 		for ( i=0; i<iplist_size; i++ ) {
-			add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip),
-						ip_list[i].ip, dcs, num_dcs);
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr),
+					&ip_list[i].ss);
+			add_one_dc_unique(mem_ctx,
+					domain->name,
+					addr,
+					&ip_list[i].ss,
+					dcs,
+					num_dcs);
 		}
         }
 
@@ -1222,8 +1269,11 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 	   the ip now in to make the failed connection cache work */
 
 	for ( i=0; i<iplist_size; i++ ) {
-		add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip), 
-			ip_list[i].ip, dcs, num_dcs);
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr),
+				&ip_list[i].ss);
+		add_one_dc_unique(mem_ctx, domain->name, addr,
+			&ip_list[i].ss, dcs, num_dcs);
 	}
 
 	SAFE_FREE( ip_list );
@@ -1233,7 +1283,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 
 static bool find_new_dc(TALLOC_CTX *mem_ctx,
 			const struct winbindd_domain *domain,
-			fstring dcname, struct sockaddr_in *addr, int *fd)
+			fstring dcname, struct sockaddr_storage *pss, int *fd)
 {
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
@@ -1241,7 +1291,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	const char **dcnames = NULL;
 	int num_dcnames = 0;
 
-	struct sockaddr_in *addrs = NULL;
+	struct sockaddr_storage *addrs = NULL;
 	int num_addrs = 0;
 
 	int i, fd_index;
@@ -1256,7 +1306,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 				    &dcnames, &num_dcnames)) {
 			return False;
 		}
-		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 445,
+		if (!add_sockaddr_to_array(mem_ctx, &dcs[i].ss, 445,
 				      &addrs, &num_addrs)) {
 			return False;
 		}
@@ -1265,7 +1315,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 				    &dcnames, &num_dcnames)) {
 			return False;
 		}
-		if (!add_sockaddr_to_array(mem_ctx, dcs[i].ip, 139,
+		if (!add_sockaddr_to_array(mem_ctx, &dcs[i].ss, 139,
 				      &addrs, &num_addrs)) {
 			return False;
 		}
@@ -1278,28 +1328,29 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 		return False;
 
 	/* 5 second timeout. */
-	if ( !open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) 
-	{
+	if (!open_any_socket_out(addrs, num_addrs, 5000, &fd_index, fd) ) {
 		for (i=0; i<num_dcs; i++) {
+			char ab[INET6_ADDRSTRLEN];
+			print_sockaddr(ab, sizeof(ab), &dcs[i].ss);
 			DEBUG(10, ("find_new_dc: open_any_socket_out failed for "
 				"domain %s address %s. Error was %s\n",
-				domain->name, inet_ntoa(dcs[i].ip), strerror(errno) ));
+				domain->name, ab, strerror(errno) ));
 			winbind_add_failed_connection_entry(domain,
 				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
 		return False;
 	}
 
-	*addr = addrs[fd_index];
+	*pss = addrs[fd_index];
 
-	if (*dcnames[fd_index] != '\0' && !is_ipaddress_v4(dcnames[fd_index])) {
+	if (*dcnames[fd_index] != '\0' && !is_ipaddress(dcnames[fd_index])) {
 		/* Ok, we've got a name for the DC */
 		fstrcpy(dcname, dcnames[fd_index]);
 		return True;
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name( domain, addr->sin_addr, dcname )) {
+	if (dcip_to_name(domain, pss, dcname)) {
 		return True;
 	}
 
@@ -1336,12 +1387,15 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			saf_servername, domain->name ));
 
 		/* convert an ip address to a name */
-		if ( is_ipaddress_v4( saf_servername ) ) {
+		if (is_ipaddress( saf_servername ) ) {
 			fstring saf_name;
-			struct in_addr ip;
+			struct sockaddr_storage ss;
 
-			ip = *interpret_addr2( saf_servername );
-			if (dcip_to_name( domain, ip, saf_name )) {
+			if (!interpret_string_addr(&ss, saf_servername,
+						AI_NUMERICHOST)) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			if (dcip_to_name( domain, &ss, saf_name )) {
 				fstrcpy( domain->dcname, saf_name );
 			} else {
 				winbind_add_failed_connection_entry(
@@ -1356,7 +1410,6 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 	for (retries = 0; retries < 3; retries++) {
-
 		int fd = -1;
 		bool retry = False;
 
@@ -1367,18 +1420,18 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		if (*domain->dcname 
 			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
-			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20)))
+			&& (resolve_name(domain->dcname, &domain->dcaddr, 0x20)))
 		{
-			struct sockaddr_in *addrs = NULL;
+			struct sockaddr_storage *addrs = NULL;
 			int num_addrs = 0;
 			int dummy = 0;
 
-			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs)) {
+			if (!add_sockaddr_to_array(mem_ctx, &domain->dcaddr, 445, &addrs, &num_addrs)) {
 				set_domain_offline(domain);
 				talloc_destroy(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
-			if (!add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs)) {
+			if (!add_sockaddr_to_array(mem_ctx, &domain->dcaddr, 139, &addrs, &num_addrs)) {
 				set_domain_offline(domain);
 				talloc_destroy(mem_ctx);
 				return NT_STATUS_NO_MEMORY;

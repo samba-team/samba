@@ -221,13 +221,19 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 		ads->config.client_site_name =
 			SMB_STRDUP(cldap_reply.client_site_name);
 	}
-		
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
 
 	ads->ldap.port = LDAP_PORT;
-	ads->ldap.ip = *interpret_addr2(srv);
+	if (!interpret_string_addr(&ads->ldap.ss, srv, 0)) {
+		DEBUG(1,("ads_try_connect: unable to convert %s "
+			"to an address\n",
+			srv));
+		SAFE_FREE( srv );
+		return False;
+	}
+
 	SAFE_FREE(srv);
-	
+
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain, cldap_reply.client_site_name );
 
@@ -306,10 +312,10 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
 	for ( i=0; i<count; i++ ) {
-		fstring server;
-		
-		fstrcpy( server, inet_ntoa(ip_list[i].ip) );
-		
+		char server[INET6_ADDRSTRLEN];
+
+		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+
 		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
 			continue;
 
@@ -371,6 +377,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	int version = LDAP_VERSION3;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
+	char addr[INET6_ADDRSTRLEN];
 
 	ZERO_STRUCT(ads->ldap);
 	ads->ldap.last_attempt	= time(NULL);
@@ -378,7 +385,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	/* try with a user specified server */
 
-	if (ads->server.ldap_server && 
+	if (ads->server.ldap_server &&
 	    ads_try_connect(ads, ads->server.ldap_server)) {
 		goto got_connection;
 	}
@@ -391,7 +398,9 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ADS_ERROR_NT(ntstatus);
 
 got_connection:
-	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap.ip)));
+
+	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+	DEBUG(3,("Connected to LDAP server %s\n", addr));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
@@ -405,7 +414,8 @@ got_connection:
 	}
 
 	if (!ads->auth.kdc_server) {
-		ads->auth.kdc_server = SMB_STRDUP(inet_ntoa(ads->ldap.ip));
+		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+		ads->auth.kdc_server = SMB_STRDUP(addr);
 	}
 
 #if KRB5_DNS_HACK
@@ -440,8 +450,9 @@ got_connection:
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
-		saf_store( ads->server.workgroup, inet_ntoa(ads->ldap.ip));
-		saf_store( ads->server.realm, inet_ntoa(ads->ldap.ip));
+		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
+		saf_store( ads->server.workgroup, addr);
+		saf_store( ads->server.realm, addr);
 	}
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);

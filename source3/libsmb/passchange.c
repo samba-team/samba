@@ -30,14 +30,14 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	struct nmb_name calling, called;
 	struct cli_state *cli;
 	struct rpc_pipe_client *pipe_hnd;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 
 	NTSTATUS result;
 	bool pass_must_change = False;
 
 	*err_str = '\0';
 
-	if(!resolve_name( remote_machine, &ip, 0x20)) {
+	if(!resolve_name( remote_machine, &ss, 0x20)) {
 		slprintf(err_str, err_str_len-1, "Unable to find an IP address for machine %s.\n",
 			remote_machine );
 		return NT_STATUS_UNSUCCESSFUL;
@@ -48,7 +48,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = cli_connect(cli, remote_machine, &ip);
+	result = cli_connect(cli, remote_machine, &ss);
 	if (!NT_STATUS_IS_OK(result)) {
 		slprintf(err_str, err_str_len-1, "Unable to connect to SMB server on machine %s. Error was : %s.\n",
 			remote_machine, nt_errstr(result) );

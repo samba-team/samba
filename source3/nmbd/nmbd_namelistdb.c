@@ -338,7 +338,7 @@ bool find_ip_in_name_record( struct name_record *namerec, struct in_addr ip )
 	int i;
 
 	for(i = 0; i < namerec->data.num_ips; i++) {
-		if(ip_equal( namerec->data.ip[i], ip)) {
+		if(ip_equal_v4( namerec->data.ip[i], ip)) {
 			return True;
 		}
 	}
@@ -391,7 +391,7 @@ void remove_ip_from_name_record( struct name_record *namerec,
 	int orig_num = namerec->data.num_ips;
 
 	for(i = 0; i < orig_num; i++) {
-		if( ip_equal( remove_ip, namerec->data.ip[i]) ) {
+		if( ip_equal_v4( remove_ip, namerec->data.ip[i]) ) {
 			remove_nth_ip_in_record( namerec, i);
 			break;
 		}

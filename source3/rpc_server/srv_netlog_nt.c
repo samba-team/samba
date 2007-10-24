@@ -90,7 +90,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
         uint32 logon_attempts = 0x0;
         uint32 tc_status;
 	fstring servername, domain, dc_name, dc_name2;
-	struct in_addr dc_ip;
+	struct sockaddr_storage dc_ss;
 
 	/* this should be \\global_myname() */
 	unistr2_to_ascii(servername, &q_u->uni_server_name, sizeof(servername));
@@ -107,7 +107,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 			if ( !is_trusted_domain( domain ) )
 				break;
 				
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ip ) ) {
+			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
 				tc_status = ERROR_NO_LOGON_SERVERS;
 				break;
 			}
@@ -124,7 +124,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 			if ( !is_trusted_domain( domain ) )
 				break;
 				
-			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ip ) ) {
+			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
 				tc_status = ERROR_NO_LOGON_SERVERS;
 				break;
 			}

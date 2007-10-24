@@ -191,7 +191,7 @@ struct winbindd_domain {
 
 	/* A working DC */
 	fstring dcname;
-	struct sockaddr_in dcaddr;
+	struct sockaddr_storage dcaddr;
 
 	/* Sequence number stuff */
 

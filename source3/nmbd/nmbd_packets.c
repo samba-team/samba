@@ -50,7 +50,7 @@ static int find_subnet_fd_for_address( struct in_addr local_ip )
 	struct subnet_record *subrec;
 
 	for( subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-		if(ip_equal(local_ip, subrec->myip))
+		if(ip_equal_v4(local_ip, subrec->myip))
 			return subrec->nmb_sock;
 
 	return ClientNMB;
@@ -65,7 +65,7 @@ static int find_subnet_mailslot_fd_for_address( struct in_addr local_ip )
 	struct subnet_record *subrec;
 
 	for( subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-		if(ip_equal(local_ip, subrec->myip))
+		if(ip_equal_v4(local_ip, subrec->myip))
 			return subrec->dgram_sock;
 
 	return ClientDGRAM;

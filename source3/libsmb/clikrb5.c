@@ -162,7 +162,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
- void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+ void setup_kaddr_v4( krb5_address *pkaddr, struct sockaddr *paddr)
 {
 	pkaddr->addr_type = KRB5_ADDRESS_INET;
 	pkaddr->address.length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
@@ -170,7 +170,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 }
 #elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
 /* MIT */
- void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+ void setup_kaddr_v4( krb5_address *pkaddr, struct sockaddr *paddr)
 {
 	pkaddr->addrtype = ADDRTYPE_INET;
 	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);

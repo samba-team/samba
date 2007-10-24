@@ -33,7 +33,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 {
 	struct cli_state *cli = NULL;
 	fstring desthost;
-	struct in_addr dest_ip;
+	struct sockaddr_storage dest_ss;
 	const char *p;
 	char *pserver;
 	bool connected_ok = False;
@@ -54,12 +54,12 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 				   desthost, sizeof(desthost));
 		strupper_m(desthost);
 
-		if(!resolve_name( desthost, &dest_ip, 0x20)) {
+		if(!resolve_name( desthost, &dest_ss, 0x20)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
 		}
 
-		if (ismyip_v4(dest_ip)) {
+		if (ismyaddr(&dest_ss)) {
 			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
 			continue;
 		}
@@ -73,7 +73,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			return NULL;
 		}
 
-		status = cli_connect(cli, desthost, &dest_ip);
+		status = cli_connect(cli, desthost, &dest_ss);
 		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -91,7 +91,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 	
 	if (!attempt_netbios_session_request(&cli, global_myname(), 
-					     desthost, &dest_ip)) {
+					     desthost, &dest_ss)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
 		cli_shutdown(cli);

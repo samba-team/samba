@@ -2528,26 +2528,28 @@ done:
 **********************************************************/
 
 static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
-			struct in_addr *client_ip, const char *remote_machine)
+			struct sockaddr_storage *client_ss, const char *remote_machine)
 {
 	NTSTATUS ret;
 	struct cli_state *the_cli;
-	struct in_addr rm_addr;
+	struct sockaddr_storage rm_addr;
 
-	if ( is_zero_ip_v4(*client_ip) ) {
+	if ( is_zero_addr(client_ss) ) {
 		if ( !resolve_name( remote_machine, &rm_addr, 0x20) ) {
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return False;
 		}
 
-		if ( ismyip_v4( rm_addr )) {
+		if (ismyaddr(&rm_addr)) {
 			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
 			return False;
 		}
 	} else {
-		rm_addr.s_addr = client_ip->s_addr;
+		char addr[INET6_ADDRSTRLEN];
+		rm_addr = *client_ss;
+		print_sockaddr(addr, sizeof(addr), &rm_addr);
 		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
-			inet_ntoa(*client_ip) ));
+			addr));
 	}
 
 	/* setup the connection */
@@ -2596,7 +2598,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 
 static bool srv_spoolss_replyopenprinter(int snum, const char *printer, 
 					uint32 localprinter, uint32 type, 
-					POLICY_HND *handle, struct in_addr *client_ip)
+					POLICY_HND *handle, struct sockaddr_storage *client_ss)
 {
 	WERROR result;
 
@@ -2609,7 +2611,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
-		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ip, unix_printer ))
+		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ss, unix_printer ))
 			return False;
 			
 		messaging_register(smbd_messaging_context(), NULL,
@@ -2660,7 +2662,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	uint32 printerlocal = q_u->printerlocal;
 	int snum = -1;
 	SPOOL_NOTIFY_OPTION *option = q_u->option;
-	struct in_addr client_ip;
+	struct sockaddr_storage client_ss;
 
 	/* store the notify value in the printer struct */
 
@@ -2690,12 +2692,16 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	else if ( (Printer->printer_type == SPLHND_PRINTER) &&
 			!get_printer_snum(p, handle, &snum, NULL) )
 		return WERR_BADFID;
-		
-	client_ip.s_addr = inet_addr(p->conn->client_address);
+
+	if (!interpret_string_addr(&client_ss,
+				p->conn->client_address,
+				AI_NUMERICHOST)) {
+		return WERR_SERVER_UNAVAILABLE;
+	}
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
-					&Printer->notify.client_hnd, &client_ip))
+					&Printer->notify.client_hnd, &client_ss))
 		return WERR_SERVER_UNAVAILABLE;
 
 	Printer->notify.client_connected=True;

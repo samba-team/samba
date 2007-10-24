@@ -206,11 +206,10 @@ values
 	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
 
 /****************************************************************************
-true if two IP addresses are equal
+true if two IPv4 addresses are equal
 ****************************************************************************/
 
-#define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
-#define ip_service_equal(ip1,ip2) ( ((ip1).ip.s_addr == (ip2).ip.s_addr) && ((ip1).port == (ip2).port) )
+#define ip_equal_v4(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
 
 /*****************************************************************
  splits out the last subkey of a key

@@ -1187,19 +1187,20 @@ bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
 }
 
 /****************************************************************************
- Return the number of bits that match between two 4 character buffers
+ Return the number of bits that match between two len character buffers
 ***************************************************************************/
 
-int matching_quad_bits(unsigned char *p1, unsigned char *p2)
+int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len)
 {
-	int i, j, ret = 0;
-	for (i=0; i<4; i++) {
+	size_t i, j;
+	int ret = 0;
+	for (i=0; i<len; i++) {
 		if (p1[i] != p2[i])
 			break;
 		ret += 8;
 	}
 
-	if (i==4)
+	if (i==len)
 		return ret;
 
 	for (j=0; j<8; j++) {
@@ -1219,8 +1220,8 @@ static unsigned char sort_ip[4];
 
 static int name_query_comp(unsigned char *p1, unsigned char *p2)
 {
-	return matching_quad_bits(p2+2, sort_ip) -
-		matching_quad_bits(p1+2, sort_ip);
+	return matching_len_bits(p2+2, sort_ip, 4) -
+		matching_len_bits(p1+2, sort_ip, 4);
 }
 
 /****************************************************************************

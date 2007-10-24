@@ -614,7 +614,10 @@ int kerberos_kinit_password(const char *principal,
  Does DNS queries.
 ************************************************************************/
 
-static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sitename, struct in_addr primary_ip)
+static char *get_kdc_ip_string(char *mem_ctx,
+		const char *realm,
+		const char *sitename,
+		struct sockaddr_storage *pss)
 {
 	int i;
 	struct ip_service *ip_srv_site = NULL;
@@ -622,7 +625,8 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
 	int count_site = 0;
 	int count_nonsite;
 	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
-					inet_ntoa(primary_ip));
+					print_canonical_sockaddr(mem_ctx,
+							pss));
 
 	if (kdc_str == NULL) {
 		return NULL;
@@ -635,12 +639,15 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
 		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
 
 		for (i = 0; i < count_site; i++) {
-			if (ip_equal(ip_srv_site[i].ip, primary_ip)) {
+			if (addr_equal(&ip_srv_site[i].ss, pss)) {
 				continue;
 			}
-			/* Append to the string - inefficient but not done often. */
+			/* Append to the string - inefficient
+			 * but not done often. */
 			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-				kdc_str, inet_ntoa(ip_srv_site[i].ip));
+				kdc_str,
+				print_canonical_sockaddr(mem_ctx,
+							&ip_srv_site[i].ss));
 			if (!kdc_str) {
 				SAFE_FREE(ip_srv_site);
 				return NULL;
@@ -655,13 +662,14 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
 	for (i = 0; i < count_nonsite; i++) {
 		int j;
 
-		if (ip_equal(ip_srv_nonsite[i].ip, primary_ip)) {
+		if (addr_equal(&ip_srv_nonsite[i].ss, pss)) {
 			continue;
 		}
 
 		/* Ensure this isn't an IP already seen (YUK! this is n*n....) */
 		for (j = 0; j < count_site; j++) {
-			if (ip_equal(ip_srv_nonsite[i].ip, ip_srv_site[j].ip)) {
+			if (addr_equal(&ip_srv_nonsite[i].ss,
+						&ip_srv_site[j].ss)) {
 				break;
 			}
 			/* As the lists are sorted we can break early if nonsite > site. */
@@ -675,7 +683,9 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
 
 		/* Append to the string - inefficient but not done often. */
 		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-			kdc_str, inet_ntoa(ip_srv_nonsite[i].ip));
+				kdc_str,
+				print_canonical_sockaddr(mem_ctx,
+						&ip_srv_nonsite[i].ss));
 		if (!kdc_str) {
 			SAFE_FREE(ip_srv_site);
 			SAFE_FREE(ip_srv_nonsite);
@@ -700,8 +710,10 @@ static char *get_kdc_ip_string(char *mem_ctx, const char *realm, const char *sit
  run as root or will fail (which is a good thing :-).
 ************************************************************************/
 
-bool create_local_private_krb5_conf_for_domain(const char *realm, const char *domain,
-					const char *sitename, struct in_addr ip)
+bool create_local_private_krb5_conf_for_domain(const char *realm,
+						const char *domain,
+						const char *sitename,
+						struct sockaddr_storage *pss)
 {
 	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
 	char *tmpname = NULL;
@@ -742,12 +754,12 @@ bool create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 	realm_upper = talloc_strdup(fname, realm);
 	strupper_m(realm_upper);
 
-	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, ip);
+	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss);
 	if (!kdc_ip_string) {
 		TALLOC_FREE(dname);
 		return False;
 	}
-		
+
 	file_contents = talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n\n"
 				"[realms]\n\t%s = {\n"
 				"\t%s\t}\n",
@@ -806,7 +818,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm, const char *do
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
 		"file %s with realm %s KDC = %s\n",
-		fname, realm_upper, inet_ntoa(ip) ));
+		fname, realm_upper, print_canonical_sockaddr(dname, pss) ));
 
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);

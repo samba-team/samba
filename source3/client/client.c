@@ -79,7 +79,7 @@ static bool recurse = False;
 static bool showacls = False;
 bool lowercase = False;
 
-static struct in_addr dest_ip;
+static struct sockaddr_storage dest_ss;
 
 #define SEPARATORS " \t\n\r"
 
@@ -3839,7 +3839,7 @@ static int do_tar_op(char *base_directory)
 
 static int do_message_op(void)
 {
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	struct nmb_name called, calling;
 	fstring server_name;
 	char name_type_hex[10];
@@ -3853,9 +3853,9 @@ static int do_message_op(void)
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
 	fstrcat(server_name, name_type_hex);
 
-        zero_ip_v4(&ip);
-	if (have_ip) 
-		ip = dest_ip;
+        zero_addr(&ss,AF_INET);
+	if (have_ip)
+		ss = dest_ss;
 
 	/* we can only do messages over port 139 (to windows clients at least) */
 
@@ -3866,7 +3866,7 @@ static int do_message_op(void)
 		return 1;
 	}
 
-	status = cli_connect(cli, server_name, &ip);
+	status = cli_connect(cli, server_name, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
 		return 1;
@@ -3993,12 +3993,12 @@ static int do_message_op(void)
  			break;
 		case 'I':
 			{
-				dest_ip = *interpret_addr2(poptGetOptArg(pc));
-				if (is_zero_ip_v4(dest_ip))
+				if (!interpret_string_addr(&dest_ss, poptGetOptArg(pc), 0)) {
 					exit(1);
+				}
 				have_ip = True;
 
-				cli_cm_set_dest_ip( dest_ip );
+				cli_cm_set_dest_ss(&dest_ss);
 			}
 			break;
 		case 'E':

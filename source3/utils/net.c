@@ -56,7 +56,7 @@
 
 /* Yes, these buggers are globals.... */
 const char *opt_requester_name = NULL;
-const char *opt_host = NULL; 
+const char *opt_host = NULL;
 const char *opt_password = NULL;
 const char *opt_user_name = NULL;
 bool opt_user_specified = False;
@@ -87,7 +87,7 @@ const char *opt_destination = NULL;
 int opt_testmode = False;
 
 int opt_have_ip = False;
-struct in_addr opt_dest_ip;
+struct sockaddr_storage opt_dest_ip;
 
 extern bool AllowDebugChange;
 
@@ -157,12 +157,13 @@ int net_run_function2(int argc, const char **argv, const char *whoami,
 }
 
 /****************************************************************************
-connect to \\server\service 
+ Connect to \\server\service.
 ****************************************************************************/
 
-NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
-					const char *server_name, 
-					const char *service_name, 
+NTSTATUS connect_to_service(struct cli_state **c,
+					struct sockaddr_storage *server_ss,
+					const char *server_name,
+					const char *service_name,
 					const char *service_type)
 {
 	NTSTATUS nt_status;
@@ -172,9 +173,9 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = cli_full_connection(c, NULL, server_name, 
-					server_ip, opt_port,
-					service_name, service_type,  
+	nt_status = cli_full_connection(c, NULL, server_name,
+					server_ss, opt_port,
+					service_name, service_type,
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -184,15 +185,15 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 
 		/* Display a nicer message depending on the result */
 
-		if (NT_STATUS_V(nt_status) == 
+		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
 			d_fprintf(stderr, "The username or password was not correct.\n");
 
-		if (NT_STATUS_V(nt_status) == 
+		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
 			d_fprintf(stderr, "The account was locked out.\n");
 
-		if (NT_STATUS_V(nt_status) == 
+		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
 			d_fprintf(stderr, "The account was disabled.\n");
 
@@ -200,30 +201,33 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 	}
 }
 
-
 /****************************************************************************
-connect to \\server\ipc$  
+ Connect to \\server\ipc$.
 ****************************************************************************/
-NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
-					const char *server_name)
+
+NTSTATUS connect_to_ipc(struct cli_state **c,
+			struct sockaddr_storage *server_ss,
+			const char *server_name)
 {
-	return connect_to_service(c, server_ip, server_name, "IPC$", "IPC");
+	return connect_to_service(c, server_ss, server_name, "IPC$", "IPC");
 }
 
 /****************************************************************************
-connect to \\server\ipc$ anonymously
+ Connect to \\server\ipc$ anonymously.
 ****************************************************************************/
+
 NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
-			struct in_addr *server_ip, const char *server_name)
+				struct sockaddr_storage *server_ss,
+				const char *server_name)
 {
 	NTSTATUS nt_status;
 
-	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
-					server_ip, opt_port,
-					"IPC$", "IPC",  
+	nt_status = cli_full_connection(c, opt_requester_name, server_name,
+					server_ss, opt_port,
+					"IPC$", "IPC",
 					"", "",
 					"", 0, Undefined, NULL);
-	
+
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
@@ -254,11 +258,12 @@ static char *get_user_and_realm(const char *username)
 }
 
 /****************************************************************************
-connect to \\server\ipc$ using KRB5
+ Connect to \\server\ipc$ using KRB5.
 ****************************************************************************/
 
 NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
-			struct in_addr *server_ip, const char *server_name)
+			struct sockaddr_storage *server_ss,
+			const char *server_name)
 {
 	NTSTATUS nt_status;
 	char *user_and_realm = NULL;
@@ -273,13 +278,13 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = cli_full_connection(c, NULL, server_name, 
-					server_ip, opt_port,
-					"IPC$", "IPC",  
+	nt_status = cli_full_connection(c, NULL, server_name,
+					server_ss, opt_port,
+					"IPC$", "IPC",
 					user_and_realm, opt_workgroup,
 					opt_password, CLI_FULL_CONNECTION_USE_KERBEROS, 
 					Undefined, NULL);
-	
+
 	SAFE_FREE(user_and_realm);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -367,7 +372,7 @@ int net_use_krb_machine_account(void)
 int net_use_machine_account(void)
 {
 	char *user_name = NULL;
-		
+
 	if (!secrets_init()) {
 		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
 		exit(1);
@@ -381,62 +386,78 @@ int net_use_machine_account(void)
 	return 0;
 }
 
-bool net_find_server(const char *domain, unsigned flags, struct in_addr *server_ip, char **server_name)
+bool net_find_server(const char *domain,
+			unsigned flags,
+			struct sockaddr_storage *server_ss,
+			char **server_name)
 {
 	const char *d = domain ? domain : opt_target_workgroup;
 
 	if (opt_host) {
 		*server_name = SMB_STRDUP(opt_host);
-	}		
+	}
 
 	if (opt_have_ip) {
-		*server_ip = opt_dest_ip;
+		*server_ss = opt_dest_ip;
 		if (!*server_name) {
-			*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr), &opt_dest_ip);
+			*server_name = SMB_STRDUP(addr);
 		}
 	} else if (*server_name) {
 		/* resolve the IP address */
-		if (!resolve_name(*server_name, server_ip, 0x20))  {
+		if (!resolve_name(*server_name, server_ss, 0x20))  {
 			DEBUG(1,("Unable to resolve server name\n"));
-			return False;
+			return false;
 		}
 	} else if (flags & NET_FLAGS_PDC) {
-		struct in_addr pdc_ip;
+		fstring dc_name;
+		struct sockaddr_storage pdc_ss;
 
-		if (get_pdc_ip(d, &pdc_ip)) {
-			fstring dc_name;
-			
-			if (is_zero_ip_v4(pdc_ip))
-				return False;
-			
-			if ( !name_status_find(d, 0x1b, 0x20, pdc_ip, dc_name) )
-				return False;
-				
-			*server_name = SMB_STRDUP(dc_name);
-			*server_ip = pdc_ip;
+		if (get_pdc_ip(d, &pdc_ss)) {
+			DEBUG(1,("Unable to resolve PDC server address\n"));
+			return false;
 		}
-	} else if (flags & NET_FLAGS_DMB) {
-		struct in_addr msbrow_ip;
-		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
-		if (!resolve_name(d, &msbrow_ip, 0x1B))  {
-			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
+
+		if (is_zero_addr(&pdc_ss)) {
+			return false;
+		}
+
+		if (!name_status_find(d, 0x1b, 0x20, &pdc_ss, dc_name)) {
 			return False;
-		} else {
-			*server_ip = msbrow_ip;
 		}
-		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
+
+		*server_name = SMB_STRDUP(dc_name);
+		*server_ss = pdc_ss;
+	} else if (flags & NET_FLAGS_DMB) {
+		struct sockaddr_storage msbrow_ss;
+		char addr[INET6_ADDRSTRLEN];
+
+		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
+		if (!resolve_name(d, &msbrow_ss, 0x1B))  {
+			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
+			return false;
+		}
+		*server_ss = msbrow_ss;
+		print_sockaddr(addr, sizeof(addr), server_ss);
+		*server_name = SMB_STRDUP(addr);
 	} else if (flags & NET_FLAGS_MASTER) {
-		struct in_addr brow_ips;
-		if (!resolve_name(d, &brow_ips, 0x1D))  {
+		struct sockaddr_storage brow_ss;
+		char addr[INET6_ADDRSTRLEN];
+		if (!resolve_name(d, &brow_ss, 0x1D))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
-			return False;
-		} else {
-			*server_ip = brow_ips;
+			return false;
 		}
-		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
+		*server_ss = brow_ss;
+		print_sockaddr(addr, sizeof(addr), server_ss);
+		*server_name = SMB_STRDUP(addr);
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
-		(*server_ip).s_addr = htonl(INADDR_LOOPBACK);
+		if (!interpret_string_addr(server_ss,
+					"127.0.0.1", AI_NUMERICHOST)) {
+			DEBUG(1,("Unable to resolve 127.0.0.1\n"));
+			return false;
+		}
 		*server_name = SMB_STRDUP("127.0.0.1");
 	}
 
@@ -448,20 +469,22 @@ bool net_find_server(const char *domain, unsigned flags, struct in_addr *server_
 	return True;
 }
 
-
-bool net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+bool net_find_pdc(struct sockaddr_storage *server_ss,
+		fstring server_name,
+		const char *domain_name)
 {
-	if (get_pdc_ip(domain_name, server_ip)) {
-		if (is_zero_ip_v4(*server_ip))
-			return False;
-		
-		if (!name_status_find(domain_name, 0x1b, 0x20, *server_ip, server_name))
-			return False;
-			
-		return True;	
-	} 
-	else
-		return False;
+	if (!get_pdc_ip(domain_name, server_ss)) {
+		return false;
+	}
+	if (is_zero_addr(server_ss)) {
+		return false;
+	}
+
+	if (!name_status_find(domain_name, 0x1b, 0x20, server_ss, server_name)) {
+		return false;
+	}
+
+	return true;
 }
 
 NTSTATUS net_make_ipc_connection(unsigned flags, struct cli_state **pcli)
@@ -470,29 +493,29 @@ NTSTATUS net_make_ipc_connection(unsigned flags, struct cli_state **pcli)
 }
 
 NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
-                                    struct in_addr *ip, unsigned flags,
+                                    struct sockaddr_storage *pss, unsigned flags,
 				    struct cli_state **pcli)
 {
 	char *server_name = NULL;
-	struct in_addr server_ip;
+	struct sockaddr_storage server_ss;
 	struct cli_state *cli = NULL;
 	NTSTATUS nt_status;
 
-	if ( !server || !ip ) {
-		if (!net_find_server(domain, flags, &server_ip, &server_name)) {
+	if ( !server || !pss ) {
+		if (!net_find_server(domain, flags, &server_ss, &server_name)) {
 			d_fprintf(stderr, "Unable to find a suitable server\n");
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 	} else {
 		server_name = SMB_STRDUP( server );
-		server_ip = *ip;
+		server_ss = *pss;
 	}
 
 	if (flags & NET_FLAGS_ANONYMOUS) {
-		nt_status = connect_to_ipc_anonymous(&cli, &server_ip, server_name);
+		nt_status = connect_to_ipc_anonymous(&cli, &server_ss, server_name);
 	} else {
-		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
+		nt_status = connect_to_ipc(&cli, &server_ss, server_name);
 	}
 
 	/* store the server in the affinity cache if it was a PDC */
@@ -989,7 +1012,7 @@ static struct functable net_func[] = {
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	zero_ip_v4(&opt_dest_ip);
+	zero_addr(&opt_dest_ip, AF_INET);
 
 	load_case_tables();
 
@@ -1007,11 +1030,12 @@ static struct functable net_func[] = {
 			exit(0);
 			break;
 		case 'I':
-			opt_dest_ip = *interpret_addr2(poptGetOptArg(pc));
-			if (is_zero_ip_v4(opt_dest_ip))
+			if (!interpret_string_addr(&opt_dest_ip,
+						poptGetOptArg(pc), 0)) {
 				d_fprintf(stderr, "\nInvalid ip address specified\n");
-			else
+			} else {
 				opt_have_ip = True;
+			}
 			break;
 		case 'U':
 			opt_user_specified = True;

@@ -108,7 +108,11 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 			free( address );
 			return NULL;
 		}
-		*ret = address[0].ip;
+		if (address[0].ss.ss_family != AF_INET) {
+			free(address);
+			return NULL;
+		}
+		*ret = ((struct sockaddr_in *)&address[0].ss)->sin_addr;
 		free( address );
 		return ret;
 	}
@@ -121,11 +125,17 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	/* uggh, we have to broadcast to each interface in turn */
 	for (j=iface_count() - 1;j >= 0;j--) {
 		const struct in_addr *bcast = iface_n_bcast_v4(j);
+		struct sockaddr_storage ss;
+		struct sockaddr_storage *pss;
 		if (!bcast) {
 			continue;
 		}
-		ret = name_query(fd,name,0x00,True,True,*bcast,count, &flags, NULL);
-		if (ret) break;
+		in_addr_to_sockaddr_storage(&ss, *bcast);
+		pss = name_query(fd,name,0x00,True,True,&ss,count, &flags, NULL);
+		if (pss) {
+			*ret = ((struct sockaddr_in *)pss)->sin_addr;
+			break;
+		}
 	}
 
 	close(fd);

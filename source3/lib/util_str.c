@@ -2270,26 +2270,53 @@ bool str_list_substitute(char **list, const char *pattern, const char *insert)
  *         reallocated to new length
  **/
 
-char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
+static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
 {
 	char *new_ipstr = NULL;
+	char addr_buf[INET6_ADDRSTRLEN];
 
 	/* arguments checking */
-	if (!ipstr_list || !service) return NULL;
+	if (!ipstr_list || !service) {
+		return NULL;
+	}
 
 	/* attempt to convert ip to a string and append colon separator to it */
 	if (*ipstr_list) {
-		asprintf(&new_ipstr, "%s%s%s:%d", *ipstr_list, IPSTR_LIST_SEP,
-			inet_ntoa(service->ip), service->port);
+		print_sockaddr(addr_buf,
+				sizeof(addr_buf),
+				&service->ss);
+		if (service->ss.ss_family == AF_INET) {
+			/* IPv4 */
+			asprintf(&new_ipstr, "%s%s%s:%d",
+					*ipstr_list,
+					IPSTR_LIST_SEP,
+					addr_buf,
+					service->port);
+		} else {
+			/* IPv6 */
+			asprintf(&new_ipstr, "%s%s[%s]:%d",
+					*ipstr_list,
+					IPSTR_LIST_SEP,
+					addr_buf,
+					service->port);
+		}
 		SAFE_FREE(*ipstr_list);
 	} else {
-		asprintf(&new_ipstr, "%s:%d",
-				inet_ntoa(service->ip), service->port);
+		if (service->ss.ss_family == AF_INET) {
+			/* IPv4 */
+			asprintf(&new_ipstr, "%s:%d",
+				addr_buf,
+				service->port);
+		} else {
+			/* IPv6 */
+			asprintf(&new_ipstr, "[%s]:%d",
+				addr_buf,
+				service->port);
+		}
 	}
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;
 }
-
 
 /**
  * Allocate and initialise an ipstr list using ip adresses
@@ -2302,18 +2329,22 @@ char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
  **/
 
 char *ipstr_list_make(char **ipstr_list,
-		const struct ip_service * ip_list, int ip_count)
+			const struct ip_service *ip_list,
+			int ip_count)
 {
 	int i;
 
 	/* arguments checking */
-	if (!ip_list || !ipstr_list) return 0;
+	if (!ip_list || !ipstr_list) {
+		return 0;
+	}
 
 	*ipstr_list = NULL;
 
 	/* process ip addresses given as arguments */
-	for (i = 0; i < ip_count; i++)
+	for (i = 0; i < ip_count; i++) {
 		*ipstr_list = ipstr_list_add(ipstr_list, &ip_list[i]);
+	}
 
 	return (*ipstr_list);
 }
@@ -2322,7 +2353,7 @@ char *ipstr_list_make(char **ipstr_list,
 /**
  * Parse given ip string list into array of ip addresses
  * (as ip_service structures)
- *    e.g. 192.168.1.100:389,192.168.1.78, ...
+ *    e.g. [IPv6]:port,192.168.1.100:389,192.168.1.78, ...
  *
  * @param ipstr ip string list to be parsed
  * @param ip_list pointer to array of ip addresses which is
@@ -2330,7 +2361,7 @@ char *ipstr_list_make(char **ipstr_list,
  * @return number of succesfully parsed addresses
  **/
 
-int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
+int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 {
 	fstring token_str;
 	size_t count;
@@ -2348,26 +2379,33 @@ int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
 
 	for ( i=0; next_token(&ipstr_list, token_str,
 				IPSTR_LIST_SEP, FSTRING_LEN) && i<count; i++ ) {
-		struct in_addr addr;
-		unsigned port = 0;
-		char *p = strchr(token_str, ':');
+		char *s = token_str;
+		char *p = strrchr(token_str, ':');
 
 		if (p) {
 			*p = 0;
-			port = atoi(p+1);
+			(*ip_list)[i].port = atoi(p+1);
 		}
 
 		/* convert single token to ip address */
-		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
-			break;
-
-		(*ip_list)[i].ip = addr;
-		(*ip_list)[i].port = port;
+		if (token_str[0] == '[') {
+			/* IPv6 address. */
+			s++;
+			p = strchr(token_str, ']');
+			if (!p) {
+				continue;
+			}
+			*p = '\0';
+		}
+		if (!interpret_string_addr(&(*ip_list)[i].ss,
+					s,
+					AI_NUMERICHOST)) {
+			continue;
+		}
 	}
 
 	return count;
 }
-
 
 /**
  * Safely free ip string list
@@ -2379,7 +2417,6 @@ void ipstr_list_free(char* ipstr_list)
 {
 	SAFE_FREE(ipstr_list);
 }
-
 
 /**
  Unescape a URL encoded string, in place.

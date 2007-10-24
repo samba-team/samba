@@ -1689,7 +1689,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, p;
 	uint32 num_printers;
-	uint32 level = 3; 
+	uint32 level = 3;
 	pstring printername = "", sharename = "";
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
@@ -1703,7 +1703,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 	struct cli_state *cli_share_src = NULL;
 	struct cli_state *cli_share_dst = NULL;
 	fstring drivername = "";
-	
+
 	ZERO_STRUCT(drv_ctr_src);
 	ZERO_STRUCT(drv_ctr_dst);
 	ZERO_STRUCT(info_ctr_enum);
@@ -1715,21 +1715,20 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
-	
 
 	/* open print$-share on the src server */
-	nt_status = connect_to_service(&cli_share_src, &cli->dest_ip, 
+	nt_status = connect_to_service(&cli_share_src, &cli->dest_ss,
 			cli->desthost, "print$", "A:");
-	if (!NT_STATUS_IS_OK(nt_status)) 
+	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
 
 	got_src_driver_share = True;
 
 
 	/* open print$-share on the dst server */
-	nt_status = connect_to_service(&cli_share_dst, &cli_dst->dest_ip, 
+	nt_status = connect_to_service(&cli_share_dst, &cli_dst->dest_ss,
 			cli_dst->desthost, "print$", "A:");
-	if (!NT_STATUS_IS_OK(nt_status)) 
+	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	got_dst_driver_share = True;
