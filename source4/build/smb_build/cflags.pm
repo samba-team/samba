@@ -6,7 +6,8 @@
 package cflags;
 use strict;
 
-use sort 'stable';
+my $sort_available = eval "use sort 'stable'; return 1;";
+$sort_available = 0 unless defined($sort_available);
 
 sub by_path {
 	return  1 if($a =~ m#^\-I/#);
@@ -29,10 +30,15 @@ sub create_cflags($$$$) {
 		next unless defined ($key->{FINAL_CFLAGS});
 		next unless (@{$key->{FINAL_CFLAGS}} > 0);
 
+		my @sorted_cflags = @{$key->{FINAL_CFLAGS}};
+		if ($sort_available) {
+			@sorted_cflags = sort(by_path, @{$key->{FINAL_CFLAGS}});
+		}
+
 		# Rewrite CFLAGS so that both the source and the build
 		# directories are in the path.
 		my @cflags = ();
-		foreach my $flag (sort by_path @{$key->{FINAL_CFLAGS}}) {
+		foreach my $flag (@sorted_cflags) {
 			if($src_ne_build) {
 			        if($flag =~ m#^-I([^/].*$)#) {
 				        my $dir = $1;
