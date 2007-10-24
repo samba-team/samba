@@ -240,7 +240,7 @@ cn: LDAPtestUSER4
 		assert(ok.error == 0);
 	}
 
-	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in renamed container");
+	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))");
 	if (res.error != 0 || res.msgs.length != 1) {
 		println("Could not find (&(cn=ldaptestuser4)(objectClass=user))");
@@ -248,7 +248,17 @@ cn: LDAPtestUSER4
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn);
+	assert(res.msgs[0].dn == ("cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn));
+
+	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in renamed container");
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer2," + base_dn, ldb.SCOPE_SUBTREE);
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser4)(objectClass=user)) under cn=ldaptestcontainer2," + base_dn);
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn));
 
 	println("Testing delete of subtree renamed "+res.msgs[0].dn);
 	ok = ldb.del(res.msgs[0].dn);
@@ -311,7 +321,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptestuser,cn=users," + base_dn);
+	assert(res.msgs[0].dn == ("cn=ldaptestuser,cn=users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestuser");
 	assert(res.msgs[0].name == "ldaptestuser");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -320,7 +330,7 @@ objectClass: user
 	assert(res.msgs[0].objectClass[3] == "user");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
-	assert(res.msgs[0].objectCategory == "cn=Person,cn=Schema,cn=Configuration," + base_dn);
+	assert(res.msgs[0].objectCategory == ("CN=Person,CN=Schema,CN=Configuration," + base_dn));
 	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res[0].userAccountControl == 546);
  
@@ -386,7 +396,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptestcomputer,cn=computers," + base_dn);
+	assert(res.msgs[0].dn == ("cn=ldaptestcomputer,cn=computers," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestcomputer");
 	assert(res.msgs[0].name == "ldaptestcomputer");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -396,7 +406,7 @@ objectClass: user
 	assert(res.msgs[0].objectClass[4] == "computer");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
-	assert(res.msgs[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+	assert(res.msgs[0].objectCategory == ("CN=Computer,CN=Schema,CN=Configuration," + base_dn));
 	assert(res.msgs[0].primaryGroupID == 513);
 //	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res.msgs[0].userAccountControl == 546);
@@ -489,7 +499,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptest2computer,cn=computers," + base_dn);
+	assert(res.msgs[0].dn == ("cn=ldaptest2computer,cn=computers," + base_dn));
 	assert(res.msgs[0].cn == "ldaptest2computer");
 	assert(res.msgs[0].name == "ldaptest2computer");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -513,7 +523,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptestuser2,cn=users," + base_dn);
+	assert(res.msgs[0].dn == ("cn=ldaptestuser2,cn=users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestuser2");
 	assert(res.msgs[0].name == "ldaptestuser2");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -540,7 +550,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == "cn=ldaptestutf8user èùéìòà,cn=users," + base_dn);
+//	assert(res.msgs[0].dn == ("CN=ldaptestutf8user èùéìòà,CN=users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestutf8user èùéìòà");
 	assert(res.msgs[0].name == "ldaptestutf8user èùéìòà");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -562,7 +572,7 @@ objectClass: user
 	if (res.error != 0 || res.msgs.length != 1) {
 		println("Could not find (expect space collapse, win2k3 fails) (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))");
 	} else {
-		assert(res.msgs[0].dn == "cn=ldaptestutf8user2 èùéìòà,cn=users," + base_dn);
+//		assert(res.msgs[0].dn == ("cn=ldaptestutf8user2 èùéìòà,cn=users," + base_dn));
 		assert(res.msgs[0].cn == "ldaptestutf8user2 èùéìòà");
 	}
 
