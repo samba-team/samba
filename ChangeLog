@@ -1,3 +1,8 @@
+2007-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c: Adding same enctype is enough one time. From
+	Andy Polyakov and Bjorn Sandell.
+	
 2007-10-18  Love  <lha@stacken.kth.se>
 
 	* lib/krb5/cache.c (krb5_cc_retrieve_cred): check return value
