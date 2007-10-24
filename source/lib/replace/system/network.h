@@ -202,10 +202,12 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
 #ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
 
 #ifndef HAVE_SA_FAMILY_T
+#define HAVE_SA_FAMILY_T
 typedef unsigned short int sa_family_t;
 #endif
 
@@ -220,6 +222,7 @@ typedef unsigned short int sa_family_t;
 #endif
 
 #ifndef HAVE_STRUCT_ADDRINFO
+#define HAVE_STRUCT_ADDRINFO
 struct addrinfo {
 	int			ai_flags;
 	int			ai_family;
