@@ -330,7 +330,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		strlcpy(ifaces[total].name, iname, sizeof(ifaces[total].name));
+		strlcpy(ifaces[total].name,
+				ifreq.ifr_name,
+				sizeof(ifaces[total].name));
 
 		memcpy(&ifaces[total].ip, &ifreq.ifr_addr,
 				sizeof(struct sockaddr_in));
@@ -444,19 +446,19 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 				sizeof(struct sockaddr_in));
 
 		if (ifaces[total].flags & IFF_BROADCAST) {
-			if (ioctl(fd, SIOCGIFBRDADDR, &ifr[i]) != 0) {
-				continue;
+			if (ioctl(fd, SIOCGIFBRDADDR, ifr) != 0) {
+				goto next;
 			}
-			memcpy(&ifaces[total].bcast, &ifr[i].ifr_broadaddr,
+			memcpy(&ifaces[total].bcast, &ifr->ifr_broadaddr,
 				sizeof(struct sockaddr_in));
 		} else if (ifaces[total].flags & IFF_POINTOPOINT) {
-			if (ioctl(fd, SIOCGIFDSTADDR, &ifr[i]) != 0) {
-				continue;
+			if (ioctl(fd, SIOCGIFDSTADDR, ifr) != 0) {
+				goto next;
 			}
-			memcpy(&ifaces[total].bcast, &ifr[i].ifr_dstaddr,
+			memcpy(&ifaces[total].bcast, &ifr->ifr_dstaddr,
 				sizeof(struct sockaddr_in));
 		} else {
-			continue;
+			goto next;
 		}
 
 
@@ -532,7 +534,12 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 	}
 #endif
 
-	if (i1->ip.ss_family == AF_INET) {
+	/* AIX uses __ss_family instead of ss_family inside of
+	   sockaddr_storage. Instead of trying to figure out which field to
+	   use, we can just cast it to a sockaddr.
+	 */
+
+	if (((struct sockaddr *)&i1->ip)->sa_family == AF_INET) {
 		struct sockaddr_in *s1 = (struct sockaddr_in *)&i1->ip;
 		struct sockaddr_in *s2 = (struct sockaddr_in *)&i2->ip;
 
