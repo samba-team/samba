@@ -136,6 +136,17 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #define AI_ADDRCONFIG	0x0020
 #endif
 
+#ifndef AI_NUMERICSERV
+/*
+ * logic copied from AI_NUMERICHOST
+ */
+#if defined(HAVE_STRUCT_ADDRINFO) && defined(HAVE_GETADDRINFO)
+#define AI_NUMERICSERV	0
+#else
+#define AI_NUMERICSERV	0x0400
+#endif
+#endif
+
 #ifndef NI_NUMERICHOST
 #define NI_NUMERICHOST	1
 #endif
