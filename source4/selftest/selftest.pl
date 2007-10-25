@@ -13,7 +13,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -72,11 +72,18 @@ TESTSUITE-NAME/TEST-NAME
 The reason for a test can also be specified, by adding a hash sign (#) and the reason 
 after the test name.
 
-=item I<--skip>
+=item I<--exclude>
 
-Specify a file containing a list of tests that should be skipped. Possible candidates are
-tests that segfault the server, flip or don't end. The format of this file is the same as 
+Specify a file containing a list of tests that should be skipped. Possible 
+candidates are tests that segfault the server, flip or don't end. The format of this file is the same as 
 for the --expected-failures flag.
+
+=item I<--include>
+
+Specify a file containing a list of tests that should be run. Same format 
+as the --exclude flag.
+
+Not includes specified means all tests will be run.
 
 =item I<--one>
 
@@ -137,7 +144,8 @@ my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
 my $opt_immediate = 0;
 my $opt_expected_failures = undef;
-my @opt_skip = ();
+my @opt_exclude = ();
+my @opt_include = ();
 my $opt_verbose = 0;
 my $opt_testenv = 0;
 my $ldap = undef;
@@ -146,14 +154,15 @@ my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_no_lazy_setup = undef;
 my $opt_format = "plain";
-my @opt_testlists = ();
+my @testlists = ();
 
 my $srcdir = ".";
 my $builddir = ".";
 my $prefix = "./st";
 
 my @expected_failures = ();
-my @skips = ();
+my @includes = ();
+my @excludes = ();
 
 my $statistics = {
 	START_TIME => time(),
@@ -193,7 +202,16 @@ sub expecting_failure($)
 sub skip($)
 {
 	my ($name) = @_;
-	return find_in_list(\@skips, $name);
+
+	my $reason = find_in_list(\@excludes, $name);
+
+	return $reason if $reason;
+
+	return undef unless ($#includes > -1);
+
+	return "not included" if (not find_in_list(\@includes, $name));
+
+	return undef;
 }
 
 sub getlog_env($);
@@ -322,7 +340,8 @@ my $result = GetOptions (
 		'one' => \$opt_one,
 		'immediate' => \$opt_immediate,
 		'expected-failures=s' => \$opt_expected_failures,
-		'skip=s' => \@opt_skip,
+		'exclude=s' => \@opt_exclude,
+		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
 		'verbose' => \$opt_verbose,
@@ -333,7 +352,7 @@ my $result = GetOptions (
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'format=s' => \$opt_format,
-		'testlist=s' => \@opt_testlists
+		'testlist=s' => \@testlists
 	    );
 
 exit(1) if (not $result);
@@ -466,8 +485,16 @@ if (defined($opt_expected_failures)) {
 	@expected_failures = read_test_regexes($opt_expected_failures);
 }
 
-foreach (@opt_skip) {
-	push (@skips, read_test_regexes($_));
+foreach (@opt_exclude) {
+	push (@excludes, read_test_regexes($_));
+}
+
+if ($opt_quick) {
+	push (@includes, read_test_regexes("samba4-quick"));
+}
+
+foreach (@opt_include) {
+	push (@includes, read_test_regexes($_));
 }
 
 my $interfaces = join(',', ("127.0.0.6/8", 
@@ -580,13 +607,11 @@ sub read_testlist($)
 	return @ret;
 }
 
-if ($opt_quick) {
-	@todo = read_testlist("$testsdir/tests_quick.sh|");
-} else {
-	@todo = read_testlist("$testsdir/tests_all.sh|");
+if ($#testlists == -1) {
+	die("No testlists specified");
 }
 
-foreach (@opt_testlists) {
+foreach (@testlists) {
 	push(@todo, read_testlist($_));
 }
 

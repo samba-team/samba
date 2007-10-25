@@ -1,7 +1,7 @@
 SELFTEST = $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/samba4-knownfail \
-    --skip=$(srcdir)/samba4-skip \
+    --exclude=$(srcdir)/samba4-skip --testlist="./selftest/samba4_tests.sh|" \
     $(TEST_OPTIONS) 
 
 htmltest: everything
