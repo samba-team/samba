@@ -19,8 +19,8 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		KEY_QUERY_VALUE 		= 0x00001,
 		KEY_SET_VALUE 			= 0x00002,
 		KEY_CREATE_SUB_KEY 		= 0x00004,
-		KEY_ENUMERATE_SUB_KEYS 	= 0x00008,
-		KEY_NOTIFY 				= 0x00010,
+		KEY_ENUMERATE_SUB_KEYS		= 0x00008,
+		KEY_NOTIFY			= 0x00010,
 		KEY_CREATE_LINK 		= 0x00020,
 		KEY_WOW64_64KEY 		= 0x00100,
 		KEY_WOW64_32KEY 		= 0x00200
@@ -195,13 +195,20 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x0e */
+	typedef [public,bitmap32bit] bitmap {
+		REG_NOTIFY_CHANGE_NAME		= 0x00000001,
+		REG_NOTIFY_CHANGE_ATTRIBUTES	= 0x00000002,
+		REG_NOTIFY_CHANGE_LAST_SET	= 0x00000004,
+		REG_NOTIFY_CHANGE_SECURITY	= 0x00000008
+	} winreg_NotifyChangeType;
+
 	[public] WERROR winreg_NotifyChangeKeyValue(
 		[in,ref] policy_handle *handle,
-		[in] uint8 watch_subtree,
-		[in] uint32 notify_filter,
+		[in] boolean8 watch_subtree,
+		[in] winreg_NotifyChangeType notify_filter,
 		[in] uint32 unknown,
 		[in] winreg_String string1,
-		[in] winreg_String string2, 
+		[in] winreg_String string2,
 		[in] uint32 unknown2
 	);
 
