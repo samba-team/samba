@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse.y,v 1.29 2006/12/28 17:15:02 lha Exp $ */
+/* $Id: parse.y 21597 2007-07-16 18:48:58Z lha $ */
 
 %{
 #ifdef HAVE_CONFIG_H
@@ -45,7 +45,7 @@
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id: parse.y,v 1.29 2006/12/28 17:15:02 lha Exp $");
+RCSID("$Id: parse.y 21597 2007-07-16 18:48:58Z lha $");
 
 static Type *new_type (Typetype t);
 static struct constraint_spec *new_constraint_spec(enum ctype);
@@ -65,7 +65,7 @@ struct string_list {
 %union {
     int constant;
     struct value *value;
-    struct range range;
+    struct range *range;
     char *name;
     Type *type;
     Member *member;
@@ -214,7 +214,7 @@ struct string_list {
 %type <members> NamedNumberList
 
 %type <objid> objid objid_list objid_element objid_opt
-%type <range> range
+%type <range> range size
 
 %type <sl> referencenames
 
@@ -224,11 +224,13 @@ struct string_list {
 %type <constraint_spec> ContentsConstraint
 %type <constraint_spec> UserDefinedConstraint
 
+
+
 %start ModuleDefinition
 
 %%
 
-ModuleDefinition: IDENTIFIER kw_DEFINITIONS TagDefault ExtensionDefault
+ModuleDefinition: IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault
 			EEQUAL kw_BEGIN ModuleBody kw_END
 		{
 			checkundefined();
@@ -337,13 +339,40 @@ BooleanType	: kw_BOOLEAN
 
 range		: '(' Value RANGE Value ')'
 		{
-			if($2->type != integervalue || 
-			   $4->type != integervalue)
-				error_message("Non-integer value used in range");
-			$$.min = $2->u.integervalue;
-			$$.max = $4->u.integervalue;
+		    if($2->type != integervalue)
+			error_message("Non-integer used in first part of range");
+		    if($2->type != integervalue)
+			error_message("Non-integer in second part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $4->u.integervalue;
+		}
+		| '(' Value RANGE kw_MAX ')'
+		{		
+		    if($2->type != integervalue)
+			error_message("Non-integer in first part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $2->u.integervalue - 1;
+		}
+		| '(' kw_MIN RANGE Value ')'
+		{		
+		    if($4->type != integervalue)
+			error_message("Non-integer in second part of range");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $4->u.integervalue + 2;
+		    $$->max = $4->u.integervalue;
+		}
+		| '(' Value ')'
+		{
+		    if($2->type != integervalue)
+			error_message("Non-integer used in limit");
+		    $$ = ecalloc(1, sizeof(*$$));
+		    $$->min = $2->u.integervalue;
+		    $$->max = $2->u.integervalue;
 		}
 		;
+
 
 IntegerType	: kw_INTEGER
 		{
@@ -353,8 +382,7 @@ IntegerType	: kw_INTEGER
 		| kw_INTEGER range
 		{
 			$$ = new_type(TInteger);
-			$$->range = emalloc(sizeof(*$$->range));
-			*($$->range) = $2;
+			$$->range = $2;
 			$$ = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, $$);
 		}
 		| kw_INTEGER '{' NamedNumberList '}'
@@ -425,10 +453,12 @@ ObjectIdentifierType: kw_OBJECT kw_IDENTIFIER
 				     TE_EXPLICIT, new_type(TOID));
 		}
 		;
-OctetStringType	: kw_OCTET kw_STRING
+OctetStringType	: kw_OCTET kw_STRING size
 		{
-			$$ = new_tag(ASN1_C_UNIV, UT_OctetString, 
-				     TE_EXPLICIT, new_type(TOctetString));
+		    Type *t = new_type(TOctetString);
+		    t->range = $3;
+		    $$ = new_tag(ASN1_C_UNIV, UT_OctetString, 
+				 TE_EXPLICIT, t);
 		}
 		;
 
@@ -438,6 +468,13 @@ NullType	: kw_NULL
 				     TE_EXPLICIT, new_type(TNull));
 		}
 		;
+
+size		:
+		{ $$ = NULL; }
+		| kw_SIZE range
+		{ $$ = $2; }
+		;
+
 
 SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		{
@@ -453,10 +490,11 @@ SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		}
 		;
 
-SequenceOfType	: kw_SEQUENCE kw_OF Type
+SequenceOfType	: kw_SEQUENCE size kw_OF Type
 		{
 		  $$ = new_type(TSequenceOf);
-		  $$->subtype = $3;
+		  $$->range = $2;
+		  $$->subtype = $4;
 		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
 		}
 		;
