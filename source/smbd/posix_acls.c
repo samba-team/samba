@@ -4270,7 +4270,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 	/* now for ACL checks */
 
-	return can_access_file(conn, dname, &sbuf, FILE_WRITE_DATA);
+	return can_access_file_acl(conn, dname, &sbuf, FILE_WRITE_DATA);
 }
 
 /****************************************************************************
