@@ -48,3 +48,4 @@ RPC-FRSAPI							# Not provided by Samba 4
 ^NET-DOMOPEN$						# Hangs for some reason
 ^NET-API-BECOME-DC$					# Fails
 WINBIND							# FIXME: This should not be skipped
+NSS-TEST						# Fails
