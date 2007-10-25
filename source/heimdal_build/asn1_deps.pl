@@ -45,7 +45,7 @@ foreach my $line (@lines) {
 		$o_file = "$dirname/asn1_$output.o";
 		print "$x_file: $header\n";
 		print "$c_file: $dirname/asn1_$output.x\n";
-		print "\t\@cp $x_file $c_file\n\n";
+		print "\t\@echo \"#include \\\"config.h\\\"\" > $c_file && cat $x_file >> $c_file\n\n";
 		push @x_files, $x_file;
 		push @c_files, $c_file;
 		push @o_files, $o_file;
