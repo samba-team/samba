@@ -93,10 +93,6 @@ int rep_inet_pton(int af, const char *src, void *dst);
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
-#if !defined(HAVE_GETADDRINFO)
-#include "getaddrinfo.h"
-#endif
-
 /*
  * Some systems have getaddrinfo but not the
  * defines needed to use it.
@@ -212,6 +208,7 @@ typedef unsigned short int sa_family_t;
 #endif
 
 #ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#define HAVE_STRUCT_SOCKADDR_STORAGE
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
 #define sockaddr_storage sockaddr_in6
 #define ss_family sin6_family
@@ -234,6 +231,10 @@ struct addrinfo {
 	struct addrinfo		*ai_next;
 };
 #endif   /* HAVE_STRUCT_ADDRINFO */
+
+#if !defined(HAVE_GETADDRINFO)
+#include "getaddrinfo.h"
+#endif
 
 #ifdef SOCKET_WRAPPER
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
