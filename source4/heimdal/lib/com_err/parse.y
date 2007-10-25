@@ -35,7 +35,7 @@
 #include "compile_et.h"
 #include "lex.h"
 
-RCSID("$Id: parse.y,v 1.15 2005/06/16 19:21:42 lha Exp $");
+RCSID("$Id: parse.y 15426 2005-06-16 19:21:42Z lha $");
 
 void yyerror (char *s);
 static long name2number(const char *str);
