@@ -435,7 +435,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				s = open_socket_in(SOCK_STREAM, port, 0,
 						   &ss, true);
 				if (s == -1) {
-					return false;
+					continue;
 				}
 
 				/* ready to listen */
@@ -471,6 +471,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 	SAFE_FREE(ports);
 
+	if (num_sockets == 0) {
+		DEBUG(0,("open_sockets_smbd: No "
+			"sockets available to bind to.\n"));
+		return false;
+	}
 
 	/* Setup the main smbd so that we can get messages. Note that
 	   do this after starting listening. This is needed as when in
