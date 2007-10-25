@@ -37,6 +37,9 @@ TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  * struct definitions needed to call it.  To avoid conflict with the libbind
  * definition in such cases, we rename our routines to pg_xxx() via macros.
  *
+
+in lib/replace we use rep_xxx()
+
  * This code will also work on platforms where struct addrinfo is defined
  * in the system headers but no getaddrinfo() can be located.
  *
@@ -53,28 +56,32 @@ TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 #ifdef getaddrinfo
 #undef getaddrinfo
 #endif
-#define getaddrinfo pg_getaddrinfo
+#define getaddrinfo rep_getaddrinfo
+#define HAVE_GETADDRINFO
 
 #ifdef freeaddrinfo
 #undef freeaddrinfo
 #endif
-#define freeaddrinfo pg_freeaddrinfo
+#define freeaddrinfo rep_freeaddrinfo
+#define HAVE_FREEADDRINFO
 
 #ifdef gai_strerror
 #undef gai_strerror
 #endif
-#define gai_strerror pg_gai_strerror
+#define gai_strerror rep_gai_strerror
+#define HAVE_GAI_STRERROR
 
 #ifdef getnameinfo
 #undef getnameinfo
 #endif
-#define getnameinfo pg_getnameinfo
+#define getnameinfo rep_getnameinfo
+#define HAVE_GETNAMEINFO
 
-extern int getaddrinfo(const char *node, const char *service,
+extern int rep_getaddrinfo(const char *node, const char *service,
 			const struct addrinfo * hints, struct addrinfo ** res);
-extern void freeaddrinfo(struct addrinfo * res);
-extern const char *gai_strerror(int errcode);
-extern int getnameinfo(const struct sockaddr * sa, socklen_t salen,
+extern void rep_freeaddrinfo(struct addrinfo * res);
+extern const char *rep_gai_strerror(int errcode);
+extern int rep_getnameinfo(const struct sockaddr * sa, socklen_t salen,
 			char *node, size_t nodelen,
 			char *service, size_t servicelen, int flags);
 #endif   /* HAVE_GETADDRINFO */
