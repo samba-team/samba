@@ -78,7 +78,7 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 	struct winreg_NotifyChangeKeyValue r;
 
 	r.in.handle = handle;
-	r.in.watch_subtree = 1;
+	r.in.watch_subtree = true;
 	r.in.notify_filter = 0;
 	r.in.unknown = r.in.unknown2 = 0;
 	init_winreg_String(&r.in.string1, NULL);
@@ -90,7 +90,8 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		torture_comment(tctx,
-				"NotifyChangeKeyValue failed - %s - not considering\n", win_errstr(r.out.result));
+				"NotifyChangeKeyValue failed - %s - not considering\n",
+				win_errstr(r.out.result));
 		return true;
 	}
 
