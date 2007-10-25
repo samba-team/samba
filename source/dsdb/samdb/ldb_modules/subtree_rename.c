@@ -97,7 +97,7 @@ static int subtree_rename_search_callback(struct ldb_context *ldb, void *context
 
 	/* Only entries are interesting, and we handle the case of the parent seperatly */
 	if (ares->type == LDB_REPLY_ENTRY
-	    && ldb_dn_compare(ares->message->dn, ac->orig_req->op.rename.olddn) == 0) {
+	    && ldb_dn_compare(ares->message->dn, ac->orig_req->op.rename.olddn) != 0) {
 		/* And it is an actual entry: now create a rename from it */
 		int ret;
 
