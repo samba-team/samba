@@ -32,9 +32,12 @@ TOP=`pwd`
 if cd $dir && $YACC -d $file; then
 	if [ -r y.tab.h -a -r y.tab.c ];then
 		#echo "info: move files"
-		sed -e "/^#/!b" -e "/^#/ s|y\.tab\.h|$SRC|" -e "/^#/ s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
-		sed -e "/^#/ s|y\.tab\.c|$SRC|" -e "/^#/ s|\"$base.y|\"$SRC|" y.tab.c > $base.c
+		sed -e "/^#/!b" -e "s|y\.tab\.h|$SRC|" -e "s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
+		sed -e "s|y\.tab\.c|$SRC|" -e "s|\"$base.y|\"$SRC|" y.tab.c > $base.c
 		rm -f y.tab.c y.tab.h
+	elif [ ! -r $base.h -a ! -r $base.c]; then
+		echo "$base.h nor $base.c generated."
+		exit 1
 	fi
 fi
 cd $TOP
