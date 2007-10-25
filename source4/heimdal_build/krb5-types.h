@@ -5,11 +5,7 @@
 #define __krb5_types_h__
 
 #include "replace.h"
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
+#include "system/network.h"
 
 typedef socklen_t krb5_socklen_t;
 typedef ssize_t krb5_ssize_t;
