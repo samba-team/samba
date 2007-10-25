@@ -152,36 +152,6 @@ AC_HAVE_TYPE([struct sockaddr_in6], [
 #include <netinet/in.h>
 ])
 
-dnl test for getaddrinfo/getnameinfo
-AC_CACHE_CHECK([for getaddrinfo],samba_cv_HAVE_GETADDRINFO,[
-AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>
-#include <netdb.h>],
-[
-struct sockaddr sa;
-struct addrinfo *ai = NULL;
-int ret = getaddrinfo(NULL, NULL, NULL, &ai);
-if (ret != 0) {
-	const char *es = gai_strerror(ret);
-}
-freeaddrinfo(ai);
-ret = getnameinfo(&sa, sizeof(sa),
-		NULL, 0,
-		NULL, 0, 0);
-
-],
-samba_cv_HAVE_GETADDRINFO=yes,samba_cv_HAVE_GETADDRINFO=no)])
-if test x"$samba_cv_HAVE_GETADDRINFO" = x"yes"; then
-    AC_DEFINE(HAVE_GETADDRINFO,1,[Whether the system has getaddrinfo and getnameinfo])
-    AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
-    AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
-fi
-
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
@@ -358,6 +328,7 @@ m4_include(win32.m4)
 m4_include(timegm.m4)
 m4_include(inet_ntop.m4)
 m4_include(inet_pton.m4)
+m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
 
 AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
