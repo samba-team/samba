@@ -228,6 +228,7 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 	struct winreg_SetKeySecurity r;
 	struct KeySecurityData *sdata = NULL;
 	DATA_BLOB sdblob;
+	uint32_t sec_info;
 
 	ZERO_STRUCT(r);
 
@@ -245,8 +246,23 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 	sdata->size = sdblob.length;
 	sdata->len = sdblob.length;
 
+	sec_info = SECINFO_UNPROTECTED_SACL | SECINFO_UNPROTECTED_DACL;
+
+	if (sd->owner_sid) {
+		sec_info |= SECINFO_OWNER;
+	}
+	if (sd->group_sid) {
+		sec_info |= SECINFO_GROUP;
+	}
+	if (sd->sacl) {
+		sec_info |= SECINFO_SACL;
+	}
+	if (sd->dacl) {
+		sec_info |= SECINFO_DACL;
+	}
+
 	r.in.handle = handle;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.sec_info = sec_info;
 	r.in.sd = sdata;
 
 	torture_assert_ntstatus_ok(tctx,
