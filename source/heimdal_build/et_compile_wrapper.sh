@@ -10,7 +10,8 @@ DESTDIR=$3
 
 CMD=$4
 FILE=$5
-shift 5
+SOURCE=$6
+shift 6
 
 test -z "${SRCDIR}" && {
 	echo "${SELF}:SRCDIR: '${SRCDIR}'" >&2;
@@ -37,6 +38,11 @@ test -z "${FILE}" && {
 	exit 1;
 }
 
+test -z "${SOURCE}" && {
+	echo "${SELF}:SOURCE: '${SOURCE}'" >&2;
+	exit 1;
+}
+
 CURDIR=`pwd`
 
 cd ${SRCDIR} && {
@@ -58,6 +64,13 @@ cd ${BUILDDIR} && {
 cd ${DESTDIR} && {
 	${ABS_BUILDDIR}/${CMD} ${ABS_SRCDIR}/${FILE} >&2 || exit 1;
 	cd ${CURDIR}
+	TMP="${SOURCE}.$$"
+	mv ${SOURCE} ${TMP} && {
+		echo "#include \"config.h\"" > ${SOURCE} && {
+			cat ${TMP} >> ${SOURCE}
+		}
+	}
+	rm ${TMP}
 } || {
 	echo "${SELF}:cannot cd into '${BUILDDIR}'" >&2;
 	exit 1;
