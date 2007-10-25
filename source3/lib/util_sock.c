@@ -1879,7 +1879,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 			sizeof(name_buf),
 			NULL,
 			0,
-			NI_NUMERICHOST);
+			0);
 
 	if (ret) {
 		DEBUG(1,("get_peer_name: getnameinfo failed "
