@@ -253,7 +253,7 @@ static int getaddr_info_name(const char *node,
  *	Bugs:	- servname can only be a number, not text.
  */
 
-int getaddrinfo(const char *node,
+int rep_getaddrinfo(const char *node,
 		const char *service,
 		const struct addrinfo * hintp,
 		struct addrinfo ** res)
@@ -315,7 +315,7 @@ int getaddrinfo(const char *node,
 }
 
 
-void freeaddrinfo(struct addrinfo *res)
+void rep_freeaddrinfo(struct addrinfo *res)
 {
 	struct addrinfo *next = NULL;
 
@@ -332,7 +332,7 @@ void freeaddrinfo(struct addrinfo *res)
 }
 
 
-const char *gai_strerror(int errcode)
+const char *rep_gai_strerror(int errcode)
 {
 #ifdef HAVE_HSTRERROR
 	int			hcode;
@@ -468,7 +468,7 @@ static int getservicenameinfo(const struct sockaddr *sa,
  *
  * Bugs:	- No IPv6 support.
  */
-int getnameinfo(const struct sockaddr *sa, socklen_t salen,
+int rep_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 			char *node, size_t nodelen,
 			char *service, size_t servicelen, int flags)
 {
