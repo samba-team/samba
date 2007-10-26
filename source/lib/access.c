@@ -52,7 +52,7 @@ static bool masked_match(const char *tok, const char *slash, const char *s)
 	SAFE_FREE(tok_copy);
 
         if (strlen(slash + 1) > 2) {
-		if (interpret_string_addr(&ss_mask, slash+1, 0)) {
+		if (!interpret_string_addr(&ss_mask, slash+1, 0)) {
 			return false;
 		}
         } else {
