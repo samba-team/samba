@@ -100,14 +100,6 @@ void setup_linklocal_scope_id(struct sockaddr_storage *pss)
 			return;
 		}
 	}
-	for (i=local_interfaces;i;i=i->next) {
-		if (same_net(pss, &i->ip, &i->netmask)) {
-			struct sockaddr_in6 *psa6 =
-				(struct sockaddr_in6 *)pss;
-			psa6->sin6_scope_id = if_nametoindex(i->name);
-			return;
-		}
-	}
 }
 #endif
 
