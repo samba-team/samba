@@ -115,15 +115,21 @@ static void filter_request(char *buf)
 }
 
 
-static void filter_child(int c, struct in_addr dest_ip)
+static void filter_child(int c, struct sockaddr_storage *dest_ss)
 {
 	int s;
 
 	/* we have a connection from a new client, now connect to the server */
-	s = open_socket_out(SOCK_STREAM, &dest_ip, 445, LONG_CONNECT_TIMEOUT);
+	s = open_socket_out(SOCK_STREAM, dest_ss, 445, LONG_CONNECT_TIMEOUT);
 
 	if (s == -1) {
-		d_printf("Unable to connect to %s\n", inet_ntoa(dest_ip));
+		char addr[INET6_ADDRSTRLEN];
+		if (dest_ss) {
+			print_sockaddr(addr, sizeof(addr), dest_ss);
+		}
+
+		d_printf("Unable to connect to %s (%s)\n",
+			 dest_ss?addr:"NULL",strerror(errno));
 		exit(1);
 	}
 
@@ -169,7 +175,7 @@ static void filter_child(int c, struct in_addr dest_ip)
 static void start_filter(char *desthost)
 {
 	int s, c;
-	struct in_addr dest_ip;
+	struct sockaddr_storage dest_ss;
 
 	CatchChild();
 
@@ -185,7 +191,7 @@ static void start_filter(char *desthost)
 		d_printf("listen failed\n");
 	}
 
-	if (!resolve_name(desthost, &dest_ip, 0x20)) {
+	if (!resolve_name(desthost, &dest_ss, 0x20)) {
 		d_printf("Unable to resolve host %s\n", desthost);
 		exit(1);
 	}
@@ -205,7 +211,7 @@ static void start_filter(char *desthost)
 			if (c != -1) {
 				if (fork() == 0) {
 					close(s);
-					filter_child(c, dest_ip);
+					filter_child(c, &dest_ss);
 					exit(0);
 				} else {
 					close(c);
