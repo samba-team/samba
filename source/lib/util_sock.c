@@ -53,11 +53,27 @@ bool is_ipaddress(const char *str)
 	int ret = -1;
 
 #if defined(HAVE_IPV6)
-	struct in6_addr dest6;
+	if (strchr_m(str, ':')) {
+		char addr[INET6_ADDRSTRLEN];
+		struct in6_addr dest6;
+		const char *sp = str;
+		char *p = strchr_m(str, '%');
 
-	ret = inet_pton(AF_INET6, str, &dest6);
-	if (ret > 0) {
-		return true;
+		/*
+		 * Cope with link-local.
+		 * This is IP:v6:addr%ifname.
+		 */
+
+		if (p && (p > str) && (if_nametoindex(p+1) != 0)) {
+			strlcpy(addr, str,
+				MIN(PTR_DIFF(p,str)+1,
+					sizeof(addr)));
+			sp = addr;
+		}
+		ret = inet_pton(AF_INET6, addr, &dest6);
+		if (ret > 0) {
+			return true;
+		}
 	}
 #endif
 	return is_ipaddress_v4(str);
@@ -200,7 +216,27 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 		const char *str,
 		int flags)
 {
+	char addr[INET6_ADDRSTRLEN];
 	struct addrinfo *res = NULL;
+#if defined(HAVE_IPV6)
+	unsigned int scope_id = 0;
+
+	if (strchr_m(str, ':')) {
+		char *p = strchr_m(str, '%');
+
+		/*
+		 * Cope with link-local.
+		 * This is IP:v6:addr%ifname.
+		 */
+
+		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
+			strlcpy(addr, str,
+				MIN(PTR_DIFF(p,str)+1,
+					sizeof(addr)));
+			str = addr;
+		}
+	}
+#endif
 
 	zero_addr(pss, AF_INET);
 
@@ -212,6 +248,17 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 	}
 	/* Copy the first sockaddr. */
 	memcpy(pss, res->ai_addr, res->ai_addrlen);
+
+#if defined(HAVE_IPV6)
+	if (pss->ss_family == AF_INET6 && scope_id) {
+		struct sockaddr_in6 *ps6 = (struct sockaddr_in6 *)pss;
+		if (IN6_IS_ADDR_LINKLOCAL(&ps6->sin6_addr) &&
+				ps6->sin6_scope_id == 0) {
+			ps6->sin6_scope_id = scope_id;
+		}
+	}
+#endif
+
 	freeaddrinfo(res);
 	return true;
 }
