@@ -130,6 +130,9 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	nsd->revision = osd->revision;
+	nsd->type = osd->type;
+
 	return nsd;
 
  failed:
