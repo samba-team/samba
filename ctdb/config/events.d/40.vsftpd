@@ -40,6 +40,10 @@ case $cmd in
 
 	/bin/rm -f $CTDB_BASE/state/vsftpd/restart
 	;;
+
+     monitor)
+	ctdb_check_tcp_ports "ftp" 20 21
+	;;
 esac
 
 exit 0
