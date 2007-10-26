@@ -99,7 +99,7 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 
 	p.packet_type = DGRAM_PACKET;
-	p.ip = ((const struct sockaddr_in *)&dest_ss)->sin_addr;
+	p.ip = ((const struct sockaddr_in *)dest_ss)->sin_addr;
 	p.timestamp = time(NULL);
 
 	DEBUG(4,("send_mailslot: Sending to mailslot %s from %s ",
