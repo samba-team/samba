@@ -64,7 +64,7 @@ bool is_ipaddress(const char *str)
 }
 
 /****************************************************************************
- Is a sockaddr_storage a broadcast address ? 
+ Is a sockaddr_storage a broadcast address ?
 ****************************************************************************/
 
 bool is_broadcast_addr(const struct sockaddr_storage *pss)
@@ -1478,6 +1478,10 @@ int open_socket_out(int type,
 	if (pss->ss_family == AF_INET6) {
 		struct sockaddr_in6 *psa6 = (struct sockaddr_in6 *)&sock_out;
 		psa6->sin6_port = htons(port);
+		if (psa6->sin6_scope_id == 0 &&
+				IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
+			setup_linklocal_scope_id(&sock_out);
+		}
 	}
 #endif
 	if (pss->ss_family == AF_INET) {

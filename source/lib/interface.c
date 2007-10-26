@@ -88,6 +88,29 @@ bool is_local_net(const struct sockaddr_storage *from)
 	return false;
 }
 
+#if defined(HAVE_IPV6)
+void setup_linklocal_scope_id(struct sockaddr_storage *pss)
+{
+	struct interface *i;
+	for (i=local_interfaces;i;i=i->next) {
+		if (addr_equal(&i->ip,pss)) {
+			struct sockaddr_in6 *psa6 =
+				(struct sockaddr_in6 *)pss;
+			psa6->sin6_scope_id = if_nametoindex(i->name);
+			return;
+		}
+	}
+	for (i=local_interfaces;i;i=i->next) {
+		if (same_net(pss, &i->ip, &i->netmask)) {
+			struct sockaddr_in6 *psa6 =
+				(struct sockaddr_in6 *)pss;
+			psa6->sin6_scope_id = if_nametoindex(i->name);
+			return;
+		}
+	}
+}
+#endif
+
 /****************************************************************************
  Check if a packet is from a local (known) net.
 **************************************************************************/
@@ -323,100 +346,6 @@ static void add_interface(const struct iface_struct *ifs)
 	DEBUG(2,("netmask=%s\n",
 		print_sockaddr(addr, sizeof(addr),
 			&iface->netmask) ));
-}
-
-/****************************************************************************
- Create a struct sockaddr_storage with the netmask bits set to 1.
-****************************************************************************/
-
-bool make_netmask(struct sockaddr_storage *pss_out,
-			const struct sockaddr_storage *pss_in,
-			unsigned long masklen)
-{
-	*pss_out = *pss_in;
-	/* Now apply masklen bits of mask. */
-#if defined(HAVE_IPV6)
-	if (pss_in->ss_family == AF_INET6) {
-		char *p = (char *)&((struct sockaddr_in6 *)pss_out)->sin6_addr;
-		unsigned int i;
-
-		if (masklen > 128) {
-			return false;
-		}
-		for (i = 0; masklen >= 8; masklen -= 8, i++) {
-			*p++ = 0xff;
-		}
-		/* Deal with the partial byte. */
-		*p++ &= (0xff & ~(0xff>>masklen));
-		i++;
-		for (;i < sizeof(struct in6_addr); i++) {
-			*p++ = '\0';
-		}
-		return true;
-	}
-#endif
-	if (pss_in->ss_family == AF_INET) {
-		if (masklen > 32) {
-			return false;
-		}
-		((struct sockaddr_in *)pss_out)->sin_addr.s_addr =
-			htonl(((0xFFFFFFFFL >> masklen) ^ 0xFFFFFFFFL));
-		return true;
-	}
-	return false;
-}
-
-/****************************************************************************
- Create a struct sockaddr_storage set to the broadcast or network adress from
- an incoming sockaddr_storage.
-****************************************************************************/
-
-static void make_bcast_or_net(struct sockaddr_storage *pss_out,
-			const struct sockaddr_storage *pss_in,
-			const struct sockaddr_storage *nmask,
-			bool make_bcast)
-{
-	unsigned int i = 0, len = 0;
-	char *pmask = NULL;
-	char *p = NULL;
-	*pss_out = *pss_in;
-
-	/* Set all zero netmask bits to 1. */
-#if defined(HAVE_IPV6)
-	if (pss_in->ss_family == AF_INET6) {
-		p = (char *)&((struct sockaddr_in6 *)pss_out)->sin6_addr;
-		pmask = (char *)&((struct sockaddr_in6 *)nmask)->sin6_addr;
-		len = 16;
-	}
-#endif
-	if (pss_in->ss_family == AF_INET) {
-		p = (char *)&((struct sockaddr_in *)pss_out)->sin_addr;
-		pmask = (char *)&((struct sockaddr_in *)nmask)->sin_addr;
-		len = 4;
-	}
-
-	for (i = 0; i < len; i++, p++, pmask++) {
-		if (make_bcast) {
-			*p = (*p & *pmask) | (*pmask ^ 0xff);
-		} else {
-			/* make_net */
-			*p = (*p & *pmask);
-		}
-	}
-}
-
-static void make_bcast(struct sockaddr_storage *pss_out,
-			const struct sockaddr_storage *pss_in,
-			const struct sockaddr_storage *nmask)
-{
-	make_bcast_or_net(pss_out, pss_in, nmask, true);
-}
-
-static void make_net(struct sockaddr_storage *pss_out,
-			const struct sockaddr_storage *pss_in,
-			const struct sockaddr_storage *nmask)
-{
-	make_bcast_or_net(pss_out, pss_in, nmask, false);
 }
 
 /****************************************************************************
