@@ -120,16 +120,9 @@ sub summary($)
 	}
 }
 
-sub missing_env($$$)
+sub skip_testsuite($$)
 {
-	my ($self, $name, $envname) = @_;
-
-	print "FAIL: $name (ENV[$envname] not available!)\n";
-}
-
-sub skip_testsuite($$$)
-{
-	my ($self, $envname, $name, $reason) = @_;
+	my ($self, $name, $reason) = @_;
 
 	if ($reason) {
 		print "SKIPPED: $name [$reason]\n";
