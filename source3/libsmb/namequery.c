@@ -1594,6 +1594,32 @@ bool resolve_name(const char *name,
 	char *sitename = NULL;
 	int count = 0;
 
+#if defined(HAVE_IPV6)
+	unsigned int if_idx = 0;
+	const char *p = strchr_m(name, '%');
+
+	if (p && (if_idx = if_nametoindex(p+1)) != 0) {
+		char *newname = SMB_STRDUP(name);
+		if (!newname) {
+			return false;
+		}
+		newname[PTR_DIFF(p,name)] = '\0';
+		if (is_ipaddress(newname) &&
+				interpret_string_addr(return_ss,
+					newname, AI_NUMERICHOST)) {
+			struct sockaddr_in6 *psa6 =
+				(struct sockaddr_in6 *)&return_ss;
+			if (psa6->sin6_scope_id == 0 &&
+					IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
+				psa6->sin6_scope_id = if_idx;
+			}
+			SAFE_FREE(newname);
+			return true;
+		}
+		SAFE_FREE(newname);
+	}
+#endif
+
 	if (is_ipaddress(name)) {
 		return interpret_string_addr(return_ss, name, AI_NUMERICHOST);
 	}
