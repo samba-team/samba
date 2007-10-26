@@ -271,11 +271,11 @@ WINBIND_STRUCT_TESTS=`$samba4bindir/smbtorture --list | grep "^WINBIND-STRUCT" |
 WINBIND_NDR_TESTS=`$samba4bindir/smbtorture --list | grep "^WINBIND-NDR" | xargs`
 for env in dc member; do
 	for t in $WINBIND_STRUCT_TESTS; do
-		plantest "$ENVNAME:$t" $ENVNAME $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
+		plantest $t $env $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
 	done
 
 	for t in $WINBIND_NDR_TESTS; do
-		plantest "$ENVNAME:$t" $ENVNAME $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
+		plantest $t $env $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
 	done
 done
 
