@@ -66,6 +66,31 @@ void display_sec_access(SEC_ACCESS *info)
 }
 
 /****************************************************************************
+ display sec_ace flags
+ ****************************************************************************/
+void display_sec_ace_flags(uint8_t flags)
+{
+	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT)
+		printf("SEC_ACE_FLAG_OBJECT_INHERIT ");
+	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT)
+		printf(" SEC_ACE_FLAG_CONTAINER_INHERIT ");
+	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)
+		printf("SEC_ACE_FLAG_NO_PROPAGATE_INHERIT ");
+	if (flags & SEC_ACE_FLAG_INHERIT_ONLY)
+		printf("SEC_ACE_FLAG_INHERIT_ONLY ");
+	if (flags & SEC_ACE_FLAG_INHERITED_ACE)
+		printf("SEC_ACE_FLAG_INHERITED_ACE ");
+/*	if (flags & SEC_ACE_FLAG_VALID_INHERIT)
+		printf("SEC_ACE_FLAG_VALID_INHERIT "); */
+	if (flags & SEC_ACE_FLAG_SUCCESSFUL_ACCESS)
+		printf("SEC_ACE_FLAG_SUCCESSFUL_ACCESS ");
+	if (flags & SEC_ACE_FLAG_FAILED_ACCESS)
+		printf("SEC_ACE_FLAG_FAILED_ACCESS ");
+
+	printf("\n");
+}
+
+/****************************************************************************
  display sec_ace object
  ****************************************************************************/
 static void disp_sec_ace_object(struct security_ace_object *object)
@@ -123,7 +148,8 @@ void display_sec_ace(SEC_ACE *ace)
 			break;
 	}
 
-	printf(" (%d) flags: %d\n", ace->type, ace->flags);
+	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
+	display_sec_ace_flags(ace->flags);
 	display_sec_access(&ace->access_mask);
 	sid_to_string(sid_str, &ace->trustee);
 	printf("\t\tSID: %s\n\n", sid_str);
@@ -145,9 +171,11 @@ void display_sec_acl(SEC_ACL *sec_acl)
 			 sec_acl->num_aces, sec_acl->revision); 
 	printf("\t---\n");
 
-	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
-		for (i = 0; i < sec_acl->num_aces; i++)
+	if (sec_acl->size != 0 && sec_acl->num_aces != 0) {
+		for (i = 0; i < sec_acl->num_aces; i++) {
 			display_sec_ace(&sec_acl->aces[i]);
+		}
+	}
 }
 
 void display_acl_type(uint16 type)
