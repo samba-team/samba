@@ -1,11 +1,11 @@
-LOCAL-RESOLVE/async
-LOCAL-ICONV/next_codepoint()
+LOCAL-RESOLVE.*/async
+LOCAL-ICONV.*/next_codepoint()
 BASE-DELAYWRITE/finfo update on close
-BASE-DELETE/deltest20a
-BASE-DELETE/deltest20b
-RAW-OPLOCK/OPLOCK
+BASE-DELETE.*/deltest20a
+BASE-DELETE.*/deltest20b
+RAW-OPLOCK.*/OPLOCK
 RPC-WINREG
-LOCAL-REGISTRY/security # Not implemented yet
+LOCAL-REGISTRY.*/security # Not implemented yet
 RPC-WKSSVC.*NetWkstaGetInfo
 RPC-WKSSVC.*NetWkstaTransportEnum
 RPC-HANDLES.*/lsarpc-shared
