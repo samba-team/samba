@@ -73,9 +73,9 @@ sub print_html_footer($$)
 
 sub output_msg($$$);
 
-sub start_testsuite($$)
+sub start_testsuite($$$)
 {
-	my ($self, $state) = @_;
+	my ($self, $name, $state) = @_;
 
 	$self->{local_statistics} = {
 		success => 0,
@@ -84,13 +84,12 @@ sub start_testsuite($$)
 		failure => 0
 	};
 
-	$state->{HTMLFILE} = "$state->{NAME}.html";
+	$state->{HTMLFILE} = "$name.html";
 	$state->{HTMLFILE} =~ s/[:\t\n \/]/_/g;
 
 	open(TEST, ">$self->{dirname}/$state->{HTMLFILE}") or die("Unable to open $state->{HTMLFILE} for writing");
 
-	$self->print_html_header("Test Results for $state->{NAME}",
-		                     *TEST);
+	$self->print_html_header("Test Results for $name", *TEST);
 
 	if ($state->{ENVNAME} ne "none") {
 		print TEST "<h2>Environment settings</h2>\n";
@@ -137,7 +136,7 @@ sub output_msg($$$)
 
 sub end_testsuite($$$$$)
 {
-	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
 
 	print TEST "</table>\n";
 
@@ -149,7 +148,7 @@ sub end_testsuite($$$$$)
 	close(TEST);
 
 	print INDEX "<tr>\n";
-	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$state->{NAME}</a></td>\n";
+	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$name</a></td>\n";
 	my $st = $self->{local_statistics};
 
 	if ($ret == $expected_ret) {
