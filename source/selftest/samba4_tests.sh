@@ -12,7 +12,11 @@ plantest() {
 	shift 2
 	cmdline="$*"
 	echo "-- TEST --"
-	echo $name
+	if [ "$env" = "none" ]; then
+		echo "samba4.$name"
+	else
+		echo "samba4.$name ($env)"
+	fi
 	echo $env
 	echo $cmdline
 }
@@ -23,22 +27,22 @@ samba4srcdir=$incdir/..
 samba4bindir=$samba4srcdir/bin
 SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 
-plantest "base.js" dc "$SCRIPTDIR/base.js" $CONFIGURATION
-plantest "samr.js" dc "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
-plantest "echo.js" dc "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
+plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
+plantest "js.samr" dc "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
+plantest "js.echo" dc "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
 #plantest "ejsnet.js" dc "$SCRIPTDIR/ejsnet.js" $CONFIGURATION -U\$USERNAME%\$PASSWORD \$DOMAIN ejstestuser
-plantest "ldb.js" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION
-plantest "winreg" dc $samba4srcdir/scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U\$USERNAME%\$PASSWORD
+plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION
+plantest "js.winreg" dc $samba4srcdir/scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U\$USERNAME%\$PASSWORD
 
 # Simple tests for LDAP and CLDAP
 
 for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD"; do
-    plantest "TESTING PROTOCOL ldap with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldap \$SERVER_IP $options
+    plantest "ldb.ldap with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldap \$SERVER_IP $options
 done
 # see if we support ldaps
 if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
     for options in "" "-U\$USERNAME%\$PASSWORD"; do
-	plantest "TESTING PROTOCOL ldaps with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldaps \$SERVER_IP $options
+	plantest "ldb.ldaps with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldaps \$SERVER_IP $options
     done
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
@@ -52,7 +56,7 @@ LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
 plantest "ldb" none $LDBDIR/tests/test-tdb.sh
 
-plantest "ejs ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD
+plantest "js.ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD
 
 # Tests for RPC
 
@@ -187,7 +191,7 @@ done
 
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
-    plantest "ntvfs/cifs $t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs.cifs.$t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 # Local tests
@@ -222,8 +226,8 @@ bbdir=$incdir/../../testprogs/blackbox
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
-plantest "blackbox.nmblookup:dc" dc $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
-plantest "blackbox.nmblookup:member" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantest "blackbox.nmblookup" dc $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
+plantest "blackbox.nmblookup" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
 
 # Tests using the "Simple" NTVFS backend
 
@@ -234,7 +238,7 @@ done
 DATADIR=$samba4srcdir/../testdata
 
 plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
-plantest "samba3sam.js" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
+plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 rm -rf $PREFIX/upgrade
 mkdir -p $PREFIX/upgrade
@@ -252,7 +256,7 @@ plantest "wbinfo -a against member server with domain creds" member $VALGRIND $s
 NBT_TESTS=`$samba4bindir/smbtorture --list | grep "^NBT-" | xargs`
 
 for f in $NBT_TESTS; do
-	plantest "$f:$env" "dc" $samba4bindir/smbtorture $TORTURE_OPTIONS //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
+	plantest $f dc $samba4bindir/smbtorture $TORTURE_OPTIONS //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
 done
 
 WB_OPTS="${TORTURE_OPTIONS}"

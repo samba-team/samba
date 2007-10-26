@@ -40,7 +40,6 @@ sub new($$$$) {
 	print INDEX "  <table>\n";
 	print INDEX "  <tr>\n";
 	print INDEX "    <td class=\"tableHead\">Test</td>\n";
-	print INDEX "    <td class=\"tableHead\">Environment</td>\n";
 	print INDEX "    <td class=\"tableHead\">Result</td>\n";
 	print INDEX "  </tr>\n";
 
@@ -151,7 +150,6 @@ sub end_testsuite($$$$$)
 
 	print INDEX "<tr>\n";
 	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$state->{NAME}</a></td>\n";
-	print INDEX "  <td class=\"environment\">$state->{ENVNAME}</td>\n";
 	my $st = $self->{local_statistics};
 
 	if ($ret == $expected_ret) {
