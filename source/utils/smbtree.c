@@ -70,7 +70,7 @@ static void add_name(const char *machine_name, uint32 server_type,
 static bool get_workgroups(struct user_auth_info *user_info)
 {
         struct cli_state *cli;
-        struct in_addr server_ip;
+        struct sockaddr_storage server_ss;
 	pstring master_workgroup;
 
         /* Try to connect to a #1d name of our current workgroup.  If that
@@ -79,22 +79,24 @@ static bool get_workgroups(struct user_auth_info *user_info)
 
 	pstrcpy(master_workgroup, lp_workgroup());
 
-        if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ip)) {
+        if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ss)) {
                 DEBUG(4, ("Unable to find master browser for workgroup %s, falling back to broadcast\n", 
 			  master_workgroup));
 				use_bcast = True;
 		} else if(!use_bcast) {
-        	if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr), &server_ss);
+			if (!(cli = get_ipc_connect(addr, &server_ss, user_info)))
 				return False;
 		}
-		
+
 		if (!(cli = get_ipc_connect_master_ip_bcast(master_workgroup, user_info))) {
 			DEBUG(4, ("Unable to find master browser by "
 				  "broadcast\n"));
 			return False;
         }
 
-        if (!cli_NetServerEnum(cli, master_workgroup, 
+        if (!cli_NetServerEnum(cli, master_workgroup,
                                SV_TYPE_DOMAIN_ENUM, add_name, &workgroups))
                 return False;
 
@@ -106,27 +108,29 @@ static bool get_workgroups(struct user_auth_info *user_info)
 static bool get_servers(char *workgroup, struct user_auth_info *user_info)
 {
         struct cli_state *cli;
-        struct in_addr server_ip;
+        struct sockaddr_storage server_ss;
+	char addr[INET6_ADDRSTRLEN];
 
         /* Open an IPC$ connection to the master browser for the workgroup */
 
-        if (!find_master_ip(workgroup, &server_ip)) {
+        if (!find_master_ip(workgroup, &server_ss)) {
                 DEBUG(4, ("Cannot find master browser for workgroup %s\n",
                           workgroup));
                 return False;
         }
 
-        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
+	print_sockaddr(addr, sizeof(addr), &server_ss);
+        if (!(cli = get_ipc_connect(addr, &server_ss, user_info)))
                 return False;
 
-        if (!cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, add_name, 
+        if (!cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, add_name,
                                &servers))
                 return False;
 
         return True;
 }
 
-static bool get_rpc_shares(struct cli_state *cli, 
+static bool get_rpc_shares(struct cli_state *cli,
 			   void (*fn)(const char *, uint32, const char *, void *),
 			   void *state)
 {
