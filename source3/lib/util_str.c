@@ -2280,11 +2280,12 @@ static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
 		return NULL;
 	}
 
+	print_sockaddr(addr_buf,
+			sizeof(addr_buf),
+			&service->ss);
+
 	/* attempt to convert ip to a string and append colon separator to it */
 	if (*ipstr_list) {
-		print_sockaddr(addr_buf,
-				sizeof(addr_buf),
-				&service->ss);
 		if (service->ss.ss_family == AF_INET) {
 			/* IPv4 */
 			asprintf(&new_ipstr, "%s%s%s:%d",

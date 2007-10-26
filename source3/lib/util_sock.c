@@ -234,7 +234,7 @@ bool is_loopback_ip_v4(struct in_addr ip)
 bool is_loopback_addr(const struct sockaddr_storage *pss)
 {
 #if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET) {
+	if (pss->ss_family == AF_INET6) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_LOOPBACK(pin6);
@@ -265,7 +265,7 @@ bool is_zero_ip_v4(struct in_addr ip)
 bool is_zero_addr(const struct sockaddr_storage *pss)
 {
 #if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET) {
+	if (pss->ss_family == AF_INET6) {
 		struct in6_addr *pin6 =
 			&((struct sockaddr_in6 *)pss)->sin6_addr;
 		return IN6_IS_ADDR_UNSPECIFIED(pin6);
