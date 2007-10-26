@@ -349,19 +349,12 @@ sub summary($)
 	close(SUMMARY);
 }
 
-sub missing_env($$$)
-{
-	my ($self, $name, $envname) = @_;
-
-	$self->skip_testsuite($envname, $name, "environment `$envname` not available!");
-}
-
 sub skip_testsuite($$$$)
 {
-	my ($self, $envname, $name, $reason) = @_;
+	my ($self, $name, $reason) = @_;
 
 	push (@{$self->{error_summary}->{skip_testsuites}}, 
-		  [$envname, $name, $reason]);
+		  [$name, $reason]);
 }
 
 1;

@@ -470,10 +470,10 @@ sub read_test_regexes($)
 	open(LF, "<$name") or die("unable to read $name: $!");
 	while (<LF>) { 
 		chomp; 
-		if (/^(.*?)([ \t]+)\#(.*)$/) {
-			push (@ret, [$1, $3]);
+		if (/^(.*?)([ \t]+)\#([\t ]*)(.*?)$/) {
+			push (@ret, [$1, $4]);
 		} else {
-			s/^(.*?)([ \t]+)\#(.*)$//;
+			s/^(.*?)([ \t]+)\#([\t ]*)(.*?)$//;
 			push (@ret, [$_, undef]); 
 		}
 	}
@@ -783,7 +783,7 @@ $envvarstr
 		
 		my $skipreason = skip($name);
 		if ($skipreason) {
-			$msg_ops->skip_testsuite($envname, $name, $skipreason);
+			$msg_ops->skip_testsuite($name, $skipreason);
 			$statistics->{SUITES_SKIPPED}++;
 			next;
 		}
@@ -791,7 +791,7 @@ $envvarstr
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
 			$statistics->{SUITES_SKIPPED}++;
-			$msg_ops->missing_env($name, $envname);
+			$msg_ops->skip_testsuite($name, "unable to set up environment $envname");
 			next;
 		}
 
