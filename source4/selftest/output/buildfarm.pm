@@ -16,21 +16,21 @@ sub new($$$$) {
 	bless($self, $class);
 }
 
-sub start_testsuite($$)
+sub start_testsuite($$$)
 {
-	my ($self, $state) = @_;
+	my ($self, $name, $state) = @_;
 	my $out = "";
 
 	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
-	$out .= "Running test $state->{NAME} (level 0 stdout)\n";
+	$out .= "Running test $name (level 0 stdout)\n";
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
 	$out .= scalar(localtime())."\n";
 	$out .= "SELFTEST RUNTIME: " . $duration . "s\n";
-	$out .= "NAME: $state->{NAME}\n";
+	$out .= "NAME: $name\n";
 	$out .= "CMD: $state->{CMD}\n";
 
-	$self->{test_output}->{$state->{NAME}} = "";
+	$self->{test_output}->{$name} = "";
 
 	print $out;
 }
@@ -49,9 +49,9 @@ sub control_msg($$$)
 	$self->{test_output}->{$state->{NAME}} .= $output;
 }
 
-sub end_testsuite($$$$$)
+sub end_testsuite($$$$$$)
 {
-	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
 	my $out = "";
 
 	$out .= "TEST RUNTIME: " . (time() - $state->{START_TIME}) . "s\n";
@@ -60,7 +60,7 @@ sub end_testsuite($$$$$)
 		$out .= "ALL OK\n";
 	} else {
 		$out .= "ERROR: $ret\n";
-		$out .= $self->{test_output}->{$state->{NAME}};
+		$out .= $self->{test_output}->{$name};
 	}
 
 	$out .= "PCAP FILE: $state->{PCAP_FILE}\n" if defined($state->{PCAP_FILE});
@@ -69,9 +69,9 @@ sub end_testsuite($$$$$)
 
 	$out .= "==========================================\n";
 	if ($ret == $expected_ret) {
-		$out .= "TEST PASSED: $state->{NAME}\n";
+		$out .= "TEST PASSED: $name\n";
 	} else {
-		$out .= "TEST FAILED: $state->{NAME} (status $ret)\n";
+		$out .= "TEST FAILED: $name (status $ret)\n";
 	}
 	$out .= "==========================================\n";
 

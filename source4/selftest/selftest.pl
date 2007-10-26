@@ -250,7 +250,7 @@ sub run_testsuite($$$$$$$)
 	my $msg_state = {
 		ENVNAME	=> $envname,
 		ENVVARS => $envvars,
-		NAME	=> $name,
+		NAME => $name,
 		CMD	=> $cmd,
 		INDEX	=> $i,
 		TOTAL	=> $totalsuites,
@@ -260,7 +260,7 @@ sub run_testsuite($$$$$$$)
 	setup_pcap($msg_state);
 
 	open(RESULT, "$cmd 2>&1|");
-	$msg_ops->start_testsuite($msg_state);
+	$msg_ops->start_testsuite($name, $msg_state);
 
 	my $expected_ret = parse_results(
 		$msg_ops, $msg_state, $statistics, *RESULT, \&expecting_failure);
@@ -270,7 +270,7 @@ sub run_testsuite($$$$$$$)
 
 	cleanup_pcap($msg_state, $expected_ret, $ret);
 
-	$msg_ops->end_testsuite($msg_state, $expected_ret, $ret,
+	$msg_ops->end_testsuite($name, $msg_state, $expected_ret, $ret,
 							getlog_env($msg_state->{ENVNAME}));
 
 	if (not $opt_socket_wrapper_keep_pcap and 

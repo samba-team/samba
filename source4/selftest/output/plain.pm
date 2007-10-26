@@ -20,17 +20,17 @@ sub new($$$$) {
 
 sub output_msg($$$);
 
-sub start_testsuite($$)
+sub start_testsuite($$$)
 {
-	my ($self, $state) = @_;
+	my ($self, $name, $state) = @_;
 	my $out = "";
 
 	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
 	$out .= "[$state->{INDEX}/$state->{TOTAL} in ".$duration."s";
 	$out .= sprintf(", %d errors", $self->{statistics}->{SUITES_FAIL}) if ($self->{statistics}->{SUITES_FAIL} > 0);
-	$out .= "] $state->{NAME}\n", 
+	$out .= "] $name\n", 
 
-	$self->{test_output}->{$state->{NAME}} = "" unless($self->{verbose});
+	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
 	$self->output_msg($state, "CMD: $state->{CMD}\n");
 
@@ -55,9 +55,9 @@ sub control_msg($$$)
 	$self->output_msg($state, $output);
 }
 
-sub end_testsuite($$$$$)
+sub end_testsuite($$$$$$)
 {
-	my ($self, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
 	my $out = "";
 
 	$self->output_msg($state, "ENVLOG: $envlog\n") if ($envlog ne "");
@@ -67,7 +67,7 @@ sub end_testsuite($$$$$)
 	}
 
 	if ($ret != $expected_ret and $self->{immediate} and not $self->{verbose}) {
-		$out .= $self->{test_output}->{$state->{NAME}};
+		$out .= $self->{test_output}->{$name};
 	}
 
 	print $out;
