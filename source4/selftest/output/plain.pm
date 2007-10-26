@@ -6,14 +6,16 @@ use Exporter;
 
 use strict;
 
-sub new($$$$) {
-	my ($class, $verbose, $immediate, $statistics) = @_;
+sub new($$$$$) {
+	my ($class, $summaryfile, $verbose, $immediate, $statistics) = @_;
 	my $self = { 
 		verbose => $verbose, 
 		immediate => $immediate, 
 		statistics => $statistics,
 		test_output => {},
-		suitesfailed => []
+		suitesfailed => [],
+		skips => {},
+		summaryfile => $summaryfile,
 	};
 	bless($self, $class);
 }
@@ -102,12 +104,21 @@ sub summary($)
 {
 	my ($self) = @_;
 
+	open(SUMMARY, ">$self->{summaryfile}");
+
+	if ($#{$self->{suitesfailed}} > -1) {
+		print SUMMARY "= Failed tests =\n";
+	}
+
 	if (not $self->{immediate} and not $self->{verbose}) {
 		foreach (@{$self->{suitesfailed}}) {
 			print "===============================================================================\n";
 			print "FAIL: $_\n";
 			print $self->{test_output}->{$_};
 			print "\n";
+
+			print SUMMARY "= $_ =\n";
+			print SUMMARY $self->{test_output}->{$_}."\n\n";
 		}
 	}
 
@@ -118,17 +129,25 @@ sub summary($)
 	} else {
 		print "FAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
 	}
+
+	print SUMMARY "= Skipped tests =\n";
+	foreach my $reason (keys %{$self->{skips}}) {
+		print SUMMARY "$reason\n";
+		foreach my $name (@{$self->{skips}->{$reason}}) {
+			print SUMMARY "\t$name\n";
+		}
+		print SUMMARY "\n";
+	}
+	close(SUMMARY);
+
+	print "A summary can be found in $self->{summaryfile}\n";
 }
 
 sub skip_testsuite($$)
 {
 	my ($self, $name, $reason) = @_;
 
-	if ($reason) {
-		print "SKIPPED: $name [$reason]\n";
-	} else {
-		print "SKIPPED: $name\n";
-	}
+	push (@{$self->{skips}->{$reason}}, $name);
 }
 
 1;

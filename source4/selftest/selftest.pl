@@ -736,7 +736,7 @@ if ($opt_format eq "buildfarm") {
 	$msg_ops = new output::buildfarm($statistics);
 } elsif ($opt_format eq "plain") {
 	require output::plain;
-	$msg_ops = new output::plain($opt_verbose, $opt_immediate, $statistics);
+	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics);
 } elsif ($opt_format eq "html") {
 	require output::html;
 	mkdir("test-results", 0777);
