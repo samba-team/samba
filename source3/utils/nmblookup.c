@@ -244,11 +244,11 @@ int main(int argc,char *argv[])
 		{ "flags", 'f', POPT_ARG_NONE, NULL, 'f', "List the NMB flags returned" },
 		{ "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
 		{ "master-browser", 'M', POPT_ARG_NONE, NULL, 'M', "Search for a master browser" },
-		{ "recursion", 'R', POPT_ARG_VAL, NULL, 'R', "Set recursion desired in package" },
-		{ "status", 'S', POPT_ARG_VAL, NULL, 'S', "Lookup node status as well" },
+		{ "recursion", 'R', POPT_ARG_NONE, NULL, 'R', "Set recursion desired in package" },
+		{ "status", 'S', POPT_ARG_NONE, NULL, 'S', "Lookup node status as well" },
 		{ "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
-		{ "root-port", 'r', POPT_ARG_VAL, NULL, 'r', "Use root port 137 (Win95 only replies to this)" },
-		{ "lookup-by-ip", 'A', POPT_ARG_VAL, NULL, 'A', "Do a node status on <name> as an IP Address" },
+		{ "root-port", 'r', POPT_ARG_NONE, NULL, 'r', "Use root port 137 (Win95 only replies to this)" },
+		{ "lookup-by-ip", 'A', POPT_ARG_NONE, NULL, 'A', "Do a node status on <name> as an IP Address" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		{ 0, 0, 0, 0 }
