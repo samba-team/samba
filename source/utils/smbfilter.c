@@ -199,15 +199,15 @@ static void start_filter(char *desthost)
 	while (1) {
 		fd_set fds;
 		int num;
-		struct sockaddr addr;
-		socklen_t in_addrlen = sizeof(addr);
+		struct sockaddr_storage ss;
+		socklen_t in_addrlen = sizeof(ss);
 		
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 
 		num = sys_select_intr(s+1,&fds,NULL,NULL,NULL);
 		if (num > 0) {
-			c = accept(s, &addr, &in_addrlen);
+			c = accept(s, (struct sockaddr *)&ss, &in_addrlen);
 			if (c != -1) {
 				if (fork() == 0) {
 					close(s);
