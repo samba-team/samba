@@ -60,7 +60,7 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 	ADS_STATUS status;
 	bool local = False;
 	fstring dc_name;
-	struct in_addr dc_ip;	
+	struct sockaddr_storage dc_ip;
 
 	if (ad_idmap_ads != NULL) {
 

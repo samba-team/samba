@@ -140,7 +140,7 @@ bool make_netmask(struct sockaddr_storage *pss_out,
 static void make_bcast_or_net(struct sockaddr_storage *pss_out,
 			const struct sockaddr_storage *pss_in,
 			const struct sockaddr_storage *nmask,
-			bool make_bcast)
+			bool make_bcast_p)
 {
 	unsigned int i = 0, len = 0;
 	char *pmask = NULL;
@@ -162,7 +162,7 @@ static void make_bcast_or_net(struct sockaddr_storage *pss_out,
 	}
 
 	for (i = 0; i < len; i++, p++, pmask++) {
-		if (make_bcast) {
+		if (make_bcast_p) {
 			*p = (*p & *pmask) | (*pmask ^ 0xff);
 		} else {
 			/* make_net */

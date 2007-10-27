@@ -80,7 +80,7 @@ umount_ok(const char *mount_point)
 static char *
 canonicalize (char *path)
 {
-	char *canonical = malloc (PATH_MAX + 1);
+	char *canonical = (char*)malloc (PATH_MAX + 1);
 
 	if (!canonical) {
 		fprintf(stderr, "Error! Not enough memory!\n");

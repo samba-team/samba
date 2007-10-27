@@ -37,7 +37,7 @@ static pstring mpoint;
 static pstring service;
 static pstring options;
 
-static struct in_addr dest_ip;
+static struct sockaddr_storage dest_ip;
 static bool have_ip;
 static int smb_port = 0;
 static bool got_user;
@@ -122,7 +122,7 @@ static struct cli_state *do_connection(char *the_service)
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
-	struct in_addr ip;
+	struct sockaddr_storage ip;
 	pstring server;
 	char *share;
 
@@ -146,7 +146,7 @@ static struct cli_state *do_connection(char *the_service)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_ip_v4(&ip);
+        zero_addr(&ip, INADDR_ANY);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
@@ -798,8 +798,8 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "debug")) {
 				DEBUGLEVEL = val;
 			} else if(!strcmp(opts, "ip")) {
-				dest_ip = *interpret_addr2(opteq+1);
-				if (is_zero_ip_v4(dest_ip)) {
+				if (!interpret_string_addr(&dest_ip, opteq+1,
+							   0)) {
 					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
 					exit(1);
 				}
