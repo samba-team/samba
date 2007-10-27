@@ -1077,7 +1077,8 @@ static bool uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 ****************************************************************************/
 
 static bool ensure_canon_entry_valid(canon_ace **pp_ace,
-							const files_struct *fsp,
+				     const struct share_params *params,
+				     const bool is_directory,
 							const DOM_SID *pfile_owner_sid,
 							const DOM_SID *pfile_grp_sid,
 							const SMB_STRUCT_STAT *pst,
@@ -1093,7 +1094,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 		if (pace->type == SMB_ACL_USER_OBJ) {
 
 			if (setting_acl)
-				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRUSR);
+				apply_default_perms(params, is_directory, pace, S_IRUSR);
 			got_user = True;
 
 		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
@@ -1103,7 +1104,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRGRP);
+				apply_default_perms(params, is_directory, pace, S_IRGRP);
 			got_grp = True;
 
 		} else if (pace->type == SMB_ACL_OTHER) {
@@ -1113,7 +1114,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IROTH);
+				apply_default_perms(params, is_directory, pace, S_IROTH);
 			got_other = True;
 			pace_other = pace;
 		}
@@ -1156,7 +1157,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 					pace->perms = 0;
 			}
 
-			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRUSR);
+			apply_default_perms(params, is_directory, pace, S_IRUSR);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		}
@@ -1182,7 +1183,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 				pace->perms = pace_other->perms;
 			else
 				pace->perms = 0;
-			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRGRP);
+			apply_default_perms(params, is_directory, pace, S_IRGRP);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
 		}
@@ -1204,7 +1205,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
 			pace->perms = 0;
-			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IROTH);
+			apply_default_perms(params, is_directory, pace, S_IROTH);
 		} else
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 
@@ -2015,7 +2016,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	pst->st_mode = create_default_mode(fsp, False);
 
-	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (!ensure_canon_entry_valid(&file_ace, fsp->conn->params, fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2031,7 +2032,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	pst->st_mode = create_default_mode(fsp, True);
 
-	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp->conn->params, fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2227,7 +2228,7 @@ static canon_ace *canonicalise_acl( const files_struct *fsp, SMB_ACL_T posix_acl
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(&list_head, fsp, powner, pgroup, psbuf, False))
+	if (!ensure_canon_entry_valid(&list_head, fsp->conn->params, fsp->is_directory, powner, pgroup, psbuf, False))
 		goto fail;
 
 	/*
