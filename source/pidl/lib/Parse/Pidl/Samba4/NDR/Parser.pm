@@ -423,8 +423,10 @@ sub ParseArrayPullHeader($$$$$$)
 	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
 		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
 	} else {
-		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL}, 
-		    check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
+		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
+			check_null_pointer($e, $env, sub { $self->pidl(shift); },
+					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+			check_fully_dereferenced($e, $env));
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
@@ -447,7 +449,10 @@ sub ParseArrayPullHeader($$$$$$)
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		$self->defer("if ($var_name) {");
 		$self->defer_indent;
-		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, sub { $self->defer(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
+		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
+			check_null_pointer($e, $env, sub { $self->defer(shift); },
+					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+			check_fully_dereferenced($e, $env));
 		$self->defer("NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));");
 		$self->defer_deindent;
 		$self->defer("}");
@@ -457,7 +462,8 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->defer("if ($var_name) {");
 		$self->defer_indent;
 		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
-			check_null_pointer($e, $env, sub { $self->defer(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), 
+			check_null_pointer($e, $env, sub { $self->defer(shift); },
+					   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for length_is()\");"),
 			check_fully_dereferenced($e, $env));
 		$self->defer("NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));");
 		$self->defer_deindent;
@@ -740,7 +746,11 @@ sub ParsePtrPush($$$$)
 	my ($self,$e,$l,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
-		$self->pidl("if ($var_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;");
+		$self->pidl("if ($var_name == NULL) {");
+		$self->indent;
+		$self->pidl("return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
+		$self->deindent;
+		$self->pidl("}");
 		if ($l->{LEVEL} eq "EMBEDDED") {
 			$self->pidl("NDR_CHECK(ndr_push_ref_ptr(ndr));");
 		}
@@ -875,7 +885,9 @@ sub ParseSwitchPull($$$$$$)
 {
 	my($self,$e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
-		check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
+		check_null_pointer($e, $env, sub { $self->pidl(shift); },
+				   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
+		check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
 	$self->pidl("NDR_CHECK(ndr_pull_set_switch_value($ndr, $var_name, $switch_var));");
@@ -887,7 +899,9 @@ sub ParseSwitchPush($$$$$$)
 {
 	my($self,$e,$l,$ndr,$var_name,$env) = @_;
 	my $switch_var = ParseExprExt($l->{SWITCH_IS}, $env, $e->{ORIGINAL}, 
-		check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), check_fully_dereferenced($e, $env));
+		check_null_pointer($e, $env, sub { $self->pidl(shift); },
+				   "return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for switch_is()\");"),
+		check_fully_dereferenced($e, $env));
 
 	$var_name = get_pointer_to($var_name);
 	$self->pidl("NDR_CHECK(ndr_push_set_switch_value($ndr, $var_name, $switch_var));");
@@ -2222,9 +2236,10 @@ sub ParseFunctionPull($$)
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
-			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e->{ORIGINAL}, check_null_pointer($e, $env, sub { $self->pidl(shift); }, "return NT_STATUS_INVALID_PARAMETER_MIX;"), 
+			my $size = ParseExprExt($e->{LEVELS}[1]->{SIZE_IS}, $env, $e->{ORIGINAL},
+				check_null_pointer($e, $env, sub { $self->pidl(shift); },
+						   "return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
 				check_fully_dereferenced($e, $env));
-			
 			$self->pidl("NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);");
 
 			if (grep(/in/, @{$e->{DIRECTION}})) {
