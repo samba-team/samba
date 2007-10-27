@@ -643,7 +643,9 @@ static NTSTATUS ndr_push_echo_AddOne(struct ndr_push *ndr, int flags, const stru
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.in_data));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.out_data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.out_data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.out_data));
 	}
 	return NT_STATUS_OK;
@@ -862,15 +864,21 @@ _PUBLIC_ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_echo_TestCall(struct ndr_push *ndr, int flags, const struct echo_TestCall *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.s1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.s1 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.s1, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.s1, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.s1, ndr_charset_length(r->in.s1, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.s2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.s2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.s2 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.s2 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.s2, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -953,7 +961,9 @@ static NTSTATUS ndr_push_echo_TestCall2(struct ndr_push *ndr, int flags, const s
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.info == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.info, r->in.level));
 		NDR_CHECK(ndr_push_echo_Info(ndr, NDR_SCALARS, r->out.info));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -1059,20 +1069,32 @@ _PUBLIC_ void ndr_print_echo_TestSleep(struct ndr_print *ndr, const char *name, 
 static NTSTATUS ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const struct echo_TestEnum *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.foo1 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Enum1(ndr, NDR_SCALARS, *r->in.foo1));
-		if (r->in.foo2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.foo2 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Enum2(ndr, NDR_SCALARS, r->in.foo2));
-		if (r->in.foo3 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.foo3 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.foo3, *r->in.foo1));
 		NDR_CHECK(ndr_push_echo_Enum3(ndr, NDR_SCALARS, r->in.foo3));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.foo1 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.foo1 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Enum1(ndr, NDR_SCALARS, *r->out.foo1));
-		if (r->out.foo2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.foo2 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Enum2(ndr, NDR_SCALARS, r->out.foo2));
-		if (r->out.foo3 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.foo3 == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.foo3, *r->out.foo1));
 		NDR_CHECK(ndr_push_echo_Enum3(ndr, NDR_SCALARS, r->out.foo3));
 	}
@@ -1192,11 +1214,15 @@ _PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, i
 static NTSTATUS ndr_push_echo_TestSurrounding(struct ndr_push *ndr, int flags, const struct echo_TestSurrounding *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Surrounding(ndr, NDR_SCALARS, r->in.data));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_echo_Surrounding(ndr, NDR_SCALARS, r->out.data));
 	}
 	return NT_STATUS_OK;
@@ -1261,10 +1287,16 @@ _PUBLIC_ void ndr_print_echo_TestSurrounding(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_echo_TestDoublePointer(struct ndr_push *ndr, int flags, const struct echo_TestDoublePointer *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->in.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		if (**r->in.data == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (**r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ***r->in.data));
 	}

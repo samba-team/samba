@@ -298,11 +298,15 @@ _PUBLIC_ void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *nam
 static NTSTATUS ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, const struct svcctl_CloseServiceHandle *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -370,12 +374,16 @@ _PUBLIC_ void ndr_print_svcctl_CloseServiceHandle(struct ndr_print *ndr, const c
 static NTSTATUS ndr_push_svcctl_ControlService(struct ndr_push *ndr, int flags, const struct svcctl_ControlService *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.control));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.service_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.service_status == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -446,7 +454,9 @@ _PUBLIC_ void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_svcctl_DeleteService(struct ndr_push *ndr, int flags, const struct svcctl_DeleteService *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
@@ -501,11 +511,15 @@ _PUBLIC_ void ndr_print_svcctl_DeleteService(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_svcctl_LockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_LockServiceDatabase *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.lock == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.lock == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -656,11 +670,15 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceObjectSecurity(struct ndr_print *ndr, c
 static NTSTATUS ndr_push_svcctl_QueryServiceStatus(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatus *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.service_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.service_status == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_SERVICE_STATUS(ndr, NDR_SCALARS, r->out.service_status));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -770,11 +788,15 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceStatus(struct ndr_print *ndr, const cha
 static NTSTATUS ndr_push_svcctl_UnlockServiceDatabase(struct ndr_push *ndr, int flags, const struct svcctl_UnlockServiceDatabase *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.lock == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.lock == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.lock));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.lock == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.lock == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -883,7 +905,9 @@ _PUBLIC_ void ndr_print_svcctl_NotifyBootConfigStatus(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_svcctl_SCSetServiceBitsW(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bits));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bitson));
@@ -947,7 +971,9 @@ _PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsW(struct ndr_print *ndr, const ch
 static NTSTATUS ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.start));
@@ -996,7 +1022,9 @@ static NTSTATUS ndr_push_svcctl_ChangeServiceConfigW(struct ndr_push *ndr, int f
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.tag_id == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.tag_id == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.tag_id));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -1227,7 +1255,9 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigW(struct ndr_print *ndr, const
 static NTSTATUS ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.scmanager_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -1284,7 +1314,9 @@ static NTSTATUS ndr_push_svcctl_CreateServiceW(struct ndr_push *ndr, int flags, 
 		if (r->out.TagId) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.TagId));
 		}
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -1547,7 +1579,9 @@ _PUBLIC_ void ndr_print_svcctl_CreateServiceW(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.service == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.service == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
@@ -1557,9 +1591,13 @@ static NTSTATUS ndr_push_svcctl_EnumDependentServicesW(struct ndr_push *ndr, int
 		if (r->out.service_status) {
 			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
 		}
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.services_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.services_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.services_returned));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -1666,7 +1704,9 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesW(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
@@ -1679,9 +1719,13 @@ static NTSTATUS ndr_push_svcctl_EnumServicesStatusW(struct ndr_push *ndr, int fl
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.service, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.services_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.services_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.services_returned));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.resume_handle));
 		if (r->out.resume_handle) {
@@ -1836,7 +1880,9 @@ static NTSTATUS ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, int flags, 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -1947,7 +1993,9 @@ _PUBLIC_ void ndr_print_svcctl_OpenSCManagerW(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.scmanager_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -1956,7 +2004,9 @@ static NTSTATUS ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int flags, co
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -2035,13 +2085,17 @@ _PUBLIC_ void ndr_print_svcctl_OpenServiceW(struct ndr_print *ndr, const char *n
 static NTSTATUS ndr_push_svcctl_QueryServiceConfigW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.query, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -2115,14 +2169,20 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfigW(struct ndr_print *ndr, const 
 static NTSTATUS ndr_push_svcctl_QueryServiceLockStatusW(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.lock_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.lock_status == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
-		if (r->out.required_buf_size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.required_buf_size == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.required_buf_size));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -2207,7 +2267,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusW(struct ndr_print *ndr, co
 static NTSTATUS ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.Arguments));
@@ -2298,7 +2360,9 @@ _PUBLIC_ void ndr_print_svcctl_StartServiceW(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
@@ -2313,8 +2377,12 @@ static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameW(struct ndr_push *ndr, int
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.display_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.display_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.display_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.display_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.display_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -2466,7 +2534,9 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameW(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
@@ -2481,8 +2551,12 @@ static NTSTATUS ndr_push_svcctl_GetServiceKeyNameW(struct ndr_push *ndr, int fla
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.key_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.key_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.key_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.key_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.key_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -2634,7 +2708,9 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceKeyNameW(struct ndr_print *ndr, const c
 static NTSTATUS ndr_push_svcctl_SCSetServiceBitsA(struct ndr_push *ndr, int flags, const struct svcctl_SCSetServiceBitsA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bits));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.bitson));
@@ -2698,7 +2774,9 @@ _PUBLIC_ void ndr_print_svcctl_SCSetServiceBitsA(struct ndr_print *ndr, const ch
 static NTSTATUS ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfigA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.start));
@@ -2747,7 +2825,9 @@ static NTSTATUS ndr_push_svcctl_ChangeServiceConfigA(struct ndr_push *ndr, int f
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.tag_id == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.tag_id == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.tag_id));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -2978,7 +3058,9 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfigA(struct ndr_print *ndr, const
 static NTSTATUS ndr_push_svcctl_CreateServiceA(struct ndr_push *ndr, int flags, const struct svcctl_CreateServiceA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.ServiceName));
 		if (r->in.ServiceName) {
@@ -3302,7 +3384,9 @@ _PUBLIC_ void ndr_print_svcctl_CreateServiceA(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int flags, const struct svcctl_EnumDependentServicesA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.service == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.service == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.service));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
@@ -3312,9 +3396,13 @@ static NTSTATUS ndr_push_svcctl_EnumDependentServicesA(struct ndr_push *ndr, int
 		if (r->out.service_status) {
 			NDR_CHECK(ndr_push_ENUM_SERVICE_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.service_status));
 		}
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.services_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.services_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.services_returned));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -3421,7 +3509,9 @@ _PUBLIC_ void ndr_print_svcctl_EnumDependentServicesA(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *ndr, int flags, const struct svcctl_EnumServicesStatusA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.state));
@@ -3434,9 +3524,13 @@ static NTSTATUS ndr_push_svcctl_EnumServicesStatusA(struct ndr_push *ndr, int fl
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.service, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.services_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.services_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.services_returned));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.resume_handle));
 		if (r->out.resume_handle) {
@@ -3591,7 +3685,9 @@ static NTSTATUS ndr_push_svcctl_OpenSCManagerA(struct ndr_push *ndr, int flags, 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -3702,7 +3798,9 @@ _PUBLIC_ void ndr_print_svcctl_OpenSCManagerA(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_svcctl_OpenServiceA(struct ndr_push *ndr, int flags, const struct svcctl_OpenServiceA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.scmanager_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.scmanager_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager_handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.ServiceName));
 		if (r->in.ServiceName) {
@@ -3793,13 +3891,17 @@ _PUBLIC_ void ndr_print_svcctl_OpenServiceA(struct ndr_print *ndr, const char *n
 static NTSTATUS ndr_push_svcctl_QueryServiceConfigA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfigA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.query, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -3873,14 +3975,20 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfigA(struct ndr_print *ndr, const 
 static NTSTATUS ndr_push_svcctl_QueryServiceLockStatusA(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceLockStatusA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.lock_status == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.lock_status == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_SERVICE_LOCK_STATUS(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.lock_status));
-		if (r->out.required_buf_size == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.required_buf_size == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.required_buf_size));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -3965,7 +4073,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusA(struct ndr_print *ndr, co
 static NTSTATUS ndr_push_svcctl_StartServiceA(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.Arguments));
@@ -4056,7 +4166,9 @@ _PUBLIC_ void ndr_print_svcctl_StartServiceA(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceDisplayNameA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
@@ -4071,8 +4183,12 @@ static NTSTATUS ndr_push_svcctl_GetServiceDisplayNameA(struct ndr_push *ndr, int
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.display_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.display_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.display_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.display_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.display_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -4224,7 +4340,9 @@ _PUBLIC_ void ndr_print_svcctl_GetServiceDisplayNameA(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr, int flags, const struct svcctl_GetServiceKeyNameA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.service_name));
 		if (r->in.service_name) {
@@ -4239,8 +4357,12 @@ static NTSTATUS ndr_push_svcctl_GetServiceKeyNameA(struct ndr_push *ndr, int fla
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.key_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.key_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.key_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.key_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.key_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -4474,7 +4596,9 @@ _PUBLIC_ void ndr_print_svcctl_EnumServiceGroupW(struct ndr_print *ndr, const ch
 static NTSTATUS ndr_push_svcctl_ChangeServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2A *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
@@ -4556,7 +4680,9 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2A(struct ndr_print *ndr, cons
 static NTSTATUS ndr_push_svcctl_ChangeServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_ChangeServiceConfig2W *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
@@ -4638,14 +4764,18 @@ _PUBLIC_ void ndr_print_svcctl_ChangeServiceConfig2W(struct ndr_print *ndr, cons
 static NTSTATUS ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2A *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4721,14 +4851,18 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2A(struct ndr_print *ndr, const
 static NTSTATUS ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceConfig2W *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4804,14 +4938,18 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2W(struct ndr_print *ndr, const
 static NTSTATUS ndr_push_svcctl_QueryServiceStatusEx(struct ndr_push *ndr, int flags, const struct svcctl_QueryServiceStatusEx *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4887,7 +5025,9 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceStatusEx(struct ndr_print *ndr, const
 static NTSTATUS ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExA *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.scmanager == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.scmanager == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
@@ -4900,16 +5040,24 @@ static NTSTATUS ndr_push_EnumServicesStatusExA(struct ndr_push *ndr, int flags, 
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.services, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.service_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.service_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.service_returned));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.resume_handle));
 		if (r->out.resume_handle) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
 		}
-		if (r->out.group_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.group_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.group_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.group_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.group_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -5070,7 +5218,9 @@ _PUBLIC_ void ndr_print_EnumServicesStatusExA(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, int flags, const struct EnumServicesStatusExW *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.scmanager == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.scmanager == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.scmanager));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
@@ -5083,16 +5233,24 @@ static NTSTATUS ndr_push_EnumServicesStatusExW(struct ndr_push *ndr, int flags, 
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.services, r->in.buf_size));
-		if (r->out.bytes_needed == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.bytes_needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.bytes_needed));
-		if (r->out.service_returned == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.service_returned == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.service_returned));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.resume_handle));
 		if (r->out.resume_handle) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
 		}
-		if (r->out.group_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
-		if (*r->out.group_name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.group_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.group_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_ref_ptr(ndr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.group_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
