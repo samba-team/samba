@@ -174,7 +174,8 @@ enum ndr_err_code {
 	NDR_ERR_ALLOC,
 	NDR_ERR_RANGE,
 	NDR_ERR_TOKEN,
-	NDR_ERR_IPV4ADDRESS
+	NDR_ERR_IPV4ADDRESS,
+	NDR_ERR_INVALID_POINTER
 };
 
 enum ndr_compression_alg {
