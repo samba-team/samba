@@ -1962,14 +1962,20 @@ static NTSTATUS ndr_push_epm_Lookup(struct ndr_push *ndr, int flags, const struc
 			NDR_CHECK(ndr_push_rpc_if_id_t(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.interface_id));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.vers_option));
-		if (r->in.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.entry_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_ents));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.entry_handle));
-		if (r->out.num_ents == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.num_ents == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ents));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_ents));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -2150,14 +2156,20 @@ _PUBLIC_ NTSTATUS ndr_push_epm_Map(struct ndr_push *ndr, int flags, const struct
 		if (r->in.map_tower) {
 			NDR_CHECK(ndr_push_epm_twr_t(ndr, NDR_SCALARS, r->in.map_tower));
 		}
-		if (r->in.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.entry_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_towers));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.entry_handle));
-		if (r->out.num_towers == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.num_towers == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_towers));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_towers));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -2325,11 +2337,15 @@ _PUBLIC_ void ndr_print_epm_Map(struct ndr_print *ndr, const char *name, int fla
 static NTSTATUS ndr_push_epm_LookupHandleFree(struct ndr_push *ndr, int flags, const struct epm_LookupHandleFree *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.entry_handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.entry_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.entry_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.entry_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -2397,7 +2413,9 @@ _PUBLIC_ void ndr_print_epm_LookupHandleFree(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_epm_InqObject(struct ndr_push *ndr, int flags, const struct epm_InqObject *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.epm_object == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.epm_object == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.epm_object));
 	}
 	if (flags & NDR_OUT) {

@@ -3113,7 +3113,9 @@ _PUBLIC_ NTSTATUS ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.version == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.version == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dfs_ManagerVersion(ndr, NDR_SCALARS, *r->out.version));
 	}
 	return NT_STATUS_OK;
@@ -3167,12 +3169,16 @@ _PUBLIC_ void ndr_print_dfs_GetManagerVersion(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_dfs_Add(struct ndr_push *ndr, int flags, const struct dfs_Add *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.path == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.path == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.path, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.path, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.path, ndr_charset_length(r->in.path, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		if (r->in.server == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.server == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server, CH_UTF16)));
@@ -3309,7 +3315,9 @@ _PUBLIC_ void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int fla
 static NTSTATUS ndr_push_dfs_Remove(struct ndr_push *ndr, int flags, const struct dfs_Remove *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.dfs_entry_path == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.dfs_entry_path == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dfs_entry_path, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dfs_entry_path, CH_UTF16)));
@@ -3451,7 +3459,9 @@ static NTSTATUS ndr_push_dfs_SetInfo(struct ndr_push *ndr, int flags, const stru
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.sharename, ndr_charset_length(r->in.sharename, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.info == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
 		NDR_CHECK(ndr_push_dfs_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 	}
@@ -3592,7 +3602,9 @@ static NTSTATUS ndr_push_dfs_GetInfo(struct ndr_push *ndr, int flags, const stru
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.info == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.info, r->in.level));
 		NDR_CHECK(ndr_push_dfs_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -4552,7 +4564,9 @@ _PUBLIC_ void ndr_print_dfs_RemoveStdRoot(struct ndr_print *ndr, const char *nam
 static NTSTATUS ndr_push_dfs_ManagerInitialize(struct ndr_push *ndr, int flags, const struct dfs_ManagerInitialize *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.servername == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.servername == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));

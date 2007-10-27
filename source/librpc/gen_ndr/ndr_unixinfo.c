@@ -66,7 +66,9 @@ static NTSTATUS ndr_push_unixinfo_SidToUid(struct ndr_push *ndr, int flags, cons
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.uid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.uid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, *r->out.uid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -128,7 +130,9 @@ static NTSTATUS ndr_push_unixinfo_UidToSid(struct ndr_push *ndr, int flags, cons
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.uid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -190,7 +194,9 @@ static NTSTATUS ndr_push_unixinfo_SidToGid(struct ndr_push *ndr, int flags, cons
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.gid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.gid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, *r->out.gid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -252,7 +258,9 @@ static NTSTATUS ndr_push_unixinfo_GidToSid(struct ndr_push *ndr, int flags, cons
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->in.gid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -313,7 +321,9 @@ static NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, cons
 	uint32_t cntr_uids_0;
 	uint32_t cntr_infos_0;
 	if (flags & NDR_IN) {
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		for (cntr_uids_0 = 0; cntr_uids_0 < *r->in.count; cntr_uids_0++) {
@@ -321,7 +331,9 @@ static NTSTATUS ndr_push_unixinfo_GetPWUid(struct ndr_push *ndr, int flags, cons
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		for (cntr_infos_0 = 0; cntr_infos_0 < *r->out.count; cntr_infos_0++) {

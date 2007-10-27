@@ -3995,11 +3995,15 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *na
 static NTSTATUS ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Close *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4067,7 +4071,9 @@ _PUBLIC_ void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int f
 static NTSTATUS ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
@@ -4122,16 +4128,24 @@ _PUBLIC_ void ndr_print_lsa_Delete(struct ndr_print *ndr, const char *name, int 
 static NTSTATUS ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.resume_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_count));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
-		if (r->out.privs == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.privs == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_PrivArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.privs));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4227,7 +4241,9 @@ _PUBLIC_ void ndr_print_lsa_EnumPrivs(struct ndr_print *ndr, const char *name, i
 static NTSTATUS ndr_push_lsa_QuerySecurity(struct ndr_push *ndr, int flags, const struct lsa_QuerySecurity *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.sec_info));
 	}
@@ -4397,12 +4413,16 @@ static NTSTATUS ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const s
 		if (r->in.system_name) {
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->in.system_name));
 		}
-		if (r->in.attr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.attr == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4493,7 +4513,9 @@ _PUBLIC_ void ndr_print_lsa_OpenPolicy(struct ndr_print *ndr, const char *name, 
 static NTSTATUS ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 	}
@@ -4662,14 +4684,20 @@ _PUBLIC_ void ndr_print_lsa_ClearAuditLog(struct ndr_print *ndr, const char *nam
 static NTSTATUS ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.acct_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.acct_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.acct_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4752,16 +4780,24 @@ _PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *nam
 static NTSTATUS ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.resume_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_entries));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4860,14 +4896,20 @@ _PUBLIC_ void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name
 static NTSTATUS ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.info == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.trustdom_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.trustdom_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.trustdom_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -4950,16 +4992,24 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomain(struct ndr_print *ndr, const cha
 static NTSTATUS ndr_push_lsa_EnumTrustDom(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustDom *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.resume_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
-		if (r->out.domains == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_DomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -5059,7 +5109,9 @@ static NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const 
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
@@ -5069,10 +5121,14 @@ static NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const 
 		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
 			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->in.names[cntr_names_0]));
 		}
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 	}
 	if (flags & NDR_OUT) {
@@ -5080,9 +5136,13 @@ static NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const 
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -5242,14 +5302,22 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		if (r->in.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 	}
 	if (flags & NDR_OUT) {
@@ -5257,9 +5325,13 @@ static NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const s
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.names));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -5398,13 +5470,17 @@ _PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, 
 static NTSTATUS ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sec_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sec_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -5477,14 +5553,20 @@ _PUBLIC_ void ndr_print_lsa_CreateSecret(struct ndr_print *ndr, const char *name
 static NTSTATUS ndr_push_lsa_OpenAccount(struct ndr_push *ndr, int flags, const struct lsa_OpenAccount *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.acct_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.acct_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.acct_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -5567,7 +5649,9 @@ _PUBLIC_ void ndr_print_lsa_OpenAccount(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivsAccount *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
@@ -5648,9 +5732,13 @@ _PUBLIC_ void ndr_print_lsa_EnumPrivsAccount(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_lsa_AddPrivilegesToAccount(struct ndr_push *ndr, int flags, const struct lsa_AddPrivilegesToAccount *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.privs == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.privs == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_PrivilegeSet(ndr, NDR_SCALARS, r->in.privs));
 	}
 	if (flags & NDR_OUT) {
@@ -5717,7 +5805,9 @@ _PUBLIC_ void ndr_print_lsa_AddPrivilegesToAccount(struct ndr_print *ndr, const 
 static NTSTATUS ndr_push_lsa_RemovePrivilegesFromAccount(struct ndr_push *ndr, int flags, const struct lsa_RemovePrivilegesFromAccount *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.remove_all));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.privs));
@@ -5963,14 +6053,20 @@ _PUBLIC_ void ndr_print_lsa_SetSystemAccessAccount(struct ndr_print *ndr, const 
 static NTSTATUS ndr_push_lsa_OpenTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.trustdom_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.trustdom_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.trustdom_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -6053,7 +6149,9 @@ _PUBLIC_ void ndr_print_lsa_OpenTrustedDomain(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfo(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfo *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.trustdom_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.trustdom_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trustdom_handle));
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
 	}
@@ -6181,13 +6279,17 @@ _PUBLIC_ void ndr_print_lsa_SetInformationTrustedDomain(struct ndr_print *ndr, c
 static NTSTATUS ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sec_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sec_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -6260,7 +6362,9 @@ _PUBLIC_ void ndr_print_lsa_OpenSecret(struct ndr_print *ndr, const char *name, 
 static NTSTATUS ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sec_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sec_handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.new_val));
 		if (r->in.new_val) {
@@ -6363,7 +6467,9 @@ _PUBLIC_ void ndr_print_lsa_SetSecret(struct ndr_print *ndr, const char *name, i
 static NTSTATUS ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.sec_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sec_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sec_handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.new_val));
 		if (r->in.new_val) {
@@ -6604,13 +6710,19 @@ _PUBLIC_ void ndr_print_lsa_QuerySecret(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_lsa_LookupPrivValue(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivValue *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.luid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.luid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_LUID(ndr, NDR_SCALARS, r->out.luid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -6691,9 +6803,13 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivValue(struct ndr_print *ndr, const char *n
 static NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivName *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.luid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.luid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_LUID(ndr, NDR_SCALARS, r->in.luid));
 	}
 	if (flags & NDR_OUT) {
@@ -6786,11 +6902,17 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivName(struct ndr_print *ndr, const char *na
 static NTSTATUS ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr, int flags, const struct lsa_LookupPrivDisplayName *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.name == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
-		if (r->in.language_id == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.language_id == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->in.language_id));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.unknown));
 	}
@@ -6799,7 +6921,9 @@ static NTSTATUS ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr, int fla
 		if (r->out.disp_name) {
 			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.disp_name));
 		}
-		if (r->out.language_id == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.language_id == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.language_id));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -6954,7 +7078,9 @@ _PUBLIC_ void ndr_print_lsa_DeleteObject(struct ndr_print *ndr, const char *name
 static NTSTATUS ndr_push_lsa_EnumAccountsWithUserRight(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountsWithUserRight *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.name));
 		if (r->in.name) {
@@ -6962,7 +7088,9 @@ static NTSTATUS ndr_push_lsa_EnumAccountsWithUserRight(struct ndr_push *ndr, int
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -7051,13 +7179,19 @@ _PUBLIC_ void ndr_print_lsa_EnumAccountsWithUserRight(struct ndr_print *ndr, con
 static NTSTATUS ndr_push_lsa_EnumAccountRights(struct ndr_push *ndr, int flags, const struct lsa_EnumAccountRights *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.rights == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.rights == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_RightSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rights));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -7138,11 +7272,17 @@ _PUBLIC_ void ndr_print_lsa_EnumAccountRights(struct ndr_print *ndr, const char 
 static NTSTATUS ndr_push_lsa_AddAccountRights(struct ndr_push *ndr, int flags, const struct lsa_AddAccountRights *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
-		if (r->in.rights == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.rights == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_RightSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.rights));
 	}
 	if (flags & NDR_OUT) {
@@ -7221,12 +7361,18 @@ _PUBLIC_ void ndr_print_lsa_AddAccountRights(struct ndr_print *ndr, const char *
 static NTSTATUS ndr_push_lsa_RemoveAccountRights(struct ndr_push *ndr, int flags, const struct lsa_RemoveAccountRights *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown));
-		if (r->in.rights == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.rights == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_RightSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.rights));
 	}
 	if (flags & NDR_OUT) {
@@ -7307,9 +7453,13 @@ _PUBLIC_ void ndr_print_lsa_RemoveAccountRights(struct ndr_print *ndr, const cha
 static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoBySid(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.dom_sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.dom_sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.dom_sid));
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
 	}
@@ -7449,9 +7599,13 @@ _PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfo(struct ndr_print *ndr, const ch
 static NTSTATUS ndr_push_lsa_DeleteTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_DeleteTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.dom_sid == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.dom_sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.dom_sid));
 	}
 	if (flags & NDR_OUT) {
@@ -7607,12 +7761,16 @@ static NTSTATUS ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.system_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.system_name, ndr_charset_length(r->in.system_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->in.attr == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.attr == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -7877,7 +8035,9 @@ _PUBLIC_ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_lsa_QueryInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_QueryInfoPolicy2 *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 	}
@@ -8005,7 +8165,9 @@ _PUBLIC_ void ndr_print_lsa_SetInfoPolicy2(struct ndr_print *ndr, const char *na
 static NTSTATUS ndr_push_lsa_QueryTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_QueryTrustedDomainInfoByName *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.trusted_domain));
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
@@ -8095,7 +8257,9 @@ _PUBLIC_ void ndr_print_lsa_QueryTrustedDomainInfoByName(struct ndr_print *ndr, 
 static NTSTATUS ndr_push_lsa_SetTrustedDomainInfoByName(struct ndr_push *ndr, int flags, const struct lsa_SetTrustedDomainInfoByName *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.trusted_domain));
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, r->in.level));
@@ -8183,16 +8347,24 @@ _PUBLIC_ void ndr_print_lsa_SetTrustedDomainInfoByName(struct ndr_print *ndr, co
 static NTSTATUS ndr_push_lsa_EnumTrustedDomainsEx(struct ndr_push *ndr, int flags, const struct lsa_EnumTrustedDomainsEx *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.resume_handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_size));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.resume_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.resume_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
-		if (r->out.domains == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_DomainListEx(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -8329,11 +8501,15 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomainEx(struct ndr_print *ndr, const c
 static NTSTATUS ndr_push_lsa_CloseTrustedDomainEx(struct ndr_push *ndr, int flags, const struct lsa_CloseTrustedDomainEx *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -8401,7 +8577,9 @@ _PUBLIC_ void ndr_print_lsa_CloseTrustedDomainEx(struct ndr_print *ndr, const ch
 static NTSTATUS ndr_push_lsa_QueryDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_QueryDomainInformationPolicy *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 	}
@@ -8488,7 +8666,9 @@ _PUBLIC_ void ndr_print_lsa_QueryDomainInformationPolicy(struct ndr_print *ndr, 
 static NTSTATUS ndr_push_lsa_SetDomainInformationPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetDomainInformationPolicy *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.info));
@@ -8573,13 +8753,17 @@ _PUBLIC_ void ndr_print_lsa_SetDomainInformationPolicy(struct ndr_print *ndr, co
 static NTSTATUS ndr_push_lsa_OpenTrustedDomainByName(struct ndr_push *ndr, int flags, const struct lsa_OpenTrustedDomainByName *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.trustdom_handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.trustdom_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.trustdom_handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -8693,14 +8877,22 @@ _PUBLIC_ void ndr_print_lsa_TestCall(struct ndr_print *ndr, const char *name, in
 static NTSTATUS ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		if (r->in.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
@@ -8710,9 +8902,13 @@ static NTSTATUS ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const 
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.names));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -8856,7 +9052,9 @@ static NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
@@ -8866,10 +9064,14 @@ static NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const
 		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
 			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->in.names[cntr_names_0]));
 		}
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
@@ -8879,9 +9081,13 @@ static NTSTATUS ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -9415,7 +9621,9 @@ static NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.num_names));
@@ -9425,10 +9633,14 @@ static NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const
 		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
 			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->in.names[cntr_names_0]));
 		}
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
@@ -9438,9 +9650,13 @@ static NTSTATUS ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -9891,12 +10107,18 @@ _PUBLIC_ void ndr_print_lsa_CREDRRENAME(struct ndr_print *ndr, const char *name,
 static NTSTATUS ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		if (r->in.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
@@ -9906,9 +10128,13 @@ static NTSTATUS ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const 
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.names == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.names == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransNameArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.names));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -10048,10 +10274,14 @@ static NTSTATUS ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int flags, const
 		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
 			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->in.names[cntr_names_0]));
 		}
-		if (r->in.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
-		if (r->in.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->in.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
@@ -10061,9 +10291,13 @@ static NTSTATUS ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int flags, const
 		if (r->out.domains) {
 			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
 		}
-		if (r->out.sids == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.sids == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sids));
-		if (r->out.count == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
