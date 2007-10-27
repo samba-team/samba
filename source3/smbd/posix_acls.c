@@ -999,20 +999,21 @@ NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_i
  Ensure the enforced permissions for this share apply.
 ****************************************************************************/
 
-static void apply_default_perms(const files_struct *fsp, canon_ace *pace, mode_t type)
+static void apply_default_perms(const struct share_params *params,
+				const bool is_directory, canon_ace *pace,
+				mode_t type)
 {
-	int snum = SNUM(fsp->conn);
 	mode_t and_bits = (mode_t)0;
 	mode_t or_bits = (mode_t)0;
 
 	/* Get the initial bits to apply. */
 
-	if (fsp->is_directory) {
-		and_bits = lp_dir_security_mask(snum);
-		or_bits = lp_force_dir_security_mode(snum);
+	if (is_directory) {
+		and_bits = lp_dir_security_mask(params->service);
+		or_bits = lp_force_dir_security_mode(params->service);
 	} else {
-		and_bits = lp_security_mask(snum);
-		or_bits = lp_force_security_mode(snum);
+		and_bits = lp_security_mask(params->service);
+		or_bits = lp_force_security_mode(params->service);
 	}
 
 	/* Now bounce them into the S_USR space. */	
@@ -1020,7 +1021,7 @@ static void apply_default_perms(const files_struct *fsp, canon_ace *pace, mode_t
 	case S_IRUSR:
 		/* Ensure owner has read access. */
 		pace->perms |= S_IRUSR;
-		if (fsp->is_directory)
+		if (is_directory)
 			pace->perms |= (S_IWUSR|S_IXUSR);
 		and_bits = unix_perms_to_acl_perms(and_bits, S_IRUSR, S_IWUSR, S_IXUSR);
 		or_bits = unix_perms_to_acl_perms(or_bits, S_IRUSR, S_IWUSR, S_IXUSR);
@@ -1092,7 +1093,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 		if (pace->type == SMB_ACL_USER_OBJ) {
 
 			if (setting_acl)
-				apply_default_perms(fsp, pace, S_IRUSR);
+				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRUSR);
 			got_user = True;
 
 		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
@@ -1102,7 +1103,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				apply_default_perms(fsp, pace, S_IRGRP);
+				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRGRP);
 			got_grp = True;
 
 		} else if (pace->type == SMB_ACL_OTHER) {
@@ -1112,7 +1113,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				apply_default_perms(fsp, pace, S_IROTH);
+				apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IROTH);
 			got_other = True;
 			pace_other = pace;
 		}
@@ -1155,7 +1156,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 					pace->perms = 0;
 			}
 
-			apply_default_perms(fsp, pace, S_IRUSR);
+			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRUSR);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		}
@@ -1181,7 +1182,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 				pace->perms = pace_other->perms;
 			else
 				pace->perms = 0;
-			apply_default_perms(fsp, pace, S_IRGRP);
+			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IRGRP);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
 		}
@@ -1203,7 +1204,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
 			pace->perms = 0;
-			apply_default_perms(fsp, pace, S_IROTH);
+			apply_default_perms(fsp->conn->params, fsp->is_directory, pace, S_IROTH);
 		} else
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 
