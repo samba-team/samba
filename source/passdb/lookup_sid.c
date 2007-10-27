@@ -880,6 +880,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 	*ret_domains = dom_infos;
 	*ret_names = name_infos;
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 
  fail:
