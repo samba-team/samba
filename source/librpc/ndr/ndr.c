@@ -328,6 +328,8 @@ static NTSTATUS ndr_map_error(enum ndr_err_code ndr_err)
 		return NT_STATUS_NO_MEMORY;
 	case NDR_ERR_ARRAY_SIZE:
 		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
+	case NDR_ERR_INVALID_POINTER:
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	default:
 		break;
 	}
