@@ -122,14 +122,6 @@ sub summary($)
 		}
 	}
 
-	if ($self->{statistics}->{SUITES_FAIL} == 0) {
-		my $ok = $self->{statistics}->{TESTS_EXPECTED_OK} + 
-				 $self->{statistics}->{TESTS_EXPECTED_FAIL};
-		print "ALL OK ($ok tests in $self->{statistics}->{SUITES_OK} testsuites)\n";
-	} else {
-		print "FAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
-	}
-
 	print SUMMARY "= Skipped tests =\n";
 	foreach my $reason (keys %{$self->{skips}}) {
 		print SUMMARY "$reason\n";
@@ -140,7 +132,16 @@ sub summary($)
 	}
 	close(SUMMARY);
 
-	print "A summary can be found in $self->{summaryfile}\n";
+	print "\nA summary with detailed informations can be found in:\n  $self->{summaryfile}\n";
+
+	if ($self->{statistics}->{SUITES_FAIL} == 0) {
+		my $ok = $self->{statistics}->{TESTS_EXPECTED_OK} + 
+				 $self->{statistics}->{TESTS_EXPECTED_FAIL};
+		print "\nALL OK ($ok tests in $self->{statistics}->{SUITES_OK} testsuites)\n";
+	} else {
+		print "\nFAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
+	}
+
 }
 
 sub skip_testsuite($$)
