@@ -369,7 +369,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					open_socket_in(SOCK_STREAM, port, 0,
 							ifss, True);
 				if(s == -1) {
-					return false;
+					continue;
 				}
 
 				/* ready to listen */
