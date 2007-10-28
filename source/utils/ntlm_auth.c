@@ -738,7 +738,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		if(have_session_key) {
 			char *key64 = base64_encode_data_blob(session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
-			SAFE_FREE(key64);
+			TALLOC_FREE(key64);
 		} else {
 			x_fprintf(x_stdout, "BH\n");
 		}
@@ -767,7 +767,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
 		x_fprintf(x_stdout, "TT %s\n", reply_base64);
-		SAFE_FREE(reply_base64);
+		TALLOC_FREE(reply_base64);
 		data_blob_free(&reply);
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
@@ -888,7 +888,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		if(have_session_key) {
 			char *key64 = base64_encode_data_blob(session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
-			SAFE_FREE(key64);
+			TALLOC_FREE(key64);
 		}
 		else {
 			x_fprintf(x_stdout, "BH\n");
@@ -928,7 +928,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		} else { 
 			x_fprintf(x_stdout, "KK %s\n", reply_base64);
 		}
-		SAFE_FREE(reply_base64);
+		TALLOC_FREE(reply_base64);
 		if (first) {
 			initial_message = reply;
 		} else {
@@ -938,7 +938,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
-		SAFE_FREE(reply_base64);
+		TALLOC_FREE(reply_base64);
 
 		if(have_session_key)
 			data_blob_free(&session_key);
@@ -1033,7 +1033,7 @@ static void offer_gss_spnego_mechs(void) {
 	reply_base64 = base64_encode_data_blob(token);
 	x_fprintf(x_stdout, "TT %s *\n", reply_base64);
 
-	SAFE_FREE(reply_base64);
+	TALLOC_FREE(reply_base64);
 	data_blob_free(&token);
 	DEBUG(10, ("sent SPNEGO negTokenInit\n"));
 	return;
@@ -1264,7 +1264,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	x_fprintf(x_stdout, "%s %s %s\n",
 		  reply_code, reply_base64, reply_argument);
 
-	SAFE_FREE(reply_base64);
+	TALLOC_FREE(reply_base64);
 	data_blob_free(&token);
 
 	return;
@@ -1329,7 +1329,7 @@ static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	to_server_base64 = base64_encode_data_blob(to_server);
 	data_blob_free(&to_server);
 	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
-	SAFE_FREE(to_server_base64);
+	TALLOC_FREE(to_server_base64);
 	return True;
 }
 
@@ -1387,7 +1387,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	to_server_base64 = base64_encode_data_blob(to_server);
 	data_blob_free(&to_server);
 	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
-	SAFE_FREE(to_server_base64);
+	TALLOC_FREE(to_server_base64);
 	return;
 }
 
@@ -1474,7 +1474,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 	reply_base64 = base64_encode_data_blob(to_server);
 	x_fprintf(x_stdout, "KK %s *\n", reply_base64);
 
-	SAFE_FREE(reply_base64);
+	TALLOC_FREE(reply_base64);
 	data_blob_free(&to_server);
 	DEBUG(10, ("sent GSS-SPNEGO KERBEROS5 negTokenInit\n"));
 	return True;

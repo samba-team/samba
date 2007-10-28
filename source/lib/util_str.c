@@ -2528,7 +2528,8 @@ char *base64_encode_data_blob(DATA_BLOB data)
 	out_cnt = 0;
 	len = data.length;
 	output_len = data.length * 2;
-	result = (char *)SMB_MALLOC(output_len); /* get us plenty of space */
+	result = TALLOC_ARRAY(talloc_tos(), char, output_len); /* get us plenty of space */
+	SMB_ASSERT(result != NULL);
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {
 		int c = (unsigned char) *(data.data++);
