@@ -238,7 +238,7 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 	}
 #endif
 
-	zero_addr(pss, AF_INET);
+	zero_addr(pss);
 
 	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
 		return false;
@@ -343,14 +343,14 @@ void zero_ip_v4(struct in_addr *ip)
 }
 
 /*******************************************************************
- Set an address to INADDR_ANY, or IN6ADDR_ANY.
+ Set an address to INADDR_ANY.
 ******************************************************************/
 
-void zero_addr(struct sockaddr_storage *pss, int family)
+void zero_addr(struct sockaddr_storage *pss)
 {
 	memset(pss, '\0', sizeof(*pss));
 	/* Ensure we're at least a valid sockaddr-storage. */
-	pss->ss_family = family;
+	pss->ss_family = AF_INET;
 }
 
 /*******************************************************************

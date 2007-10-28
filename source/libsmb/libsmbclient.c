@@ -654,7 +654,7 @@ smbc_server(SMBCCTX *context,
         const char *username_used;
  	NTSTATUS status;
 
-	zero_addr(&ss, AF_INET);
+	zero_addr(&ss);
 	ZERO_STRUCT(c);
 
 	if (server[0] == 0) {
@@ -742,7 +742,7 @@ smbc_server(SMBCCTX *context,
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-	zero_addr(&ss, AF_INET);
+	zero_addr(&ss);
 
 	/* have to open a new connection */
 	if ((c = cli_initialise()) == NULL) {
@@ -964,7 +964,7 @@ smbc_attr_server(SMBCCTX *context,
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
 
-                zero_addr(&ss, AF_INET);
+                zero_addr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
                                                 global_myname(), server,
                                                 &ss, 0, "IPC$", "?????",

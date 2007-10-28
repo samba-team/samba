@@ -745,7 +745,7 @@ out_free:
 
 	load_case_tables();
 
-	zero_addr(&server_ss, AF_INET);
+	zero_addr(&server_ss);
 
 	setlinebuf(stdout);
 

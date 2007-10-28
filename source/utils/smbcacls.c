@@ -769,7 +769,7 @@ static struct cli_state *connect_one(const char *share)
 	struct cli_state *c;
 	struct sockaddr_storage ss;
 	NTSTATUS nt_status;
-	zero_addr(&ss, AF_INET);
+	zero_addr(&ss);
 
 	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password: ");

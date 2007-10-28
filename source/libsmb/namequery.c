@@ -331,7 +331,7 @@ bool name_status_find(const char *q_name,
 
 	if (!interpret_string_addr(&ss, lp_socket_address(),
 				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_addr(&ss, AF_INET);
+		zero_addr(&ss);
 	}
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, &ss, True);
@@ -528,7 +528,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 		for ( j=i+1; j<count; j++ ) {
 			if (addr_equal(&iplist[i].ss, &iplist[j].ss) &&
 					iplist[i].port == iplist[j].port) {
-				zero_addr(&iplist[j].ss, AF_INET);
+				zero_addr(&iplist[j].ss);
 			}
 		}
 	}
@@ -942,7 +942,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 
 	if (!interpret_string_addr(&ss, lp_socket_address(),
 				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_addr(&ss, AF_INET);
+		zero_addr(&ss);
 	}
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3, &ss, true );
@@ -1030,7 +1030,7 @@ NTSTATUS resolve_wins(const char *name,
 	/* the address we will be sending from */
 	if (!interpret_string_addr(&src_ss, lp_socket_address(),
 				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_addr(&src_ss, AF_INET);
+		zero_addr(&src_ss);
 	}
 
 	if (src_ss.ss_family != AF_INET) {

@@ -106,7 +106,7 @@ static struct cli_state *open_nbt_connection(void)
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
 
-        zero_addr(&ss, AF_INET);
+        zero_addr(&ss);
 
 	if (!(c = cli_initialise())) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);

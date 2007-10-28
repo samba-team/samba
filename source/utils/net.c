@@ -1012,7 +1012,7 @@ static struct functable net_func[] = {
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	zero_addr(&opt_dest_ip, AF_INET);
+	zero_addr(&opt_dest_ip);
 
 	load_case_tables();
 
