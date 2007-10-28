@@ -44,6 +44,8 @@ static struct vfs_init_function_entry *backends = NULL;
 static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 {
 	struct vfs_init_function_entry *entry = backends;
+
+	DEBUG(10, ("vfs_find_backend_entry called for %s\n", name));
  
 	while(entry) {
 		if (strcmp(entry->name, name)==0) return entry;
@@ -109,6 +111,7 @@ static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
 	vfs_op_tuple *ops;
+	char *module_path = NULL;
 	char *module_name = NULL;
 	char *module_param = NULL, *p;
 	int i;
@@ -126,9 +129,9 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 	DEBUG(3, ("Initialising custom vfs hooks from [%s]\n", vfs_object));
 
-	module_name = smb_xstrdup(vfs_object);
+	module_path = smb_xstrdup(vfs_object);
 
-	p = strchr_m(module_name, ':');
+	p = strchr_m(module_path, ':');
 
 	if (p) {
 		*p = 0;
@@ -136,31 +139,48 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		trim_char(module_param, ' ', ' ');
 	}
 
-	trim_char(module_name, ' ', ' ');
+	trim_char(module_path, ' ', ' ');
+
+	module_name = smb_xstrdup(module_path);
+
+	if ((module_name[0] == '/') &&
+	    (strcmp(module_path, DEFAULT_VFS_MODULE_NAME) != 0)) {
+
+		/*
+		 * Extract the module name from the path. Just use the base
+		 * name of the last path component.
+		 */
+
+		SAFE_FREE(module_name);
+		module_name = smb_xstrdup(strrchr_m(module_path, '/')+1);
+
+		p = strchr_m(module_name, '.');
+
+		if (p != NULL) {
+			*p = '\0';
+		}
+	}
 
 	/* First, try to load the module with the new module system */
 	if((entry = vfs_find_backend_entry(module_name)) || 
-	   (NT_STATUS_IS_OK(smb_probe_module("vfs", module_name)) && 
+	   (NT_STATUS_IS_OK(smb_probe_module("vfs", module_path)) &&
 		(entry = vfs_find_backend_entry(module_name)))) {
 
 		DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
 		
 	 	if ((ops = entry->vfs_op_tuples) == NULL) {
 	 		DEBUG(0, ("entry->vfs_op_tuples==NULL for [%s] failed\n", vfs_object));
-	 		SAFE_FREE(module_name);
-	 		return False;
+			goto fail;
 	 	}
 	} else {
 		DEBUG(0,("Can't find a vfs module [%s]\n",vfs_object));
-		SAFE_FREE(module_name);
-		return False;
+		goto fail;
 	}
 
 	handle = TALLOC_ZERO_P(conn->mem_ctx,vfs_handle_struct);
 	if (!handle) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
-		SAFE_FREE(module_name);
-		return False;
+		goto fail;
 	}
 	memcpy(&handle->vfs_next, &conn->vfs, sizeof(struct vfs_ops));
 	handle->conn = conn;
@@ -183,8 +203,14 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		vfs_set_operation(&conn->vfs, ops[i].type, handle, ops[i].op);
 	}
 
+	SAFE_FREE(module_path);
 	SAFE_FREE(module_name);
 	return True;
+
+ fail:
+	SAFE_FREE(module_path);
+	SAFE_FREE(module_name);
+	return False;
 }
 
 /*****************************************************************
