@@ -146,7 +146,7 @@ static struct cli_state *do_connection(char *the_service)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_addr(&ip, AF_INET);
+        zero_addr(&ip);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
