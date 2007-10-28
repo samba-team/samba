@@ -369,7 +369,7 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(account, newstr, PDB_CHANGED);
-		SAFE_FREE(newstr);
+		TALLOC_FREE(newstr);
 	}
 
 	/* User and group sid */
@@ -1385,7 +1385,7 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 
 	res = fprintf(add_fd, "%s:: %s\n", attr_name, base64);
 	TALLOC_FREE(value);
-	SAFE_FREE(base64);
+	TALLOC_FREE(base64);
 	return res;
 }
 

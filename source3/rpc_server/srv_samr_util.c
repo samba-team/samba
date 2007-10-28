@@ -58,7 +58,7 @@ void copy_id20_to_sam_passwd(struct samu *to, SAM_USER_INFO_20 *from)
 		if (STRING_CHANGED_NC(old_string,new_string))
 			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
 
-		SAFE_FREE(new_string);
+		TALLOC_FREE(new_string);
 	}
 }
 
@@ -201,7 +201,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (STRING_CHANGED_NC(old_string,newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
 
-		SAFE_FREE(newstr);
+		TALLOC_FREE(newstr);
 	}
 	
 	if (from->fields_present & ACCT_RID) {
@@ -425,7 +425,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
 
-		SAFE_FREE(newstr);
+		TALLOC_FREE(newstr);
 	}
 	
 	if (from->fields_present & ACCT_RID) {
@@ -637,7 +637,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (STRING_CHANGED_NC(old_string,newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
 
-		SAFE_FREE(newstr);
+		TALLOC_FREE(newstr);
 	}
 	
 	if (from->fields_present & ACCT_RID) {

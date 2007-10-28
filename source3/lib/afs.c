@@ -53,7 +53,7 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 
 	base64_key = base64_encode_data_blob(key);
 	if (base64_key == NULL) {
-		free(base64_ticket);
+		TALLOC_FREE(base64_ticket);
 		return NULL;
 	}
 
@@ -63,8 +63,8 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 
 	DEBUG(10, ("Got ticket string:\n%s\n", result));
 
-	free(base64_ticket);
-	free(base64_key);
+	TALLOC_FREE(base64_ticket);
+	TALLOC_FREE(base64_key);
 
 	return result;
 }
