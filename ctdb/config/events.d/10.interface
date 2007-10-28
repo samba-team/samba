@@ -137,23 +137,29 @@ case $cmd in
 	;;
 
      monitor)
-	[ -x /usr/sbin/ethtool ] && {
-	    [ -z "$CTDB_PUBLIC_INTERFACE" ] || {
-	    	/usr/sbin/ethtool $CTDB_PUBLIC_INTERFACE | grep 'Link detected: yes' > /dev/null || {
-		    echo "`date` ERROR: No link on the public network interface $CTDB_PUBLIC_INTERFACE"
-		    exit 1
-	    	}
-	    }
-	    cat $CTDB_PUBLIC_ADDRESSES | sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//" | 
-	    sort | uniq | while read IFACE; do
+	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES | 
+		sed -e "s/^[^\t ]*[\t ]*//" -e "s/[\t ]*$//"`
+
+	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
+
+	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
+
+
+	for IFACE in $INTERFACES ; do
+	    if [ `echo $IFACE | grep '^bond*'` ] ; then
+		grep '^MII Status: up' /proc/net/bonding/$IFACE > /dev/null || {
+			echo "`date` ERROR: public network interface $IFACE is down"
+			exit 1
+		}
+	    else
 		[ -z "$IFACE" ] || {
 	    	    /usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
 			echo "`date` ERROR: No link on the public network interface $IFACE"
 			exit 1
 	    	    }
 		}
-	    done
-	}
+	    fi
+	done
 	;;
 
 esac
