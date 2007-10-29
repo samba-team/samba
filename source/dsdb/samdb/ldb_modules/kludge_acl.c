@@ -122,6 +122,12 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *class;
 	int i, j, ret;
+
+ 	/* If we don't have a schema yet, we can't do anything... */
+	if (schema == NULL) {
+		return LDB_SUCCESS;
+	}
+
 	/* Must remove any existing attribute, or else confusion reins */
 	ldb_msg_remove_attr(msg, attrName);
 	ret = ldb_msg_add_empty(msg, attrName, 0, &allowedAttributes);
@@ -184,6 +190,12 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	const struct dsdb_class *class;
 	int i, j, ret;
+
+ 	/* If we don't have a schema yet, we can't do anything... */
+	if (schema == NULL) {
+		return LDB_SUCCESS;
+	}
+
 	/* Must remove any existing attribute, or else confusion reins */
 	ldb_msg_remove_attr(msg, attrName);
 	ret = ldb_msg_add_empty(msg, attrName, 0, &allowedClasses);
