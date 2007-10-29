@@ -1123,7 +1123,7 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
 /* Samba wrapper function for krb5 functionality. */
-void setup_kaddr_v4( krb5_address *pkaddr, struct sockaddr *paddr);
+bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);

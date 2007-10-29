@@ -401,7 +401,7 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	krb5_data ap_req, chpw_req, chpw_rep;
 	int ret, sock;
 	socklen_t addr_len;
-	struct sockaddr remote_addr, local_addr;
+	struct sockaddr_storage remote_addr, local_addr;
 	struct sockaddr_storage addr;
 	krb5_address local_kaddr, remote_kaddr;
 	bool use_tcp = False;
@@ -438,15 +438,14 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 			return ADS_ERROR_SYSTEM(rc);
 		}
 		addr_len = sizeof(remote_addr);
-		getpeername(sock, &remote_addr, &addr_len);
+		getpeername(sock, (struct sockaddr *)&remote_addr, &addr_len);
 		addr_len = sizeof(local_addr);
-		getsockname(sock, &local_addr, &addr_len);
+		getsockname(sock, (struct sockaddr *)&local_addr, &addr_len);
 
-		/* FIXME ! How do we do IPv6 here ? JRA. */
-		if (remote_addr.sa_family != AF_INET ||
-				local_addr.sa_family != AF_INET) {
+		if (!setup_kaddr(&remote_kaddr, &remote_addr) ||
+				!setup_kaddr(&local_kaddr, &local_addr)) {
 			DEBUG(1,("do_krb5_kpasswd_request: "
-				"no IPv6 support (yet).\n"));
+				"Failed to setup addresses.\n"));
 			close(sock);
 			SAFE_FREE(ap_req.data);
 			krb5_auth_con_free(context, auth_context);
@@ -454,9 +453,6 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 			return ADS_ERROR_SYSTEM(EINVAL);
 		}
 
-		setup_kaddr_v4(&remote_kaddr, &remote_addr);
-		setup_kaddr_v4(&local_kaddr, &local_addr);
-	
 		ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
 		if (ret) {
 			close(sock);
@@ -465,7 +461,7 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 			DEBUG(1,("krb5_auth_con_setaddrs failed (%s)\n", error_message(ret)));
 			return ADS_ERROR_KRB5(ret);
 		}
-	
+
 		ret = build_kpasswd_request(pversion, context, auth_context, &ap_req,
 					  princ, newpw, use_tcp, &chpw_req);
 		if (ret) {
