@@ -244,3 +244,15 @@ OBJ_FILES = \
 # End MODULE ldb_subtree_rename
 ################################################
 
+################################################
+# Start MODULE ldb_linked_attributes
+[MODULE::ldb_linked_attributes]
+INIT_FUNCTION = ldb_linked_attributes_init
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC SAMDB 
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		linked_attributes.o
+# End MODULE ldb_linked_attributes
+################################################
+

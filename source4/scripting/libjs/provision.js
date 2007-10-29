@@ -966,6 +966,7 @@ function provision_guess()
 					"objectclass",
 					"rdn_name",
 					"subtree_rename",
+					"linked_attributes",
 					"show_deleted",
 					"partition");
 	subobj.MODULES_LIST = join(",", modules_list);
