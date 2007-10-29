@@ -907,6 +907,21 @@ const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb
 	return NULL;
 }
 
+const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *schema,
+						      int linkID)
+{
+	struct dsdb_attribute *cur;
+
+	/* TODO: add binary search */
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (cur->linkID != linkID) continue;
+
+		return cur;
+	}
+
+	return NULL;
+}
+
 const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *schema,
 						    uint32_t id)
 {
