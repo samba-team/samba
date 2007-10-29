@@ -162,19 +162,45 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
- void setup_kaddr_v4( krb5_address *pkaddr, struct sockaddr *paddr)
+ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 {
-	pkaddr->addr_type = KRB5_ADDRESS_INET;
-	pkaddr->address.length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
-	pkaddr->address.data = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+	memset(pkaddr, '\0', sizeof(krb5_address));
+#if defined(HAVE_IPV6) && defined(KRB5_ADDRESS_INET6)
+	if (paddr->ss_family == AF_INET6) {
+		pkaddr->addr_type = KRB5_ADDRESS_INET6;
+		pkaddr->address.length = sizeof(((struct sockaddr_in6 *)paddr)->sin6_addr);
+		pkaddr->address.data = (char *)&(((struct sockaddr_in6 *)paddr)->sin6_addr);
+		return true;
+	}
+#endif
+	if (paddr->ss_family == AF_INET) {
+		pkaddr->addr_type = KRB5_ADDRESS_INET;
+		pkaddr->address.length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
+		pkaddr->address.data = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+		return true;
+	}
+	return false;
 }
 #elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
 /* MIT */
- void setup_kaddr_v4( krb5_address *pkaddr, struct sockaddr *paddr)
+ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 {
-	pkaddr->addrtype = ADDRTYPE_INET;
-	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
-	pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
+	memset(pkaddr, '\0', sizeof(krb5_address));
+#if defined(HAVE_IPV6) && defined(ADDRTYPE_INET6)
+	if (paddr->ss_family == AF_INET6) {
+		pkaddr->addrtype = ADDRTYPE_INET6;
+		pkaddr->length = sizeof(((struct sockaddr_in6 *)paddr)->sin6_addr);
+		pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in6 *)paddr)->sin6_addr);
+		return true;
+	}
+#endif
+	if (paddr->ss_family == AF_INET) {
+		pkaddr->addrtype = ADDRTYPE_INET;
+		pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
+		pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
+		return true;
+	}
+	return false;
 }
 #else
 #error UNKNOWN_ADDRTYPE
