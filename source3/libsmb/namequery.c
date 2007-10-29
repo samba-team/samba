@@ -1341,15 +1341,14 @@ NTSTATUS resolve_ads(const char *name,
 	i = 0;
 	j = 0;
 	while ( i < numdcs && (*return_count<numaddrs) ) {
-		struct in_addr ip;
 		struct ip_service *r = &(*return_iplist)[*return_count];
 
 		r->port = dcs[i].port;
 
 		/* If we don't have an IP list for a name, lookup it up */
 
-		if (!dcs[i].ips) {
-			ip = *interpret_addr2(dcs[i].hostname);
+		if (!dcs[i].ss_s) {
+			interpret_string_addr(&r->ss, dcs[i].hostname, 0);
 			i++;
 			j = 0;
 		} else {
@@ -1361,11 +1360,9 @@ NTSTATUS resolve_ads(const char *name,
 				continue;
 			}
 
-			ip = dcs[i].ips[j];
+			r->ss = dcs[i].ss_s[j];
 			j++;
 		}
-
-		in_addr_to_sockaddr_storage(&r->ss, ip);
 
 		/* make sure it is a valid IP.  I considered checking the
 		 * negative connection cache, but this is the wrong place
