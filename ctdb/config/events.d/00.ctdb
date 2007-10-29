@@ -31,7 +31,7 @@ case $cmd in
 	    value=`echo $v | cut -d= -f2`
 	    ctdb setvar $varname $value || exit 1
 	    echo "`date` Set $varname to $value"
-	done
+	done || exit 1
 	;;
 esac
 

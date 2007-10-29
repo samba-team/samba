@@ -67,7 +67,6 @@ case $cmd in
       monitor)
 	# check that NFS responds to rpc requests
 	ctdb_check_rpc "NFS" 100003 3
-	ctdb_check_rpc "mount" 100005 1
 
 	# and that its directories are available
 	nfs_dirs=`grep -v '^#' < /etc/exports | cut -d' ' -f1`
@@ -77,6 +76,17 @@ case $cmd in
 	ctdb_check_rpc "statd" 100024 1
 	ctdb_check_rpc "lockd" 100021 1
 	ctdb_check_directories "statd" $STATD_SHARED_DIRECTORY
+
+	# mount needs special handling since it is sometimes not started
+	# correctly on RHEL5
+	rpcinfo -u localhost 100005 1 > /dev/null || {
+		echo "`date` ERROR: MOUNTD is not running. Trying to restart it."
+		RPCMOUNTDOPTS=""
+		[ -n "$MOUNTD_PORT" ] && RPCMOUNTDOPTS="$RPCMOUNTDOPTS -p $MOUNTD_PORT"
+		killall -q -9 rpc.mountd
+		rpc.mountd $RPCMOUNTDOPTS &
+		exit 1
+	}
 	;;
 
 esac
