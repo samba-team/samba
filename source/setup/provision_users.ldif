@@ -2,11 +2,6 @@ dn: CN=Administrator,CN=Users,${DOMAINDN}
 objectClass: user
 cn: Administrator
 description: Built-in account for administering the computer/domain
-memberOf: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
-memberOf: CN=Domain Admins,CN=Users,${DOMAINDN}
-memberOf: CN=Enterprise Admins,CN=Users,${DOMAINDN}
-memberOf: CN=Schema Admins,CN=Users,${DOMAINDN}
-memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 userAccountControl: 66048
 objectSid: ${DOMAINSID}-500
 adminCount: 1
@@ -19,7 +14,6 @@ dn: CN=Guest,CN=Users,${DOMAINDN}
 objectClass: user
 cn: Guest
 description: Built-in account for guest access to the computer/domain
-memberOf: CN=Guests,CN=Builtin,${DOMAINDN}
 userAccountControl: 66082
 primaryGroupID: 514
 objectSid: ${DOMAINSID}-501
@@ -241,7 +235,6 @@ objectClass: group
 cn: Enterprise Admins
 description: Designated administrators of the enterprise
 member: CN=Administrator,CN=Users,${DOMAINDN}
-memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
@@ -264,7 +257,6 @@ objectClass: group
 cn: Domain Admins
 description: Designated administrators of the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
-memberOf: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
@@ -275,7 +267,6 @@ objectClass: top
 objectClass: group
 cn: Domain Users
 description: All domain users
-memberOf: CN=Users,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
 isCriticalSystemObject: TRUE
@@ -285,7 +276,6 @@ objectClass: top
 objectClass: group
 cn: Domain Guests
 description: All domain guests
-memberOf: CN=Guests,CN=Builtin,${DOMAINDN}
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
 isCriticalSystemObject: TRUE
