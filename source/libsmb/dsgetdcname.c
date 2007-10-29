@@ -27,7 +27,7 @@
 #define DSGETDCNAME_CACHE_TTL	60*15
 
 struct ip_service_name {
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 	unsigned port;
 	const char *hostname;
 };
@@ -625,8 +625,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		/* If we don't have an IP list for a name, lookup it up */
 
-		if (!dcs[i].ips) {
-			r->ip = *interpret_addr2(dcs[i].hostname);
+		if (!dcs[i].ss_s) {
+			interpret_string_addr(&r->ss, dcs[i].hostname, 0);
 			i++;
 			j = 0;
 		} else {
@@ -638,7 +638,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			r->ip = dcs[i].ips[j];
+			r->ss = dcs[i].ss_s[j];
 			j++;
 		}
 
@@ -650,7 +650,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 * back to netbios lookups is that our DNS server doesn't know
 		 * anything about the DC's   -- jerry */
 
-		if (!is_zero_ip_v4(r->ip)) {
+		if (!is_zero_addr(&r->ss)) {
 			(*return_count)++;
 			continue;
 		}
@@ -789,8 +789,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	}
 
 	if (flags & DS_IP_REQUIRED) {
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &dclist[i]->ss);
 		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
-					     inet_ntoa(dclist[i]->ip));
+						addr);
 		dc_address_type = ADS_INET_ADDRESS;
 	} else {
 		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",

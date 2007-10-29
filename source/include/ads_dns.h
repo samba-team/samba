@@ -36,7 +36,7 @@ struct dns_rr {
 	uint16 in_class;
 	uint32 ttl;
 	uint16 rdatalen;
-	uint8 *rdata;	
+	uint8 *rdata;
 };
 
 /* SRV records */
@@ -47,14 +47,14 @@ struct dns_rr_srv {
 	uint16 weight;
 	uint16 port;
 	size_t num_ips;
-	struct in_addr *ips;	/* support multi-homed hosts */
+	struct sockaddr_storage *ss_s;	/* support multi-homed hosts */
 };
 
 /* NS records */
 
 struct dns_rr_ns {
 	const char *hostname;
-	struct in_addr ip;
+	struct sockaddr_storage ss;
 };
 
 

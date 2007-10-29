@@ -1,18 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    DNS utility library
    Copyright (C) Gerald (Jerry) Carter           2006.
+   Copyright (C) Jeremy Allison                  2007.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -44,6 +45,13 @@
 #if !defined(T_A)	/* AIX 5.3 already defines T_A */
 #  define T_A   	ns_t_a
 #endif
+
+#if defined(HAVE_IPV6)
+#if !defined(T_AAAA)
+#  define T_AAAA	ns_t_aaaa
+#endif
+#endif
+
 #  define T_SRV 	ns_t_srv
 #if !defined(T_NS)	/* AIX 5.3 already defines T_NS */
 #  define T_NS 		ns_t_ns
@@ -73,7 +81,7 @@ static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	int namelen;
 
 	ZERO_STRUCTP( q );
-	
+
 	if ( !start || !end || !q || !*ptr)
 		return False;
 
@@ -134,7 +142,7 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	rr->in_class = RSVAL(p, 2);
 	rr->ttl      = RIVAL(p, 4);
 	rr->rdatalen = RSVAL(p, 8);
-	
+
 	p += 10;
 
 	/* sanity check the available space */
@@ -168,7 +176,7 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	if ( !start || !end || !srv || !*ptr)
 		return -1;
 
-	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning 
+	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning
 	   of the next record */
 
 	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
@@ -177,7 +185,8 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	}
 
 	if ( rr.type != T_SRV ) {
-		DEBUG(1,("ads_dns_parse_rr_srv: Bad answer type (%d)\n", rr.type));
+		DEBUG(1,("ads_dns_parse_rr_srv: Bad answer type (%d)\n",
+					rr.type));
 		return False;
 	}
 
@@ -213,7 +222,7 @@ static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	if ( !start || !end || !nsrec || !*ptr)
 		return -1;
 
-	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning 
+	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning
 	   of the next record */
 
 	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
@@ -222,14 +231,15 @@ static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	}
 
 	if ( rr.type != T_NS ) {
-		DEBUG(1,("ads_dns_parse_rr_ns: Bad answer type (%d)\n", rr.type));
+		DEBUG(1,("ads_dns_parse_rr_ns: Bad answer type (%d)\n",
+					rr.type));
 		return False;
 	}
 
 	p = rr.rdata;
 
 	/* ame server hostname */
-	
+
 	namelen = dn_expand( start, end, p, nsname, sizeof(nsname) );
 	if ( namelen < 0 ) {
 		DEBUG(1,("ads_dns_parse_rr_ns: Failed to uncompress name!\n"));
@@ -249,16 +259,16 @@ static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 	if ( a->priority == b->priority ) {
 
 		/* randomize entries with an equal weight and priority */
-		if ( a->weight == b->weight ) 
+		if ( a->weight == b->weight )
 			return 0;
 
-		/* higher weights should be sorted lower */ 
+		/* higher weights should be sorted lower */
 		if ( a->weight > b->weight )
 			return -1;
 		else
 			return 1;
 	}
-		
+
 	if ( a->priority < b->priority )
 		return -1;
 
@@ -271,14 +281,14 @@ static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 
 #define DNS_FAILED_WAITTIME          30
 
-static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type, 
+static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
                               uint8 **buf, int *resp_length )
 {
 	uint8 *buffer = NULL;
 	size_t buf_len;
-	int resp_len = NS_PACKETSZ;	
+	int resp_len = NS_PACKETSZ;
 	static time_t last_dns_check = 0;
-	static NTSTATUS last_dns_status = NT_STATUS_OK;	
+	static NTSTATUS last_dns_status = NT_STATUS_OK;
 	time_t now = time(NULL);
 
 	/* Try to prevent bursts of DNS lookups if the server is down */
@@ -288,13 +298,13 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	if ( last_dns_check > now )
 		last_dns_check = 0;
 
-	/* IF we had a DNS timeout or a bad server and we are still 
-	   in the 30 second cache window, just return the previous 
+	/* IF we had a DNS timeout or a bad server and we are still
+	   in the 30 second cache window, just return the previous
 	   status and save the network timeout. */
 
 	if ( (NT_STATUS_EQUAL(last_dns_status,NT_STATUS_IO_TIMEOUT) ||
 	      NT_STATUS_EQUAL(last_dns_status,NT_STATUS_CONNECTION_REFUSED)) &&
-	     (last_dns_check+DNS_FAILED_WAITTIME) > now ) 
+	     (last_dns_check+DNS_FAILED_WAITTIME) > now )
 	{
 		DEBUG(10,("last_dns_check: Returning cached status (%s)\n",
 			  nt_errstr(last_dns_status) ));
@@ -305,39 +315,44 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	do {
 		if ( buffer )
 			TALLOC_FREE( buffer );
-		
+
 		buf_len = resp_len * sizeof(uint8);
 
-		if (buf_len) {			
-			if ( (buffer = TALLOC_ARRAY(ctx, uint8, buf_len)) == NULL ) {
-				DEBUG(0,("ads_dns_lookup_srv: talloc() failed!\n"));
+		if (buf_len) {
+			if ((buffer = TALLOC_ARRAY(ctx, uint8, buf_len))
+					== NULL ) {
+				DEBUG(0,("ads_dns_lookup_srv: "
+					"talloc() failed!\n"));
 				last_dns_status = NT_STATUS_NO_MEMORY;
 				last_dns_check = time(NULL);
-				return last_dns_status;	
+				return last_dns_status;
 			}
 		}
 
-		if ( (resp_len = res_query(name, C_IN, q_type, buffer, buf_len)) < 0 ) {
-			DEBUG(3,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
+		if ((resp_len = res_query(name, C_IN, q_type, buffer, buf_len))
+				< 0 ) {
+			DEBUG(3,("ads_dns_lookup_srv: "
+				"Failed to resolve %s (%s)\n",
+				name, strerror(errno)));
 			TALLOC_FREE( buffer );
 			last_dns_status = NT_STATUS_UNSUCCESSFUL;
-			
+
 			if (errno == ETIMEDOUT) {
-				last_dns_status = NT_STATUS_IO_TIMEOUT;				
+				last_dns_status = NT_STATUS_IO_TIMEOUT;
 			}
 			if (errno == ECONNREFUSED) {
-				last_dns_status = NT_STATUS_CONNECTION_REFUSED;				
+				last_dns_status = NT_STATUS_CONNECTION_REFUSED;
 			}
 			last_dns_check = time(NULL);
 			return last_dns_status;
 		}
 	} while ( buf_len < resp_len && resp_len < MAX_DNS_PACKET_SIZE );
-	
+
 	*buf = buffer;
 	*resp_length = resp_len;
 
 	last_dns_check = time(NULL);
-	last_dns_status = NT_STATUS_OK;	
+	last_dns_status = NT_STATUS_OK;
 	return last_dns_status;
 }
 
@@ -345,7 +360,10 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
  Simple wrapper for a DNS SRV query
 *********************************************************************/
 
-static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_srv **dclist, int *numdcs )
+static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
+				const char *name,
+				struct dns_rr_srv **dclist,
+				int *numdcs)
 {
 	uint8 *buffer = NULL;
 	int resp_len = 0;
@@ -359,8 +377,8 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	if ( !ctx || !name || !dclist ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	/* Send the request.  May have to loop several times in case 
+
+	/* Send the request.  May have to loop several times in case
 	   of large replies */
 
 	status = dns_send_req( ctx, name, T_SRV, &buffer, &resp_len );
@@ -375,19 +393,23 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	   available in libresolv.a, and not the shared lib.  Who knows why....
 	   So we have to parse the DNS reply ourselves */
 
-	/* Pull the answer RR's count from the header.  Use the NMB ordering macros */
+	/* Pull the answer RR's count from the header.
+	 * Use the NMB ordering macros */
 
 	query_count      = RSVAL( p, 4 );
 	answer_count     = RSVAL( p, 6 );
 	auth_count       = RSVAL( p, 8 );
 	additional_count = RSVAL( p, 10 );
 
-	DEBUG(4,("ads_dns_lookup_srv: %d records returned in the answer section.\n", 
+	DEBUG(4,("ads_dns_lookup_srv: "
+		"%d records returned in the answer section.\n",
 		answer_count));
-		
+
 	if (answer_count) {
-		if ( (dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv, answer_count)) == NULL ) {
-			DEBUG(0,("ads_dns_lookup_srv: talloc() failure for %d char*'s\n", 
+		if ((dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv,
+						answer_count)) == NULL ) {
+			DEBUG(0,("ads_dns_lookup_srv: "
+				"talloc() failure for %d char*'s\n",
 				answer_count));
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -404,8 +426,10 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	for ( rrnum=0; rrnum<query_count; rrnum++ ) {
 		struct dns_query q;
 
-		if ( !ads_dns_parse_query( ctx, buffer, buffer+resp_len, &p, &q ) ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to parse query record!\n"));
+		if (!ads_dns_parse_query(ctx, buffer,
+					buffer+resp_len, &p, &q)) {
+			DEBUG(1,("ads_dns_lookup_srv: "
+				"Failed to parse query record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -413,10 +437,12 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	/* now we are at the answer section */
 
 	for ( rrnum=0; rrnum<answer_count; rrnum++ ) {
-		if ( !ads_dns_parse_rr_srv( ctx, buffer, buffer+resp_len, &p, &dcs[rrnum] ) ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to parse answer record!\n"));
+		if (!ads_dns_parse_rr_srv(ctx, buffer, buffer+resp_len,
+					&p, &dcs[rrnum])) {
+			DEBUG(1,("ads_dns_lookup_srv: "
+				"Failed to parse answer record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
-		}		
+		}
 	}
 	idx = rrnum;
 
@@ -426,8 +452,10 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 	for ( rrnum=0; rrnum<auth_count; rrnum++ ) {
 		struct dns_rr rr;
 
-		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to parse authority record!\n"));
+		if (!ads_dns_parse_rr( ctx, buffer,
+					buffer+resp_len, &p, &rr)) {
+			DEBUG(1,("ads_dns_lookup_srv: "
+				"Failed to parse authority record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -438,58 +466,81 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
 		struct dns_rr rr;
 		int i;
 
-		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed to parse additional records section!\n"));
+		if (!ads_dns_parse_rr(ctx, buffer, buffer+resp_len,
+					&p, &rr)) {
+			DEBUG(1,("ads_dns_lookup_srv: Failed "
+				"to parse additional records section!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		/* only interested in A records as a shortcut for having to come 
-		   back later and lookup the name.  For multi-homed hosts, the 
-		   number of additional records and exceed the number of answer 
-		   records. */
-		  
+		/* Only interested in A or AAAA records as a shortcut for having
+		 * to come back later and lookup the name. For multi-homed
+		 * hosts, the number of additional records and exceed the
+		 * number of answer records. */
 
-		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
-			continue;
+		if (rr.type != T_A || rr.rdatalen != 4) {
+#if defined(HAVE_IPV6)
+			/* FIXME. RFC2874 defines A6 records. This
+			 * requires recusive and horribly complex lookups.
+			 * Bastards. Ignore this for now.... JRA.
+			 */
+			if (rr.type != T_AAAA || rr.rdatalen != 16)
+#endif
+				continue;
+		}
 
 		for ( i=0; i<idx; i++ ) {
 			if ( strcmp( rr.hostname, dcs[i].hostname ) == 0 ) {
 				int num_ips = dcs[i].num_ips;
-				uint8 *buf;
-				struct in_addr *tmp_ips;
+				struct sockaddr_storage *tmp_ss_s;
 
 				/* allocate new memory */
-				
-				if ( dcs[i].num_ips == 0 ) {
-					if ( (dcs[i].ips = TALLOC_ARRAY( dcs, 
-						struct in_addr, 1 )) == NULL ) 
-					{
+
+				if (dcs[i].num_ips == 0) {
+					if ((dcs[i].ss_s = TALLOC_ARRAY(dcs,
+						struct sockaddr_storage, 1 ))
+							== NULL ) {
 						return NT_STATUS_NO_MEMORY;
 					}
 				} else {
-					if ( (tmp_ips = TALLOC_REALLOC_ARRAY( dcs, dcs[i].ips,
-						struct in_addr, dcs[i].num_ips+1)) == NULL ) 
-					{
+					if ((tmp_ss_s = TALLOC_REALLOC_ARRAY(dcs,
+							dcs[i].ss_s,
+							struct sockaddr_storage,
+							dcs[i].num_ips+1))
+								== NULL ) {
 						return NT_STATUS_NO_MEMORY;
 					}
-					
-					dcs[i].ips = tmp_ips;
+
+					dcs[i].ss_s = tmp_ss_s;
 				}
 				dcs[i].num_ips++;
-				
+
 				/* copy the new IP address */
-				
-				buf = (uint8*)&dcs[i].ips[num_ips].s_addr;
-				memcpy( buf, rr.rdata, 4 );
+				if (rr.type == T_A) {
+					struct in_addr ip;
+					memcpy(&ip, rr.rdata, 4);
+					in_addr_to_sockaddr_storage(
+							&dcs[i].ss_s[num_ips],
+							ip);
+				}
+#if defined(HAVE_IPV6)
+				if (rr.type == T_AAAA) {
+					struct in6_addr ip6;
+					memcpy(&ip6, rr.rdata, rr.rdatalen);
+					in6_addr_to_sockaddr_storage(
+							&dcs[i].ss_s[num_ips],
+							ip6);
+				}
+#endif
 			}
 		}
 	}
 
 	qsort( dcs, idx, sizeof(struct dns_rr_srv), QSORT_CAST dnssrvcmp );
-	
+
 	*dclist = dcs;
 	*numdcs = idx;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -497,7 +548,10 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dn
  Simple wrapper for a DNS NS query
 *********************************************************************/
 
-NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_rr_ns **nslist, int *numns )
+NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
+				const char *dnsdomain,
+				struct dns_rr_ns **nslist,
+				int *numns)
 {
 	uint8 *buffer = NULL;
 	int resp_len = 0;
@@ -511,10 +565,10 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	if ( !ctx || !dnsdomain || !nslist ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	/* Send the request.  May have to loop several times in case 
+
+	/* Send the request.  May have to loop several times in case
 	   of large replies */
-	   
+
 	status = dns_send_req( ctx, dnsdomain, T_NS, &buffer, &resp_len );
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(3,("ads_dns_lookup_ns: Failed to send DNS query (%s)\n",
@@ -527,19 +581,23 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	   available in libresolv.a, and not the shared lib.  Who knows why....
 	   So we have to parse the DNS reply ourselves */
 
-	/* Pull the answer RR's count from the header.  Use the NMB ordering macros */
+	/* Pull the answer RR's count from the header.
+	 * Use the NMB ordering macros */
 
 	query_count      = RSVAL( p, 4 );
 	answer_count     = RSVAL( p, 6 );
 	auth_count       = RSVAL( p, 8 );
 	additional_count = RSVAL( p, 10 );
 
-	DEBUG(4,("ads_dns_lookup_ns: %d records returned in the answer section.\n", 
+	DEBUG(4,("ads_dns_lookup_ns: "
+		"%d records returned in the answer section.\n",
 		answer_count));
-		
+
 	if (answer_count) {
-		if ( (nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns, answer_count)) == NULL ) {
-			DEBUG(0,("ads_dns_lookup_ns: talloc() failure for %d char*'s\n", 
+		if ((nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns,
+						answer_count)) == NULL ) {
+			DEBUG(0,("ads_dns_lookup_ns: "
+				"talloc() failure for %d char*'s\n",
 				answer_count));
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -556,8 +614,10 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	for ( rrnum=0; rrnum<query_count; rrnum++ ) {
 		struct dns_query q;
 
-		if ( !ads_dns_parse_query( ctx, buffer, buffer+resp_len, &p, &q ) ) {
-			DEBUG(1,("ads_dns_lookup_ns: Failed to parse query record!\n"));
+		if (!ads_dns_parse_query(ctx, buffer, buffer+resp_len,
+					&p, &q)) {
+			DEBUG(1,("ads_dns_lookup_ns: "
+				" Failed to parse query record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -565,10 +625,12 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	/* now we are at the answer section */
 
 	for ( rrnum=0; rrnum<answer_count; rrnum++ ) {
-		if ( !ads_dns_parse_rr_ns( ctx, buffer, buffer+resp_len, &p, &nsarray[rrnum] ) ) {
-			DEBUG(1,("ads_dns_lookup_ns: Failed to parse answer record!\n"));
+		if (!ads_dns_parse_rr_ns(ctx, buffer, buffer+resp_len,
+					&p, &nsarray[rrnum])) {
+			DEBUG(1,("ads_dns_lookup_ns: "
+				"Failed to parse answer record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
-		}		
+		}
 	}
 	idx = rrnum;
 
@@ -578,8 +640,10 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 	for ( rrnum=0; rrnum<auth_count; rrnum++ ) {
 		struct dns_rr rr;
 
-		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
-			DEBUG(1,("ads_dns_lookup_ns: Failed to parse authority record!\n"));
+		if ( !ads_dns_parse_rr(ctx, buffer, buffer+resp_len,
+					&p, &rr)) {
+			DEBUG(1,("ads_dns_lookup_ns: "
+				"Failed to parse authority record!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -590,28 +654,48 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 		struct dns_rr rr;
 		int i;
 
-		if ( !ads_dns_parse_rr( ctx, buffer, buffer+resp_len, &p, &rr ) ) {
-			DEBUG(1,("ads_dns_lookup_ns: Failed to parse additional records section!\n"));
+		if (!ads_dns_parse_rr(ctx, buffer, buffer+resp_len,
+					&p, &rr)) {
+			DEBUG(1,("ads_dns_lookup_ns: Failed "
+				"to parse additional records section!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		/* only interested in A records as a shortcut for having to come 
+		/* only interested in A records as a shortcut for having to come
 		   back later and lookup the name */
 
-		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
-			continue;
+		if (rr.type != T_A || rr.rdatalen != 4) {
+#if defined(HAVE_IPV6)
+			if (rr.type != T_AAAA || rr.rdatalen != 16)
+#endif
+				continue;
+		}
 
 		for ( i=0; i<idx; i++ ) {
-			if ( strcmp( rr.hostname, nsarray[i].hostname ) == 0 ) {
-				uint8 *buf = (uint8*)&nsarray[i].ip.s_addr;
-				memcpy( buf, rr.rdata, 4 );
+			if (strcmp(rr.hostname, nsarray[i].hostname) == 0) {
+				if (rr.type == T_A) {
+					struct in_addr ip;
+					memcpy(&ip, rr.rdata, 4);
+					in_addr_to_sockaddr_storage(
+							&nsarray[i].ss,
+							ip);
+				}
+#if defined(HAVE_IPV6)
+				if (rr.type == T_AAAA) {
+					struct in6_addr ip6;
+					memcpy(&ip6, rr.rdata, rr.rdatalen);
+					in6_addr_to_sockaddr_storage(
+							&nsarray[i].ss,
+							ip6);
+				}
+#endif
 			}
 		}
 	}
-	
+
 	*nslist = nsarray;
 	*numns = idx;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -624,7 +708,7 @@ NTSTATUS ads_dns_lookup_ns( TALLOC_CTX *ctx, const char *dnsdomain, struct dns_r
 static char *sitename_key(const char *realm)
 {
 	char *keystr;
-	
+
 	if (asprintf(&keystr, SITENAME_KEY, strupper_static(realm)) == -1) {
 		return NULL;
 	}
@@ -652,7 +736,7 @@ bool sitename_store(const char *realm, const char *sitename)
 		DEBUG(0,("sitename_store: no realm\n"));
 		return False;
 	}
-	
+
 	key = sitename_key(realm);
 
 	if (!sitename || (sitename && !*sitename)) {
@@ -663,7 +747,7 @@ bool sitename_store(const char *realm, const char *sitename)
 	}
 
 	expire = get_time_t_max(); /* Store indefinately. */
-	
+
 	DEBUG(10,("sitename_store: realm = [%s], sitename = [%s], expire = [%u]\n",
 		realm, sitename, (unsigned int)expire ));
 
@@ -684,13 +768,13 @@ char *sitename_fetch(const char *realm)
 	bool ret = False;
 	const char *query_realm;
 	char *key;
-	
+
 	if (!gencache_init()) {
 		return False;
 	}
 
 	if (!realm || (strlen(realm) == 0)) {
-		query_realm = lp_realm(); 
+		query_realm = lp_realm();
 	} else {
 		query_realm = realm;
 	}
