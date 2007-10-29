@@ -32,7 +32,7 @@ function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 	ldb.del("cn=ldaptestuser,cn=users," + base_dn);
 
 	var ok = ldb.add("
-dn: cn=ldaptestuser,cn=users," + base_dn + "
+dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectClass: user
 objectClass: person
 cn: LDAPtestUSER
@@ -44,7 +44,7 @@ cn: LDAPtestUSER
 			assert(ok.error == 0);
 		}
 		ok = ldb.add("
-dn: cn=ldaptestuser,cn=users," + base_dn + "
+dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectClass: user
 objectClass: person
 cn: LDAPtestUSER
@@ -117,7 +117,7 @@ servicePrincipalName: cifs/ldaptest2computer
 		}
 
 	ok = ldb.add("
-dn: cn=ldaptestuser2,cn=users," + base_dn + "
+dn: cn=ldaptestuser2,cn=useRs," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER2
@@ -129,7 +129,7 @@ cn: LDAPtestUSER2
 			assert(ok.error == 0);
 		}
 	        ok = ldb.add("
-dn: cn=ldaptestuser2,cn=users," + base_dn + "
+dn: cn=ldaptestuser2,cn=useRs," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER2
@@ -142,6 +142,8 @@ cn: LDAPtestUSER2
 
 	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
 
+	println("Testing Renames");
+
 	ok = ldb.rename("cn=ldaptestuser2,cn=users," + base_dn, "cn=ldaptestuser3,cn=users," + base_dn);
 	if (ok.error != 0) {
 		println("Could not rename cn=ldaptestuser2,cn=users," + base_dn + " into cn=ldaptestuser3,cn=users," + base_dn + ": " + ok.errstr);
@@ -150,7 +152,7 @@ cn: LDAPtestUSER2
 
 	// ensure we cannot add it again
 	ok = ldb.add("
-dn: cn=ldaptestuser3,cn=users," + base_dn + "
+dn: cn=ldaptestuser3,cn=userS," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER3
@@ -204,13 +206,15 @@ cn: LDAPtestUSER3
 
 	ok = ldb.del("cn=ldaptestuser5,cn=users," + base_dn);
 
+	println("Testing subtree Renames");
+
 	ok = ldb.add("
 dn: cn=ldaptestcontainer," + base_dn + "
 objectClass: container
 ");
 	
 	ok = ldb.add("
-dn: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
+dn: CN=ldaptestuser4,CN=ldaptestcontainer," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER4
@@ -222,7 +226,7 @@ cn: LDAPtestUSER4
 			assert(ok.error == 0);
 		}
 		ok = ldb.add("
-dn: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
+dn: CN=ldaptestuser4,CN=ldaptestcontainer," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER4
@@ -233,8 +237,8 @@ cn: LDAPtestUSER4
 		}
 	}
 
-	println("Testing ldb.rename of cn=ldaptestcontainer," + base_dn + "to cn=ldaptestcontainer2," + base_dn);
-	ok = ldb.rename("cn=ldaptestcontainer," + base_dn, "cn=ldaptestcontainer2," + base_dn);
+	println("Testing ldb.rename of cn=ldaptestcontainer," + base_dn + " to cn=ldaptestcontainer2," + base_dn);
+	ok = ldb.rename("CN=ldaptestcontainer," + base_dn, "CN=ldaptestcontainer2," + base_dn);
 	if (ok.error != 0) {
 		println(ok.errstr);
 		assert(ok.error == 0);
@@ -248,7 +252,7 @@ cn: LDAPtestUSER4
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
 
 	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in renamed container");
 	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer2," + base_dn, ldb.SCOPE_SUBTREE);
@@ -258,8 +262,14 @@ cn: LDAPtestUSER4
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptestuser4,cn=ldaptestcontainer2," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
 
+	println("Testing delete (should fail, not a leaf node) of renamed cn=ldaptestcontainer2," + base_dn);
+	ok = ldb.del("cn=ldaptestcontainer2," + base_dn);
+	if (ok.error != 66) { /* LDB_ERR_NOT_ALLOWED_ON_NON_LEAF */
+		println(ok.errstr);
+		assert(ok.error == 66);
+	}
 	println("Testing delete of subtree renamed "+res.msgs[0].dn);
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
@@ -321,7 +331,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptestuser,cn=users," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestuser,CN=Users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestuser");
 	assert(res.msgs[0].name == "ldaptestuser");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -396,7 +406,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptestcomputer,cn=computers," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestcomputer,CN=Computers," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestcomputer");
 	assert(res.msgs[0].name == "ldaptestcomputer");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -499,7 +509,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptest2computer,cn=computers," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptest2computer,CN=Computers," + base_dn));
 	assert(res.msgs[0].cn == "ldaptest2computer");
 	assert(res.msgs[0].name == "ldaptest2computer");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -523,7 +533,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("cn=ldaptestuser2,cn=users," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestuser2,CN=Users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestuser2");
 	assert(res.msgs[0].name == "ldaptestuser2");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -550,7 +560,7 @@ objectClass: user
 		assert(res.msgs.length == 1);
 	}
 
-//	assert(res.msgs[0].dn == ("CN=ldaptestutf8user èùéìòà,CN=users," + base_dn));
+	assert(res.msgs[0].dn == ("CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestutf8user èùéìòà");
 	assert(res.msgs[0].name == "ldaptestutf8user èùéìòà");
 	assert(res.msgs[0].objectClass[0] == "top");
@@ -572,7 +582,7 @@ objectClass: user
 	if (res.error != 0 || res.msgs.length != 1) {
 		println("Could not find (expect space collapse, win2k3 fails) (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))");
 	} else {
-//		assert(res.msgs[0].dn == ("cn=ldaptestutf8user2 èùéìòà,cn=users," + base_dn));
+		assert(res.msgs[0].dn == ("cn=ldaptestutf8user2 èùéìòà,cn=users," + base_dn));
 		assert(res.msgs[0].cn == "ldaptestutf8user2 èùéìòà");
 	}
 

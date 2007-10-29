@@ -631,6 +631,16 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Erasing data from partitions\n");
 	ldb_erase_partitions(info, samdb, ldapbackend);
 	
+	// (hack) Reload, now we have the partitions and rootdse loaded.  
+	var commit_ok = samdb.transaction_commit();
+	if (!commit_ok) {
+		info.message("samdb commit failed: " + samdb.errstring() + "\n");
+		assert(commit_ok);
+	}
+	samdb.close();
+
+	samdb = open_ldb(info, paths.samdb, false);
+
 	message("Adding DomainDN: " + subobj.DOMAINDN + " (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
 	message("Modifying DomainDN: " + subobj.DOMAINDN + "\n");
@@ -951,20 +961,21 @@ function provision_guess()
 	//
 	// Some Known ordering constraints:
 	// - rootdse must be first, as it makes redirects from "" -> cn=rootdse
-	// - samldb must be before password_hash, because password_hash checks
-	//   that the objectclass is of type person (filled in by samldb)
+	// - objectclass must be before password_hash, because password_hash checks
+	//   that the objectclass is of type person (filled in by the objectclass 
+	//   module when expanding the objectclass list)
 	// - partition must be last
 	// - each partition has its own module list then
 	modules_list        = new Array("rootdse",
-					"kludge_acl",
 					"paged_results",
 					"server_sort",
 					"extended_dn",
 					"asq",
 					"samldb",
-					"operational",
-					"objectclass",
 					"rdn_name",
+					"objectclass",
+					"kludge_acl",
+					"operational",
 					"subtree_rename",
 					"linked_attributes",
 					"show_deleted",
