@@ -29,8 +29,8 @@ show_file() {
     fname="$1"
     echo "  ================================"
     echo "  File: $fname"
-    echo "  `ls -l $fname`"
-    cat "$fname" | sed 's/^/  /'
+    echo "  `ls -l $fname 2>&1`"
+    cat "$fname" 2>&1 | sed 's/^/  /'
     echo "  ================================"
 }
 
@@ -57,14 +57,14 @@ EOF
 for f in $CONFIG_FILES; do
  [ -r "$f" ] || {
     error "$f is missing"
-    next;
+    continue;
  }
  show_file $f
  for i in `seq 0 $MAX_NODE`; do
      echo "Testing for same config file $f on node $i"
      tmpf=/tmp/`basename $f`.node$i
-     onnode $i cat $f > $tmpf
-     cmp $f $tmpf || {
+     onnode $i cat $f > $tmpf 2>&1
+     cmp $f $tmpf 2>&1 || {
 	 error "File $f is different on node $i"
 	 diff -u $f $tmpf
      }
@@ -127,6 +127,7 @@ show_all "/sbin/ifconfig -a"
 show_all "/sbin/ip addr list"
 show_all "/sbin/route -n"
 show_all "netstat -s"
+show_all "free"
 show_all "crontab -l"
 show_all "sysctl -a"
 show_all "/sbin/iptables -L -n"
@@ -143,6 +144,11 @@ show_all "/usr/sbin/nfsstat -v"
 }
 [ -x /usr/sbin/getenforce ] && {
     show_all "/usr/sbin/getenforce"
+}
+[ -d /proc/net/bonding ] && {
+    for f in /proc/net/bonding/*; do
+	show_all "cat $f"
+    done
 }
 
 [ -d /usr/lpp/mmfs ] && {
