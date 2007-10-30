@@ -1,4 +1,4 @@
-<samba:parameter name="config file"
+<samba:parameter name="registry shares"
                  context="G"
 		 type="bool"
 		 advanced="1"
