@@ -58,7 +58,7 @@ NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 */
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
-	NDR_CHECK(mprSetVar(*v, name, mprObject(name)));
+	EJS_CHECK(mprSetVar(*v, name, mprObject(name)));
 	return mprGetVar(v, name);
 }
 
@@ -68,7 +68,7 @@ NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint8_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
@@ -86,7 +86,7 @@ NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint16_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
@@ -104,7 +104,7 @@ NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
@@ -121,7 +121,7 @@ NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_int32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, int32_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
@@ -138,7 +138,7 @@ NTSTATUS ejs_push_int32(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_time_t(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, time_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
@@ -152,7 +152,7 @@ NTSTATUS ejs_push_time_t(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToNumber(v);
 	return NT_STATUS_OK;
 }
@@ -219,7 +219,7 @@ NTSTATUS ejs_push_NTSTATUS(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, unsigned *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
@@ -238,7 +238,7 @@ NTSTATUS ejs_push_enum(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char **s)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*s = mprToString(v);
 	return NT_STATUS_OK;
 }
@@ -276,7 +276,7 @@ NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs,
 			  struct MprVar *v, const char *name, struct dom_sid *r)
 {
 	struct dom_sid *sid;
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	sid = dom_sid_parse_talloc(ejs, mprToString(v));
 	NT_STATUS_HAVE_NO_MEMORY(sid);
 	*r = *sid;
@@ -294,7 +294,7 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_GUID(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, struct GUID *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	return GUID_from_string(mprToString(v), r);
 }
 
@@ -375,7 +375,7 @@ NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_bool(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, bool *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
+	EJS_CHECK(mprGetVar(&v, name));
 	*r = mprVarToBool(v);
 	return NT_STATUS_OK;
 }
