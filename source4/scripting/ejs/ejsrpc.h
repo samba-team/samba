@@ -152,6 +152,14 @@ NTSTATUS ejs_push_winreg_String(struct ejs_rpc *ejs,
 	if (!(s)) return ejs_panic(ejs, "out of memory"); \
 } while (0)
 
+#define EJS_CHECK(cmd) do { \
+	NTSTATUS _status; \
+	_status = cmd; \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		return _status; \
+	} \
+} while (0)
+
 /* some types are equivalent for ejs */
 #define ejs_pull_dom_sid2 ejs_pull_dom_sid
 #define ejs_push_dom_sid2 ejs_push_dom_sid
