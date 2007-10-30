@@ -23,7 +23,11 @@
  *
  *  Component: objectClass sorting module
  *
- *  Description: sort the objectClass attribute into the class hierarchy
+ *  Description: 
+ *  - sort the objectClass attribute into the class
+ *    hierarchy, 
+ *  - fix DNs and attributes into 'standard' case
+ *  - Add objectCategory and ntSecurityDescriptor defaults
  *
  *  Author: Andrew Bartlett
  */
@@ -61,7 +65,7 @@ struct oc_context {
 
 struct class_list {
 	struct class_list *prev, *next;
-	const char *objectclass;
+	const struct dsdb_class *objectclass;
 };
 
 static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
@@ -95,7 +99,12 @@ static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_mod
 	return h;
 }
 
+/* Sort objectClasses into correct order, and validate that all
+ * objectClasses specified actually exist in the schema
+ */
+
 static int objectclass_sort(struct ldb_module *module,
+			    const struct dsdb_schema *schema,
 			    struct ldb_message *msg, /* so that when we create new elements, we put it on the right parent */
 			    TALLOC_CTX *mem_ctx,
 			    struct ldb_message_element *objectclass_element,
@@ -103,7 +112,6 @@ static int objectclass_sort(struct ldb_module *module,
 {
 	int i;
 	int layer;
-	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
 	struct class_list *sorted = NULL, *parent_class = NULL,
 		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass, *poss_parent, *new_parent;
 	/* DESIGN:
@@ -143,11 +151,15 @@ static int objectclass_sort(struct ldb_module *module,
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		current->objectclass = (const char *)objectclass_element->values[i].data;
+		current->objectclass = dsdb_class_by_lDAPDisplayName(schema, (const char *)objectclass_element->values[i].data);
+		if (!current->objectclass) {
+			ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in schema", (const char *)objectclass_element->values[i].data);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
 
 		/* this is the root of the tree.  We will start
 		 * looking for subclasses from here */
-		if (ldb_attr_cmp("top", current->objectclass) == 0) {
+		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) == 0) {
 			DLIST_ADD_END(parent_class, current, struct class_list *);
 		} else {
 			DLIST_ADD_END(unsorted, current, struct class_list *);
@@ -156,29 +168,24 @@ static int objectclass_sort(struct ldb_module *module,
 
 	if (parent_class == NULL) {
 		current = talloc(mem_ctx, struct class_list);
-		current->objectclass = talloc_strdup(msg, "top");
+		current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
 		DLIST_ADD_END(parent_class, current, struct class_list *);
 	}
 
 	/* For each object:  find parent chain */
 	for (current = unsorted; schema && current; current = current->next) {
-		const struct dsdb_class *class = dsdb_class_by_lDAPDisplayName(schema, current->objectclass);
-		if (!class) {
-			ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in schema", current->objectclass);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
-		}
 		for (poss_parent = unsorted; poss_parent; poss_parent = poss_parent->next) {
-			if (ldb_attr_cmp(poss_parent->objectclass, class->subClassOf) == 0) {
+			if (ldb_attr_cmp(poss_parent->objectclass->lDAPDisplayName, current->objectclass->subClassOf) == 0) {
 				break;
 			}
 		}
 		/* If we didn't get to the end of the list, we need to add this parent */
-		if (poss_parent || (ldb_attr_cmp("top", class->subClassOf) == 0)) {
+		if (poss_parent || (ldb_attr_cmp("top", current->objectclass->subClassOf) == 0)) {
 			continue;
 		}
 
 		new_parent = talloc(mem_ctx, struct class_list);
-		new_parent->objectclass = talloc_strdup(msg, class->subClassOf);
+		new_parent->objectclass = dsdb_class_by_lDAPDisplayName(schema, current->objectclass->subClassOf);
 		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
 	}
 
@@ -193,13 +200,12 @@ static int objectclass_sort(struct ldb_module *module,
 		for (current = parent_class; schema && unsorted && current; current = current->next) {
 			/* Walk the list of possible subclasses in unsorted */
 			for (poss_subclass = unsorted; poss_subclass; ) {
-				const struct dsdb_class *class = dsdb_class_by_lDAPDisplayName(schema, poss_subclass->objectclass);
 				struct class_list *next;
 				
 				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
 				next = poss_subclass->next;
 
-				if (class && ldb_attr_cmp(class->subClassOf, current->objectclass) == 0) {
+				if (ldb_attr_cmp(poss_subclass->objectclass->subClassOf, current->objectclass->lDAPDisplayName) == 0) {
 					DLIST_REMOVE(unsorted, poss_subclass);
 					DLIST_ADD(subclass, poss_subclass);
 					
@@ -237,7 +243,7 @@ static int objectclass_sort(struct ldb_module *module,
 	 * was no 'top', a conflict in the objectClasses or some other
 	 * schema error?
 	 */
-	ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass);
+	ldb_asprintf_errstring(module->ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass->lDAPDisplayName);
 	return LDB_ERR_OBJECT_CLASS_VIOLATION;
 }
 
@@ -333,6 +339,22 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 	/* And replace it with CN=foo (we need the attribute in upper case */
 	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr,
 				    *ldb_dn_get_rdn_val(newdn));
+}
+
+/* Fix all attribute names to be in the correct case, and check they are all valid per the schema */
+static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *schema, struct ldb_message *msg) 
+{
+	int i;
+	for (i=0; i < msg->num_elements; i++) {
+		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
+		if (!attribute) {
+			ldb_asprintf_errstring(ldb, "objectclass %s is not a valid objectClass in schema", msg->elements[i].name);
+			return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+		}
+		msg->elements[i].name = attribute->lDAPDisplayName;
+	}
+
+	return LDB_SUCCESS;
 }
 
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
@@ -447,53 +469,56 @@ static int objectclass_do_add(struct ldb_handle *h)
 
 	}
 
-	/* This is now the objectClass list from the database */
-	objectclass_element = ldb_msg_find_element(msg, "objectClass");
-
-	if (!objectclass_element) {
-		/* Where did it go?  bail now... */
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ret = objectclass_sort(ac->module, msg, mem_ctx, objectclass_element, &sorted);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	ldb_msg_remove_attr(msg, "objectClass");
-	ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
-	
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	/* We must completely replace the existing objectClass entry,
-	 * because we need it sorted */
-
-	/* Move from the linked list back into an ldb msg */
-	for (current = sorted; current; current = current->next) {
-		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
+	if (schema) {
+		ret = fix_attributes(ac->module->ldb, schema, msg);
 		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(ac->module->ldb, 
-					  "objectclass: could not re-add sorted "
-					  "objectclass to modify msg");
 			talloc_free(mem_ctx);
 			return ret;
 		}
-		/* Last one is the critical one */
-		if (schema && !current->next) {
-			const struct dsdb_class *objectclass
-				= dsdb_class_by_lDAPDisplayName(schema, 
-								current->objectclass);
-			if (objectclass) {
+
+		/* This is now the objectClass list from the database */
+		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+		
+		if (!objectclass_element) {
+			/* Where did it go?  bail now... */
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ret = objectclass_sort(ac->module, schema, msg, mem_ctx, objectclass_element, &sorted);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		
+		ldb_msg_remove_attr(msg, "objectClass");
+		ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
+		
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		
+		/* We must completely replace the existing objectClass entry,
+		 * because we need it sorted */
+		
+		/* Move from the linked list back into an ldb msg */
+		for (current = sorted; current; current = current->next) {
+			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
+			if (ret != LDB_SUCCESS) {
+				ldb_set_errstring(ac->module->ldb, 
+						  "objectclass: could not re-add sorted "
+						  "objectclass to modify msg");
+				talloc_free(mem_ctx);
+				return ret;
+			}
+			/* Last one is the critical one */
+			if (!current->next) {
 				if (!ldb_msg_find_element(msg, "objectCategory")) {
 					ldb_msg_add_string(msg, "objectCategory", 
-							   objectclass->defaultObjectCategory);
+							   current->objectclass->defaultObjectCategory);
 				}
 				if (!ldb_msg_find_element(msg, "nTSecurityDescriptor")) {
-					DATA_BLOB *sd = get_sd(ac->module, mem_ctx, objectclass);
+					DATA_BLOB *sd = get_sd(ac->module, mem_ctx, current->objectclass);
 					ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
 				}
 			}
@@ -502,6 +527,7 @@ static int objectclass_do_add(struct ldb_handle *h)
 
 	talloc_free(mem_ctx);
 	ret = ldb_msg_sanity_check(ac->module->ldb, msg);
+
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -520,6 +546,9 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 {
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
+	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
+	int ret;
+
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectclass_modify\n");
 
 	/* do not manipulate our control entries */
@@ -527,29 +556,57 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 	
+	/* Without schema, there isn't much to do here */
+	if (!schema) {
+		return ldb_next_request(module, req);
+	}
 	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
 
 	/* If no part of this touches the objectClass, then we don't
 	 * need to make any changes.  */
-	/* If the only operation is the deletion of the objectClass then go on */
+
+	/* If the only operation is the deletion of the objectClass
+	 * then go on with just fixing the attribute case */
 	if (!objectclass_element) {
-		return ldb_next_request(module, req);
+		struct ldb_request *down_req = talloc(req, struct ldb_request);
+		if (down_req == NULL) {
+			ldb_set_errstring(module->ldb, "Out of memory!");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		*down_req = *req; /* copy the request */
+		
+		down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
+		
+		if (down_req->op.mod.message == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		ret = fix_attributes(module->ldb, schema, msg);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* go on with the call chain */
+		ret = ldb_next_request(module, down_req);
+		
+		/* do not free down_req as the call results may be linked to it,
+		 * it will be freed when the upper level request get freed */
+		if (ret == LDB_SUCCESS) {
+			req->handle = down_req->handle;
+		}
+		return ret;
 	}
 
 	switch (objectclass_element->flags & LDB_FLAG_MOD_MASK) {
 	case LDB_FLAG_MOD_DELETE:
-		/* Delete everything?  Probably totally illigal, but hey! */
-		if (objectclass_element->num_values == 0) {
-			
-			return ldb_next_request(module, req);
-		}
+		return LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED;
 		break;
 	case LDB_FLAG_MOD_REPLACE:
 	{
 		struct ldb_request *down_req;
 		struct class_list *sorted, *current;
 		TALLOC_CTX *mem_ctx;
-		int ret;
 		mem_ctx = talloc_new(req);
 		if (mem_ctx == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -567,12 +624,18 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		
 		down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
 		
-		if (down_req->op.add.message == NULL) {
+		if (down_req->op.mod.message == NULL) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = objectclass_sort(module, msg, mem_ctx, objectclass_element, &sorted);
+		ret = fix_attributes(module->ldb, schema, msg);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		ret = objectclass_sort(module, schema, msg, mem_ctx, objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -590,7 +653,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
-			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
+			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 				talloc_free(mem_ctx);
@@ -638,12 +701,25 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		/* prepare the first operation */
 		ac->down_req = talloc(ac, struct ldb_request);
 		if (ac->down_req == NULL) {
-			ldb_set_errstring(module->ldb, "Out of memory!");
+			ldb_oom(ac->module->ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
 		*(ac->down_req) = *req; /* copy the request */
 		
+		ac->down_req->op.mod.message = msg = ldb_msg_copy_shallow(ac->down_req, req->op.mod.message);
+		
+		if (ac->down_req->op.mod.message == NULL) {
+			ldb_oom(ac->module->ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		ret = fix_attributes(ac->module->ldb, schema, msg);
+		if (ret != LDB_SUCCESS) {
+			ldb_oom(ac->module->ldb);
+			return ret;
+		}
+
 		ac->down_req->context = NULL;
 		ac->down_req->callback = NULL;
 		ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
@@ -681,6 +757,7 @@ static int objectclass_search_self(struct ldb_handle *h)
 
 static int objectclass_do_mod(struct ldb_handle *h) {
 
+	const struct dsdb_schema *schema;
 	struct oc_context *ac;
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
@@ -689,6 +766,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	int ret;
       
 	ac = talloc_get_type(h->private_data, struct oc_context);
+	schema = dsdb_get_schema(ac->module->ldb);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
@@ -727,7 +805,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	/* modify dn */
 	msg->dn = ac->orig_req->op.mod.message->dn;
 
-	ret = objectclass_sort(ac->module, msg, mem_ctx, objectclass_element, &sorted);
+	ret = objectclass_sort(ac->module, schema, msg, mem_ctx, objectclass_element, &sorted);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -745,7 +823,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 	
 	/* Move from the linked list back into an ldb msg */
 	for (current = sorted; current; current = current->next) {
-		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
+		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass->lDAPDisplayName);
 		if (ret != LDB_SUCCESS) {
 			ldb_set_errstring(ac->module->ldb, "objectclass: could not re-add sorted objectclass to modify msg");
 			talloc_free(mem_ctx);
