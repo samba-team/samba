@@ -812,8 +812,8 @@ static bool open_sockets(bool isdaemon, int port)
 
 	reopen_logs();
 
-	DEBUG( 0, ( "Netbios nameserver version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 0, ( "%s\n", COPYRIGHT_STARTUP_MESSAGE ) );
+	DEBUG(0,("nmbd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	if ( !reload_nmbd_services(False) )
 		return(-1);
