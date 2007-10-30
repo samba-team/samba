@@ -28,7 +28,7 @@
 	<para>
 	Depending on the used KRB5 library (MIT and older Heimdal versions)
 	it is possible that the message "integrity only" is not supported. 
-	In this case, <emohasis>sign</emphasis> is just an alias for 
+	In this case, <emphasis>sign</emphasis> is just an alias for 
 	<emphasis>seal</emphasis>.
 	</para>
 
