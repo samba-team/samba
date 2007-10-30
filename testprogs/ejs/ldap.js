@@ -33,9 +33,9 @@ function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 
 	var ok = ldb.add("
 dn: cn=ldaptestuser,cn=uSers," + base_dn + "
-objectClass: user
-objectClass: person
-cn: LDAPtestUSER
+objectclass: user
+objectclass: person
+cN: LDAPtestUSER
 ");
 	if (ok.error != 0) {
 		ok = ldb.del("cn=ldaptestuser,cn=users," + base_dn);
@@ -45,9 +45,9 @@ cn: LDAPtestUSER
 		}
 		ok = ldb.add("
 dn: cn=ldaptestuser,cn=uSers," + base_dn + "
-objectClass: user
-objectClass: person
-cn: LDAPtestUSER
+objectclass: user
+objectclass: person
+cN: LDAPtestUSER
 ");
 		if (ok.error != 0) {
 			println(ok.errstr);
@@ -57,8 +57,8 @@ cn: LDAPtestUSER
 
 	var ok = ldb.add("
 dn: cn=ldaptestcomputer,cn=computers," + base_dn + "
-objectClass: computer
-cn: LDAPtestCOMPUTER
+objectclass: computer
+cN: LDAPtestCOMPUTER
 ");
 	if (ok.error != 0) {
 		ok = ldb.del("cn=ldaptestcomputer,cn=computers," + base_dn);
