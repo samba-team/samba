@@ -786,9 +786,9 @@ bool torture_net_become_dc(struct torture_context *torture)
 		ret = false;
 		goto cleanup;
 	}
-	msg->dn = ldb_dn_new(msg, s->ldb, "cn=ROOTDSE");
+	msg->dn = ldb_dn_new(msg, s->ldb, "@ROOTDSE");
 	if (!msg->dn) {
-		printf("ldb_msg_new(cn=ROOTDSE) failed\n");
+		printf("ldb_msg_new(@ROOTDSE) failed\n");
 		ret = false;
 		goto cleanup;
 	}

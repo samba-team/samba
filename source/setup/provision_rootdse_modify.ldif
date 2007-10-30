@@ -1,5 +1,5 @@
 # mark the database as syncronized
-dn: cn=ROOTDSE
+dn: @ROOTDSE
 changetype: modify
 replace: isSynchronized
 isSynchronized: TRUE
