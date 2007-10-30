@@ -389,7 +389,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* return or own handle to deal with this call */
 	req->handle = h;
 
-	parent_dn = ldb_dn_get_parent(ac->search_req, ac->orig_req->op.mod.message->dn);
+	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.mod.message->dn);
 	if (parent_dn == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -402,6 +402,8 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	talloc_steal(ac->search_req, parent_dn);
 
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
@@ -873,7 +875,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	/* return or own handle to deal with this call */
 	req->handle = h;
 
-	parent_dn = ldb_dn_get_parent(ac->search_req, ac->orig_req->op.rename.newdn);
+	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.rename.newdn);
 	if (parent_dn == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -886,7 +888,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
+	talloc_steal(ac->search_req, parent_dn);
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = OC_SEARCH_RENAME_PARENT;
