@@ -348,6 +348,21 @@ static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struc
 	return result;
 }
 
+static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
+			int fromfd,
+			files_struct *fsp,
+			int tofd,
+			SMB_OFF_T offset,
+			size_t n)
+{
+	ssize_t result;
+
+	START_PROFILE_BYTES(syscall_recvfile, n);
+	result = sys_recvfile(fromfd, tofd, offset, n);
+	END_PROFILE(syscall_recvfile);
+	return result;
+}
+
 /*********************************************************
  For rename across filesystems Patch from Warren Birnbaum
  <warrenb@hpcvscdp.cv.hp.com>
@@ -1262,6 +1277,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_lseek),	SMB_VFS_OP_LSEEK,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_sendfile),	SMB_VFS_OP_SENDFILE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_recvfile),	SMB_VFS_OP_RECVFILE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_rename),	SMB_VFS_OP_RENAME,
 	 SMB_VFS_LAYER_OPAQUE},

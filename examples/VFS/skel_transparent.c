@@ -149,6 +149,16 @@ static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, int fi
 	return SMB_VFS_NEXT_LSEEK(handle, fsp, filedes, offset, whence);
 }
 
+static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
+{
+	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, fromfd, hdr, offset, n);
+}
+
+static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t n)
+{
+	return SMB_VFS_NEXT_RECVFILE(handle, fromfd, fsp, tofd, offset, n);
+}
+
 static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
 {
 	return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
@@ -561,6 +571,8 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_read),				SMB_VFS_OP_READ,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_write),			SMB_VFS_OP_WRITE,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_lseek),			SMB_VFS_OP_LSEEK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_sendfile),			SMB_VFS_OP_SENDFILE,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_recvfile),			SMB_VFS_OP_RECVFILE,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_rename),			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_fsync),			SMB_VFS_OP_FSYNC,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_stat),				SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
