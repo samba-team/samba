@@ -259,7 +259,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 		smb_panic("Could not allocate smb_request");
 	}
 
-	init_smb_request(req, (uint8 *)blr->inbuf);
+	init_smb_request(req, (uint8 *)blr->inbuf, 0);
 	reply_outbuf(req, 2, 0);
 
 	/*
@@ -531,7 +531,7 @@ static bool process_trans2(blocking_lock_record *blr)
 		return True;
 	}
 
-	init_smb_request(req, (uint8 *)blr->inbuf);
+	init_smb_request(req, (uint8 *)blr->inbuf, 0);
 
 	SCVAL(req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);

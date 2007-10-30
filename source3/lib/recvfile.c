@@ -125,13 +125,49 @@ static ssize_t default_sys_recvfile(int fromfd,
 }
 
 #if defined(HAVE_SPLICE_SYSCALL)
+
+#ifdef JRA_SPLICE_TEST
+#include <linux/unistd.h>
+#include <sys/syscall.h>
+
+#define __NR_splice             313
+_syscall6( long, splice,
+		int, fromfd,
+		loff_t *, fromoffset,
+		int, tofd,
+		loff_t *, tooffset,
+		size_t, count,
+		unsigned int, flags);
+#endif
+
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
 			SMB_OFF_T offset,
 			size_t count)
 {
-	errno = ENOSYS
-	return -1;
+	size_t total = 0;
+
+	if (count == 0) {
+		return 0;
+	}
+
+	while (total < count) {
+		ssize_t ret = splice(fromfd,
+					NULL,
+					tofd,
+					&offset,
+					count,
+					0);
+		if (ret == -1) {
+			if (errno != EINTR) {
+				return -1;
+			}
+			continue;
+		}
+		total += ret;
+		count -= ret;
+	}
+	return total;
 }
 #else
 

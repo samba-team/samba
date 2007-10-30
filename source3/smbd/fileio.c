@@ -116,12 +116,16 @@ static unsigned int allocated_write_caches;
  *Really* write to a file.
 ****************************************************************************/
 
-static ssize_t real_write_file(files_struct *fsp,const char *data, SMB_OFF_T pos, size_t n)
+static ssize_t real_write_file(struct smb_request *req,
+				files_struct *fsp,
+				const char *data,
+				SMB_OFF_T pos,
+				size_t n)
 {
 	ssize_t ret;
 
         if (pos == -1) {
-                ret = vfs_write_data(fsp, data, n);
+                ret = vfs_write_data(req, fsp, data, n);
         } else {
 		fsp->fh->pos = pos;
 		if (pos && lp_strict_allocate(SNUM(fsp->conn))) {
@@ -129,7 +133,7 @@ static ssize_t real_write_file(files_struct *fsp,const char *data, SMB_OFF_T pos
 				return -1;
 			}
 		}
-                ret = vfs_pwrite_data(fsp, data, n, pos);
+                ret = vfs_pwrite_data(req, fsp, data, n, pos);
 	}
 
 	DEBUG(10,("real_write_file (%s): pos = %.0f, size = %lu, returned %ld\n",
@@ -191,11 +195,15 @@ static int wcp_file_size_change(files_struct *fsp)
  Write to a file.
 ****************************************************************************/
 
-ssize_t write_file(files_struct *fsp, const char *data, SMB_OFF_T pos, size_t n)
+ssize_t write_file(struct smb_request *req,
+			files_struct *fsp,
+			const char *data,
+			SMB_OFF_T pos,
+			size_t n)
 {
 	write_cache *wcp = fsp->wcp;
 	ssize_t total_written = 0;
-	int write_path = -1; 
+	int write_path = -1;
 
 	if (fsp->print_file) {
 		fstring sharename;
@@ -234,8 +242,8 @@ ssize_t write_file(files_struct *fsp, const char *data, SMB_OFF_T pos, size_t n)
 			if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
 				setup_write_cache(fsp, st.st_size);
 				wcp = fsp->wcp;
-			} 
-		}  
+			}
+		}
 	}
 
 #ifdef WITH_PROFILE
@@ -280,9 +288,18 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 	}
 #endif
 
+	if (wcp && req->unread_bytes) {
+		/* If we're using receivefile don't
+		 * deal with a write cache.
+		 */
+		flush_write_cache(fsp, WRITE_FLUSH);
+		delete_write_cache(fsp);
+		wcp = NULL;
+	}
+
 	if(!wcp) {
 		DO_PROFILE_INC(writecache_direct_writes);
-		total_written = real_write_file(fsp, data, pos, n);
+		total_written = real_write_file(req, fsp, data, pos, n);
 		return total_written;
 	}
 
@@ -291,7 +308,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 	fsp->fh->pos = pos + n;
 
-	/* 
+	/*
 	 * If we have active cache and it isn't contiguous then we flush.
 	 * NOTE: There is a small problem with running out of disk ....
 	 */
@@ -610,7 +627,7 @@ len = %u\n",fsp->fh->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (uns
 			if ( n <= wcp->alloc_size && n > wcp->data_size) {
 				cache_flush_needed = True;
 			} else {
-				ssize_t ret = real_write_file(fsp, data, pos, n);
+				ssize_t ret = real_write_file(NULL,fsp, data, pos, n);
 
 				/*
 				 * If the write overlaps the entire cache, then
@@ -657,7 +674,7 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 	 */
 
 	if (n > wcp->alloc_size ) {
-		ssize_t ret = real_write_file(fsp, data, pos, n);
+		ssize_t ret = real_write_file(NULL,fsp, data, pos, n);
 		if (ret == -1) {
 			return -1;
 		}
@@ -828,7 +845,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 	}
 #endif
 
-	ret = real_write_file(fsp, wcp->data, wcp->offset, data_size);
+	ret = real_write_file(NULL, fsp, wcp->data, wcp->offset, data_size);
 
 	/*
 	 * Ensure file size if kept up to date if write extends file.

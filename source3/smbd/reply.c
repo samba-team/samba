@@ -3494,7 +3494,7 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	}
 
 	if (numtowrite>0) {
-		nwritten = write_file(fsp,data,startpos,numtowrite);
+		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
 
 	DEBUG(3,("reply_writebraw: initial write fnum=%d start=%.0f num=%d "
@@ -3572,7 +3572,7 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
-		nwritten = write_file(fsp,buf+4,startpos+nwritten,numtowrite);
+		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
 		if (nwritten == -1) {
 			TALLOC_FREE(buf);
 			reply_unixerror(req, ERRHRD, ERRdiskfull);
@@ -3686,7 +3686,7 @@ void reply_writeunlock(connection_struct *conn, struct smb_request *req)
 	if(numtowrite == 0) {
 		nwritten = 0;
 	} else {
-		nwritten = write_file(fsp,data,startpos,numtowrite);
+		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
   
 	status = sync_file(conn, fsp, False /* write through */);
@@ -3808,7 +3808,7 @@ void reply_write(connection_struct *conn, struct smb_request *req)
 			return;
 		}
 	} else
-		nwritten = write_file(fsp,data,startpos,numtowrite);
+		nwritten = write_file(req,fsp,data,startpos,numtowrite);
   
 	status = sync_file(conn, fsp, False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3838,6 +3838,64 @@ void reply_write(connection_struct *conn, struct smb_request *req)
 
 	END_PROFILE(SMBwrite);
 	return;
+}
+
+/****************************************************************************
+ Ensure a buffer is a valid writeX for recvfile purposes.
+****************************************************************************/
+
+#define STANDARD_WRITE_AND_X_HEADER_SIZE (smb_size - 4 + /* basic header */ \
+						(2*14) + /* word count (including bcc) */ \
+						1 /* pad byte */)
+
+bool is_valid_writeX_buffer(char *inbuf)
+{
+	size_t numtowrite;
+	connection_struct *conn = NULL;
+	unsigned int doff = 0;
+	size_t len = smb_len(inbuf);
+
+	if (CVAL(inbuf,smb_com) != SMBwriteX ||
+			CVAL(inbuf,smb_vwv0) != 0xFF ||
+			CVAL(inbuf,smb_wct) != 14) {
+		return false;
+	}
+	conn = conn_find(SVAL(inbuf, smb_tid));
+	if (conn == NULL) {
+		return false;
+	}
+	if (IS_IPC(conn)) {
+		return false;
+	}
+	numtowrite = SVAL(inbuf,smb_vwv10);
+	numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+	if (numtowrite == 0) {
+		return false;
+	}
+	/* Ensure the sizes match up. */
+	doff = SVAL(inbuf,smb_vwv11);
+
+	if (doff < STANDARD_WRITE_AND_X_HEADER_SIZE) {
+		/* no pad byte...old smbclient :-( */
+		return false;
+	}
+
+	if (len - doff != numtowrite) {
+		DEBUG(10,("is_valid_writeX_buffer: doff mismatch "
+			"len = %u, doff = %u, numtowrite = %u\n",
+			(unsigned int)len,
+			(unsigned int)doff,
+			(unsigned int)numtowrite ));
+		return false;
+	}
+
+	DEBUG(10,("is_valid_writeX_buffer: true "
+		"len = %u, doff = %u, numtowrite = %u\n",
+		(unsigned int)len,
+		(unsigned int)doff,
+		(unsigned int)numtowrite ));
+
+	return true;
 }
 
 /****************************************************************************
@@ -3875,10 +3933,18 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		numtowrite |= ((((size_t)SVAL(req->inbuf,smb_vwv9)) & 1 )<<16);
 	}
 
-	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
-		reply_doserror(req, ERRDOS, ERRbadmem);
-		END_PROFILE(SMBwriteX);
-		return;
+	if (req->unread_bytes) {
+	       	if (numtowrite != req->unread_bytes) {
+			reply_doserror(req, ERRDOS, ERRbadmem);
+			END_PROFILE(SMBwriteX);
+			return;
+		}
+	} else {
+		if (smb_doff > smblen || smb_doff + numtowrite > smblen) {
+			reply_doserror(req, ERRDOS, ERRbadmem);
+			END_PROFILE(SMBwriteX);
+			return;
+		}
 	}
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -3947,15 +4013,16 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		nwritten = 0;
 	} else {
 
-		if (schedule_aio_write_and_X(conn, req, fsp, data, startpos,
-					     numtowrite)) {
+		if (req->unread_bytes == 0 &&
+				schedule_aio_write_and_X(conn, req, fsp, data,
+							startpos, numtowrite)) {
 			END_PROFILE(SMBwriteX);
 			return;
 		}
 
-		nwritten = write_file(fsp,data,startpos,numtowrite);
+		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
-  
+
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwriteX);
@@ -4264,7 +4331,7 @@ void reply_writeclose(connection_struct *conn, struct smb_request *req)
 		return;
 	}
   
-	nwritten = write_file(fsp,data,startpos,numtowrite);
+	nwritten = write_file(req,fsp,data,startpos,numtowrite);
 
 	set_filetime(conn, fsp->fsp_name, mtime);
   
@@ -4726,7 +4793,7 @@ void reply_printwrite(connection_struct *conn, struct smb_request *req)
 
 	data = smb_buf(req->inbuf) + 3;
 
-	if (write_file(fsp,data,-1,numtowrite) != numtowrite) {
+	if (write_file(req,fsp,data,-1,numtowrite) != numtowrite) {
 		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBsplwr);
 		return;

@@ -1,20 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Main SMB server routines
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
    Copyright (C) Jelmer Vernooij		2002-2003
-   
+   Copyright (C) Volker Lendecke		1993-2007
+   Copyright (C) Jeremy Allison			1993-2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -37,6 +39,8 @@ extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
 static SIG_ATOMIC_T got_sig_cld;
 
+extern int smb_read_error;
+
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -58,6 +62,293 @@ static void smbd_set_server_fd(int fd)
 {
 	server_fd = fd;
 	client_setfd(fd);
+}
+
+/* Socket functions for smbd packet processing. */
+
+static bool valid_packet_size(len)
+{
+	/*
+	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
+	 * of header. Don't print the error if this fits.... JRA.
+	 */
+
+	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
+					(unsigned long)len));
+		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
+
+			/*
+			 * Correct fix. smb_read_error may have already been
+			 * set. Only set it here if not already set. Global
+			 * variables still suck :-). JRA.
+			 */
+
+			if (smb_read_error == 0)
+				smb_read_error = READ_ERROR;
+			return false;
+		}
+	}
+	return true;
+}
+
+static ssize_t read_packet_remainder(int fd,
+					char *buffer,
+					unsigned int timeout,
+					ssize_t len)
+{
+	ssize_t ret;
+
+	if(len <= 0) {
+		return len;
+	}
+
+	if (timeout > 0) {
+		ret = read_socket_with_timeout(fd,
+						buffer,
+						len,
+						len,
+						timeout);
+	} else {
+		ret = read_data(fd, buffer, len);
+	}
+
+	if (ret != len) {
+		if (smb_read_error == 0) {
+			smb_read_error = READ_ERROR;
+		}
+		return -1;
+	}
+
+	return len;
+}
+
+/****************************************************************************
+ Attempt a zerocopy writeX read. We know here that len > smb_size-4
+****************************************************************************/
+
+/*
+ * Unfortunately, earlier versions of smbclient/libsmbclient
+ * don't send this "standard" writeX header. I've fixed this
+ * for 3.2 but we'll use the old method with earlier versions.
+ * Windows and CIFSFS at least use this standard size. Not
+ * sure about MacOSX.
+ */
+
+#define STANDARD_WRITE_AND_X_HEADER_SIZE (smb_size - 4 + /* basic header */ \
+				(2*14) + /* word count (including bcc) */ \
+				1 /* pad byte */)
+
+ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
+					const char lenbuf[4],
+					int fd,
+					char **buffer,
+					unsigned int timeout,
+					size_t *p_unread)
+{
+	/* Size of a WRITEX call (+4 byte len). */
+	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
+	ssize_t len = smb_len(lenbuf);
+	ssize_t toread;
+	ssize_t ret;
+
+	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
+
+	if (timeout > 0) {
+		ret = read_socket_with_timeout(fd,
+					writeX_header + 4,
+					STANDARD_WRITE_AND_X_HEADER_SIZE,
+					STANDARD_WRITE_AND_X_HEADER_SIZE,
+					timeout);
+	} else {
+		ret = read_data(fd,
+				writeX_header+4,
+				STANDARD_WRITE_AND_X_HEADER_SIZE);
+	}
+
+	if (ret != STANDARD_WRITE_AND_X_HEADER_SIZE) {
+		if (smb_read_error == 0) {
+			smb_read_error = READ_ERROR;
+		}
+		return -1;
+	}
+
+	/*
+	 * Ok - now try and see if this is a possible
+	 * valid writeX call.
+	 */
+
+	if (is_valid_writeX_buffer(writeX_header)) {
+		/*
+		 * If the data offset is beyond what
+		 * we've read, drain the extra bytes.
+		 */
+		uint16_t doff = SVAL(writeX_header,smb_vwv11);
+		ssize_t newlen;
+
+		if (doff > STANDARD_WRITE_AND_X_HEADER_SIZE) {
+			size_t drain = doff - STANDARD_WRITE_AND_X_HEADER_SIZE;
+			if (drain_socket(smbd_server_fd(), drain) != drain) {
+	                        smb_panic("receive_smb_raw_talloc_partial_read:"
+					" failed to drain pending bytes");
+	                }
+		} else {
+			doff = STANDARD_WRITE_AND_X_HEADER_SIZE;
+		}
+
+		/* Spoof down the length and null out the bcc. */
+		set_message_bcc(writeX_header, 0);
+		newlen = smb_len(writeX_header);
+
+		/* Copy the header we've written. */
+
+		*buffer = TALLOC_MEMDUP(mem_ctx,
+				writeX_header,
+				sizeof(writeX_header));
+
+		if (*buffer == NULL) {
+			DEBUG(0, ("Could not allocate inbuf of length %d\n",
+				  (int)sizeof(writeX_header)));
+			if (smb_read_error == 0)
+				smb_read_error = READ_ERROR;
+			return -1;
+		}
+
+		/* Work out the remaining bytes. */
+		*p_unread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
+
+		return newlen + 4;
+	}
+
+	if (!valid_packet_size(len)) {
+		return -1;
+	}
+
+	/*
+	 * Not a valid writeX call. Just do the standard
+	 * talloc and return.
+	 */
+
+	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+
+	if (*buffer == NULL) {
+		DEBUG(0, ("Could not allocate inbuf of length %d\n",
+			  (int)len+4));
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return -1;
+	}
+
+	/* Copy in what we already read. */
+	memcpy(*buffer,
+		writeX_header,
+		4 + STANDARD_WRITE_AND_X_HEADER_SIZE);
+	toread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
+
+	if(toread > 0) {
+		ret = read_packet_remainder(fd,
+			(*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
+					timeout,
+					toread);
+		if (ret != toread) {
+			return -1;
+		}
+	}
+
+	return len + 4;
+}
+
+static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
+					int fd,
+					char **buffer,
+					unsigned int timeout,
+					size_t *p_unread)
+{
+	char lenbuf[4];
+	ssize_t len,ret;
+	int min_recv_size = lp_min_receive_file_size();
+
+	smb_read_error = 0;
+	*p_unread = 0;
+
+	len = read_smb_length_return_keepalive(fd, lenbuf, timeout);
+	if (len < 0) {
+		DEBUG(10,("receive_smb_raw: length < 0!\n"));
+
+		/*
+		 * Correct fix. smb_read_error may have already been
+		 * set. Only set it here if not already set. Global
+		 * variables still suck :-). JRA.
+		 */
+
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return -1;
+	}
+
+	if (CVAL(lenbuf,0) != SMBkeepalive &&
+			min_recv_size &&
+			len > min_recv_size &&
+			!srv_is_signing_active()) {
+
+		return receive_smb_raw_talloc_partial_read(mem_ctx,
+							lenbuf,
+							fd,
+							buffer,
+							timeout,
+							p_unread);
+	}
+
+	if (!valid_packet_size(len)) {
+		return -1;
+	}
+
+	/*
+	 * The +4 here can't wrap, we've checked the length above already.
+	 */
+
+	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+
+	if (*buffer == NULL) {
+		DEBUG(0, ("Could not allocate inbuf of length %d\n",
+			  (int)len+4));
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return -1;
+	}
+
+	memcpy(*buffer, lenbuf, sizeof(lenbuf));
+
+	ret = read_packet_remainder(fd, (*buffer)+4, timeout, len);
+	if (ret != len) {
+		return -1;
+	}
+
+	return len + 4;
+}
+
+ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
+			   unsigned int timeout, size_t *p_unread)
+{
+	ssize_t len;
+
+	len = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout, p_unread);
+
+	if (len < 0) {
+		return -1;
+	}
+
+	/* Check the incoming SMB signature. */
+	if (!srv_check_sign_mac(*buffer, true)) {
+		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
+			  "incoming packet!\n"));
+		if (smb_read_error == 0) {
+			smb_read_error = READ_BAD_SIG;
+		}
+		return -1;
+	}
+
+	return len;
 }
 
 struct event_context *smbd_event_context(void)

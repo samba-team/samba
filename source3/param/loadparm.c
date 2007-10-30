@@ -331,6 +331,7 @@ typedef struct {
 
 	bool bResetOnZeroVC;
 	int iKeepalive;
+	int iminreceivefile;
 	param_opt_struct *param_opt;
 } global;
 
@@ -998,6 +999,7 @@ static struct parm_struct parm_table[] = {
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
 	{"protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
+	{"min receivefile size", P_INTEGER, P_GLOBAL, &Globals.iminreceivefile, NULL, NULL, FLAG_ADVANCED}, 
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
@@ -1708,6 +1710,8 @@ static void init_globals(bool first_time_only)
 
 	/* By default no shares out of the registry */
 	Globals.bRegistryShares = False;
+
+	Globals.iminreceivefile = 0;
 }
 
 /*******************************************************************
@@ -2165,6 +2169,7 @@ FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
+FN_GLOBAL_INTEGER(lp_min_receive_file_size, &Globals.iminreceivefile);
 FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrapping)
 
 /* local prototypes */

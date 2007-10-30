@@ -675,6 +675,7 @@ struct smb_request {
 	uint8  wct;
 	const uint8 *inbuf;
 	uint8 *outbuf;
+	size_t unread_bytes;
 };
 
 /* Defines for the sent_oplock_break field above. */
