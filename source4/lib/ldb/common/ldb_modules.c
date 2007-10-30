@@ -347,15 +347,17 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	if (modules != NULL) {
 		ret = ldb_load_modules_list(ldb, modules, ldb->modules, &ldb->modules);
-		talloc_free(modules);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
 			return ret;
 		}
 	} else {
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database");
 	}
 
-	return ldb_init_module_chain(ldb, ldb->modules);
+	ret = ldb_init_module_chain(ldb, ldb->modules);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 /*
