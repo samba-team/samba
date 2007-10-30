@@ -280,8 +280,8 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	down_req->operation = req->operation;
-	/* in our db we store the rootDSE with a DN of cn=rootDSE */
-	down_req->op.search.base = ldb_dn_new(down_req, module->ldb, "cn=rootDSE");
+	/* in our db we store the rootDSE with a DN of @ROOTDSE */
+	down_req->op.search.base = ldb_dn_new(down_req, module->ldb, "@ROOTDSE");
 	down_req->op.search.scope = LDB_SCOPE_BASE;
 	down_req->op.search.tree = ldb_parse_tree(down_req, NULL);
 	if (down_req->op.search.base == NULL || down_req->op.search.tree == NULL) {

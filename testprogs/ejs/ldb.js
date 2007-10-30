@@ -89,7 +89,7 @@ function setup_modules(ldb)
 dn: @MODULES
 @LIST: rootdse,operational,rdn_name,partition
 
-dn: cn=ROOTDSE
+dn: @ROOTDSE
 defaultNamingContext: cn=Test
 
 dn: @PARTITION
