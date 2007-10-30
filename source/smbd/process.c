@@ -25,7 +25,7 @@ extern int smb_echo_count;
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
 
-/* 
+/*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
  *  Set by us for CORE protocol.
@@ -48,7 +48,9 @@ extern int max_send;
  * Initialize a struct smb_request from an inbuf
  */
 
-void init_smb_request(struct smb_request *req, const uint8 *inbuf)
+void init_smb_request(struct smb_request *req,
+			const uint8 *inbuf,
+			size_t unread_bytes)
 {
 	size_t req_size = smb_len(inbuf) + 4;
 	/* Ensure we have at least smb_size bytes. */
@@ -63,6 +65,8 @@ void init_smb_request(struct smb_request *req, const uint8 *inbuf)
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
+	req->unread_bytes = unread_bytes;
+
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
 		DEBUG(0,("init_smb_request: invalid wct number %u (size %u)\n",
@@ -231,6 +235,14 @@ bool push_deferred_smb_message(struct smb_request *req,
 {
 	struct timeval end_time;
 
+	if (req->unread_bytes) {
+		DEBUG(0,("push_deferred_smb_message: logic error ! "
+			"unread_bytes = %u\n",
+			(unsigned int)req->unread_bytes ));
+		smb_panic("push_deferred_smb_message: "
+			"logic error unread_bytes != 0" );
+	}
+
 	end_time = timeval_sum(&request_time, &timeout);
 
 	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
@@ -382,8 +394,11 @@ static int select_on_fd(int fd, int maxfd, fd_set *fds)
 The timeout is in milliseconds
 ****************************************************************************/
 
-static bool receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
-				   size_t *buffer_len, int timeout)
+static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
+				char **buffer,
+				size_t *buffer_len,
+				int timeout,
+				size_t *p_unread)
 {
 	fd_set r_fds, w_fds;
 	int selrtn;
@@ -391,6 +406,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	int maxfd = 0;
 	ssize_t len;
 
+	*p_unread = 0;
 	smb_read_error = 0;
 
  again:
@@ -565,7 +581,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		goto again;
 	}
 
-	len = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0);
+	len = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0, p_unread);
 
 	if (len == -1) {
 		return False;
@@ -1115,7 +1131,7 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
  Construct a reply to the incoming packet.
 ****************************************************************************/
 
-static void construct_reply(char *inbuf, int size)
+static void construct_reply(char *inbuf, int size, size_t unread_bytes)
 {
 	uint8 type = CVAL(inbuf,smb_com);
 	struct smb_request *req;
@@ -1127,9 +1143,18 @@ static void construct_reply(char *inbuf, int size)
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
-	init_smb_request(req, (uint8 *)inbuf);
+	init_smb_request(req, (uint8 *)inbuf, unread_bytes);
 
 	switch_message(type, req, size);
+
+	if (req->unread_bytes) {
+		/* writeX failed. drain socket. */
+		if (drain_socket(smbd_server_fd(), req->unread_bytes) !=
+				req->unread_bytes) {
+			smb_panic("failed to drain pending bytes");
+		}
+		req->unread_bytes = 0;
+	}
 
 	if (req->outbuf == NULL) {
 		return;
@@ -1152,7 +1177,7 @@ static void construct_reply(char *inbuf, int size)
  Process an smb from the client
 ****************************************************************************/
 
-static void process_smb(char *inbuf, size_t nread)
+static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
 {
 	static int trans_num;
 	int msg_type = CVAL(inbuf,0);
@@ -1176,7 +1201,9 @@ static void process_smb(char *inbuf, size_t nread)
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
-	DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, (int)nread ) );
+	DEBUG( 3, ( "Transaction %d of length %d (%u toread)\n", trans_num,
+				(int)nread,
+				(unsigned int)unread_bytes ));
 
 	if (msg_type != 0) {
 		/*
@@ -1188,8 +1215,8 @@ static void process_smb(char *inbuf, size_t nread)
 
 	show_msg(inbuf);
 
-	construct_reply(inbuf,nread);
-      
+	construct_reply(inbuf,nread,unread_bytes);
+
 	trans_num++;
 }
 
@@ -1348,7 +1375,7 @@ void chain_reply(struct smb_request *req)
 	if (!(req2 = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
-	init_smb_request(req2, (uint8 *)inbuf2);
+	init_smb_request(req2, (uint8 *)inbuf2,0);
 
 	/* process the request */
 	switch_message(smb_com2, req2, new_size);
@@ -1625,6 +1652,7 @@ void smbd_process(void)
 {
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
+	size_t unread_bytes = 0;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
@@ -1635,8 +1663,8 @@ void smbd_process(void)
 		size_t inbuf_len;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		errno = 0;      
-		
+		errno = 0;
+
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
 			if(!timeout_processing(&select_timeout,
@@ -1648,7 +1676,7 @@ void smbd_process(void)
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
 		while (!receive_message_or_smb(NULL, &inbuf, &inbuf_len,
-					       select_timeout)) {
+					       select_timeout, &unread_bytes)) {
 			if(!timeout_processing(&select_timeout,
 					       &last_timeout_processing_time))
 				return;
@@ -1664,10 +1692,10 @@ void smbd_process(void)
 		 * faster than the select timeout, thus starving out the
 		 * essential processing (change notify, blocking locks) that
 		 * the timeout code does. JRA.
-		 */ 
+		 */
 		num_echos = smb_echo_count;
 
-		process_smb(inbuf, inbuf_len);
+		process_smb(inbuf, inbuf_len, unread_bytes);
 
 		TALLOC_FREE(inbuf);
 

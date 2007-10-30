@@ -418,10 +418,23 @@ ssize_t vfs_pread_data(files_struct *fsp, char *buf,
  Write data to a fd on the vfs.
 ****************************************************************************/
 
-ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
+ssize_t vfs_write_data(struct smb_request *req,
+			files_struct *fsp,
+			const char *buffer,
+			size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
+
+	if (req && req->unread_bytes) {
+		SMB_ASSERT(req->unread_bytes == N);
+		req->unread_bytes = 0;
+		return SMB_VFS_RECVFILE(smbd_server_fd(),
+					fsp,
+					fsp->fh->fd,
+					(SMB_OFF_T)-1,
+					N);
+	}
 
 	while (total < N) {
 		ret = SMB_VFS_WRITE(fsp,fsp->fh->fd,buffer + total,N - total);
@@ -436,11 +449,24 @@ ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 	return (ssize_t)total;
 }
 
-ssize_t vfs_pwrite_data(files_struct *fsp,const char *buffer,
-                size_t N, SMB_OFF_T offset)
+ssize_t vfs_pwrite_data(struct smb_request *req,
+			files_struct *fsp,
+			const char *buffer,
+			size_t N,
+			SMB_OFF_T offset)
 {
 	size_t total=0;
 	ssize_t ret;
+
+	if (req && req->unread_bytes) {
+		SMB_ASSERT(req->unread_bytes == N);
+		req->unread_bytes = 0;
+		return SMB_VFS_RECVFILE(smbd_server_fd(),
+					fsp,
+					fsp->fh->fd,
+					offset,
+					N);
+	}
 
 	while (total < N) {
 		ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, buffer + total,

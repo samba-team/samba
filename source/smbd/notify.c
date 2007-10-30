@@ -189,7 +189,7 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 	smb_setlen((char *)tmp_request, smb_size);
 	SCVAL(tmp_request, smb_wct, 0);
 
-	init_smb_request(req, tmp_request);
+	init_smb_request(req, tmp_request,0);
 
 	send_nt_replies(req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);
