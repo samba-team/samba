@@ -103,6 +103,10 @@ enum profile_stats_values
 #define syscall_sendfile_count __profile_stats_value(PR_VALUE_SYSCALL_SENDFILE, count)
 #define syscall_sendfile_time __profile_stats_value(PR_VALUE_SYSCALL_SENDFILE, time)
 
+	PR_VALUE_SYSCALL_RECVFILE,
+#define syscall_recvfile_count __profile_stats_value(PR_VALUE_SYSCALL_RECVFILE, count)
+#define syscall_recvfile_time __profile_stats_value(PR_VALUE_SYSCALL_RECVFILE, time)
+
 	PR_VALUE_SYSCALL_RENAME,
 #define syscall_rename_count __profile_stats_value(PR_VALUE_SYSCALL_RENAME, count)
 #define syscall_rename_time __profile_stats_value(PR_VALUE_SYSCALL_RENAME, time)

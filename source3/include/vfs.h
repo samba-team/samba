@@ -73,6 +73,7 @@
 /* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
 /* Leave at 22 - not yet released. Add file_id_create operation. --metze */
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
+/* Leave at 22 - not yet released. Added recvfile. */
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -138,6 +139,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_PWRITE,
 	SMB_VFS_OP_LSEEK,
 	SMB_VFS_OP_SENDFILE,
+	SMB_VFS_OP_RECVFILE,
 	SMB_VFS_OP_RENAME,
 	SMB_VFS_OP_FSYNC,
 	SMB_VFS_OP_STAT,
@@ -266,6 +268,7 @@ struct vfs_ops {
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t count);
 		int (*rename)(struct vfs_handle_struct *handle, const char *oldname, const char *newname);
 		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		int (*stat)(struct vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf);
@@ -392,6 +395,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *pwrite;
 		struct vfs_handle_struct *lseek;
 		struct vfs_handle_struct *sendfile;
+		struct vfs_handle_struct *recvfile;
 		struct vfs_handle_struct *rename;
 		struct vfs_handle_struct *fsync;
 		struct vfs_handle_struct *stat;

@@ -297,6 +297,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "syscall_pwrite",		/* PR_VALUE_SYSCALL_PWRITE */
 	    "syscall_lseek",		/* PR_VALUE_SYSCALL_LSEEK */
 	    "syscall_sendfile",		/* PR_VALUE_SYSCALL_SENDFILE */
+	    "syscall_recvfile",		/* PR_VALUE_SYSCALL_RECVFILE */
 	    "syscall_rename",		/* PR_VALUE_SYSCALL_RENAME */
 	    "syscall_fsync",		/* PR_VALUE_SYSCALL_FSYNC */
 	    "syscall_stat",		/* PR_VALUE_SYSCALL_STAT */
