@@ -1057,8 +1057,8 @@ extern void build_options(bool screen);
 
 	reopen_logs();
 
-	DEBUG(0,( "smbd version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD( 0, ( "%s\n", COPYRIGHT_STARTUP_MESSAGE ) );
+	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
