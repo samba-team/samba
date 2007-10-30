@@ -291,7 +291,7 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	char *p;
 	bool large_writex = False;
 
-	if (size > cli->bufsize) {
+	if (size + 1 > cli->bufsize) {
 		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);
 		if (!cli->outbuf) {
 			return False;
@@ -307,7 +307,7 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	if (((SMB_BIG_UINT)offset >> 32) || (size > 0xFFFF)) {
+	if (cli->capabilities & CAP_LARGE_FILES) {
 		large_writex = True;
 	}
 
@@ -315,11 +315,11 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 		set_message(cli->outbuf,14,0,True);
 	else
 		set_message(cli->outbuf,12,0,True);
-	
+
 	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
-	
+
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
@@ -336,19 +336,21 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	 */
 	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
+	/* +1 is pad byte. */
 	SSVAL(cli->outbuf,smb_vwv11,
-	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
+	      smb_buf(cli->outbuf) - smb_base(cli->outbuf) + 1);
 
 	if (large_writex) {
 		SIVAL(cli->outbuf,smb_vwv12,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
 	}
-	
-	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
+
+	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11) -1;
+	*p++ = '\0'; /* pad byte. */
 	memcpy(p, buf, size);
 	cli_setup_bcc(cli, p+size);
 
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
-	
+
 	show_msg(cli->outbuf);
 	return cli_send_smb(cli);
 }
