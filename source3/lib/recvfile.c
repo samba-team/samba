@@ -39,7 +39,7 @@
  *
  * Returns number of bytes written to 'tofd'
  * or thrown away if 'tofd == -1'.
- * eturn != count then sets errno.
+ * return != count then sets errno.
  * Returns count if complete success.
  */
 
@@ -140,18 +140,26 @@ _syscall6( long, splice,
 		unsigned int, flags);
 #endif
 
+/*
+ * Try and use the Linux system call to do this.
+ * Remember we only return -1 if the socket read
+ * failed. Else we return the number of bytes
+ * actually written. We always read count bytes
+ * from the network in the case of return != -1.
+ */
+
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
 			SMB_OFF_T offset,
 			size_t count)
 {
-	size_t total = 0;
+	size_t total_written = 0;
 
 	if (count == 0) {
 		return 0;
 	}
 
-	while (total < count) {
+	while (total_written < count) {
 		ssize_t ret = splice(fromfd,
 					NULL,
 					tofd,
@@ -160,14 +168,25 @@ ssize_t sys_recvfile(int fromfd,
 					0);
 		if (ret == -1) {
 			if (errno != EINTR) {
-				return -1;
+				break;
 			}
 			continue;
 		}
-		total += ret;
+		total_written += ret;
 		count -= ret;
 	}
-	return total;
+
+	if (total_written < count) {
+		int saved_errno = errno;
+		if (drain_socket(fromfd, count-total_written) !=
+				count-total_written) {
+			/* socket is dead. */
+			return -1;
+		}
+		errno = saved_errno;
+	}
+
+	return total_written;
 }
 #else
 
