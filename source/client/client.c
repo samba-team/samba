@@ -2013,6 +2013,12 @@ static int cmd_posix(void)
         if (caplow & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP) {
 		pstrcat(caps, "posix_path_operations ");
 	}
+        if (caplow & CIFS_UNIX_LARGE_READ_CAP) {
+		pstrcat(caps, "large_read ");
+	}
+        if (caplow & CIFS_UNIX_LARGE_WRITE_CAP) {
+		pstrcat(caps, "large_write ");
+	}
 
 	if (strlen(caps) > 0 && caps[strlen(caps)-1] == ' ') {
 		caps[strlen(caps)-1] = '\0';
