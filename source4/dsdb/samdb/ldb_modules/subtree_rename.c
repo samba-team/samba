@@ -163,6 +163,14 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	/* Firstly ensure we are not trying to rename it to be a child of itself */
+	if ((ldb_dn_compare_base(req->op.rename.olddn, req->op.rename.newdn) == 0) 
+	    && (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) != 0)) {
+		ldb_asprintf_errstring(module->ldb, "Cannot rename %s to be a child of itself",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	/* This gets complex:  We need to:
 	   - Do a search for all entires under this entry 
 	   - Wait for these results to appear

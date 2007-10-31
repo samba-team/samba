@@ -288,6 +288,13 @@ cn: LDAPtestUSER4
 
 	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
 
+	println("Testing ldb.rename (into itself) of cn=ldaptestcontainer2," + base_dn + " to cn=ldaptestcontainer,cn=ldaptestcontainer2," + base_dn);
+	ok = ldb.rename("cn=ldaptestcontainer2," + base_dn, "cn=ldaptestcontainer,cn=ldaptestcontainer2," + base_dn);
+	if (ok.error != 53) { /* LDAP_UNWILLING_TO_PERFORM */
+		println(ok.errstr);
+		assert(ok.error == 53);
+	}
+
 	println("Testing delete (should fail, not a leaf node) of renamed cn=ldaptestcontainer2," + base_dn);
 	ok = ldb.del("cn=ldaptestcontainer2," + base_dn);
 	if (ok.error != 66) { /* LDB_ERR_NOT_ALLOWED_ON_NON_LEAF */
