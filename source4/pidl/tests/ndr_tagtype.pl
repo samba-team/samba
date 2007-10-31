@@ -17,7 +17,7 @@ test_samba4_ndr('struct-notypedef', '[public] struct bla { uint8 x; }; ',
 	DATA_BLOB result_blob;
 	r.x = 13;
 
-	if (NT_STATUS_IS_ERR(ndr_push_STRUCT_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
+	if (!NT_STATUS_IS_OK(ndr_push_STRUCT_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
 		return 1;
 
 	result_blob = ndr_push_blob(ndr);
@@ -36,7 +36,7 @@ test_samba4_ndr('struct-notypedef-used', '[public] struct bla { uint8 x; };
 	DATA_BLOB result_blob;
 	fn.in.r.x = 13;
 
-	if (NT_STATUS_IS_ERR(ndr_push_myfn(ndr, NDR_IN, &fn)))
+	if (!NT_STATUS_IS_OK(ndr_push_myfn(ndr, NDR_IN, &fn)))
 		return 1;
 
 	result_blob = ndr_push_blob(ndr);
@@ -56,7 +56,7 @@ test_samba4_ndr('struct-notypedef-embedded', 'struct bla { uint8 x; };
 	DATA_BLOB result_blob;
 	st.r.x = 13;
 
-	if (NT_STATUS_IS_ERR(ndr_push_STRUCT_myst(ndr, NDR_IN, &st)))
+	if (!NT_STATUS_IS_OK(ndr_push_STRUCT_myst(ndr, NDR_IN, &st)))
 		return 1;
 
 	result_blob = ndr_push_blob(ndr);
