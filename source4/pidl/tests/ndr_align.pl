@@ -70,11 +70,11 @@ test_samba4_ndr('align-uint8-hyper',
 	struct ndr_push *ndr = ndr_push_init_ctx(NULL);
 	struct bla r;
 	uint8_t expected[] = { 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-						   0xef, 0xbe, 0xef, 0xbe, 0xef, 0xbe, 0xef, 0xbe };
+			       0xef, 0xbe, 0xef, 0xbe, 0xef, 0xbe, 0xef, 0xbe };
 	DATA_BLOB expected_blob = { expected, 16 };
 	DATA_BLOB result_blob;
 	r.x = 13;
-	r.y = 0xbeefbeefbeefbeef;
+	r.y = 0xbeefbeefbeefbeefLLU;
 
 	if (NT_STATUS_IS_ERR(ndr_push_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
 		return 1;
