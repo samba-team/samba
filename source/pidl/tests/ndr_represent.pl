@@ -18,7 +18,7 @@ test_samba4_ndr('represent_as-simple',
 	struct ndr_pull *ndr = ndr_pull_init_blob(&in_blob, NULL);
 	struct bla r;
 
-	if (NT_STATUS_IS_ERR(ndr_pull_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
+	if (!NT_STATUS_IS_OK(ndr_pull_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
 		return 1;
 
 	if (r.in.x != 13)
@@ -51,7 +51,7 @@ test_samba4_ndr('transmit_as-simple',
 	struct ndr_pull *ndr = ndr_pull_init_blob(&in_blob, NULL);
 	struct bla r;
 
-	if (NT_STATUS_IS_ERR(ndr_pull_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
+	if (!NT_STATUS_IS_OK(ndr_pull_bla(ndr, NDR_SCALARS|NDR_BUFFERS, &r)))
 		return 1;
 
 	if (r.in.x != 13)
