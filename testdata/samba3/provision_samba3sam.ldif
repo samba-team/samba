@@ -57,7 +57,7 @@ passwordAttribute: sambaLMPwdHistory
 passwordAttribute: krb5key
 
 # the rootDSE module looks in this record for its base data
-dn: cn=ROOTDSE
+dn: @ROOTDSE
 subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
 dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,${BASEDN}
 defaultNamingContext: ${BASEDN}
