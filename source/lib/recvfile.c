@@ -126,20 +126,6 @@ static ssize_t default_sys_recvfile(int fromfd,
 
 #if defined(HAVE_SPLICE_SYSCALL)
 
-#ifdef JRA_SPLICE_TEST
-#include <linux/unistd.h>
-#include <sys/syscall.h>
-
-#define __NR_splice             313
-_syscall6( long, splice,
-		int, fromfd,
-		loff_t *, fromoffset,
-		int, tofd,
-		loff_t *, tooffset,
-		size_t, count,
-		unsigned int, flags);
-#endif
-
 /*
  * Try and use the Linux system call to do this.
  * Remember we only return -1 if the socket read
@@ -168,6 +154,13 @@ ssize_t sys_recvfile(int fromfd,
 					0);
 		if (ret == -1) {
 			if (errno != EINTR) {
+				if (total_written == 0 &&
+						errno == EBADF || errno == EINVAL) {
+					return default_sys_recvfile(fromfd,
+								tofd,
+								offset,
+								count);
+				}
 				break;
 			}
 			continue;

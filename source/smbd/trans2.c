@@ -2719,6 +2719,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		 */
 
 		case SMB_QUERY_CIFS_UNIX_INFO:
+		{
+			bool large_write = lp_min_receive_file_size() &&
+						!srv_is_signing_active();
+
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
@@ -2733,8 +2737,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
-					CIFS_UNIX_LARGE_READ_CAP)));
+					CIFS_UNIX_LARGE_READ_CAP|
+					large_write ?
+					CIFS_UNIX_LARGE_WRITE_CAP : 0)));
 			break;
+		}
 
 		case SMB_QUERY_POSIX_FS_INFO:
 		{
