@@ -1114,7 +1114,7 @@ void reply_setatr(connection_struct *conn, struct smb_request *req)
 		else
 			mode &= ~aDIR;
 
-		if (file_set_dosmode(conn,fname,mode,&sbuf,False) != 0) {
+		if (file_set_dosmode(conn,fname,mode,&sbuf,NULL,false) != 0) {
 			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			END_PROFILE(SMBsetatr);
 			return;

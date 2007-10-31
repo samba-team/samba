@@ -230,8 +230,13 @@ ssize_t write_file(struct smb_request *req,
 
 		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
 			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
-			if ((lp_store_dos_attributes(SNUM(fsp->conn)) || MAP_ARCHIVE(fsp->conn)) && !IS_DOS_ARCHIVE(dosmode)) {
-				file_set_dosmode(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st, False);
+			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
+					MAP_ARCHIVE(fsp->conn)) &&
+					!IS_DOS_ARCHIVE(dosmode)) {
+				file_set_dosmode(fsp->conn,fsp->fsp_name,
+						dosmode | aARCH,&st,
+						NULL,
+						false);
 			}
 
 			/*

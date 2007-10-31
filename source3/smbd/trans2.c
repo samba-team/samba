@@ -4563,7 +4563,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode 0x%x\n",
 					fname, (unsigned int)dosmode ));
 
-		if(file_set_dosmode(conn, fname, dosmode, psbuf, False)) {
+		if(file_set_dosmode(conn, fname, dosmode, psbuf, NULL, false)) {
 			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of %s failed (%s)\n",
 						fname, strerror(errno)));
 			return map_nt_error_from_unix(errno);

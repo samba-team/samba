@@ -1971,7 +1971,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 	file_set_dosmode(conn, newname, fattr, &sbuf2,
-			 parent_dirname(newname));
+			 parent_dirname(newname),false);
 
 	if (ret < (SMB_OFF_T)sbuf1.st_size) {
 		return NT_STATUS_DISK_FULL;
