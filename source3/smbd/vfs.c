@@ -428,15 +428,14 @@ ssize_t vfs_write_data(struct smb_request *req,
 
 	if (req && req->unread_bytes) {
 		SMB_ASSERT(req->unread_bytes == N);
-		ret = SMB_VFS_RECVFILE(smbd_server_fd(),
+		/* VFS_RECVFILE must drain the socket
+		 * before returning. */
+		req->unread_bytes = 0;
+		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
 					fsp->fh->fd,
 					(SMB_OFF_T)-1,
 					N);
-		if (ret != -1) {
-			req->unread_bytes = 0;
-		}
-		return ret;
 	}
 
 	while (total < N) {
@@ -463,15 +462,14 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 
 	if (req && req->unread_bytes) {
 		SMB_ASSERT(req->unread_bytes == N);
-		ret = SMB_VFS_RECVFILE(smbd_server_fd(),
+		/* VFS_RECVFILE must drain the socket
+		 * before returning. */
+		req->unread_bytes = 0;
+		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
 					fsp->fh->fd,
 					offset,
 					N);
-		if (ret != -1) {
-			req->unread_bytes = 0;
-		}
-		return ret;
 	}
 
 	while (total < N) {

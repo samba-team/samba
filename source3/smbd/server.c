@@ -148,7 +148,7 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 {
 	/* Size of a WRITEX call (+4 byte len). */
 	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
-	ssize_t len = smb_len(lenbuf);
+	ssize_t len = smb_len_large(lenbuf); /* Could be a UNIX large writeX. */
 	ssize_t toread;
 	ssize_t ret;
 
