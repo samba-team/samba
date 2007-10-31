@@ -4467,13 +4467,13 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 				files_struct *fsp,
 				const char *fname,
 				const SMB_STRUCT_STAT *psbuf,
-				struct timespec ts[2])
+				struct timespec ts[2],
+				bool setting_write_time)
 {
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE;
 
-	
 	if (!VALID_STAT(*psbuf)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -4486,6 +4486,11 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	if (null_timespec(ts[1])) {
 		ts[1] = get_mtimespec(psbuf);
+		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
+	}
+
+	if (!setting_write_time) {
+		/* ts[1] comes from change time, not write time. */
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
@@ -4528,9 +4533,8 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 	if(file_ntimes(conn, fname, ts)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
-	if (action != 0) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
-	}
+	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
+
 	return NT_STATUS_OK;
 }
 
@@ -5226,7 +5230,8 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				ts);
+				ts,
+				true);
 }
 
 /****************************************************************************
@@ -5246,6 +5251,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	uint32 dosmode = 0;
 	struct timespec ts[2];
 	NTSTATUS status = NT_STATUS_OK;
+	bool setting_write_time = true;
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5278,7 +5284,12 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Prefer a defined time to an undefined one. */
 	if (null_timespec(ts[1])) {
-		ts[1] = null_timespec(write_time) ? changed_time : write_time;
+		if (null_timespec(write_time)) {
+			ts[1] = changed_time;
+			setting_write_time = false;
+		} else {
+	 		ts[1] = write_time;
+		}
 	}
 
 	DEBUG(10,("smb_set_file_basic_info: file %s\n",
@@ -5288,7 +5299,8 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				ts);
+				ts,
+				setting_write_time);
 }
 
 /****************************************************************************
@@ -5349,7 +5361,8 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 			 * This is equivalent to a write. Ensure it's seen immediately
 			 * if there are no pending writes.
 			 */
-			set_filetime(fsp->conn, fsp->fsp_name, timespec_current());
+			set_filetime(fsp->conn, fsp->fsp_name,
+					timespec_current());
 		}
 		return NT_STATUS_OK;
 	}
@@ -5682,7 +5695,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				fsp,
 				fname,
 				psbuf,
-				ts);
+				ts,
+				true);
 }
 
 /****************************************************************************

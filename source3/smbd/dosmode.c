@@ -591,7 +591,7 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 
 	return ret;
 }
-  
+
 /*******************************************************************
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
@@ -609,12 +609,13 @@ bool set_filetime(connection_struct *conn, const char *fname,
 	ts[0] = ts[1]; /* atime. */
 
 	if (file_ntimes(conn, fname, ts)) {
-		DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+		DEBUG(4,("set_filetime(%s) failed: %s\n",
+					fname,strerror(errno)));
 		return False;
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-		     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
-  
-	return True;
+		FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
+
+	return true;
 }

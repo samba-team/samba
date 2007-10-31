@@ -153,7 +153,8 @@ static ssize_t real_write_file(struct smb_request *req,
 		 */
 
 		if (!null_timespec(fsp->pending_modtime)) {
-			set_filetime(fsp->conn, fsp->fsp_name, fsp->pending_modtime);
+			set_filetime(fsp->conn, fsp->fsp_name,
+					fsp->pending_modtime);
 
 			/* If we didn't get the "set modtime" call ourselves, we must
 			   store the last write time to restore on close. JRA. */
