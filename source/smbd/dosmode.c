@@ -425,7 +425,8 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 
 int file_set_dosmode(connection_struct *conn, const char *fname,
 		     uint32 dosmode, SMB_STRUCT_STAT *st,
-		     const char *parent_dir)
+		     const char *parent_dir,
+		     bool newfile)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
@@ -455,6 +456,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 
 	/* Store the DOS attributes in an EA by preference. */
 	if (set_ea_dos_attribute(conn, fname, st, dosmode)) {
+		if (!newfile) {
+			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		}
 		return 0;
 	}
 
@@ -491,8 +496,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	}
 
 	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		if (!newfile) {
+			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		}
 		return 0;
 	}
 
@@ -523,8 +530,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		ret = SMB_VFS_FCHMOD(fsp, fsp->fh->fd, unixmode);
 		unbecome_root();
 		close_file_fchmod(fsp);
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		if (!newfile) {
+			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		}
 	}
 
 	return( ret );

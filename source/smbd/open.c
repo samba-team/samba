@@ -1866,7 +1866,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (!posix_open) {
 				file_set_dosmode(conn, fname,
 					 new_dos_attributes | aARCH, NULL,
-					 parent_dir);
+					 parent_dir,
+					 true);
 			}
 		}
 	}
@@ -2035,7 +2036,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		if (!posix_open) {
 			file_set_dosmode(conn, name,
 				 file_attributes | aDIR, NULL,
-				 parent_dir);
+				 parent_dir,
+				 true);
 		}
 	}
 

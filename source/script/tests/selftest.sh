@@ -139,6 +139,8 @@ cat >$SERVERCONFFILE<<EOF
 	printing = bsd
 	printcap name = /dev/null
 
+#	min receivefile size = 4000
+
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no
