@@ -256,7 +256,6 @@ sub summary($)
 	my $st = $self->{statistics};
 	print INDEX "<tr>\n";
 	print INDEX "  <td class=\"testSuiteTotal\">Total</td>\n";
-	print INDEX "  <td></td>\n";
 
 	if ($st->{SUITES_FAIL} == 0) {
 		print INDEX "  <td class=\"resultOk\">";
@@ -333,9 +332,9 @@ sub summary($)
 
 	foreach (@{$summ->{skip_testsuites}}) {
 		print SUMMARY "<tr>\n";
-		print SUMMARY "  <td>$$_[1]</td>\n";
-		if (defined($$_[2])) {
-			print SUMMARY "  <td>$$_[2]</td>\n";
+		print SUMMARY "  <td>$$_[0]</td>\n";
+		if (defined($$_[1])) {
+			print SUMMARY "  <td>$$_[1]</td>\n";
 		} else {
 			print SUMMARY "  <td></td>\n";
 		}

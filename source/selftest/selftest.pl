@@ -203,15 +203,7 @@ sub skip($)
 {
 	my ($name) = @_;
 
-	my $reason = find_in_list(\@excludes, $name);
-
-	return $reason if $reason;
-
-	return undef unless ($#includes > -1);
-
-	return "not included" if (not find_in_list(\@includes, $name));
-
-	return undef;
+	return find_in_list(\@excludes, $name);
 }
 
 sub getlog_env($);
@@ -611,8 +603,33 @@ if ($#testlists == -1) {
 	die("No testlists specified");
 }
 
-foreach (@testlists) {
-	push(@todo, read_testlist($_));
+my $msg_ops;
+if ($opt_format eq "buildfarm") {
+	require output::buildfarm;
+	$msg_ops = new output::buildfarm($statistics);
+} elsif ($opt_format eq "plain") {
+	require output::plain;
+	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics);
+} elsif ($opt_format eq "html") {
+	require output::html;
+	mkdir("test-results", 0777);
+	$msg_ops = new output::html("test-results", $statistics);
+} else {
+	die("Invalid output format '$opt_format'");
+}
+
+foreach my $fn (@testlists) {
+	foreach (read_testlist($fn)) {
+		my $name = $$_[0];
+		next if (@includes and not find_in_list(\@includes, $name));
+		my $skipreason = skip($name);
+		if ($skipreason) {
+			$msg_ops->skip_testsuite($name, $skipreason);
+			$statistics->{SUITES_SKIPPED}++;
+		} else {
+			push(@todo, $_); 
+		}
+	}
 }
 
 if ($#todo == -1) {
@@ -730,20 +747,6 @@ sub teardown_env($)
 	delete $running_envs{$envname};
 }
 
-my $msg_ops;
-if ($opt_format eq "buildfarm") {
-	require output::buildfarm;
-	$msg_ops = new output::buildfarm($statistics);
-} elsif ($opt_format eq "plain") {
-	require output::plain;
-	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics);
-} elsif ($opt_format eq "html") {
-	require output::html;
-	mkdir("test-results", 0777);
-	$msg_ops = new output::html("test-results", $statistics);
-} else {
-	die("Invalid output format '$opt_format'");
-}
 
 if ($opt_no_lazy_setup) {
 	setup_env($_) foreach (keys %required_envs);
@@ -781,13 +784,6 @@ $envvarstr
 		my $name = $$_[0];
 		my $envname = $$_[1];
 		
-		my $skipreason = skip($name);
-		if ($skipreason) {
-			$msg_ops->skip_testsuite($name, $skipreason);
-			$statistics->{SUITES_SKIPPED}++;
-			next;
-		}
-
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
 			$statistics->{SUITES_SKIPPED}++;
