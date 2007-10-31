@@ -295,6 +295,13 @@ cn: LDAPtestUSER4
 		assert(ok.error == 53);
 	}
 
+	println("Testing ldb.rename (into non-existent container) of cn=ldaptestcontainer2," + base_dn + " to cn=ldaptestcontainer,cn=ldaptestcontainer3," + base_dn);
+	ok = ldb.rename("cn=ldaptestcontainer2," + base_dn, "cn=ldaptestcontainer,cn=ldaptestcontainer3," + base_dn);
+	if (ok.error != 53 && ok.error != 80) { /* LDAP_UNWILLING_TO_PERFORM or LDAP_OTHER*/
+		println(ok.errstr);
+		assert(ok.error == 53 || ok.error == 80);
+	}
+
 	println("Testing delete (should fail, not a leaf node) of renamed cn=ldaptestcontainer2," + base_dn);
 	ok = ldb.del("cn=ldaptestcontainer2," + base_dn);
 	if (ok.error != 66) { /* LDB_ERR_NOT_ALLOWED_ON_NON_LEAF */

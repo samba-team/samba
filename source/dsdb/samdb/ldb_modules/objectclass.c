@@ -865,6 +865,14 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	if (ldb_dn_is_special(req->op.rename.newdn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
+	
+	/* Firstly ensure we are not trying to rename it to be a child of itself */
+	if ((ldb_dn_compare_base(req->op.rename.olddn, req->op.rename.newdn) == 0) 
+	    && (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) != 0)) {
+		ldb_asprintf_errstring(module->ldb, "Cannot rename %s to be a child of itself",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	h = oc_init_handle(req, module);
 	if (!h) {
