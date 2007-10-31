@@ -3698,7 +3698,7 @@ void reply_writeunlock(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+	if(((nwritten < numtowrite) && (numtowrite != 0))||(nwritten < 0)) {
 		reply_unixerror(req, ERRHRD, ERRdiskfull);
 		END_PROFILE(SMBwriteunlock);
 		return;
