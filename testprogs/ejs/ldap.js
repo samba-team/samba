@@ -150,6 +150,30 @@ cn: LDAPtestUSER2
 		assert(ok.error == 0);
 	}
 
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser3,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println("Could not rename cn=ldaptestuser3,cn=users," + base_dn + " onto itself: " + ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	ok = ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestUSER3,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println("Could not rename cn=ldaptestuser3,cn=users," + base_dn + " into cn=ldaptestUSER3,cn=users," + base_dn + ": " + ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestuser3)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestuser3)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser3)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestUSER3");
+	assert(res.msgs[0].name == "ldaptestUSER3");
+
 	// ensure we cannot add it again
 	ok = ldb.add("
 dn: cn=ldaptestuser3,cn=userS," + base_dn + "
