@@ -1014,6 +1014,26 @@ const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 	return NULL;
 }
 
+WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *schema, TALLOC_CTX *mem_ctx, const char ***attr_list_ret)
+{
+	const char **attr_list = NULL;
+	struct dsdb_attribute *cur;
+	int i = 0;
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (cur->linkID == 0) continue;
+		
+		attr_list = talloc_realloc(mem_ctx, attr_list, const char *, i+2);
+		if (!attr_list) {
+			return WERR_NOMEM;
+		}
+		attr_list[i] = cur->lDAPDisplayName;
+		i++;
+	}
+	attr_list[i] = NULL;
+	*attr_list_ret = attr_list;
+	return WERR_OK;
+}
+
 int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	int ret;
