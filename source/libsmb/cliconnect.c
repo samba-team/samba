@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern pstring user_socket_options;
-
 static const struct {
 	int prot;
 	const char *name;
@@ -1382,7 +1380,7 @@ bool cli_session_request(struct cli_state *cli,
 
 		DEBUG(3,("Retargeted\n"));
 
-		set_socket_options(cli->fd,user_socket_options);
+		set_socket_options(cli->fd, lp_socket_options());
 
 		/* Try again */
 		{
@@ -1469,7 +1467,7 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		return map_nt_error_from_unix(errno);
 	}
 
-	set_socket_options(cli->fd,user_socket_options);
+	set_socket_options(cli->fd, lp_socket_options());
 
 	return NT_STATUS_OK;
 }

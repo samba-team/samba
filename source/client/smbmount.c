@@ -24,7 +24,6 @@
 #include <linux/smb_fs.h>
 
 extern bool in_client;
-extern pstring user_socket_options;
 extern char *optarg;
 extern int optind;
 
@@ -807,7 +806,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "workgroup")) {
 				pstrcpy(workgroup,opteq+1);
 			} else if(!strcmp(opts, "sockopt")) {
-				pstrcpy(user_socket_options,opteq+1);
+				lp_do_parameter(-1, "socket options", opteq+1);
 			} else if(!strcmp(opts, "scope")) {
 				set_global_scope(opteq+1);
 			} else {

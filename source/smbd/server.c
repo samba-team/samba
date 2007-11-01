@@ -34,7 +34,6 @@ int last_message = -1;
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
 extern struct auth_context *negprot_global_auth_context;
-extern pstring user_socket_options;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
 static SIG_ATOMIC_T got_sig_cld;
@@ -186,7 +185,7 @@ static bool open_sockets_inetd(void)
 	close_low_fds(False); /* Don't close stderr */
 	
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), user_socket_options);
+	set_socket_options(smbd_server_fd(), lp_socket_options());
 
 	return True;
 }
@@ -380,7 +379,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(s,user_socket_options);
+				set_socket_options(smbd_server_fd(),
+						   lp_socket_options());
 
 				/* Set server socket to
 				 * non-blocking for the accept. */
@@ -446,7 +446,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(s,user_socket_options);
+				set_socket_options(smbd_server_fd(),
+						   lp_socket_options());
 
 				/* Set server socket to non-blocking
 				 * for the accept. */
@@ -623,7 +624,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				am_parent = 0;
 
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-				set_socket_options(smbd_server_fd(),user_socket_options);
+				set_socket_options(smbd_server_fd(),
+						   lp_socket_options());
 
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
@@ -758,7 +760,7 @@ bool reload_services(bool test)
 
 	if (smbd_server_fd() != -1) {      
 		set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-		set_socket_options(smbd_server_fd(), user_socket_options);
+		set_socket_options(smbd_server_fd(), lp_socket_options());
 	}
 
 	mangle_reset_cache();

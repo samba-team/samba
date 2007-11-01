@@ -32,8 +32,6 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
-extern pstring user_socket_options;
-
 int get_client_fd(void)
 {
 	return -1;
@@ -470,7 +468,8 @@ bool reload_services(bool test)
 	{
 		if (smbd_server_fd() != -1) {      
 			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(), user_socket_options);
+			set_socket_options(smbd_server_fd(),
+					   lp_socket_options());
 		}
 	}
 

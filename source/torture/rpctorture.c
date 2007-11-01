@@ -25,9 +25,6 @@
 
 extern pstring global_myname;
 
-extern pstring user_socket_options;
-
-
 extern file_info def_finfo;
 
 #define CNV_LANG(s) dos2unix_format(s,False)
@@ -360,7 +357,7 @@ enum client_action
 
 			case 'O':
 			{
-				pstrcpy(user_socket_options,optarg);
+				lp_do_parameter(-1, "socket options", optarg);
 				break;	
 			}
 
