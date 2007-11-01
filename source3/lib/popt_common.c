@@ -33,7 +33,6 @@
  *		-i,--scope
  */
 
-extern pstring user_socket_options;
 extern bool AllowDebugChange;
 extern bool override_logfile;
 
@@ -92,7 +91,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'O':
 		if (arg) {
-			pstrcpy(user_socket_options,arg);
+			lp_do_parameter(-1, "socket options", arg);
 		}
 		break;
 

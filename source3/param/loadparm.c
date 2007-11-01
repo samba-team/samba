@@ -55,7 +55,6 @@
 bool in_client = False;		/* Not in the client by default */
 bool bLoaded = False;
 
-extern pstring user_socket_options;
 extern enum protocol_types Protocol;
 extern userdom_struct current_user_info;
 
@@ -1052,7 +1051,7 @@ static struct parm_struct parm_table[] = {
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
-	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
+	{"socket options", P_STRING, P_GLOBAL, &Globals.szSocketOptions, NULL, NULL, FLAG_ADVANCED},
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1505,7 +1504,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
 #endif
 
-	pstrcpy(user_socket_options, DEFAULT_SOCKET_OPTIONS);
+	string_set(&Globals.szSocketOptions, DEFAULT_SOCKET_OPTIONS);
 
 	string_set(&Globals.szLogonDrive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
@@ -2032,6 +2031,7 @@ FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
+FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
