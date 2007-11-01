@@ -55,6 +55,30 @@ cN: LDAPtestUSER
 		}
 	}
 
+	ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
+
+	var ok = ldb.add("
+dn: cn=ldaptestgroup,cn=uSers," + base_dn + "
+objectclass: group
+member: cn=ldaptestuser,cn=useRs," + base_dn + "
+");
+	if (ok.error != 0) {
+		ok = ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+		ok = ldb.add("
+dn: cn=ldaptestgroup,cn=uSers," + base_dn + "
+objectclass: group
+member: cn=ldaptestuser,cn=useRs," + base_dn + "
+");
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+	}
+
 	var ok = ldb.add("
 dn: cn=ldaptestcomputer,cn=computers," + base_dn + "
 objectclass: computer
@@ -75,6 +99,11 @@ cn: LDAPtestCOMPUTER
 			println(ok.errstr);
 			assert(ok.error == 0);
 		}
+	}
+
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	var ok = ldb.add("
@@ -138,6 +167,20 @@ cn: LDAPtestUSER2
 			println(ok.errstr);
 			assert(ok.error == 0);
 		}
+	}
+
+	println("Testing Group Modifies");
+	ok = ldb.modify("
+dn: cn=ldaptestgroup,cn=users," + base_dn + "
+changetype: modify
+add: member
+member: cn=ldaptestuser2,cn=users," + base_dn + "
+member: cn=ldaptestcomputer,cn=computers," + base_dn + "
+");
+
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
@@ -229,6 +272,14 @@ cn: LDAPtestUSER3
 	}
 
 	ok = ldb.del("cn=ldaptestuser5,cn=users," + base_dn);
+
+	ok = ldb.del("cn=ldaptestgroup2,cn=users," + base_dn);
+
+	ok = ldb.rename("cn=ldaptestgroup,cn=users," + base_dn, "cn=ldaptestgroup2,cn=users," + base_dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
 
 	println("Testing subtree Renames");
 
@@ -562,7 +613,13 @@ objectClass: user
 //	assert(res.msgs[0].userAccountControl == 4098);
 
 
-        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor");
+   	ok = ldb.del(res.msgs[0].dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+
+        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "memberOf");
 	println("Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 1) {
@@ -581,7 +638,7 @@ objectClass: user
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
 	assert(res.msgs[0].nTSecurityDescriptor != undefined);
-
+	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
 
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
@@ -609,6 +666,12 @@ objectClass: user
 	assert(res.msgs[0].whenCreated != undefined);
 
 	ok = ldb.del(res.msgs[0].dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	ok = ldb.del(("CN=ldaptestgroup2,CN=Users," + base_dn))
 	if (ok.error != 0) {
 		println(ok.errstr);
 		assert(ok.error == 0);
