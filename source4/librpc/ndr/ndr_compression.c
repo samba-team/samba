@@ -26,7 +26,8 @@
 
 static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,
-						 struct decomp_state *decomp_state)
+						 struct decomp_state *decomp_state,
+						 bool *last)
 {
 	DATA_BLOB comp_chunk;
 	uint32_t comp_chunk_offset;
@@ -65,17 +66,16 @@ static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 
 	if ((plain_chunk_size < 0x00008000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
-		return NT_STATUS_OK;
+		*last = true;
 	}
 
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 					   struct ndr_pull **_comndr,
 					   ssize_t decompressed_len)
 {
-	NTSTATUS status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	struct ndr_push *ndrpush;
 	struct ndr_pull *comndr;
 	DATA_BLOB uncompressed;
@@ -84,6 +84,7 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	uint32_t payload_offset;
 	uint8_t *payload;
 	struct decomp_state *decomp_state;
+	bool last = false;
 
 	ndrpush = ndr_push_init_ctx(subndr);
 	NT_STATUS_HAVE_NO_MEMORY(ndrpush);
@@ -91,10 +92,9 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	decomp_state = ZIPdecomp_state(subndr);
 	NT_STATUS_HAVE_NO_MEMORY(decomp_state);
 
-	while (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
-		status = ndr_pull_compression_mszip_chunk(subndr, ndrpush, decomp_state);
+	while (!last) {
+		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, decomp_state, &last));
 	}
-	NT_STATUS_NOT_OK_RETURN(status);
 
 	uncompressed = ndr_push_blob(ndrpush);
 
@@ -152,7 +152,8 @@ static NTSTATUS ndr_push_compression_mszip(struct ndr_push *subndr,
 }
 
 static NTSTATUS ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
-						  struct ndr_push *ndrpush)
+						  struct ndr_push *ndrpush,
+						  bool *last)
 {
 	DATA_BLOB comp_chunk;
 	uint32_t comp_chunk_offset;
@@ -181,28 +182,27 @@ static NTSTATUS ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
 
 	if ((plain_chunk_size < 0x00010000) || (ndrpull->offset+4 >= ndrpull->data_size)) {
 		/* this is the last chunk */
-		return NT_STATUS_OK;
+		*last = true;
 	}
 
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ndr_pull_compression_xpress(struct ndr_pull *subndr,
 					    struct ndr_pull **_comndr,
 					    ssize_t decompressed_len)
 {
-	NTSTATUS status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	struct ndr_push *ndrpush;
 	struct ndr_pull *comndr;
 	DATA_BLOB uncompressed;
+	bool last = false;
 
 	ndrpush = ndr_push_init_ctx(subndr);
 	NT_STATUS_HAVE_NO_MEMORY(ndrpush);
 
-	while (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
-		status = ndr_pull_compression_xpress_chunk(subndr, ndrpush);
+	while (!last) {
+		NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
 	}
-	NT_STATUS_NOT_OK_RETURN(status);
 
 	uncompressed = ndr_push_blob(ndrpush);
 
