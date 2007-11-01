@@ -13,6 +13,24 @@ interface frsrpc
 {
 	/*****************/
 	/* Function 0x00 */
+
+	/* TAG:3 this TLV contains a GUID and the name of the server sending
+	 * the call
+	 */
+	typedef struct {
+		[subcontext(4)] GUID unknown1;
+		[subcontext(4)] nstring source_server;
+	} frsrpc_FrsSendCommPktChunkDataSSRV;
+
+	/* TAG:4 this TLV contains a GUID and the name of the destination
+	 * server the PDU is sent to
+	 */
+	typedef struct {
+		[subcontext(4)] GUID unknown1;
+		[subcontext(4)] nstring dest_server;
+	} frsrpc_FrsSendCommPktChunkDataDSRV;
+
+
 	typedef struct {
 		uint32 unknown1;
 	} frsrpc_FrsSendCommPktChunkDataA;
@@ -36,8 +54,8 @@ interface frsrpc
 		[default,flag(NDR_REMAINING)] DATA_BLOB blob;
 		[case(1)] frsrpc_FrsSendCommPktChunkDataA A;
 		[case(2)] frsrpc_FrsSendCommPktChunkDataA A;
-		[case(3)] frsrpc_FrsSendCommPktChunkDataB B;
-		[case(4)] frsrpc_FrsSendCommPktChunkDataB B;
+		[case(3)] frsrpc_FrsSendCommPktChunkDataSSRV SSRV;
+		[case(4)] frsrpc_FrsSendCommPktChunkDataDSRV DSRV;
 		[case(5)] frsrpc_FrsSendCommPktChunkDataB B;
 		[case(8)] frsrpc_FrsSendCommPktChunkDataB B;
 		[case(6)] frsrpc_FrsSendCommPktChunkDataC C;
@@ -73,10 +91,10 @@ interface frsrpc
 		uint32 unknown8;
 		uint32 unknown9;
 		/*
-		 * the format of this blob is this:
+		 * The format of this blob is this a concatenation
+		 * of TLVs which are not really NDR encoded.
 		 *
-		 * some of the folloeing chunks are concatenated:
-		 *
+		 * The individual TLVs are encoded as :
 		 * struct {
 		 * 	uint16 type;
 		 *	[subcontext(4),switch_is(type)] chunk_data data;
@@ -89,6 +107,12 @@ interface frsrpc
 		 *	struct GUID guid;
 		 *	lstring string;
 		 * } ...;
+		 *
+		 *
+		 * The tags are (might be) :
+		 * 3: Source server sending the PDU
+		 * 4: Destination server the PDU is sent to
+		 *
 		 */
 		[subcontext(4)/*,size_is(tlv_size)*/] frsrpc_FrsSendCommPktChunkCtr *chunks;
 		uint32 unknown10;
