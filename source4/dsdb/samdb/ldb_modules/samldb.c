@@ -51,7 +51,7 @@ static bool samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
 	status = ndr_push_struct_blob(&v, msg, sid, 
 				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
+		return false;
 	}
 	return (ldb_msg_add_value(msg, name, &v, NULL) == 0);
 }
