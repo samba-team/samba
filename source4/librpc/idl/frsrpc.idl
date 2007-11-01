@@ -69,7 +69,7 @@ interface frsrpc
 		uint32 unknown4;
     		uint32 tlv_size;
 		uint32 unknown6;
-		uint32 unknown7;
+		uint32 unknown7; /* This may be a UNIQUE pointer? */
 		uint32 unknown8;
 		uint32 unknown9;
 		/*
