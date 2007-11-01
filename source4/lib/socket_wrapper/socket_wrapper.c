@@ -42,19 +42,10 @@
 #ifdef _SAMBA_BUILD_
 
 #define SOCKET_WRAPPER_NOT_REPLACE
-#include "includes.h"
+#include "lib/replace/replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
-
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef calloc
-#undef calloc
-#endif
-#ifdef strdup
-#undef strdup
-#endif
+#include "system/time.h"
 
 #else /* _SAMBA_BUILD_ */
 
@@ -74,8 +65,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#define _PUBLIC_
+#endif
 
+#ifndef _PUBLIC_
+#define _PUBLIC_
 #endif
 
 #define SWRAP_DLIST_ADD(list,item) do { \
