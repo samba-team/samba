@@ -69,6 +69,9 @@ interface frsrpc
 		uint32 unknown4;
     		uint32 unknown5;
 		uint32 unknown6;
+		uint32 unknown7;
+		uint32 unknown8;
+		uint32 unknown9;
 		/*
 		 * the format of this blob is this:
 		 *
