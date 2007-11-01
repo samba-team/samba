@@ -723,7 +723,7 @@ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ndr);
-	ndr_pull_set_switch_value(ndr, p, level);
+	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	return NT_STATUS_OK;
 }
@@ -738,7 +738,7 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ndr);
-	ndr_pull_set_switch_value(ndr, p, level);
+	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
