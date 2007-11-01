@@ -728,10 +728,9 @@ _PUBLIC_ NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ct
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	return NT_STATUS_OK;
 }
 
 /*
@@ -741,14 +740,9 @@ _PUBLIC_ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *me
 				  ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	NTSTATUS status;
-
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
-	if (!NT_STATUS_IS_OK(status)) return status;
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				      "not all bytes consumed ofs[%u] size[%u]",
@@ -765,11 +759,10 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
 	ndr_pull_set_switch_value(ndr, p, level);
-	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	return NT_STATUS_OK;
 }
 
 /*
@@ -780,15 +773,10 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
-	NTSTATUS status;
-
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
 	ndr_pull_set_switch_value(ndr, p, level);
-	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
-	if (!NT_STATUS_IS_OK(status)) return status;
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				      "not all bytes consumed ofs[%u] size[%u]",
