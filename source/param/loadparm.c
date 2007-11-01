@@ -1696,7 +1696,7 @@ static void init_globals(bool first_time_only)
 	Globals.bASUSupport       = False;
 	
 	/* User defined shares. */
-	pstrcpy(s, dyn_LOCKDIR);
+	pstrcpy(s, dyn_STATEDIR());
 	pstrcat(s, "/usershares");
 	string_set(&Globals.szUsersharePath, s);
 	string_set(&Globals.szUsershareTemplateShare, "");
@@ -3340,12 +3340,12 @@ static struct tdb_wrap *lp_regdb_open(void)
 	uint32 vers_id;
 
 	become_root();
-	reg_tdb = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, 
+	reg_tdb = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, 
 				REG_TDB_FLAGS, O_RDWR, 0600);
 	unbecome_root();
 	if (!reg_tdb) {
 		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
-			 lock_path("registry.tdb"), strerror(errno)));
+			 state_path("registry.tdb"), strerror(errno)));
 		goto done;
 	}
 	else {
@@ -3356,7 +3356,7 @@ static struct tdb_wrap *lp_regdb_open(void)
 	if (vers_id != REGVER_V1) {
 		DEBUG(10, ("lp_regdb_open: INFO: registry tdb %s has wrong "
 			  "INFO/version (got %d, expected %d)\n",
-			  lock_path("registry.tdb"), vers_id, REGVER_V1));
+			  state_path("registry.tdb"), vers_id, REGVER_V1));
 		/* this is apparently not implemented in the tdb */
 	}
 

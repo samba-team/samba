@@ -55,7 +55,7 @@ static bool init_group_mapping(void)
 	/* this is needed as Samba3 doesn't have this globally yet */
 	ldb_global_init();
 
-	db_path = lock_path("group_mapping.ldb");
+	db_path = state_path("group_mapping.ldb");
 
 	ldb = ldb_init(NULL);
 	if (ldb == NULL) goto failed;
@@ -89,9 +89,9 @@ static bool init_group_mapping(void)
 	}
 
 	/* possibly upgrade */
-	tdb_path = lock_path("group_mapping.tdb");
+	tdb_path = state_path("group_mapping.tdb");
 	if (file_exist(tdb_path, NULL) && !mapping_upgrade(tdb_path)) {
-		unlink(lock_path("group_mapping.ldb"));
+		unlink(state_path("group_mapping.ldb"));
 		goto failed;
 	}
 
@@ -638,7 +638,7 @@ static bool mapping_upgrade(const char *tdb_path)
 	}
 
 	pstrcpy(old_path, tdb_path);
-	pstrcpy(new_path, lock_path("group_mapping.tdb.upgraded"));
+	pstrcpy(new_path, state_path("group_mapping.tdb.upgraded"));
 
 	if (rename(old_path, new_path) != 0) {
 		DEBUG(0,("Failed to rename old group mapping database\n"));

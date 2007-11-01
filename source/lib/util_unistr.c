@@ -87,11 +87,11 @@ void load_case_tables(void)
 	}
 	initialised = 1;
 
-	upcase_table = (smb_ucs2_t *)map_file(lib_path("upcase.dat"),
+	upcase_table = (smb_ucs2_t *)map_file(data_path("upcase.dat"),
 					      0x20000);
 	upcase_table_use_unmap = ( upcase_table != NULL );
 
-	lowcase_table = (smb_ucs2_t *)map_file(lib_path("lowcase.dat"),
+	lowcase_table = (smb_ucs2_t *)map_file(data_path("lowcase.dat"),
 					       0x20000);
 	lowcase_table_use_unmap = ( lowcase_table != NULL );
 
@@ -229,7 +229,7 @@ void init_valid_table(void)
 		return;
 	}
 
-	valid_file = (uint8 *)map_file(lib_path("valid.dat"), 0x10000);
+	valid_file = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
 	if (valid_file) {
 		valid_table = valid_file;
 		mapped_file = 1;

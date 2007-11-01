@@ -212,9 +212,9 @@ bool init_account_policy(void)
 		return True;
 	}
 
-	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
 	if (!tdb) { /* the account policies files does not exist or open failed, try to create a new one */
-		tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 		if (!tdb) {
 			DEBUG(0,("Failed to open account policy database\n"));
 			return False;

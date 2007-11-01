@@ -42,7 +42,7 @@ static bool init_group_mapping(void)
 	if (tdb)
 		return True;
 		
-	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_open_log(state_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
 		return False;

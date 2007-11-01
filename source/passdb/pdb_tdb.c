@@ -1542,7 +1542,7 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 	uint32 rid;
 	bool ret = False;
 
-	tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
+	tdb = tdb_open_log(state_path("winbindd_idmap.tdb"), 0,
 			   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
 
 	if (tdb == NULL) {
@@ -1606,7 +1606,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	/* save the path for later */
 			   
 	if ( !location ) {
-		pstr_sprintf( tdbfile, "%s/%s", lp_private_dir(), PASSDB_FILE_NAME );
+		pstr_sprintf( tdbfile, "%s/%s", dyn_STATEDIR(), PASSDB_FILE_NAME );
 		pfile = tdbfile;
 	}
 	pstrcpy( tdbsam_filename, pfile );
