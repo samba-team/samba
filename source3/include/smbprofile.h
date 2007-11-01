@@ -741,6 +741,7 @@ struct profile_stats {
 	unsigned syscall_read_bytes;
 	unsigned syscall_write_bytes;
 	unsigned syscall_sendfile_bytes;
+	unsigned syscall_recvfile_bytes;
 
 /* stat cache counters */
 	unsigned statcache_lookups;
