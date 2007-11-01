@@ -27,26 +27,19 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 /*******************************************************************
- Fill in the valiues for the struct wkssvc_NetWkstaInfo100.
+ Fill in the values for the struct wkssvc_NetWkstaInfo100.
  ********************************************************************/
 
 static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 {
-	pstring my_name;
-	pstring domain;
+	info100->platform_id	 = 0x000001f4;	/* unknown */
+	info100->version_major	 = lp_major_announce_version();
+	info100->version_minor	 = lp_minor_announce_version();
 
-	pstrcpy (my_name, global_myname());
-	strupper_m(my_name);
-
-	pstrcpy (domain, lp_workgroup());
-	strupper_m(domain);
-	
-	info100->platform_id     = 0x000001f4; 	/* unknown */
-	info100->version_major   = lp_major_announce_version(); 
-	info100->version_minor   = lp_minor_announce_version();   
-
-	info100->server_name = talloc_strdup( info100, my_name );
-	info100->domain_name = talloc_strdup( info100, domain );
+	info100->server_name = talloc_strdup(
+		info100, strupper_static(global_myname()));
+	info100->domain_name = talloc_strdup(
+		info100, strupper_static(lp_workgroup()));
 
 	return;
 }
