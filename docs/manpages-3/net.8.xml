@@ -1122,7 +1122,7 @@ Set the "password do not expire" flag for a user account.
 </refsect2>
 
 <refsect2>
-<title>SAM SET PWMUSTCHANGENOW &lt;NAME&gt; [yes|no]</title>
+<title>SAM SET PWDMUSTCHANGENOW &lt;NAME&gt; [yes|no]</title>
 
 <para>
 Set or unset the "password must change" flag for a user account.
