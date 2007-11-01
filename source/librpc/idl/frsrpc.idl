@@ -67,7 +67,7 @@ interface frsrpc
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
-    		uint32 unknown5;
+    		uint32 tlv_size;
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
@@ -90,7 +90,7 @@ interface frsrpc
 		 *	lstring string;
 		 * } ...;
 		 */
-		[subcontext(4)/*,size_is(unknown5)*/] frsrpc_FrsSendCommPktChunkCtr *chunks;
+		[subcontext(4)/*,size_is(tlv_size)*/] frsrpc_FrsSendCommPktChunkCtr *chunks;
 		uint32 unknown8;
 		uint32 unknown9;
 	} frsrpc_FrsSendCommPktReq;
