@@ -127,6 +127,13 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
+# FHS directories; equal to LOCKDIR if not using --with-fhs
+CACHEDIR = @cachedir@
+STATEDIR = @statedir@
+
+# Where to look for (and install) codepage databases.
+CODEPAGEDIR = @codepagedir@
+
 # the directory where pid files go
 PIDDIR = @piddir@
 
@@ -154,7 +161,10 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
 	-DCTDBDIR=\"$(CTDBDIR)\" \
-	-DCONFIGDIR=\"$(CONFIGDIR)\"
+	-DCONFIGDIR=\"$(CONFIGDIR)\" \
+	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
+	-DCACHEDIR=\"$(CACHEDIR)\" \
+	-DSTATEDIR=\"$(STATEDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
 
@@ -1761,10 +1771,10 @@ installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 installdat: installdirs
-	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR) $(LIBDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
 
 installmsg: installdirs
-	@$(SHELL) $(srcdir)/script/installmsg.sh $(DESTDIR) $(LIBDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installmsg.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
 
 installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)

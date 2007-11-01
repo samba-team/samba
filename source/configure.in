@@ -65,6 +65,10 @@ AC_ARG_WITH(fhs,
     libdir="\${prefix}/lib/samba"
     configdir="\${sysconfdir}/samba"
     swatdir="\${DATADIR}/samba/swat"
+    codepagedir="\${prefix}/lib/samba"
+    statedir="\${VARDIR}/lib/samba"
+    cachedir="\${VARDIR}/lib/samba"
+    AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
     ;;
   esac])
 
@@ -284,6 +288,9 @@ AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
+AC_SUBST(codepagedir)
+AC_SUBST(statedir)
+AC_SUBST(cachedir)
 AC_SUBST(rootsbindir)
 AC_SUBST(pammodulesdir)
 

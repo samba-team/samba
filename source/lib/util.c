@@ -2435,6 +2435,39 @@ char *lib_path(const char *name)
 }
 
 /**
+ * @brief Returns an absolute path to a file in the Samba data directory.
+ *
+ * @param name File to find, relative to CODEPAGEDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
+
+char *data_path(const char *name)
+{
+	return talloc_asprintf(talloc_tos(), "%s/%s", dyn_CODEPAGEDIR, name);
+}
+
+/*****************************************************************
+a useful function for returning a path in the Samba state directory
+ *****************************************************************/
+char *state_path(char *name)
+{
+	pstring fname;
+
+	pstrcpy(fname,dyn_STATEDIR());
+	trim_string(fname,"","/");
+
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return talloc_strdup(talloc_tos(), fname);
+}
+
+/**
  * @brief Returns the platform specific shared library extension.
  *
  * @retval Pointer to a static #fstring containing the extension.
