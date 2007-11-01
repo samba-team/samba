@@ -30,6 +30,12 @@ interface frsrpc
 		[subcontext(4)] nstring dest_server;
 	} frsrpc_FrsSendCommPktChunkDataDSRV;
 
+	/* TAG:18 this TLV contains a  timestamp 
+	*/
+	typedef struct {
+		[subcontext(4)] NTTIME time;
+	} frsrpc_FrsSendCommPktChunkDataTS;
+
 
 	typedef struct {
 		uint32 unknown1;
@@ -46,10 +52,6 @@ interface frsrpc
 		GUID unknown2;
 	} frsrpc_FrsSendCommPktChunkDataC;
 
-	typedef struct {
-		NTTIME time;
-	} frsrpc_FrsSendCommPktChunkDataD;
-
 	typedef [nodiscriminant] union {
 		[default,flag(NDR_REMAINING)] DATA_BLOB blob;
 		[case(1)] frsrpc_FrsSendCommPktChunkDataA A;
@@ -59,7 +61,7 @@ interface frsrpc
 		[case(5)] frsrpc_FrsSendCommPktChunkDataB B;
 		[case(8)] frsrpc_FrsSendCommPktChunkDataB B;
 		[case(6)] frsrpc_FrsSendCommPktChunkDataC C;
-		[case(18)] frsrpc_FrsSendCommPktChunkDataD D;
+		[case(18)] frsrpc_FrsSendCommPktChunkDataTS TS;
 		[case(19)] frsrpc_FrsSendCommPktChunkDataA A;
 	} frsrpc_FrsSendCommPktChunkData;
 
@@ -110,8 +112,9 @@ interface frsrpc
 		 *
 		 *
 		 * The tags are (might be) :
-		 * 3: Source server sending the PDU
-		 * 4: Destination server the PDU is sent to
+		 *  3: Source server sending the PDU
+		 *  4: Destination server the PDU is sent to
+		 * 18: Timestamp
 		 *
 		 */
 		[subcontext(4)/*,size_is(tlv_size)*/] frsrpc_FrsSendCommPktChunkCtr *chunks;
