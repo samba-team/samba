@@ -614,16 +614,16 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	}
 	data = search.out.response->attributes[0].values;
 
-	status = ndr_pull_union_blob(data, mem_ctx, &io->out.netlogon, 
-				     io->in.version & 0xF,
-				     (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	status = ndr_pull_union_blob_all(data, mem_ctx, &io->out.netlogon, 
+					 io->in.version & 0xF,
+					 (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("cldap failed to parse netlogon response of type 0x%02x\n",
 			 SVAL(data->data, 0)));
 		dump_data(10, data->data, data->length);
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
