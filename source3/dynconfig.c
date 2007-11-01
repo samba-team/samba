@@ -52,6 +52,13 @@ pstring dyn_LOGFILEBASE = LOGFILEBASE;
 pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
 
 /**
+ * @brief Samba data directory.
+ *
+ * @sa data_path() to get the path to a file inside the CODEPAGEDIR.
+ **/
+pstring dyn_CODEPAGEDIR = CODEPAGEDIR;
+
+/**
  * @brief Samba library directory.
  *
  * @sa lib_path() to get the path to a file inside the LIBDIR.
@@ -69,3 +76,27 @@ pstring dyn_PIDDIR  = PIDDIR;
 
 pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
 pstring dyn_PRIVATE_DIR = PRIVATE_DIR;
+
+
+/* In non-FHS mode, these should be configurable using 'lock dir =';
+   but in FHS mode, they are their own directory.  Implement as wrapper
+   functions so that everything can still be kept in dynconfig.c.
+ */
+
+char *dyn_STATEDIR(void)
+{
+#ifdef FHS_COMPATIBLE
+	return STATEDIR;
+#else
+	return lp_lockdir();
+#endif
+}
+
+char *dyn_CACHEDIR(void)
+{
+#ifdef FHS_COMPATIBLE
+	return CACHEDIR;
+#else
+	return lp_lockdir();
+#endif
+}

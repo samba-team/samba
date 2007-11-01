@@ -30,8 +30,12 @@ extern char const *dyn_SBINDIR,
 extern pstring dyn_CONFIGFILE;
 extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
 extern pstring dyn_LIBDIR;
+extern pstring dyn_CODEPAGEDIR;
 extern fstring dyn_SHLIBEXT;
 extern pstring dyn_LOCKDIR;
 extern pstring dyn_PIDDIR;
 extern pstring dyn_SMB_PASSWD_FILE;
 extern pstring dyn_PRIVATE_DIR;
+
+char *dyn_STATEDIR(void);
+char *dyn_CACHEDIR(void);
