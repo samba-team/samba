@@ -56,7 +56,7 @@
 	if (r->in.buffer) {\
 		DATA_BLOB _data_blob_info;\
 		_ndr_info = ndr_push_init_ctx(ndr);\
-		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
+		NT_STATUS_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->out.info) {\
 			struct __##fn __r;\
@@ -121,7 +121,7 @@
 	r->out.result	= _r.out.result;\
 	if (_r.out.info) {\
 		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr);\
-		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
+		NT_STATUS_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->in.offered != _ndr_info->data_size) {\
 			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
@@ -415,7 +415,7 @@ NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const 
 		{
 			struct __spoolss_GetPrinterData __r;
 			_ndr_info = ndr_push_init_ctx(ndr);
-			if (!_ndr_info) return NT_STATUS_NO_MEMORY;
+			NT_STATUS_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
 			__r.in.type	= r->out.type;
 			__r.out.data	= r->out.data;
@@ -470,7 +470,7 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);
-			if (!_ndr_data) return NT_STATUS_NO_MEMORY;
+			NT_STATUS_HAVE_NO_MEMORY(_ndr_data);
 			_ndr_data->flags= ndr->flags;
 			__r.in.type	= r->out.type;
 			__r.out.data	= r->out.data;
@@ -495,7 +495,7 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const 
 		DATA_BLOB _data_blob_data;
 
 		_ndr_data = ndr_push_init_ctx(ndr);\
-		if (!_ndr_data) return NT_STATUS_NO_MEMORY;\
+		NT_STATUS_HAVE_NO_MEMORY(_ndr_data);\
 		_ndr_data->flags= ndr->flags;\
 
 		__r.in.type	= r->in.type;
