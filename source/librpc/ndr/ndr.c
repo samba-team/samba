@@ -750,13 +750,29 @@ _PUBLIC_ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *me
 	if (ndr->offset < ndr->data_size) {
 		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
 	}
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
   pull a union from a blob using NDR, given the union discriminator
 */
 _PUBLIC_ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			     uint32_t level, ndr_pull_flags_fn_t fn)
+{
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr_pull_set_switch_value(ndr, p, level);
+	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+}
+
+/*
+  pull a union from a blob using NDR, given the union discriminator,
+  failing if all bytes are not consumed
+*/
+_PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
@@ -769,10 +785,10 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx
 	ndr_pull_set_switch_value(ndr, p, level);
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
-	if (ndr->offset != ndr->data_size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	if (ndr->offset < ndr->data_size) {
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
 	}
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
