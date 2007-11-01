@@ -367,6 +367,8 @@ static NTSTATUS ndr_map_error(enum ndr_err_code ndr_err)
 		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
 	case NDR_ERR_INVALID_POINTER:
 		return NT_STATUS_INVALID_PARAMETER_MIX;
+	case NDR_ERR_UNREAD_BYTES:
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
 	default:
 		break;
 	}
@@ -748,7 +750,9 @@ _PUBLIC_ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *me
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
 	if (ndr->offset < ndr->data_size) {
-		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
+		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
+				      "not all bytes consumed ofs[%u] size[%u]",
+				      ndr->offset, ndr->data_size);
 	}
 	return NT_STATUS_OK;
 }
@@ -786,7 +790,9 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) return status;
 	if (ndr->offset < ndr->data_size) {
-		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
+		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
+				      "not all bytes consumed ofs[%u] size[%u]",
+				      ndr->offset, ndr->data_size);
 	}
 	return NT_STATUS_OK;
 }
