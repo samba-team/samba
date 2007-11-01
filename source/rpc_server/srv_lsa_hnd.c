@@ -53,9 +53,10 @@ bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 		if (strequal( plist->name, pipe_name) ||
 				(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
 			if (!plist->pipe_handles) {
-				pstring msg;
-				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
-						pipe_name );
+				char *msg;
+				asprintf(&msg, "init_pipe_handles: NULL "
+					 "pipe_handle pointer in pipe %s",
+					 pipe_name);
 				smb_panic(msg);
 			}
 			hl = plist->pipe_handles;
