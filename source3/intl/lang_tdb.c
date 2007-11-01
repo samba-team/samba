@@ -127,7 +127,7 @@ bool lang_tdb_init(const char *lang)
 	if (!lang) 
 		return True;
 
-	asprintf(&msg_path, "%s.msg", lib_path((const char *)lang));
+	asprintf(&msg_path, "%s.msg", data_path((const char *)lang));
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		DEBUG(10, ("lang_tdb_init: %s: %s\n", msg_path, 

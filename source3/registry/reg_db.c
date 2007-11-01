@@ -230,12 +230,12 @@ bool regdb_init( void )
 	if ( tdb_reg )
 		return True;
 
-	if ( !(tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
+	if ( !(tdb_reg = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
 	{
-		tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
+		tdb_reg = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if ( !tdb_reg ) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
-				lock_path("registry.tdb"), strerror(errno) ));
+				state_path("registry.tdb"), strerror(errno) ));
 			return False;
 		}
 		
@@ -278,11 +278,11 @@ WERROR regdb_open( void )
 	
 	become_root();
 
-	tdb_reg = tdb_wrap_open(NULL, lock_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
+	tdb_reg = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
 	if ( !tdb_reg ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
 		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
-			lock_path("registry.tdb"), strerror(errno) ));
+			state_path("registry.tdb"), strerror(errno) ));
 	}
 
 	unbecome_root();

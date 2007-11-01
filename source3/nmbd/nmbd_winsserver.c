@@ -584,7 +584,7 @@ bool initialise_wins(void)
 
 	add_samba_names_to_subnet(wins_server_subnet);
 
-	if((fp = x_fopen(lock_path(WINS_LIST),O_RDONLY,0)) == NULL) {
+	if((fp = x_fopen(state_path(WINS_LIST),O_RDONLY,0)) == NULL) {
 		DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
 			WINS_LIST, strerror(errno) ));
 		return True;
@@ -2337,7 +2337,7 @@ void wins_write_database(time_t t, bool background)
 		}
 	}
 
-	slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
+	slprintf(fname,sizeof(fname)-1,"%s/%s", dyn_STATEDIR(), WINS_LIST);
 	all_string_sub(fname,"//", "/", 0);
 	slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
 
