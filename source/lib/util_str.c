@@ -411,13 +411,8 @@ char *strupper_static(const char *s)
 {
 	static char *str = NULL;
 
-	if (str) {
-		SAFE_FREE(str);
-	}
+	SAFE_FREE(str);
 	str = SMB_STRDUP(s);
-	if (!str) {
-		return CONST_DISCARD(char *,s);
-	}
 	strupper_m(str);
 	return str;
 }
