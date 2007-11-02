@@ -441,7 +441,7 @@ typedef struct {
 	bool bStrictAllocate;
 	bool bStrictSync;
 	char magic_char;
-	bool *copymap;
+	struct bitmap *copymap;
 	bool bDeleteReadonly;
 	bool bFakeOplocks;
 	bool bDeleteVetoFiles;
@@ -2181,7 +2181,8 @@ static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
-			 service * pserviceSource, bool *pcopymapDest);
+			 service * pserviceSource,
+			 struct bitmap *pcopymapDest);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue);
 static bool do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
@@ -2455,7 +2456,7 @@ static void free_service(service *pservice)
 		       pservice->szService));
 
 	string_free(&pservice->szService);
-	SAFE_FREE(pservice->copymap);
+	bitmap_free(pservice->copymap);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
@@ -3188,7 +3189,8 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service * pserviceDest, service * pserviceSource, bool *pcopymapDest)
+static void copy_service(service * pserviceDest, service * pserviceSource,
+			 struct bitmap *pcopymapDest)
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
@@ -3197,7 +3199,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, bool 
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
-		    (bcopyall || pcopymapDest[i])) {
+		    (bcopyall || bitmap_query(pcopymapDest,i))) {
 			void *def_ptr = parm_table[i].ptr;
 			void *src_ptr =
 				((char *)pserviceSource) + PTR_DIFF(def_ptr,
@@ -3244,9 +3246,8 @@ static void copy_service(service * pserviceDest, service * pserviceSource, bool 
 	if (bcopyall) {
 		init_copymap(pserviceDest);
 		if (pserviceSource->copymap)
-			memcpy((void *)pserviceDest->copymap,
-			       (void *)pserviceSource->copymap,
-			       sizeof(bool) * NUMPARAMETERS);
+			bitmap_copy(pserviceDest->copymap,
+				    pserviceSource->copymap);
 	}
 	
 	data = pserviceSource->param_opt;
@@ -3985,15 +3986,17 @@ static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
 static void init_copymap(service * pservice)
 {
 	int i;
-	SAFE_FREE(pservice->copymap);
-	pservice->copymap = SMB_MALLOC_ARRAY(bool,NUMPARAMETERS);
+	if (pservice->copymap) {
+		bitmap_free(pservice->copymap);
+	}
+	pservice->copymap = bitmap_allocate(NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
 		       (int)NUMPARAMETERS));
 	else
 		for (i = 0; i < NUMPARAMETERS; i++)
-			pservice->copymap[i] = True;
+			bitmap_set(pservice->copymap, i);
 }
 
 /***************************************************************************
@@ -4095,7 +4098,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		   the same data pointer */
 		for (i = 0; parm_table[i].label; i++)
 			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				ServicePtrs[snum]->copymap[i] = False;
+				bitmap_clear(ServicePtrs[snum]->copymap, i);
 	}
 
 	/* if it is a special case then go ahead */
