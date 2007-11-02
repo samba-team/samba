@@ -2671,7 +2671,11 @@ smbc_opendir_ctx(SMBCCTX *context,
                                 return NULL;
                         }
 
-                        ip_list = &server_addr;
+			ip_list = memdup(&server_addr, sizeof(server_addr));
+			if (ip_list == NULL) {
+				errno = ENOMEM;
+				return NULL;
+			}
                         count = 1;
                 }
 
