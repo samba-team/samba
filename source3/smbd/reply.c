@@ -3927,8 +3927,8 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	smblen = smb_len(req->inbuf);
 
 	if (req->unread_bytes > 0xFFFF ||
-			(smblen > smb_doff + 4 &&
-				smblen - smb_doff + 4 > 0xFFFF)) {
+			(smblen > smb_doff &&
+				smblen - smb_doff > 0xFFFF)) {
 		numtowrite |= (((size_t)SVAL(req->inbuf,smb_vwv9))<<16);
 	}
 
@@ -3939,8 +3939,8 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 			return;
 		}
 	} else {
-		if (smb_doff + 4 > smblen || smb_doff + 4 + numtowrite < numtowrite ||
-				smb_doff + 4 + numtowrite > smblen) {
+		if (smb_doff > smblen || smb_doff + numtowrite < numtowrite ||
+				smb_doff + numtowrite > smblen) {
 			reply_doserror(req, ERRDOS, ERRbadmem);
 			END_PROFILE(SMBwriteX);
 			return;
