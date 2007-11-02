@@ -439,6 +439,40 @@ static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool _test_SecurityDescriptor(struct dcerpc_pipe *p,
+				     struct torture_context *tctx,
+				     struct policy_handle *handle,
+				     uint32_t access_mask,
+				     const char *key,
+				     WERROR open_werr,
+				     WERROR get_werr,
+				     WERROR set_werr)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+	bool got_key = false;
+
+	if (!_test_OpenKey(p, tctx, handle, key, access_mask, &new_handle,
+			   open_werr, &got_key)) {
+		return false;
+	}
+
+	if (!got_key) {
+		return true;
+	}
+
+	if (!_test_GetSetSecurityDescriptor(p, tctx, &new_handle,
+					    get_werr, set_werr)) {
+		ret = false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		return false;
+	}
+
+	return ret;
+}
+
 static bool test_dacl_trustee_present(struct dcerpc_pipe *p,
 				      struct torture_context *tctx,
 				      struct policy_handle *handle,
@@ -946,6 +980,60 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool test_SecurityDescriptorsMasks(struct dcerpc_pipe *p,
+					  struct torture_context *tctx,
+					  struct policy_handle *handle,
+					  const char *key)
+{
+	bool ret = true;
+	int i;
+
+	struct winreg_mask_result_table {
+		uint32_t access_mask;
+		WERROR open_werr;
+		WERROR get_werr;
+		WERROR set_werr;
+	} sd_mask_tests[] = {
+		{ 0,
+			WERR_ACCESS_DENIED, WERR_BADFILE, WERR_FOOBAR },
+		{ SEC_FLAG_MAXIMUM_ALLOWED,
+			WERR_OK, WERR_OK, WERR_OK },
+		{ SEC_STD_WRITE_DAC,
+			WERR_OK, WERR_ACCESS_DENIED, WERR_FOOBAR },
+		{ SEC_FLAG_SYSTEM_SECURITY,
+			WERR_OK, WERR_ACCESS_DENIED, WERR_FOOBAR }
+	};
+
+	/* FIXME: before this test can ever run successfully we need a way to
+	 * correctly read a NULL security_descritpor in ndr, get the required
+	 * length, requery, etc.
+	 */
+
+	return true;
+
+	for (i=0; i < ARRAY_SIZE(sd_mask_tests); i++) {
+
+		torture_comment(tctx,
+				"SecurityDescriptor get & set with access_mask: 0x%08x\n",
+				sd_mask_tests[i].access_mask);
+		torture_comment(tctx,
+				"expecting: open %s, get: %s, set: %s\n",
+				win_errstr(sd_mask_tests[i].open_werr),
+				win_errstr(sd_mask_tests[i].get_werr),
+				win_errstr(sd_mask_tests[i].set_werr));
+
+		if (_test_SecurityDescriptor(p, tctx, handle,
+					     sd_mask_tests[i].access_mask, key,
+					     sd_mask_tests[i].open_werr,
+					     sd_mask_tests[i].get_werr,
+					     sd_mask_tests[i].set_werr)) {
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+
 typedef bool (*secinfo_verify_fn)(struct dcerpc_pipe *,
 				  struct torture_context *,
 				  struct policy_handle *,
@@ -1255,7 +1343,6 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 {
 	bool ret = true;
 
-
 	if (!test_SecurityDescriptor(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptor failed\n");
 		ret = false;
@@ -1273,6 +1360,11 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 
 	if (!test_SecurityDescriptorsSecInfo(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptorsSecInfo failed\n");
+		ret = false;
+	}
+
+	if (!test_SecurityDescriptorsMasks(p, tctx, handle, key)) {
+		printf("test_SecurityDescriptorsMasks failed\n");
 		ret = false;
 	}
 
