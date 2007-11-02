@@ -791,16 +791,11 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 _PUBLIC_ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
 			      ndr_push_flags_fn_t fn)
 {
-	NTSTATUS status;
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
+
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
@@ -815,17 +810,12 @@ _PUBLIC_ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, con
 _PUBLIC_ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_push_flags_fn_t fn)
 {
-	NTSTATUS status;
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(ndr);
+
 	ndr_push_set_switch_value(ndr, p, level);
-	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
