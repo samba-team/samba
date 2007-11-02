@@ -550,7 +550,7 @@ int set_message(char *buf,int num_words,int num_bytes,bool zero)
 int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
-	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
 }
@@ -2450,21 +2450,25 @@ char *data_path(const char *name)
 /*****************************************************************
 a useful function for returning a path in the Samba state directory
  *****************************************************************/
-char *state_path(char *name)
-{
-	pstring fname;
 
-	pstrcpy(fname,dyn_STATEDIR());
+char *state_path(const char *name)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *fname = talloc_strdup(ctx, dyn_STATEDIR());
+
+	if (!fname) {
+		smb_panic("state_path: out of memory");
+	}
 	trim_string(fname,"","/");
 
 	if (!directory_exist(fname,NULL)) {
 		mkdir(fname,0755);
 	}
 
-	pstrcat(fname,"/");
-	pstrcat(fname,name);
+	fname = talloc_asprintf(ctx, "%s/%s",
+			fname, name);
 
-	return talloc_strdup(talloc_tos(), fname);
+	return fname;
 }
 
 /**
