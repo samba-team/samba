@@ -399,7 +399,7 @@ static bool test_security(struct torture_context *tctx, const void *_data)
 	if (!create_test_key(tctx, rctx, "Düsseldorf", &root, &subkey))
 		return false;
 
-	osd = security_descriptor_create(tctx,
+	osd = security_descriptor_dacl_create(tctx,
 					 0,
 					 NULL, NULL,
 					 SID_NT_AUTHENTICATED_USERS,
