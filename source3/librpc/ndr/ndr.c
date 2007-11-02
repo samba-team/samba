@@ -526,9 +526,7 @@ NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
 {
 	struct ndr_token_list *tok;
 	tok = talloc(mem_ctx, struct ndr_token_list);
-	if (tok == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(tok);
 	tok->key = key;
 	tok->value = value;
 	DLIST_ADD((*list), tok);
