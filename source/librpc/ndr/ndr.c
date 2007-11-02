@@ -777,7 +777,7 @@ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	ndr = ndr_push_init_ctx(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ndr);
 
-	ndr_push_set_switch_value(ndr, p, level);
+	NDR_CHECK(ndr_push_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
 	*blob = ndr_push_blob(ndr);
