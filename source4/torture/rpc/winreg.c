@@ -713,6 +713,10 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		torture_fail(tctx,
 			     "CreateKey failed (OpenKey after Create didn't work)\n");
 
+	if (created && !test_CloseKey(p, tctx, &newhandle))
+		torture_fail(tctx,
+			     "CreateKey failed (CloseKey after Open didn't work)\n");
+
 	if (created && !test_DeleteKey(p, tctx, &handle, TEST_KEY1)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
