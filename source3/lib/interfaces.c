@@ -701,9 +701,10 @@ static socklen_t calc_sa_size(struct sockaddr *psa)
 	socklen_t sl = sizeof(struct sockaddr_in);
 #if defined(HAVE_IPV6)
 	if (psa->sa_family == AF_INET6) {
-		salen = sizeof(struct sockaddr_in6);
+		sl = sizeof(struct sockaddr_in6);
 	}
 #endif
+	return sl;
 }
 
  int main()
