@@ -128,12 +128,11 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
 */
 NTSTATUS ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
-	NTSTATUS status;
-	status = ndr_pull_uint32(ndr, NDR_SCALARS, v);
-	if (NT_STATUS_IS_OK(status) && *v != 0) {
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, v));
+	if (*v != 0) {
 		ndr->ptr_count++;
 	}
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
