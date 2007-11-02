@@ -3926,7 +3926,8 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	numtowrite = SVAL(req->inbuf,smb_vwv10);
 	smb_doff = SVAL(req->inbuf,smb_vwv11);
 	smblen = smb_len(req->inbuf);
-	large_writeX = ((req->wct == 14) && (smblen > 0xFFFF));
+	large_writeX = (req->wct == 14 &&
+			(smblen > 0xFFFF || req->unread_bytes > 0xFFFF));
 
 	/* Deal with possible LARGE_WRITEX */
 	if (large_writeX) {
