@@ -3848,12 +3848,12 @@ void reply_write(connection_struct *conn, struct smb_request *req)
 						(2*14) + /* word count (including bcc) */ \
 						1 /* pad byte */)
 
-bool is_valid_writeX_buffer(char *inbuf)
+bool is_valid_writeX_buffer(const char *inbuf)
 {
 	size_t numtowrite;
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
-	size_t len = smb_len(inbuf);
+	size_t len = smb_len_large(inbuf);
 
 	if (CVAL(inbuf,smb_com) != SMBwriteX ||
 			CVAL(inbuf,smb_vwv0) != 0xFF ||
@@ -3867,14 +3867,19 @@ bool is_valid_writeX_buffer(char *inbuf)
 	if (IS_IPC(conn)) {
 		return false;
 	}
+	doff = SVAL(inbuf,smb_vwv11);
+
 	numtowrite = SVAL(inbuf,smb_vwv10);
-	numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+
+	if (len > doff && len - doff > 0xFFFF) {
+		numtowrite |= (((size_t)SVAL(inbuf,smb_vwv9))<<16);
+	}
+
 	if (numtowrite == 0) {
 		return false;
 	}
-	/* Ensure the sizes match up. */
-	doff = SVAL(inbuf,smb_vwv11);
 
+	/* Ensure the sizes match up. */
 	if (doff < STANDARD_WRITE_AND_X_HEADER_SIZE) {
 		/* no pad byte...old smbclient :-( */
 		return false;

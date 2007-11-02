@@ -3227,6 +3227,35 @@ static int cmd_show_connect( void )
 	return 0;
 }
 
+/****************************************************************************
+ iosize command
+***************************************************************************/
+
+int cmd_iosize(void)
+{
+	fstring buf;
+	int iosize;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0, ("iosize <n> or iosize 0x<n>. "
+			"Minimum is 16384 (0x4000), "
+			"max is 16776960 (0xFFFF00)\n"));
+		return 1;
+	}
+
+	iosize = strtol(buf,NULL,0);
+	if (iosize < 0 || iosize > 0xFFFF00) {
+		DEBUG(0, ("iosize out of range (min = 16384 (0x4000), "
+			"max = 16776960 (0x0xFFFF00)"));
+		return 1;
+	}
+
+	io_bufsize = iosize;
+	d_printf("iosize is now %d\n", io_bufsize);
+	return 0;
+}
+
+
 /* Some constants for completing filename arguments */
 
 #define COMPL_NONE        0          /* No completions */
@@ -3265,6 +3294,7 @@ static struct
   {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+  {"iosize",cmd_iosize,"iosize <number> (default 64512)",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<oldname> <newname> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lock",cmd_lock,"lock <fnum> [r|w] <hex-start> <hex-len> : set a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},

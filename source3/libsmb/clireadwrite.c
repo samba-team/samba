@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client file read/write routines
    Copyright (C) Andrew Tridgell 1994-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,7 +23,7 @@
 Issue a single SMBread and don't wait for a reply.
 ****************************************************************************/
 
-static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
+static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 			   size_t size, int i)
 {
 	bool bigoffset = False;
@@ -31,11 +31,11 @@ static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	if ((SMB_BIG_UINT)offset >> 32) 
+	if ((SMB_BIG_UINT)offset >> 32)
 		bigoffset = True;
 
 	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
-		
+
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -68,7 +68,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	/* We can only do direct reads if not signing. */
 	bool direct_reads = !client_is_signing_on(cli);
 
-	if (size == 0) 
+	if (size == 0)
 		return 0;
 
 	/*
@@ -280,18 +280,25 @@ ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 	return total;
 }
 #endif
+
 /****************************************************************************
-issue a single SMBwrite and don't wait for a reply
+ Issue a single SMBwrite and don't wait for a reply.
 ****************************************************************************/
 
-static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset, 
-			    uint16 mode, const char *buf,
-			    size_t size, int i)
+static bool cli_issue_write(struct cli_state *cli,
+				int fnum,
+				off_t offset,
+				uint16 mode,
+				const char *buf,
+				size_t size,
+				int i)
 {
 	char *p;
-	bool large_writex = False;
+	bool large_writex = false;
+	/* We can only do direct writes if not signing. */
+	bool direct_writes = !client_is_signing_on(cli);
 
-	if (size + 1 > cli->bufsize) {
+	if (!direct_writes && size + 1 > cli->bufsize) {
 		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);
 		if (!cli->outbuf) {
 			return False;
@@ -311,10 +318,11 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 		large_writex = True;
 	}
 
-	if (large_writex)
+	if (large_writex) {
 		set_message(cli->outbuf,14,0,True);
-	else
+	} else {
 		set_message(cli->outbuf,12,0,True);
+	}
 
 	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -334,7 +342,7 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	 * locally. However, this check might already have been
 	 * done by our callers.
 	 */
-	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
+	SSVAL(cli->outbuf,smb_vwv9,(size>>16));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	/* +1 is pad byte. */
 	SSVAL(cli->outbuf,smb_vwv11,
@@ -346,13 +354,27 @@ static bool cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11) -1;
 	*p++ = '\0'; /* pad byte. */
-	memcpy(p, buf, size);
-	cli_setup_bcc(cli, p+size);
+	if (!direct_writes) {
+		memcpy(p, buf, size);
+	}
+	if (size > 0x1FFFF) {
+		/* This is a POSIX 14 word large write. */
+		set_message_bcc(cli->outbuf, 0); /* Set bcc to zero. */
+		_smb_setlen_large(cli->outbuf,smb_size + 28 + 1 /* pad */ + size - 4);
+	} else {
+		cli_setup_bcc(cli, p+size);
+	}
 
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	show_msg(cli->outbuf);
-	return cli_send_smb(cli);
+	if (direct_writes) {
+		/* For direct writes we now need to write the data
+		 * directly out of buf. */
+		return cli_send_smb_direct_writeX(cli, buf, size);
+	} else {
+		return cli_send_smb(cli);
+	}
 }
 
 /****************************************************************************
@@ -371,8 +393,8 @@ ssize_t cli_write(struct cli_state *cli,
 	unsigned int issued = 0;
 	unsigned int received = 0;
 	int mpx = 1;
-	int block = cli->max_xmit - (smb_size+32);
-	int blocks = (size + (block-1)) / block;
+	size_t writesize;
+	int blocks;
 
 	if(cli->max_mux > 1) {
 		mpx = cli->max_mux-1;
@@ -380,11 +402,29 @@ ssize_t cli_write(struct cli_state *cli,
 		mpx = 1;
 	}
 
+        if (!client_is_signing_on(cli) &&
+			(cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
+			(cli->capabilities & CAP_LARGE_FILES)) {
+		/* Only do massive writes if we can do them direct
+		 * with no signing. */
+		writesize = CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
+	} else if (cli->capabilities & CAP_LARGE_READX) {
+		if (cli->is_samba) {
+			writesize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
+		} else {
+			writesize = CLI_WINDOWS_MAX_LARGE_READX_SIZE;
+		}
+	} else {
+		writesize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	}
+
+	blocks = (size + (writesize-1)) / writesize;
+
 	while (received < blocks) {
 
 		while ((issued - received < mpx) && (issued < blocks)) {
-			ssize_t bsent = issued * block;
-			ssize_t size1 = MIN(block, size - bsent);
+			ssize_t bsent = issued * writesize;
+			ssize_t size1 = MIN(writesize, size - bsent);
 
 			if (!cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
@@ -394,8 +434,9 @@ ssize_t cli_write(struct cli_state *cli,
 			issued++;
 		}
 
-		if (!cli_receive_smb(cli))
+		if (!cli_receive_smb(cli)) {
 			return bwritten;
+		}
 
 		received++;
 
@@ -406,9 +447,10 @@ ssize_t cli_write(struct cli_state *cli,
 		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))<<16);
 	}
 
-	while (received < issued && cli_receive_smb(cli))
+	while (received < issued && cli_receive_smb(cli)) {
 		received++;
-	
+	}
+
 	return bwritten;
 }
 
@@ -424,7 +466,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 	do {
 		size_t size = MIN(size1, cli->max_xmit - 48);
-		
+
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
@@ -433,25 +475,25 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
-		
+
 		SSVAL(cli->outbuf,smb_vwv0,fnum);
 		SSVAL(cli->outbuf,smb_vwv1,size);
 		SIVAL(cli->outbuf,smb_vwv2,offset);
 		SSVAL(cli->outbuf,smb_vwv4,0);
-		
+
 		p = smb_buf(cli->outbuf);
 		*p++ = 1;
 		SSVAL(p, 0, size); p += 2;
 		memcpy(p, buf + total, size); p += size;
 
 		cli_setup_bcc(cli, p);
-		
+
 		if (!cli_send_smb(cli))
 			return -1;
 
 		if (!cli_receive_smb(cli))
 			return -1;
-		
+
 		if (cli_is_error(cli))
 			return -1;
 
