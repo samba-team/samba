@@ -30,6 +30,7 @@
 #define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"
 #define TEST_KEY2 TEST_KEY_BASE "\\with a SD (#1)"
 #define TEST_KEY3 TEST_KEY_BASE "\\with a subkey"
+#define TEST_KEY4 TEST_KEY_BASE "\\sd_tests"
 #define TEST_SUBKEY TEST_KEY3 "\\subkey"
 
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx,
@@ -145,7 +146,8 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 					SID_NT_AUTHENTICATED_USERS,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
 					SEC_GENERIC_ALL,
-					SEC_ACE_FLAG_OBJECT_INHERIT,
+					SEC_ACE_FLAG_OBJECT_INHERIT |
+					SEC_ACE_FLAG_CONTAINER_INHERIT,
 					NULL);
 
 	torture_assert_ntstatus_ok(tctx,
@@ -176,27 +178,37 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_GetKeySecurity(struct dcerpc_pipe *p,
-				struct torture_context *tctx,
-				struct policy_handle *handle,
-				struct security_descriptor **sd_out)
+static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle,
+				 uint32_t *sec_info_ptr,
+				 WERROR get_werr,
+				 struct security_descriptor **sd_out)
 {
 	struct winreg_GetKeySecurity r;
 	struct security_descriptor *sd = NULL;
+	uint32_t sec_info;
 	DATA_BLOB sdblob;
+
+	if (sec_info_ptr) {
+		sec_info = *sec_info_ptr;
+	} else {
+		sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+	}
 
 	ZERO_STRUCT(r);
 
 	r.in.handle = handle;
+	r.in.sec_info = sec_info;
 	r.in.sd = r.out.sd = talloc_zero(tctx, struct KeySecurityData);
 	r.in.sd->size = 0x1000;
-	r.in.sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_winreg_GetKeySecurity(p, tctx, &r),
 				   "GetKeySecurity failed");
 
-	torture_assert_werr_ok(tctx, r.out.result, "GetKeySecurity failed");
+	torture_assert_werr_equal(tctx, r.out.result, get_werr,
+				  "GetKeySecurity failed");
 
 	sdblob.data = r.out.sd->data;
 	sdblob.length = r.out.sd->len;
@@ -221,10 +233,20 @@ static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_SetKeySecurity(struct dcerpc_pipe *p,
+static bool test_GetKeySecurity(struct dcerpc_pipe *p,
 				struct torture_context *tctx,
 				struct policy_handle *handle,
-				struct security_descriptor *sd)
+				struct security_descriptor **sd_out)
+{
+	return _test_GetKeySecurity(p, tctx, handle, NULL, WERR_OK, sd_out);
+}
+
+static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle,
+				 uint32_t *sec_info_ptr,
+				 struct security_descriptor *sd,
+				 WERROR werr)
 {
 	struct winreg_SetKeySecurity r;
 	struct KeySecurityData *sdata = NULL;
@@ -233,7 +255,7 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 
 	ZERO_STRUCT(r);
 
-	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+	if (sd && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
 
@@ -247,19 +269,23 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 	sdata->size = sdblob.length;
 	sdata->len = sdblob.length;
 
-	sec_info = SECINFO_UNPROTECTED_SACL | SECINFO_UNPROTECTED_DACL;
-
-	if (sd->owner_sid) {
-		sec_info |= SECINFO_OWNER;
-	}
-	if (sd->group_sid) {
-		sec_info |= SECINFO_GROUP;
-	}
-	if (sd->sacl) {
-		sec_info |= SECINFO_SACL;
-	}
-	if (sd->dacl) {
-		sec_info |= SECINFO_DACL;
+	if (sec_info_ptr) {
+		sec_info = *sec_info_ptr;
+	} else {
+		sec_info = SECINFO_UNPROTECTED_SACL |
+			   SECINFO_UNPROTECTED_DACL;
+		if (sd->owner_sid) {
+			sec_info |= SECINFO_OWNER;
+		}
+		if (sd->group_sid) {
+			sec_info |= SECINFO_GROUP;
+		}
+		if (sd->sacl) {
+			sec_info |= SECINFO_SACL;
+		}
+		if (sd->dacl) {
+			sec_info |= SECINFO_DACL;
+		}
 	}
 
 	r.in.handle = handle;
@@ -270,7 +296,8 @@ static bool test_SetKeySecurity(struct dcerpc_pipe *p,
 				   dcerpc_winreg_SetKeySecurity(p, tctx, &r),
 				   "SetKeySecurity failed");
 
-	torture_assert_werr_ok(tctx, r.out.result, "SetKeySecurity failed");
+	torture_assert_werr_equal(tctx, r.out.result, werr,
+				  "SetKeySecurity failed");
 
 	return true;
 }
@@ -338,6 +365,50 @@ static bool test_Cleanup(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
+static bool _test_GetSetSecurityDescriptor(struct dcerpc_pipe *p,
+					   struct torture_context *tctx,
+					   struct policy_handle *handle,
+					   WERROR get_werr,
+					   WERROR set_werr)
+{
+	struct security_descriptor *sd = NULL;
+
+	if (!_test_GetKeySecurity(p, tctx, handle, NULL, get_werr, &sd)) {
+		return false;
+	}
+
+	if (!_test_SetKeySecurity(p, tctx, handle, NULL, sd, set_werr)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
+				    struct torture_context *tctx,
+				    struct policy_handle *handle,
+				    const char *key)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	torture_comment(tctx, "SecurityDescriptor get & set\n");
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	if (!_test_GetSetSecurityDescriptor(p, tctx, &new_handle,
+					    WERR_OK, WERR_OK)) {
+		ret = false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		return false;
+	}
+
+	return ret;
+}
 
 static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			   struct policy_handle *handle, const char *key)
@@ -354,6 +425,22 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result, "DeleteKey failed");
 
 	return true;
+}
+
+static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
+				     struct torture_context *tctx,
+				     struct policy_handle *handle,
+				     const char *key)
+{
+	bool ret = true;
+
+
+	if (!test_SecurityDescriptor(p, tctx, handle, key)) {
+		printf("test_SecurityDescriptor failed\n");
+		ret = false;
+	}
+
+	return ret;
 }
 
 /* DeleteKey on a key with subkey(s) should
@@ -679,8 +766,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	struct policy_handle handle, newhandle;
 	bool ret = true, created = false, created2 = false, deleted = false;
 	bool created3 = false, created_subkey = false;
+	bool created4 = false;
 	struct winreg_OpenHKLM r;
-	struct security_descriptor *sd = NULL;
 
 	winreg_open_fn open_fn = userdata;
 
@@ -692,6 +779,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 				   "open");
 
 	test_Cleanup(p, tctx, &handle, TEST_KEY1);
+	test_Cleanup(p, tctx, &handle, TEST_KEY4);
 	test_Cleanup(p, tctx, &handle, TEST_KEY2);
 	test_Cleanup(p, tctx, &handle, TEST_SUBKEY);
 	test_Cleanup(p, tctx, &handle, TEST_KEY3);
@@ -746,20 +834,29 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		created2 = true;
 	}
 
-	if (created2 && !test_GetKeySecurity(p, tctx, &newhandle, &sd)) {
-		printf("GetKeySecurity failed\n");
-		ret = false;
-	}
-
-	if (created2 && sd && !test_SetKeySecurity(p, tctx, &newhandle, sd)) {
-		printf("SetKeySecurity failed\n");
-		ret = false;
-	}
-
 	if (created2 && !test_CloseKey(p, tctx, &newhandle)) {
 		printf("CloseKey failed\n");
 		ret = false;
 	}
+
+	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY4, NULL, &newhandle)) {
+		created4 = true;
+	}
+
+	if (!created4 && !test_CloseKey(p, tctx, &newhandle)) {
+		printf("CloseKey failed\n");
+		ret = false;
+	}
+
+	if (created4 && !test_SecurityDescriptors(p, tctx, &handle, TEST_KEY4)) {
+		ret = false;
+	}
+
+	if (created4 && !test_DeleteKey(p, tctx, &handle, TEST_KEY4)) {
+		printf("DeleteKey failed\n");
+		ret = false;
+	}
+
 
 	if (created && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
 		printf("DeleteKey failed\n");
