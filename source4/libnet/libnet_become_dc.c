@@ -1736,7 +1736,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		domain_admins_sid_str = dom_sid_string(domain_admins_sid, domain_admins_sid);
 		if (composite_nomem(domain_admins_sid_str, c)) return;
 
-		v = security_descriptor_create(vd,
+		v = security_descriptor_dacl_create(vd,
 					       0,
 					       /* owner: domain admins */
 					       domain_admins_sid_str,

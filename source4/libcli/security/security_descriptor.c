@@ -142,78 +142,123 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 }
 
 /*
-  add an ACE to the DACL of a security_descriptor
+  add an ACE to an ACL of a security_descriptor
 */
-NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd, 
-				      const struct security_ace *ace)
+
+static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
+					    bool add_to_sacl,
+					    const struct security_ace *ace)
 {
-	if (sd->dacl == NULL) {
-		sd->dacl = talloc(sd, struct security_acl);
-		if (sd->dacl == NULL) {
+	struct security_acl *acl = NULL;
+
+	if (add_to_sacl) {
+		acl = sd->sacl;
+	} else {
+		acl = sd->dacl;
+	}
+
+	if (acl == NULL) {
+		acl = talloc(sd, struct security_acl);
+		if (acl == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		sd->dacl->revision = SECURITY_ACL_REVISION_NT4;
-		sd->dacl->size     = 0;
-		sd->dacl->num_aces = 0;
-		sd->dacl->aces     = NULL;
+		acl->revision = SECURITY_ACL_REVISION_NT4;
+		acl->size     = 0;
+		acl->num_aces = 0;
+		acl->aces     = NULL;
 	}
 
-	sd->dacl->aces = talloc_realloc(sd->dacl, sd->dacl->aces, 
-					  struct security_ace, sd->dacl->num_aces+1);
-	if (sd->dacl->aces == NULL) {
+	acl->aces = talloc_realloc(acl, acl->aces,
+				   struct security_ace, acl->num_aces+1);
+	if (acl->aces == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sd->dacl->aces[sd->dacl->num_aces] = *ace;
-	sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths = 
-		(uint32_t *)talloc_memdup(sd->dacl->aces, 
-			      sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths,
-			      sizeof(uint32_t) * 
-			      sd->dacl->aces[sd->dacl->num_aces].trustee.num_auths);
-	if (sd->dacl->aces[sd->dacl->num_aces].trustee.sub_auths == NULL) {
+	acl->aces[acl->num_aces] = *ace;
+	acl->aces[acl->num_aces].trustee.sub_auths =
+		(uint32_t *)talloc_memdup(acl->aces,
+			      acl->aces[acl->num_aces].trustee.sub_auths,
+			      sizeof(uint32_t) *
+			      acl->aces[acl->num_aces].trustee.num_auths);
+	if (acl->aces[acl->num_aces].trustee.sub_auths == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	switch (sd->dacl->aces[sd->dacl->num_aces].type) {
+	switch (acl->aces[acl->num_aces].type) {
 	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
 	case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 	case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
 	case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
-		sd->dacl->revision = SECURITY_ACL_REVISION_ADS;
+		acl->revision = SECURITY_ACL_REVISION_ADS;
 		break;
 	default:
 		break;
 	}
 
-	sd->dacl->num_aces++;
+	acl->num_aces++;
 
-	sd->type |= SEC_DESC_DACL_PRESENT;
+	if (add_to_sacl) {
+		sd->sacl = acl;
+		sd->type |= SEC_DESC_SACL_PRESENT;
+	} else {
+		sd->dacl = acl;
+		sd->type |= SEC_DESC_DACL_PRESENT;
+	}
 
 	return NT_STATUS_OK;
 }
 
+/*
+  add an ACE to the SACL of a security_descriptor
+*/
+
+NTSTATUS security_descriptor_sacl_add(struct security_descriptor *sd,
+				      const struct security_ace *ace)
+{
+	return security_descriptor_acl_add(sd, true, ace);
+}
 
 /*
-  delete the ACE corresponding to the given trustee in the DACL of a security_descriptor
+  add an ACE to the DACL of a security_descriptor
 */
-NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd, 
-				      struct dom_sid *trustee)
+
+NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
+				      const struct security_ace *ace)
+{
+	return security_descriptor_acl_add(sd, false, ace);
+}
+
+/*
+  delete the ACE corresponding to the given trustee in an ACL of a
+  security_descriptor
+*/
+
+static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
+					    bool sacl_del,
+					    struct dom_sid *trustee)
 {
 	int i;
 	bool found = false;
+	struct security_acl *acl = NULL;
 
-	if (sd->dacl == NULL) {
+	if (sacl_del) {
+		acl = sd->sacl;
+	} else {
+		acl = sd->dacl;
+	}
+
+	if (acl == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* there can be multiple ace's for one trustee */
-	for (i=0;i<sd->dacl->num_aces;i++) {
-		if (dom_sid_equal(trustee, &sd->dacl->aces[i].trustee)) {
-			memmove(&sd->dacl->aces[i], &sd->dacl->aces[i+1],
-				sizeof(sd->dacl->aces[i]) * (sd->dacl->num_aces - (i+1)));
-			sd->dacl->num_aces--;
-			if (sd->dacl->num_aces == 0) {
-				sd->dacl->aces = NULL;
+	for (i=0;i<acl->num_aces;i++) {
+		if (dom_sid_equal(trustee, &acl->aces[i].trustee)) {
+			memmove(&acl->aces[i], &acl->aces[i+1],
+				sizeof(acl->aces[i]) * (acl->num_aces - (i+1)));
+			acl->num_aces--;
+			if (acl->num_aces == 0) {
+				acl->aces = NULL;
 			}
 			found = true;
 		}
@@ -223,15 +268,15 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	sd->dacl->revision = SECURITY_ACL_REVISION_NT4;
+	acl->revision = SECURITY_ACL_REVISION_NT4;
 
-	for (i=0;i<sd->dacl->num_aces;i++) {
-		switch (sd->dacl->aces[i].type) {
+	for (i=0;i<acl->num_aces;i++) {
+		switch (acl->aces[i].type) {
 		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
 		case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
 		case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
-			sd->dacl->revision = SECURITY_ACL_REVISION_ADS;
+			acl->revision = SECURITY_ACL_REVISION_ADS;
 			return NT_STATUS_OK;
 		default:
 			break; /* only for the switch statement */
@@ -241,6 +286,27 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 	return NT_STATUS_OK;
 }
 
+/*
+  delete the ACE corresponding to the given trustee in the DACL of a
+  security_descriptor
+*/
+
+NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
+				      struct dom_sid *trustee)
+{
+	return security_descriptor_acl_del(sd, false, trustee);
+}
+
+/*
+  delete the ACE corresponding to the given trustee in the SACL of a
+  security_descriptor
+*/
+
+NTSTATUS security_descriptor_sacl_del(struct security_descriptor *sd,
+				      struct dom_sid *trustee)
+{
+	return security_descriptor_acl_del(sd, true, trustee);
+}
 
 /*
   compare two security ace structures
@@ -319,30 +385,9 @@ bool security_descriptor_mask_equal(const struct security_descriptor *sd1,
 }
 
 
-/*
-  create a security descriptor using string SIDs. This is used by the
-  torture code to allow the easy creation of complex ACLs
-  This is a varargs function. The list of DACL ACEs ends with a NULL sid.
-
-  Each ACE contains a set of 4 parameters:
-  SID, ACCESS_TYPE, MASK, FLAGS
-
-  a typical call would be:
-
-    sd = security_descriptor_create(mem_ctx,
-                                    sd_type_flags,
-                                    mysid,
-				    mygroup,
-				    SID_NT_AUTHENTICATED_USERS, 
-				    SEC_ACE_TYPE_ACCESS_ALLOWED,
-				    SEC_FILE_ALL,
-				    SEC_ACE_FLAG_OBJECT_INHERIT,
-				    NULL);
-  that would create a sd with one DACL ACE
-*/
-
-struct security_descriptor *security_descriptor_appendv(struct security_descriptor *sd,
-						        va_list ap)
+static struct security_descriptor *security_descriptor_appendv(struct security_descriptor *sd,
+							       bool add_ace_to_sacl,
+							       va_list ap)
 {
 	const char *sidstr;
 
@@ -364,7 +409,11 @@ struct security_descriptor *security_descriptor_appendv(struct security_descript
 			return NULL;
 		}
 		ace->trustee = *sid;
-		status = security_descriptor_dacl_add(sd, ace);
+		if (add_ace_to_sacl) {
+			status = security_descriptor_sacl_add(sd, ace);
+		} else {
+			status = security_descriptor_dacl_add(sd, ace);
+		}
 		/* TODO: check: would talloc_free(ace) here be correct? */
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(sd);
@@ -381,23 +430,25 @@ struct security_descriptor *security_descriptor_append(struct security_descripto
 	va_list ap;
 
 	va_start(ap, sd);
-	sd = security_descriptor_appendv(sd, ap);
+	sd = security_descriptor_appendv(sd, false, ap);
 	va_end(ap);
 
 	return sd;
 }
 
-struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
-						       uint16_t sd_type,
-						       const char *owner_sid,
-						       const char *group_sid,
-						       ...)
+static struct security_descriptor *security_descriptor_createv(TALLOC_CTX *mem_ctx,
+							       uint16_t sd_type,
+							       const char *owner_sid,
+							       const char *group_sid,
+							       bool add_ace_to_sacl,
+							       va_list ap)
 {
-	va_list ap;
 	struct security_descriptor *sd;
 
 	sd = security_descriptor_initialise(mem_ctx);
-	if (sd == NULL) return NULL;
+	if (sd == NULL) {
+		return NULL;
+	}
 
 	sd->type |= sd_type;
 
@@ -416,8 +467,58 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	return security_descriptor_appendv(sd, add_ace_to_sacl, ap);
+}
+
+/*
+  create a security descriptor using string SIDs. This is used by the
+  torture code to allow the easy creation of complex ACLs
+  This is a varargs function. The list of DACL ACEs ends with a NULL sid.
+
+  Each ACE contains a set of 4 parameters:
+  SID, ACCESS_TYPE, MASK, FLAGS
+
+  a typical call would be:
+
+    sd = security_descriptor_dacl_create(mem_ctx,
+                                         sd_type_flags,
+                                         mysid,
+                                         mygroup,
+                                         SID_NT_AUTHENTICATED_USERS,
+                                         SEC_ACE_TYPE_ACCESS_ALLOWED,
+                                         SEC_FILE_ALL,
+                                         SEC_ACE_FLAG_OBJECT_INHERIT,
+                                         NULL);
+  that would create a sd with one DACL ACE
+*/
+
+struct security_descriptor *security_descriptor_dacl_create(TALLOC_CTX *mem_ctx,
+							    uint16_t sd_type,
+							    const char *owner_sid,
+							    const char *group_sid,
+							    ...)
+{
+	struct security_descriptor *sd = NULL;
+	va_list ap;
 	va_start(ap, group_sid);
-	sd = security_descriptor_appendv(sd, ap);
+	sd = security_descriptor_createv(mem_ctx, sd_type, owner_sid,
+					 group_sid, false, ap);
+	va_end(ap);
+
+	return sd;
+}
+
+struct security_descriptor *security_descriptor_sacl_create(TALLOC_CTX *mem_ctx,
+							    uint16_t sd_type,
+							    const char *owner_sid,
+							    const char *group_sid,
+							    ...)
+{
+	struct security_descriptor *sd = NULL;
+	va_list ap;
+	va_start(ap, group_sid);
+	sd = security_descriptor_createv(mem_ctx, sd_type, owner_sid,
+					 group_sid, true, ap);
 	va_end(ap);
 
 	return sd;

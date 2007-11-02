@@ -297,7 +297,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
 	printf("set a sec desc allowing no write by CREATOR_OWNER\n");
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					SID_CREATOR_OWNER,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -334,7 +334,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
 	printf("set a sec desc allowing no write by owner\n");
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, owner_sid, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -389,7 +389,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
 	printf("set a sec desc allowing generic read by owner\n");
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -402,7 +402,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("check that generic read has been mapped correctly\n");
-	sd2 = security_descriptor_create(tctx,
+	sd2 = security_descriptor_dacl_create(tctx,
 					 0, owner_sid, NULL,
 					 owner_sid,
 					 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -567,7 +567,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
-		sd = security_descriptor_create(tctx,
+		sd = security_descriptor_dacl_create(tctx,
 						0, owner_sid, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -583,7 +583,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		status = smb_raw_setfileinfo(cli->tree, &set);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		sd2 = security_descriptor_create(tctx,
+		sd2 = security_descriptor_dacl_create(tctx,
 						 0, owner_sid, NULL,
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -615,7 +615,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 		printf("testing generic bits 0x%08x (anonymous)\n", 
 		       file_mappings[i].gen_bits);
-		sd = security_descriptor_create(tctx,
+		sd = security_descriptor_dacl_create(tctx,
 						0, SID_NT_ANONYMOUS, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -631,7 +631,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		status = smb_raw_setfileinfo(cli->tree, &set);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		sd2 = security_descriptor_create(tctx,
+		sd2 = security_descriptor_dacl_create(tctx,
 						 0, SID_NT_ANONYMOUS, NULL,
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -732,7 +732,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
-		sd = security_descriptor_create(tctx,
+		sd = security_descriptor_dacl_create(tctx,
 						0, owner_sid, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -748,7 +748,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		status = smb_raw_setfileinfo(cli->tree, &set);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		sd2 = security_descriptor_create(tctx,
+		sd2 = security_descriptor_dacl_create(tctx,
 						 0, owner_sid, NULL,
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -780,7 +780,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 		printf("testing generic bits 0x%08x (anonymous)\n", 
 		       file_mappings[i].gen_bits);
-		sd = security_descriptor_create(tctx,
+		sd = security_descriptor_dacl_create(tctx,
 						0, SID_NT_ANONYMOUS, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -796,7 +796,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		status = smb_raw_setfileinfo(cli->tree, &set);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
-		sd2 = security_descriptor_create(tctx,
+		sd2 = security_descriptor_dacl_create(tctx,
 						 0, SID_NT_ANONYMOUS, NULL,
 						 owner_sid,
 						 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -907,7 +907,7 @@ static bool test_owner_bits(struct torture_context *tctx,
 	}
 	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1114,7 +1114,7 @@ static bool test_inheritance(struct torture_context *tctx,
 
 	printf("owner_sid is %s\n", owner_sid);
 
-	sd_def = security_descriptor_create(tctx,
+	sd_def = security_descriptor_dacl_create(tctx,
 					    0, owner_sid, NULL,
 					    owner_sid,
 					    SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1129,7 +1129,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	creator_owner = dom_sid_parse_talloc(tctx, SID_CREATOR_OWNER);
 
 	for (i=0;i<ARRAY_SIZE(test_flags);i++) {
-		sd = security_descriptor_create(tctx,
+		sd = security_descriptor_dacl_create(tctx,
 						0, NULL, NULL,
 						SID_CREATOR_OWNER,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1262,7 +1262,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	}
 
 	printf("testing access checks on inherited create with %s\n", fname1);
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1295,7 +1295,7 @@ static bool test_inheritance(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, fnum2);
 
-	sd2 = security_descriptor_create(tctx,
+	sd2 = security_descriptor_dacl_create(tctx,
 					 0, owner_sid, NULL,
 					 owner_sid,
 					 SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1431,7 +1431,7 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 
 	printf("owner_sid is %s\n", owner_sid);
 
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1471,7 +1471,7 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
 	printf("update parent sd\n");
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, NULL, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -1586,7 +1586,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 	printf("TESTING ACCESS MASKS FOR SD GET/SET\n");
 
 	/* first create a file with full access for everyone */
-	sd = security_descriptor_create(tctx,
+	sd = security_descriptor_dacl_create(tctx,
 					0, SID_NT_ANONYMOUS, SID_BUILTIN_USERS,
 					SID_WORLD,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,

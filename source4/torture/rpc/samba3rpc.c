@@ -2117,14 +2117,14 @@ bool try_tcon(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	sd = security_descriptor_create(
+	sd = security_descriptor_dacl_create(
 		tmp_ctx, 0, "S-1-5-32-544",
 		dom_sid_string(mem_ctx, dom_sid_add_rid(mem_ctx, domain_sid,
 							DOMAIN_RID_USERS)),
 		dom_sid_string(mem_ctx, user_sid),
 		SEC_ACE_TYPE_ACCESS_ALLOWED, access_mask, 0, NULL);
 	if (sd == NULL) {
-		d_printf("security_descriptor_create failed\n");
+		d_printf("security_descriptor_dacl_create failed\n");
 		talloc_free(tmp_ctx);
                 return false;
         }
