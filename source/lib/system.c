@@ -2545,3 +2545,27 @@ int sys_getpeereid( int s, uid_t *uid)
 	return -1;
 #endif
 }
+
+int sys_getnameinfo(const struct sockaddr *psa,
+			socklen_t salen,
+			char *host,
+			size_t hostlen,
+			char *service,
+			size_t servlen,
+			int flags)
+{
+	/*
+	 * For Solaris we must make sure salen is the
+	 * correct length for the incoming sa_family.
+	 */
+
+	if (salen == sizeof(struct sockaddr_storage)) {
+		salen = sizeof(struct sockaddr_in);
+#if defined(HAVE_IPV6)
+		if (psa->sa_family == AF_INET6) {
+			salen = sizeof(struct sockaddr_in6);
+		}
+#endif
+	}
+	return getnameinfo(psa, salen, host, hostlen, service, servlen, flags);
+}

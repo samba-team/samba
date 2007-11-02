@@ -131,7 +131,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 		return -1;
 	}
 
-	ret = getnameinfo((struct sockaddr *)&ss,
+	ret = sys_getnameinfo((struct sockaddr *)&ss,
 			sizeof(struct sockaddr_storage),
 			h_name, sizeof(h_name),
 			NULL, 0,
