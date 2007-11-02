@@ -52,6 +52,9 @@ test "${libdir}" || libdir="\${prefix}/lib"
 pammodulesdir="\${LIBDIR}/security"
 configdir="\${LIBDIR}"
 swatdir="\${prefix}/swat"
+codepagedir="\${LIBDIR}"
+statedir="\${LOCKDIR}"
+cachedir="\${LOCKDIR}"
 
 AC_ARG_WITH(fhs,
 [  --with-fhs              Use FHS-compliant paths (default=no)],
