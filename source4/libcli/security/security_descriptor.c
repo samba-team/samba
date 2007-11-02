@@ -422,3 +422,32 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 
 	return sd;
 }
+
+struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
+					 const char *sid_str,
+					 enum security_ace_type type,
+					 uint32_t access_mask,
+					 uint8_t flags)
+
+{
+	struct dom_sid *sid;
+	struct security_ace *ace;
+
+	ace = talloc_zero(mem_ctx, struct security_ace);
+	if (ace == NULL) {
+		return NULL;
+	}
+
+	sid = dom_sid_parse_talloc(ace, sid_str);
+	if (sid == NULL) {
+		talloc_free(ace);
+		return NULL;
+	}
+
+	ace->trustee = *sid;
+	ace->type = type;
+	ace->access_mask = access_mask;
+	ace->flags = flags;
+
+	return ace;
+}
