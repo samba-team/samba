@@ -946,12 +946,315 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	return ret;
 }
 
+typedef bool (*secinfo_verify_fn)(struct dcerpc_pipe *,
+				  struct torture_context *,
+				  struct policy_handle *,
+				  const char *,
+				  const struct dom_sid *);
+
+static bool test_SetSecurityDescriptor_SecInfo(struct dcerpc_pipe *p,
+					       struct torture_context *tctx,
+					       struct policy_handle *handle,
+					       const char *key,
+					       const char *test,
+					       uint32_t access_mask,
+					       uint32_t sec_info,
+					       struct security_descriptor *sd,
+					       WERROR set_werr,
+					       bool expect_present,
+					       bool (*fn) (struct dcerpc_pipe *,
+							   struct torture_context *,
+							   struct policy_handle *,
+							   const char *,
+							   const struct dom_sid *),
+					       const struct dom_sid *sid)
+{
+	struct policy_handle new_handle;
+	bool open_success = false;
+
+	torture_comment(tctx, "SecurityDescriptor (%s) sets for secinfo: "
+			"0x%08x, access_mask: 0x%08x\n",
+			test, sec_info, access_mask);
+
+	if (!_test_OpenKey(p, tctx, handle, key,
+			   access_mask,
+			   &new_handle,
+			   WERR_OK,
+			   &open_success)) {
+		return false;
+	}
+
+	if (!open_success) {
+		printf("key did not open\n");
+		test_CloseKey(p, tctx, &new_handle);
+		return false;
+	}
+
+	if (!_test_SetKeySecurity(p, tctx, &new_handle, &sec_info,
+				  sd,
+				  set_werr)) {
+		torture_warning(tctx,
+				"SetKeySecurity with secinfo: 0x%08x has failed\n",
+				sec_info);
+		smb_panic("");
+		test_CloseKey(p, tctx, &new_handle);
+		return false;
+	}
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	if (W_ERROR_IS_OK(set_werr)) {
+		bool present;
+		present = fn(p, tctx, handle, key, sid);
+		if ((expect_present) && (!present)) {
+			torture_warning(tctx,
+					"%s sid is not present!\n",
+					test);
+			return false;
+		}
+		if ((!expect_present) && (present)) {
+			torture_warning(tctx,
+					"%s sid is present but not expected!\n",
+					test);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
+					    struct torture_context *tctx,
+					    struct policy_handle *handle,
+					    const char *key)
+{
+	struct security_descriptor *sd_orig = NULL;
+	struct dom_sid *sid = NULL;
+	bool ret = true;
+	int i, a;
+
+	struct security_descriptor *sd_owner =
+		security_descriptor_dacl_create(tctx,
+						0,
+						TEST_SID, NULL, NULL);
+
+	struct security_descriptor *sd_group =
+		security_descriptor_dacl_create(tctx,
+						0,
+						NULL, TEST_SID, NULL);
+
+	struct security_descriptor *sd_dacl =
+		security_descriptor_dacl_create(tctx,
+						0,
+						NULL, NULL,
+						TEST_SID,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_GENERIC_ALL,
+						0,
+						SID_NT_AUTHENTICATED_USERS,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						SEC_GENERIC_ALL,
+						0,
+						NULL);
+
+	struct security_descriptor *sd_sacl =
+		security_descriptor_sacl_create(tctx,
+						0,
+						NULL, NULL,
+						TEST_SID,
+						SEC_ACE_TYPE_SYSTEM_AUDIT,
+						SEC_GENERIC_ALL,
+						SEC_ACE_FLAG_SUCCESSFUL_ACCESS,
+						NULL);
+
+	struct winreg_secinfo_table {
+		struct security_descriptor *sd;
+		uint32_t sec_info;
+		WERROR set_werr;
+		bool sid_present;
+		secinfo_verify_fn fn;
+	};
+
+	struct winreg_secinfo_table sec_info_owner_tests[] = {
+		{ sd_owner, 0, WERR_OK,
+			false, (secinfo_verify_fn)_test_owner_present },
+		{ sd_owner, SECINFO_OWNER, WERR_OK,
+			true, (secinfo_verify_fn)_test_owner_present },
+		{ sd_owner, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_owner, SECINFO_DACL, WERR_OK,
+			true, (secinfo_verify_fn)_test_owner_present },
+		{ sd_owner, SECINFO_SACL, WERR_ACCESS_DENIED },
+	};
+
+	uint32_t sd_owner_good_access_masks[] = {
+		SEC_FLAG_MAXIMUM_ALLOWED,
+		/* SEC_STD_WRITE_OWNER, */
+	};
+
+	struct winreg_secinfo_table sec_info_group_tests[] = {
+		{ sd_group, 0, WERR_OK,
+			false, (secinfo_verify_fn)_test_group_present },
+		{ sd_group, SECINFO_OWNER, WERR_INVALID_PARAM },
+		{ sd_group, SECINFO_GROUP, WERR_OK,
+			true, (secinfo_verify_fn)_test_group_present },
+		{ sd_group, SECINFO_DACL, WERR_OK,
+			true, (secinfo_verify_fn)_test_group_present },
+		{ sd_group, SECINFO_SACL, WERR_ACCESS_DENIED },
+	};
+
+	uint32_t sd_group_good_access_masks[] = {
+		SEC_FLAG_MAXIMUM_ALLOWED,
+	};
+
+	struct winreg_secinfo_table sec_info_dacl_tests[] = {
+		{ sd_dacl, 0, WERR_OK,
+			false, (secinfo_verify_fn)_test_dacl_trustee_present },
+		{ sd_dacl, SECINFO_OWNER, WERR_INVALID_PARAM },
+		{ sd_dacl, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_dacl, SECINFO_DACL, WERR_OK,
+			true, (secinfo_verify_fn)_test_dacl_trustee_present },
+		{ sd_dacl, SECINFO_SACL, WERR_ACCESS_DENIED },
+	};
+
+	uint32_t sd_dacl_good_access_masks[] = {
+		SEC_FLAG_MAXIMUM_ALLOWED,
+		SEC_STD_WRITE_DAC,
+	};
+
+	struct winreg_secinfo_table sec_info_sacl_tests[] = {
+		{ sd_sacl, 0, WERR_OK,
+			false, (secinfo_verify_fn)_test_sacl_trustee_present },
+		{ sd_sacl, SECINFO_OWNER, WERR_INVALID_PARAM },
+		{ sd_sacl, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_sacl, SECINFO_DACL, WERR_OK,
+			false, (secinfo_verify_fn)_test_sacl_trustee_present },
+		{ sd_sacl, SECINFO_SACL, WERR_OK,
+			true, (secinfo_verify_fn)_test_sacl_trustee_present },
+	};
+
+	uint32_t sd_sacl_good_access_masks[] = {
+		SEC_FLAG_MAXIMUM_ALLOWED | SEC_FLAG_SYSTEM_SECURITY,
+		/* SEC_FLAG_SYSTEM_SECURITY, */
+	};
+
+	sid = dom_sid_parse_talloc(tctx, TEST_SID);
+	if (sid == NULL) {
+		return false;
+	}
+
+	if (!test_BackupSecurity(p, tctx, handle, key, &sd_orig)) {
+		return false;
+	}
+
+	/* OWNER */
+
+	for (i=0; i < ARRAY_SIZE(sec_info_owner_tests); i++) {
+
+		for (a=0; a < ARRAY_SIZE(sd_owner_good_access_masks); a++) {
+
+			if (!test_SetSecurityDescriptor_SecInfo(p, tctx, handle,
+					key,
+					"OWNER",
+					sd_owner_good_access_masks[a],
+					sec_info_owner_tests[i].sec_info,
+					sec_info_owner_tests[i].sd,
+					sec_info_owner_tests[i].set_werr,
+					sec_info_owner_tests[i].sid_present,
+					sec_info_owner_tests[i].fn,
+					sid))
+			{
+				printf("test_SetSecurityDescriptor_SecInfo failed for OWNER\n");
+				ret = false;
+				goto out;
+			}
+		}
+	}
+
+	/* GROUP */
+
+	for (i=0; i < ARRAY_SIZE(sec_info_group_tests); i++) {
+
+		for (a=0; a < ARRAY_SIZE(sd_group_good_access_masks); a++) {
+
+			if (!test_SetSecurityDescriptor_SecInfo(p, tctx, handle,
+					key,
+					"GROUP",
+					sd_group_good_access_masks[a],
+					sec_info_group_tests[i].sec_info,
+					sec_info_group_tests[i].sd,
+					sec_info_group_tests[i].set_werr,
+					sec_info_group_tests[i].sid_present,
+					sec_info_group_tests[i].fn,
+					sid))
+			{
+				printf("test_SetSecurityDescriptor_SecInfo failed for GROUP\n");
+				ret = false;
+				goto out;
+			}
+		}
+	}
+
+	/* DACL */
+
+	for (i=0; i < ARRAY_SIZE(sec_info_dacl_tests); i++) {
+
+		for (a=0; a < ARRAY_SIZE(sd_dacl_good_access_masks); a++) {
+
+			if (!test_SetSecurityDescriptor_SecInfo(p, tctx, handle,
+					key,
+					"DACL",
+					sd_dacl_good_access_masks[a],
+					sec_info_dacl_tests[i].sec_info,
+					sec_info_dacl_tests[i].sd,
+					sec_info_dacl_tests[i].set_werr,
+					sec_info_dacl_tests[i].sid_present,
+					sec_info_dacl_tests[i].fn,
+					sid))
+			{
+				printf("test_SetSecurityDescriptor_SecInfo failed for DACL\n");
+				ret = false;
+				goto out;
+			}
+		}
+	}
+
+	/* SACL */
+
+	for (i=0; i < ARRAY_SIZE(sec_info_sacl_tests); i++) {
+
+		for (a=0; a < ARRAY_SIZE(sd_sacl_good_access_masks); a++) {
+
+			if (!test_SetSecurityDescriptor_SecInfo(p, tctx, handle,
+					key,
+					"SACL",
+					sd_sacl_good_access_masks[a],
+					sec_info_sacl_tests[i].sec_info,
+					sec_info_sacl_tests[i].sd,
+					sec_info_sacl_tests[i].set_werr,
+					sec_info_sacl_tests[i].sid_present,
+					sec_info_sacl_tests[i].fn,
+					sid))
+			{
+				printf("test_SetSecurityDescriptor_SecInfo failed for SACL\n");
+				ret = false;
+				goto out;
+			}
+		}
+	}
+
+ out:
+	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
+
+	return ret;
+}
+
 static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 				     struct torture_context *tctx,
 				     struct policy_handle *handle,
 				     const char *key)
 {
 	bool ret = true;
+
 
 	if (!test_SecurityDescriptor(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptor failed\n");
@@ -965,6 +1268,11 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 
 	if (!test_SecurityDescriptorBlockInheritance(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptorBlockInheritance failed\n");
+		ret = false;
+	}
+
+	if (!test_SecurityDescriptorsSecInfo(p, tctx, handle, key)) {
+		printf("test_SecurityDescriptorsSecInfo failed\n");
 		ret = false;
 	}
 
