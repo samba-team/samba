@@ -606,9 +606,13 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 {
 	NTSTATUS status;
 	uint32_t v;
+
 	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, false);
-	if (NT_STATUS_IS_OK(status)) return v;
-	return 0;
+	if (!NT_STATUS_IS_OK(status)) {
+		return 0;
+	}
+
+	return v;
 }
 
 /*
