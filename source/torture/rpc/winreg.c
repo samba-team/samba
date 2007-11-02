@@ -32,6 +32,10 @@
 #define TEST_KEY3 TEST_KEY_BASE "\\with a subkey"
 #define TEST_KEY4 TEST_KEY_BASE "\\sd_tests"
 #define TEST_SUBKEY TEST_KEY3 "\\subkey"
+#define TEST_SUBKEY_SD  TEST_KEY4 "\\subkey_sd"
+#define TEST_SUBSUBKEY_SD TEST_KEY4 "\\subkey_sd\\subsubkey_sd"
+
+#define TEST_SID "S-1-5-21-1234567890-1234567890-1234567890-500"
 
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx,
 				     struct initshutdown_String *name,
@@ -302,6 +306,14 @@ static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SetKeySecurity(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				struct security_descriptor *sd)
+{
+	return _test_SetKeySecurity(p, tctx, handle, NULL, sd, WERR_OK);
+}
+
 static bool test_CloseKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			  struct policy_handle *handle)
 {
@@ -410,19 +422,165 @@ static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
-			   struct policy_handle *handle, const char *key)
+static bool test_dacl_ace_present(struct dcerpc_pipe *p,
+				  struct torture_context *tctx,
+				  struct policy_handle *handle,
+				  const struct security_ace *ace)
 {
+	struct security_descriptor *sd = NULL;
+	int i;
+
+	if (!test_GetKeySecurity(p, tctx, handle, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->dacl) {
+		return false;
+	}
+
+	for (i = 0; i < sd->dacl->num_aces; i++) {
+		if (security_ace_equal(&sd->dacl->aces[i], ace)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool test_RestoreSecurity(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle,
+				 const char *key,
+				 struct security_descriptor *sd)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	if (!test_SetKeySecurity(p, tctx, &new_handle, sd)) {
+		ret = false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
+					       struct torture_context *tctx,
+					       struct policy_handle *handle,
+					       const char *key)
+{
+	/* get sd
+	   add ace SEC_ACE_FLAG_CONTAINER_INHERIT
+	   set sd
+	   get sd
+	   check ace
+	   add subkey
+	   get sd
+	   check ace
+	   add subsubkey
+	   get sd
+	   check ace
+	   del subsubkey
+	   del subkey
+	   reset sd
+	*/
+
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *sd_orig = NULL;
+	struct security_ace *ace = NULL;
+	struct policy_handle new_handle;
 	NTSTATUS status;
-	struct winreg_DeleteKey r;
+	bool ret = true;
 
-	r.in.handle = handle;
-	init_winreg_String(&r.in.key, key);
+	torture_comment(tctx, "SecurityDescriptor inheritance\n");
 
-	status = dcerpc_winreg_DeleteKey(p, tctx, &r);
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
 
-	torture_assert_ntstatus_ok(tctx, status, "DeleteKey failed");
-	torture_assert_werr_ok(tctx, r.out.result, "DeleteKey failed");
+	if (!_test_GetKeySecurity(p, tctx, &new_handle, NULL, WERR_OK, &sd)) {
+		return false;
+	}
+
+	sd_orig = security_descriptor_copy(tctx, sd);
+	if (sd_orig == NULL) {
+		return false;
+	}
+
+	ace = security_ace_create(tctx,
+				  TEST_SID,
+				  SEC_ACE_TYPE_ACCESS_ALLOWED,
+				  SEC_STD_REQUIRED,
+				  SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	status = security_descriptor_dacl_add(sd, ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to add ace: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* FIXME: add further tests for these flags */
+	sd->type |= SEC_DESC_DACL_AUTO_INHERIT_REQ |
+		    SEC_DESC_SACL_AUTO_INHERITED;
+
+	if (!test_SetKeySecurity(p, tctx, &new_handle, sd)) {
+		return false;
+	}
+
+	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("new ACE not present!\n");
+		return false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		return false;
+	}
+
+	if (!test_CreateKey(p, tctx, handle, TEST_SUBKEY_SD, NULL)) {
+		ret = false;
+		goto out;
+	}
+
+	if (!test_OpenKey(p, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+		ret = false;
+		goto out;
+	}
+
+	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("inherited ACE not present!\n");
+		ret = false;
+		goto out;
+	}
+
+	test_CloseKey(p, tctx, &new_handle);
+	if (!test_CreateKey(p, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+		ret = false;
+		goto out;
+	}
+
+	if (!test_OpenKey(p, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+		ret = false;
+		goto out;
+	}
+
+	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("inherited ACE not present!\n");
+		ret = false;
+		goto out;
+	}
+
+ out:
+	test_CloseKey(p, tctx, &new_handle);
+	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
+	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
+	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
 	return true;
 }
@@ -440,7 +598,29 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
+	if (!test_SecurityDescriptorInheritance(p, tctx, handle, key)) {
+		printf("test_SecurityDescriptorInheritance failed\n");
+		ret = false;
+	}
+
 	return ret;
+}
+
+static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+			   struct policy_handle *handle, const char *key)
+{
+	NTSTATUS status;
+	struct winreg_DeleteKey r;
+
+	r.in.handle = handle;
+	init_winreg_String(&r.in.key, key);
+
+	status = dcerpc_winreg_DeleteKey(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status, "DeleteKey failed");
+	torture_assert_werr_ok(tctx, r.out.result, "DeleteKey failed");
+
+	return true;
 }
 
 /* DeleteKey on a key with subkey(s) should
@@ -779,6 +959,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 				   "open");
 
 	test_Cleanup(p, tctx, &handle, TEST_KEY1);
+	test_Cleanup(p, tctx, &handle, TEST_SUBSUBKEY_SD);
+	test_Cleanup(p, tctx, &handle, TEST_SUBKEY_SD);
 	test_Cleanup(p, tctx, &handle, TEST_KEY4);
 	test_Cleanup(p, tctx, &handle, TEST_KEY2);
 	test_Cleanup(p, tctx, &handle, TEST_SUBKEY);
