@@ -199,7 +199,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		if (translate_addresses) {
 			char h_name[HOST_NAME_MAX];
 			h_name[0] = '\0';
-			if (getnameinfo((const struct sockaddr *)&ip_list[j],
+			if (sys_getnameinfo((const struct sockaddr *)&ip_list[j],
 					sizeof(struct sockaddr_storage),
 					h_name, sizeof(h_name),
 					NULL, 0,
