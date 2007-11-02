@@ -843,6 +843,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ndr);
 		return 0;
 	}
 	ret = ndr->offset;
@@ -865,9 +866,15 @@ _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_pus
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
-	ndr_push_set_switch_value(ndr, p, level);
+
+	status = ndr_push_set_switch_value(ndr, p, level);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ndr);
+		return 0;
+	}
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ndr);
 		return 0;
 	}
 	ret = ndr->offset;
