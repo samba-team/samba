@@ -2738,8 +2738,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
 					CIFS_UNIX_LARGE_READ_CAP|
-					large_write ?
-					CIFS_UNIX_LARGE_WRITE_CAP : 0)));
+					(large_write ?
+					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
 			break;
 		}
 
