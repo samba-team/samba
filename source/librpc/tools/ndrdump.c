@@ -130,6 +130,15 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	return p;
 }
 
+static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
+{
+	if (force) {
+		dump_data(0, d, l);
+	} else {
+		dump_data_skip_zeros(0, d, l);
+	}
+}
+
  int main(int argc, const char *argv[])
 {
 	const struct ndr_interface_table *p = NULL;
@@ -338,12 +347,14 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 
 	if (ndr_pull->offset != ndr_pull->data_size) {
 		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - ndr_pull->offset);
-		dump_data(0, ndr_pull->data+ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+		ndrdump_data(ndr_pull->data+ndr_pull->offset,
+			     ndr_pull->data_size - ndr_pull->offset,
+			     dumpdata);
 	}
 
 	if (dumpdata) {
 		printf("%d bytes consumed\n", ndr_pull->offset);
-		dump_data(0, blob.data, blob.length);
+		ndrdump_data(blob.data, blob.length, dumpdata);
 	}
 
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
@@ -377,7 +388,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 
 		if (dumpdata) {
 			printf("%ld bytes generated (validate)\n", (long)v_blob.length);
-			dump_data(0, v_blob.data, v_blob.length);
+			ndrdump_data(v_blob.data, v_blob.length, dumpdata);
 		}
 
 		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
@@ -393,7 +404,9 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 
 		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
 			printf("WARNING! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
-			dump_data(0, ndr_v_pull->data+ndr_v_pull->offset, ndr_v_pull->data_size - ndr_v_pull->offset);
+			ndrdump_data(ndr_v_pull->data+ndr_v_pull->offset,
+				     ndr_v_pull->data_size - ndr_v_pull->offset,
+				     dumpdata);
 		}
 
 		ndr_v_print = talloc_zero(mem_ctx, struct ndr_print);
