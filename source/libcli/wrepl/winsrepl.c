@@ -85,6 +85,7 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	struct wrepl_socket *wrepl_socket = talloc_get_type(private, struct wrepl_socket);
 	struct wrepl_request *req = wrepl_socket->recv_queue;
 	DATA_BLOB blob;
+	NTSTATUS status;
 
 	if (!req) {
 		DEBUG(1,("Received unexpected WINS packet of length %u!\n", 
@@ -99,11 +100,11 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	blob.length = packet_blob_in.length - 4;
 	
 	/* we have a full request - parse it */
-	req->status = ndr_pull_struct_blob(&blob,
-					   req->packet, req->packet,
-					   (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
-	if (!NT_STATUS_IS_OK(req->status)) {
-		wrepl_request_finished(req, req->status);
+	status = ndr_pull_struct_blob(&blob,
+				      req->packet, req->packet,
+				      (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		wrepl_request_finished(req, status);
 		return NT_STATUS_OK;
 	}
 
@@ -113,7 +114,7 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 		NDR_PRINT_DEBUG(wrepl_packet, req->packet);
 	}
 
-	wrepl_request_finished(req, req->status);
+	wrepl_request_finished(req, NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
 
@@ -468,6 +469,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	struct wrepl_request *req;
 	struct wrepl_wrap wrap;
 	DATA_BLOB blob;
+	NTSTATUS status;
 
 	req = talloc_zero(wrepl_socket, struct wrepl_request);
 	if (!req) return NULL;
@@ -483,10 +485,10 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	}
 
 	wrap.packet = *packet;
-	req->status = ndr_push_struct_blob(&blob, req, &wrap,
-					   (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
-	if (!NT_STATUS_IS_OK(req->status)) {
-		return wrepl_request_finished(req, req->status);
+	status = ndr_push_struct_blob(&blob, req, &wrap,
+				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
+	if (!NT_STATUS_IS_OK(status)) {
+		return wrepl_request_finished(req, status);
 	}
 
 	if (DEBUGLVL(10)) {
@@ -511,9 +513,9 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 		talloc_set_destructor(s, wrepl_send_ctrl_destructor);
 	}
 
-	req->status = packet_send(wrepl_socket->packet, blob);
-	if (!NT_STATUS_IS_OK(req->status)) {
-		return wrepl_request_finished(req, req->status);
+	status = packet_send(wrepl_socket->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return wrepl_request_finished(req, status);
 	}
 
 	req->trigger = false;
