@@ -2392,13 +2392,17 @@ sub HeaderInclude
 # generate prototypes and defines for the interface definitions
 # FIXME: these prototypes are for the DCE/RPC client functions, not the 
 # NDR parser and so do not belong here, technically speaking
-sub HeaderInterface($$)
+sub HeaderInterface($$$)
 {
-	my($self,$interface) = @_;
+	my($self,$interface,$needed) = @_;
 
 	my $count = 0;
 
 	$self->pidl_hdr(choose_header("librpc/ndr/libndr.h", "ndr.h"));
+
+	if ($needed->{"compression"}) {
+		$self->pidl(choose_header("librpc/ndr/ndr_compression.h", "ndr/compression.h"));
+	}
 
 	if (has_property($interface, "object")) {
 		$self->pidl(choose_header("librpc/gen_ndr/ndr_orpc.h", "ndr/orpc.h"));
@@ -2559,11 +2563,7 @@ sub ParseInterface($$$)
 
 	$self->pidl_hdr("");
 
-	if ($needed->{"compression"}) {
-		$self->pidl(choose_header("librpc/ndr/ndr_compression.h", "ndr/compression.h"));
-	}
-
-	$self->HeaderInterface($interface);
+	$self->HeaderInterface($interface, $needed);
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
