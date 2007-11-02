@@ -656,6 +656,14 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
 _PUBLIC_ void dump_data(int level, const uint8_t *buf,int len);
 
 /**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level.
+ * 16 zero bytes in a row are ommited
+ */
+_PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len);
+
+/**
  malloc that aborts with smb_panic on fail or zero size.
 **/
 _PUBLIC_ void *smb_xmalloc(size_t size);
