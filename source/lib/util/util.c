@@ -464,7 +464,7 @@ static void _dump_data(int level, const uint8_t *buf, int len,
  */
 _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
 {
-	return _dump_data(level, buf, len, false);
+	_dump_data(level, buf, len, false);
 }
 
 /**
@@ -475,7 +475,7 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
  */
 _PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
 {
-	return _dump_data(level, buf, len, true);
+	_dump_data(level, buf, len, true);
 }
 
 
