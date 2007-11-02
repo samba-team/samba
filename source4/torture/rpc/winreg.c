@@ -422,6 +422,58 @@ static bool test_SecurityDescriptor(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool test_dacl_trustee_present(struct dcerpc_pipe *p,
+				      struct torture_context *tctx,
+				      struct policy_handle *handle,
+				      const struct dom_sid *sid)
+{
+	struct security_descriptor *sd = NULL;
+	int i;
+
+	if (!test_GetKeySecurity(p, tctx, handle, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->dacl) {
+		return false;
+	}
+
+	for (i = 0; i < sd->dacl->num_aces; i++) {
+		if (dom_sid_equal(&sd->dacl->aces[i].trustee, sid)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool test_dacl_trustee_flags_present(struct dcerpc_pipe *p,
+					    struct torture_context *tctx,
+					    struct policy_handle *handle,
+					    const struct dom_sid *sid,
+					    uint8_t flags)
+{
+	struct security_descriptor *sd = NULL;
+	int i;
+
+	if (!test_GetKeySecurity(p, tctx, handle, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->dacl) {
+		return false;
+	}
+
+	for (i = 0; i < sd->dacl->num_aces; i++) {
+		if ((dom_sid_equal(&sd->dacl->aces[i].trustee, sid)) &&
+		    (sd->dacl->aces[i].flags == flags)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static bool test_dacl_ace_present(struct dcerpc_pipe *p,
 				  struct torture_context *tctx,
 				  struct policy_handle *handle,
@@ -585,13 +637,135 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
+						    struct torture_context *tctx,
+						    struct policy_handle *handle,
+						    const char *key)
+{
+	/* get sd
+	   add ace SEC_ACE_FLAG_NO_PROPAGATE_INHERIT
+	   set sd
+	   add subkey/subkey
+	   get sd
+	   check ace
+	   get sd from subkey
+	   check ace
+	   del subkey/subkey
+	   del subkey
+	   reset sd
+	*/
+
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *sd_orig = NULL;
+	struct security_ace *ace = NULL;
+	struct policy_handle new_handle;
+	struct dom_sid *sid = NULL;
+	NTSTATUS status;
+	bool ret = true;
+	uint8_t ace_flags = 0x0;
+
+	torture_comment(tctx, "SecurityDescriptor inheritance block\n");
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	if (!_test_GetKeySecurity(p, tctx, &new_handle, NULL, WERR_OK, &sd)) {
+		return false;
+	}
+
+	sd_orig = security_descriptor_copy(tctx, sd);
+	if (sd_orig == NULL) {
+		return false;
+	}
+
+	ace = security_ace_create(tctx,
+				  TEST_SID,
+				  SEC_ACE_TYPE_ACCESS_ALLOWED,
+				  SEC_STD_REQUIRED,
+				  SEC_ACE_FLAG_CONTAINER_INHERIT |
+				  SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
+
+	status = security_descriptor_dacl_add(sd, ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to add ace: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if (!_test_SetKeySecurity(p, tctx, &new_handle, NULL, sd, WERR_OK)) {
+		return false;
+	}
+
+	if (!test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("new ACE not present!\n");
+		return false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		return false;
+	}
+
+	if (!test_CreateKey(p, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+		return false;
+	}
+
+	if (!test_OpenKey(p, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+		ret = false;
+		goto out;
+	}
+
+	if (test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("inherited ACE present but should not!\n");
+		ret = false;
+		goto out;
+	}
+
+	sid = dom_sid_parse_talloc(tctx, TEST_SID);
+	if (sid == NULL) {
+		return false;
+	}
+
+	if (test_dacl_trustee_present(p, tctx, &new_handle, sid)) {
+		printf("inherited trustee SID present but should not!\n");
+		ret = false;
+		goto out;
+	}
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	if (!test_OpenKey(p, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+		ret = false;
+		goto out;
+	}
+
+	if (test_dacl_ace_present(p, tctx, &new_handle, ace)) {
+		printf("inherited ACE present but should not!\n");
+		ret = false;
+		goto out;
+	}
+
+	if (!test_dacl_trustee_flags_present(p, tctx, &new_handle, sid, ace_flags)) {
+		printf("inherited trustee SID with flags 0x%02x not present!\n",
+			ace_flags);
+		ret = false;
+		goto out;
+	}
+
+ out:
+	test_CloseKey(p, tctx, &new_handle);
+	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
+	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
+	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
+
+	return ret;
+}
+
 static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 				     struct torture_context *tctx,
 				     struct policy_handle *handle,
 				     const char *key)
 {
 	bool ret = true;
-
 
 	if (!test_SecurityDescriptor(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptor failed\n");
@@ -600,6 +774,11 @@ static bool test_SecurityDescriptors(struct dcerpc_pipe *p,
 
 	if (!test_SecurityDescriptorInheritance(p, tctx, handle, key)) {
 		printf("test_SecurityDescriptorInheritance failed\n");
+		ret = false;
+	}
+
+	if (!test_SecurityDescriptorBlockInheritance(p, tctx, handle, key)) {
+		printf("test_SecurityDescriptorBlockInheritance failed\n");
 		ret = false;
 	}
 
