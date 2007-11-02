@@ -344,24 +344,41 @@ static bool test_FlushKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-static bool test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
-			 struct policy_handle *hive_handle,
-			 const char *keyname, struct policy_handle *key_handle)
+static bool _test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+			  struct policy_handle *hive_handle,
+			  const char *keyname, uint32_t access_mask,
+			  struct policy_handle *key_handle,
+			  WERROR open_werr,
+			  bool *success)
 {
 	struct winreg_OpenKey r;
 
 	r.in.parent_handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
 	r.in.unknown = 0x00000000;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.access_mask = access_mask;
 	r.out.handle = key_handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_OpenKey(p, tctx, &r),
 				   "OpenKey failed");
 
-	torture_assert_werr_ok(tctx, r.out.result, "OpenKey failed");
+	torture_assert_werr_equal(tctx, r.out.result, open_werr,
+				  "OpenKey failed");
+
+	if (success && W_ERROR_EQUAL(r.out.result, WERR_OK)) {
+		*success = true;
+	}
 
 	return true;
+}
+
+static bool test_OpenKey(struct dcerpc_pipe *p, struct torture_context *tctx,
+			 struct policy_handle *hive_handle,
+			 const char *keyname, struct policy_handle *key_handle)
+{
+	return _test_OpenKey(p, tctx, hive_handle, keyname,
+			     SEC_FLAG_MAXIMUM_ALLOWED, key_handle,
+			     WERR_OK, NULL);
 }
 
 static bool test_Cleanup(struct dcerpc_pipe *p, struct torture_context *tctx,
@@ -447,6 +464,151 @@ static bool test_dacl_trustee_present(struct dcerpc_pipe *p,
 	return false;
 }
 
+static bool _test_dacl_trustee_present(struct dcerpc_pipe *p,
+				       struct torture_context *tctx,
+				       struct policy_handle *handle,
+				       const char *key,
+				       const struct dom_sid *sid)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	ret = test_dacl_trustee_present(p, tctx, &new_handle, sid);
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	return ret;
+}
+
+static bool test_sacl_trustee_present(struct dcerpc_pipe *p,
+				      struct torture_context *tctx,
+				      struct policy_handle *handle,
+				      const struct dom_sid *sid)
+{
+	struct security_descriptor *sd = NULL;
+	int i;
+	uint32_t sec_info = SECINFO_SACL;
+
+	if (!_test_GetKeySecurity(p, tctx, handle, &sec_info, WERR_OK, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->sacl) {
+		return false;
+	}
+
+	for (i = 0; i < sd->sacl->num_aces; i++) {
+		if (dom_sid_equal(&sd->sacl->aces[i].trustee, sid)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool _test_sacl_trustee_present(struct dcerpc_pipe *p,
+				       struct torture_context *tctx,
+				       struct policy_handle *handle,
+				       const char *key,
+				       const struct dom_sid *sid)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!_test_OpenKey(p, tctx, handle, key, SEC_FLAG_SYSTEM_SECURITY,
+			   &new_handle, WERR_OK, NULL)) {
+		return false;
+	}
+
+	ret = test_sacl_trustee_present(p, tctx, &new_handle, sid);
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	return ret;
+}
+
+static bool test_owner_present(struct dcerpc_pipe *p,
+			       struct torture_context *tctx,
+			       struct policy_handle *handle,
+			       const struct dom_sid *sid)
+{
+	struct security_descriptor *sd = NULL;
+	uint32_t sec_info = SECINFO_OWNER;
+
+	if (!_test_GetKeySecurity(p, tctx, handle, &sec_info, WERR_OK, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->owner_sid) {
+		return false;
+	}
+
+	return dom_sid_equal(sd->owner_sid, sid);
+}
+
+static bool _test_owner_present(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				const char *key,
+				const struct dom_sid *sid)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	ret = test_owner_present(p, tctx, &new_handle, sid);
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	return ret;
+}
+
+static bool test_group_present(struct dcerpc_pipe *p,
+			       struct torture_context *tctx,
+			       struct policy_handle *handle,
+			       const struct dom_sid *sid)
+{
+	struct security_descriptor *sd = NULL;
+	uint32_t sec_info = SECINFO_GROUP;
+
+	if (!_test_GetKeySecurity(p, tctx, handle, &sec_info, WERR_OK, &sd)) {
+		return false;
+	}
+
+	if (!sd || !sd->group_sid) {
+		return false;
+	}
+
+	return dom_sid_equal(sd->group_sid, sid);
+}
+
+static bool _test_group_present(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				const char *key,
+				const struct dom_sid *sid)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	ret = test_group_present(p, tctx, &new_handle, sid);
+
+	test_CloseKey(p, tctx, &new_handle);
+
+	return ret;
+}
+
 static bool test_dacl_trustee_flags_present(struct dcerpc_pipe *p,
 					    struct torture_context *tctx,
 					    struct policy_handle *handle,
@@ -513,6 +675,30 @@ static bool test_RestoreSecurity(struct dcerpc_pipe *p,
 	}
 
 	if (!test_SetKeySecurity(p, tctx, &new_handle, sd)) {
+		ret = false;
+	}
+
+	if (!test_CloseKey(p, tctx, &new_handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_BackupSecurity(struct dcerpc_pipe *p,
+				struct torture_context *tctx,
+				struct policy_handle *handle,
+				const char *key,
+				struct security_descriptor **sd)
+{
+	struct policy_handle new_handle;
+	bool ret = true;
+
+	if (!test_OpenKey(p, tctx, handle, key, &new_handle)) {
+		return false;
+	}
+
+	if (!test_GetKeySecurity(p, tctx, &new_handle, sd)) {
 		ret = false;
 	}
 
