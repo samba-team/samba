@@ -3949,6 +3949,11 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
+		if (req->unread_bytes) {
+			reply_doserror(req, ERRDOS, ERRbadmem);
+			END_PROFILE(SMBwriteX);
+			return;
+		}
 		reply_pipe_write_and_X(req);
 		END_PROFILE(SMBwriteX);
 		return;
