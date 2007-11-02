@@ -1325,12 +1325,14 @@ int open_socket_in(int type,
 {
 	struct sockaddr_storage sock;
 	int res;
+	socklen_t slen = sizeof(struct sockaddr_in);
 
 	sock = *psock;
 
 #if defined(HAVE_IPV6)
 	if (sock.ss_family == AF_INET6) {
 		((struct sockaddr_in6 *)&sock)->sin6_port = htons(port);
+		slen = sizeof(struct sockaddr_in6);
 	}
 #endif
 	if (sock.ss_family == AF_INET) {
@@ -1374,7 +1376,7 @@ int open_socket_in(int type,
 	}
 
 	/* now we've got a socket - we need to bind it */
-	if( bind( res, (struct sockaddr *)&sock, sizeof(sock) ) == -1 ) {
+	if (bind(res, (struct sockaddr *)&sock, slen) == -1 ) {
 		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 ||
 				port == SMB_PORT2 || port == NMB_PORT) ) {
 			char addr[INET6_ADDRSTRLEN];
