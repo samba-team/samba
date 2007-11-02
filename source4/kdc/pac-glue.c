@@ -187,8 +187,8 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	nt_status = ndr_pull_struct_blob(&pac_in, mem_ctx, &logon_info, 
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
 	if (!NT_STATUS_IS_OK(nt_status) || !logon_info.info) {
+		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 		talloc_free(mem_ctx);
-		DEBUG(0,("can't parse the PAC LOGON_INFO\n"));
 		return EINVAL;
 	}
 
