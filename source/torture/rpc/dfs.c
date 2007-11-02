@@ -335,7 +335,7 @@ static bool test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t 
 static bool test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	bool ret = true;
-	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 200, 300};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -350,7 +350,7 @@ static bool test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static bool test_EnumEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *host)
 {
 	bool ret = true;
-	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 200, 300};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
