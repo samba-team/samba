@@ -696,6 +696,16 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 #ifdef AUTOCONF_TEST
 /* this is the autoconf driver to test get_interfaces() */
 
+static socklen_t calc_sa_size(struct sockaddr *psa)
+{
+	socklen_t sl = sizeof(struct sockaddr_in);
+#if defined(HAVE_IPV6)
+	if (psa->sa_family == AF_INET6) {
+		salen = sizeof(struct sockaddr_in6);
+	}
+#endif
+}
+
  int main()
 {
 	struct iface_struct ifaces[MAX_INTERFACES];
@@ -710,22 +720,23 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	for (i=0;i<total;i++) {
 		char addr[INET6_ADDRSTRLEN];
 		int ret;
+		socklen_t sl;
 		printf("%-10s ", ifaces[i].name);
 		addr[0] = '\0';
 		ret = getnameinfo((struct sockaddr *)&ifaces[i].ip,
-				sizeof(ifaces[i].ip),
+				calc_sa_size(&ifaces[i].ip),
 				addr, sizeof(addr),
 				NULL, 0, NI_NUMERICHOST);
 		printf("IP=%s ", addr);
 		addr[0] = '\0';
 		ret = getnameinfo((struct sockaddr *)&ifaces[i].netmask,
-				sizeof(ifaces[i].netmask),
+				calc_sa_size(&ifaces[i].netmask),
 				addr, sizeof(addr),
 				NULL, 0, NI_NUMERICHOST);
 		printf("NETMASK=%s ", addr);
 		addr[0] = '\0';
 		ret = getnameinfo((struct sockaddr *)&ifaces[i].bcast,
-				sizeof(ifaces[i].bcast),
+				calc_sa_size(&ifaces[i].bcast),
 				addr, sizeof(addr),
 				NULL, 0, NI_NUMERICHOST);
 		printf("BCAST=%s\n", addr);

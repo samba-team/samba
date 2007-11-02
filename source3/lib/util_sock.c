@@ -495,7 +495,7 @@ bool is_address_any(const struct sockaddr_storage *psa)
  Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
 ****************************************************************************/
 
-char *print_sockaddr_len(char *dest,
+static char *print_sockaddr_len(char *dest,
 			size_t destlen,
 			const struct sockaddr_storage *psa,
 			socklen_t psalen)
@@ -503,7 +503,7 @@ char *print_sockaddr_len(char *dest,
 	if (destlen > 0) {
 		dest[0] = '\0';
 	}
-	(void)getnameinfo((const struct sockaddr *)psa,
+	(void)sys_getnameinfo((const struct sockaddr *)psa,
 			psalen,
 			dest, destlen,
 			NULL, 0,
@@ -519,7 +519,8 @@ char *print_sockaddr(char *dest,
 			size_t destlen,
 			const struct sockaddr_storage *psa)
 {
-	return print_sockaddr_len(dest, destlen, psa, sizeof(*psa));
+	return print_sockaddr_len(dest, destlen, psa,
+			sizeof(struct sockaddr_storage));
 }
 
 /****************************************************************************
