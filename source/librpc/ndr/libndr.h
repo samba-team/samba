@@ -286,8 +286,8 @@ typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 
-#include "librpc/gen_ndr/misc.h"
-#include "libcli/util/werror.h"
+#include "libcli/util/error.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr_proto.h"
 
 extern const struct ndr_syntax_id ndr_transfer_syntax;

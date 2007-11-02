@@ -2607,12 +2607,6 @@ sub GenerateIncludes($)
 		$self->pidl("#include <stdarg.h>");
 		$self->pidl("#include <string.h>");
 	}
-
-	# Samba3 has everything in include/includes.h
-	if (is_intree() != 3) {
-		$self->pidl(choose_header("libcli/util/ntstatus.h", "core/ntstatus.h"));
-		$self->pidl(choose_header("librpc/gen_ndr/ndr_misc.h", "gen_ndr/ndr_misc.h"));
-	}
 }
 
 #####################################################################
