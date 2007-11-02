@@ -3912,7 +3912,6 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	unsigned int smb_doff;
 	unsigned int smblen;
 	char *data;
-	bool large_writeX;
 	NTSTATUS status;
 
 	START_PROFILE(SMBwriteX);
@@ -3926,12 +3925,11 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	numtowrite = SVAL(req->inbuf,smb_vwv10);
 	smb_doff = SVAL(req->inbuf,smb_vwv11);
 	smblen = smb_len(req->inbuf);
-	large_writeX = (req->wct == 14 &&
-			(smblen > 0xFFFF || req->unread_bytes > 0xFFFF));
 
-	/* Deal with possible LARGE_WRITEX */
-	if (large_writeX) {
-		numtowrite |= ((((size_t)SVAL(req->inbuf,smb_vwv9)) & 1 )<<16);
+	if (req->unread_bytes > 0xFFFF ||
+			(smblen > smb_doff + 4 &&
+				smblen - smb_doff + 4 > 0xFFFF)) {
+		numtowrite |= (((size_t)SVAL(req->inbuf,smb_vwv9))<<16);
 	}
 
 	if (req->unread_bytes) {
@@ -3941,7 +3939,8 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 			return;
 		}
 	} else {
-		if (smb_doff > smblen || smb_doff + numtowrite > smblen) {
+		if (smb_doff + 4 > smblen || smb_doff + 4 + numtowrite < numtowrite ||
+				smb_doff + 4 + numtowrite > smblen) {
 			reply_doserror(req, ERRDOS, ERRbadmem);
 			END_PROFILE(SMBwriteX);
 			return;
@@ -4032,8 +4031,7 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 
 	reply_outbuf(req, 6, 0);
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
-	if (large_writeX)
-		SSVAL(req->outbuf,smb_vwv4,(nwritten>>16)&1);
+	SSVAL(req->outbuf,smb_vwv4,nwritten>>16);
 
 	if (nwritten < (ssize_t)numtowrite) {
 		SCVAL(req->outbuf,smb_rcls,ERRHRD);
