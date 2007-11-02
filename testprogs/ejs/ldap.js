@@ -659,6 +659,7 @@ objectClass: user
 	assert(res.msgs[0].whenCreated != undefined);
 	assert(res.msgs[0].nTSecurityDescriptor != undefined);
 	assert(res.msgs[0].member[0] == ("CN=ldaptestuser2,CN=Users," + base_dn));
+	assert(res.msgs[0].member.length == 1);
 
 	ok = ldb.del(("CN=ldaptestuser2,CN=Users," + base_dn));
 	if (ok.error != 0) {
