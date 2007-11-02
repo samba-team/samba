@@ -44,16 +44,17 @@ static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, 
 	free(s);
 }
 
-static NTSTATUS get_ntacl(char *filename, struct xattr_NTACL **ntacl, 
+static NTSTATUS get_ntacl(TALLOC_CTX *mem_ctx,
+			  char *filename,
+			  struct xattr_NTACL **ntacl, 
 			  ssize_t *ntacl_len)
 {
 	DATA_BLOB blob;
 	ssize_t size;
 	NTSTATUS result;
 	struct ndr_pull *ndr;
-	struct ndr_print *pr;
 
-	*ntacl = talloc(NULL, struct xattr_NTACL);
+	*ntacl = talloc(mem_ctx, struct xattr_NTACL);
 
 	size = wrap_getxattr(filename, XATTR_NTACL_NAME, NULL, 0);
 
@@ -74,24 +75,30 @@ static NTSTATUS get_ntacl(char *filename, struct xattr_NTACL **ntacl,
 
 	result = ndr_pull_xattr_NTACL(ndr, NDR_SCALARS|NDR_BUFFERS, *ntacl);
 
-	if (NT_STATUS_IS_OK(result)) {
-		pr = talloc(*ntacl, struct ndr_print);
-		pr->print = ntacl_print_debug_helper;
-		pr->depth = 0;
-		pr->flags = 0;
-		
-		ndr_print_xattr_NTACL(pr, filename, *ntacl);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
-	return result;
+	return NT_STATUS_OK;
 }
 
-static void print_ntacl(struct xattr_NTACL *ntacl)
+static void print_ntacl(TALLOC_CTX *mem_ctx,
+			const char *fname,
+			struct xattr_NTACL *ntacl)
 {
+	struct ndr_print *pr;
+
+	pr = talloc_zero(mem_ctx, struct ndr_print);
+	if (!pr) return;
+	pr->print = ntacl_print_debug_helper;
+
+	ndr_print_xattr_NTACL(pr, fname, ntacl);
+	talloc_free(pr);
 }
 
 int main(int argc, char *argv[])
 {
+	NTSTATUS status;
 	struct xattr_NTACL *ntacl;
 	ssize_t ntacl_len;
 
@@ -100,10 +107,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	status = get_ntacl(NULL, argv[1], &ntacl, &ntacl_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "get_ntacl failed: %s\n", nt_errstr(status));
+		return 1;
+	}
 
-	get_ntacl(argv[1], &ntacl, &ntacl_len);
+	print_ntacl(ntacl, argv[1], ntacl);
 
-	print_ntacl(ntacl);
+	talloc_free(ntacl);
 
 	return 0;
 }
