@@ -207,6 +207,50 @@ static bool test_ForceReplication(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_InfoW(struct torture_context *tctx,
+		       struct dcerpc_pipe *p)
+{
+	int i;
+
+	for (i=0; i<10; i++) {
+
+		struct frsapi_InfoW r;
+		struct frsapi_Info *info;
+		int d;
+		DATA_BLOB blob;
+
+		ZERO_STRUCT(r);
+
+		info = talloc_zero(tctx, struct frsapi_Info);
+
+		r.in.length = 0x1000;
+		r.in.info = r.out.info = info;
+
+		info->length = r.in.length;
+		info->length2 = r.in.length;
+		info->level = i;
+		info->offset = 0x2c;
+		info->blob_len = 0x2c;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_frsapi_InfoW(p, tctx, &r),
+			"InfoW failed");
+
+		torture_assert_werr_ok(tctx, r.out.result, "InfoW failed");
+
+		/* display the formatted blob text */
+		blob = r.out.info->blob;
+		for (d = 0; d < blob.length; d++) {
+			if (blob.data[d]) {
+				printf("%c", blob.data[d]);
+			}
+		}
+		printf("\n");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -225,6 +269,7 @@ struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "ForceReplication",
 					  test_ForceReplication);
 
-
+	test = torture_rpc_tcase_add_test(tcase, "InfoW",
+					  test_InfoW);
 	return suite;
 }
