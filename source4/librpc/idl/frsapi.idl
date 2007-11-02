@@ -53,8 +53,7 @@ interface frsapi
 
 	/****************/
 	/* Function 0x07 */
-
-	typedef enum {
+	typedef [v1_enum] enum {
 		FRSAPI_INFO_VERSION	= 0,
 		FRSAPI_INFO_SETS	= 1,
 		FRSAPI_INFO_DS		= 2,
@@ -67,7 +66,26 @@ interface frsapi
 		FRSAPI_INFO_CONFIGTABLE	= 9
 	} frsapi_InfoEnum;
 
-	void FRSAPI_INFO_W();
+	typedef struct {
+		uint32 length;
+		GUID guid;
+		uint32 length2;
+		uint32 unknown1;
+		frsapi_InfoEnum level;
+		uint32 query_counter;
+		uint32 unknown2;
+		uint32 offset;
+		uint32 blob_len;
+		/* [size_is(length-offset)] uint8 *data; */
+		[subcontext_size(length-offset),subcontext(0),flag(NDR_REMAINING)] DATA_BLOB blob;
+	} frsapi_Info;
+
+	WERROR frsapi_InfoW(
+		[in] [range(0,0x10000)] uint32 length,
+		/* [in,out] [size_is(length)] [unique] uint8 *data */
+		[in,out,unique] frsapi_Info *info
+
+	);
 
 	/****************/
 	/* Function 0x08 */
