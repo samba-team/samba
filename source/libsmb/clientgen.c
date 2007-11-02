@@ -251,15 +251,15 @@ bool cli_receive_smb_readX_header(struct cli_state *cli)
 static ssize_t write_socket(int fd, const char *buf, size_t len)
 {
         ssize_t ret=0;
-                                                                                                                                            
+
         DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
         ret = write_data(fd,buf,len);
-                                                                                                                                            
+
         DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
         if(ret <= 0)
                 DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
                         (int)len, fd, strerror(errno) ));
-                                                                                                                                            
+
         return(ret);
 }
 
@@ -298,6 +298,65 @@ bool cli_send_smb(struct cli_state *cli)
 	if (!cli->mid)
 		cli->mid++;
 	return True;
+}
+
+/****************************************************************************
+ Send a "direct" writeX smb to a fd.
+****************************************************************************/
+
+bool cli_send_smb_direct_writeX(struct cli_state *cli,
+				const char *p,
+				size_t extradata)
+{
+	/* First length to send is the offset to the data. */
+	size_t len = SVAL(cli->outbuf,smb_vwv11) + 4;
+	size_t nwritten=0;
+	ssize_t ret;
+
+	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
+	if (cli->fd == -1) {
+		return false;
+	}
+
+	if (client_is_signing_on(cli)) {
+		DEBUG(0,("cli_send_smb_large: cannot send signed packet.\n"));
+		return false;
+	}
+
+	while (nwritten < len) {
+		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
+		if (ret <= 0) {
+			close(cli->fd);
+			cli->fd = -1;
+			cli->smb_rw_error = WRITE_ERROR;
+			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
+			return false;
+		}
+		nwritten += ret;
+	}
+
+	/* Now write the extra data. */
+	nwritten=0;
+	while (nwritten < extradata) {
+		ret = write_socket(cli->fd,p+nwritten,extradata - nwritten);
+		if (ret <= 0) {
+			close(cli->fd);
+			cli->fd = -1;
+			cli->smb_rw_error = WRITE_ERROR;
+			DEBUG(0,("Error writing %d extradata "
+				"bytes to client. %d (%s)\n",
+				(int)extradata,(int)ret, strerror(errno) ));
+			return False;
+		}
+		nwritten += ret;
+	}
+
+	/* Increment the mid so we can tell between responses. */
+	cli->mid++;
+	if (!cli->mid)
+		cli->mid++;
+	return true;
 }
 
 /****************************************************************************
