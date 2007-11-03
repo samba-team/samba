@@ -699,7 +699,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 				
 				nt_status = cli_nt_error(cli);
 				if (cli_is_error(cli) && NT_STATUS_IS_OK(nt_status)) {
-					if (cli->smb_rw_error == READ_BAD_SIG) {
+					if (cli->smb_rw_error == SMB_READ_BAD_SIG) {
 						nt_status = NT_STATUS_ACCESS_DENIED;
 					} else {
 						nt_status = NT_STATUS_UNSUCCESSFUL;

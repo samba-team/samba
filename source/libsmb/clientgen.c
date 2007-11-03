@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern int smb_read_error;
-
 /****************************************************************************
  Change the timeout (in milliseconds).
 ****************************************************************************/
@@ -112,7 +110,7 @@ bool cli_receive_smb(struct cli_state *cli)
 	/* If the server is not responding, note that now */
 	if (len < 0) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
-		cli->smb_rw_error = smb_read_error;
+		cli->smb_rw_error = get_smb_read_error();
 		close(cli->fd);
 		cli->fd = -1;
 		return False;
@@ -135,12 +133,12 @@ bool cli_receive_smb(struct cli_state *cli)
 			 * Reflected signature on login error. 
 			 * Set bad sig but don't close fd.
 			 */
-			cli->smb_rw_error = READ_BAD_SIG;
+			cli->smb_rw_error = SMB_READ_BAD_SIG;
 			return True;
 		}
 
 		DEBUG(0, ("SMB Signature verification failed on incoming packet!\n"));
-		cli->smb_rw_error = READ_BAD_SIG;
+		cli->smb_rw_error = SMB_READ_BAD_SIG;
 		close(cli->fd);
 		cli->fd = -1;
 		return False;
@@ -242,7 +240,8 @@ bool cli_receive_smb_readX_header(struct cli_state *cli)
 
   read_err:
 
-	cli->smb_rw_error = smb_read_error = READ_ERROR;
+	set_smb_read_error(SMB_READ_ERROR);
+	cli->smb_rw_error = SMB_READ_ERROR;
 	close(cli->fd);
 	cli->fd = -1;
 	return False;
@@ -286,7 +285,7 @@ bool cli_send_smb(struct cli_state *cli)
 		if (ret <= 0) {
 			close(cli->fd);
 			cli->fd = -1;
-			cli->smb_rw_error = WRITE_ERROR;
+			cli->smb_rw_error = SMB_WRITE_ERROR;
 			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
 			return False;
@@ -328,7 +327,7 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 		if (ret <= 0) {
 			close(cli->fd);
 			cli->fd = -1;
-			cli->smb_rw_error = WRITE_ERROR;
+			cli->smb_rw_error = SMB_WRITE_ERROR;
 			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
 			return false;
@@ -343,7 +342,7 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 		if (ret <= 0) {
 			close(cli->fd);
 			cli->fd = -1;
-			cli->smb_rw_error = WRITE_ERROR;
+			cli->smb_rw_error = SMB_WRITE_ERROR;
 			DEBUG(0,("Error writing %d extradata "
 				"bytes to client. %d (%s)\n",
 				(int)extradata,(int)ret, strerror(errno) ));
@@ -590,11 +589,11 @@ void cli_shutdown(struct cli_state *cli)
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
 	 *
-	 * Also, do not do tree disconnect when cli->smb_rw_error is DO_NOT_DO_TDIS
+	 * Also, do not do tree disconnect when cli->smb_rw_error is SMB_DO_NOT_DO_TDIS
 	 * the only user for this so far is smbmount which passes opened connection
 	 * down to kernel's smbfs module.
 	 */
-	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) ) {
+	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != SMB_DO_NOT_DO_TDIS ) ) {
 		cli_tdis(cli);
 	}
         

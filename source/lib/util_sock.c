@@ -673,7 +673,28 @@ int client_socket_port(void)
 	return get_socket_port(client_fd);
 }
 
-int smb_read_error = 0;
+/****************************************************************************
+ Accessor functions to make thread-safe code easier later...
+****************************************************************************/
+
+static enum smb_read_errors smb_read_error = SMB_READ_OK;
+
+enum smb_read_errors get_smb_read_error(void)
+{
+	return smb_read_error;
+}
+
+void set_smb_read_error(enum smb_read_errors newerr)
+{
+	smb_read_error = newerr;
+}
+
+void cond_set_smb_read_error(enum smb_read_errors newerr)
+{
+	if (smb_read_error == SMB_READ_OK) {
+		smb_read_error = newerr;
+	}
+}
 
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
@@ -897,7 +918,7 @@ ssize_t read_socket_with_timeout(int fd,
 	if (maxcnt <= 0)
 		return(0);
 
-	smb_read_error = 0;
+	set_smb_read_error(SMB_READ_OK);
 
 	/* Blocking read */
 	if (time_out == 0) {
@@ -911,7 +932,7 @@ ssize_t read_socket_with_timeout(int fd,
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: "
 					"blocking read. EOF from client.\n"));
-				smb_read_error = READ_EOF;
+				set_smb_read_error(SMB_READ_EOF);
 				return -1;
 			}
 
@@ -928,7 +949,7 @@ ssize_t read_socket_with_timeout(int fd,
 						"read error = %s.\n",
 						strerror(errno) ));
 				}
-				smb_read_error = READ_ERROR;
+				set_smb_read_error(SMB_READ_ERROR);
 				return -1;
 			}
 			nread += readret;
@@ -966,7 +987,7 @@ ssize_t read_socket_with_timeout(int fd,
 				"read. select error = %s.\n",
 				strerror(errno) ));
 			}
-			smb_read_error = READ_ERROR;
+			set_smb_read_error(SMB_READ_ERROR);
 			return -1;
 		}
 
@@ -974,7 +995,7 @@ ssize_t read_socket_with_timeout(int fd,
 		if (selrtn == 0) {
 			DEBUG(10,("read_socket_with_timeout: timeout read. "
 				"select timed out.\n"));
-			smb_read_error = READ_TIMEOUT;
+			set_smb_read_error(SMB_READ_TIMEOUT);
 			return -1;
 		}
 
@@ -984,7 +1005,7 @@ ssize_t read_socket_with_timeout(int fd,
 			/* we got EOF on the file descriptor */
 			DEBUG(5,("read_socket_with_timeout: timeout read. "
 				"EOF from client.\n"));
-			smb_read_error = READ_EOF;
+			set_smb_read_error(SMB_READ_EOF);
 			return -1;
 		}
 
@@ -1001,7 +1022,7 @@ ssize_t read_socket_with_timeout(int fd,
 					"read. read error = %s.\n",
 					strerror(errno) ));
 			}
-			smb_read_error = READ_ERROR;
+			set_smb_read_error(SMB_READ_ERROR);
 			return -1;
 		}
 
@@ -1021,7 +1042,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 	ssize_t ret;
 	size_t total=0;
 
-	smb_read_error = 0;
+	set_smb_read_error(SMB_READ_OK);
 
 	while (total < N) {
 		ret = sys_read(fd,buffer + total,N - total);
@@ -1030,7 +1051,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 			DEBUG(10,("read_data: read of %d returned 0. "
 				"Error = %s\n",
 				(int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
+			set_smb_read_error(SMB_READ_EOF);
 			return 0;
 		}
 
@@ -1049,7 +1070,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 					(int)(N - total),
 					strerror(errno) ));
 			}
-			smb_read_error = READ_ERROR;
+			set_smb_read_error(SMB_READ_ERROR);
 			return -1;
 		}
 		total += ret;
@@ -1191,7 +1212,7 @@ ssize_t receive_smb_raw(int fd,
 {
 	ssize_t len,ret;
 
-	smb_read_error = 0;
+	set_smb_read_error(SMB_READ_OK);
 
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
@@ -1203,8 +1224,7 @@ ssize_t receive_smb_raw(int fd,
 		 * variables still suck :-). JRA.
 		 */
 
-		if (smb_read_error == 0)
-			smb_read_error = READ_ERROR;
+		cond_set_smb_read_error(SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -1224,8 +1244,7 @@ ssize_t receive_smb_raw(int fd,
 			 * variables still suck :-). JRA.
 			 */
 
-			if (smb_read_error == 0)
-				smb_read_error = READ_ERROR;
+			cond_set_smb_read_error(SMB_READ_ERROR);
 			return -1;
 		}
 	}
@@ -1246,9 +1265,7 @@ ssize_t receive_smb_raw(int fd,
 		}
 
 		if (ret != len) {
-			if (smb_read_error == 0) {
-				smb_read_error = READ_ERROR;
-			}
+			cond_set_smb_read_error(SMB_READ_ERROR);
 			return -1;
 		}
 
@@ -1276,8 +1293,8 @@ bool receive_smb(int fd, char *buffer, unsigned int timeout)
 	if (!srv_check_sign_mac(buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification "
 			"failed on incoming packet!\n"));
-		if (smb_read_error == 0) {
-			smb_read_error = READ_BAD_SIG;
+		if (get_smb_read_error() == 0) {
+			smb_read_error = SMB_READ_BAD_SIG;
 		}
 		return false;
 	}

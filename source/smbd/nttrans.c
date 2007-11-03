@@ -22,7 +22,6 @@
 
 extern int max_send;
 extern enum protocol_types Protocol;
-extern int smb_read_error;
 extern struct current_user current_user;
 
 static const char *known_nt_pipes[] = {

@@ -82,7 +82,8 @@ struct rpc_pipe_client {
 struct cli_state {
 	int port;
 	int fd;
-	int smb_rw_error; /* Copy of last read or write error. */
+	/* Copy of last read or write error. */
+	enum smb_read_errors smb_rw_error;
 	uint16 cnum;
 	uint16 pid;
 	uint16 mid;

@@ -72,17 +72,17 @@ static const char *cli_smb_errstr(struct cli_state *cli)
 static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
 {
 	switch(cli->smb_rw_error) {
-		case READ_TIMEOUT:
+		case SMB_READ_TIMEOUT:
 			return NT_STATUS_IO_TIMEOUT;
-		case READ_EOF:
+		case SMB_READ_EOF:
 			return NT_STATUS_END_OF_FILE;
 		/* What we shoud really do for read/write errors is convert from errno. */
 		/* FIXME. JRA. */
-		case READ_ERROR:
+		case SMB_READ_ERROR:
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		case WRITE_ERROR:
+		case SMB_WRITE_ERROR:
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	        case READ_BAD_SIG:
+	        case SMB_READ_BAD_SIG:
 			return NT_STATUS_INVALID_PARAMETER;
 	        default:
 			break;
@@ -111,24 +111,24 @@ const char *cli_errstr(struct cli_state *cli)
 	/* Was it server socket error ? */
 	if (cli->fd == -1 && cli->smb_rw_error) {
 		switch(cli->smb_rw_error) {
-			case READ_TIMEOUT:
+			case SMB_READ_TIMEOUT:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Call timed out: server did not respond after %d milliseconds",
 					cli->timeout);
 				break;
-			case READ_EOF:
+			case SMB_READ_EOF:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Call returned zero bytes (EOF)" );
 				break;
-			case READ_ERROR:
+			case SMB_READ_ERROR:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Read error: %s", strerror(errno) );
 				break;
-			case WRITE_ERROR:
+			case SMB_WRITE_ERROR:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Write error: %s", strerror(errno) );
 				break;
-		        case READ_BAD_SIG:
+		        case SMB_READ_BAD_SIG:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Server packet had invalid SMB signature!");
 				break;

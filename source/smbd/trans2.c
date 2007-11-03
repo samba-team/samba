@@ -27,7 +27,6 @@
 
 extern int max_send;
 extern enum protocol_types Protocol;
-extern int smb_read_error;
 extern uint32 global_client_caps;
 extern struct current_user current_user;
 
