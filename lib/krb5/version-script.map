@@ -5,8 +5,8 @@ HEIMDAL_KRB5_1.0 {
 		krb524_convert_creds_kdc;
 		krb524_convert_creds_kdc_ccache;
 		krb5_425_conv_principal;
-		krb5_425_conv_principal_ext;
 		krb5_425_conv_principal_ext2;
+		krb5_425_conv_principal_ext;
 		krb5_524_conv_principal;
 		krb5_abort;
 		krb5_abortx;
@@ -183,8 +183,8 @@ HEIMDAL_KRB5_1.0 {
 		krb5_data_realloc;
 		krb5_data_zero;
 		krb5_decode_Authenticator;
-		krb5_decode_ETYPE_INFO;
 		krb5_decode_ETYPE_INFO2;
+		krb5_decode_ETYPE_INFO;
 		krb5_decode_EncAPRepPart;
 		krb5_decode_EncASRepPart;
 		krb5_decode_EncKrbCredPart;
@@ -229,8 +229,8 @@ HEIMDAL_KRB5_1.0 {
 		krb5_domain_x500_encode;
 		krb5_eai_to_heim_errno;
 		krb5_encode_Authenticator;
-		krb5_encode_ETYPE_INFO;
 		krb5_encode_ETYPE_INFO2;
+		krb5_encode_ETYPE_INFO;
 		krb5_encode_EncAPRepPart;
 		krb5_encode_EncASRepPart;
 		krb5_encode_EncKrbCredPart;
@@ -449,6 +449,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_parse_nametype;
 		krb5_passwd_result_to_string;
 		krb5_password_key_proc;
+		krb5_plugin_register;
 		krb5_prepend_config_files;
 		krb5_prepend_config_files_default;
 		krb5_princ_realm;
@@ -479,8 +480,8 @@ HEIMDAL_KRB5_1.0 {
 		krb5_rc_resolve_full;
 		krb5_rc_resolve_type;
 		krb5_rc_store;
-		krb5_rd_cred;
 		krb5_rd_cred2;
+		krb5_rd_cred;
 		krb5_rd_error;
 		krb5_rd_priv;
 		krb5_rd_rep;
@@ -613,8 +614,8 @@ HEIMDAL_KRB5_1.0 {
 		krb5_us_timeofday;
 		krb5_vabort;
 		krb5_vabortx;
-		krb5_verify_ap_req;
 		krb5_verify_ap_req2;
+		krb5_verify_ap_req;
 		krb5_verify_authenticator_checksum;
 		krb5_verify_checksum;
 		krb5_verify_init_creds;
@@ -703,7 +704,6 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_pk_octetstring2key;
 		_krb5_pk_allow_proxy_certificate;
 		_krb5_pac_sign;
-		_krb5_plugin_register;
 		_krb5_plugin_find;
 		_krb5_plugin_get_symbol;
 		_krb5_plugin_get_next;
