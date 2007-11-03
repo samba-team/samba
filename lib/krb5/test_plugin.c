@@ -97,9 +97,9 @@ main(int argc, char **argv)
     if (ret)
 	errx(1, "krb5_init_contex");
 
-    ret = _krb5_plugin_register(context, PLUGIN_TYPE_DATA, "resolve", &resolve);
+    ret = krb5_plugin_register(context, PLUGIN_TYPE_DATA, "resolve", &resolve);
     if (ret)
-	krb5_err(context, 1, ret, "_krb5_plugin_register");
+	krb5_err(context, 1, ret, "krb5_plugin_register");
 
 
     ret = krb5_krbhst_init_flags(context,
