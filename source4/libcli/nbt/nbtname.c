@@ -96,7 +96,6 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 */
 _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
-	NTSTATUS status;
 	uint32_t offset = ndr->offset;
 	uint32_t max_offset = offset;
 	unsigned num_components;
@@ -111,8 +110,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 	/* break up name into a list of components */
 	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
 		uint8_t *component;
-		status = ndr_pull_component(ndr, &component, &offset, &max_offset);
-		NT_STATUS_NOT_OK_RETURN(status);
+		NDR_CHECK(ndr_pull_component(ndr, &component, &offset, &max_offset));
 		if (component == NULL) break;
 		if (name) {
 			name = talloc_asprintf_append_buffer(name, ".%s", component);
@@ -283,7 +281,6 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
 {
-	NTSTATUS status;
 	uint8_t *scope;
 	char *cname;
 	const char *s;
@@ -293,8 +290,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 		return NT_STATUS_OK;
 	}
 
-	status = ndr_pull_nbt_string(ndr, ndr_flags, &s);
-	NT_STATUS_NOT_OK_RETURN(status);
+	NDR_CHECK(ndr_pull_nbt_string(ndr, ndr_flags, &s));
 
 	scope = (uint8_t *)strchr(s, '.');
 	if (scope) {
