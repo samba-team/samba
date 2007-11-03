@@ -312,7 +312,6 @@ static int load_registry_service(const char *servicename)
 		TALLOC_FREE(value);
 	}
 
-	res = 0;
  error:
 
 	TALLOC_FREE(key);
