@@ -721,7 +721,6 @@ static socklen_t calc_sa_size(struct sockaddr *psa)
 	for (i=0;i<total;i++) {
 		char addr[INET6_ADDRSTRLEN];
 		int ret;
-		socklen_t sl;
 		printf("%-10s ", ifaces[i].name);
 		addr[0] = '\0';
 		ret = getnameinfo((struct sockaddr *)&ifaces[i].ip,
