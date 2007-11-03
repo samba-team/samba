@@ -118,10 +118,10 @@ loadlib(krb5_context context,
 #endif /* HAVE_DLOPEN */
 
 krb5_error_code
-_krb5_plugin_register(krb5_context context,
-		      enum krb5_plugin_type type,
-		      const char *name, 
-		      void *symbol)
+krb5_plugin_register(krb5_context context,
+		     enum krb5_plugin_type type,
+		     const char *name, 
+		     void *symbol)
 {
     struct plugin *e;
 
