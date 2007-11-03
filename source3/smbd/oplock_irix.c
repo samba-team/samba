@@ -104,7 +104,6 @@ static bool irix_oplocks_available(void)
 
 static files_struct *irix_oplock_receive_message(fd_set *fds)
 {
-	extern int smb_read_error;
 	oplock_stat_t os;
 	char dummy;
 	struct file_id fileid;
@@ -122,7 +121,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 		DEBUG(0,("irix_oplock_receive_message: read of kernel "
 			 "notification failed. Error was %s.\n",
 			 strerror(errno) ));
-		smb_read_error = READ_ERROR;
+		set_smb_read_error(SMB_READ_ERROR);
 		return NULL;
 	}
 
@@ -142,7 +141,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 			 */
 			return NULL;
 		}
-		smb_read_error = READ_ERROR;
+		set_smb_read_error(SMB_READ_ERROR);
 		return NULL;
 	}
 

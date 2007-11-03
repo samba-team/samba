@@ -28,7 +28,6 @@ static int32 level_II_oplocks_open = 0;
 bool global_client_failed_oplock_break = False;
 
 extern uint32 global_client_caps;
-extern int smb_read_error;
 
 static struct kernel_oplocks *koplocks;
 
