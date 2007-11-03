@@ -73,31 +73,31 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		user->user_private_info.DataLength = data.length;
 
 		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			if (keys.keys.keys2.lmpassword.length == 16) {
-				if (rid_crypt) {
-					sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
-					user->lmpassword = lm_hash;
-				} else {
-					user->lmpassword = keys.keys.keys2.lmpassword.pwd;
-				}
-				user->lm_password_present = true;
-			}
-			if (keys.keys.keys2.ntpassword.length == 16) {
-				if (rid_crypt) {
-					sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
-					user->ntpassword = nt_hash;
-				} else {
-					user->ntpassword = keys.keys.keys2.ntpassword.pwd;
-				}
-				user->nt_password_present = true;
-			}
-			/* TODO: rid decrypt history fields */
-		} else {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
 			dump_data(10, data.data, data.length);
 			return nt_status;
 		}
+
+		if (keys.keys.keys2.lmpassword.length == 16) {
+			if (rid_crypt) {
+				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
+				user->lmpassword = lm_hash;
+			} else {
+				user->lmpassword = keys.keys.keys2.lmpassword.pwd;
+			}
+			user->lm_password_present = true;
+		}
+		if (keys.keys.keys2.ntpassword.length == 16) {
+			if (rid_crypt) {
+				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
+				user->ntpassword = nt_hash;
+			} else {
+				user->ntpassword = keys.keys.keys2.ntpassword.pwd;
+			}
+			user->nt_password_present = true;
+		}
+		/* TODO: rid decrypt history fields */
 	}
 	return NT_STATUS_OK;
 }
