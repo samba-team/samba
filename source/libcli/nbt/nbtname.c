@@ -49,7 +49,8 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 	uint_t loops = 0;
 	while (loops < 5) {
 		if (*offset >= ndr->data_size) {
-			return NT_STATUS_BAD_NETWORK_NAME;
+			return ndr_pull_error(ndr, NDR_ERR_STRING,
+					      "BAD NBT NAME component");
 		}
 		len = ndr->data[*offset];
 		if (len == 0) {
@@ -61,7 +62,8 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 		if ((len & 0xC0) == 0xC0) {
 			/* its a label pointer */
 			if (1 + *offset >= ndr->data_size) {
-				return NT_STATUS_BAD_NETWORK_NAME;
+				return ndr_pull_error(ndr, NDR_ERR_STRING,
+						      "BAD NBT NAME component");
 			}
 			*max_offset = MAX(*max_offset, *offset + 2);
 			*offset = ((len&0x3F)<<8) | ndr->data[1 + *offset];
@@ -71,10 +73,12 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 		}
 		if ((len & 0xC0) != 0) {
 			/* its a reserved length field */
-			return NT_STATUS_BAD_NETWORK_NAME;
+			return ndr_pull_error(ndr, NDR_ERR_STRING,
+					      "BAD NBT NAME component");
 		}
 		if (*offset + len + 2 > ndr->data_size) {
-			return NT_STATUS_BAD_NETWORK_NAME;
+			return ndr_pull_error(ndr, NDR_ERR_STRING,
+					      "BAD NBT NAME component");
 		}
 		*component = (uint8_t*)talloc_strndup(ndr, (const char *)&ndr->data[1 + *offset], len);
 		NT_STATUS_HAVE_NO_MEMORY(*component);
@@ -84,7 +88,7 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 	}
 
 	/* too many pointers */
-	return NT_STATUS_BAD_NETWORK_NAME;
+	return ndr_pull_error(ndr, NDR_ERR_STRING, "BAD NBT NAME component");
 }
 
 /**
@@ -118,7 +122,8 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 		}
 	}
 	if (num_components == MAX_COMPONENTS) {
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ndr_pull_error(ndr, NDR_ERR_STRING,
+				      "BAD NBT NAME too many components");
 	}
 	if (num_components == 0) {
 		name = talloc_strdup(ndr, "");
@@ -203,7 +208,7 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const
 /*
   decompress a 'compressed' name component
  */
-static NTSTATUS decompress_name(char *name, enum nbt_name_type *type)
+static bool decompress_name(char *name, enum nbt_name_type *type)
 {
 	int i;
 	for (i=0;name[2*i];i++) {
@@ -211,7 +216,7 @@ static NTSTATUS decompress_name(char *name, enum nbt_name_type *type)
 		uint8_t c2 = name[1+(2*i)];
 		if (c1 < 'A' || c1 > 'P' ||
 		    c2 < 'A' || c2 > 'P') {
-			return NT_STATUS_BAD_NETWORK_NAME;
+			return false;
 		}
 		name[i] = ((c1-'A')<<4) | (c2-'A');		    
 	}
@@ -229,7 +234,7 @@ static NTSTATUS decompress_name(char *name, enum nbt_name_type *type)
 		name[i-1] = 0;
 	}
 	
-	return NT_STATUS_OK;
+	return true;
 }
 
 
@@ -282,6 +287,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 	uint8_t *scope;
 	char *cname;
 	const char *s;
+	bool ok;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -304,12 +310,16 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 	/* the first component is limited to 16 bytes in the DOS charset,
 	   which is 32 in the 'compressed' form */
 	if (strlen(cname) > 32) {
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ndr_pull_error(ndr, NDR_ERR_STRING,
+				      "NBT NAME cname > 32");
 	}
 
 	/* decompress the first component */
-	status = decompress_name(cname, &r->type);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ok = decompress_name(cname, &r->type);
+	if (!ok) {
+		return ndr_pull_error(ndr, NDR_ERR_STRING,
+				      "NBT NAME failed to decompress");
+	}
 
 	r->name = talloc_strdup(ndr->current_mem_ctx, cname);
 	NT_STATUS_HAVE_NO_MEMORY(r->name);
@@ -547,7 +557,10 @@ _PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, c
 	uint32_t name_len;
 	uint32_t scope_len = 0;
 
-	if (r == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+	if (r == NULL) {
+		return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER,
+				      "wrepl_nbt_name NULL pointer");
+	}
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -555,14 +568,18 @@ _PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, c
 
 	name_len = strlen(r->name);
 	if (name_len > 15) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		return ndr_push_error(ndr, NDR_ERR_STRING,
+				      "wrepl_nbt_name longer as 15 chars: %s",
+				      r->name);
 	}
 
 	if (r->scope) {
 		scope_len = strlen(r->scope);
 	}
 	if (scope_len > 238) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		return ndr_push_error(ndr, NDR_ERR_STRING,
+				      "wrepl_nbt_name scope longer as 238 chars: %s",
+				      r->scope);
 	}
 
 	namebuf = (uint8_t *)talloc_asprintf(ndr, "%-15s%c%s",
