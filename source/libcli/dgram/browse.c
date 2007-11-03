@@ -105,5 +105,5 @@ NTSTATUS dgram_mailslot_browse_parse(struct dgram_mailslot_handler *dgmslot,
 			file_save("browse.dat", data.data, data.length);
 		}
 	}
-	return status;
+	return NT_STATUS_OK;
 }
