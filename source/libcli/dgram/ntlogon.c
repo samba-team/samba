@@ -117,6 +117,7 @@ NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,
 		if (DEBUGLVL(10)) {
 			file_save("ntlogon.dat", data.data, data.length);
 		}
+		return status;
 	}
 	return NT_STATUS_OK;
 }
