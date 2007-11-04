@@ -495,7 +495,8 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			a_string = realloc_string_sub(a_string, "%D", r);
 			break;
 		case 'I' :
-			a_string = realloc_string_sub(a_string, "%I", client_addr(addr));
+			a_string = realloc_string_sub(a_string, "%I",
+						client_addr(addr, sizeof(addr)));
 			break;
 		case 'i': 
 			a_string = realloc_string_sub( a_string, "%i", client_socket_addr() );

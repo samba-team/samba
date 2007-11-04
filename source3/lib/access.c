@@ -358,24 +358,24 @@ bool check_access(int sock, const char **allow_list, const char **deny_list)
 			ret = allow_access(deny_list,
 					allow_list,
 					"",
-					get_peer_addr(sock,addr));
+					get_peer_addr(sock,addr,sizeof(addr)));
 		} else {
 			DEBUG (3, ("check_access: hostnames in "
 				"host allow/deny list.\n"));
 			ret = allow_access(deny_list,
 					allow_list,
 					get_peer_name(sock,true),
-					get_peer_addr(sock,addr));
+					get_peer_addr(sock,addr,sizeof(addr)));
 		}
 
 		if (ret) {
 			DEBUG(2,("Allowed connection from %s (%s)\n",
 				 only_ip ? "" : get_peer_name(sock,true),
-				 get_peer_addr(sock,addr)));
+				 get_peer_addr(sock,addr,sizeof(addr))));
 		} else {
 			DEBUG(0,("Denied connection from %s (%s)\n",
 				 only_ip ? "" : get_peer_name(sock,true),
-				 get_peer_addr(sock,addr)));
+				 get_peer_addr(sock,addr,sizeof(addr))));
 		}
 	}
 

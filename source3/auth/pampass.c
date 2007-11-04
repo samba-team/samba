@@ -470,7 +470,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 	if (rhost == NULL) {
 		our_rhost = client_name();
 		if (strequal(our_rhost,"UNKNOWN"))
-			our_rhost = client_addr(addr);
+			our_rhost = client_addr(addr,sizeof(addr));
 	} else {
 		our_rhost = rhost;
 	}

@@ -620,7 +620,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 
 	clientname = client_name();
 	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr(addr);
+		clientname = client_addr(addr,sizeof(addr));
 	}
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,

@@ -590,7 +590,7 @@ void client_setfd(int fd)
 	char addr[INET6_ADDRSTRLEN];
 	client_fd = fd;
 	safe_strcpy(client_ip_string,
-			get_peer_addr(client_fd,addr),
+			get_peer_addr(client_fd,addr,sizeof(addr)),
 			sizeof(client_ip_string)-1);
 }
 
@@ -659,9 +659,9 @@ const char *client_name(void)
 	return get_peer_name(client_fd,false);
 }
 
-const char *client_addr(char addr[INET6_ADDRSTRLEN])
+const char *client_addr(char *addr, size_t addrlen)
 {
-	return get_peer_addr(client_fd,addr);
+	return get_peer_addr(client_fd,addr,addrlen);
 }
 
 const char *client_socket_addr(void)
@@ -1700,14 +1700,15 @@ int open_udp_socket(const char *host, int port)
  ******************************************************************/
 
 static const char *get_peer_addr_internal(int fd,
-				char addr_buf[INET6_ADDRSTRLEN],
+				char *addr_buf,
+				size_t addr_buf_len,
 				struct sockaddr_storage *pss,
 				socklen_t *plength)
 {
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
 
-	safe_strcpy(addr_buf,"0.0.0.0",sizeof(addr_buf)-1);
+	safe_strcpy(addr_buf,"0.0.0.0",addr_buf_len-1);
 
 	if (fd == -1) {
 		return addr_buf;
@@ -1824,11 +1825,11 @@ const char *get_peer_name(int fd, bool force_lookup)
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
-		pstrcpy(name_buf, get_peer_addr(fd, addr_buf));
+		pstrcpy(name_buf, get_peer_addr(fd, addr_buf, sizeof(addr_buf)));
 		return name_buf;
 	}
 
-	p = get_peer_addr_internal(fd, addr_buf, &ss, &length);
+	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
 	if (strcmp(p, addr_buf_cache) == 0) {
@@ -1881,9 +1882,9 @@ const char *get_peer_name(int fd, bool force_lookup)
  Return the IP addr of the remote end of a socket as a string.
  ******************************************************************/
 
-const char *get_peer_addr(int fd, char addr[INET6_ADDRSTRLEN])
+const char *get_peer_addr(int fd, char *addr, size_t addr_len)
 {
-	return get_peer_addr_internal(fd, addr, NULL, NULL);
+	return get_peer_addr_internal(fd, addr, addr_len, NULL, NULL);
 }
 
 /*******************************************************************
