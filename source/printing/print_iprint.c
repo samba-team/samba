@@ -779,9 +779,9 @@ static int iprint_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
 	             NULL, pjob->user);
 
-	clientname = client_name();
+	clientname = client_name(get_client_fd());
 	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr(addr,sizeof(addr));
+		clientname = client_addr(get_client_fd(),addr,sizeof(addr));
 	}
 	
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,

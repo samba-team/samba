@@ -468,9 +468,9 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 	}
 
 	if (rhost == NULL) {
-		our_rhost = client_name();
+		our_rhost = client_name(get_client_fd());
 		if (strequal(our_rhost,"UNKNOWN"))
-			our_rhost = client_addr(addr,sizeof(addr));
+			our_rhost = client_addr(get_client_fd(),addr,sizeof(addr));
 	} else {
 		our_rhost = rhost;
 	}

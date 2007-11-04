@@ -1317,8 +1317,8 @@ static void setup_new_vc_session(void)
 #endif
 	if (lp_reset_on_zero_vc()) {
 		connections_forall(shutdown_other_smbds,
-				CONST_DISCARD(void *,
-					client_addr(addr,sizeof(addr))));
+			CONST_DISCARD(void *,
+			client_addr(get_client_fd(),addr,sizeof(addr))));
 	}
 }
 

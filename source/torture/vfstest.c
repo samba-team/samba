@@ -34,6 +34,11 @@ static struct cmd_list {
 
 extern pstring user_socket_options;
 
+int get_client_fd(void)
+{
+	return -1;
+}
+
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
