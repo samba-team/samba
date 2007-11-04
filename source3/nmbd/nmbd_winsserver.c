@@ -680,7 +680,7 @@ bool initialise_wins(void)
 		next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
 		for(i = 0; i < num_ips; i++) {
 			next_token(&ptr, ip_str, NULL, sizeof(ip_str));
-			ip_list[i] = *interpret_addr2(ip_str);
+			(void)interpret_addr2(&ip_list[i], ip_str);
 		}
 		next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
 
@@ -810,8 +810,9 @@ void wins_process_name_refresh_request( struct subnet_record *subrec,
 	struct name_record *namerec = NULL;
 	int ttl = get_ttl_from_packet(nmb);
 	struct in_addr from_ip;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	putip( (char *)&from_ip, &nmb->additional->rdata[2] );
 
 	if(bcast) {
@@ -1116,8 +1117,9 @@ void wins_process_name_registration_request(struct subnet_record *subrec,
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
 	bool registering_group_name = (nb_flags & NB_GROUP) ? True : False;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
 	if(bcast) {
@@ -1192,7 +1194,7 @@ to register name %s. Name already exists in WINS with source type %d.\n",
 	 */
 
 	if(registering_group_name && (question->name_type != 0x1c)) {
-		from_ip = *interpret_addr2("255.255.255.255");
+		(void)interpret_addr2(&from_ip, "255.255.255.255");
 	}
 
 	/*
@@ -1397,8 +1399,9 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
 	int ttl;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	memcpy((char *)&orig_reg_packet, userdata->data, sizeof(struct packet_struct *));
 
 	nmb = &orig_reg_packet->packet.nmb;
@@ -1486,9 +1489,10 @@ void wins_process_multihomed_name_registration_request( struct subnet_record *su
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
 	bool group = (nb_flags & NB_GROUP) ? True : False;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 	unstring qname;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
 	if(bcast) {
@@ -2112,8 +2116,9 @@ static int wins_processing_traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA
 	time_t t = *(time_t *)state;
 	bool store_record = False;
 	struct name_record *namerec = NULL;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	if (kbuf.dsize != sizeof(unstring) + 1) {
 		return 0;
 	}
@@ -2381,9 +2386,10 @@ void nmbd_wins_new_entry(struct messaging_context *msg,
 	struct name_record *new_namerec = NULL;
 	struct nmb_name question;
 	bool overwrite=False;
-	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
+	struct in_addr our_fake_ip;
 	int i;
 
+	(void)interpret_addr2(&our_fake_ip, "0.0.0.0");
 	if (buf==NULL) {
 		return;
 	}

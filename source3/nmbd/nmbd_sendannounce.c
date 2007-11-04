@@ -488,7 +488,7 @@ void announce_remote(time_t t)
 		else
 			wgroup = pwgroup;
 
-		addr = *interpret_addr2(s2);
+		(void)interpret_addr2(&addr,s2);
     
 		/* Announce all our names including aliases */
 		/* Give the ip address as the address of our first
@@ -569,7 +569,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 
 	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
 		/* The entries are of the form a.b.c.d */
-		addr = *interpret_addr2(s2);
+		(void)interpret_addr2(&addr,s2);
 
 		DEBUG(5,("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
 			global_myname(), inet_ntoa(addr) ));

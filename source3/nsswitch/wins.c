@@ -160,7 +160,7 @@ static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
 		return NULL;
 
 	make_nmb_name(&nname, "*", 0);
-	ip = *interpret_addr2(addr);
+	(void)interpret_addr2(&ip,addr);
 	status = node_status_query(fd,&nname,ip, count, NULL);
 
 	close(fd);

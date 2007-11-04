@@ -162,12 +162,13 @@ bool register_my_workgroup_and_names(void)
 			for(subrec = FIRST_SUBNET; subrec; subrec = subrec->next) {
 				for (n=0;n<ARRAY_SIZE(name_types);n++) {
 					struct name_record *namerec;
-					struct nmb_name nmbname;			
+					struct nmb_name nmbname;
+					struct in_addr ip;
 					make_nmb_name(&nmbname, my_netbios_names(i), name_types[n]);
 					namerec = find_name_on_subnet(unicast_subnet, &nmbname, FIND_SELF_NAME);
 					if (namerec == NULL) continue;
 					for (a=0;cluster_addresses[a];a++) {
-						add_ip_to_name_record(namerec, *interpret_addr2(cluster_addresses[a]));
+						add_ip_to_name_record(namerec, *interpret_addr2(&ip, cluster_addresses[a]));
 					}
 				}
 			}
