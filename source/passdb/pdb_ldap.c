@@ -159,7 +159,8 @@ static const char** get_userattr_delete_list( TALLOC_CTX *mem_ctx,
 
 static const char* get_objclass_filter( int schema_ver )
 {
-	static fstring objclass_filter;
+	fstring objclass_filter;
+	char *result;
 	
 	switch( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
@@ -170,10 +171,13 @@ static const char* get_objclass_filter( int schema_ver )
 			break;
 		default:
 			DEBUG(0,("get_objclass_filter: Invalid schema version specified!\n"));
+			objclass_filter[0] = '\0';
 			break;
 	}
 	
-	return objclass_filter;	
+	result = talloc_strdup(talloc_tos(), objclass_filter);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /*****************************************************************

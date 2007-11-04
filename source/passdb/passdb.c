@@ -261,7 +261,8 @@ NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
 
 char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
 {
-	static fstring acct_str;
+	fstring acct_str;
+	char *result;
 
 	size_t i = 0;
 
@@ -288,7 +289,9 @@ char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
 	acct_str[i++] = ']';
 	acct_str[i++] = '\0';
 
-	return acct_str;
+	result = talloc_strdup(talloc_tos(), acct_str);
+	SMB_ASSERT(result != NULL);
+	return result;
 }     
 
 /**********************************************************

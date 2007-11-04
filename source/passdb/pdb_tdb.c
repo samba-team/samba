@@ -55,7 +55,7 @@ static bool pwent_initialized;
 
 static TDB_CONTEXT *tdbsam;
 static int ref_count = 0;
-static pstring tdbsam_filename;
+static char *tdbsam_filename;
 
 /**********************************************************************
  Marshall/unmarshall struct samu structs.
@@ -1609,7 +1609,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 		pstr_sprintf( tdbfile, "%s/%s", dyn_STATEDIR(), PASSDB_FILE_NAME );
 		pfile = tdbfile;
 	}
-	pstrcpy( tdbsam_filename, pfile );
+	tdbsam_filename = SMB_STRDUP(pfile);
 
 	/* no private data */
 	
