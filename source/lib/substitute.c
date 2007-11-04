@@ -41,6 +41,7 @@ void set_local_machine_name(const char* local_name, bool perm)
 {
 	static bool already_perm = False;
 	fstring tmp_local_machine;
+	char addr[INET6_ADDRSTRLEN];
 
 	fstrcpy(tmp_local_machine,local_name);
 	trim_char(tmp_local_machine,' ',' ');
@@ -51,7 +52,7 @@ void set_local_machine_name(const char* local_name, bool perm)
 	 */
 
 	if ( strequal(tmp_local_machine, "*SMBSERVER") || strequal(tmp_local_machine, "*SMBSERV") )  {
-		fstrcpy( local_machine, client_socket_addr() );
+		fstrcpy( local_machine, client_socket_addr(addr, sizeof(addr)) );
 		return;
 	}
 
@@ -499,7 +500,8 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 						client_addr(addr, sizeof(addr)));
 			break;
 		case 'i': 
-			a_string = realloc_string_sub( a_string, "%i", client_socket_addr() );
+			a_string = realloc_string_sub( a_string, "%i",
+						client_socket_addr(addr, sizeof(addr)) );
 			break;
 		case 'L' : 
 			if ( StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {

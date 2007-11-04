@@ -405,7 +405,7 @@ enum client_action
 
 			case 'I':
 			{
-				cli_info.dest_ip = *interpret_addr2(optarg);
+				(void)interpret_addr2(&cli_info.dest_ip, optarg);
 				if (is_zero_ip(cli_info.dest_ip))
 				{
 					exit(1);

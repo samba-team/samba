@@ -183,14 +183,16 @@ static void parse_ip(struct tagged_ip *ip, const char *str)
 	char *s = strchr(str, ':');
 	if (!s) {
 		fstrcpy(ip->tag, "*");
-		ip->ip = *interpret_addr2(str);
+		(void)interpret_addr2(&ip->ip,str);
 		return;
 	} 
 
-	ip->ip = *interpret_addr2(s+1);
+	(void)interpret_addr2(&ip->ip,s+1);
 	fstrcpy(ip->tag, str);
 	s = strchr(ip->tag, ':');
-	if (s) *s = 0;
+	if (s) {
+		*s = 0;
+	}
 }
 
 

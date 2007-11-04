@@ -199,12 +199,11 @@ uint32 interpret_addr(const char *str)
  A convenient addition to interpret_addr().
 ******************************************************************/
 
-struct in_addr *interpret_addr2(const char *str)
+struct in_addr *interpret_addr2(struct in_addr *ip, const char *str)
 {
-	static struct in_addr ret;
 	uint32 a = interpret_addr(str);
-	ret.s_addr = a;
-	return(&ret);
+	ip->s_addr = a;
+	return ip;
 }
 
 /*******************************************************************
@@ -331,15 +330,7 @@ bool is_zero_addr(const struct sockaddr_storage *pss)
 
 void zero_ip_v4(struct in_addr *ip)
 {
-        static bool init;
-        static struct in_addr ipzero;
-
-        if (!init) {
-                ipzero = *interpret_addr2("0.0.0.0");
-                init = true;
-        }
-
-        *ip = ipzero;
+	memset(ip, '\0', sizeof(struct in_addr));
 }
 
 /*******************************************************************
@@ -595,21 +586,20 @@ void client_setfd(int fd)
 }
 
 /****************************************************************************
- Return a static string of an IP address (IPv4 or IPv6).
+ Return the string of an IP address (IPv4 or IPv6).
 ****************************************************************************/
 
-static const char *get_socket_addr(int fd)
+static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
 {
 	struct sockaddr_storage sa;
 	socklen_t length = sizeof(sa);
-	static char addr_buf[INET6_ADDRSTRLEN];
 
 	/* Ok, returning a hard coded IPv4 address
  	 * is bogus, but it's just as bogus as a
  	 * zero IPv6 address. No good choice here.
  	 */
 
-	safe_strcpy(addr_buf, "0.0.0.0", sizeof(addr_buf)-1);
+	safe_strcpy(addr_buf, "0.0.0.0", addr_len-1);
 
 	if (fd == -1) {
 		return addr_buf;
@@ -621,7 +611,7 @@ static const char *get_socket_addr(int fd)
 		return addr_buf;
 	}
 
-	return print_sockaddr_len(addr_buf, sizeof(addr_buf), &sa, length);
+	return print_sockaddr_len(addr_buf, addr_len, &sa, length);
 }
 
 /****************************************************************************
@@ -664,9 +654,9 @@ const char *client_addr(char *addr, size_t addrlen)
 	return get_peer_addr(client_fd,addr,addrlen);
 }
 
-const char *client_socket_addr(void)
+const char *client_socket_addr(char *addr, size_t addr_len)
 {
-	return get_socket_addr(client_fd);
+	return get_socket_addr(client_fd, addr, addr_len);
 }
 
 int client_socket_port(void)
@@ -1672,9 +1662,9 @@ int open_udp_socket(const char *host, int port)
 	int type = SOCK_DGRAM;
 	struct sockaddr_in sock_out;
 	int res;
-	struct in_addr *addr;
+	struct in_addr addr;
 
-	addr = interpret_addr2(host);
+	(void)interpret_addr2(&addr, host);
 
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
@@ -1682,7 +1672,7 @@ int open_udp_socket(const char *host, int port)
 	}
 
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
-	putip((char *)&sock_out.sin_addr,(char *)addr);
+	putip((char *)&sock_out.sin_addr,(char *)&addr);
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
 
@@ -1987,32 +1977,32 @@ out_umask:
  Get my own canonical name, including domain.
 ****************************************************************************/
 
+static fstring dnshostname_cache;
+
 bool get_mydnsfullname(fstring my_dnsname)
 {
-	static fstring dnshostname;
-
-	if (!*dnshostname) {
+	if (!*dnshostname_cache) {
 		struct addrinfo *res = NULL;
 		bool ret;
 
 		/* get my host name */
-		if (gethostname(dnshostname, sizeof(dnshostname)) == -1) {
-			*dnshostname = '\0';
+		if (gethostname(dnshostname_cache, sizeof(dnshostname_cache)) == -1) {
+			*dnshostname_cache = '\0';
 			DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
 			return false;
 		}
 
 		/* Ensure null termination. */
-		dnshostname[sizeof(dnshostname)-1] = '\0';
+		dnshostname_cache[sizeof(dnshostname_cache)-1] = '\0';
 
 		ret = interpret_string_addr_internal(&res,
-					dnshostname,
+					dnshostname_cache,
 					AI_ADDRCONFIG|AI_CANONNAME);
 
 		if (!ret || res == NULL) {
 			DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
 				"name %s [%s]\n",
-				dnshostname,
+				dnshostname_cache,
 				gai_strerror(ret) ));
 			return false;
 		}
@@ -2024,16 +2014,16 @@ bool get_mydnsfullname(fstring my_dnsname)
 		if (res->ai_canonname == NULL) {
 			DEBUG(3,("get_mydnsfullname: failed to get "
 				"canonical name for %s\n",
-				dnshostname));
+				dnshostname_cache));
 			freeaddrinfo(res);
 			return false;
 		}
 
 
-		fstrcpy(dnshostname, res->ai_canonname);
+		fstrcpy(dnshostname_cache, res->ai_canonname);
 		freeaddrinfo(res);
 	}
-	fstrcpy(my_dnsname, dnshostname);
+	fstrcpy(my_dnsname, dnshostname_cache);
 	return true;
 }
 
