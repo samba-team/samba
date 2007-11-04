@@ -443,7 +443,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_synta
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
 	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return status;
 	}
@@ -453,7 +453,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_synta
 
 	talloc_free(mem_ctx);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
@@ -1416,5 +1416,5 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	*pp2 = p2;
 
-	return status;
+	return NT_STATUS_OK;
 }

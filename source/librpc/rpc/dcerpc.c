@@ -803,7 +803,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 		return status;
 	}
 
-	return status;	
+	return NT_STATUS_OK;	
 }
 
 
