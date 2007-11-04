@@ -587,9 +587,10 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 
 void client_setfd(int fd)
 {
+	char addr[INET6_ADDRSTRLEN];
 	client_fd = fd;
 	safe_strcpy(client_ip_string,
-			get_peer_addr(client_fd),
+			get_peer_addr(client_fd,addr),
 			sizeof(client_ip_string)-1);
 }
 
@@ -658,9 +659,9 @@ const char *client_name(void)
 	return get_peer_name(client_fd,false);
 }
 
-const char *client_addr(void)
+const char *client_addr(char addr[INET6_ADDRSTRLEN])
 {
-	return get_peer_addr(client_fd);
+	return get_peer_addr(client_fd,addr);
 }
 
 const char *client_socket_addr(void)
@@ -1699,12 +1700,12 @@ int open_udp_socket(const char *host, int port)
  ******************************************************************/
 
 static const char *get_peer_addr_internal(int fd,
+				char addr_buf[INET6_ADDRSTRLEN],
 				struct sockaddr_storage *pss,
 				socklen_t *plength)
 {
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
-	static char addr_buf[INET6_ADDRSTRLEN];
 
 	safe_strcpy(addr_buf,"0.0.0.0",sizeof(addr_buf)-1);
 
@@ -1731,7 +1732,6 @@ static const char *get_peer_addr_internal(int fd,
 			*plength);
 	return addr_buf;
 }
-
 
 /*******************************************************************
  Matchname - determine if host name matches IP address. Used to
@@ -1807,10 +1807,12 @@ static bool matchname(const char *remotehost,
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
+static char addr_buf_cache[INET6_ADDRSTRLEN];
+
 const char *get_peer_name(int fd, bool force_lookup)
 {
-	static fstring addr_buf;
 	static pstring name_buf;
+	char addr_buf[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
 	const char *p;
@@ -1822,13 +1824,14 @@ const char *get_peer_name(int fd, bool force_lookup)
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
-		return get_peer_addr(fd);
+		pstrcpy(name_buf, get_peer_addr(fd, addr_buf));
+		return name_buf;
 	}
 
-	p = get_peer_addr_internal(fd, &ss, &length);
+	p = get_peer_addr_internal(fd, addr_buf, &ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (strcmp(p, addr_buf) == 0) {
+	if (strcmp(p, addr_buf_cache) == 0) {
 		return name_buf;
 	}
 
@@ -1837,7 +1840,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 		return name_buf;
 	}
 
-	fstrcpy(addr_buf, p);
+	safe_strcpy(addr_buf_cache, p, sizeof(addr_buf_cache)-1);
 
 	/* Look up the remote host name. */
 	ret = getnameinfo((struct sockaddr *)&ss,
@@ -1878,9 +1881,9 @@ const char *get_peer_name(int fd, bool force_lookup)
  Return the IP addr of the remote end of a socket as a string.
  ******************************************************************/
 
-const char *get_peer_addr(int fd)
+const char *get_peer_addr(int fd, char addr[INET6_ADDRSTRLEN])
 {
-	return get_peer_addr_internal(fd, NULL, NULL);
+	return get_peer_addr_internal(fd, addr, NULL, NULL);
 }
 
 /*******************************************************************

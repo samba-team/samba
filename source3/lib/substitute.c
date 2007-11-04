@@ -449,6 +449,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr, vnnstr;
 	struct passwd *pass;
+	char addr[INET6_ADDRSTRLEN];
 	const char *local_machine_name = get_local_machine_name();
 
 	/* workaround to prevent a crash while looking at bug #687 */
@@ -494,7 +495,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			a_string = realloc_string_sub(a_string, "%D", r);
 			break;
 		case 'I' :
-			a_string = realloc_string_sub(a_string, "%I", client_addr());
+			a_string = realloc_string_sub(a_string, "%I", client_addr(addr));
 			break;
 		case 'i': 
 			a_string = realloc_string_sub( a_string, "%i", client_socket_addr() );

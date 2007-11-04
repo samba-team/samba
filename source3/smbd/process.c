@@ -1460,15 +1460,18 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
 	DO_PROFILE_INC(smb_count);
 
 	if (trans_num == 0) {
+		char addr[INET6_ADDRSTRLEN];
+
 		/* on the first packet, check the global hosts allow/ hosts
 		deny parameters before doing any parsing of the packet
 		passed to us by the client.  This prevents attacks on our
 		parsing code from hosts not in the hosts allow list */
+
 		if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
 				  lp_hostsdeny(-1))) {
 			/* send a negative session response "not listening on calling name" */
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
+			DEBUG( 1, ( "Connection denied from %s\n", client_addr(addr) ) );
 			(void)send_smb(smbd_server_fd(),(char *)buf);
 			exit_server_cleanly("connection denied");
 		}
