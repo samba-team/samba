@@ -758,8 +758,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	add_session_user(user);
 
-	safe_strcpy(conn->client_address, client_addr(addr,sizeof(addr)), 
-		    sizeof(conn->client_address)-1);
+	safe_strcpy(conn->client_address,
+			client_addr(get_client_fd(),addr,sizeof(addr)), 
+			sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
 	conn->used = True;
@@ -1303,7 +1304,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
 			get_remote_machine_name(),
-			client_addr(addr,sizeof(addr)),
+			client_addr(get_client_fd(),addr,sizeof(addr)),
 			service));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;

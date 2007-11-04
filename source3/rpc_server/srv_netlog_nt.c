@@ -210,8 +210,8 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
      */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_name(), client_addr(addr,sizeof(addr))))
-	{
+			client_name(get_client_fd()),
+			client_addr(get_client_fd(),addr,sizeof(addr)))) {
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;
 	}

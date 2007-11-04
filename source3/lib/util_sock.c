@@ -21,13 +21,6 @@
 
 #include "includes.h"
 
-/* the following 3 client_*() functions are nasty ways of allowing
-   some generic functions to get info that really should be hidden in
-   particular modules */
-static int client_fd = -1;
-/* What to print out on a client disconnect error. */
-static char client_ip_string[INET6_ADDRSTRLEN];
-
 /****************************************************************************
  Return true if a string could be an IPv4 address.
 ****************************************************************************/
@@ -573,19 +566,6 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Set the global client_fd variable.
-****************************************************************************/
-
-void client_setfd(int fd)
-{
-	char addr[INET6_ADDRSTRLEN];
-	client_fd = fd;
-	safe_strcpy(client_ip_string,
-			get_peer_addr(client_fd,addr,sizeof(addr)),
-			sizeof(client_ip_string)-1);
-}
-
-/****************************************************************************
  Return the string of an IP address (IPv4 or IPv6).
 ****************************************************************************/
 
@@ -614,6 +594,8 @@ static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
 	return print_sockaddr_len(addr_buf, addr_len, &sa, length);
 }
 
+#if 0
+/* Not currently used. JRA. */
 /****************************************************************************
  Return the port number we've bound to on a socket.
 ****************************************************************************/
@@ -643,26 +625,30 @@ static int get_socket_port(int fd)
 	}
 	return -1;
 }
+#endif
 
-const char *client_name(void)
+const char *client_name(int fd)
 {
-	return get_peer_name(client_fd,false);
+	return get_peer_name(fd,false);
 }
 
-const char *client_addr(char *addr, size_t addrlen)
+const char *client_addr(int fd, char *addr, size_t addrlen)
 {
-	return get_peer_addr(client_fd,addr,addrlen);
+	return get_peer_addr(fd,addr,addrlen);
 }
 
-const char *client_socket_addr(char *addr, size_t addr_len)
+const char *client_socket_addr(int fd, char *addr, size_t addr_len)
 {
-	return get_socket_addr(client_fd, addr, addr_len);
+	return get_socket_addr(fd, addr, addr_len);
 }
 
-int client_socket_port(void)
+#if 0
+/* Not currently used. JRA. */
+int client_socket_port(int fd)
 {
-	return get_socket_port(client_fd);
+	return get_socket_port(fd);
 }
+#endif
 
 /****************************************************************************
  Accessor functions to make thread-safe code easier later...
@@ -904,6 +890,7 @@ ssize_t read_socket_with_timeout(int fd,
 	ssize_t readret;
 	size_t nread = 0;
 	struct timeval timeout;
+	char addr[INET6_ADDRSTRLEN];
 
 	/* just checking .... */
 	if (maxcnt <= 0)
@@ -928,12 +915,12 @@ ssize_t read_socket_with_timeout(int fd,
 			}
 
 			if (readret == -1) {
-				if (fd == client_fd) {
+				if (fd == get_client_fd()) {
 					/* Try and give an error message
 					 * saying what client failed. */
 					DEBUG(0,("read_socket_with_timeout: "
 						"client %s read error = %s.\n",
-						client_ip_string,
+						get_peer_addr(fd,addr,sizeof(addr)),
 						strerror(errno) ));
 				} else {
 					DEBUG(0,("read_socket_with_timeout: "
@@ -967,12 +954,13 @@ ssize_t read_socket_with_timeout(int fd,
 		/* Check if error */
 		if (selrtn == -1) {
 			/* something is wrong. Maybe the socket is dead? */
-			if (fd == client_fd) {
+			if (fd == get_client_fd()) {
 				/* Try and give an error message saying
 				 * what client failed. */
 				DEBUG(0,("read_socket_with_timeout: timeout "
 				"read for client %s. select error = %s.\n",
-				client_ip_string, strerror(errno) ));
+				get_peer_addr(fd,addr,sizeof(addr)),
+				strerror(errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout "
 				"read. select error = %s.\n",
@@ -1002,12 +990,13 @@ ssize_t read_socket_with_timeout(int fd,
 
 		if (readret == -1) {
 			/* the descriptor is probably dead */
-			if (fd == client_fd) {
+			if (fd == get_client_fd()) {
 				/* Try and give an error message
 				 * saying what client failed. */
 				DEBUG(0,("read_socket_with_timeout: timeout "
 					"read to client %s. read error = %s.\n",
-					client_ip_string, strerror(errno) ));
+					get_peer_addr(fd,addr,sizeof(addr)),
+					strerror(errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout "
 					"read. read error = %s.\n",
@@ -1032,6 +1021,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 {
 	ssize_t ret;
 	size_t total=0;
+	char addr[INET6_ADDRSTRLEN];
 
 	set_smb_read_error(SMB_READ_OK);
 
@@ -1047,13 +1037,13 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 		}
 
 		if (ret == -1) {
-			if (fd == client_fd) {
+			if (fd == get_client_fd()) {
 				/* Try and give an error message saying
 				 * what client failed. */
 				DEBUG(0,("read_data: read failure for %d "
 					"bytes to client %s. Error = %s\n",
 					(int)(N - total),
-					client_ip_string,
+					get_peer_addr(fd,addr,sizeof(addr)),
 					strerror(errno) ));
 			} else {
 				DEBUG(0,("read_data: read failure for %d. "
@@ -1077,17 +1067,19 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
+	char addr[INET6_ADDRSTRLEN];
 
 	while (total < N) {
 		ret = sys_write(fd,buffer + total,N - total);
 
 		if (ret == -1) {
-			if (fd == client_fd) {
+			if (fd == get_client_fd()) {
 				/* Try and give an error message saying
 				 * what client failed. */
 				DEBUG(0,("write_data: write failure in "
 					"writing to client %s. Error %s\n",
-					client_ip_string, strerror(errno) ));
+					get_peer_addr(fd,addr,sizeof(addr)),
+					strerror(errno) ));
 			} else {
 				DEBUG(0,("write_data: write failure. "
 					"Error = %s\n", strerror(errno) ));

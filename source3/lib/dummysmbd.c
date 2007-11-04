@@ -23,6 +23,11 @@
 
 #include "includes.h"
 
+int get_client_fd(void)
+{
+	return -1;
+}
+
 int find_service(fstring service)
 {
 	return -1;
