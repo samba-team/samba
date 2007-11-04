@@ -1728,7 +1728,7 @@ static const char *get_peer_addr_internal(int fd,
 	}
 
 	print_sockaddr_len(addr_buf,
-			sizeof(addr_buf),
+			addr_buf_len,
 			pss,
 			*plength);
 	return addr_buf;
