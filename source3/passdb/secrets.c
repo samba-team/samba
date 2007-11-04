@@ -209,10 +209,12 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
  **/
 static const char *trust_keystr(const char *domain)
 {
-	static fstring keystr;
+	char *keystr;
 
-	slprintf(keystr,sizeof(keystr)-1,"%s/%s",
-		 SECRETS_MACHINE_ACCT_PASS, domain);
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_MACHINE_ACCT_PASS, domain);
+	SMB_ASSERT(keystr != NULL);
+
 	strupper_m(keystr);
 
 	return keystr;
@@ -227,9 +229,11 @@ static const char *trust_keystr(const char *domain)
  **/
 static char *trustdom_keystr(const char *domain)
 {
-	static pstring keystr;
+	char *keystr;
 
-	pstr_sprintf(keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_DOMTRUST_ACCT_PASS, domain);
+	SMB_ASSERT(keystr != NULL);
 	strupper_m(keystr);
 
 	return keystr;
