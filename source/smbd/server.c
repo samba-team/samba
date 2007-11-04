@@ -624,8 +624,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd(),remaddr),
-							False);
+				set_remote_machine_name(get_peer_addr(smbd_server_fd(),
+								remaddr,
+								sizeof(remaddr)),
+								false);
 
 				/* Reset the state of the random
 				 * number generation system, so

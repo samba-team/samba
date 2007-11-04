@@ -1471,7 +1471,8 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
 				  lp_hostsdeny(-1))) {
 			/* send a negative session response "not listening on calling name" */
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-			DEBUG( 1, ( "Connection denied from %s\n", client_addr(addr) ) );
+			DEBUG( 1, ( "Connection denied from %s\n",
+				client_addr(addr,sizeof(addr)) ) );
 			(void)send_smb(smbd_server_fd(),(char *)buf);
 			exit_server_cleanly("connection denied");
 		}

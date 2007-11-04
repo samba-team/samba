@@ -71,7 +71,8 @@ static bool read_target_host(const char *mapfile, pstring targethost)
 
 		*space = '\0';
 
-		if (strncmp(client_addr(addr), buf, strlen(buf)) == 0) {
+		if (strncmp(client_addr(addr,sizeof(addr)),
+				buf, strlen(buf)) == 0) {
 			found = True;
 			break;
 		}

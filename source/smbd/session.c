@@ -161,7 +161,7 @@ bool session_claim(user_struct *vuser)
 
 	hostname = client_name();
 	if (strcmp(hostname, "UNKNOWN") == 0) {
-		hostname = client_addr(addr);
+		hostname = client_addr(addr,sizeof(addr));
 	}
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
@@ -171,7 +171,7 @@ bool session_claim(user_struct *vuser)
 	sessionid.uid = vuser->uid;
 	sessionid.gid = vuser->gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
-	fstrcpy(sessionid.ip_addr_str, client_addr(addr));
+	fstrcpy(sessionid.ip_addr_str, client_addr(addr,sizeof(addr)));
 	sessionid.connect_start = time(NULL);
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str,

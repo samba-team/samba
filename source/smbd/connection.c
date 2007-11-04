@@ -152,7 +152,7 @@ bool claim_connection(connection_struct *conn, const char *name,
 	crec.bcast_msg_flags = msg_flags;
 	
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr,conn?conn->client_address:client_addr(addr),
+	strlcpy(crec.addr,conn?conn->client_address:client_addr(addr,sizeof(addr)),
 		sizeof(crec.addr));
 
 	dbuf.dptr = (uint8 *)&crec;
