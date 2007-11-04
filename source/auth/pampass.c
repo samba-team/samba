@@ -455,6 +455,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 {
 	int pam_error;
 	const char *our_rhost;
+	char addr[INET6_ADDRSTRLEN];
 
 	*pamh = (pam_handle_t *)NULL;
 
@@ -469,7 +470,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 	if (rhost == NULL) {
 		our_rhost = client_name();
 		if (strequal(our_rhost,"UNKNOWN"))
-			our_rhost = client_addr();
+			our_rhost = client_addr(addr);
 	} else {
 		our_rhost = rhost;
 	}

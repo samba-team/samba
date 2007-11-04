@@ -602,6 +602,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			if (allowable_number_of_smbd_processes() &&
 			    smbd_server_fd() != -1 &&
 			    ((child = sys_fork())==0)) {
+				char remaddr[INET6_ADDRSTRLEN];
+
 				/* Child code ... */
 
 				/* Stop zombies, the parent explicitly handles
@@ -622,7 +624,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* this is needed so that we get decent entries
 				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd()),
+				set_remote_machine_name(get_peer_addr(smbd_server_fd(),remaddr),
 							False);
 
 				/* Reset the state of the random

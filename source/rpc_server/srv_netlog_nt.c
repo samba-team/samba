@@ -196,8 +196,10 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	const uint8 *pass;
 	bool ret;
 	uint32 acct_ctrl;
-
+	
 #if 0
+	char addr[INET6_ADDRSTRLEN];
+
     /*
      * Currently this code is redundent as we already have a filter
      * by hostname list. What this code really needs to do is to 
@@ -208,7 +210,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
      */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_name(), client_addr()))
+	                  client_name(), client_addr(addr)))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;

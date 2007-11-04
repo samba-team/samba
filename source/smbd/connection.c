@@ -128,6 +128,7 @@ bool claim_connection(connection_struct *conn, const char *name,
 	struct connections_data crec;
 	TDB_DATA dbuf;
 	NTSTATUS status;
+	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(5,("claiming [%s]\n", name));
 
@@ -151,7 +152,7 @@ bool claim_connection(connection_struct *conn, const char *name,
 	crec.bcast_msg_flags = msg_flags;
 	
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr,conn?conn->client_address:client_addr(),
+	strlcpy(crec.addr,conn?conn->client_address:client_addr(addr),
 		sizeof(crec.addr));
 
 	dbuf.dptr = (uint8 *)&crec;

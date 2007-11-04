@@ -55,6 +55,7 @@ static bool read_target_host(const char *mapfile, pstring targethost)
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
 	while (x_fgets(buf, sizeof(buf), f) != NULL) {
+		char addr[INET6_ADDRSTRLEN];
 
 		if ((strlen(buf) > 0) && (buf[strlen(buf)-1] == '\n'))
 			buf[strlen(buf)-1] = '\0';
@@ -70,7 +71,7 @@ static bool read_target_host(const char *mapfile, pstring targethost)
 
 		*space = '\0';
 
-		if (strncmp(client_addr(), buf, strlen(buf)) == 0) {
+		if (strncmp(client_addr(addr), buf, strlen(buf)) == 0) {
 			found = True;
 			break;
 		}

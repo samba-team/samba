@@ -567,6 +567,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	pstring		new_jobname;
 	int		num_options = 0; 
 	cups_option_t 	*options = NULL;
+	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(5,("cups_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -619,7 +620,7 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 
 	clientname = client_name();
 	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr();
+		clientname = client_addr(addr);
 	}
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,

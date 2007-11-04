@@ -647,7 +647,8 @@ return the hostname of the client
 const char *cgi_remote_addr(void)
 {
 	if (inetd_server) {
-		return get_peer_addr(1);
+		char addr[INET6_ADDRSTRLEN];
+		return get_peer_addr(1,addr);
 	}
 	return getenv("REMOTE_ADDR");
 }
