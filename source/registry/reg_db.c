@@ -788,6 +788,21 @@ static WERROR regdb_set_secdesc(const char *key,
 	}
 	normalize_dbkey(tdbkey);
 
+	if (secdesc == NULL) {
+		/* assuming a delete */
+		int tdb_ret;
+
+		tdb_ret = tdb_trans_delete(tdb_reg->tdb,
+					   string_term_tdb_data(tdbkey));
+		if (tdb_ret == -1) {
+			err = ntstatus_to_werror(map_nt_error_from_unix(errno));
+		} else {
+			err = WERR_OK;
+		}
+
+		goto done;
+	}
+
 	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
 						   &tdbdata.dptr,
 						   &tdbdata.dsize));

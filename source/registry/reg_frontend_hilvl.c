@@ -204,3 +204,13 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 	*psecdesc = secdesc;
 	return WERR_OK;
 }
+
+WERROR regkey_set_secdesc(REGISTRY_KEY *key,
+			  struct security_descriptor *psecdesc)
+{
+	if (key->hook && key->hook->ops && key->hook->ops->set_secdesc) {
+		return key->hook->ops->set_secdesc(key->name, psecdesc);
+	}
+
+	return WERR_ACCESS_DENIED;
+}
