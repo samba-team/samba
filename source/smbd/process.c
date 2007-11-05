@@ -45,7 +45,7 @@ extern int max_send;
 
 /* Socket functions for smbd packet processing. */
 
-static bool valid_packet_size(len)
+static bool valid_packet_size(size_t len)
 {
 	/*
 	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
