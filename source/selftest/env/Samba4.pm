@@ -447,7 +447,7 @@ sub provision($$$$$$)
 	my $realm = "SAMBA.EXAMPLE.COM";
 	my $dnsname = "samba.example.com";
 	my $basedn = "dc=samba,dc=example,dc=com";
-	my $root = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
+	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
 	my $srcdir="$RealBin/..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
@@ -595,10 +595,9 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	push (@provision_options, "--adminpass=$password");
 	push (@provision_options, "--krbtgtpass=krbtgt$password");
 	push (@provision_options, "--machinepass=machine$password");
-	push (@provision_options, "--root=$root");
+	push (@provision_options, "--root=$unix_name");
 	push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
 	push (@provision_options, "--password=$password");
-	push (@provision_options, "--root=$root");
 	push (@provision_options, "--server-role=$server_role");
 
 	my $ldap_uri= "$ldapdir/ldapi";
@@ -629,7 +628,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	if (defined($self->{ldap})) {
 
                 push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$root --realm=$realm --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
 	        if ($self->{ldap} eq "openldap") {
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");
