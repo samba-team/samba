@@ -121,4 +121,4 @@ _PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
   @note You should never have to call this function directly. Call the DEBUG()
   macro instead.
 */
-_PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2);
+_PUBLIC_ void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
