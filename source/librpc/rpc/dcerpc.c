@@ -1291,7 +1291,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 				       NDR_OUT, st);
 	if (strcmp(s1, s2) != 0) {
 #if 1
-		printf("VALIDATE ERROR:\nWIRE:\n%s\n GEN:\n%s\n", s1, s2);
+		DEBUG(3,("VALIDATE ERROR:\nWIRE:\n%s\n GEN:\n%s\n", s1, s2));
 #else
 		/* this is sometimes useful */
 		printf("VALIDATE ERROR\n");
@@ -1299,6 +1299,8 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		file_save("gen.dat", s2, strlen(s2));
 		system("diff -u wire.dat gen.dat");
 #endif
+		return ndr_push_error(push, NDR_ERR_VALIDATE,
+				      "failed output validation strings doesn't match");
 	}
 
 	return NT_STATUS_OK;
