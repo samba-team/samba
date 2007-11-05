@@ -32,9 +32,11 @@ POPT_OBJ = @POPT_OBJ@
 
 LDAP_LIBS = @LDAP_LIBS@
 
+SHLIBEXT = @SHLIBEXT@
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
-	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"@SHLIBEXT@\" -DUSE_MMAP=1 @CFLAGS@
+	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=@LDFLAGS@ -Llib -lldb @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TDB_LIBS) \
 		  $(LDAP_LIBS)
@@ -104,6 +106,9 @@ lib/libldb.a: $(OBJS)
 lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
 	$(CC) -shared -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
+sample_module.$(SHLIBEXT): tests/sample_module.o 
+	$(CC) -shared -o $@ tests/sample_module.o $(LIB_FLAGS)
+
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS)
 
@@ -159,6 +164,11 @@ distclean: clean
 
 realdistclean: distclean
 	rm -f configure.in include/config.h.in
+
+check:: test
+
+check-soloading: sample_module.$(SHLIBEXT)
+	LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
 
 test: all
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done

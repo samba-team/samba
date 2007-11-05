@@ -60,6 +60,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "verbose",   'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &options.interactive, 0, "input from stdin", NULL },
 		{ "recursive", 'r', POPT_ARG_NONE, &options.recursive, 0, "recursive delete", NULL },
+		{ "modules-path", 0, POPT_ARG_STRING, &options.modules_path, 0, "modules path", "PATH" },
 		{ "num-searches", 0, POPT_ARG_INT, &options.num_searches, 0, "number of test searches", NULL },
 		{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
 		{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
@@ -217,6 +218,12 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	}
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 #endif
+
+	if (options.modules_path != NULL) {
+		ldb_set_modules_dir(ldb, options.modules_path);
+	} else if (getenv("LDB_MODULES_PATH") != NULL) {
+		ldb_set_modules_dir(ldb, getenv("LDB_MODULES_PATH"));
+	}
 
 	/* now connect to the ldb */
 	if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
