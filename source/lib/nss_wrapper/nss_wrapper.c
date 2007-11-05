@@ -83,49 +83,602 @@
 
 #endif
 
+#if 0
+# ifdef DEBUG
+# define NWRAP_ERROR(args)	DEBUG(0, args)
+# else
+# define NWRAP_ERROR(args)	printf args
+# endif
+#else
+#define NWRAP_ERROR(args)
+#endif
+
+#if 0
+# ifdef DEBUG
+# define NWRAP_DEBUG(args)	DEBUG(0, args)
+# else
+# define NWRAP_DEBUG(args)	printf args
+# endif
+#else
+#define NWRAP_DEBUG(args)
+#endif
+
+#if 0
+# ifdef DEBUG
+# define NWRAP_VERBOSE(args)	DEBUG(0, args)
+# else
+# define NWRAP_VERBOSE(args)	printf args
+# endif
+#else
+#define NWRAP_VERBOSE(args)
+#endif
+
+struct nwrap_cache {
+	const char *path;
+	int fd;
+	struct stat st;
+	uint8_t *buf;
+	void *private_data;
+	bool (*parse_line)(struct nwrap_cache *, char *line);
+	void (*unload)(struct nwrap_cache *);
+};
+
+struct nwrap_pw {
+	struct nwrap_cache *cache;
+
+	struct passwd *list;
+	int num;
+	int idx;
+};
+
+struct nwrap_cache __nwrap_cache_pw;
+struct nwrap_pw nwrap_pw_global;
+
+static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line);
+static void nwrap_pw_unload(struct nwrap_cache *nwrap);
+
+static void nwrap_init(void)
+{
+	static bool initialized;
+
+	if (initialized) return;
+	initialized = true;
+
+	nwrap_pw_global.cache = &__nwrap_cache_pw;
+
+	nwrap_pw_global.cache->path = getenv("NSS_WRAPPER_PASSWD");
+	nwrap_pw_global.cache->fd = -1;
+	nwrap_pw_global.cache->private_data = &nwrap_pw_global;
+	nwrap_pw_global.cache->parse_line = nwrap_pw_parse_line;
+	nwrap_pw_global.cache->unload = nwrap_pw_unload;
+}
+
+static bool nwrap_enabled(void)
+{
+	nwrap_init();
+
+	if (!nwrap_pw_global.cache->path) {
+		return false;
+	}
+	if (nwrap_pw_global.cache->path[0] == '\0') {
+		return false;
+	}
+
+	return true;
+}
+
+static bool nwrap_parse_file(struct nwrap_cache *nwrap)
+{
+	int ret;
+	uint8_t *buf = NULL;
+	char *nline;
+
+	if (nwrap->st.st_size == 0) {
+		NWRAP_DEBUG(("%s: size == 0\n",
+			     __location__));
+		goto done;
+	}
+
+	if (nwrap->st.st_size > INT32_MAX) {
+		NWRAP_ERROR(("%s: size[%u] larger than INT32_MAX\n",
+			     __location__, (unsigned)nwrap->st.st_size));
+		goto failed;
+	}
+
+	ret = lseek(nwrap->fd, 0, SEEK_SET);
+	if (ret != 0) {
+		NWRAP_ERROR(("%s: lseek - %d\n",__location__,ret));
+		goto failed;
+	}
+
+	buf = malloc(nwrap->st.st_size + 1);
+	if (!buf) {
+		NWRAP_ERROR(("%s: malloc failed\n",__location__));
+		goto failed;
+	}
+
+	ret = read(nwrap->fd, buf, nwrap->st.st_size);
+	if (ret != nwrap->st.st_size) {
+		NWRAP_ERROR(("%s: read(%u) gave %d\n",
+			     __location__, (unsigned)nwrap->st.st_size, ret));
+		goto failed;
+	}
+
+	buf[nwrap->st.st_size] = '\0';
+
+	nline = (char *)buf;
+	while (nline && nline[0]) {
+		char *line;
+		char *e;
+		bool ok;
+
+		line = nline;
+		nline = NULL;
+
+		e = strchr(line, '\n');
+		if (e) {
+			e[0] = '\0';
+			e++;
+			if (e[0] == '\r') {
+				e[0] = '\0';
+				e++;
+			}
+			nline = e;
+		}
+
+		NWRAP_VERBOSE(("%s:'%s'\n",__location__, line));
+
+		if (strlen(line) == 0) {
+			continue;
+		}
+
+		ok = nwrap->parse_line(nwrap, line);
+		if (!ok) {
+			goto failed;
+		}
+	}
+
+done:
+	nwrap->buf = buf;
+	return true;
+
+failed:
+	if (buf) free(buf);
+	return false;
+}
+
+static void nwrap_cache_unload(struct nwrap_cache *nwrap)
+{
+	nwrap->unload(nwrap);
+
+	if (nwrap->buf) free(nwrap->buf);
+
+	nwrap->buf = NULL;
+}
+
+static void nwrap_cache_reload(struct nwrap_cache *nwrap)
+{
+	struct stat st;
+	int ret;
+	bool ok;
+	bool retried = false;
+
+reopen:
+	if (nwrap->fd < 0) {
+		nwrap->fd = open(nwrap->path, O_RDONLY);
+		if (nwrap->fd < 0) {
+			NWRAP_ERROR(("%s: unable to open '%s' readonly %d:%s\n",
+				     __location__,
+				     nwrap->path, nwrap->fd,
+				     strerror(errno)));
+			return;
+		}
+		NWRAP_VERBOSE(("%s: open '%s'\n", __location__, nwrap->path));
+	}
+
+	ret = fstat(nwrap->fd, &st);
+	if (ret != 0) {
+		NWRAP_ERROR(("%s: fstat(%s) - %d:%s\n",
+			     __location__,
+			     nwrap->path,
+			     ret, strerror(errno)));
+		return;
+	}
+
+	if (retried == false && st.st_nlink == 0) {
+		/* maybe someone has replaced the file... */
+		NWRAP_DEBUG(("%s: st_nlink == 0, reopen %s\n",
+			     __location__, nwrap->path));
+		retried = true;
+		memset(&nwrap->st, 0, sizeof(nwrap->st));
+		close(nwrap->fd);
+		nwrap->fd = -1;
+		goto reopen;
+	}
+
+	if (st.st_mtime == nwrap->st.st_mtime) {
+		NWRAP_VERBOSE(("%s: st_mtime[%u] hasn't changed, skip reload\n",
+			       __location__, (unsigned)st.st_mtime));
+		return;
+	}
+	NWRAP_DEBUG(("%s: st_mtime has changed [%u] => [%u], start reload\n",
+		     __location__, (unsigned)st.st_mtime,
+		     (unsigned)nwrap->st.st_mtime));
+
+	nwrap->st = st;
+
+	nwrap_cache_unload(nwrap);
+
+	ok = nwrap_parse_file(nwrap);
+	if (!ok) {
+		NWRAP_ERROR(("%s: failed to reload %s\n",
+			     __location__, nwrap->path));
+		nwrap_cache_unload(nwrap);
+	}
+	NWRAP_DEBUG(("%s: reloaded %s\n",
+		     __location__, nwrap->path));
+}
+
+/*
+ * the caller has to call nwrap_unload() on failure
+ */
+static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line)
+{
+	struct nwrap_pw *nwrap_pw;
+	char *c;
+	char *p;
+	char *e;
+	struct passwd *pw;
+	size_t list_size;
+
+	nwrap_pw = (struct nwrap_pw *)nwrap->private_data;
+
+	list_size = sizeof(*nwrap_pw->list) * (nwrap_pw->num+1);
+	pw = (struct passwd *)realloc(nwrap_pw->list, list_size);
+	if (!pw) {
+		NWRAP_ERROR(("%s:realloc(%u) failed\n",
+			     __location__, list_size));
+		return false;
+	}
+	nwrap_pw->list = pw;
+
+	pw = &nwrap_pw->list[nwrap_pw->num];
+
+	c = line;
+
+	/* name */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	pw->pw_name = c;
+	c = p;
+
+	NWRAP_VERBOSE(("name[%s]\n", pw->pw_name));
+
+	/* password */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	pw->pw_passwd = c;
+	c = p;
+
+	NWRAP_VERBOSE(("password[%s]\n", pw->pw_passwd));
+
+	/* uid */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	e = NULL;
+	pw->pw_uid = (uid_t)strtoul(c, &e, 10);
+	if (c == e) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e == NULL) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e[0] != '\0') {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	c = p;
+
+	NWRAP_VERBOSE(("uid[%u]\n", pw->pw_uid));
+
+	/* gid */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	e = NULL;
+	pw->pw_gid = (gid_t)strtoul(c, &e, 10);
+	if (c == e) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e == NULL) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e[0] != '\0') {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	c = p;
+
+	NWRAP_VERBOSE(("gid[%u]\n", pw->pw_gid));
+
+	/* gecos */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	pw->pw_gecos = c;
+	c = p;
+
+	NWRAP_VERBOSE(("gecos[%s]\n", pw->pw_gecos));
+
+	/* dir */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:'%s'\n",__location__,c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	pw->pw_dir = c;
+	c = p;
+
+	NWRAP_VERBOSE(("dir[%s]\n", pw->pw_dir));
+
+	/* shell */
+	pw->pw_shell = c;
+	NWRAP_VERBOSE(("shell[%s]\n", pw->pw_shell));
+
+	NWRAP_DEBUG(("add user[%s:%s:%u:%u:%s:%s:%s]\n",
+		     pw->pw_name, pw->pw_passwd,
+		     pw->pw_uid, pw->pw_gid,
+		     pw->pw_gecos, pw->pw_dir, pw->pw_shell));
+
+	nwrap_pw->num++;
+	return true;
+}
+
+static void nwrap_pw_unload(struct nwrap_cache *nwrap)
+{
+	struct nwrap_pw *nwrap_pw;
+	nwrap_pw = (struct nwrap_pw *)nwrap->private_data;
+
+	if (nwrap_pw->list) free(nwrap_pw->list);
+
+	nwrap_pw->list = NULL;
+	nwrap_pw->num = 0;
+	nwrap_pw->idx = 0;
+}
+
+static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
+			   char *buf, size_t buflen, struct passwd **destp)
+{
+	char *first;
+	char *last;
+	off_t ofs;
+
+	first = src->pw_name;
+
+	last = src->pw_shell;
+	while (*last) last++;
+
+	ofs = PTR_DIFF(last + 1, first);
+
+	if (ofs > buflen) {
+		return ERANGE;
+	}
+
+	memcpy(buf, first, ofs);
+
+	ofs = PTR_DIFF(src->pw_name, first);
+	dst->pw_name = buf + ofs;
+	ofs = PTR_DIFF(src->pw_passwd, first);
+	dst->pw_passwd = buf + ofs;
+	dst->pw_uid = src->pw_uid;
+	dst->pw_gid = src->pw_gid;
+	ofs = PTR_DIFF(src->pw_gecos, first);
+	dst->pw_gecos = buf + ofs;
+	ofs = PTR_DIFF(src->pw_dir, first);
+	dst->pw_dir = buf + ofs;
+	ofs = PTR_DIFF(src->pw_shell, first);
+	dst->pw_shell = buf + ofs;
+
+	return 0;
+}
+
 /* user functions */
 _PUBLIC_ struct passwd *nwrap_getpwnam(const char *name)
 {
-	return real_getpwnam(name);
+	int i;
+
+	if (!nwrap_enabled()) {
+		return real_getpwnam(name);
+	}
+
+	nwrap_cache_reload(nwrap_pw_global.cache);
+
+	for (i=0; i<nwrap_pw_global.num; i++) {
+		if (strcmp(nwrap_pw_global.list[i].pw_name, name) == 0) {
+			NWRAP_DEBUG(("%s: user[%s] found\n",
+				     __location__, name));
+			return &nwrap_pw_global.list[i];
+		}
+		NWRAP_VERBOSE(("%s: user[%s] does not match [%s]\n",
+			       __location__, name,
+			       nwrap_pw_global.list[i].pw_name));
+	}
+
+	NWRAP_DEBUG(("%s: user[%s] not found\n", __location__, name));
+
+	errno = ENOENT;
+	return NULL;
 }
 
-_PUBLIC_ int nwrap_getpwnam_r(const char *name, struct passwd *pwbuf,
-			      char *buf, size_t buflen, struct passwd **pwbufp)
+_PUBLIC_ int nwrap_getpwnam_r(const char *name, struct passwd *pwdst,
+			      char *buf, size_t buflen, struct passwd **pwdstp)
 {
-	return real_getpwnam_r(name, pwbuf, buf, buflen, pwbufp);
+	struct passwd *pw;
+
+	if (!nwrap_enabled()) {
+		return real_getpwnam_r(name, pwdst, buf, buflen, pwdstp);
+	}
+
+	pw = nwrap_getpwnam(name);
+	if (!pw) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
 
 _PUBLIC_ struct passwd *nwrap_getpwuid(uid_t uid)
 {
-	return real_getpwuid(uid);
+	int i;
+
+	if (!nwrap_enabled()) {
+		return real_getpwuid(uid);
+	}
+
+	nwrap_cache_reload(nwrap_pw_global.cache);
+
+	for (i=0; i<nwrap_pw_global.num; i++) {
+		if (nwrap_pw_global.list[i].pw_uid == uid) {
+			NWRAP_DEBUG(("%s: uid[%u] found\n",
+				     __location__, uid));
+			return &nwrap_pw_global.list[i];
+		}
+		NWRAP_VERBOSE(("%s: uid[%u] does not match [%u]\n",
+			       __location__, uid,
+			       nwrap_pw_global.list[i].pw_uid));
+	}
+
+	NWRAP_DEBUG(("%s: uid[%u] not found\n", __location__, uid));
+
+	errno = ENOENT;
+	return NULL;
 }
 
-_PUBLIC_ int nwrap_getpwuid_r(uid_t uid, struct passwd *pwbuf,
-			      char *buf, size_t buflen, struct passwd **pwbufp)
+_PUBLIC_ int nwrap_getpwuid_r(uid_t uid, struct passwd *pwdst,
+			      char *buf, size_t buflen, struct passwd **pwdstp)
 {
-	return real_getpwuid_r(uid, pwbuf, buf, buflen, pwbufp);
+	struct passwd *pw;
+
+	if (!nwrap_enabled()) {
+		return real_getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
+	}
+
+	pw = nwrap_getpwuid(uid);
+	if (!pw) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
 
 /* user enum functions */
 _PUBLIC_ void nwrap_setpwent(void)
 {
-	real_setpwent();
+	if (!nwrap_enabled()) {
+		real_setpwent();
+	}
+
+	nwrap_pw_global.idx = 0;
 }
 
 _PUBLIC_ struct passwd *nwrap_getpwent(void)
 {
-	return real_getpwent();
+	struct passwd *pw;
+
+	if (!nwrap_enabled()) {
+		return real_getpwent();
+	}
+
+	if (nwrap_pw_global.idx == 0) {
+		nwrap_cache_reload(nwrap_pw_global.cache);
+	}
+
+	if (nwrap_pw_global.idx >= nwrap_pw_global.num) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	pw = &nwrap_pw_global.list[nwrap_pw_global.idx++];
+
+	NWRAP_VERBOSE(("%s: return user[%s] uid[%u]\n",
+		       __location__, pw->pw_name, pw->pw_uid));
+
+	return pw;
 }
 
-_PUBLIC_ int nwrap_getpwent_r(struct passwd *pwbuf, char *buf,
-			      size_t buflen, struct passwd **pwbufp)
+_PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
+			      size_t buflen, struct passwd **pwdstp)
 {
-	return real_getpwent_r(pwbuf, buf, buflen, pwbufp);
+	struct passwd *pw;
+
+	if (!nwrap_enabled()) {
+		return real_getpwent_r(pwdst, buf, buflen, pwdstp);
+	}
+
+	pw = nwrap_getpwent();
+	if (!pw) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
 
 _PUBLIC_ void nwrap_endpwent(void)
 {
-	real_endpwent();
+	if (!nwrap_enabled()) {
+		real_endpwent();
+	}
+
+	nwrap_pw_global.idx = 0;
 }
 
 /* misc functions */
