@@ -167,12 +167,12 @@ distclean: clean
 realdistclean: distclean
 	rm -f configure.in include/config.h.in
 
-check:: test
+check:: test check-soloading
 
 check-soloading: sample_module.$(SHLIBEXT)
 	LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
 
-test: all
+test: all check-soloading
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
 valgrindtest: all
