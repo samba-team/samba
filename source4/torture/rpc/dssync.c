@@ -574,8 +574,7 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 		const struct samr_Password *nthash;
 		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
 		if (nthash) {
-			DEBUG(0,("CREDENTIALS nthash:\n"));
-			dump_data(0, nthash->hash, sizeof(nthash->hash));
+			dump_data_pw("CREDENTIALS nthash:", nthash->hash, sizeof(nthash->hash));
 		}
 	}
 	status = gensec_session_key(ctx->new_dc.drsuapi.pipe->conn->security_state.generic_state,
