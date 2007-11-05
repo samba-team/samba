@@ -93,4 +93,11 @@ char *rep_getpass(const char *prompt);
 #define ULTRIX_AUTH 1
 #endif
 
+#ifdef NSS_WRAPPER
+#ifndef NSS_WRAPPER_NOT_REPLACE
+#define NSS_WRAPPER_REPLACE
+#endif
+#include "lib/nss_wrapper/nss_wrapper.h"
+#endif
+
 #endif
