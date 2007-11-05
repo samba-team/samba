@@ -49,6 +49,7 @@
 #include "lib/crypto/crypto.h"
 #include "libcli/security/proto.h"
 #include "param/param.h"
+#include "lib/registry/registry.h"
 
 static struct cli_credentials *create_anon_creds(TALLOC_CTX *mem_ctx)
 {
@@ -1529,6 +1530,12 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 	return result;
 }
 
+static int destroy_tree(struct smbcli_tree *tree)
+{
+	smb_tree_disconnect(tree);
+	return 0;
+}
+
 /*
  * Do a tcon, given a session
  */
@@ -1568,6 +1575,7 @@ NTSTATUS secondary_tcon(TALLOC_CTX *mem_ctx,
 
 	result->tid = tcon.tconx.out.tid;
 	result = talloc_steal(mem_ctx, result);
+	talloc_set_destructor(result, destroy_tree);
 	talloc_free(tmp_ctx);
 	*res = result;
 	return NT_STATUS_OK;
@@ -2957,5 +2965,336 @@ bool torture_samba3_rpc_winreg(struct torture_context *torture)
 
 	talloc_free(mem_ctx);
 
+	return ret;
+}
+
+static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
+			      struct smbcli_state *cli,
+			      const char *share,
+			      struct srvsvc_NetShareInfo502 **info)
+{
+	struct smbcli_tree *ipc;
+	struct dcerpc_pipe *p;
+	struct srvsvc_NetShareGetInfo r;
+	NTSTATUS status;
+
+	if (!(p = dcerpc_pipe_init(cli,
+				   cli->transport->socket->event.ctx))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	status = secondary_tcon(p, cli->session, "IPC$", &ipc);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = dcerpc_pipe_open_smb(p, ipc, "\\pipe\\srvsvc");
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		goto fail;
+	}
+
+	status = dcerpc_bind_auth_none(p, &ndr_table_srvsvc);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_bind_auth_none failed: %s\n",
+			 nt_errstr(status));
+		goto fail;
+	}
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s",
+					  dcerpc_server_name(p));
+	r.in.share_name = share;
+	r.in.level = 502;
+
+	status = dcerpc_srvsvc_NetShareGetInfo(p, p, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("(%s) OpenHKLM failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(r.out.result));
+		goto fail;
+	}
+
+	*info = talloc_move(mem_ctx, &r.out.info.info502);
+	return NT_STATUS_OK;
+
+ fail:
+	talloc_free(p);
+	return status;
+}
+
+/*
+ * Get us a handle on HKLM\
+ */
+
+static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
+				struct smbcli_state *cli,
+				struct dcerpc_pipe **pipe_p,
+				struct policy_handle **handle)
+{
+	struct smbcli_tree *ipc;
+	struct dcerpc_pipe *p;
+	struct winreg_OpenHKLM r;
+	NTSTATUS status;
+	struct policy_handle *result;
+
+	result = talloc(mem_ctx, struct policy_handle);
+
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(p = dcerpc_pipe_init(result,
+				   cli->transport->socket->event.ctx))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	status = secondary_tcon(p, cli->session, "IPC$", &ipc);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = dcerpc_pipe_open_smb(p, ipc, "\\winreg");
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		goto fail;
+	}
+
+	status = dcerpc_bind_auth_none(p, &ndr_table_winreg);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_bind_auth_none failed: %s\n",
+			 nt_errstr(status));
+		goto fail;
+	}
+
+	r.in.system_name = 0;
+        r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+        r.out.handle = result;
+
+	status = dcerpc_winreg_OpenHKLM(p, p, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		d_printf("(%s) OpenHKLM failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(r.out.result));
+		goto fail;
+	}
+
+	*pipe_p = p;
+	*handle = result;
+	return NT_STATUS_OK;
+
+ fail:
+	talloc_free(result);
+	return status;
+}
+
+static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
+					   const char *sharename)
+{
+	struct dcerpc_pipe *p;
+	struct policy_handle *hklm = NULL;
+	struct policy_handle new_handle;
+	struct winreg_CreateKey c;
+	struct winreg_CloseKey cl;
+	enum winreg_CreateAction action_taken;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(cli);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	status = get_hklm_handle(mem_ctx, cli, &p, &hklm);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	c.in.handle = hklm;
+	c.in.name.name = talloc_asprintf(
+		mem_ctx, "software\\samba\\smbconf\\%s", sharename);
+	if (c.in.name.name == NULL) {
+		d_printf("talloc_asprintf failed\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	c.in.keyclass.name = "";
+	c.in.options = 0;
+	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	c.in.secdesc = NULL;
+	c.in.action_taken = &action_taken;
+	c.out.new_handle = &new_handle;
+	c.out.action_taken = &action_taken;
+
+	status = dcerpc_winreg_CreateKey(p, p, &c);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(c.out.result)) {
+		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(c.out.result));
+		goto fail;
+	}
+
+	cl.in.handle = &new_handle;
+	cl.out.handle = &new_handle;
+	status = dcerpc_winreg_CloseKey(p, p, &cl);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(cl.out.result)) {
+		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(cl.out.result));
+		goto fail;
+	}
+
+
+ fail:
+	talloc_free(mem_ctx);
+	return status;
+}
+
+static NTSTATUS torture_samba3_deleteshare(struct smbcli_state *cli,
+					   const char *sharename)
+{
+	struct dcerpc_pipe *p;
+	struct policy_handle *hklm = NULL;
+	struct winreg_DeleteKey d;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(cli);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	status = get_hklm_handle(cli, cli, &p, &hklm);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	d.in.handle = hklm;
+	d.in.key.name = talloc_asprintf(
+		mem_ctx, "software\\samba\\smbconf\\%s", sharename);
+	if (d.in.key.name == NULL) {
+		d_printf("talloc_asprintf failed\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	status = dcerpc_winreg_DeleteKey(p, p, &d);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(d.out.result)) {
+		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(d.out.result));
+		goto fail;
+	}
+
+ fail:
+	talloc_free(mem_ctx);
+	return status;
+}
+
+static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
+					 const char *sharename,
+					 const char *parameter,
+					 const char *value)
+{
+	struct dcerpc_pipe *p = NULL;
+	struct policy_handle *hklm = NULL, key_handle;
+	struct winreg_OpenKey o;
+	struct winreg_SetValue s;
+	uint32_t type;
+	DATA_BLOB val;
+	NTSTATUS status;
+
+	status = get_hklm_handle(cli, cli, &p, &hklm);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
+		return status;;
+	}
+
+	o.in.parent_handle = hklm;
+	o.in.keyname.name = talloc_asprintf(
+		hklm, "software\\samba\\smbconf\\%s", sharename);
+	if (o.in.keyname.name == NULL) {
+		d_printf("talloc_asprintf failed\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	o.in.unknown = 0;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.handle = &key_handle;
+
+	status = dcerpc_winreg_OpenKey(p, p, &o);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(o.out.result)) {
+		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(o.out.result));
+		goto done;
+	}
+
+	if (!reg_string_to_val(hklm, "REG_SZ", value, &type, &val)) {
+		d_printf("(%s) reg_string_to_val failed\n", __location__);
+		goto done;
+	}
+
+	s.in.handle = &key_handle;
+	s.in.name.name = parameter;
+	s.in.type = type;
+	s.in.data = val.data;
+	s.in.size = val.length;
+
+	status = dcerpc_winreg_SetValue(p, p, &s);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(s.out.result)) {
+		d_printf("(%s) SetValue failed: %s, %s\n", __location__,
+			 nt_errstr(status), win_errstr(s.out.result));
+		goto done;
+	}
+
+ done:
+	talloc_free(hklm);
+	return status;
+}
+
+bool torture_samba3_regconfig(struct torture_context *torture)
+{
+	struct smbcli_state *cli;
+	struct srvsvc_NetShareInfo502 *i = NULL;
+	NTSTATUS status;
+	bool ret = false;
+	const char *comment = "Dummer Kommentar";
+
+	if (!(torture_open_connection(&cli, 0))) {
+		return false;
+	}
+
+	status = torture_samba3_createshare(cli, "blubber");
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(torture, "torture_samba3_createshare failed: "
+				"%s\n", nt_errstr(status));
+		goto done;
+	}
+
+	status = torture_samba3_setconfig(cli, "blubber", "comment", comment);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(torture, "torture_samba3_setconfig failed: "
+				"%s\n", nt_errstr(status));
+		goto done;
+	}
+
+	status = get_shareinfo(torture, cli, "blubber", &i);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(torture, "get_shareinfo failed: "
+				"%s\n", nt_errstr(status));
+		goto done;
+	}
+
+	if (strcmp(comment, i->comment) != 0) {
+		torture_warning(torture, "Expected comment [%s], got [%s]\n",
+				comment, i->comment);
+		goto done;
+	}
+
+	status = torture_samba3_deleteshare(cli, "blubber");
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_warning(torture, "torture_samba3_deleteshare failed: "
+				"%s\n", nt_errstr(status));
+		goto done;
+	}
+
+	ret = true;
+ done:
+	talloc_free(cli);
 	return ret;
 }
