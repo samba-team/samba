@@ -94,6 +94,9 @@ sub check_or_start($$$)
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
 
+		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
+		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
+
 		# Start slapd before smbd, but with the fifo on stdin
 		if (defined($self->{ldap})) {
 		    $self->slapd_start($env_vars) or 
@@ -448,6 +451,9 @@ sub provision($$$$$$)
 	my $dnsname = "samba.example.com";
 	my $basedn = "dc=samba,dc=example,dc=com";
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
+	my $unix_uid = $>;
+	my $unix_gids_str = $);
+	my @unix_gids = split(" ", $unix_gids_str);
 	my $srcdir="$RealBin/..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
@@ -461,6 +467,8 @@ sub provision($$$$$$)
 	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
 	my $winbindd_priv_pipe_dir = "$piddir/smbd.tmp/winbind_pipe";
+	my $nsswrap_passwd = "$etcdir/passwd";
+	my $nsswrap_group = "$etcdir/group";
 
 	my $configuration = "--configfile=$conffile";
 	my $ldapdir = "$privatedir/ldap";
@@ -577,6 +585,24 @@ sub provision($$$$$$)
 ";
 	close(KRB5CONF);
 
+	open(PWD, ">$nsswrap_passwd");
+	print PWD "
+root:x:0:0:root gecos:$prefix_abs:/bin/false
+$unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
+nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
+";
+	close(PWD);
+
+	open(GRP, ">$nsswrap_group");
+	print GRP "
+root:x:0:
+wheel:x:10:
+users:x:100:
+nobody:x:65533:
+nogroup:x:65534:nobody
+";
+	close(GRP);
+
 #Ensure the config file is valid before we start
 	if (system("$self->{bindir}/testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$self->{bindir}/testparm -v --suppress-prompt $configuration >&2");
@@ -585,7 +611,11 @@ sub provision($$$$$$)
 
 	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration!");
 
-my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provision");
+	my @provision_options = ();
+	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
+	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
+	push (@provision_options, "$self->{bindir}/smbscript");
+	push (@provision_options, "$self->{setupdir}/provision");
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
@@ -598,7 +628,7 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 	push (@provision_options, "--root=$unix_name");
 	push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
 	push (@provision_options, "--password=$password");
-	push (@provision_options, "--server-role=$server_role");
+	push (@provision_options, "--server-role=\"$server_role\"");
 
 	my $ldap_uri= "$ldapdir/ldapi";
 	$ldap_uri =~ s|/|%2F|g;
@@ -622,7 +652,9 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 		NCALRPCDIR => $ncalrpcdir,
 		LOCKDIR => $lockdir,
 		CONFIGURATION => $configuration,
-		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface
+		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface,
+		NSS_WRAPPER_PASSWD => $nsswrap_passwd,
+		NSS_WRAPPER_GROUP => $nsswrap_group,
 	};
 
 	if (defined($self->{ldap})) {
@@ -642,7 +674,8 @@ my @provision_options = ("$self->{bindir}/smbscript", "$self->{setupdir}/provisi
 			die("couldn't start slapd");
 	}
 
-	(system(@provision_options) == 0) or die("Unable to provision");
+	my $provision_cmd = join(" ", @provision_options);
+	(system($provision_cmd) == 0) or die("Unable to provision: \n$provision_cmd\n");
 
 	if (defined($self->{ldap})) {
 		$self->slapd_stop($ret) or 
