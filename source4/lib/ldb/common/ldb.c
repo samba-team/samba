@@ -56,7 +56,7 @@ struct ldb_context *ldb_init(void *mem_ctx)
 	return ldb;
 }
 
-static struct ldb_backend {
+struct ldb_backend {
 	const char *name;
 	ldb_connect_fn connect_fn;
 	struct ldb_backend *prev, *next;
