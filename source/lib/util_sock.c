@@ -1276,7 +1276,7 @@ bool receive_smb(int fd, char *buffer, unsigned int timeout)
 	if (!srv_check_sign_mac(buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification "
 			"failed on incoming packet!\n"));
-		if (get_smb_read_error() == 0) {
+		if (get_smb_read_error() == SMB_READ_OK) {
 			smb_read_error = SMB_READ_BAD_SIG;
 		}
 		return false;
