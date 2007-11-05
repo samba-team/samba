@@ -432,6 +432,8 @@ objectClass: user
 	assert(res.msgs[0].objectCategory == ("CN=Person,CN=Schema,CN=Configuration," + base_dn));
 	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res[0].userAccountControl == 546);
+	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
+	assert(res.msgs[0].memberOf.length == 1);
  
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
@@ -510,6 +512,7 @@ objectClass: user
 //	assert(res.msgs[0].sAMAccountType == 805306368);
 //	assert(res.msgs[0].userAccountControl == 546);
 	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
+	assert(res.msgs[0].memberOf.length == 1);
 
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
