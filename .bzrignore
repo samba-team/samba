@@ -202,3 +202,5 @@ rpc_server/lsa/proto.h
 torture/winbind/proto.h
 source/rpc_server/lsa/proto.h
 source/torture/winbind/proto.h
+source/lib/ldb/tdbtest.ldb
+source/lib/ldb/tdbtest.ldb
