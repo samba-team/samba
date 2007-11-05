@@ -11,6 +11,7 @@ lib/util/xfile.h: util/xfile.h
 lib/tdr/tdr.h: tdr.h
 librpc/rpc/dcerpc.h: dcerpc.h
 lib/socket_wrapper/socket_wrapper.h: socket_wrapper.h
+lib/nss_wrapper/nss_wrapper.h: nss_wrapper.h
 libnet/libnet.h: libnet.h
 libnet/libnet_join.h: libnet/join.h
 libnet/libnet_lookup.h: libnet/lookup.h
