@@ -24,6 +24,7 @@ extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+static enum smb_read_errors smb_read_error = SMB_READ_OK;
 
 /*
  * Size of data we can send to client. Set
@@ -42,6 +43,13 @@ SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
 extern int max_send;
+
+/* Accessor function for smb_read_error for smbd functions. */
+
+enum smb_read_errors *get_srv_read_error(void)
+{
+	return &smb_read_error;
+}
 
 /* Socket functions for smbd packet processing. */
 
@@ -63,7 +71,8 @@ static bool valid_packet_size(size_t len)
 			 * variables still suck :-). JRA.
 			 */
 
-			cond_set_smb_read_error(SMB_READ_ERROR);
+			cond_set_smb_read_error(get_srv_read_error(),
+						SMB_READ_ERROR);
 			return false;
 		}
 	}
@@ -86,13 +95,15 @@ static ssize_t read_packet_remainder(int fd,
 						buffer,
 						len,
 						len,
-						timeout);
+						timeout,
+						get_srv_read_error());
 	} else {
-		ret = read_data(fd, buffer, len);
+		ret = read_data(fd, buffer, len, get_srv_read_error());
 	}
 
 	if (ret != len) {
-		cond_set_smb_read_error(SMB_READ_ERROR);
+		cond_set_smb_read_error(get_srv_read_error(),
+					SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -135,15 +146,18 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 					writeX_header + 4,
 					STANDARD_WRITE_AND_X_HEADER_SIZE,
 					STANDARD_WRITE_AND_X_HEADER_SIZE,
-					timeout);
+					timeout,
+					get_srv_read_error());
 	} else {
 		ret = read_data(fd,
 				writeX_header+4,
-				STANDARD_WRITE_AND_X_HEADER_SIZE);
+				STANDARD_WRITE_AND_X_HEADER_SIZE,
+				get_srv_read_error());
 	}
 
 	if (ret != STANDARD_WRITE_AND_X_HEADER_SIZE) {
-		cond_set_smb_read_error(SMB_READ_ERROR);
+		cond_set_smb_read_error(get_srv_read_error(),
+					SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -183,7 +197,8 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 		if (*buffer == NULL) {
 			DEBUG(0, ("Could not allocate inbuf of length %d\n",
 				  (int)sizeof(writeX_header)));
-			cond_set_smb_read_error(SMB_READ_ERROR);
+			cond_set_smb_read_error(get_srv_read_error(),
+						SMB_READ_ERROR);
 			return -1;
 		}
 
@@ -207,7 +222,8 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
 			  (int)len+4));
-		cond_set_smb_read_error(SMB_READ_ERROR);
+		cond_set_smb_read_error(get_srv_read_error(),
+					SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -240,10 +256,11 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	ssize_t len,ret;
 	int min_recv_size = lp_min_receive_file_size();
 
-	set_smb_read_error(SMB_READ_OK);
+	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 	*p_unread = 0;
 
-	len = read_smb_length_return_keepalive(fd, lenbuf, timeout);
+	len = read_smb_length_return_keepalive(fd, lenbuf,
+			timeout, get_srv_read_error());
 	if (len < 0) {
 		DEBUG(10,("receive_smb_raw: length < 0!\n"));
 
@@ -253,7 +270,7 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 		 * variables still suck :-). JRA.
 		 */
 
-		cond_set_smb_read_error(SMB_READ_ERROR);
+		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -283,7 +300,7 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
 			  (int)len+4));
-		cond_set_smb_read_error(SMB_READ_ERROR);
+		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
 		return -1;
 	}
 
@@ -312,7 +329,7 @@ ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
 	if (!srv_check_sign_mac(*buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
-		cond_set_smb_read_error(SMB_READ_BAD_SIG);
+		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_BAD_SIG);
 		return -1;
 	}
 
@@ -682,7 +699,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	ssize_t len;
 
 	*p_unread = 0;
-	set_smb_read_error(SMB_READ_OK);
+	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 
  again:
 
@@ -736,7 +753,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 							msg->buf.length);
 			if (*buffer == NULL) {
 				DEBUG(0, ("talloc failed\n"));
-				set_smb_read_error(SMB_READ_ERROR);
+				set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
 				return False;
 			}
 			*buffer_len = msg->buf.length;
@@ -830,13 +847,13 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	/* Check if error */
 	if (selrtn == -1) {
 		/* something is wrong. Maybe the socket is dead? */
-		set_smb_read_error(SMB_READ_ERROR);
+		set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
 		return False;
 	} 
     
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		set_smb_read_error(SMB_READ_TIMEOUT);
+		set_smb_read_error(get_srv_read_error(),SMB_READ_TIMEOUT);
 		return False;
 	}
 
@@ -1826,18 +1843,18 @@ static bool timeout_processing(int *select_timeout,
 {
 	time_t t;
 
-	if (get_smb_read_error() == SMB_READ_EOF) {
+	if (*get_srv_read_error() == SMB_READ_EOF) {
 		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
 		return false;
 	}
 
-	if (get_smb_read_error() == SMB_READ_ERROR) {
+	if (*get_srv_read_error() == SMB_READ_ERROR) {
 		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
 			strerror(errno)));
 		return false;
 	}
 
-	if (get_smb_read_error() == SMB_READ_BAD_SIG) {
+	if (*get_srv_read_error() == SMB_READ_BAD_SIG) {
 		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
 		return false;
 	}

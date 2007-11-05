@@ -44,7 +44,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 	/* Read data */
 
 	len = read_data(state->sock, (char *)&state->request,
-			sizeof(state->request));
+			sizeof(state->request), NULL);
 
 	if (len != sizeof(state->request)) {
 		DEBUG(len > 0 ? 0 : 3, ("Got invalid request length: %d\n", (int)len));
@@ -72,7 +72,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 	state->request.extra_data.data[state->request.extra_len] = '\0';
 
 	len = read_data(state->sock, state->request.extra_data.data,
-			state->request.extra_len);
+			state->request.extra_len, NULL);
 
 	if (len != state->request.extra_len) {
 		DEBUG(0, ("Could not read extra data\n"));
