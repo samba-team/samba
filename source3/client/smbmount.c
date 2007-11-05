@@ -382,7 +382,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
-		c->smb_rw_error = DO_NOT_DO_TDIS;
+		c->smb_rw_error = SMB_DO_NOT_DO_TDIS;
 		cli_shutdown(c);
 		c = NULL;
 
