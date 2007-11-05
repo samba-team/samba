@@ -82,6 +82,9 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 
 	if (auth_info) {
 		status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	*blob = ndr_push_blob(ndr);
@@ -449,6 +452,10 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_synta
 	}
 
 	status = ndr_pull_uint16(ndr, NDR_SCALARS, &if_version);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
 	syntax->if_version = if_version;
 
 	talloc_free(mem_ctx);
