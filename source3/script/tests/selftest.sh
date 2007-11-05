@@ -30,6 +30,8 @@ export TORTURE_MAXTIME
 SERVER=localhost2
 SERVER_IP=127.0.0.2
 USERNAME=`PATH=/usr/ucb:$PATH whoami`
+USERID=`PATH=/usr/ucb:$PATH id -u`
+GROUPID=`PATH=/usr/ucb:$PATH id -g`
 PASSWORD=test
 
 SRCDIR="`dirname $0`/../.."
@@ -48,6 +50,8 @@ LOGDIR=$PREFIX_ABS/logs
 SOCKET_WRAPPER_DIR=$PREFIX/sw
 CONFIGURATION="-s $CONFFILE"
 SAMBA4CONFIGURATION="-s $SAMBA4CONFFILE"
+NSS_WRAPPER_PASSWD="$PRIVATEDIR/passwd"
+NSS_WRAPPER_GROUP="$PRIVATEDIR/group"
 
 export PREFIX PREFIX_ABS
 export CONFIGURATION CONFFILE SAMBA4CONFIGURATION SAMBA4CONFFILE
@@ -57,6 +61,7 @@ export SRCDIR SCRIPTDIR BINDIR
 export USERNAME PASSWORD
 export SMBTORTURE4
 export SERVER SERVER_IP
+export NSS_WRAPPER_PASSWD NSS_WRAPPER_GROUP
 
 PATH=bin:$PATH
 export PATH
@@ -72,6 +77,15 @@ if test "x`smbd -b | grep SOCKET_WRAPPER`" = "x"; then
 	echo "***"
 	exit 1
 fi
+
+if test "x`smbd -b | grep NSS_WRAPPER`" = "x"; then
+	echo "***"
+	echo "*** You must include --enable-nss-wrapper when compiling Samba"
+	echo "*** in order to execute 'make test'.  Exiting...."
+	echo "***"
+	exit 1
+fi
+
 
 ## 
 ## create the test directory layout
@@ -128,9 +142,9 @@ cat >$SERVERCONFFILE<<EOF
 
 	passdb backend = tdbsam
 
-	; Necessary to add the build farm hacks
-	add user script = /bin/false
-	add machine script = /bin/false
+	add user script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	add machine script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
+	delete user script = $PERL $SRCDIR/lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action delete --name %u
 
 	kernel oplocks = no
 	kernel change notify = no
@@ -169,6 +183,17 @@ EOF
 ##
 ## create a test account
 ##
+
+cat >$NSS_WRAPPER_PASSWD<<EOF
+nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
+$USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
+EOF
+
+cat >$NSS_WRAPPER_GROUP<<EOF
+nobody:x:65533:
+nogroup:x:65534:nobody
+$USERNAME-group:x:$GROUPID:
+EOF
 
 (echo $PASSWORD; echo $PASSWORD) | \
 	smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
