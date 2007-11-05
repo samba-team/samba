@@ -10,6 +10,7 @@ include messaging/config.mk
 include events/config.mk
 include cmdline/config.mk
 include socket_wrapper/config.mk
+include nss_wrapper/config.mk
 include appweb/config.mk
 include stream/config.mk
 include util/config.mk

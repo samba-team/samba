@@ -82,7 +82,8 @@ OBJ_FILES = \
 PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SAMDB \
-		NDR_UNIXINFO
+		NDR_UNIXINFO \
+		NSS_WRAPPER
 # End MODULE dcerpc_unixinfo
 ################################################
 

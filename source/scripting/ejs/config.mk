@@ -43,6 +43,7 @@ INIT_FUNCTION = smb_setup_ejs_random
 OBJ_FILES = smbcalls_nss.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_nss
+PRIVATE_DEPENDENCIES = NSS_WRAPPER
 
 [MODULE::smbcalls_data]
 OBJ_FILES = smbcalls_data.o
