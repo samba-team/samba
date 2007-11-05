@@ -144,7 +144,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 		return False;
 	}
 
-	DEBUG(10,("get_ea_value: EA %s is of length %u: ", ea_name, (unsigned int)sizeret));
+	DEBUG(10,("get_ea_value: EA %s is of length %u\n", ea_name, (unsigned int)sizeret));
 	dump_data(10, (uint8 *)val, sizeret);
 
 	pea->flags = 0;
