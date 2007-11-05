@@ -137,6 +137,20 @@ struct nwrap_pw nwrap_pw_global;
 static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_pw_unload(struct nwrap_cache *nwrap);
 
+struct nwrap_gr {
+	struct nwrap_cache *cache;
+
+	struct group *list;
+	int num;
+	int idx;
+};
+
+struct nwrap_cache __nwrap_cache_gr;
+struct nwrap_gr nwrap_gr_global;
+
+static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line);
+static void nwrap_gr_unload(struct nwrap_cache *nwrap);
+
 static void nwrap_init(void)
 {
 	static bool initialized;
@@ -151,6 +165,14 @@ static void nwrap_init(void)
 	nwrap_pw_global.cache->private_data = &nwrap_pw_global;
 	nwrap_pw_global.cache->parse_line = nwrap_pw_parse_line;
 	nwrap_pw_global.cache->unload = nwrap_pw_unload;
+
+	nwrap_gr_global.cache = &__nwrap_cache_gr;
+
+	nwrap_gr_global.cache->path = getenv("NSS_WRAPPER_GROUP");
+	nwrap_gr_global.cache->fd = -1;
+	nwrap_gr_global.cache->private_data = &nwrap_gr_global;
+	nwrap_gr_global.cache->parse_line = nwrap_gr_parse_line;
+	nwrap_gr_global.cache->unload = nwrap_gr_unload;
 }
 
 static bool nwrap_enabled(void)
@@ -161,6 +183,12 @@ static bool nwrap_enabled(void)
 		return false;
 	}
 	if (nwrap_pw_global.cache->path[0] == '\0') {
+		return false;
+	}
+	if (!nwrap_gr_global.cache->path) {
+		return false;
+	}
+	if (nwrap_gr_global.cache->path[0] == '\0') {
 		return false;
 	}
 
@@ -522,6 +550,198 @@ static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
 	return 0;
 }
 
+/*
+ * the caller has to call nwrap_unload() on failure
+ */
+static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line)
+{
+	struct nwrap_gr *nwrap_gr;
+	char *c;
+	char *p;
+	char *e;
+	struct group *gr;
+	size_t list_size;
+	unsigned nummem;
+
+	nwrap_gr = (struct nwrap_gr *)nwrap->private_data;
+
+	list_size = sizeof(*nwrap_gr->list) * (nwrap_gr->num+1);
+	gr = (struct group *)realloc(nwrap_gr->list, list_size);
+	if (!gr) {
+		NWRAP_ERROR(("%s:realloc failed\n",__location__));
+		return false;
+	}
+	nwrap_gr->list = gr;
+
+	gr = &nwrap_gr->list[nwrap_gr->num];
+
+	c = line;
+
+	/* name */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	gr->gr_name = c;
+	c = p;
+
+	NWRAP_VERBOSE(("name[%s]\n", gr->gr_name));
+
+	/* password */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	gr->gr_passwd = c;
+	c = p;
+
+	NWRAP_VERBOSE(("password[%s]\n", gr->gr_passwd));
+
+	/* gid */
+	p = strchr(c, ':');
+	if (!p) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s'\n",
+			     __location__, line, c));
+		return false;
+	}
+	*p = '\0';
+	p++;
+	e = NULL;
+	gr->gr_gid = (gid_t)strtoul(c, &e, 10);
+	if (c == e) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e == NULL) {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	if (e[0] != '\0') {
+		NWRAP_ERROR(("%s:invalid line[%s]: '%s' - %s\n",
+			     __location__, line, c, strerror(errno)));
+		return false;
+	}
+	c = p;
+
+	NWRAP_VERBOSE(("gid[%u]\n", gr->gr_gid));
+
+	/* members */
+	gr->gr_mem = (char **)malloc(sizeof(char *));
+	if (!gr->gr_mem) {
+		NWRAP_ERROR(("%s:calloc failed\n",__location__));
+		return false;
+	}
+	gr->gr_mem[0] = NULL;
+
+	for(nummem=0; p; nummem++) {
+		char **m;
+		size_t m_size;
+		c = p;
+		p = strchr(c, ',');
+		if (p) {
+			*p = '\0';
+			p++;
+		}
+
+		if (strlen(c) == 0) {
+			break;
+		}
+
+		m_size = sizeof(char *) * (nummem+2);
+		m = (char **)realloc(gr->gr_mem, m_size);
+		if (!m) {
+			NWRAP_ERROR(("%s:realloc(%u) failed\n",
+				      __location__, m_size));
+			return false;
+		}
+		gr->gr_mem = m;
+		gr->gr_mem[nummem] = c;
+		gr->gr_mem[nummem+1] = NULL;
+
+		NWRAP_VERBOSE(("member[%u]: '%s'\n", nummem, gr->gr_mem[nummem]));
+	}
+
+	NWRAP_DEBUG(("add group[%s:%s:%u:] with %u members\n",
+		     gr->gr_name, gr->gr_passwd, gr->gr_gid, nummem));
+
+	nwrap_gr->num++;
+	return true;
+}
+
+static void nwrap_gr_unload(struct nwrap_cache *nwrap)
+{
+	int i;
+	struct nwrap_gr *nwrap_gr;
+	nwrap_gr = (struct nwrap_gr *)nwrap->private_data;
+
+	if (nwrap_gr->list) {
+		for (i=0; i < nwrap_gr->num; i++) {
+			if (nwrap_gr->list[i].gr_mem) {
+				free(nwrap_gr->list[i].gr_mem);
+			}
+		}
+		free(nwrap_gr->list);
+	}
+
+	nwrap_gr->list = NULL;
+	nwrap_gr->num = 0;
+	nwrap_gr->idx = 0;
+}
+
+static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
+			   char *buf, size_t buflen, struct group **destp)
+{
+	char *first;
+	char **lastm;
+	char *last;
+	off_t ofsb;
+	off_t ofsm;
+	off_t ofs;
+	unsigned i;
+
+	first = src->gr_name;
+
+	lastm = src->gr_mem;
+	while (*lastm) lastm++;
+
+	last = *lastm;
+	while (*last) last++;
+
+	ofsb = PTR_DIFF(last + 1, first);
+	ofsm = PTR_DIFF(lastm + 1, src->gr_mem);
+
+	if ((ofsb + ofsm) > buflen) {
+		return ERANGE;
+	}
+
+	memcpy(buf, first, ofsb);
+	memcpy(buf + ofsb, src->gr_mem, ofsm);
+
+	ofs = PTR_DIFF(src->gr_name, first);
+	dst->gr_name = buf + ofs;
+	ofs = PTR_DIFF(src->gr_passwd, first);
+	dst->gr_passwd = buf + ofs;
+	dst->gr_gid = src->gr_gid;
+
+	dst->gr_mem = (char **)(buf + ofsb);
+	for (i=0; src->gr_mem[i]; i++) {
+		ofs = PTR_DIFF(src->gr_mem[i], first);
+		dst->gr_mem[i] = buf + ofs;
+	}
+
+	return 0;
+}
+
 /* user functions */
 _PUBLIC_ struct passwd *nwrap_getpwnam(const char *name)
 {
@@ -684,50 +904,171 @@ _PUBLIC_ void nwrap_endpwent(void)
 /* misc functions */
 _PUBLIC_ int nwrap_initgroups(const char *user, gid_t group)
 {
-	return real_initgroups(user, group);
+	if (!nwrap_enabled()) {
+		return real_initgroups(user, group);
+	}
+
+	/* TODO: maybe we should also fake this... */
+	return EPERM;
 }
 
 /* group functions */
 _PUBLIC_ struct group *nwrap_getgrnam(const char *name)
 {
-	return real_getgrnam(name);
+	int i;
+
+	if (!nwrap_enabled()) {
+		return real_getgrnam(name);
+	}
+
+	nwrap_cache_reload(nwrap_gr_global.cache);
+
+	for (i=0; i<nwrap_gr_global.num; i++) {
+		if (strcmp(nwrap_gr_global.list[i].gr_name, name) == 0) {
+			NWRAP_DEBUG(("%s: group[%s] found\n",
+				     __location__, name));
+			return &nwrap_gr_global.list[i];
+		}
+		NWRAP_VERBOSE(("%s: group[%s] does not match [%s]\n",
+			       __location__, name,
+			       nwrap_gr_global.list[i].gr_name));
+	}
+
+	NWRAP_DEBUG(("%s: group[%s] not found\n", __location__, name));
+
+	errno = ENOENT;
+	return NULL;
 }
 
-_PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *gbuf,
-			      char *buf, size_t buflen, struct group **gbufp)
+_PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *grdst,
+			      char *buf, size_t buflen, struct group **grdstp)
 {
-	return real_getgrnam_r(name, gbuf, buf, buflen, gbufp);
+	struct group *gr;
+
+	if (!nwrap_enabled()) {
+		return real_getgrnam_r(name, grdst, buf, buflen, grdstp);
+	}
+
+	gr = nwrap_getgrnam(name);
+	if (!gr) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
 }
 
 _PUBLIC_ struct group *nwrap_getgrgid(gid_t gid)
 {
-	return real_getgrgid(gid);
+	int i;
+
+	if (!nwrap_enabled()) {
+		return real_getgrgid(gid);
+	}
+
+	nwrap_cache_reload(nwrap_gr_global.cache);
+
+	for (i=0; i<nwrap_gr_global.num; i++) {
+		if (nwrap_gr_global.list[i].gr_gid == gid) {
+			NWRAP_DEBUG(("%s: gid[%u] found\n",
+				     __location__, gid));
+			return &nwrap_gr_global.list[i];
+		}
+		NWRAP_VERBOSE(("%s: gid[%u] does not match [%u]\n",
+			       __location__, gid,
+			       nwrap_gr_global.list[i].gr_gid));
+	}
+
+	NWRAP_DEBUG(("%s: gid[%u] not found\n", __location__, gid));
+
+	errno = ENOENT;
+	return NULL;
 }
 
-_PUBLIC_ int nwrap_getgrgid_r(gid_t gid, struct group *gbuf,
-			      char *buf, size_t buflen, struct group **gbufp)
+_PUBLIC_ int nwrap_getgrgid_r(gid_t gid, struct group *grdst,
+			      char *buf, size_t buflen, struct group **grdstp)
 {
-	return real_getgrgid_r(gid, gbuf, buf, buflen, gbufp);
+	struct group *gr;
+
+	if (!nwrap_enabled()) {
+		return real_getgrgid_r(gid, grdst, buf, buflen, grdstp);
+	}
+
+	gr = nwrap_getgrgid(gid);
+	if (!gr) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
+
+	return ENOENT;
 }
 
 /* group enum functions */
 _PUBLIC_ void nwrap_setgrent(void)
 {
-	real_setgrent();
+	if (!nwrap_enabled()) {
+		real_setgrent();
+	}
+
+	nwrap_gr_global.idx = 0;
 }
 
 _PUBLIC_ struct group *nwrap_getgrent(void)
 {
-	return real_getgrent();
+	struct group *gr;
+
+	if (!nwrap_enabled()) {
+		return real_getgrent();
+	}
+
+	if (nwrap_gr_global.idx == 0) {
+		nwrap_cache_reload(nwrap_gr_global.cache);
+	}
+
+	if (nwrap_gr_global.idx >= nwrap_gr_global.num) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	gr = &nwrap_gr_global.list[nwrap_gr_global.idx++];
+
+	NWRAP_VERBOSE(("%s: return group[%s] gid[%u]\n",
+		       __location__, gr->gr_name, gr->gr_gid));
+
+	return gr;
 }
 
-_PUBLIC_ int nwrap_getgrent_r(struct group *gbuf, char *buf,
-			      size_t buflen, struct group **gbufp)
+_PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
+			      size_t buflen, struct group **grdstp)
 {
-	return real_getgrent_r(gbuf, buf, buflen, gbufp);
+	struct group *gr;
+
+	if (!nwrap_enabled()) {
+		return real_getgrent_r(grdst, buf, buflen, grdstp);
+	}
+
+	gr = nwrap_getgrent();
+	if (!gr) {
+		if (errno == 0) {
+			return ENOENT;
+		}
+		return errno;
+	}
+
+	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
 }
 
 _PUBLIC_ void nwrap_endgrent(void)
 {
-	real_endgrent();
+	if (!nwrap_enabled()) {
+		real_endgrent();
+	}
+
+	nwrap_gr_global.idx = 0;
 }
