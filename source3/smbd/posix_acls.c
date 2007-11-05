@@ -1081,7 +1081,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
 							const files_struct *fsp,
 							const DOM_SID *pfile_owner_sid,
 							const DOM_SID *pfile_grp_sid,
-							SMB_STRUCT_STAT *pst,
+							const SMB_STRUCT_STAT *pst,
 							bool setting_acl)
 {
 	canon_ace *pace;
@@ -2066,7 +2066,7 @@ static bool unpack_canon_ace(files_struct *fsp,
  But NT cannot display this in their ACL editor !
 ********************************************************************************/
 
-static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
+static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
 {
 	canon_ace *list_head = *pp_list_head;
 	canon_ace *owner_ace = NULL;
