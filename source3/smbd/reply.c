@@ -3535,7 +3535,8 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	}
 
 	/* Now read the raw data into the buffer and write it */
-	if (read_smb_length(smbd_server_fd(),buf,SMB_SECONDARY_WAIT) == -1) {
+	if (read_smb_length(smbd_server_fd(),buf,
+			SMB_SECONDARY_WAIT, get_srv_read_error()) == -1) {
 		exit_server_cleanly("secondary writebraw failed");
 	}
 
@@ -3564,7 +3565,7 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		if (read_data(smbd_server_fd(), buf+4, numtowrite)
+		if (read_data(smbd_server_fd(), buf+4, numtowrite,get_srv_read_error())
 					!= numtowrite ) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write "
 				"raw read failed (%s). Terminating\n",

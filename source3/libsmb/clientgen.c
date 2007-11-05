@@ -52,24 +52,26 @@ int cli_set_port(struct cli_state *cli, int port)
  should never go into a blocking read.
 ****************************************************************************/
 
-static ssize_t client_receive_smb(int fd,char *buffer, unsigned int timeout, size_t maxlen)
+static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 {
 	ssize_t len;
 
 	for(;;) {
-		len = receive_smb_raw(fd, buffer, timeout, maxlen);
+		len = receive_smb_raw(cli->fd, cli->inbuf, cli->timeout,
+				maxlen, &cli->smb_rw_error);
 
 		if (len < 0) {
 			DEBUG(10,("client_receive_smb failed\n"));
-			show_msg(buffer);
+			show_msg(cli->inbuf);
 			return len;
 		}
 
 		/* Ignore session keepalive packets. */
-		if(CVAL(buffer,0) != SMBkeepalive)
+		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
 			break;
+		}
 	}
-	show_msg(buffer);
+	show_msg(cli->inbuf);
 	return len;
 }
 
@@ -86,7 +88,7 @@ bool cli_receive_smb(struct cli_state *cli)
 		return False; 
 
  again:
-	len = client_receive_smb(cli->fd,cli->inbuf,cli->timeout, 0);
+	len = client_receive_smb(cli, 0);
 	
 	if (len > 0) {
 		/* it might be an oplock break request */
@@ -110,7 +112,6 @@ bool cli_receive_smb(struct cli_state *cli)
 	/* If the server is not responding, note that now */
 	if (len < 0) {
                 DEBUG(0, ("Receiving SMB: Server stopped responding\n"));
-		cli->smb_rw_error = get_smb_read_error();
 		close(cli->fd);
 		cli->fd = -1;
 		return False;
@@ -154,9 +155,10 @@ bool cli_receive_smb(struct cli_state *cli)
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
 {
 	if (cli->timeout > 0) {
-		return read_socket_with_timeout(cli->fd, buffer, len, len, cli->timeout);
+		return read_socket_with_timeout(cli->fd, buffer, len,
+						len, cli->timeout, &cli->smb_rw_error);
 	} else {
-		return read_data(cli->fd, buffer, len);
+		return read_data(cli->fd, buffer, len, &cli->smb_rw_error);
 	}
 }
 
@@ -174,7 +176,7 @@ bool cli_receive_smb_readX_header(struct cli_state *cli)
  again:
 
 	/* Read up to the size of a readX header reply. */
-	len = client_receive_smb(cli->fd, cli->inbuf, cli->timeout, (smb_size - 4) + 24);
+	len = client_receive_smb(cli, (smb_size - 4) + 24);
 	
 	if (len > 0) {
 		/* it might be an oplock break request */
@@ -240,7 +242,6 @@ bool cli_receive_smb_readX_header(struct cli_state *cli)
 
   read_err:
 
-	set_smb_read_error(SMB_READ_ERROR);
 	cli->smb_rw_error = SMB_READ_ERROR;
 	close(cli->fd);
 	cli->fd = -1;

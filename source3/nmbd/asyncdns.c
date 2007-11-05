@@ -87,7 +87,7 @@ static void asyncdns_process(void)
 	DEBUGLEVEL = -1;
 
 	while (1) {
-		if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) 
+		if (read_data(fd_in, (char *)&r, sizeof(r), NULL) != sizeof(r)) 
 			break;
 
 		pull_ascii_nstring( qname, sizeof(qname), r.name.name);
@@ -208,7 +208,7 @@ void run_dns_queue(void)
 		start_async_dns();
 	}
 
-	if ((size=read_data(fd_in, (char *)&r, sizeof(r))) != sizeof(r)) {
+	if ((size=read_data(fd_in, (char *)&r, sizeof(r), NULL)) != sizeof(r)) {
 		if (size) {
 			DEBUG(0,("Incomplete DNS answer from child!\n"));
 			fd_in = -1;
