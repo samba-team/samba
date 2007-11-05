@@ -2082,7 +2082,7 @@ bool is_myname_or_ipaddr(const char *s)
 	/* Maybe its an IP address? */
 	if (is_ipaddress(servername)) {
 		struct sockaddr_storage ss;
-		struct iface_struct nics[MAX_INTERFACES];
+		struct iface_struct *nics;
 		int i, n;
 
 		if (!interpret_string_addr(&ss, servername, AI_NUMERICHOST)) {
@@ -2093,12 +2093,19 @@ bool is_myname_or_ipaddr(const char *s)
 			return false;
 		}
 
+		nics = TALLOC_ARRAY(talloc_tos(), struct iface_struct,
+					MAX_INTERFACES);
+		if (!nics) {
+			return false;
+		}
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
 			if (addr_equal(&nics[i].ip, &ss)) {
+				TALLOC_FREE(nics);
 				return true;
 			}
 		}
+		TALLOC_FREE(nics);
 	}
 
 	/* No match */
