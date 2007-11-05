@@ -44,6 +44,7 @@ static const struct {
 	{ "DatabaseHashSize", 10000,  offsetof(struct ctdb_tunable, database_hash_size) },
 	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout) },
 	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
+	{ "CheckNodesFile",       1,  offsetof(struct ctdb_tunable, check_nodes_file) },
 	{ "DeterministicIPs",     0,  offsetof(struct ctdb_tunable, deterministic_public_ips) },
 };
 

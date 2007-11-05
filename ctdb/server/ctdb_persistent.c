@@ -91,8 +91,19 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	state->c    = c;
 
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
+		uint32_t nodeid;
+		struct ctdb_node *node;
 		int ret;
+
+
+		nodeid = ctdb->vnn_map->map[i];
+		if ( !ctdb_validate_pnn(ctdb, nodeid) ) {
+			DEBUG(0, ("Cant update persistent record to non-existent vnn node:%u.\n", nodeid));
+			continue;
+		}
+
+
+		node = ctdb->nodes[nodeid];
 
 		/* only send to active nodes */
 		if (node->flags & NODE_FLAGS_INACTIVE) {

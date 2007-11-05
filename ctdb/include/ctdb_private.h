@@ -88,6 +88,7 @@ struct ctdb_tunable {
 	uint32_t database_hash_size;
 	uint32_t rerecovery_timeout;
 	uint32_t enable_bans;
+	uint32_t check_nodes_file;
 	uint32_t deterministic_public_ips;
 };
 

@@ -1786,6 +1786,8 @@ again:
 	   they are the same as for this node
 	 */
 	for (j=0; j<nodemap->num; j++) {
+		uint32_t node_count;
+
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -1801,20 +1803,34 @@ again:
 			goto again;
 		}
 
-		/* if the nodes disagree on how many nodes there are
-		   then this is a good reason to try recovery
+		/* If the nodes disagree on how many nodes there are
+		   then this is a good reason to try recovery.
+		   This check might be disabled, for example when adding nodes
+		   to an existing cluster.
 		 */
 		if (remote_nodemap->num != nodemap->num) {
 			DEBUG(0, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
 				  nodemap->nodes[j].pnn, remote_nodemap->num, nodemap->num));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
-			goto again;
+
+			/* If we have disabled checking the nodes file we just
+			   print a message and continue.
+			 */
+			if (ctdb->tunable.check_nodes_file == 0) {
+				DEBUG(0, ("Node file checking is disabled. Ignoring that node-count is inconsistent\n"));
+			} else {
+				do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+				goto again;
+			}
 		}
 
 		/* if the nodes disagree on which nodes exist and are
 		   active, then that is also a good reason to do recovery
 		 */
-		for (i=0;i<nodemap->num;i++) {
+		node_count = nodemap->num;
+		if (remote_nodemap->num < node_count) {
+			node_count = remote_nodemap->num;
+		}
+		for (i=0;i<node_count;i++) {
 			if (remote_nodemap->nodes[i].pnn != nodemap->nodes[i].pnn) {
 				DEBUG(0, (__location__ " Remote node:%u has different nodemap pnn for %d (%u vs %u).\n", 
 					  nodemap->nodes[j].pnn, i, 
