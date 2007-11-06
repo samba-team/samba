@@ -176,11 +176,13 @@ static void start_filter(char *desthost)
 {
 	int s, c;
 	struct sockaddr_storage dest_ss;
+	struct sockaddr_storage my_ss;
 
 	CatchChild();
 
 	/* start listening on port 445 locally */
-	s = open_socket_in(SOCK_STREAM, 445, 0, 0, True);
+	my_ss.ss_family = AF_INET;
+	s = open_socket_in(SOCK_STREAM, 445, 0, &my_ss, True);
 	
 	if (s == -1) {
 		d_printf("bind failed\n");
