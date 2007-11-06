@@ -8,3 +8,58 @@ AC_LINK_IFELSE([ int main() { return 0; } ],
 AC_SUBST(LD_EXPORT_DYNAMIC)
 LDFLAGS="$saved_LDFLAGS"
 ])
+
+AC_DEFUN([AC_LD_PICFLAG],
+[
+case "$host_os" in
+	*linux*) 
+		PICFLAG="-fPIC" 
+		;;
+	*solaris*)
+		if test "${GCC}" = "yes"; then
+			PICFLAG="-fPIC"
+		else
+			PICFLAG="-KPIC"
+		fi
+		;;
+	*sunos*)
+		PICFLAG="-KPIC"   # Is this correct for SunOS
+		;;
+	*netbsd* | *freebsd* | *dragonfly* )  
+		PICFLAG="-fPIC -DPIC"
+		;;
+	*openbsd*)
+		PICFLAG="-fPIC"
+		;;
+	*irix*)
+		if test "${GCC}" = "yes"; then
+			PICFLAG="-fPIC"
+		else 
+			PICFLAG="-KPIC"
+		fi
+		;;
+	*aix*)
+		# as AIX code is always position independent...
+		PICFLAG="-O2"
+		;;
+	*hpux*)
+		if test $ac_cv_prog_cc_Ae = yes; then
+			PICFLAG="+z +ESnolit"
+		elif test "${GCC}" = "yes"; then
+			PICFLAG="-fPIC"
+		fi
+		if test "$host_cpu" = "ia64"; then
+			PICFLAG="+z"
+		fi
+		;;
+	*osf*)
+		PICFLAG="-fPIC"
+		;;
+	*unixware*)
+		PICFLAG="-KPIC"
+		;;
+	*darwin*)
+		;;
+esac
+AC_SUBST(PICFLAG)
+])
