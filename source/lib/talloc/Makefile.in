@@ -14,12 +14,23 @@ INSTALLCMD = @INSTALL@
 CC = @CC@
 CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H= -I. -I@srcdir@
 EXTRA_TARGETS = @DOC_TARGET@
+PICFLAG = @PICFLAG@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+SHLIBEXT = @SHLIBEXT@
+SHLD_FLAGS = @SHLD_FLAGS@
+SONAMEFLAG = @SONAMEFLAG@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
 
 LIBOBJ = @TALLOC_OBJ@ @LIBREPLACEOBJ@
 
-all: showflags libtalloc.a testsuite $(EXTRA_TARGETS)
+SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
+SONAME = libtalloc.$(SHLIBEXT).1
+
+.c.o:
+	$(CC) $(PICFLAG) -o $@ -c $< $(CFLAGS)
+
+all: showflags libtalloc.a $(SOLIB) testsuite $(EXTRA_TARGETS)
 
 showflags:
 	@echo 'talloc will be compiled with flags:'
@@ -33,10 +44,14 @@ libtalloc.a: $(LIBOBJ)
 	ar -rv $@ $(LIBOBJ)
 	@-ranlib $@
 
+$(SOLIB): $(LIBOBJ)
+	$(CC) $(SONAMEFLAG)$(SONAME) $(SHLD_FLAGS) -o $@ $^
+
 install: all 
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
+	${INSTALLCMD} -m 755 $(SOLIB) $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
@@ -52,7 +67,7 @@ doc: talloc.3 talloc.3.html
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
-	rm -f *~ $(LIBOBJ) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
+	rm -f *~ $(LIBOBJ) $(SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
 
 test: testsuite
 	./testsuite
