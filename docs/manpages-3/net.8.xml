@@ -161,7 +161,7 @@ displays the time on the remote server.
 <refsect3>
 <title>TIME SYSTEM</title>
 
-<para>Displays the time on the remote server in a format ready for <command>/bin/date</command></para>
+<para>Displays the time on the remote server in a format ready for <command>/bin/date</command>.</para>
 
 </refsect3>
 
@@ -620,7 +620,7 @@ omitted, the SID of the domain the local server is in.</para>
 <title>GROUPMAP</title>
 
 <para>Manage the mappings between Windows group SIDs and UNIX groups.
-Parameters take the for "parameter=value".  Common options include:</para>
+Common options include:</para>
 
 <itemizedlist>
 <listitem><para>unixgroup - Name of the UNIX group</para></listitem>
@@ -658,7 +658,7 @@ net groupmap add {rid=int|sid=string} unixgroup=string \
 <refsect3>
 <title>GROUPMAP MODIFY</title>
 
-<para>Update en existing group entry</para>
+<para>Update en existing group entry.</para>
 
 <para>
 <programlisting>
@@ -671,7 +671,7 @@ net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] \
 <refsect3>
 <title>GROUPMAP LIST</title>
 
-<para>List existing group mapping entries</para>
+<para>List existing group mapping entries.</para>
 
 <para>net groupmap list [verbose] [ntgroup=string] [sid=SID]</para>
 
@@ -1134,7 +1134,7 @@ Set or unset the "password must change" flag for a user account.
 <title>SAM POLICY LIST</title>
 
 <para>
-List the avilable account policies.
+List the available account policies.
 </para>
 
 </refsect2>
@@ -1192,7 +1192,7 @@ Restore the mappings from the specified file or stdin.
 <title>IDMAP SECRET &lt;DOMAIN&gt;|ALLOC &lt;secret&gt;</title>
 
 <para>
-Store a secret for the sepcified domain, used primarily for domains
+Store a secret for the specified domain, used primarily for domains
 that use idmap_ldap as a backend. In this case the secret is used
 as the password for the user DN used to bind to the ldap server.
 </para>
@@ -1203,12 +1203,12 @@ as the password for the user DN used to bind to the ldap server.
 <title>USERSHARE</title>
 
 <para>Starting with version 3.0.23, a Samba server now supports the ability for
-non-root users to add user define shares to be exported using the "net usershare"
+non-root users to add user defined shares to be exported using the "net usershare"
 commands.
 </para>
 
 <para>
-To set this up, first set up your smb.conf by adding to the [global] section :
+To set this up, first set up your smb.conf by adding to the [global] section:
 
 usershare path = /usr/local/samba/lib/usershares
 
@@ -1251,7 +1251,7 @@ Add or replace a new user defined share, with name "sharename".
 
 <para>
 "path" specifies the absolute pathname on the system to be exported.
-Restrictions may be put on this, see the global smb.conf parameters :
+Restrictions may be put on this, see the global smb.conf parameters:
 "usershare owner only", "usershare prefix allow list", and
 "usershare prefix deny list".
 </para>
@@ -1265,7 +1265,7 @@ on the share when browsed to by a client.
 specifies which users have read and write access to the entire share.
 Note that guest connections are not allowed unless the smb.conf parameter
 "usershare allow guests" has been set. The definition of a user
-defined share acl is : "user:permission", where user is a valid
+defined share acl is: "user:permission", where user is a valid
 username on the system and permission can be "F", "R", or "D".
 "F" stands for "full permissions", ie. read and write permissions.
 "D" stands for "deny" for a user, ie. prevent this user from accessing
@@ -1321,7 +1321,7 @@ shares created by other users.
 </para>
 
 <para>
-The information given about a share looks like :
+The information given about a share looks like:
 
 [foobar]
 path=/home/jeremy
