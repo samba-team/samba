@@ -522,6 +522,80 @@ static bool test_StdRoot(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static bool test_GetDcAddress(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      const char *host)
+{
+	NTSTATUS status;
+	struct dfs_GetDcAddress r;
+	uint8_t is_root = 0;
+	uint32_t ttl = 0;
+	const char *ptr;
+
+	printf("Testing GetDcAddress\n");
+
+	ptr = host;
+
+	r.in.servername = host;
+	r.in.server_fullname = r.out.server_fullname = &ptr;
+	r.in.is_root = r.out.is_root = &is_root;
+	r.in.ttl = r.out.ttl = &ttl;
+
+	status = dcerpc_dfs_GetDcAddress(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDcAddress failed - %s\n", nt_errstr(status));
+		return false;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_GetDcAddress failed - %s\n",
+			win_errstr(r.out.result));
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_SetDcAddress(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      const char *host)
+{
+	NTSTATUS status;
+	struct dfs_SetDcAddress r;
+
+	printf("Testing SetDcAddress\n");
+
+	r.in.servername = host;
+	r.in.server_fullname = host;
+	r.in.flags = 0;
+	r.in.ttl = 1000;
+
+	status = dcerpc_dfs_SetDcAddress(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetDcAddress failed - %s\n", nt_errstr(status));
+		return false;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_SetDcAddress failed - %s\n",
+			win_errstr(r.out.result));
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_DcAddress(struct dcerpc_pipe *p,
+			   TALLOC_CTX *mem_ctx,
+			   const char *host)
+{
+	if (!test_GetDcAddress(p, mem_ctx, host)) {
+		return false;
+	}
+
+	if (!test_SetDcAddress(p, mem_ctx, host)) {
+		return false;
+	}
+
+	return true;
+}
+
 bool torture_rpc_dfs(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -538,6 +612,7 @@ bool torture_rpc_dfs(struct torture_context *torture)
 	ret &= test_Enum(p, torture);
 	ret &= test_EnumEx(p, torture, host);
 	ret &= test_StdRoot(p, torture, host);
+	ret &= test_DcAddress(p, torture, host);
 
 	return ret;
 }

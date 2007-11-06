@@ -377,10 +377,20 @@ import "misc.idl";
 		);
 
 	/* Function 0x10 */
-	WERROR dfs_GetDcAddress();
+	WERROR dfs_GetDcAddress(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in,out,ref]	[string,charset(UTF16)] uint16 **server_fullname,
+		[in,out,ref] 	boolean8 *is_root,
+		[in,out,ref] 	uint32 *ttl
+		);
 
 	/* Function 0x11 */
-	WERROR dfs_SetDcAddress();
+	WERROR dfs_SetDcAddress(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in]		[string,charset(UTF16)] uint16 server_fullname[],
+		[in]		uint32	flags,
+		[in]		uint32	ttl
+		);
 
 	/* Function 0x12 */
 	WERROR dfs_FlushFtTable(
