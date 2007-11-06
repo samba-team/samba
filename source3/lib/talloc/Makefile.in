@@ -45,7 +45,7 @@ libtalloc.a: $(LIBOBJ)
 	@-ranlib $@
 
 $(SOLIB): $(LIBOBJ)
-	$(CC) $(SONAMEFLAG)$(SONAME) $(SHLD_FLAGS) -o $@ $^
+	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^
 
 install: all 
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
