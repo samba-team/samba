@@ -98,9 +98,7 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 			;;
 		*hpux*)
-			if test $ac_cv_prog_cc_Ae = yes; then
-				SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
-			fi
+			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			;;
 		*darwin*)
 			SHLD_FLAGS="-bundle -flat_namespace -undefined suppress"
