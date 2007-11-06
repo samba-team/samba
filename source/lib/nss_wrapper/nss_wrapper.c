@@ -906,7 +906,21 @@ _PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 	struct passwd *pw;
 
 	if (!nwrap_enabled()) {
+#ifdef SOLARIS_GETPWENT_R
+		pw = real_getpwent_r(pwdst, buf, buflen);
+		if (!pw) {
+			if (errno == 0) {
+				return ENOENT;
+			}
+			return errno;
+		}
+		if (pwdstp) {
+			*pwdstp = pw;
+		}
+		return 0;
+#else
 		return real_getpwent_r(pwdst, buf, buflen, pwdstp);
+#endif
 	}
 
 	pw = nwrap_getpwent();
@@ -1078,7 +1092,21 @@ _PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
 	struct group *gr;
 
 	if (!nwrap_enabled()) {
+#ifdef SOLARIS_GETGRENT_R
+		gr = real_getgrent_r(grdst, buf, buflen);
+		if (!gr) {
+			if (errno == 0) {
+				return ENOENT;
+			}
+			return errno;
+		}
+		if (grdstp) {
+			*grdstp = gr;
+		}
+		return 0;
+#else
 		return real_getgrent_r(grdst, buf, buflen, grdstp);
+#endif
 	}
 
 	gr = nwrap_getgrent();
