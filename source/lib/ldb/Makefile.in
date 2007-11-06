@@ -36,6 +36,7 @@ SHLIBEXT = @SHLIBEXT@
 
 LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
 
+PICFLAG = @PICFLAG@
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
@@ -98,6 +99,11 @@ showflags:
 	@mkdir -p `dirname $@`
 	@$(CC) $(CFLAGS) -c $< -o $@
 
+.c.po:
+	@echo Compiling $*.c
+	@mkdir -p `dirname $@`
+	@$(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
+
 dirs:
 	@mkdir -p $(DIRS)
 
@@ -108,8 +114,8 @@ lib/libldb.a: $(OBJS)
 lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
 	$(CC) -shared -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
-sample_module.$(SHLIBEXT): tests/sample_module.o 
-	$(CC) -shared -o $@ tests/sample_module.o 
+sample_module.$(SHLIBEXT): tests/sample_module.po 
+	$(CC) -shared -o $@ tests/sample_module.po 
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
@@ -141,7 +147,7 @@ examples/ldbreader: examples/ldbreader.o $(LIBS)
 examples/ldifreader: examples/ldifreader.o $(LIBS)
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
-.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
+.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html .po
 
 manpages:
 	@$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"

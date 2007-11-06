@@ -56,7 +56,6 @@ case "$host_os" in
 		SHLD_FLAGS="-shared -Wl,-Bsymbolic"
 		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
-		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
 		;;
 	*solaris*)
@@ -64,13 +63,11 @@ case "$host_os" in
 		SHLD_FLAGS="-G"
 		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
-			PICFLAG="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
 		else
-			PICFLAG="-KPIC"
 			## ${CFLAGS} added for building 64-bit shared 
 			## libs using Sun's Compiler
 			SHLD_FLAGS="-G \${CFLAGS}"
@@ -80,20 +77,17 @@ case "$host_os" in
 		BLDSHARED="true"
 		SHLD_FLAGS="-G"
 		SONAMEFLAG="-Wl,-h,"
-		PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-fPIC -DPIC"
 		;;
 	*openbsd*)
 		# disabled because us4 fails to link libtorture.so
 		BLDSHARED="false"
 		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-fPIC"
 		;;
 	*irix*)
 		# disabled because us4 fails to link libtorture.so
@@ -101,19 +95,12 @@ case "$host_os" in
 		SHLD_FLAGS="-set_version sgi1.0 -shared"
 		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
-		if test "${GCC}" = "yes"; then
-			PICFLAG="-fPIC"
-		else 
-			PICFLAG="-KPIC"
-		fi
 		;;
 	*aix*)
 		# disabled because us4 fails to link libtorture.so
 		BLDSHARED="false"
 		SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
-		# as AIX code is always position independent...
-		PICFLAG="-O2"
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
@@ -121,14 +108,11 @@ case "$host_os" in
 			BLDSHARED="true"
 			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			SONAMEFLAG="-Wl,+h "
-			PICFLAG="+z +ESnolit"
 		elif test "${GCC}" = "yes"; then
 			BLDSHARED="true" # I hope this is correct
-			PICFLAG="-fPIC"
 		fi
 		if test "$host_cpu" = "ia64"; then
 			SHLIBEXT="so"
-			PICFLAG="+z"
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
 			SHLIBEXT="sl"
@@ -139,12 +123,10 @@ case "$host_os" in
 		# disabled because tru64 fails to link libtorture.so
 		BLDSHARED="false"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-fPIC"
 		;;
 	*unixware*)
 		BLDSHARED="true"
 		SONAMEFLAG="-Wl,-soname,"
-		PICFLAG="-KPIC"
 		;;
 	*darwin*)
 		BLDSHARED="true"
@@ -166,6 +148,8 @@ AC_MSG_CHECKING([STLD])
 AC_MSG_RESULT([$STLD])
 AC_MSG_CHECKING([STLD_FLAGS])
 AC_MSG_RESULT([$STLD_FLAGS])
+
+AC_LD_PICFLAG
 
 AC_ARG_ENABLE(shared,
 [  --disable-shared        Disable testing for building shared libraries],
