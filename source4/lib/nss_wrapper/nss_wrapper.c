@@ -900,36 +900,6 @@ _PUBLIC_ struct passwd *nwrap_getpwent(void)
 	return pw;
 }
 
-#ifdef SOLARIS_GETPWENT_R
-_PUBLIC_ struct passwd *nwrap_getpwent_r(struct passwd *pwdst,
-					 char *buf,
-					 int buflen)
-{
-	struct passwd *pw;
-	struct passwd *pwdstp = NULL;
-	int ret;
-
-	if (!nwrap_enabled()) {
-		return real_getpwent_r(pwdst, buf, buflen);
-	}
-
-	pw = nwrap_getpwent();
-	if (!pw) {
-		if (errno == 0) {
-			errno = ENOENT;
-		}
-		return NULL;
-	}
-
-	ret = nwrap_pw_copy_r(pw, pwdst, buf, buflen, &pwdstp);
-	if (ret != 0) {
-		errno = ret;
-		return NULL;
-	}
-
-	return pwdstp;
-}
-#else
 _PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 			      size_t buflen, struct passwd **pwdstp)
 {
@@ -949,7 +919,6 @@ _PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 
 	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
-#endif
 
 _PUBLIC_ void nwrap_endpwent(void)
 {
@@ -1103,36 +1072,6 @@ _PUBLIC_ struct group *nwrap_getgrent(void)
 	return gr;
 }
 
-#ifdef SOLARIS_GETGRENT_R
-_PUBLIC_ struct group *nwrap_getgrent_r(struct group *grdst,
-					char *buf,
-					int buflen)
-{
-	struct group *gr;
-	struct group *grdstp = NULL;
-	int ret;
-
-	if (!nwrap_enabled()) {
-		return real_getgrent_r(grdst, buf, buflen);
-	}
-
-	gr = nwrap_getgrent();
-	if (!gr) {
-		if (errno == 0) {
-			errno = ENOENT;
-		}
-		return NULL;
-	}
-
-	ret = nwrap_gr_copy_r(gr, grdst, buf, buflen, &grdstp);
-	if (ret != 0) {
-		errno = ret;
-		return NULL;
-	}
-
-	return grdstp;
-}
-#else
 _PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
 			      size_t buflen, struct group **grdstp)
 {
@@ -1152,7 +1091,6 @@ _PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
 
 	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
 }
-#endif
 
 _PUBLIC_ void nwrap_endgrent(void)
 {
