@@ -18,6 +18,8 @@ AC_CHECK_HEADERS(sys/capability.h)
 
 # passwd
 AC_CHECK_HEADERS(grp.h sys/id.h compat.h shadow.h sys/priv.h pwd.h sys/security.h)
+AC_CHECK_FUNCS(getpwnam_r getpwuid_r getpwent_r)
+AC_CHECK_FUNCS(getgrnam_r getgrgid_r getgrent_r)
 
 # locale
 AC_CHECK_HEADERS(ctype.h locale.h)
