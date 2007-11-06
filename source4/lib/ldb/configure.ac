@@ -38,9 +38,6 @@ AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_SEARCH_LIBS(dlopen, dl, AC_DEFINE(HAVE_DLOPEN, [1], [have dlopen]))
 
-SHLIBEXT="so" # Should be set based on OS later on
-AC_SUBST(SHLIBEXT)
-
 AC_DEFINE_UNQUOTED(LDB_MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
 AC_SUBST(LDB_MODULESDIR)
 
@@ -74,6 +71,7 @@ AC_SUBST(EXTRA_OBJ)
 AC_LD_EXPORT_DYNAMIC
 AC_LD_PICFLAG
 AC_LD_SHLDFLAGS
+AC_LD_SHLIBEXT
 
 m4_include(libldb.m4)
 AC_OUTPUT(Makefile ldb.pc)
