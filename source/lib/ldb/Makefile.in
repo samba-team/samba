@@ -34,7 +34,7 @@ LDAP_LIBS = @LDAP_LIBS@
 
 SHLIBEXT = @SHLIBEXT@
 
-LD_EXPORT_DYNAMIC = -Wl,--export-dynamic
+LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
 
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
