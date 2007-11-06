@@ -102,7 +102,6 @@ sub check_module($$$)
 		my $sane_subsystem = lc($mod->{SUBSYSTEM});
 		$sane_subsystem =~ s/^lib//;
 		$mod->{INSTALLDIR} = "MODULESDIR/$sane_subsystem";
-		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 	} 
 	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
