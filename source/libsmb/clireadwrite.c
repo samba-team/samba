@@ -402,11 +402,12 @@ ssize_t cli_write(struct cli_state *cli,
 		mpx = 1;
 	}
 
-        if (!client_is_signing_on(cli) &&
+        if (write_mode == 0 &&
+			!client_is_signing_on(cli) &&
 			(cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
 			(cli->capabilities & CAP_LARGE_FILES)) {
 		/* Only do massive writes if we can do them direct
-		 * with no signing. */
+		 * with no signing - not on a pipe. */
 		writesize = CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
 	} else if (cli->capabilities & CAP_LARGE_READX) {
 		if (cli->is_samba) {
