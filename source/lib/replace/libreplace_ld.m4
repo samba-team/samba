@@ -1,10 +1,18 @@
 AC_DEFUN([AC_LD_EXPORT_DYNAMIC],
 [
 saved_LDFLAGS="$LDFLAGS"
-LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
-AC_LINK_IFELSE([ int main() { return 0; } ],
-[ LD_EXPORT_DYNAMIC=-Wl,--export-dynamic  ],
-[ LD_EXPORT_DYNAMIC= ])
+if AC_TRY_COMMAND([${CC-cc} $CFLAGS -Wl,--version 2>&1 | grep "GNU ld" >/dev/null]); then
+	LD_EXPORT_DYNAMIC="-Wl,-export-dynamic"
+else
+	case "$host_os" in
+		hpux* )
+		  LD_EXPORT_DYNAMIC="-Wl,-E"
+		  ;;
+		* )
+		  LD_EXPORT_DYNAMIC=""
+		  ;;
+	  esac
+fi
 AC_SUBST(LD_EXPORT_DYNAMIC)
 LDFLAGS="$saved_LDFLAGS"
 ])
