@@ -97,7 +97,7 @@ SOLIB = lib/libldb.$(SHLIBEXT).0.9.0
 STATICLIB = lib/libldb.a
 
 $(SOLIB): $(OBJS)
-	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^ @LDFLAGS@ @LIBS@ $(TALLOC_LIBS) $(TDB_LIBS)
+	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^ $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS)
 
 all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
 
@@ -124,7 +124,7 @@ lib/libldb.a: $(OBJS)
 	@-ranlib $@
 
 lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(LIBS) bin/libldb.a
-	$(CC) $(SHLD_FLAGS) -Wl,-soname,libnss_ldb.$(SHLIBEXT).2 -o lib/libnss_ldb.$(SHLIBEXT).2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
+	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)libnss_ldb.$(SHLIBEXT).2 -o lib/libnss_ldb.$(SHLIBEXT).2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 sample_module.$(SHLIBEXT): tests/sample_module.o 
 	$(CC) $(SHLD_FLAGS) $(LIBS) $(LDFLAGS) -o $@ tests/sample_module.o 
