@@ -170,7 +170,7 @@ static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return get_nt_acl(fsp, security_info, ppdesc);
+		return posix_fget_nt_acl(fsp, security_info, ppdesc);
 	}
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;

@@ -430,7 +430,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
  Load the user.SAMBA_PAI attribute.
 ************************************************************************/
 
-static struct pai_val *load_inherited_info(files_struct *fsp)
+static struct pai_val *fload_inherited_info(files_struct *fsp)
 {
 	char *pai_buf;
 	size_t pai_buf_size = 1024;
@@ -485,6 +485,71 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 
 	if (paiv && paiv->pai_protected)
 		DEBUG(10,("load_inherited_info: ACL is protected for file %s\n", fsp->fsp_name));
+
+	SAFE_FREE(pai_buf);
+	return paiv;
+}
+
+/************************************************************************
+ Load the user.SAMBA_PAI attribute.
+************************************************************************/
+
+static struct pai_val *load_inherited_info(const struct connection_struct *conn,
+					   const char *fname)
+{
+	char *pai_buf;
+	size_t pai_buf_size = 1024;
+	struct pai_val *paiv = NULL;
+	ssize_t ret;
+
+	if (!lp_map_acl_inherit(SNUM(conn))) {
+		return NULL;
+	}
+
+	if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL) {
+		return NULL;
+	}
+
+	do {
+		ret = SMB_VFS_GETXATTR(conn, fname,
+				       SAMBA_POSIX_INHERITANCE_EA_NAME,
+				       pai_buf, pai_buf_size);
+
+		if (ret == -1) {
+			if (errno != ERANGE) {
+				break;
+			}
+			/* Buffer too small - enlarge it. */
+			pai_buf_size *= 2;
+			SAFE_FREE(pai_buf);
+			if (pai_buf_size > 1024*1024) {
+				return NULL; /* Limit malloc to 1mb. */
+			}
+			if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL)
+				return NULL;
+		}
+	} while (ret == -1);
+
+	DEBUG(10,("load_inherited_info: ret = %lu for file %s\n", (unsigned long)ret, fname));
+
+	if (ret == -1) {
+		/* No attribute or not supported. */
+#if defined(ENOATTR)
+		if (errno != ENOATTR)
+			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
+#else
+		if (errno != ENOSYS)
+			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
+#endif
+		SAFE_FREE(pai_buf);
+		return NULL;
+	}
+
+	paiv = create_pai_val(pai_buf, ret);
+
+	if (paiv && paiv->pai_protected) {
+		DEBUG(10,("load_inherited_info: ACL is protected for file %s\n", fname));
+	}
 
 	SAFE_FREE(pai_buf);
 	return paiv;
@@ -2724,6 +2789,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 
 	return num_aces;
 }
+
 /****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns the size needed to return the
@@ -2731,11 +2797,15 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
  the UNIX style get ACL.
 ****************************************************************************/
 
-NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
+static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
+				      const char *name,
+				      const SMB_STRUCT_STAT *sbuf,
+				      struct pai_val *pal,
+				      SMB_ACL_T posix_acl,
+				      SMB_ACL_T def_acl,
+				      uint32_t security_info,
+				      SEC_DESC **ppdesc)
 {
-	connection_struct *conn = fsp->conn;
-	SMB_STRUCT_STAT sbuf;
-	SEC_ACE *nt_ace_list = NULL;
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
 	size_t sd_size = 0;
@@ -2743,56 +2813,11 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	size_t num_acls = 0;
 	size_t num_def_acls = 0;
 	size_t num_aces = 0;
-	SMB_ACL_T posix_acl = NULL;
-	SMB_ACL_T def_acl = NULL;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	SEC_ACE *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
-	struct pai_val *pal = NULL;
 	SEC_DESC *psd = NULL;
-
-	*ppdesc = NULL;
-
-	DEBUG(10,("get_nt_acl: called for file %s\n", fsp->fsp_name ));
-
-	if(fsp->is_directory || fsp->fh->fd == -1) {
-
-		/* Get the stat struct for the owner info. */
-		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-		/*
-		 * Get the ACL from the path.
-		 */
-
-		posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_ACCESS);
-
-		/*
-		 * If it's a directory get the default POSIX ACL.
-		 */
-
-		if(fsp->is_directory) {
-			def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
-			def_acl = free_empty_sys_acl(conn, def_acl);
-		}
-
-	} else {
-
-		/* Get the stat struct for the owner info. */
-		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-		/*
-		 * Get the ACL from the fd.
-		 */
-		posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
-	}
-
-	DEBUG(5,("get_nt_acl : file ACL %s, directory ACL %s\n",
-			posix_acl ? "present" :  "absent",
-			def_acl ? "present" :  "absent" ));
-
-	pal = load_inherited_info(fsp);
 
 	/*
 	 * Get the owner, group and world SIDs.
@@ -2804,7 +2829,7 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		sid_copy(&group_sid, &global_sid_Builtin_Users);
 		num_profile_acls = 2;
 	} else {
-		create_file_sids(&sbuf, &owner_sid, &group_sid);
+		create_file_sids(sbuf, &owner_sid, &group_sid);
 	}
 
 	if ((security_info & DACL_SECURITY_INFORMATION) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
@@ -2819,22 +2844,20 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 */
 
 		/* Create the canon_ace lists. */
-		file_ace = canonicalise_acl(fsp->conn, 
-					    fsp->fsp_name, posix_acl, &sbuf,
+		file_ace = canonicalise_acl(conn, name, posix_acl, sbuf,
 					    &owner_sid, &group_sid, pal,
 					    SMB_ACL_TYPE_ACCESS);
 
 		/* We must have *some* ACLS. */
 	
 		if (count_canon_ace_list(file_ace) == 0) {
-			DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
+			DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", name));
 			goto done;
 		}
 
-		if (fsp->is_directory && def_acl) {
-			dir_ace = canonicalise_acl(fsp->conn,
-						   fsp->fsp_name, def_acl,
-						   &sbuf,
+		if (S_ISDIR(sbuf->st_mode) && def_acl) {
+			dir_ace = canonicalise_acl(conn, name, def_acl,
+						   sbuf,
 						   &global_sid_Creator_Owner,
 						   &global_sid_Creator_Group,
 						   pal, SMB_ACL_TYPE_DEFAULT);
@@ -2921,7 +2944,7 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 				acc = map_canon_ace_perms(SNUM(conn),
 						&nt_acl_type,
 						ace->perms,
-						fsp->is_directory);
+						S_ISDIR(sbuf->st_mode));
 				init_sec_ace(&nt_ace_list[num_aces++],
 					&ace->trustee,
 					nt_acl_type,
@@ -2950,7 +2973,7 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 				acc = map_canon_ace_perms(SNUM(conn),
 						&nt_acl_type,
 						ace->perms,
-						fsp->is_directory);
+						S_ISDIR(sbuf->st_mode));
 				init_sec_ace(&nt_ace_list[num_aces++],
 					&ace->trustee,
 					nt_acl_type,
@@ -3037,6 +3060,69 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	SAFE_FREE(nt_ace_list);
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
+			   SEC_DESC **ppdesc)
+{
+	SMB_STRUCT_STAT sbuf;
+	SMB_ACL_T posix_acl = NULL;
+	struct pai_val *pal;
+
+	*ppdesc = NULL;
+
+	DEBUG(10,("posix_fget_nt_acl: called for file %s\n", fsp->fsp_name ));
+
+	/* can it happen that fsp_name == NULL ? */
+	if (fsp->is_directory ||  fsp->fh->fd == -1) {
+		return posix_get_nt_acl(fsp->conn, fsp->fsp_name,
+					security_info, ppdesc);
+	}
+
+	/* Get the stat struct for the owner info. */
+	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	/* Get the ACL from the fd. */
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+
+	pal = fload_inherited_info(fsp);
+
+	return posix_get_nt_acl_common(fsp->conn, fsp->fsp_name, &sbuf, pal,
+				       posix_acl, NULL, security_info, ppdesc);
+}
+
+NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
+			  uint32_t security_info, SEC_DESC **ppdesc)
+{
+	SMB_STRUCT_STAT sbuf;
+	SMB_ACL_T posix_acl = NULL;
+	SMB_ACL_T def_acl = NULL;
+	struct pai_val *pal;
+
+	*ppdesc = NULL;
+
+	DEBUG(10,("posix_get_nt_acl: called for file %s\n", name ));
+
+	/* Get the stat struct for the owner info. */
+	if(SMB_VFS_STAT(conn, name, &sbuf) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	/* Get the ACL from the path. */
+	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name, SMB_ACL_TYPE_ACCESS);
+
+	/* If it's a directory get the default POSIX ACL. */
+	if(S_ISDIR(sbuf.st_mode)) {
+		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name, SMB_ACL_TYPE_DEFAULT);
+		def_acl = free_empty_sys_acl(conn, def_acl);
+	}
+
+	pal = load_inherited_info(conn, name);
+
+	return posix_get_nt_acl_common(conn, name, &sbuf, pal, posix_acl,
+				       def_acl, security_info, ppdesc);
 }
 
 /****************************************************************************
@@ -4182,8 +4268,7 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	finfo.fh->fd = -1;
 	finfo.fsp_name = CONST_DISCARD(char *,fname);
 
-	if (!NT_STATUS_IS_OK(get_nt_acl( &finfo, DACL_SECURITY_INFORMATION,
-					 &psd ))) {
+	if (!NT_STATUS_IS_OK(posix_fget_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		conn_free_internal( &conn );
 		return NULL;
