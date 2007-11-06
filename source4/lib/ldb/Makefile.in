@@ -103,11 +103,6 @@ showflags:
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) -c $< -o $@
-
-.c.po:
-	@echo Compiling $*.c
-	@mkdir -p `dirname $@`
 	@$(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 dirs:
@@ -120,8 +115,8 @@ lib/libldb.a: $(OBJS)
 lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
 	$(CC) $(SHLD_FLAGS) -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
-sample_module.$(SHLIBEXT): tests/sample_module.po 
-	$(CC) $(SHLD_FLAGS) $(LIBS) $(LDFLAGS) -o $@ tests/sample_module.po 
+sample_module.$(SHLIBEXT): tests/sample_module.o 
+	$(CC) $(SHLD_FLAGS) $(LIBS) $(LDFLAGS) -o $@ tests/sample_module.o 
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
@@ -153,7 +148,7 @@ examples/ldbreader: examples/ldbreader.o $(LIBS)
 examples/ldifreader: examples/ldifreader.o $(LIBS)
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
-.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html .po
+.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
 
 manpages:
 	@$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
@@ -162,7 +157,7 @@ doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
 
 clean:
-	rm -f *.po */*.po *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
+	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) $(NSS_LIB)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
