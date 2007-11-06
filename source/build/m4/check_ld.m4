@@ -72,30 +72,26 @@ case "$host_os" in
 		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*openbsd*)
-		# disabled because us4 fails to link libtorture.so
-		BLDSHARED="false"
+		BLDSHARED="true"
 		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
 		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*irix*)
-		# disabled because us4 fails to link libtorture.so
-		BLDSHARED="false"
+		BLDSHARED="true"
 		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
 		;;
 	*aix*)
-		# disabled because us4 fails to link libtorture.so
-		BLDSHARED="false"
+		BLDSHARED="true"
 		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
 		if test $ac_cv_prog_cc_Ae = yes; then
-			BLDSHARED="true"
 			SONAMEFLAG="-Wl,+h "
 		elif test "${GCC}" = "yes"; then
-			BLDSHARED="true" # I hope this is correct
 		fi
+		BLDSHARED="true" # I hope this is correct
 		if test "$host_cpu" = "ia64"; then
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
@@ -103,8 +99,7 @@ case "$host_os" in
 		fi
 		;;
 	*osf*)
-		# disabled because tru64 fails to link libtorture.so
-		BLDSHARED="false"
+		BLDSHARED="true"
 		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*unixware*)
