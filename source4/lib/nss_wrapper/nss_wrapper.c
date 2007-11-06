@@ -535,7 +535,7 @@ static void nwrap_pw_unload(struct nwrap_cache *nwrap)
 }
 
 static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
-			   char *buf, size_t buflen, struct passwd **destp)
+			   char *buf, size_t buflen, struct passwd **dstp)
 {
 	char *first;
 	char *last;
@@ -566,6 +566,10 @@ static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
 	dst->pw_dir = buf + ofs;
 	ofs = PTR_DIFF(src->pw_shell, first);
 	dst->pw_shell = buf + ofs;
+
+	if (dstp) {
+		*dstp = dst;
+	}
 
 	return 0;
 }
@@ -719,7 +723,7 @@ static void nwrap_gr_unload(struct nwrap_cache *nwrap)
 }
 
 static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
-			   char *buf, size_t buflen, struct group **destp)
+			   char *buf, size_t buflen, struct group **dstp)
 {
 	char *first;
 	char **lastm;
@@ -757,6 +761,10 @@ static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 	for (i=0; src->gr_mem[i]; i++) {
 		ofs = PTR_DIFF(src->gr_mem[i], first);
 		dst->gr_mem[i] = buf + ofs;
+	}
+
+	if (dstp) {
+		*dstp = dst;
 	}
 
 	return 0;
