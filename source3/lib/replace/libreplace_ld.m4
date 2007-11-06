@@ -84,7 +84,7 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 			SHLD_FLAGS="-G"
 			;;
 		*irix*)
-			SHLD_FLAGS="-set_version sgi1.0 -shared"
+			SHLD_FLAGS="-shared"
 			;;
 		*aix*)
 			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
