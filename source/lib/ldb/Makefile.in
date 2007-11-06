@@ -35,6 +35,7 @@ LDAP_LIBS = @LDAP_LIBS@
 LIBDL = @LIBDL@
 
 SHLIBEXT = @SHLIBEXT@
+SONAMEFLAG = @SONAMEFLAG@
 
 LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
 SHLD_FLAGS = @SHLD_FLAGS@
@@ -47,7 +48,7 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=$(LDFLAGS) -Llib -lldb $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
+LIB_FLAGS=$(LDFLAGS) -Llib $(SOLIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
 		  $(TDB_LIBS) $(LDAP_LIBS) $(LIBDL)
 
 LDB_TDB_DIR=ldb_tdb
@@ -80,7 +81,7 @@ LDB_LIB = lib/libldb.a
 
 BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
 
-LIBS = $(LDB_LIB)
+LIBS = $(SOLIB)
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
@@ -93,7 +94,13 @@ nss: nssdir all $(NSS_LIB)
 nssdir:
 	@mkdir -p $(NSSDIR)
 
-all: showflags dirs $(OBJS) $(LDB_LIB) $(BINS) $(EXAMPLES) manpages
+SONAME = libldb.so.0
+SOLIB = lib/libldb.so.0.9.0
+
+$(SOLIB): $(OBJS)
+	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^ @LDFLAGS@ @LIBS@ $(TALLOC_LIBS) $(TDB_LIBS)
+
+all: showflags dirs $(OBJS) $(LDB_LIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
 
 showflags:
 	@echo 'ldb will be compiled with flags:'
@@ -104,6 +111,11 @@ showflags:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
 	@$(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
+
+.c.po:
+	@echo Compiling $*.c
+	@mkdir -p `dirname $@`
+	@$(CC) -fPIC $(CFLAGS) -c $< -o $@
 
 dirs:
 	@mkdir -p $(DIRS)
@@ -148,7 +160,7 @@ examples/ldbreader: examples/ldbreader.o $(LIBS)
 examples/ldifreader: examples/ldifreader.o $(LIBS)
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
-.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
+.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html .c .o
 
 manpages:
 	@$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
@@ -190,7 +202,7 @@ installcheck: install test
 install: all
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir)/pkgconfig $(DESTDIR)$(libdir) $(bindir)
 	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
-	cp $(LDB_LIB) $(DESTDIR)$(libdir)
+	cp $(LDB_LIB) $(SOLIB) $(DESTDIR)$(libdir)
 	cp $(BINS) $(DESTDIR)$(bindir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(srcdir)/docs/installdocs.sh $(DESTDIR)$(mandir)

@@ -125,3 +125,44 @@ AC_DEFUN([AC_LD_SHLIBEXT],
 	esac
 	AC_SUBST(SHLIBEXT)
 ])
+
+AC_DEFUN([AC_LD_SONAMEFLAG],
+[
+	AC_SUBST(SONAMEFLAG)
+	SONAMEFLAG=""
+	case "$host_os" in 
+		*linux*)
+			SONAMEFLAG="-Wl,-soname="
+			;;
+		*solaris*)
+			SONAMEFLAG="-h "
+			if test "${GCC}" = "yes"; then
+				SONAMEFLAG="-Wl,-soname="
+			fi
+			;;
+		*sunos*)
+			SONAMEFLAG="-Wl,-h,"
+			;;
+		*netbsd* | *freebsd* | *dragonfly* )
+			SONAMEFLAG="-Wl,-soname,"
+			;;
+		*openbsd*)
+			SONAMEFLAG="-Wl,-soname,"
+			;;
+		*irix*)
+			SONAMEFLAG="-soname "
+			;;
+		*hpux*)
+			SONAMEFLAG="-Wl,+h "
+			;;
+		*osf*)
+			SONAMEFLAG="-Wl,-soname,"
+			;;
+		*unixware*)
+			SONAMEFLAG="-Wl,-soname,"
+			;;
+		*darwin*)
+			SONAMEFLAG="-Wl,-soname,"
+			;;
+		esac
+])
