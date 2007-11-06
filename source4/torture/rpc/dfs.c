@@ -596,6 +596,47 @@ static bool test_DcAddress(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_FlushFtTable(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx,
+			      const char *host,
+			      const char *sharename)
+{
+	NTSTATUS status;
+	struct dfs_FlushFtTable r;
+	enum dfs_ManagerVersion version;
+
+	printf("Testing FlushFtTable\n");
+
+	if (!test_GetManagerVersion(p, mem_ctx, &version)) {
+		return false;
+	}
+
+	r.in.servername = host;
+	r.in.rootshare = sharename;
+
+	status = dcerpc_dfs_FlushFtTable(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("FlushFtTable failed - %s\n", nt_errstr(status));
+		return false;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("dfs_FlushFtTable failed - %s\n",
+			win_errstr(r.out.result));
+		IS_DFS_VERSION_UNSUPPORTED_CALL_W2K3(version, r.out.result);
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_FtRoot(struct dcerpc_pipe *p,
+			TALLOC_CTX *mem_ctx,
+			const char *host)
+{
+	const char *sharename = SMBTORTURE_DFS_SHARENAME;
+
+	return test_FlushFtTable(p, mem_ctx, host, sharename);
+}
+
 bool torture_rpc_dfs(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -612,6 +653,7 @@ bool torture_rpc_dfs(struct torture_context *torture)
 	ret &= test_Enum(p, torture);
 	ret &= test_EnumEx(p, torture, host);
 	ret &= test_StdRoot(p, torture, host);
+	ret &= test_FtRoot(p, torture, host);
 	ret &= test_DcAddress(p, torture, host);
 
 	return ret;
