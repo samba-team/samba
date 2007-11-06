@@ -63,3 +63,41 @@ case "$host_os" in
 esac
 AC_SUBST(PICFLAG)
 ])
+
+AC_DEFUN([AC_LD_SHLDFLAGS],
+[
+	SHLD_FLAGS="-shared"
+
+	case "$host_os" in
+		*linux*)
+			SHLD_FLAGS="-shared -Wl,-Bsymbolic"
+			;;
+		*solaris*)
+			SHLD_FLAGS="-G"
+			if test "${GCC}" = "no"; then
+				## ${CFLAGS} added for building 64-bit shared 
+				## libs using Sun's Compiler
+				SHLD_FLAGS="-G \${CFLAGS}"
+			fi
+			;;
+		*sunos*)
+			SHLD_FLAGS="-G"
+			;;
+		*irix*)
+			SHLD_FLAGS="-set_version sgi1.0 -shared"
+			;;
+		*aix*)
+			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			;;
+		*hpux*)
+			if test $ac_cv_prog_cc_Ae = yes; then
+				SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
+			fi
+			;;
+		*darwin*)
+			SHLD_FLAGS="-bundle -flat_namespace -undefined suppress"
+			;;
+	esac
+
+	AC_SUBST(SHLD_FLAGS)
+])
