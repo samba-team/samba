@@ -280,9 +280,6 @@ AC_TRY_CPP([
 eprintf("bla", "bar");
 ], AC_DEFINE(HAVE__VA_ARGS__MACRO, 1, [Whether the __VA_ARGS__ macro is available]))
 
-# Check prerequisites
-AC_CHECK_FUNCS([memset printf syslog], [], 
-			   [ AC_MSG_ERROR([Required function not found])])
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
@@ -331,7 +328,7 @@ m4_include(inet_pton.m4)
 m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
 
-AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
+AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
