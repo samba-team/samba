@@ -72,6 +72,7 @@ AC_SUBST(TESTS)
 AC_SUBST(EXTRA_OBJ)
 
 AC_LD_EXPORT_DYNAMIC
+AC_LD_PICFLAG
 
 m4_include(libldb.m4)
 AC_OUTPUT(Makefile ldb.pc)
