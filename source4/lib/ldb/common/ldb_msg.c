@@ -321,7 +321,8 @@ int ldb_msg_element_compare_name(struct ldb_message_element *el1,
   convenience functions to return common types from a message
   these return the first value if the attribute is multi-valued
 */
-const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name)
+const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, 
+					   const char *attr_name)
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
 	if (!el || el->num_values == 0) {
