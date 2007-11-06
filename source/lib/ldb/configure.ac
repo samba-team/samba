@@ -36,7 +36,6 @@ AC_PATH_PROG(GCOV,gcov)
 AC_PATH_PROG(SLAPD,slapd)
 AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
-AC_SEARCH_LIBS(dlopen, dl, AC_DEFINE(HAVE_DLOPEN, [1], [have dlopen]))
 
 AC_DEFINE_UNQUOTED(LDB_MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
 AC_SUBST(LDB_MODULESDIR)

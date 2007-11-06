@@ -32,6 +32,8 @@ POPT_OBJ = @POPT_OBJ@
 
 LDAP_LIBS = @LDAP_LIBS@
 
+LIBDL = @LIBDL@
+
 SHLIBEXT = @SHLIBEXT@
 
 LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
@@ -46,7 +48,7 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
 LIB_FLAGS=$(LDFLAGS) -Llib -lldb $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
-		  $(TDB_LIBS) $(LDAP_LIBS)
+		  $(TDB_LIBS) $(LDAP_LIBS) $(LIBDL)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
