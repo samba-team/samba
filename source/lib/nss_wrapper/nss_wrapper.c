@@ -48,6 +48,26 @@
 #define _PUBLIC_
 #endif
 
+/* not all systems have _r functions... */
+#ifndef HAVE_GETPWNAM_R
+#define getpwnam_r(name, pwdst, buf, buflen, pwdstp)	ENOSYS
+#endif
+#ifndef HAVE_GETPWUID_R
+#define getpwuid_r(uid, pwdst, buf, buflen, pwdstp)	ENOSYS
+#endif
+#ifndef HAVE_GETPWENT_R
+#define getpwent_r(pwdst, buf, buflen, pwdstp)		ENOSYS
+#endif
+#ifndef HAVE_GETGRNAM_R
+#define getgrnam_r(name, grdst, buf, buflen, grdstp)	ENOSYS
+#endif
+#ifndef HAVE_GETGRUID_R
+#define getgrgid_r(uid, grdst, buf, buflen, grdstp)	ENOSYS
+#endif
+#ifndef HAVE_GETGRENT_R
+#define getgrent_r(grdst, buf, buflen, grdstp)		ENOSYS
+#endif
+
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
  * for now */
 #define REWRITE_CALLS
