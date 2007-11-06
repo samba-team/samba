@@ -74,7 +74,7 @@ $(SONAME): $(SOLIB)
 	ln -s $< $@
 
 $(SOLIB): $(TDB_OBJ)
-	$(CC) $(SONAMEFLAG)$(SONAME) $(SHLD_FLAGS) -o $@ $^
+	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^
 
 bin/tdbtest$(EXEEXT): tools/tdbtest.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
