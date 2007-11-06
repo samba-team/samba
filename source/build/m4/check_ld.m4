@@ -31,7 +31,6 @@ STLD_FLAGS="-rcs"
 BLDSHARED="false"
 LD="${CC}"
 SHLD="${CC}"
-SHLD_FLAGS="-shared"
 SHLIBEXT="so"
 SONAMEFLAG=""
 PICFLAG=""
@@ -53,29 +52,22 @@ AC_MSG_CHECKING([whether to try to build shared libraries on $host_os])
 case "$host_os" in
 	*linux*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-shared -Wl,-Bsymbolic"
 		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
 		SONAMEFLAG="-Wl,-soname="
 		;;
 	*solaris*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-G"
 		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
 			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
-		else
-			## ${CFLAGS} added for building 64-bit shared 
-			## libs using Sun's Compiler
-			SHLD_FLAGS="-G \${CFLAGS}"
 		fi
 		;;
 	*sunos*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-G"
 		SONAMEFLAG="-Wl,-h,"
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
@@ -92,21 +84,18 @@ case "$host_os" in
 	*irix*)
 		# disabled because us4 fails to link libtorture.so
 		BLDSHARED="false"
-		SHLD_FLAGS="-set_version sgi1.0 -shared"
 		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
 		;;
 	*aix*)
 		# disabled because us4 fails to link libtorture.so
 		BLDSHARED="false"
-		SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
 		if test $ac_cv_prog_cc_Ae = yes; then
 			BLDSHARED="true"
-			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			SONAMEFLAG="-Wl,+h "
 		elif test "${GCC}" = "yes"; then
 			BLDSHARED="true" # I hope this is correct
@@ -130,7 +119,6 @@ case "$host_os" in
 		;;
 	*darwin*)
 		BLDSHARED="true"
-		SHLD_FLAGS="-bundle -flat_namespace -undefined suppress"
 		SHLIBEXT="dylib"
 		;;
 esac
@@ -150,6 +138,8 @@ AC_MSG_CHECKING([STLD_FLAGS])
 AC_MSG_RESULT([$STLD_FLAGS])
 
 AC_LD_PICFLAG
+AC_LD_EXPORT_DYNAMIC
+AC_LD_SHLDFLAGS
 
 AC_ARG_ENABLE(shared,
 [  --disable-shared        Disable testing for building shared libraries],

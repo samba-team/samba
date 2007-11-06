@@ -35,6 +35,7 @@ LDAP_LIBS = @LDAP_LIBS@
 SHLIBEXT = @SHLIBEXT@
 
 LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
+SHLD_FLAGS = @SHLD_FLAGS@
 
 PICFLAG = @PICFLAG@
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
@@ -112,10 +113,10 @@ lib/libldb.a: $(OBJS)
 	@-ranlib $@
 
 lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
-	$(CC) -shared -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
+	$(CC) $(SHLD_FLAGS) -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 sample_module.$(SHLIBEXT): tests/sample_module.po 
-	$(CC) -shared -o $@ tests/sample_module.po 
+	$(CC) $(SHLD_FLAGS) -o $@ tests/sample_module.po 
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
