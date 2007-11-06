@@ -180,8 +180,56 @@ SMB_ENABLE(KERBEROS_LIB, NO)
 SMB_ENABLE(asn1_compile, NO)
 SMB_ENABLE(compile_et, NO)
 
+#
+# We need bison -y and flex in new versions
+# Otherwise we get random runtime failures
+#
+LEX_YACC_COMBINATIONS=""
+LEX_YACC_COMBINATIONS="$LEX_YACC_COMBINATIONS flex-2.5.33:bison-2.3"
+
 AC_PROG_LEX
+LEX_BASENAME=`basename "$LEX"`
+if test x"$LEX_BASENAME" = x"flex"; then
+	# "flex 2.5.33"
+	FLEX_VERSION=`$LEX --version | cut -d ' ' -f2`
+	AC_MSG_CHECKING(flex version)
+	AC_MSG_RESULT($FLEX_VERSION)
+	FLEX_MAJOR=`echo $FLEX_VERSION | cut -d '.' -f1`
+	FLEX_MINOR=`echo $FLEX_VERSION | cut -d '.' -f2`
+	FLEX_RELEASE=`echo $FLEX_VERSION | cut -d '.' -f3`
+
+	LEX_VERSION="flex-$FLEX_MAJOR.$FLEX_MINOR.$FLEX_RELEASE"
+fi
+
 AC_PROG_YACC
+YACC_BASENAME=`basename "$YACC"`
+if test x"$YACC_BASENAME" = x"bison -y"; then
+	# bison (GNU Bison) 2.3
+	BISON_VERSION=`$YACC --version | head -1 | cut -d ' ' -f4`
+	AC_MSG_CHECKING(bison version)
+	AC_MSG_RESULT($BISON_VERSION)
+	BISON_MAJOR=`echo $BISON_VERSION | cut -d '.' -f1`
+	BISON_MINOR=`echo $BISON_VERSION | cut -d '.' -f2`
+
+	YACC_VERSION="bison-$BISON_MAJOR.$BISON_MINOR"
+fi
+
+AC_MSG_CHECKING(working LEX YACC combination)
+LEX_YACC="no"
+if test x"$LEX_VERSION" != x"" -a x"$YACC_VERSION" != x""; then
+	V="$LEX_VERSION:$YACC_VERSION"
+	for C in $LEX_YACC_COMBINATIONS; do
+		if test x"$V" = x"$C"; then
+			LEX_YACC=$V
+			break;
+		fi
+	done
+fi
+if test x"$LEX_YACC" = x"no"; then
+	LEX=false
+	YACC=false
+fi
+AC_MSG_RESULT($LEX_YACC)
 
 # Portions of heimdal kerberos are unpacked into source/heimdal
 # of the samba source tree.  
