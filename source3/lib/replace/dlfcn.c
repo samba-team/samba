@@ -23,6 +23,9 @@
 */
 
 #include "replace.h"
+#ifdef HAVE_DL_H
+#include <dl.h>
+#endif
 
 #ifndef HAVE_DLOPEN
 #ifdef DLOPEN_TAKES_UNSIGNED_FLAGS
@@ -31,13 +34,22 @@ void *rep_dlopen(const char *name, unsigned int flags)
 void *rep_dlopen(const char *name, int flags)
 #endif
 {
+#ifdef HAVE_SHL_LOAD
+	return (void *)shl_load(name, flags, 0);
+#else
 	return NULL;
+#endif
 }
 #endif
 
 #ifndef HAVE_DLSYM
 void *rep_dlsym(void *handle, const char *symbol)
 {
+#ifdef HAVE_SHL_FINDSYM
+	void *sym_addr;
+	if (!shl_findsym((shl_t *)&handle, symbol, TYPE_UNDEFINED, &sym_addr))
+		return sym_addr;
+#endif
     return NULL;
 }
 #endif
@@ -52,6 +64,10 @@ char *rep_dlerror(void)
 #ifndef HAVE_DLCLOSE
 int rep_dlclose(void *handle)
 {
+#ifdef HAVE_SHL_CLOSE
+	return shl_unload((shl_t)handle);
+#else
 	return 0;
+#endif
 }
 #endif
