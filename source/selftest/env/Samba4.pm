@@ -451,6 +451,7 @@ sub provision($$$$$$)
 	my $dnsname = "samba.example.com";
 	my $basedn = "dc=samba,dc=example,dc=com";
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
+	chomp $unix_name;
 	my $unix_uid = $>;
 	my $unix_gids_str = $);
 	my @unix_gids = split(" ", $unix_gids_str);
