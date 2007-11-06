@@ -950,7 +950,7 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 	NTSTATUS result;
 
 	START_PROFILE(fget_nt_acl);
-	result = get_nt_acl(fsp, security_info, ppdesc);
+	result = posix_fget_nt_acl(fsp, security_info, ppdesc);
 	END_PROFILE(fget_nt_acl);
 	return result;
 }
@@ -962,7 +962,7 @@ static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 	NTSTATUS result;
 
 	START_PROFILE(get_nt_acl);
-	result = get_nt_acl(fsp, security_info, ppdesc);
+	result = posix_get_nt_acl(fsp->conn, fsp->fsp_name, security_info, ppdesc);
 	END_PROFILE(get_nt_acl);
 	return result;
 }

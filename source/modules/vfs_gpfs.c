@@ -240,7 +240,7 @@ static NTSTATUS gpfsacl_get_nt_acl_common(files_struct *fsp,
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return get_nt_acl(fsp, security_info, ppdesc);
+		return posix_fget_nt_acl(fsp, security_info, ppdesc);
 	}
 	
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
