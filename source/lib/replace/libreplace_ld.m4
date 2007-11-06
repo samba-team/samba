@@ -8,7 +8,7 @@ else
 		hpux* )
 		  LD_EXPORT_DYNAMIC="-Wl,-E"
 		  ;;
-		* )
+		*)
 		  LD_EXPORT_DYNAMIC=""
 		  ;;
 	  esac
@@ -101,7 +101,7 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
 			;;
 		*darwin*)
-			SHLD_FLAGS="-bundle -flat_namespace -undefined suppress"
+			SHLD_FLAGS="-dynamiclib"
 			;;
 	esac
 
@@ -150,7 +150,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*irix*)
-			SONAMEFLAG="-soname "
+			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*hpux*)
 			SONAMEFLAG="-Wl,+h "
@@ -162,7 +162,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*darwin*)
-			SONAMEFLAG="-Wl,-soname,"
+			SONAMEFLAG="-install_name "
 			;;
 		esac
 ])
