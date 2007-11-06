@@ -101,3 +101,21 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 
 	AC_SUBST(SHLD_FLAGS)
 ])
+
+AC_DEFUN([AC_LD_SHLIBEXT],
+[
+	SHLIBEXT="so"
+	case "$host_os" in
+		*hpux*)
+			if test "$host_cpu" = "ia64"; then
+				SHLIBEXT="so"
+			else
+				SHLIBEXT="sl"
+			fi
+		;;
+		*darwin*)
+			SHLIBEXT="dylib"
+		;;
+	esac
+	AC_SUBST(SHLIBEXT)
+])

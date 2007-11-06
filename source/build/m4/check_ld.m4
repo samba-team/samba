@@ -18,11 +18,8 @@ AC_SUBST(BLDSHARED)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(SHLD)
-AC_SUBST(SHLD_FLAGS)
 AC_SUBST(SHLD_UNDEF_FLAGS)
-AC_SUBST(SHLIBEXT)
 AC_SUBST(SONAMEFLAG)
-AC_SUBST(PICFLAG)
 
 # Assume non-shared by default and override below
 # these are the defaults, good for lots of systems
@@ -31,7 +28,6 @@ STLD_FLAGS="-rcs"
 BLDSHARED="false"
 LD="${CC}"
 SHLD="${CC}"
-SHLIBEXT="so"
 SONAMEFLAG=""
 PICFLAG=""
 
@@ -101,10 +97,8 @@ case "$host_os" in
 			BLDSHARED="true" # I hope this is correct
 		fi
 		if test "$host_cpu" = "ia64"; then
-			SHLIBEXT="so"
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
-			SHLIBEXT="sl"
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib:/usr/lib"
 		fi
 		;;
@@ -119,7 +113,6 @@ case "$host_os" in
 		;;
 	*darwin*)
 		BLDSHARED="true"
-		SHLIBEXT="dylib"
 		;;
 esac
 
@@ -140,6 +133,7 @@ AC_MSG_RESULT([$STLD_FLAGS])
 AC_LD_PICFLAG
 AC_LD_EXPORT_DYNAMIC
 AC_LD_SHLDFLAGS
+AC_LD_SHLIBEXT
 
 AC_ARG_ENABLE(shared,
 [  --disable-shared        Disable testing for building shared libraries],
