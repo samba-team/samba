@@ -27,6 +27,9 @@
 
 */
 
+/* this needs to be included before nss_wrapper.h on some systems */
+#include <unistd.h>
+
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
