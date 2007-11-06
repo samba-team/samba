@@ -19,7 +19,6 @@ AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(SHLD)
 AC_SUBST(SHLD_UNDEF_FLAGS)
-AC_SUBST(SONAMEFLAG)
 
 # Assume non-shared by default and override below
 # these are the defaults, good for lots of systems
@@ -28,7 +27,6 @@ STLD_FLAGS="-rcs"
 BLDSHARED="false"
 LD="${CC}"
 SHLD="${CC}"
-SONAMEFLAG=""
 PICFLAG=""
 
 # allow for --with-hostld=gcc
@@ -50,13 +48,10 @@ case "$host_os" in
 		BLDSHARED="true"
 		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
-		SONAMEFLAG="-Wl,-soname="
 		;;
 	*solaris*)
 		BLDSHARED="true"
-		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
-			SONAMEFLAG="-Wl,-soname="
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
@@ -64,21 +59,17 @@ case "$host_os" in
 		;;
 	*sunos*)
 		BLDSHARED="true"
-		SONAMEFLAG="-Wl,-h,"
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
-		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*openbsd*)
 		BLDSHARED="true"
 		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
-		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*irix*)
 		BLDSHARED="true"
-		SONAMEFLAG="-soname "
 		SHLD="${PROG_LD}"
 		;;
 	*aix*)
@@ -88,8 +79,6 @@ case "$host_os" in
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
 		if test $ac_cv_prog_cc_Ae = yes; then
-			SONAMEFLAG="-Wl,+h "
-		elif test "${GCC}" = "yes"; then
 		fi
 		BLDSHARED="true" # I hope this is correct
 		if test "$host_cpu" = "ia64"; then
@@ -100,11 +89,9 @@ case "$host_os" in
 		;;
 	*osf*)
 		BLDSHARED="true"
-		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*unixware*)
 		BLDSHARED="true"
-		SONAMEFLAG="-Wl,-soname,"
 		;;
 	*darwin*)
 		BLDSHARED="true"
@@ -129,6 +116,7 @@ AC_LD_PICFLAG
 AC_LD_EXPORT_DYNAMIC
 AC_LD_SHLDFLAGS
 AC_LD_SHLIBEXT
+AC_LD_SONAMEFLAG
 
 AC_ARG_ENABLE(shared,
 [  --disable-shared        Disable testing for building shared libraries],
