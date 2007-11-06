@@ -181,7 +181,8 @@ static void start_filter(char *desthost)
 	CatchChild();
 
 	/* start listening on port 445 locally */
-	my_ss.ss_family = AF_INET;
+
+	zero_addr(&my_ss);
 	s = open_socket_in(SOCK_STREAM, 445, 0, &my_ss, True);
 	
 	if (s == -1) {
