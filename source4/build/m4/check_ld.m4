@@ -78,8 +78,6 @@ case "$host_os" in
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
-		if test $ac_cv_prog_cc_Ae = yes; then
-		fi
 		BLDSHARED="true" # I hope this is correct
 		if test "$host_cpu" = "ia64"; then
 			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
