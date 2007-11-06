@@ -48,7 +48,9 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
-LIB_FLAGS=$(LDFLAGS) -Llib $(SOLIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
+LDB_LIB = $(STATICLIB)
+
+LIB_FLAGS=$(LDFLAGS) -Llib $(LDB_LIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
 		  $(TDB_LIBS) $(LDAP_LIBS) $(LIBDL)
 
 LDB_TDB_DIR=ldb_tdb
@@ -73,15 +75,11 @@ MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/rdn_name.o \
 
 NSSDIR=nssldb
 NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
-NSS_LIB = lib/libnss_ldb.so.2
+NSS_LIB = lib/libnss_ldb.$(SHLIBEXT).2
 
 OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
-LDB_LIB = lib/libldb.a
-
 BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
-
-LIBS = $(SOLIB)
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
@@ -94,13 +92,14 @@ nss: nssdir all $(NSS_LIB)
 nssdir:
 	@mkdir -p $(NSSDIR)
 
-SONAME = libldb.so.0
-SOLIB = lib/libldb.so.0.9.0
+SONAME = libldb.$(SHLIBEXT).0
+SOLIB = lib/libldb.$(SHLIBEXT).0.9.0
+STATICLIB = lib/libldb.a
 
 $(SOLIB): $(OBJS)
 	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^ @LDFLAGS@ @LIBS@ $(TALLOC_LIBS) $(TDB_LIBS)
 
-all: showflags dirs $(OBJS) $(LDB_LIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
+all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
 
 showflags:
 	@echo 'ldb will be compiled with flags:'
@@ -124,8 +123,8 @@ lib/libldb.a: $(OBJS)
 	ar -rv $@ $(OBJS)
 	@-ranlib $@
 
-lib/libnss_ldb.so.2: $(NSS_OBJ) $(LIBS) bin/libldb.a
-	$(CC) $(SHLD_FLAGS) -Wl,-soname,libnss_ldb.so.2 -o lib/libnss_ldb.so.2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
+lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(LIBS) bin/libldb.a
+	$(CC) $(SHLD_FLAGS) -Wl,-soname,libnss_ldb.$(SHLIBEXT).2 -o lib/libnss_ldb.$(SHLIBEXT).2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 sample_module.$(SHLIBEXT): tests/sample_module.o 
 	$(CC) $(SHLD_FLAGS) $(LIBS) $(LDFLAGS) -o $@ tests/sample_module.o 
@@ -170,7 +169,7 @@ doxygen:
 
 clean:
 	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
-	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) $(NSS_LIB)
+	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(STATICLIB) $(NSS_LIB) $(SOLIB)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
 	rm -rf apidocs/
@@ -202,7 +201,7 @@ installcheck: install test
 install: all
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir)/pkgconfig $(DESTDIR)$(libdir) $(bindir)
 	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
-	cp $(LDB_LIB) $(SOLIB) $(DESTDIR)$(libdir)
+	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
 	cp $(BINS) $(DESTDIR)$(bindir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(srcdir)/docs/installdocs.sh $(DESTDIR)$(mandir)
