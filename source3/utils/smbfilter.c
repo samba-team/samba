@@ -228,6 +228,8 @@ int main(int argc, char *argv[])
 	pstring configfile;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	load_case_tables();
+
 	setup_logging(argv[0],True);
   
 	pstrcpy(configfile,dyn_CONFIGFILE);
