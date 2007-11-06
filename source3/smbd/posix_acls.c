@@ -2110,10 +2110,10 @@ static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
  Create a linked list of canonical ACE entries.
 ****************************************************************************/
 
-static canon_ace *canonicalise_acl(const struct connection_struct *conn,
-				   const bool is_directory, const char *fname,
-				   SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-					const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
+static canon_ace *canonicalise_acl(struct connection_struct *conn,
+				   const char *fname, SMB_ACL_T posix_acl,
+				   const SMB_STRUCT_STAT *psbuf,
+				   const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
 	canon_ace *list_head = NULL;
@@ -2229,7 +2229,9 @@ static canon_ace *canonicalise_acl(const struct connection_struct *conn,
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(&list_head, conn->params, is_directory, powner, pgroup, psbuf, False))
+	if (!ensure_canon_entry_valid(&list_head, conn->params,
+				      S_ISDIR(psbuf->st_mode), powner, pgroup,
+				      psbuf, False))
 		goto fail;
 
 	/*
@@ -2817,7 +2819,7 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 */
 
 		/* Create the canon_ace lists. */
-		file_ace = canonicalise_acl(fsp->conn, fsp->is_directory,
+		file_ace = canonicalise_acl(fsp->conn, 
 					    fsp->fsp_name, posix_acl, &sbuf,
 					    &owner_sid, &group_sid, pal,
 					    SMB_ACL_TYPE_ACCESS);
@@ -2830,7 +2832,7 @@ NTSTATUS get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		}
 
 		if (fsp->is_directory && def_acl) {
-			dir_ace = canonicalise_acl(fsp->conn, fsp->is_directory,
+			dir_ace = canonicalise_acl(fsp->conn,
 						   fsp->fsp_name, def_acl,
 						   &sbuf,
 						   &global_sid_Creator_Owner,
