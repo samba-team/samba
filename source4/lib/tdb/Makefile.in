@@ -70,22 +70,25 @@ libtdb.a: $(TDB_OBJ)
 libtdb.(SHLIBEXT): $(SOLIB)
 	ln -s $< $@
 
+$(SONAME): $(SOLIB)
+	ln -s $< $@
+
 $(SOLIB): $(TDB_OBJ)
 	$(CC) $(SONAMEFLAG)$(SONAME) $(SHLD_FLAGS) -o $@ $^
 
-bin/tdbtest$(EXEEXT): tools/tdbtest.o libtdb.$(SHLIBEXT)
+bin/tdbtest$(EXEEXT): tools/tdbtest.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
 
-bin/tdbtool$(EXEEXT): tools/tdbtool.o libtdb.$(SHLIBEXT)
+bin/tdbtool$(EXEEXT): tools/tdbtool.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
 
-bin/tdbtorture$(EXEEXT): tools/tdbtorture.o libtdb.$(SHLIBEXT)
+bin/tdbtorture$(EXEEXT): tools/tdbtorture.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
 
-bin/tdbdump$(EXEEXT): tools/tdbdump.o libtdb.$(SHLIBEXT)
+bin/tdbdump$(EXEEXT): tools/tdbdump.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
 
-bin/tdbbackup$(EXEEXT): tools/tdbbackup.o libtdb.$(SHLIBEXT)
+bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(SOLIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
 test: bin/tdbtorture$(EXEEXT)
@@ -96,6 +99,7 @@ installcheck: test install
 clean:
 	rm -f $(ALL_PROGS) *.o *.a common/*.o tools/*.o tdb.pc
 	rm -f test.db test.tdb torture.tdb test.gdbm
+	rm -f $(SONAME) $(SOLIB)
 
 distclean: clean
 	rm -f *~ */*~
