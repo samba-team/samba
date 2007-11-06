@@ -16,6 +16,11 @@ CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 LDFLAGS = @LDFLAGS@
 EXEEXT = @EXEEXT@
+SHLD_FLAGS = @SHLD_FLAGS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PICFLAG = @PICFLAG@
+SONAMEFLAG = @SONAMEFLAG@
+SHLIBEXT = @SHLIBEXT@
 
 .PHONY: test
 
@@ -27,7 +32,10 @@ TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
 
 DIRS = bin common tools
 
-all: showflags dirs $(PROGS)
+SONAME = libtdb.$(SHLIBEXT).1
+SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+all: showflags dirs $(PROGS) $(SOLIB) libtdb.a
 
 showflags:
 	@echo 'tdb will be compiled with flags:'
@@ -36,10 +44,12 @@ showflags:
 	@echo '  LDFLAGS = $(LDFLAGS)'
 	@echo '  LIBS = $(LIBS)'
 
+.SUFFIXES: .c .o
+
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(PICFLAG) $(CFLAGS) -c $< -o $@
 
 dirs:
 	@mkdir -p $(DIRS)
@@ -52,23 +62,30 @@ install: all
 	cp $(PROGS) $(DESTDIR)$(bindir)
 	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
+	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
 
 libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
 
-bin/tdbtest$(EXEEXT): tools/tdbtest.o libtdb.a
+libtdb.(SHLIBEXT): $(SOLIB)
+	ln -s $< $@
+
+$(SOLIB): $(TDB_OBJ)
+	$(CC) $(SONAMEFLAG)$(SONAME) $(SHLD_FLAGS) -o $@ $^
+
+bin/tdbtest$(EXEEXT): tools/tdbtest.o libtdb.$(SHLIBEXT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
 
-bin/tdbtool$(EXEEXT): tools/tdbtool.o libtdb.a
+bin/tdbtool$(EXEEXT): tools/tdbtool.o libtdb.$(SHLIBEXT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
 
-bin/tdbtorture$(EXEEXT): tools/tdbtorture.o libtdb.a
+bin/tdbtorture$(EXEEXT): tools/tdbtorture.o libtdb.$(SHLIBEXT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
 
-bin/tdbdump$(EXEEXT): tools/tdbdump.o libtdb.a
+bin/tdbdump$(EXEEXT): tools/tdbdump.o libtdb.$(SHLIBEXT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
 
-bin/tdbbackup$(EXEEXT): tools/tdbbackup.o libtdb.a
+bin/tdbbackup$(EXEEXT): tools/tdbbackup.o libtdb.$(SHLIBEXT)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
 test: bin/tdbtorture$(EXEEXT)

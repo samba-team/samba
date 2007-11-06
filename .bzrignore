@@ -205,3 +205,4 @@ source/torture/winbind/proto.h
 source/lib/ldb/tdbtest.ldb
 source/lib/ldb/tdbtest.ldb
 *.po
+libtdb.so.*
