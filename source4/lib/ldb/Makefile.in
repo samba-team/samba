@@ -162,7 +162,7 @@ doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
 
 clean:
-	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
+	rm -f *.po */*.po *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) $(NSS_LIB)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
