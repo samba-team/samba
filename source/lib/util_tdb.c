@@ -72,6 +72,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 
 	if (timeout) {
 		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		tdb_setalarm_sigptr(tdb, &gotalarm);
 		alarm(timeout);
 	}
 
@@ -82,6 +83,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 
 	if (timeout) {
 		alarm(0);
+		tdb_setalarm_sigptr(tdb, NULL);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
