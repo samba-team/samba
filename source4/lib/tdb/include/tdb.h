@@ -147,6 +147,8 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
 
+void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
+
 /* Debug functions. Not used in production. */
 void tdb_dump_all(struct tdb_context *tdb);
 int tdb_printfreelist(struct tdb_context *tdb);
