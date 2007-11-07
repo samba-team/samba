@@ -6,5 +6,9 @@ AC_INIT(tdb, 1.1.0)
 AC_CONFIG_SRCDIR([common/tdb.c])
 AC_CONFIG_HEADER(include/config.h)
 AC_LIBREPLACE_ALL_CHECKS
+AC_LD_SONAMEFLAG
+AC_LD_PICFLAG
+AC_LD_SHLDFLAGS
+AC_LD_SHLIBEXT
 m4_include(libtdb.m4)
 AC_OUTPUT(Makefile tdb.pc)
