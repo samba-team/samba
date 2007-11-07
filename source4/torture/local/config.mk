@@ -26,16 +26,16 @@ OBJ_FILES = \
 		../../lib/registry/tests/hive.o \
 		../../lib/registry/tests/diff.o \
 		../../lib/registry/tests/registry.o \
-		resolve.o \
+		../../libcli/resolve/testsuite.o \
 		../../lib/util/tests/strlist.o \
 		../../lib/util/tests/str.o \
 		../../lib/util/tests/file.o \
 		../../lib/util/tests/genrand.o \
 		../../lib/compression/testsuite.o \
 		../../lib/charset/testsuite.o \
-		sddl.o \
+		../../libcli/security/tests/sddl.o \
 		../../lib/tdr/testsuite.o \
-		event.o \
+		../../lib/events/testsuite.o \
 		share.o \
 		local.o \
 		dbspeed.o \
