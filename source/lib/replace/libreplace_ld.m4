@@ -98,7 +98,11 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
 			;;
 		*hpux*)
-			SHLD_FLAGS="-b -Wl,-B,symbolic,-b,-z"
+			if test "${GCC}" = "yes"; then
+				SHLD_FLAGS="-shared"
+			else
+				SHLD_FLAGS="-b"
+			fi
 			;;
 		*darwin*)
 			SHLD_FLAGS="-dynamiclib"
