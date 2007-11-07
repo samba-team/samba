@@ -238,7 +238,7 @@ static void usage(void)
 
 	unlink("torture.tdb");
 
-	pids = calloc(sizeof(pid_t), num_procs);
+	pids = (pid_t *)calloc(sizeof(pid_t), num_procs);
 	pids[0] = getpid();
 
 	for (i=0;i<num_procs-1;i++) {

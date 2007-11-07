@@ -5,6 +5,6 @@ includedir=@includedir@
 
 Name: tdb
 Description: A trivial database
-Version: 4.0
+Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltdb
 Cflags: -I${includedir} 
