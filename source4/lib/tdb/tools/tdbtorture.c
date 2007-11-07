@@ -3,10 +3,10 @@
 */
 
 #include "replace.h"
-#include "tdb.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
+#include "tdb.h"
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>

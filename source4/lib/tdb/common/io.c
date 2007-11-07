@@ -96,7 +96,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 				 "%d of %d bytes at %d, trying once more\n",
 				 (int)written, len, off));
 			errno = ENOSPC;
-			written = pwrite(tdb->fd, (void *)((char *)buf+written),
+			written = pwrite(tdb->fd, (const void *)((const char *)buf+written),
 					 len-written,
 					 off+written);
 		}

@@ -1,6 +1,8 @@
 #if (_SAMBA_BUILD_ == 3)
 #include "tdb/include/tdb.h"
 #else
+#include "replace.h"
+#include "system/wait.h"
 #include "tdb.h"
 #endif
 
