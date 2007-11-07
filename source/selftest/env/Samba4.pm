@@ -499,6 +499,7 @@ sub provision($$$$$$)
 	ncalrpc dir = $ncalrpcdir
 	lock dir = $lockdir
 	setup directory = $self->{setupdir}
+	modules dir = $self->{bindir}/modules
 	js include = $srcdir/scripting/libjs
 	winbindd socket directory = $winbindd_socket_dir
         winbind separator = /
@@ -646,6 +647,7 @@ nogroup:x:65534:nobody
 		DOMAIN => $domain,
 		USERNAME => $username,
 		REALM => $realm,
+		LDB_MODULES_PATH => "$self->{bindir}/modules/ldb",
 		PASSWORD => $password,
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,

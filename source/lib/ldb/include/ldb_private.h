@@ -73,6 +73,8 @@ struct ldb_module_ops {
 typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
 			       struct ldb_module **module);
 
+const char *ldb_default_modules_dir(void);
+
 /*
   schema related information needed for matching rules
 */

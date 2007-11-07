@@ -206,3 +206,4 @@ source/lib/ldb/tdbtest.ldb
 source/lib/ldb/tdbtest.ldb
 *.po
 libtdb.so.*
+libtalloc.so.*
