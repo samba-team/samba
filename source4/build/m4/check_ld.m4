@@ -138,7 +138,7 @@ if test $BLDSHARED = true; then
 			ac_cv_shlib_works=no
 			# try building a trivial shared library
 			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
-				${SHLD} echo ${SHLD_FLAGS} -o shlib.${SHLIBEXT} shlib.o && 
+				${SHLD} ${SHLD_FLAGS} -o shlib.${SHLIBEXT} shlib.o && 
 				ac_cv_shlib_works=yes
 			rm -f shlib.${SHLIBEXT} shlib.o
 	])
