@@ -546,6 +546,7 @@ sub write_clientconf($$)
 	torture:basedir = $prefix_abs/client
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
+	modules dir = $prefix_abs/../bin/modules
 ";
 	close(CF);
 }
