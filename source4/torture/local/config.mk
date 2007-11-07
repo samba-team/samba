@@ -16,12 +16,12 @@ OBJ_FILES = \
 		../../lib/replace/test/os2_delete.o \
 		../../lib/replace/test/strptime.o \
 		../../lib/replace/test/testsuite.o \
-		messaging.o \
+		../../lib/messaging/tests/messaging.o \
+		../../lib/messaging/tests/irpc.o \
 		../../librpc/tests/binding_string.o \
 		../../lib/util/tests/idtree.o \
 		../../lib/socket/testsuite.o \
 		../../lib/socket_wrapper/testsuite.o \
-		irpc.o \
 		../../lib/registry/tests/generic.o \
 		../../lib/registry/tests/hive.o \
 		../../lib/registry/tests/diff.o \
