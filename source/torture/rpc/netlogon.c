@@ -1176,6 +1176,69 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
+					     struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct netr_DsRAddressToSitenamesW r;
+	struct netr_DsRAddress addr;
+	struct netr_DsRAddressToSitenamesWCtr *ctr;
+
+	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesWCtr);
+
+	addr.size = 16;
+	addr.buffer = talloc_zero_array(tctx, uint8_t, addr.size);
+
+	addr.buffer[0] = 2; /* AF_INET */
+	addr.buffer[4] = 127;
+	addr.buffer[5] = 0;
+	addr.buffer[6] = 0;
+	addr.buffer[7] = 1;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.count = 1;
+	r.in.addresses = talloc_zero_array(tctx, struct netr_DsRAddress, r.in.count);
+	r.in.addresses[0] = addr;
+	r.out.ctr = &ctr;
+
+	status = dcerpc_netr_DsRAddressToSitenamesW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	return true;
+}
+
+static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
+					       struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct netr_DsRAddressToSitenamesExW r;
+	struct netr_DsRAddress addr;
+	struct netr_DsRAddressToSitenamesExWCtr *ctr;
+
+	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesExWCtr);
+
+	addr.size = 16;
+	addr.buffer = talloc_zero_array(tctx, uint8_t, addr.size);
+
+	addr.buffer[0] = 2; /* AF_INET */
+	addr.buffer[4] = 127;
+	addr.buffer[5] = 0;
+	addr.buffer[6] = 0;
+	addr.buffer[7] = 1;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.count = 1;
+	r.in.addresses = talloc_zero_array(tctx, struct	netr_DsRAddress, r.in.count);
+	r.in.addresses[0] = addr;
+	r.out.ctr = &ctr;
+
+	status = dcerpc_netr_DsRAddressToSitenamesExW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert_werr_ok(tctx, r.out.result, "failed");
+
+	return true;
+}
 
 static bool test_GetDomainInfo(struct torture_context *tctx, 
 			       struct dcerpc_pipe *p,
@@ -1398,7 +1461,6 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
-
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
@@ -1423,6 +1485,8 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx", test_netr_DsRGetDCNameEx);
 	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx2", test_netr_DsRGetDCNameEx2);
 	torture_rpc_tcase_add_test(tcase, "DsrGetDcSiteCoverageW", test_netr_DsrGetDcSiteCoverageW);
+	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
+	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
 
 	return suite;
 }
