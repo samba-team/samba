@@ -243,7 +243,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	ac->num_requests++;
 	
 	/* Run the original request */
-	ret = ldb_next_request(module, req);
+	ret = ldb_next_request(module, ac->down_req[0]);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -323,7 +323,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	ac->num_requests++;
 	
 	/* Run the original request */
-	ret = ldb_next_request(module, req);
+	ret = ldb_next_request(module, ac->down_req[0]);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
