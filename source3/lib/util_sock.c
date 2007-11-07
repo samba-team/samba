@@ -579,7 +579,7 @@ static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
  	 * zero IPv6 address. No good choice here.
  	 */
 
-	safe_strcpy(addr_buf, "0.0.0.0", addr_len-1);
+	strlcpy(addr_buf, "0.0.0.0", addr_len);
 
 	if (fd == -1) {
 		return addr_buf;
@@ -1689,7 +1689,7 @@ static const char *get_peer_addr_internal(int fd,
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
 
-	safe_strcpy(addr_buf,"0.0.0.0",addr_buf_len-1);
+	strlcpy(addr_buf,"0.0.0.0",addr_buf_len);
 
 	if (fd == -1) {
 		return addr_buf;
@@ -1785,44 +1785,53 @@ static bool matchname(const char *remotehost,
 	return false;
 }
 
+static struct {
+        struct sockaddr_storage ss;
+        char *name;
+} nc;
+
 /*******************************************************************
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-static char addr_buf_cache[INET6_ADDRSTRLEN];
-
-const char *get_peer_name(int fd, bool force_lookup)
+const char *get_peer_name(int fd,
+				bool force_lookup)
 {
-	static pstring name_buf;
 	char addr_buf[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
 	const char *p;
 	int ret;
-	pstring tmp_name;
+	char name_buf[HOST_NAME_MAX];
+	char tmp_name[HOST_NAME_MAX];
 
 	/* reverse lookups can be *very* expensive, and in many
 	   situations won't work because many networks don't link dhcp
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
-		pstrcpy(name_buf, get_peer_addr(fd, addr_buf, sizeof(addr_buf)));
-		return name_buf;
+		length = sizeof(nc.ss);
+		p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
+			&nc.ss, &length);
+		SAFE_FREE(nc.name);
+		nc.name = SMB_STRDUP(p);
+		return nc.name ? nc.name : "UNKNOWN";
 	}
 
+	memset(&ss, '\0', sizeof(ss));
 	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (strcmp(p, addr_buf_cache) == 0) {
-		return name_buf;
+	if (addr_equal(&ss, &nc.ss)) {
+		return nc.name ? nc.name : "UNKNOWN";
 	}
 
-	pstrcpy(name_buf,"UNKNOWN");
+	/* Not the same. Reset the cache. */
+	zero_addr(&nc.ss);
+	SAFE_FREE(nc.name);
 	if (fd == -1) {
-		return name_buf;
+		return "UNKNOWN";
 	}
-
-	safe_strcpy(addr_buf_cache, p, sizeof(addr_buf_cache)-1);
 
 	/* Look up the remote host name. */
 	ret = getnameinfo((struct sockaddr *)&ss,
@@ -1838,11 +1847,11 @@ const char *get_peer_name(int fd, bool force_lookup)
 			"for %s with error %s\n",
 			p,
 			gai_strerror(ret)));
-		pstrcpy(name_buf, p);
+		strlcpy(name_buf, p, sizeof(name_buf));
 	} else {
 		if (!matchname(name_buf, &ss, length)) {
 			DEBUG(0,("Matchname failed on %s %s\n",name_buf,p));
-			pstrcpy(name_buf,"UNKNOWN");
+			strlcpy(name_buf,"UNKNOWN",sizeof(name_buf));
 		}
 	}
 
@@ -1850,13 +1859,14 @@ const char *get_peer_name(int fd, bool force_lookup)
 	   use --enable-developer or the clobber_region() call will
 	   get you */
 
-	pstrcpy(tmp_name, name_buf );
+	strlcpy(tmp_name, name_buf, sizeof(tmp_name));
 	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
 	if (strstr(name_buf,"..")) {
-		pstrcpy(name_buf, "UNKNOWN");
+		strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
 	}
 
-	return name_buf;
+	nc.name = SMB_STRDUP(name_buf);
+	return nc.name ? nc.name : "UNKNOWN";
 }
 
 /*******************************************************************
@@ -1934,7 +1944,7 @@ int create_pipe_sock(const char *socket_dir,
 	unlink(path);
 	memset(&sunaddr, 0, sizeof(sunaddr));
 	sunaddr.sun_family = AF_UNIX;
-	safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+	strlcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path));
 
 	if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
 		DEBUG(0, ("bind failed on pipe socket %s: %s\n", path,
