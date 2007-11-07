@@ -94,10 +94,8 @@ werror_code_struct dos_errs[] =
 
 const char *dos_errstr(WERROR werror)
 {
-        static pstring msg;
+	char *result;
         int idx = 0;
-
-	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));
 
 	while (dos_errs[idx].dos_errstr != NULL) {
 		if (W_ERROR_V(dos_errs[idx].werror) == 
@@ -106,7 +104,10 @@ const char *dos_errstr(WERROR werror)
 		idx++;
 	}
 
-        return msg;
+	result = talloc_asprintf(talloc_tos(), "DOS code 0x%08x",
+				 W_ERROR_V(werror));
+	SMB_ASSERT(result != NULL);
+        return result;
 }
 
 /* compat function for samba4 */
