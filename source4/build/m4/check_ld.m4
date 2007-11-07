@@ -116,14 +116,6 @@ AC_LD_SHLDFLAGS
 AC_LD_SHLIBEXT
 AC_LD_SONAMEFLAG
 
-AC_ARG_ENABLE(shared,
-[  --disable-shared        Disable testing for building shared libraries],
-[],[enable_shared=yes])
-
-if test x"$enable_shared" = x"no" -o x"$enable_shared" = x"false"; then
-	BLDSHARED=false
-fi
-
 #######################################################
 # test whether building a shared library actually works
 if test $BLDSHARED = true; then
@@ -146,7 +138,7 @@ if test $BLDSHARED = true; then
 			ac_cv_shlib_works=no
 			# try building a trivial shared library
 			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
-				${SHLD} `eval echo ${SHLD_FLAGS} ` -o shlib.${SHLIBEXT} shlib.o && 
+				${SHLD} echo ${SHLD_FLAGS} -o shlib.${SHLIBEXT} shlib.o && 
 				ac_cv_shlib_works=yes
 			rm -f shlib.${SHLIBEXT} shlib.o
 	])
