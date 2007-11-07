@@ -965,10 +965,10 @@ static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call,
 
 
 /* 
-  netr_DSRADDRESSTOSITENAMESW 
+  netr_DsRAddressToSitenamesW 
 */
-static WERROR dcesrv_netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRADDRESSTOSITENAMESW *r)
+static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DsRAddressToSitenamesW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -1110,10 +1110,10 @@ static WERROR dcesrv_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state
 
 
 /* 
-  netr_DSRADDRESSTOSITENAMESEXW 
+  netr_DsRAddressToSitenamesExW 
 */
-static WERROR dcesrv_netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRADDRESSTOSITENAMESEXW *r)
+static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DsRAddressToSitenamesExW *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
