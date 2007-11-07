@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __FILEDB_H__
-#define __FILEDB_H__
+#ifndef __DBWRAP_H__
+#define __DBWRAP_H__
 
 struct db_record {
 	TDB_DATA key, value;
@@ -51,4 +51,4 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   int open_flags, mode_t mode);
 
 
-#endif /* __FILEDB_H__ */
+#endif /* __DBWRAP_H__ */
