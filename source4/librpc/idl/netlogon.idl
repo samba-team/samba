@@ -1116,7 +1116,22 @@ interface netlogon
 
 	/****************/
 	/* Function 0x21 */
-	WERROR netr_DSRADDRESSTOSITENAMESW();
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_String *sitename;
+	} netr_DsRAddressToSitenamesWCtr;
+
+	typedef struct {
+		[size_is(size)] uint8 *buffer;
+		uint32 size;
+	} netr_DsRAddress;
+
+	WERROR netr_DsRAddressToSitenamesW(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [range(0,32000)] uint32 count,
+		[in] [size_is(count)] [ref] netr_DsRAddress *addresses,
+		[out] [ref] netr_DsRAddressToSitenamesWCtr **ctr
+		);
 
 	/****************/
 	/* Function 0x22 */
@@ -1141,7 +1156,18 @@ interface netlogon
 
 	/****************/
 	/* Function 0x25 */
-	WERROR netr_DSRADDRESSTOSITENAMESEXW();
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_String *sitename;
+		[size_is(count)] lsa_String *subnetname;
+	} netr_DsRAddressToSitenamesExWCtr;
+
+	WERROR netr_DsRAddressToSitenamesExW(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [range(0,32000)] uint32 count,
+		[in] [size_is(count)] [ref] netr_DsRAddress *addresses,
+		[out] [ref] netr_DsRAddressToSitenamesExWCtr **ctr
+		);
 
 	/****************/
 	/* Function 0x26 */
