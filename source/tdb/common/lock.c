@@ -28,6 +28,11 @@
 
 #include "tdb_private.h"
 
+void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *ptr)
+{
+	tdb->interrupt_sig_ptr = ptr;
+}
+
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset.
 
@@ -59,6 +64,13 @@ int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset,
 
 	do {
 		ret = fcntl(tdb->fd,lck_type,&fl);
+
+		/* Check for a sigalarm break. */
+		if (ret == -1 && errno == EINTR &&
+				tdb->interrupt_sig_ptr &&
+				*tdb->interrupt_sig_ptr) {
+			break;
+		}
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {

@@ -29,6 +29,7 @@
 #include "system/time.h"
 #include "system/shmem.h"
 #include "system/select.h"
+#include "system/wait.h"
 #include "tdb.h"
 
 #ifndef u32
@@ -170,6 +171,7 @@ struct tdb_context {
 	struct tdb_transaction *transaction;
 	int page_size;
 	int max_dead_records;
+	volatile sig_atomic_t *interrupt_sig_ptr;
 };
 
 

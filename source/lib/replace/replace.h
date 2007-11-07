@@ -79,6 +79,10 @@
 #include <stddef.h>
 #endif
 
+#if !defined(HAVE_VOLATILE)
+#define volatile
+#endif
+
 /**
   this is a warning hack. The idea is to use this everywhere that we
   get the "discarding const" warning from gcc. That doesn't actually
