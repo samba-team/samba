@@ -31,6 +31,20 @@ function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 
 	ldb.del("cn=ldaptestuser,cn=users," + base_dn);
 
+	ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
+
+	println("Testing group add with invalid member");
+	var ok = ldb.add("
+dn: cn=ldaptestgroup,cn=uSers," + base_dn + "
+objectclass: group
+member: cn=ldaptestuser,cn=useRs," + base_dn + "
+");
+
+	if (ok.error != 32) { /* LDAP_NO_SUCH_OBJECT */
+		println(ok.errstr);
+		assert(ok.error == 32);
+	}
+
 	var ok = ldb.add("
 dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectclass: user
@@ -55,28 +69,14 @@ cN: LDAPtestUSER
 		}
 	}
 
-	ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
-
 	var ok = ldb.add("
 dn: cn=ldaptestgroup,cn=uSers," + base_dn + "
 objectclass: group
 member: cn=ldaptestuser,cn=useRs," + base_dn + "
 ");
 	if (ok.error != 0) {
-		ok = ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
-		if (ok.error != 0) {
-			println(ok.errstr);
-			assert(ok.error == 0);
-		}
-		ok = ldb.add("
-dn: cn=ldaptestgroup,cn=uSers," + base_dn + "
-objectclass: group
-member: cn=ldaptestuser,cn=useRs," + base_dn + "
-");
-		if (ok.error != 0) {
-			println(ok.errstr);
-			assert(ok.error == 0);
-		}
+		println(ok.errstr);
+		assert(ok.error == 0);
 	}
 
 	var ok = ldb.add("
@@ -184,6 +184,18 @@ member: cn=ldaptestcomputer,cn=computers," + base_dn + "
 	}
 
 	ok = ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
+
+	println("Testing adding non-existent user to a group");
+	ok = ldb.modify("
+dn: cn=ldaptestgroup,cn=users," + base_dn + "
+changetype: modify
+add: member
+member: cn=ldaptestuser3,cn=users," + base_dn + "
+");
+	if (ok.error != 32) { /* LDAP_NO_SUCH_OBJECT */
+		println(ok.errstr);
+		assert(ok.error == 32);
+	}
 
 	println("Testing Renames");
 
@@ -895,7 +907,7 @@ var base_dn = find_basedn(ldb);
 var configuration_dn = find_configurationdn(ldb);
 var schema_dn = find_schemadn(ldb);
 
-printf("baseDN: %s\n", base_dn);
+println("baseDN: %s\n", base_dn);
 
 var ok = gc_ldb.connect("ldap://" + host + ":3268");
 if (!ok) {
