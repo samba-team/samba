@@ -86,7 +86,8 @@ static int db_ctdb_record_destr(struct db_record* data)
 		data->private_data, struct db_ctdb_rec);
 
 	DEBUG(10, (DEBUGLEVEL > 10
-		   ? "Unlocking db %u key %s\n" : "Unlocking db %u key %20s\n",
+		   ? "Unlocking db %u key %s\n"
+		   : "Unlocking db %u key %.20s\n",
 		   (int)crec->ctdb_ctx->db_id,
 		   hex_encode(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
@@ -141,7 +142,7 @@ again:
 		char *keystr = hex_encode(result, key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking db %u key %s\n"
-			   : "Locking db %u key %20s\n",
+			   : "Locking db %u key %.20s\n",
 			   (int)crec->ctdb_ctx->db_id, keystr));
 		TALLOC_FREE(keystr);
 	}
