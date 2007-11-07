@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/shmem.h"
 #include "system/select.h"
+#include "system/wait.h"
 #include "tdb.h"
 
 #ifndef HAVE_GETPAGESIZE
@@ -162,6 +163,7 @@ struct tdb_context {
 	int page_size;
 	int max_dead_records;
 	bool have_transaction_lock;
+	volatile sig_atomic_t *interrupt_sig_ptr;
 };
 
 

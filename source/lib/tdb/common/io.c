@@ -94,7 +94,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 			/* try once more */
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: wrote only "
 				 "%d of %d bytes at %d, trying once more\n",
-				 written, len, off));
+				 (int)written, len, off));
 			errno = ENOSPC;
 			written = pwrite(tdb->fd, (void *)((char *)buf+written),
 					 len-written,
@@ -274,11 +274,13 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 			return -1;
 		} else if (written == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of "
-				"%d bytes failed (%s)\n", n, strerror(errno)));
+				 "%d bytes failed (%s)\n", (int)n,
+				 strerror(errno)));
 			return -1;
 		} else if (written != n) {
 			TDB_LOG((tdb, TDB_DEBUG_WARNING, "expand_file: wrote "
-				"only %d of %d bytes - retrying\n", written,n));
+				 "only %d of %d bytes - retrying\n", (int)written,
+				 (int)n));
 		}
 		addition -= written;
 		size += written;

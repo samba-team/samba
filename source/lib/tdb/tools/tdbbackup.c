@@ -44,6 +44,7 @@
 #include "system/locale.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "system/wait.h"
 #include "tdb.h"
 
 #ifdef HAVE_GETOPT_H
