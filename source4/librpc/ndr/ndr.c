@@ -137,8 +137,7 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 _PUBLIC_ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 {
 	DATA_BLOB blob;
-	blob.data = ndr->data;
-	blob.length = ndr->offset;
+	blob = data_blob_const(ndr->data, ndr->offset);
 	if (ndr->alloc_size > ndr->offset) {
 		ndr->data[ndr->offset] = 0;
 	}
