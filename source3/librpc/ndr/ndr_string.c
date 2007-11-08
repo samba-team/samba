@@ -84,7 +84,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len2 + c_len_term)*byte_mul,
-						    &as, True);
+						    &as, False);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
