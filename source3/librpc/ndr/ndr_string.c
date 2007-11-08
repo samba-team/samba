@@ -20,17 +20,18 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/libndr.h"
 
 /**
   pull a general string from the wire
 */
-NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	int ret;
-	charset_t chset = CH_UTF16LE;
+	int chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
@@ -84,7 +85,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len2 + c_len_term)*byte_mul,
-						    &as, False);
+						    (void **)&as, false);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
@@ -121,7 +122,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
-						    &as, False);
+						    (void **)&as, false);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
@@ -159,7 +160,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
-						    &as, False);
+						    (void **)&as, false);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
@@ -193,7 +194,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len3 + c_len_term)*byte_mul,
-						    &as, False);
+						    (void **)&as, false);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
@@ -224,7 +225,8 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 			ret = convert_string_talloc(ndr->current_mem_ctx,
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
-						    len3, &as, False);
+						    len3,
+						    (void **)&as, false);
 			if (ret == -1) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
@@ -243,7 +245,8 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		ret = convert_string_talloc(ndr->current_mem_ctx,
 					    chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len1, &as, False);
+					    len1,
+					    (void **)&as, false);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
@@ -259,12 +262,40 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		ret = convert_string_talloc(ndr->current_mem_ctx,
 					    chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len1*byte_mul, &as, False);
+					    len1*byte_mul,
+					    (void **)&as, false);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
+		*s = as;
+		break;
+
+	case LIBNDR_FLAG_STR_NOTERM:
+		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x (missing NDR_REMAINING)\n",
+					      ndr->flags & LIBNDR_STRING_FLAGS);
+		}
+
+		len1 = ndr->data_size - ndr->offset;
+
+		NDR_PULL_NEED_BYTES(ndr, len1);
+		if (len1 == 0) {
+			as = talloc_strdup(ndr->current_mem_ctx, "");
+		} else {
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    len1,
+						    (void **)&as, false);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
+		}
+		NDR_CHECK(ndr_pull_advance(ndr, len1));
+
 		*s = as;
 		break;
 
@@ -280,10 +311,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 /**
   push a general string onto the wire
 */
-NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len, d_len;
-	charset_t chset = CH_UTF16LE;
+	int chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
@@ -318,8 +349,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	       LIBNDR_FLAG_STR_FIXLEN32))) {
 		s_len++;
 	}
-	d_len = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len, &dest,
-				      False);
+	d_len = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len, (void **)&dest, false);
 	if (d_len == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
@@ -379,6 +409,11 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	}
 
 	default:
+		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
+			NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+			break;		
+		}
+
 		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
@@ -391,7 +426,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 /**
   push a general string onto the wire
 */
-size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
+_PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 {
 	size_t c_len;
 	unsigned flags = ndr->flags;
@@ -405,7 +440,7 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 		return 15;
 	}
 	
-	c_len = s?strlen(s):0;
+	c_len = s?strlen_m(s):0;
 
 	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_UTF8)) {
 		byte_mul = 1;
@@ -424,7 +459,7 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	return c_len;
 }
 
-void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
+_PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 {
 	if (s) {
 		ndr->print(ndr, "%-25s: '%s'", name, s);
@@ -433,7 +468,7 @@ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 	}
 }
 
-uint32_t ndr_size_string(int ret, const char * const* string, int flags) 
+_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags) 
 {
 	/* FIXME: Is this correct for all strings ? */
 	if(!(*string)) return ret;
@@ -443,60 +478,142 @@ uint32_t ndr_size_string(int ret, const char * const* string, int flags)
 /**
   pull a general string array from the wire
 */
-NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
+_PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
 {
 	const char **a = *_a;
 	uint32_t count;
+	unsigned flags = ndr->flags;
+	unsigned saved_flags = ndr->flags;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	for (count = 0;; count++) {
-		TALLOC_CTX *tmp_ctx;
-		const char *s = NULL;
-		a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
-		NT_STATUS_HAVE_NO_MEMORY(a);
-		a[count]   = NULL;
-		a[count+1]   = NULL;
+	switch (flags & LIBNDR_STRING_FLAGS) {
+	case LIBNDR_FLAG_STR_NULLTERM:
+		/* 
+		 * here the strings are null terminated
+		 * but also the array is null terminated
+		 */
+		for (count = 0;; count++) {
+			TALLOC_CTX *tmp_ctx;
+			const char *s = NULL;
+			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
+			NT_STATUS_HAVE_NO_MEMORY(a);
+			a[count]   = NULL;
+			a[count+1]   = NULL;
 
-		tmp_ctx = ndr->current_mem_ctx;
-		ndr->current_mem_ctx = a;
-		NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
-		ndr->current_mem_ctx = tmp_ctx;
-		if (strcmp("", s)==0) {
-			a[count] = NULL;
-			break;
-		} else {
+			tmp_ctx = ndr->current_mem_ctx;
+			ndr->current_mem_ctx = a;
+			NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+			ndr->current_mem_ctx = tmp_ctx;
+			if (strcmp("", s)==0) {
+				a[count] = NULL;
+				break;
+			} else {
+				a[count] = s;
+			}
+		}
+
+		*_a =a;
+		break;
+
+	case LIBNDR_FLAG_STR_NOTERM:
+		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
+			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x (missing NDR_REMAINING)\n",
+					      ndr->flags & LIBNDR_STRING_FLAGS);
+		}
+		/*
+		 * here the strings are not null terminated
+		 * but serarated by a null terminator
+		 *
+		 * which means the same as:
+		 * very string is null terminated exept the last
+		 * string is terminated by the end of the buffer
+		 *
+		 * as LIBNDR_FLAG_STR_NULLTERM also end at the end
+		 * of the buffer, we can pull each string with this flag
+		 */
+		ndr->flags &= ~(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
+		ndr->flags |= LIBNDR_FLAG_STR_NULLTERM;
+
+		for (count = 0; ((ndr->data_size - ndr->offset) > 0); count++) {
+			TALLOC_CTX *tmp_ctx;
+			const char *s = NULL;
+			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
+			NT_STATUS_HAVE_NO_MEMORY(a);
+			a[count]   = NULL;
+			a[count+1]   = NULL;
+
+			tmp_ctx = ndr->current_mem_ctx;
+			ndr->current_mem_ctx = a;
+			NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+			ndr->current_mem_ctx = tmp_ctx;
 			a[count] = s;
 		}
+
+		*_a =a;
+		break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
+				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
-	*_a =a;
+	ndr->flags = saved_flags;
 	return NT_STATUS_OK;
 }
 
 /**
   push a general string array onto the wire
 */
-NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
+_PUBLIC_ NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
 {
 	uint32_t count;
+	unsigned flags = ndr->flags;
+	unsigned saved_flags = ndr->flags;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	for (count = 0; a && a[count]; count++) {
-		NDR_CHECK(ndr_push_string(ndr, ndr_flags, a[count]));
+	switch (flags & LIBNDR_STRING_FLAGS) {
+	case LIBNDR_FLAG_STR_NULLTERM:
+		for (count = 0; a && a[count]; count++) {
+			NDR_CHECK(ndr_push_string(ndr, ndr_flags, a[count]));
+		}
+
+		NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
+		break;
+
+	case LIBNDR_FLAG_STR_NOTERM:
+		if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
+			return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x (missing NDR_REMAINING)\n",
+					      ndr->flags & LIBNDR_STRING_FLAGS);
+		}
+
+		for (count = 0; a && a[count]; count++) {
+			if (count > 0) {
+				ndr->flags &= ~(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
+				ndr->flags |= LIBNDR_FLAG_STR_NULLTERM;
+				NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
+				ndr->flags = saved_flags;
+			}
+			NDR_CHECK(ndr_push_string(ndr, ndr_flags, a[count]));
+		}
+
+		break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
+				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
-
-	NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
-
+	
+	ndr->flags = saved_flags;
 	return NT_STATUS_OK;
 }
 
-void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
+_PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
 {
 	uint32_t count;
 	uint32_t i;
@@ -519,7 +636,7 @@ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char 
 /**
  * Return number of elements in a string including the last (zeroed) element 
  */
-uint32_t ndr_string_length(const void *_var, uint32_t element_size)
+_PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 {
 	uint32_t i;
 	uint8_t zero[4] = {0,0,0,0};
@@ -530,7 +647,7 @@ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 	return i+1;
 }
 
-NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
+_PUBLIC_ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
 	uint32_t i;
 	struct ndr_pull_save save_offset;
@@ -552,7 +669,7 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint3
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	int ret;
 	if (length == 0) {
@@ -570,7 +687,7 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    length*byte_mul,
-				    var, False);
+				    discard_const_p(void *, var), false);
 	if (ret == -1) {
 		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
@@ -580,8 +697,7 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var,
-			  uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	ssize_t ret, required;
 
@@ -594,7 +710,7 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var,
 	NDR_PUSH_NEED_BYTES(ndr, required);
 	ret = convert_string(CH_UNIX, chset, 
 			     var, strlen(var),
-			     ndr->data+ndr->offset, required, False);
+			     ndr->data+ndr->offset, required, false);
 	if (ret == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
@@ -611,7 +727,7 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var,
 }
 
 /* Return number of elements in a string in the specified charset */
-uint32_t ndr_charset_length(const void *var, int chset)
+_PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 {
 	/* FIXME: Treat special chars special here, taking chset into account */
 	/* Also include 0 byte */

@@ -104,7 +104,7 @@ struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
 	struct ndr_token_list *switch_list;
-	void (*print)(struct ndr_print *, const char *, ...);
+	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
 };
 
@@ -244,7 +244,7 @@ enum ndr_compression_alg {
 		if (!(mem_ctx)) {\
 			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "NDR_PULL_SET_MEM_CTX(NULL): %s\n", __location__); \
 		}\
-		ndr->current_mem_ctx = CONST_DISCARD(TALLOC_CTX *, mem_ctx);\
+		ndr->current_mem_ctx = discard_const(mem_ctx);\
 	}\
 } while(0)
 
@@ -271,7 +271,7 @@ enum ndr_compression_alg {
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-       (s) = talloc_array(ndr, uint8, size); \
+       (s) = talloc_array(ndr, uint8_t, size); \
        if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
 } while (0)
 
@@ -290,12 +290,12 @@ extern const struct ndr_syntax_id ndr_transfer_syntax;
 extern const struct ndr_syntax_id ndr64_transfer_syntax;
 
 struct ndr_interface_call {
-        const char *name;
-        size_t struct_size;
-        ndr_push_flags_fn_t ndr_push;
-        ndr_pull_flags_fn_t ndr_pull;
-        ndr_print_function_t ndr_print;
-        bool async;
+	const char *name;
+	size_t struct_size;
+	ndr_push_flags_fn_t ndr_push;
+	ndr_pull_flags_fn_t ndr_pull;
+	ndr_print_function_t ndr_print;
+	bool async;
 };
 
 struct ndr_interface_string_array {
