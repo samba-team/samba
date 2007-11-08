@@ -3856,16 +3856,24 @@ bool is_valid_writeX_buffer(const char *inbuf)
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
 
-	if (CVAL(inbuf,smb_com) != SMBwriteX ||
-			CVAL(inbuf,smb_vwv0) != 0xFF ||
-			CVAL(inbuf,smb_wct) != 14) {
+	if (CVAL(inbuf,smb_com) != SMBwriteX) {
 		return false;
 	}
+
+	if (CVAL(inbuf,smb_vwv0) != 0xFF ||
+			CVAL(inbuf,smb_wct) != 14) {
+		DEBUG(10,("is_valid_writeX_buffer: chained or "
+			"invalid word length.\n"));
+		return false;
+	}
+
 	conn = conn_find(SVAL(inbuf, smb_tid));
 	if (conn == NULL) {
+		DEBUG(10,("is_valid_writeX_buffer: bad tid\n"));
 		return false;
 	}
 	if (IS_IPC(conn)) {
+		DEBUG(10,("is_valid_writeX_buffer: IPC$ tid\n"));
 		return false;
 	}
 	doff = SVAL(inbuf,smb_vwv11);
@@ -3877,12 +3885,16 @@ bool is_valid_writeX_buffer(const char *inbuf)
 	}
 
 	if (numtowrite == 0) {
+		DEBUG(10,("is_valid_writeX_buffer: zero write\n"));
 		return false;
 	}
 
 	/* Ensure the sizes match up. */
 	if (doff < STANDARD_WRITE_AND_X_HEADER_SIZE) {
 		/* no pad byte...old smbclient :-( */
+		DEBUG(10,("is_valid_writeX_buffer: small doff %u (min %u)\n",
+			(unsigned int)doff,
+			(unsigned int)STANDARD_WRITE_AND_X_HEADER_SIZE));
 		return false;
 	}
 
@@ -3939,6 +3951,12 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	if (req->unread_bytes) {
+		/* Can't do a recvfile write on IPC$ */
+		if (IS_IPC(conn)) {
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			END_PROFILE(SMBwriteX);
+			return;
+		}
 	       	if (numtowrite != req->unread_bytes) {
 			reply_doserror(req, ERRDOS, ERRbadmem);
 			END_PROFILE(SMBwriteX);
