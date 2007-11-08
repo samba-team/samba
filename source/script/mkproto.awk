@@ -113,7 +113,7 @@ END {
   printf "int %s(void);\n", a[2]
 }
 
-/^static|^extern/ || !/^[a-zA-Z]/ || /[;]/ {
+/^static|^extern/ || !/^[a-zA-Z\_]/ || /[;]/ {
   next;
 }
 
@@ -151,7 +151,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR|ELOG_TDB|codepoint_t/ ) {
+  if( $0 ~ /^NODE_STATUS_STRUCT|^SMB_STRUCT_DIR|^ELOG_TDB|^codepoint_t|^_PUBLIC_/ ) {
     gotstart = 1;
   }
 

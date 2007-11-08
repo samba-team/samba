@@ -2169,7 +2169,6 @@ FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
-FN_GLOBAL_INTEGER(lp_min_receive_file_size, &Globals.iminreceivefile);
 FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrapping)
 
 /* local prototypes */
@@ -6241,4 +6240,12 @@ void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val)
 {
 	posix_default_lock_was_set = True;
 	posix_cifsx_locktype = val;
+}
+
+int lp_min_receive_file_size(void)
+{
+	if (Globals.iminreceivefile < 0) {
+		return 0;
+	}
+	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
 }
