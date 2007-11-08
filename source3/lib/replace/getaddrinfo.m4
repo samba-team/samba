@@ -1,6 +1,6 @@
 dnl test for getaddrinfo/getnameinfo
 AC_CACHE_CHECK([for getaddrinfo],libreplace_cv_HAVE_GETADDRINFO,[
-AC_TRY_COMPILE([
+AC_TRY_LINK([
 #include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>

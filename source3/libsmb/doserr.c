@@ -108,3 +108,9 @@ const char *dos_errstr(WERROR werror)
 
         return msg;
 }
+
+/* compat function for samba4 */
+const char *win_errstr(WERROR werror)
+{
+	return dos_errstr(werror);
+}
