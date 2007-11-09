@@ -190,7 +190,7 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 		/* Copy the header we've written. */
 
-		*buffer = TALLOC_MEMDUP(mem_ctx,
+		*buffer = (char *)TALLOC_MEMDUP(mem_ctx,
 				writeX_header,
 				sizeof(writeX_header));
 

@@ -2671,7 +2671,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                                 return NULL;
                         }
 
-			ip_list = memdup(&server_addr, sizeof(server_addr));
+			ip_list = (struct ip_service *)memdup(
+				&server_addr, sizeof(server_addr));
 			if (ip_list == NULL) {
 				errno = ENOMEM;
 				return NULL;
