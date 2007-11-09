@@ -352,7 +352,11 @@ bin/$ctx->{NAME}_init_module.c:
 	\@echo Creating \$\@
 	\@echo \"#include \\\"includes.h\\\"\" > \$\@
 	\@echo \"$proto_fn;\" >> \$\@
-	\@echo -e \"_PUBLIC_ $init_fn \\n{\\n\\treturn $ctx->{INIT_FUNCTION}();\\n}\\n\" >> \$\@
+	\@echo \"_PUBLIC_ $init_fn\" >> \$\@
+	\@echo \"{\" >> \$\@
+	\@echo \"	return $ctx->{INIT_FUNCTION}();\" >> \$\@
+	\@echo \"}\" >> \$\@
+	\@echo \"\" >> \$\@
 __EOD__
 );
 		$init_obj = "bin/$ctx->{NAME}_init_module.o";
