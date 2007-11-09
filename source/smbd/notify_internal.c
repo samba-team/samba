@@ -163,9 +163,8 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	blob.data = (uint8 *)dbuf.dptr;
 	blob.length = dbuf.dsize;
 
-	if (blob.length == 0) {
-		status = NT_STATUS_OK;
-	} else {
+	status = NT_STATUS_OK;
+	if (blob.length > 0) {
 		status = ndr_pull_struct_blob(&blob, notify->array, notify->array, 
 					      (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 	}
