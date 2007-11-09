@@ -144,6 +144,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	int flags;
 	poptContext pc;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	void *st;
 	void *v_st;
 	const char *ctx_filename = NULL;
@@ -296,13 +297,14 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-		status = f->ndr_pull(ndr_pull, NDR_IN, st);
+		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
 
 		if (ndr_pull->offset != ndr_pull->data_size) {
 			printf("WARNING! %d unread bytes while parsing context file\n", ndr_pull->data_size - ndr_pull->offset);
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
 			printf("pull for context file returned %s\n", nt_errstr(status));
 			exit(1);
 		}
@@ -332,7 +334,8 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	status = f->ndr_pull(ndr_pull, flags, st);
+	ndr_err = f->ndr_pull(ndr_pull, flags, st);
+	status = ndr_map_error2ntstatus(ndr_err);
 
 	printf("pull returned %s\n", nt_errstr(status));
 
@@ -367,8 +370,10 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 
 		ndr_v_push = ndr_push_init_ctx(mem_ctx);
 		
-		status = f->ndr_push(ndr_v_push, flags, st);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = f->ndr_push(ndr_v_push, flags, st);
+		status = ndr_map_error2ntstatus(ndr_err);
+		printf("push returned %s\n", nt_errstr(status));
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate push FAILED\n");
 			exit(1);
 		}
@@ -383,13 +388,14 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-		status = f->ndr_pull(ndr_v_pull, flags, v_st);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);
+		status = ndr_map_error2ntstatus(ndr_err);
+		printf("pull returned %s\n", nt_errstr(status));
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate pull FAILED\n");
 			exit(1);
 		}
 
-		printf("pull returned %s\n", nt_errstr(status));
 
 		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
 			printf("WARNING! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
