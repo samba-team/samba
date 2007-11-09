@@ -1180,9 +1180,10 @@ void safe_free(void *p)
  Get my own name and IP.
 ****************************************************************************/
 
-bool get_myname(char *my_name)
+char *get_myname(TALLOC_CTX *ctx)
 {
-	fstring hostname;
+	char *p;
+	char hostname[HOST_NAME_MAX];
 
 	*hostname = 0;
 
@@ -1195,17 +1196,13 @@ bool get_myname(char *my_name)
 	/* Ensure null termination. */
 	hostname[sizeof(hostname)-1] = '\0';
 
-	if (my_name) {
-		/* split off any parts after an initial . */
-		char *p = strchr_m(hostname,'.');
-
-		if (p)
-			*p = 0;
-
-		fstrcpy(my_name,hostname);
+	/* split off any parts after an initial . */
+	p = strchr_m(hostname,'.');
+	if (p) {
+		*p = 0;
 	}
 
-	return(True);
+	return talloc_strdup(ctx, hostname);
 }
 
 /****************************************************************************
@@ -2355,7 +2352,7 @@ char *smb_xstrndup(const char *s, size_t n)
 
 /*****************************************************************
  Like strdup but for memory.
-*****************************************************************/  
+*****************************************************************/
 
 void *memdup(const void *p, size_t size)
 {
@@ -2371,34 +2368,50 @@ void *memdup(const void *p, size_t size)
 
 /*****************************************************************
  Get local hostname and cache result.
-*****************************************************************/  
+*****************************************************************/
 
 char *myhostname(void)
 {
-	static pstring ret;
-	if (ret[0] == 0)
-		get_myname(ret);
+	static char *ret;
+	if (ret == NULL) {
+		/* This is cached forever so
+		 * use NULL talloc ctx. */
+		ret = get_myname(NULL);
+	}
 	return ret;
 }
 
 /*****************************************************************
+ A useful function for returning a path in the Samba pid directory.
+*****************************************************************/
+
+static char *xx_path(const char *name, const char *rootpath)
+{
+	char *fname = NULL;
+
+	fname = talloc_strdup(talloc_tos(), rootpath);
+	if (!fname) {
+		return NULL;
+	}
+	trim_string(fname,"","/");
+
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+
+	return talloc_asprintf(talloc_tos(),
+				"%s/%s",
+				fname,
+				name);
+}
+
+/*****************************************************************
  A useful function for returning a path in the Samba lock directory.
-*****************************************************************/  
+*****************************************************************/
 
 char *lock_path(const char *name)
 {
-	pstring fname;
-
-	pstrcpy(fname,lp_lockdir());
-	trim_char(fname,'\0','/');
-	
-	if (!directory_exist(fname,NULL))
-		mkdir(fname,0755);
-	
-	pstrcat(fname,"/");
-	pstrcat(fname,name);
-
-	return talloc_strdup(talloc_tos(), fname);
+	return xx_path(name, lp_lockdir());
 }
 
 /*****************************************************************
@@ -2407,18 +2420,7 @@ char *lock_path(const char *name)
 
 char *pid_path(const char *name)
 {
-	pstring fname;
-
-	pstrcpy(fname,lp_piddir());
-	trim_char(fname,'\0','/');
-
-	if (!directory_exist(fname,NULL))
-		mkdir(fname,0755);
-
-	pstrcat(fname,"/");
-	pstrcat(fname,name);
-
-	return talloc_strdup(talloc_tos(), fname);
+	return xx_path(name, lp_piddir());
 }
 
 /**
@@ -2453,22 +2455,7 @@ a useful function for returning a path in the Samba state directory
 
 char *state_path(const char *name)
 {
-	TALLOC_CTX *ctx = talloc_tos();
-	char *fname = talloc_strdup(ctx, dyn_STATEDIR());
-
-	if (!fname) {
-		smb_panic("state_path: out of memory");
-	}
-	trim_string(fname,"","/");
-
-	if (!directory_exist(fname,NULL)) {
-		mkdir(fname,0755);
-	}
-
-	fname = talloc_asprintf(ctx, "%s/%s",
-			fname, name);
-
-	return fname;
+	return xx_path(name, dyn_STATEDIR());
 }
 
 /**
