@@ -986,6 +986,7 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol_hive, pol_key;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct KeySecurityData *sd = NULL;
 	uint32_t sec_info;
 	DATA_BLOB blob;
@@ -1033,11 +1034,13 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	blob.data = sd->data;
 	blob.length = sd->size;
 
-	status = ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
-				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		goto out;
 	}
+	status = NT_STATUS_OK;
 
 	display_sec_desc(&sec_desc);
 

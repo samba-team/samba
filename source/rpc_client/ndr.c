@@ -33,6 +33,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 	DATA_BLOB blob;
 	struct ndr_push *push;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	SMB_ASSERT(cli->pipe_idx == p_idx);
 	SMB_ASSERT(table->num_calls > opnum);
@@ -44,9 +45,9 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = call->ndr_push(push, NDR_IN, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ndr_err = call->ndr_push(push, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	blob = ndr_push_blob(push);
@@ -85,11 +86,11 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 	/* have the ndr parser alloc memory for us */
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_OUT, r);
+	ndr_err = call->ndr_pull(pull, NDR_OUT, r);
 	talloc_free(pull);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
