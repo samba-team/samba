@@ -7,8 +7,9 @@
 
 <h1>ldb</h1>
 
-ldb is a LDAP-like embedded database. It is not at all LDAP standards
-compliant, so if you want a standards compliant database then please
+ldb is a LDAP-like embedded database. It is not at all
+<a href="http://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol">LDAP</a> 
+standards compliant, so if you want a standards compliant database then please
 see the excellent <a href="http://www.openldap.org/">OpenLDAP</a>
 project.<p>
 
@@ -25,15 +26,15 @@ The main features that separate ldb from other solutions are:
 
 <ul>
 <li>Safe multi-reader, multi-writer, using byte range locking
-<li>LDAP-like API
+<li><a href="http://en.wikipedia.org/wiki/LDAP_Application_Program_Interface">LDAP-like API</a>
 <li>fast operation
 <li>choice of local tdb or remote LDAP backends
 <li>integration with <a href="http://talloc.samba.org">talloc</a>
 <li>schema-less operation, for trivial setup
 <li>modules for extensions (such as schema support)
 <li>easy setup of indexes and attribute properties
-<li>ldbedit tool for database editing (reminiscent of 'vipw')
-<li>ldif for import/export
+<li><a href="http://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format">LDIF</a> for import/export
+<li>ldbedit tool for database (via LDIF) editing (reminiscent of 'vipw')
 </ul>
 
 <h2>Documentation</h2>
