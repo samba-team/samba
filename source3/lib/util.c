@@ -1434,21 +1434,21 @@ const char *uidtoname(uid_t uid)
 
 char *gidtoname(gid_t gid)
 {
-	fstring name;
 	struct group *grp;
 
 	grp = getgrgid(gid);
 	if (grp) {
-		fstrcpy(name, grp->gr_name);
+		return talloc_strdup(talloc_tos(), grp->gr_name);
 	}
 	else {
-		slprintf(name,sizeof(name) - 1, "%d",(int)gid);
+		return talloc_asprintf(talloc_tos(),
+					"%d",
+					(int)gid);
 	}
-	return talloc_strdup(talloc_tos(), name);
 }
 
 /*******************************************************************
- Convert a user name into a uid. 
+ Convert a user name into a uid.
 ********************************************************************/
 
 uid_t nametouid(const char *name)
@@ -2466,7 +2466,7 @@ char *state_path(const char *name)
 
 const char *shlib_ext(void)
 {
-  return dyn_SHLIBEXT;
+	return dyn_SHLIBEXT;
 }
 
 /*******************************************************************
@@ -2963,18 +2963,23 @@ struct server_id interpret_pid(const char *pid_string)
 
 char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
 {
-	fstring str;
 #ifdef CLUSTER_SUPPORT
 	if (pid->vnn == NONCLUSTER_VNN) {
-		fstr_sprintf(str, "%d", (int)pid->pid);
+		return talloc_asprintf(mem_ctx,
+				"%d",
+				(int)pid->pid);
 	}
 	else {
-		fstr_sprintf(str, "%u:%d", (unsigned)pid->vnn, (int)pid->pid);
+		return talloc_asprintf(mem_ctx,
+					"%u:%d",
+					(unsigned)pid->vnn,
+					(int)pid->pid);
 	}
 #else
-	fstr_sprintf(str, "%d", (int)pid->pid);
+	return talloc_asprintf(mem_ctx,
+			"%d",
+			(int)pid->pid);
 #endif
-	return talloc_strdup(mem_ctx, str);
 }
 
 char *procid_str_static(const struct server_id *pid)
