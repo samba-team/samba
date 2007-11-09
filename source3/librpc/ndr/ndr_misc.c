@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r)
+enum ndr_err_code ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -36,10 +36,10 @@ NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r)
+enum ndr_err_code ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -51,7 +51,7 @@ NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r)
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 size_t ndr_size_GUID(const struct GUID *r, int flags)
@@ -78,7 +78,7 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
 }
 
-NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r)
+enum ndr_err_code ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -87,10 +87,10 @@ NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struc
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r)
+enum ndr_err_code ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -99,7 +99,7 @@ NTSTATUS ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct poli
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const struct policy_handle *r)
@@ -111,7 +111,7 @@ void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const stru
 	ndr->depth--;
 }
 
-NTSTATUS ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
+enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -124,10 +124,10 @@ NTSTATUS ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct se
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r)
+enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		uint32_t pid;
@@ -140,7 +140,7 @@ NTSTATUS ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_i
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r)
