@@ -247,6 +247,11 @@ struct addrinfo {
 #include "getaddrinfo.h"
 #endif
 
+/* Needed for some systems that don't define it (Solaris). */
+#ifndef ifr_netmask
+#define ifr_netmask ifr_addrs
+#endif
+
 #ifdef SOCKET_WRAPPER
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
 #define SOCKET_WRAPPER_REPLACE
