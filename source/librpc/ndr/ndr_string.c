@@ -25,7 +25,7 @@
 /**
   pull a general string from the wire
 */
-_PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
@@ -37,7 +37,7 @@ _PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const cha
 	unsigned c_len_term = 0;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	if (NDR_BE(ndr)) {
@@ -312,14 +312,14 @@ _PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const cha
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 
 /**
   push a general string onto the wire
 */
-_PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len, d_len;
 	int chset = CH_UTF16;
@@ -328,7 +328,7 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 	uint8_t *dest = NULL;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	if (NDR_BE(ndr)) {
@@ -429,7 +429,7 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 
 	talloc_free(dest);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /**
@@ -487,7 +487,7 @@ _PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags
 /**
   pull a general string array from the wire
 */
-_PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
+_PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
 {
 	const char **a = *_a;
 	uint32_t count;
@@ -495,7 +495,7 @@ _PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, con
 	unsigned saved_flags = ndr->flags;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
@@ -508,7 +508,7 @@ _PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, con
 			TALLOC_CTX *tmp_ctx;
 			const char *s = NULL;
 			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
-			NT_STATUS_HAVE_NO_MEMORY(a);
+			NDR_ERR_HAVE_NO_MEMORY(a);
 			a[count]   = NULL;
 			a[count+1]   = NULL;
 
@@ -550,7 +550,7 @@ _PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, con
 			TALLOC_CTX *tmp_ctx;
 			const char *s = NULL;
 			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
-			NT_STATUS_HAVE_NO_MEMORY(a);
+			NDR_ERR_HAVE_NO_MEMORY(a);
 			a[count]   = NULL;
 			a[count+1]   = NULL;
 
@@ -570,20 +570,20 @@ _PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, con
 	}
 
 	ndr->flags = saved_flags;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /**
   push a general string array onto the wire
 */
-_PUBLIC_ NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
+_PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
 {
 	uint32_t count;
 	unsigned flags = ndr->flags;
 	unsigned saved_flags = ndr->flags;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
@@ -619,7 +619,7 @@ _PUBLIC_ NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, con
 	}
 	
 	ndr->flags = saved_flags;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
@@ -656,7 +656,7 @@ _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 	return i+1;
 }
 
-_PUBLIC_ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
+_PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
 	uint32_t i;
 	struct ndr_pull_save save_offset;
@@ -675,15 +675,15 @@ _PUBLIC_ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t cou
 
 	ndr_pull_restore(ndr, &save_offset);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	int ret;
 	if (length == 0) {
 		*var = talloc_strdup(ndr->current_mem_ctx, "");
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	if (NDR_BE(ndr) && chset == CH_UTF16) {
@@ -703,10 +703,10 @@ _PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const ch
 	}
 	NDR_CHECK(ndr_pull_advance(ndr, length*byte_mul));
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
+_PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	ssize_t ret, required;
 
@@ -732,7 +732,7 @@ _PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const ch
 
 	ndr->offset += required;
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /* Return number of elements in a string in the specified charset */
