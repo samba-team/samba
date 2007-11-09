@@ -23,7 +23,6 @@
 #include <talloc.h>
 #include "lib/util/util.h" /* for discard_const */
 #include "lib/charset/charset.h"
-#include "libcli/util/ntstatus.h"
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
@@ -160,6 +159,7 @@ struct ndr_print {
 #define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
 
 enum ndr_err_code {
+	NDR_ERR_SUCCESS = 0,
 	NDR_ERR_ARRAY_SIZE,
 	NDR_ERR_BAD_SWITCH,
 	NDR_ERR_OFFSET,
@@ -178,6 +178,14 @@ enum ndr_err_code {
 	NDR_ERR_INVALID_POINTER,
 	NDR_ERR_UNREAD_BYTES
 };
+
+#define NDR_ERR_CODE_IS_SUCCESS(x) (x == NDR_ERR_SUCCESS)
+
+#define NDR_ERR_HAVE_NO_MEMORY(x) do { \
+	if (NULL == (x)) { \
+		return NDR_ERR_ALLOC; \
+	} \
+} while (0)
 
 enum ndr_compression_alg {
 	NDR_COMPRESSION_MSZIP	= 2,
@@ -231,11 +239,13 @@ enum ndr_compression_alg {
 
 /* these are used to make the error checking on each element in libndr
    less tedious, hopefully making the code more readable */
-#define NDR_CHECK(call) do { NTSTATUS _status; \
-                             _status = call; \
-                             if (!NT_STATUS_IS_OK(_status)) \
-                                return _status; \
-                        } while (0)
+#define NDR_CHECK(call) do { \
+	enum ndr_err_code _status; \
+	_status = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_status)) { \
+		return _status; \
+	} \
+} while (0)
 
 #define NDR_PULL_GET_MEM_CTX(ndr) (ndr->current_mem_ctx)
 
@@ -281,8 +291,8 @@ enum ndr_compression_alg {
 } while (0)
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
-typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, const void *);
-typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
+typedef enum ndr_err_code (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, const void *);
+typedef enum ndr_err_code (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 
@@ -324,11 +334,11 @@ struct ndr_interface_list {
 
 /* FIXME: Use represent_as instead */
 struct dom_sid;
-NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
-NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
+enum ndr_err_code ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
+enum ndr_err_code ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
-NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
+enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
+enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
 void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct in_addr *_ip);
