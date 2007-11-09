@@ -142,7 +142,7 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 	struct messaging_array *result;
 	TDB_DATA data;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (!(result = TALLOC_ZERO_P(mem_ctx, struct messaging_array))) {
 		return NT_STATUS_NO_MEMORY;
@@ -157,15 +157,15 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 
 	blob = data_blob_const(data.dptr, data.dsize);
 
-	status = ndr_pull_struct_blob(
+	ndr_err = ndr_pull_struct_blob(
 		&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_array);
 
 	SAFE_FREE(data.dptr);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		TALLOC_FREE(result);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	if (DEBUGLEVEL >= 10) {
@@ -187,7 +187,7 @@ static NTSTATUS messaging_tdb_store(TDB_CONTEXT *msg_tdb,
 {
 	TDB_DATA data;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	TALLOC_CTX *mem_ctx;
 	int ret;
 
@@ -200,13 +200,13 @@ static NTSTATUS messaging_tdb_store(TDB_CONTEXT *msg_tdb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ndr_push_struct_blob(
+	ndr_err = ndr_push_struct_blob(
 		&blob, mem_ctx, array,
 		(ndr_push_flags_fn_t)ndr_push_messaging_array);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(mem_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	if (DEBUGLEVEL >= 10) {
