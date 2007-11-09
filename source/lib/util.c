@@ -1209,13 +1209,12 @@ bool get_myname(char *my_name)
 }
 
 /****************************************************************************
- Get my own domain name.
+ Get my own domain name, or "" if we have none.
 ****************************************************************************/
 
 char *get_mydnsdomname(TALLOC_CTX *ctx)
 {
 	const char *domname;
-	char *my_domname = NULL;
 	char *p;
 
 	domname = get_mydnsfullname();
@@ -1226,12 +1225,10 @@ char *get_mydnsdomname(TALLOC_CTX *ctx)
 	p = strchr_m(domname, '.');
 	if (p) {
 		p++;
-		my_domname = talloc_strdup(ctx, p);
+		return talloc_strdup(ctx, p);
 	} else {
-		my_domname = talloc_strdup(ctx, "");
+		return talloc_strdup(ctx, "");
 	}
-
-	return my_domname;
 }
 
 /****************************************************************************
