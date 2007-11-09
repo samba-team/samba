@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 2001-2002
+   Copyright (C) Jeremy Allison 2001-2007
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) James Peach 2006
@@ -23,10 +23,8 @@
 
 #include "includes.h"
 
-extern fstring local_machine;
 extern char *global_clobber_region_function;
 extern unsigned int global_clobber_region_line;
-extern fstring remote_arch;
 
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
@@ -259,7 +257,6 @@ bool set_netbios_aliases(const char **str_array)
 
 bool init_names(void)
 {
-	char *p;
 	int n;
 
 	if (global_myname() == NULL || *global_myname() == '\0') {
@@ -272,18 +269,15 @@ bool init_names(void)
 	if (!set_netbios_aliases(lp_netbios_aliases())) {
 		DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
 		return False;
-	}			
+	}
 
-	fstrcpy( local_machine, global_myname() );
-	trim_char( local_machine, ' ', ' ' );
-	p = strchr( local_machine, ' ' );
-	if (p)
-		*p = 0;
-	strlower_m( local_machine );
+	set_local_machine_name(global_myname(),false);
 
 	DEBUG( 5, ("Netbios name list:-\n") );
-	for( n=0; my_netbios_names(n); n++ )
-		DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names(n) ) );
+	for( n=0; my_netbios_names(n); n++ ) {
+		DEBUGADD( 5, ("my_netbios_names[%d]=\"%s\"\n",
+					n, my_netbios_names(n) ) );
+	}
 
 	return( True );
 }
@@ -1988,6 +1982,16 @@ void ra_lanman_string( const char *native_lanman )
 		set_remote_arch( RA_WIN2K3 );
 }
 
+static const char *remote_arch_str;
+
+const char *get_remote_arch_str(void)
+{
+	if (!remote_arch_str) {
+		return "UNKNOWN";
+	}
+	return remote_arch_str;
+}
+
 /*******************************************************************
  Set the horrid remote_arch string based on an enum.
 ********************************************************************/
@@ -1997,42 +2001,43 @@ void set_remote_arch(enum remote_arch_types type)
 	ra_type = type;
 	switch( type ) {
 	case RA_WFWG:
-		fstrcpy(remote_arch, "WfWg");
+		remote_arch_str = "WfWg";
 		break;
 	case RA_OS2:
-		fstrcpy(remote_arch, "OS2");
+		remote_arch_str = "OS2";
 		break;
 	case RA_WIN95:
-		fstrcpy(remote_arch, "Win95");
+		remote_arch_str = "Win95";
 		break;
 	case RA_WINNT:
-		fstrcpy(remote_arch, "WinNT");
+		remote_arch_str = "WinNT";
 		break;
 	case RA_WIN2K:
-		fstrcpy(remote_arch, "Win2K");
+		remote_arch_str = "Win2K";
 		break;
 	case RA_WINXP:
-		fstrcpy(remote_arch, "WinXP");
+		remote_arch_str = "WinXP";
 		break;
 	case RA_WIN2K3:
-		fstrcpy(remote_arch, "Win2K3");
+		remote_arch_str = "Win2K3";
 		break;
 	case RA_VISTA:
-		fstrcpy(remote_arch, "Vista");
+		remote_arch_str = "Vista";
 		break;
 	case RA_SAMBA:
-		fstrcpy(remote_arch,"Samba");
+		remote_arch_str = "Samba";
 		break;
 	case RA_CIFSFS:
-		fstrcpy(remote_arch,"CIFSFS");
+		remote_arch_str = "CIFSFS";
 		break;
 	default:
 		ra_type = RA_UNKNOWN;
-		fstrcpy(remote_arch, "UNKNOWN");
+		remote_arch_str = "UNKNOWN";
 		break;
 	}
 
-	DEBUG(10,("set_remote_arch: Client arch is \'%s\'\n", remote_arch));
+	DEBUG(10,("set_remote_arch: Client arch is \'%s\'\n",
+				remote_arch_str));
 }
 
 /*******************************************************************

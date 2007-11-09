@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern fstring local_machine;
-
 struct sync_record {
 	struct sync_record *next, *prev;
 	unstring workgroup;
@@ -92,7 +90,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	make_nmb_name(&calling, local_machine, 0x0);
+	make_nmb_name(&calling, get_local_machine_name(), 0x0);
 	make_nmb_name(&called , name, nm_type);
 
 	if (!cli_session_request(cli, &calling, &called)) {
