@@ -73,7 +73,7 @@ _PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *
 /*
   advance by 'size' bytes
 */
-_PUBLIC_ NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
+_PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 {
 	ndr->offset += size;
 	if (ndr->offset > ndr->data_size) {
@@ -81,13 +81,13 @@ _PUBLIC_ NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 				      "ndr_pull_advance by %u failed",
 				      size);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   set the parse offset to 'ofs'
 */
-static NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
+static enum ndr_err_code ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
@@ -95,7 +95,7 @@ static NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 				      "ndr_pull_set_offset %u failed",
 				      ofs);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /* save the offset/size of the current ndr state */
@@ -148,7 +148,7 @@ _PUBLIC_ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 /*
   expand the available space in the buffer to ndr->offset + extra_size
 */
-_PUBLIC_ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
+_PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 {
 	uint32_t size = extra_size + ndr->offset;
 
@@ -159,7 +159,7 @@ _PUBLIC_ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 	}
 
 	if (ndr->alloc_size > size) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	ndr->alloc_size += NDR_BASE_MARSHALL_SIZE;
@@ -172,7 +172,7 @@ _PUBLIC_ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t extra_size)
 				      ndr->alloc_size);
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
@@ -353,9 +353,11 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	(*pflags) |= new_flags;
 }
 
-static NTSTATUS ndr_map_error(enum ndr_err_code ndr_err)
+NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
 {
 	switch (ndr_err) {
+	case NDR_ERR_SUCCESS:
+		return NT_STATUS_OK;
 	case NDR_ERR_BUFSIZE:
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	case NDR_ERR_TOKEN:
@@ -379,7 +381,7 @@ static NTSTATUS ndr_map_error(enum ndr_err_code ndr_err)
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ NTSTATUS ndr_pull_error(struct ndr_pull *ndr,
+_PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 				 enum ndr_err_code ndr_err,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
 {
@@ -394,13 +396,13 @@ _PUBLIC_ NTSTATUS ndr_pull_error(struct ndr_pull *ndr,
 
 	free(s);
 
-	return ndr_map_error(ndr_err);
+	return ndr_err;
 }
 
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ NTSTATUS ndr_push_error(struct ndr_push *ndr,
+_PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 				 enum ndr_err_code ndr_err,
 				 const char *format, ...)  _PRINTF_ATTRIBUTE(3,4)
 {
@@ -415,14 +417,14 @@ _PUBLIC_ NTSTATUS ndr_push_error(struct ndr_push *ndr,
 
 	free(s);
 
-	return ndr_map_error(ndr_err);
+	return ndr_err;
 }
 
 /*
   handle subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-_PUBLIC_ NTSTATUS ndr_pull_subcontext_start(struct ndr_pull *ndr, 
+_PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 				   struct ndr_pull **_subndr,
 				   size_t header_size,
 				   ssize_t size_is)
@@ -469,7 +471,7 @@ _PUBLIC_ NTSTATUS ndr_pull_subcontext_start(struct ndr_pull *ndr,
 	NDR_PULL_NEED_BYTES(ndr, r_content_size);
 
 	subndr = talloc_zero(ndr, struct ndr_pull);
-	NT_STATUS_HAVE_NO_MEMORY(subndr);
+	NDR_ERR_HAVE_NO_MEMORY(subndr);
 	subndr->flags		= ndr->flags;
 	subndr->current_mem_ctx	= ndr->current_mem_ctx;
 
@@ -478,10 +480,10 @@ _PUBLIC_ NTSTATUS ndr_pull_subcontext_start(struct ndr_pull *ndr,
 	subndr->data_size = r_content_size;
 
 	*_subndr = subndr;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_subcontext_end(struct ndr_pull *ndr, 
+_PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
 				 struct ndr_pull *subndr,
 				 size_t header_size,
 				 ssize_t size_is)
@@ -495,10 +497,10 @@ _PUBLIC_ NTSTATUS ndr_pull_subcontext_end(struct ndr_pull *ndr,
 		advance = subndr->offset;
 	}
 	NDR_CHECK(ndr_pull_advance(ndr, advance));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_subcontext_start(struct ndr_push *ndr,
+_PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 				   struct ndr_push **_subndr,
 				   size_t header_size,
 				   ssize_t size_is)
@@ -506,17 +508,17 @@ _PUBLIC_ NTSTATUS ndr_push_subcontext_start(struct ndr_push *ndr,
 	struct ndr_push *subndr;
 
 	subndr = ndr_push_init_ctx(ndr);
-	NT_STATUS_HAVE_NO_MEMORY(subndr);
+	NDR_ERR_HAVE_NO_MEMORY(subndr);
 	subndr->flags	= ndr->flags;
 
 	*_subndr = subndr;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   push a subcontext header 
 */
-_PUBLIC_ NTSTATUS ndr_push_subcontext_end(struct ndr_push *ndr,
+_PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 				 struct ndr_push *subndr,
 				 size_t header_size,
 				 ssize_t size_is)
@@ -549,30 +551,30 @@ _PUBLIC_ NTSTATUS ndr_push_subcontext_end(struct ndr_push *ndr,
 	}
 
 	NDR_CHECK(ndr_push_bytes(ndr, subndr->data, subndr->offset));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   store a token in the ndr context, for later retrieval
 */
-_PUBLIC_ NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			 struct ndr_token_list **list, 
 			 const void *key, 
 			 uint32_t value)
 {
 	struct ndr_token_list *tok;
 	tok = talloc(mem_ctx, struct ndr_token_list);
-	NT_STATUS_HAVE_NO_MEMORY(tok);
+	NDR_ERR_HAVE_NO_MEMORY(tok);
 	tok->key = key;
 	tok->value = value;
 	DLIST_ADD((*list), tok);
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
-_PUBLIC_ NTSTATUS ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
+_PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
 				   comparison_fn_t _cmp_fn, bool _remove_tok)
 {
 	struct ndr_token_list *tok;
@@ -580,20 +582,20 @@ _PUBLIC_ NTSTATUS ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const 
 		if (_cmp_fn && _cmp_fn(tok->key,key)==0) goto found;
 		else if (!_cmp_fn && tok->key == key) goto found;
 	}
-	return ndr_map_error(NDR_ERR_TOKEN);
+	return NDR_ERR_TOKEN;
 found:
 	*v = tok->value;
 	if (_remove_tok) {
 		DLIST_REMOVE((*list), tok);
 		talloc_free(tok);
 	}
-	return NT_STATUS_OK;		
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   retrieve a token from a ndr context
 */
-_PUBLIC_ NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
+_PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
 {
 	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, true);
 }
@@ -603,11 +605,11 @@ _PUBLIC_ NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *k
 */
 _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 {
-	NTSTATUS status;
+	enum ndr_err_code status;
 	uint32_t v;
 
 	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, false);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		return 0;
 	}
 
@@ -617,7 +619,7 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 /*
   pull an array size field and add it to the array_size_list token list
 */
-_PUBLIC_ NTSTATUS ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t size;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size));
@@ -635,7 +637,7 @@ _PUBLIC_ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
 /*
   check the stored array size field
 */
-_PUBLIC_ NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
+_PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
 {
 	uint32_t stored;
 	stored = ndr_token_peek(&ndr->array_size_list, p);
@@ -644,13 +646,13 @@ _PUBLIC_ NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t s
 				      "Bad array size - got %u expected %u\n",
 				      stored, size);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   pull an array length field and add it to the array_length_list token list
 */
-_PUBLIC_ NTSTATUS ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t length, offset;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &offset));
@@ -673,7 +675,7 @@ _PUBLIC_ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
 /*
   check the stored array length field
 */
-_PUBLIC_ NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
+_PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 {
 	uint32_t stored;
 	stored = ndr_token_peek(&ndr->array_length_list, p);
@@ -682,23 +684,23 @@ _PUBLIC_ NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t
 				      "Bad array length - got %u expected %u\n",
 				      stored, length);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   store a switch value
  */
-_PUBLIC_ NTSTATUS ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val)
+_PUBLIC_ enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val)
 {
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val)
+_PUBLIC_ enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val)
 {
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
 
-_PUBLIC_ NTSTATUS ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
+_PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
 {
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
@@ -724,58 +726,58 @@ _PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *
 /*
   pull a struct from a blob using NDR
 */
-_PUBLIC_ NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			      ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   pull a struct from a blob using NDR - failing if all bytes are not consumed
 */
-_PUBLIC_ NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 				  ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				      "not all bytes consumed ofs[%u] size[%u]",
 				      ndr->offset, ndr->data_size);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   pull a union from a blob using NDR, given the union discriminator
 */
-_PUBLIC_ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   pull a union from a blob using NDR, given the union discriminator,
   failing if all bytes are not consumed
 */
-_PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	if (ndr->offset < ndr->data_size) {
@@ -783,18 +785,18 @@ _PUBLIC_ NTSTATUS ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 				      "not all bytes consumed ofs[%u] size[%u]",
 				      ndr->offset, ndr->data_size);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   push a struct to a blob using NDR
 */
-_PUBLIC_ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
+_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
 			      ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 
@@ -802,18 +804,18 @@ _PUBLIC_ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, con
 	talloc_steal(mem_ctx, blob->data);
 	talloc_free(ndr);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   push a union to a blob using NDR
 */
-_PUBLIC_ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 			     uint32_t level, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
 	ndr = ndr_push_init_ctx(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ndr);
+	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
 	NDR_CHECK(ndr_push_set_switch_value(ndr, p, level));
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
@@ -822,7 +824,7 @@ _PUBLIC_ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void
 	talloc_steal(mem_ctx, blob->data);
 	talloc_free(ndr);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
@@ -831,7 +833,7 @@ _PUBLIC_ NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void
 _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
 {
 	struct ndr_push *ndr;
-	NTSTATUS status;
+	enum ndr_err_code status;
 	size_t ret;
 
 	/* avoid recursion */
@@ -841,7 +843,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		talloc_free(ndr);
 		return 0;
 	}
@@ -856,7 +858,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push)
 {
 	struct ndr_push *ndr;
-	NTSTATUS status;
+	enum ndr_err_code status;
 	size_t ret;
 
 	/* avoid recursion */
@@ -867,12 +869,12 @@ _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_pus
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 
 	status = ndr_push_set_switch_value(ndr, p, level);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		talloc_free(ndr);
 		return 0;
 	}
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, p);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		talloc_free(ndr);
 		return 0;
 	}
@@ -901,7 +903,7 @@ _PUBLIC_ void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32
   setup the current base for relative pointers for the push
   called in the NDR_SCALAR stage
 */
-_PUBLIC_ NTSTATUS ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset)
+_PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset)
 {
 	ndr->relative_base_offset = offset;
 	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
@@ -911,7 +913,7 @@ _PUBLIC_ NTSTATUS ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, con
   setup the current base for relative pointers for the push
   called in the NDR_BUFFERS stage
 */
-_PUBLIC_ NTSTATUS ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p)
 {
 	return ndr_token_retrieve(&ndr->relative_base_list, p, &ndr->relative_base_offset);
 }
@@ -920,11 +922,11 @@ _PUBLIC_ NTSTATUS ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, con
   push a relative object - stage1
   this is called during SCALARS processing
 */
-_PUBLIC_ NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
 {
 	if (p == NULL) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
@@ -935,12 +937,12 @@ _PUBLIC_ NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
   push a relative object - stage2
   this is called during buffers processing
 */
-_PUBLIC_ NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 {
 	struct ndr_push_save save;
 	uint32_t ptr_offset = 0xFFFFFFFF;
 	if (p == NULL) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 	ndr_push_save(ndr, &save);
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
@@ -957,7 +959,7 @@ _PUBLIC_ NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 	}	
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset - ndr->relative_base_offset));
 	ndr_push_restore(ndr, &save);
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
@@ -980,7 +982,7 @@ _PUBLIC_ void ndr_pull_restore_relative_base_offset(struct ndr_pull *ndr, uint32
   setup the current base for relative pointers for the pull
   called in the NDR_SCALAR stage
 */
-_PUBLIC_ NTSTATUS ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset)
+_PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset)
 {
 	ndr->relative_base_offset = offset;
 	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
@@ -990,7 +992,7 @@ _PUBLIC_ NTSTATUS ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, con
   setup the current base for relative pointers for the pull
   called in the NDR_BUFFERS stage
 */
-_PUBLIC_ NTSTATUS ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p)
 {
 	return ndr_token_retrieve(&ndr->relative_base_list, p, &ndr->relative_base_offset);
 }
@@ -999,7 +1001,7 @@ _PUBLIC_ NTSTATUS ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, con
   pull a relative object - stage1
   called during SCALARS processing
 */
-_PUBLIC_ NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
+_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
 	rel_offset += ndr->relative_base_offset;
 	if (rel_offset > ndr->data_size) {
@@ -1014,7 +1016,7 @@ _PUBLIC_ NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, ui
   pull a relative object - stage2
   called during BUFFERS processing
 */
-_PUBLIC_ NTSTATUS ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t rel_offset;
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
