@@ -131,6 +131,7 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 {
 	DATA_BLOB tmp_blob;
+	enum ndr_err_code ndr_err;
 	struct netr_SamBaseInfo *base;
 	struct pam_auth_crap_state *state =
 		talloc_get_type(ctx->async.private_data,
@@ -139,10 +140,13 @@ static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 	state->ctx->status = wb_sam_logon_recv(ctx, state, state->req);
 	if (!composite_is_ok(state->ctx)) return;
 
-	state->ctx->status = ndr_push_struct_blob(
+	ndr_err = ndr_push_struct_blob(
 		&tmp_blob, state, state->req->out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
-	if (!composite_is_ok(state->ctx)) return;
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		state->ctx->status = ndr_map_error2ntstatus(ndr_err);
+		if (!composite_is_ok(state->ctx)) return;
+	}
 
 	/* The Samba3 protocol is a bit broken (due to non-IDL
 	 * heritage, so for compatability we must add a non-zero 4

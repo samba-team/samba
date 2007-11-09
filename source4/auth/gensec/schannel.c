@@ -46,6 +46,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 {
 	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct schannel_bind bind_schannel;
 	struct schannel_bind_ack bind_schannel_ack;
 	struct creds_CredentialState *creds;
@@ -80,9 +81,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel.u.info3.workstation = cli_credentials_get_workstation(gensec_security->credentials);
 #endif
 		
-		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
-					      (ndr_push_flags_fn_t)ndr_push_schannel_bind);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
+					       (ndr_push_flags_fn_t)ndr_push_schannel_bind);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(3, ("Could not create schannel bind: %s\n",
 				  nt_errstr(status)));
 			return status;
@@ -99,9 +101,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 		
 		/* parse the schannel startup blob */
-		status = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel, 
-					      (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel,
+					       (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(3, ("Could not parse incoming schannel bind: %s\n",
 				  nt_errstr(status)));
 			return status;
@@ -133,9 +136,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel_ack.unknown2 = 0;
 		bind_schannel_ack.unknown3 = 0x6c0000;
 		
-		status = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack, 
-					      (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack,
+					       (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(3, ("Could not return schannel bind ack for client %s: %s\n",
 				  workstation, nt_errstr(status)));
 			return status;

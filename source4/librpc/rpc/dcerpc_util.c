@@ -53,8 +53,8 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 			  struct ncacn_packet *pkt,
 			  struct dcerpc_auth *auth_info)
 {
-	NTSTATUS status;
 	struct ndr_push *ndr;
+	enum ndr_err_code ndr_err;
 
 	ndr = ndr_push_init_ctx(mem_ctx);
 	if (!ndr) {
@@ -75,15 +75,15 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		pkt->auth_length = 0;
 	}
 
-	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	if (auth_info) {
-		status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
 		}
 	}
 
@@ -440,22 +440,23 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_synta
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
-	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(mem_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	status = ndr_pull_uint16(ndr, NDR_SCALARS, &if_version);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_uint16(ndr, NDR_SCALARS, &if_version);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(mem_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
+
 	syntax->if_version = if_version;
 
 	talloc_free(mem_ctx);

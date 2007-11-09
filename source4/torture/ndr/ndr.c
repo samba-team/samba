@@ -42,8 +42,8 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 
 	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	torture_assert_ntstatus_ok(tctx, data->pull_fn(ndr, data->ndr_flags, ds), 
-							   "pulling");
+	torture_assert_ndr_success(tctx, data->pull_fn(ndr, data->ndr_flags, ds),
+				   "pulling");
 
 	torture_assert(tctx, ndr->offset == ndr->data_size, 
 				   talloc_asprintf(tctx, 
@@ -99,13 +99,13 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 	
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
-	torture_assert_ntstatus_ok(tctx, ndr_check_string_terminator(ndr, 1, 2),
-							   "simple check_string_terminator test failed");
+	torture_assert_ndr_success(tctx, ndr_check_string_terminator(ndr, 1, 2),
+				   "simple check_string_terminator test failed");
 
 	torture_assert(tctx, ndr->offset == 0,
 		"check_string_terminator did not reset offset");
 
-	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 1, 3))) {
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_check_string_terminator(ndr, 1, 3))) {
 		torture_fail(tctx, "check_string_terminator checked beyond string boundaries");
 	}
 
@@ -117,17 +117,16 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 	blob = strhex_to_data_blob("11220000");
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
-	torture_assert_ntstatus_ok(tctx, 
+	torture_assert_ndr_success(tctx,
 		ndr_check_string_terminator(ndr, 4, 1),
 		"check_string_terminator failed to recognize terminator");
 
-	torture_assert_ntstatus_ok(tctx, 
+	torture_assert_ndr_success(tctx,
 		ndr_check_string_terminator(ndr, 3, 1),
 		"check_string_terminator failed to recognize terminator");
 
-	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 2, 1))) {
-		torture_fail(tctx, 
-					 "check_string_terminator erroneously reported terminator");
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_check_string_terminator(ndr, 2, 1))) {
+		torture_fail(tctx, "check_string_terminator erroneously reported terminator");
 	}
 
 	torture_assert(tctx, ndr->offset == 0,

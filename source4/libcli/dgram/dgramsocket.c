@@ -39,6 +39,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	size_t nread, dsize;
 	struct nbt_dgram_packet *packet;
 	const char *mailslot_name;
+	enum ndr_err_code ndr_err;
 
 	status = socket_pending(dgmsock->sock, &dsize);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -70,9 +71,10 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 
 	/* parse the request */
-	status = ndr_pull_struct_blob(&blob, packet, packet, 
+	ndr_err = ndr_pull_struct_blob(&blob, packet, packet,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_dgram_packet);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(2,("Failed to parse incoming NBT DGRAM packet - %s\n",
 			 nt_errstr(status)));
 		talloc_free(tmp_ctx);
@@ -218,6 +220,7 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 {
 	struct nbt_dgram_request *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	enum ndr_err_code ndr_err;
 
 	req = talloc(dgmsock, struct nbt_dgram_request);
 	if (req == NULL) goto failed;
@@ -225,9 +228,12 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 	req->dest = dest;
 	if (talloc_reference(req, dest) == NULL) goto failed;
 
-	status = ndr_push_struct_blob(&req->encoded, req, packet, 
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, packet,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto failed;
+	}
 
 	DLIST_ADD_END(dgmsock->send_queue, req, struct nbt_dgram_request *);
 

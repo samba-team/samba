@@ -149,15 +149,16 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 						const struct ldb_val *val)
 {
 	WERROR status;
-	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	struct dreplsrv_partition_source_dsa *source;
 
 	source = talloc_zero(p, struct dreplsrv_partition_source_dsa);
 	W_ERROR_HAVE_NO_MEMORY(source);
 
-	nt_status = ndr_pull_struct_blob(val, source, &source->_repsFromBlob,
-					 (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_pull_struct_blob(val, source, &source->_repsFromBlob,
+				       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		return ntstatus_to_werror(nt_status);
 	}
 	/* NDR_PRINT_DEBUG(repsFromToBlob, &source->_repsFromBlob); */
@@ -180,7 +181,6 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 TALLOC_CTX *mem_ctx)
 {
 	WERROR status;
-	NTSTATUS nt_status;
 	const struct ldb_val *ouv_value;
 	struct replUpToDateVectorBlob ouv;
 	struct dom_sid *nc_sid;
@@ -220,9 +220,11 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 	if (ouv_value) {
-		nt_status = ndr_pull_struct_blob(ouv_value, mem_ctx, &ouv,
-						 (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(ouv_value, mem_ctx, &ouv,
+					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(nt_status);
 		}
 		/* NDR_PRINT_DEBUG(replUpToDateVectorBlob, &ouv); */

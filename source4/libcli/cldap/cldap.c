@@ -595,6 +595,7 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 			     struct cldap_netlogon *io)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct cldap_search search;
 	DATA_BLOB *data;
 
@@ -614,13 +615,14 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	}
 	data = search.out.response->attributes[0].values;
 
-	status = ndr_pull_union_blob_all(data, mem_ctx, &io->out.netlogon, 
-					 io->in.version & 0xF,
-					 (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, &io->out.netlogon,
+					  io->in.version & 0xF,
+					  (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(2,("cldap failed to parse netlogon response of type 0x%02x\n",
 			 SVAL(data->data, 0)));
 		dump_data(10, data->data, data->length);
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
@@ -700,17 +702,18 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      union nbt_cldap_netlogon *netlogon)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct cldap_reply reply;
 	struct ldap_SearchResEntry response;
 	struct ldap_Result result;
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 	DATA_BLOB blob;
 
-	status = ndr_push_union_blob(&blob, tmp_ctx, netlogon, version & 0xF, 
+	ndr_err = ndr_push_union_blob(&blob, tmp_ctx, netlogon, version & 0xF,
 				     (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	reply.messageid    = message_id;

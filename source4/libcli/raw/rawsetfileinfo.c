@@ -86,12 +86,14 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 		return true;
 
 	case RAW_FILEINFO_SEC_DESC: {
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 
-		status = ndr_push_struct_blob(blob, mem_ctx,
-					      parms->set_secdesc.in.sd,
-					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-		if (!NT_STATUS_IS_OK(status)) return false;
+		ndr_err = ndr_push_struct_blob(blob, mem_ctx,
+					       parms->set_secdesc.in.sd,
+					       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return false;
+		}
 
 		return true;
 	}

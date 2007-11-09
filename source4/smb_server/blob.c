@@ -272,12 +272,18 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 
 		return NT_STATUS_OK;
 
-	case RAW_QFS_OBJECTID_INFORMATION:
+	case RAW_QFS_OBJECTID_INFORMATION: {
+		enum ndr_err_code ndr_err;
+
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 64));
 
-		BLOB_CHECK(ndr_push_struct_blob(&guid_blob, mem_ctx, 
-						&fsinfo->objectid_information.out.guid,
-						(ndr_push_flags_fn_t)ndr_push_GUID));
+		ndr_err = ndr_push_struct_blob(&guid_blob, mem_ctx,
+					       &fsinfo->objectid_information.out.guid,
+					       (ndr_push_flags_fn_t)ndr_push_GUID);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			BLOB_CHECK(ndr_map_error2ntstatus(ndr_err));
+		}
+
 		memcpy(blob->data, guid_blob.data, guid_blob.length);
 
 		for (i=0;i<6;i++) {
@@ -285,7 +291,7 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 		}
 
 		return NT_STATUS_OK;
-
+	}
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}

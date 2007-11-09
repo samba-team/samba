@@ -84,7 +84,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	const struct ldb_val *sidval;
 	char *sidstring;
 	struct dom_sid *sid;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	/* We need the domain, so we get it from the objectSid that we hope is here... */
 	sidval = ldb_msg_find_ldb_val(local, "objectSid");
@@ -96,8 +96,9 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	if (sid == NULL) {
 		return;
 	}
-	status = ndr_pull_struct_blob(sidval, sid, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+
+	ndr_err = ndr_pull_struct_blob(sidval, sid, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
 		return;
 	}
@@ -179,17 +180,17 @@ static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 {
 	struct ldb_val out = data_blob(NULL, 0);
 	struct dom_sid *sid;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	sid = dom_sid_parse_talloc(ctx, (char *)val->data);
 	if (sid == NULL) {
 		return out;
 	}
 
-	status = ndr_push_struct_blob(&out, ctx, sid,
-				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	ndr_err = ndr_push_struct_blob(&out, ctx, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return out;
 	}
 
@@ -201,16 +202,16 @@ static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 {
 	struct ldb_val out = data_blob(NULL, 0);
 	struct dom_sid *sid;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	sid = talloc(ctx, struct dom_sid);
 	if (sid == NULL) {
 		return out;
 	}
 
-	status = ndr_pull_struct_blob(val, sid, sid,
-				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(val, sid, sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto done;
 	}
 

@@ -107,6 +107,7 @@ _PUBLIC_ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 
 	status = pull_xattr_blob(pvfs, mem_ctx, attr_name, fname, 
 				 fd, XATTR_DOSATTRIB_ESTIMATED_SIZE, &blob);
@@ -115,11 +116,14 @@ _PUBLIC_ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 	}
 
 	/* pull the blob */
-	status = ndr_pull_struct_blob(&blob, mem_ctx, p, (ndr_pull_flags_fn_t)pull_fn);
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, p, (ndr_pull_flags_fn_t)pull_fn);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	data_blob_free(&blob);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -132,11 +136,12 @@ _PUBLIC_ NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	DATA_BLOB blob;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
-	status = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(mem_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	status = push_xattr_blob(pvfs, attr_name, fname, fd, &blob);

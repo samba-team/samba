@@ -32,15 +32,18 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 {
 	size_t len = response->length - sizeof(struct winbindd_response);
 	if (len > 4) {
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 		DATA_BLOB blob;
 		blob.length = len - 4;
 		blob.data = (uint8_t *)(((char *)response->extra_data.data) + 4);
 
-		status = ndr_pull_struct_blob(&blob, mem_ctx, info3,
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, info3,
 					      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
 
-		return status;
+		return NT_STATUS_OK;
 	} else {
 		DEBUG(2, ("get_info3_from_ndr: No info3 struct found!\n"));
 		return NT_STATUS_UNSUCCESSFUL;

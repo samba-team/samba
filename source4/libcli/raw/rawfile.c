@@ -263,7 +263,6 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	uint16_t fname_len;
 	DATA_BLOB sd_blob, ea_blob;
 	struct smbcli_request *req;
-	NTSTATUS status;
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = 101;
@@ -276,10 +275,11 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	ea_blob = data_blob(NULL, 0);
 
 	if (parms->ntcreatex.in.sec_desc) {
-		status = ndr_push_struct_blob(&sd_blob, mem_ctx, 
-					      parms->ntcreatex.in.sec_desc, 
-					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-		if (!NT_STATUS_IS_OK(status)) {
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_push_struct_blob(&sd_blob, mem_ctx,
+					       parms->ntcreatex.in.sec_desc,
+					       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(mem_ctx);
 			return NULL;
 		}

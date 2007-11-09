@@ -37,14 +37,15 @@ NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
 				     struct nbt_ntlogon_packet *request)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 
-	status = ndr_push_struct_blob(&blob, tmp_ctx, request, 
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, request,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_ntlogon_packet);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 
@@ -66,16 +67,17 @@ NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_ntlogon_packet *reply)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_name myname;
 	struct socket_address *dest;
 
-	status = ndr_push_struct_blob(&blob, tmp_ctx, reply, 
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, reply,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_ntlogon_packet);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	make_nbt_name_client(&myname, lp_netbios_name(global_loadparm));
@@ -107,13 +109,14 @@ NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,
 				      struct nbt_ntlogon_packet *ntlogon)
 {
 	DATA_BLOB data = dgram_mailslot_data(dgram);
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
-	status = ndr_pull_struct_blob(&data, mem_ctx, ntlogon, 
+	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, ntlogon,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_ntlogon_packet);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse ntlogon packet of length %d\n", 
-			 (int)data.length));
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("Failed to parse ntlogon packet of length %d: %s\n",
+			 (int)data.length, nt_errstr(status)));
 		if (DEBUGLVL(10)) {
 			file_save("ntlogon.dat", data.data, data.length);
 		}

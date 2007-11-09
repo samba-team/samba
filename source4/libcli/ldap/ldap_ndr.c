@@ -44,11 +44,11 @@ char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
 char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	char *ret;
-	status = ndr_push_struct_blob(&blob, mem_ctx, sid, 
-				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;
 	}
 	ret = ldb_binary_encode(mem_ctx, blob);
@@ -63,11 +63,11 @@ char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 {
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	char *ret;
-	status = ndr_push_struct_blob(&blob, mem_ctx, guid, 
-				      (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;
 	}
 	ret = ldb_binary_encode(mem_ctx, blob);
@@ -81,12 +81,15 @@ char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldb_val val, struct GUID *guid)
 {
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	blob.data = val.data;
 	blob.length = val.length;
-	status = ndr_pull_struct_blob(&blob, mem_ctx, guid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, guid,
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(val.data);
-	return status;
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+	return NT_STATUS_OK;
 }

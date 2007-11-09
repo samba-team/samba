@@ -39,6 +39,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = &dce_conn->auth_state;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (pkt->u.bind.auth_info.length == 0) {
 		dce_conn->auth_state.auth_info = NULL;
@@ -50,11 +51,11 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
-				      call,
-				      dce_conn->auth_state.auth_info,
-				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
+				       call,
+				       dce_conn->auth_state.auth_info,
+				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
@@ -143,6 +144,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	/* We can't work without an existing gensec state, and an new blob to feed it */
 	if (!dce_conn->auth_state.auth_info ||
@@ -151,11 +153,11 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = ndr_pull_struct_blob(&pkt->u.auth3.auth_info,
-				      call,
-				      dce_conn->auth_state.auth_info,
-				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(&pkt->u.auth3.auth_info,
+				       call,
+				       dce_conn->auth_state.auth_info,
+				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
@@ -192,7 +194,7 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	/* on a pure interface change there is no auth blob */
 	if (pkt->u.alter.auth_info.length == 0) {
@@ -209,11 +211,11 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = ndr_pull_struct_blob(&pkt->u.alter.auth_info,
-				      call,
-				      dce_conn->auth_state.auth_info,
-				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(&pkt->u.alter.auth_info,
+				       call,
+				       dce_conn->auth_state.auth_info,
+				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
@@ -304,6 +306,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	struct dcerpc_auth auth;
 	struct ndr_pull *ndr;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
@@ -332,8 +335,8 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(ndr);
 		return false;
 	}
@@ -392,6 +395,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct ndr_push *ndr;
 	uint32_t payload_length;
 	DATA_BLOB creds2;
@@ -411,8 +415,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
@@ -441,9 +445,9 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	}
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, 
+	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
 				      dce_conn->auth_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 

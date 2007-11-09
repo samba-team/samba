@@ -79,13 +79,14 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 				  const struct ldb_val *schemaInfo)
 {
 	WERROR status;
-	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	struct prefixMapBlob pfm;
 	char *schema_info;
 
-	nt_status = ndr_pull_struct_blob(prefixMap, schema, &pfm,
-					 (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_pull_struct_blob(prefixMap, schema, &pfm,
+				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		return ntstatus_to_werror(nt_status);
 	}
 
@@ -160,7 +161,7 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 				 struct ldb_val *schemaInfo)
 {
 	WERROR status;
-	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 	struct prefixMapBlob pfm;
 
@@ -171,10 +172,11 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
-	nt_status = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
-					 (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
+				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	talloc_free(ctr);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		return ntstatus_to_werror(nt_status);
 	}
 
@@ -652,11 +654,12 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	if (_a && _a->value_ctr.num_values >= 1 \
 	    && _a->value_ctr.values[0].blob) { \
 		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
-		NTSTATUS _nt_status; \
-		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
+		enum ndr_err_code _ndr_err; \
+		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
 						      mem_ctx, &_id3,\
 						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
-		if (!NT_STATUS_IS_OK(_nt_status)) { \
+		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
 			return ntstatus_to_werror(_nt_status); \
 		} \
 		(p)->elem = _id3.dn; \
@@ -713,11 +716,12 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	if (_a && _a->value_ctr.num_values >= 1 \
 	    && _a->value_ctr.values[0].blob \
 	    && _a->value_ctr.values[0].blob->length == 16) { \
-	    	NTSTATUS _nt_status; \
-		_nt_status = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
+		enum ndr_err_code _ndr_err; \
+		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
 						      mem_ctx, &(p)->elem, \
 						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
-		if (!NT_STATUS_IS_OK(_nt_status)) { \
+		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
 			return ntstatus_to_werror(_nt_status); \
 		} \
 	} else { \

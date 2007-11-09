@@ -1021,7 +1021,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		     (tdr_pull_fn_t) tdr_pull_nk_block, &root);
 
 	/* Push the security descriptor to a blob */
-	if (NT_STATUS_IS_ERR(ndr_push_struct_blob(&data, regf, sec_desc,
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, sec_desc,
 			     (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
 		DEBUG(0, ("Unable to push security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
@@ -1174,7 +1174,7 @@ static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, const struct hive_key *key,
 
 	data.data = sk.sec_desc;
 	data.length = sk.rec_size;
-	if (NT_STATUS_IS_ERR(ndr_pull_struct_blob(&data, ctx, *sd,
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_pull_struct_blob(&data, ctx, *sd,
 						  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor))) {
 		DEBUG(0, ("Error parsing security descriptor\n"));
 		return WERR_GENERAL_FAILURE;

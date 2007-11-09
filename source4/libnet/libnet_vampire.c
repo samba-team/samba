@@ -49,7 +49,6 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
 	const char *username = user->account_name.string;
-	NTSTATUS nt_status;
 
 	if (rid_crypt) {
 		if (user->lm_password_present) {
@@ -66,17 +65,18 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	if (user->user_private_info.SensitiveData) {
 		DATA_BLOB data;
 		struct netr_USER_KEYS keys;
+		enum ndr_err_code ndr_err;
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
 		creds_arcfour_crypt(creds, data.data, data.length);
 		user->user_private_info.SensitiveData = data.data;
 		user->user_private_info.DataLength = data.length;
 
-		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
 			dump_data(10, data.data, data.length);
-			return nt_status;
+			return ndr_map_error2ntstatus(ndr_err);
 		}
 
 		if (keys.keys.keys2.lmpassword.length == 16) {

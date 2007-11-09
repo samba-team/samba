@@ -111,7 +111,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_val v;
 	struct GUID guid;
 	uint64_t seq_num;
-	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	int ret;
 	time_t t = time(NULL);
 
@@ -143,9 +143,9 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* a new GUID */
 	guid = GUID_random();
 
-	nt_status = ndr_push_struct_blob(&v, msg, &guid, 
-					 (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_push_struct_blob(&v, msg, &guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

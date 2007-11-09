@@ -105,6 +105,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		DATA_BLOB blob;
 		struct eventlog_Record rec;
 		struct ndr_pull *ndr;
+		enum ndr_err_code ndr_err;
 
 		/* Read first for number of bytes in record */
 
@@ -138,8 +139,9 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 
 		ndr = ndr_pull_init_blob(&blob, tctx);
 
-		status = ndr_pull_eventlog_Record(
+		ndr_err = ndr_pull_eventlog_Record(
 			ndr, NDR_SCALARS|NDR_BUFFERS, &rec);
+		status = ndr_map_error2ntstatus(ndr_err);
 
 		NDR_PRINT_DEBUG(eventlog_Record, &rec);
 

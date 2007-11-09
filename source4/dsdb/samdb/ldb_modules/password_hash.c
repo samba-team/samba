@@ -229,7 +229,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 	struct package_PrimaryKerberosBlob _old_pkb;
 	struct package_PrimaryKerberosCtr3 *old_pkb3 = NULL;
 	uint32_t i;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	/* Many, many thanks to lukeh@padl.com for this
 	 * algorithm, described in his Nov 10 2004 mail to
@@ -472,9 +472,10 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		talloc_steal(io->ac, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		status = ndr_pull_struct_blob(&blob, io->ac, &_old_pkb,
-					      (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob(&blob, io->ac, &_old_pkb,
+					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			ldb_asprintf_errstring(io->ac->module->ldb,
 					       "setup_primary_kerberos: "
 					       "failed to pull old package_PrimaryKerberosBlob: %s",
@@ -863,7 +864,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	DATA_BLOB pcb_blob;
 	char *pcb_hexstr;
 	int ret;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	uint8_t zero16[16];
 
 	ZERO_STRUCT(zero16);
@@ -878,9 +879,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 	/* if there's an old supplementaCredentials blob then parse it */
 	if (io->o.supplemental) {
-		status = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, &_old_scb,
-						  (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, &_old_scb,
+						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			ldb_asprintf_errstring(io->ac->module->ldb,
 					       "setup_supplemental_field: "
 					       "failed to pull old supplementalCredentialsBlob: %s",
@@ -910,9 +912,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	status = ndr_push_struct_blob(&pkb_blob, io->ac, &pkb,
-				      (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&pkb_blob, io->ac, &pkb,
+				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		ldb_asprintf_errstring(io->ac->module->ldb,
 				       "setup_supplemental_field: "
 				       "failed to push package_PrimaryKerberosBlob: %s",
@@ -948,9 +951,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	status = ndr_push_struct_blob(&pdb_blob, io->ac, &pdb,
-				      (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&pdb_blob, io->ac, &pdb,
+				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		ldb_asprintf_errstring(io->ac->module->ldb,
 				       "setup_supplemental_field: "
 				       "failed to push package_PrimaryWDigestBlob: %s",
@@ -974,9 +978,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 		pcb.cleartext	= io->n.cleartext;
 
-		status = ndr_push_struct_blob(&pcb_blob, io->ac, &pcb,
-					      (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(&pcb_blob, io->ac, &pcb,
+					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			ldb_asprintf_errstring(io->ac->module->ldb,
 					       "setup_supplemental_field: "
 					       "failed to push package_PrimaryCLEARTEXTBlob: %s",
@@ -996,9 +1001,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/*
 	 * setup 'Packages' element
 	 */
-	status = ndr_push_struct_blob(&pb_blob, io->ac, &pb,
-				      (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, &pb,
+				       (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		ldb_asprintf_errstring(io->ac->module->ldb,
 				       "setup_supplemental_field: "
 				       "failed to push package_PackagesBlob: %s",
@@ -1020,9 +1026,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	scb.sub.num_packages	= num_packages;
 	scb.sub.packages	= packages;
 
-	status = ndr_push_struct_blob(&io->g.supplemental, io->ac, &scb,
-				      (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac, &scb,
+				       (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 		ldb_asprintf_errstring(io->ac->module->ldb,
 				       "setup_supplemental_field: "
 				       "failed to push supplementalCredentialsBlob: %s",
