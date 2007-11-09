@@ -1227,6 +1227,8 @@ char *get_mydnsdomname(TALLOC_CTX *ctx)
 	if (p) {
 		p++;
 		my_domname = talloc_strdup(ctx, p);
+	} else {
+		my_domname = talloc_strdup(ctx, "");
 	}
 
 	return my_domname;

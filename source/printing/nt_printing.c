@@ -2953,7 +2953,7 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	   join the domain */
 
 	dnssuffix = get_mydnsdomname(talloc_tos());
-	if (!dnssuffix) {
+	if (dnssuffix && *dnssuffix) {
 		fstr_sprintf( longname, "%s.%s", global_myname(), dnssuffix );
 	} else {
 		fstrcpy( longname, global_myname() );
