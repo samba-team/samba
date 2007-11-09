@@ -161,24 +161,35 @@ uint32 smb_get_naces(SMB4ACL_T *acl)
 	return aclint->naces;
 }
 
-static int smbacl4_GetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
+static int smbacl4_GetFileOwner(struct connection_struct *conn,
+				const char *filename,
+				SMB_STRUCT_STAT *psbuf)
 {
 	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+
+	/* Get the stat struct for the owner info. */
+	if (SMB_VFS_STAT(conn, filename, psbuf) != 0)
+	{
+		DEBUG(8, ("SMB_VFS_STAT failed with error %s\n",
+			strerror(errno)));
+		return -1;
+	}
+
+	return 0;
+}
+
+static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
+{
+	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+
 	if (fsp->is_directory || fsp->fh->fd == -1) {
-		/* Get the stat struct for the owner info. */
-		if (SMB_VFS_STAT(fsp->conn,fsp->fsp_name, psbuf) != 0)
-		{
-			DEBUG(8, ("SMB_VFS_STAT failed with error %s\n",
-				strerror(errno)));
-			return -1;
-		}
-	} else {
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd, psbuf) != 0)
-		{
-			DEBUG(8, ("SMB_VFS_FSTAT failed with error %s\n",
-				strerror(errno)));
-			return -1;
-		}
+		return smbacl4_GetFileOwner(fsp->conn, fsp->fsp_name, psbuf);
+	}
+	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd, psbuf) != 0)
+	{
+		DEBUG(8, ("SMB_VFS_FSTAT failed with error %s\n",
+			strerror(errno)));
+		return -1;
 	}
 
 	return 0;
@@ -276,9 +287,8 @@ NTSTATUS smb_get_nt_acl_nfs4(files_struct *fsp,
 						 * shouldn't alloc 0 for
 						 * win */
 
-	if (smbacl4_GetFileOwner(fsp, &sbuf))
+	if (smbacl4_fGetFileOwner(fsp, &sbuf))
 		return map_nt_error_from_unix(errno);
-
 	uid_to_sid(&sid_owner, sbuf.st_uid);
 	gid_to_sid(&sid_group, sbuf.st_gid);
 
@@ -588,7 +598,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp, &params))
 		return NT_STATUS_NO_MEMORY;
 
-	if (smbacl4_GetFileOwner(fsp, &sbuf))
+	if (smbacl4_fGetFileOwner(fsp, &sbuf))
 		return map_nt_error_from_unix(errno);
 
 	if (params.do_chown) {
@@ -610,7 +620,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 			}
 			DEBUG(10,("chown %s, %u, %u succeeded.\n",
 				fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-			if (smbacl4_GetFileOwner(fsp, &sbuf))
+			if (smbacl4_fGetFileOwner(fsp, &sbuf))
 				return map_nt_error_from_unix(errno);
 		}
 	}
