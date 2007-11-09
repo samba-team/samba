@@ -23,14 +23,14 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_orpc.h"
 
-NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DUALSTRINGARRAY *ar)
+enum ndr_err_code ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DUALSTRINGARRAY *ar)
 {
 	uint16_t num_entries, security_offset;
 	uint16_t towerid;
 	uint32_t towernum = 0, conformant_size;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &conformant_size));
@@ -74,12 +74,12 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 	
 	ar->securitybindings[towernum] = NULL;
 	
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_push_DUALSTRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct DUALSTRINGARRAY *ar)
+enum ndr_err_code ndr_push_DUALSTRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct DUALSTRINGARRAY *ar)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return ndr_push_error(ndr, NDR_ERR_STRING, "ndr_push_DUALSTRINGARRAY not implemented");
 }
 
 /*
@@ -114,14 +114,14 @@ void ndr_print_DUALSTRINGARRAY(struct ndr_print *ndr, const char *name, const st
 	ndr->depth--;
 }
 
-NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRINGARRAY *ar)
+enum ndr_err_code ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRINGARRAY *ar)
 {
 	uint16_t towerid;
 	uint32_t towernum = 0;
 	uint16_t num_entries;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &num_entries));
@@ -145,12 +145,12 @@ NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRING
 	ar->stringbindings[towernum] = NULL;
 	towernum = 0;
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_push_STRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct STRINGARRAY *ar)
+enum ndr_err_code ndr_push_STRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct STRINGARRAY *ar)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return ndr_push_error(ndr, NDR_ERR_STRING, "ndr_push_STRINGARRAY not implemented");
 }
 
 /*

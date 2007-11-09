@@ -40,7 +40,7 @@ static size_t _subcontext_size_PAC_INFO(const union PAC_INFO *r, uint32_t level,
 	return NDR_ROUND(s,8);
 }
 
-NTSTATUS ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r)
+enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -71,10 +71,10 @@ NTSTATUS ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct P
 			ndr->flags = _flags_save_PAC_INFO;
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r)
+enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r)
 {
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_info_0;
@@ -119,7 +119,7 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 			ndr->flags = _flags_save_PAC_INFO;
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER *r)

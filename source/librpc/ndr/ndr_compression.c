@@ -24,7 +24,7 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_compression.h"
 
-static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
+static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,
 						 struct decomp_state *decomp_state,
 						 bool *last)
@@ -69,10 +69,10 @@ static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 		*last = true;
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
+static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
 					   struct ndr_pull **_comndr,
 					   ssize_t decompressed_len)
 {
@@ -87,10 +87,10 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	bool last = false;
 
 	ndrpush = ndr_push_init_ctx(subndr);
-	NT_STATUS_HAVE_NO_MEMORY(ndrpush);
+	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	decomp_state = ZIPdecomp_state(subndr);
-	NT_STATUS_HAVE_NO_MEMORY(decomp_state);
+	NDR_ERR_HAVE_NO_MEMORY(decomp_state);
 
 	while (!last) {
 		NDR_CHECK(ndr_pull_compression_mszip_chunk(subndr, ndrpush, decomp_state, &last));
@@ -104,7 +104,7 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	}
 
 	comndr = talloc_zero(subndr, struct ndr_pull);
-	NT_STATUS_HAVE_NO_MEMORY(comndr);
+	NDR_ERR_HAVE_NO_MEMORY(comndr);
 	comndr->flags		= subndr->flags;
 	comndr->current_mem_ctx	= subndr->current_mem_ctx;
 
@@ -142,16 +142,16 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	comndr->offset		= 0;
 
 	*_comndr = comndr;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_push_compression_mszip(struct ndr_push *subndr,
+static enum ndr_err_code ndr_push_compression_mszip(struct ndr_push *subndr,
 					   struct ndr_push *comndr)
 {
 	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Sorry MSZIP compression is not supported yet (PUSH)");
 }
 
-static NTSTATUS ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
+static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
 						  struct ndr_push *ndrpush,
 						  bool *last)
 {
@@ -185,10 +185,10 @@ static NTSTATUS ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
 		*last = true;
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_compression_xpress(struct ndr_pull *subndr,
+static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
 					    struct ndr_pull **_comndr,
 					    ssize_t decompressed_len)
 {
@@ -198,7 +198,7 @@ static NTSTATUS ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	bool last = false;
 
 	ndrpush = ndr_push_init_ctx(subndr);
-	NT_STATUS_HAVE_NO_MEMORY(ndrpush);
+	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	while (!last) {
 		NDR_CHECK(ndr_pull_compression_xpress_chunk(subndr, ndrpush, &last));
@@ -207,7 +207,7 @@ static NTSTATUS ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	uncompressed = ndr_push_blob(ndrpush);
 
 	comndr = talloc_zero(subndr, struct ndr_pull);
-	NT_STATUS_HAVE_NO_MEMORY(comndr);
+	NDR_ERR_HAVE_NO_MEMORY(comndr);
 	comndr->flags		= subndr->flags;
 	comndr->current_mem_ctx	= subndr->current_mem_ctx;
 
@@ -216,10 +216,10 @@ static NTSTATUS ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	comndr->offset		= 0;
 
 	*_comndr = comndr;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_push_compression_xpress(struct ndr_push *subndr,
+static enum ndr_err_code ndr_push_compression_xpress(struct ndr_push *subndr,
 					    struct ndr_push *comndr)
 {
 	return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "XPRESS compression is not supported yet (PUSH)");
@@ -229,7 +229,7 @@ static NTSTATUS ndr_push_compression_xpress(struct ndr_push *subndr,
   handle compressed subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-NTSTATUS ndr_pull_compression_start(struct ndr_pull *subndr,
+enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 				    struct ndr_pull **_comndr,
 				    enum ndr_compression_alg compression_alg,
 				    ssize_t decompressed_len)
@@ -243,21 +243,21 @@ NTSTATUS ndr_pull_compression_start(struct ndr_pull *subndr,
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)", 
 				      compression_alg);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_compression_end(struct ndr_pull *subndr,
+enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
 				  struct ndr_pull *comndr,
 				  enum ndr_compression_alg compression_alg,
 				  ssize_t decompressed_len)
 {
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   push a compressed subcontext
 */
-NTSTATUS ndr_push_compression_start(struct ndr_push *subndr,
+enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
 				    struct ndr_push **_comndr,
 				    enum ndr_compression_alg compression_alg,
 				    ssize_t decompressed_len)
@@ -265,17 +265,17 @@ NTSTATUS ndr_push_compression_start(struct ndr_push *subndr,
 	struct ndr_push *comndr;
 
 	comndr = ndr_push_init_ctx(subndr);
-	NT_STATUS_HAVE_NO_MEMORY(comndr);
+	NDR_ERR_HAVE_NO_MEMORY(comndr);
 	comndr->flags	= subndr->flags;
 
 	*_comndr = comndr;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   push a compressed subcontext
 */
-NTSTATUS ndr_push_compression_end(struct ndr_push *subndr,
+enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 				  struct ndr_push *comndr,
 				  enum ndr_compression_alg compression_alg,
 				  ssize_t decompressed_len)
@@ -289,5 +289,5 @@ NTSTATUS ndr_push_compression_end(struct ndr_push *subndr,
 		return ndr_push_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PUSH)", 
 				      compression_alg);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }

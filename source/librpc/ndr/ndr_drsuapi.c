@@ -79,7 +79,7 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 	} \
 } while (0)
 
-NTSTATUS ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaOID *r)
+enum ndr_err_code ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaOID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -106,10 +106,10 @@ NTSTATUS ndr_push_drsuapi_DsReplicaOID(struct ndr_push *ndr, int ndr_flags, cons
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.data, blob.length));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaOID *r)
+enum ndr_err_code ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaOID *r)
 {
 	uint32_t _ptr_oid;
 	TALLOC_CTX *_mem_save_oid_0;
@@ -141,7 +141,7 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 
 			if (_oid_array.length && _oid_array.data[0] == 0xFF) {
 				_oid = data_blob_hex_string(ndr, &_oid_array);
-				NT_STATUS_HAVE_NO_MEMORY(_oid);
+				NDR_ERR_HAVE_NO_MEMORY(_oid);
 			} else {
 				_OID_PULL_CHECK(ber_read_OID_String(ndr, _oid_array, &_oid));
 			}
@@ -153,7 +153,7 @@ NTSTATUS ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_flags, stru
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->oid, r->__ndr_size));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 size_t ndr_size_drsuapi_DsReplicaOID_oid(const char *oid, int flags)
