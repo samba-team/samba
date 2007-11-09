@@ -379,8 +379,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(smbd_server_fd(),
-						   lp_socket_options());
+				set_socket_options(s,lp_socket_options());
 
 				/* Set server socket to
 				 * non-blocking for the accept. */
@@ -446,8 +445,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(smbd_server_fd(),
-						   lp_socket_options());
+				set_socket_options(s,lp_socket_options());
 
 				/* Set server socket to non-blocking
 				 * for the accept. */
