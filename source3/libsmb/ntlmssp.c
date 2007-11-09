@@ -501,18 +501,19 @@ DATA_BLOB ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state, TALLOC_CTX *mem_ctx)
 
 /**
  * Next state function for the Negotiate packet
- * 
+ *
  * @param ntlmssp_state NTLMSSP State
  * @param request The request, as a DATA_BLOB
  * @param request The reply, as an allocated DATA_BLOB, caller to free.
- * @return Errors or MORE_PROCESSING_REQUIRED if a reply is sent. 
+ * @return Errors or MORE_PROCESSING_REQUIRED if a reply is sent.
  */
 
 static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 					 const DATA_BLOB request, DATA_BLOB *reply) 
 {
 	DATA_BLOB struct_blob;
-	fstring dnsname, dnsdomname;
+	const char *dnsname;
+	char *dnsdomname = NULL;
 	uint32 neg_flags = 0;
 	uint32 ntlmssp_command, chal_flags;
 	const uint8 *cryptkey;
@@ -535,7 +536,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		}
 		debug_ntlmssp_flags(neg_flags);
 	}
-	
+
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
 	/* Ask our caller what challenge they would like in the packet */
@@ -548,31 +549,34 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 	/* The flags we send back are not just the negotiated flags,
 	 * they are also 'what is in this packet'.  Therfore, we
-	 * operate on 'chal_flags' from here on 
+	 * operate on 'chal_flags' from here on
 	 */
 
 	chal_flags = ntlmssp_state->neg_flags;
 
 	/* get the right name to fill in as 'target' */
-	target_name = ntlmssp_target_name(ntlmssp_state, 
-					  neg_flags, &chal_flags); 
-	if (target_name == NULL) 
+	target_name = ntlmssp_target_name(ntlmssp_state,
+					  neg_flags, &chal_flags);
+	if (target_name == NULL)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	ntlmssp_state->chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
 	ntlmssp_state->internal_chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
-	
 
 	/* This should be a 'netbios domain -> DNS domain' mapping */
-	dnsdomname[0] = '\0';
-	get_mydnsdomname(dnsdomname);
+	dnsdomname = get_mydnsdomname(ntlmssp_state->mem_ctx);
+	if (!dnsdomname) {
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 	strlower_m(dnsdomname);
-	
-	dnsname[0] = '\0';
-	get_mydnsfullname(dnsname);
-	
+
+	dnsname = get_mydnsfullname();
+	if (!dnsdomname) {
+		return NT_STATUS_INVALID_COMPUTER_NAME;
+	}
+
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
+	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO)
 	{
 		msrpc_gen(&struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
@@ -592,9 +596,9 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		} else {
 			gen_string = "CdAdbddB";
 		}
-		
+
 		msrpc_gen(reply, gen_string,
-			  "NTLMSSP", 
+			  "NTLMSSP",
 			  NTLMSSP_CHALLENGE,
 			  target_name,
 			  chal_flags,
@@ -602,7 +606,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			  0, 0,
 			  struct_blob.data, struct_blob.length);
 	}
-		
+
 	data_blob_free(&struct_blob);
 
 	ntlmssp_state->expected_state = NTLMSSP_AUTH;
@@ -612,7 +616,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 /**
  * Next state function for the Authenticate packet
- * 
+ *
  * @param ntlmssp_state NTLMSSP State
  * @param request The request, as a DATA_BLOB
  * @param request The reply, as an allocated DATA_BLOB, caller to free.

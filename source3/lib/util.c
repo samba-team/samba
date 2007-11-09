@@ -1212,23 +1212,24 @@ bool get_myname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-bool get_mydnsdomname(fstring my_domname)
+char *get_mydnsdomname(TALLOC_CTX *ctx)
 {
-	fstring domname;
+	const char *domname;
+	char *my_domname = NULL;
 	char *p;
 
-	*my_domname = '\0';
-	if (!get_mydnsfullname(domname)) {
-		return False;
-	}	
+	domname = get_mydnsfullname();
+	if (!domname) {
+		return NULL;
+	}
+
 	p = strchr_m(domname, '.');
 	if (p) {
 		p++;
-		fstrcpy(my_domname, p);
-		return True;
+		my_domname = talloc_strdup(ctx, p);
 	}
 
-	return False;
+	return my_domname;
 }
 
 /****************************************************************************

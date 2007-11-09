@@ -1927,10 +1927,12 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 				/* ugly temp hack for these next two */
 
 				/* This should be a 'netbios domain -> DNS domain' mapping */
-				dnsdomname[0] = '\0';
-				get_mydnsdomname(dnsdomname);
+				dnsdomname = get_mydnsdomname(p->mem_ctx);
+				if (!dnsdomname) {
+					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+				}
 				strlower_m(dnsdomname);
-				
+
 				dns_name = dnsdomname;
 				forest_name = dnsdomname;
 

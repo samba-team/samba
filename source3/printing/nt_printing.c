@@ -2936,7 +2936,7 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 {
 	REGVAL_CTR *ctr = NULL;
 	fstring longname;
-	fstring dnssuffix;
+	const char *dnssuffix;
 	char *allocated_string = NULL;
         const char *ascii_str;
 	int i;
@@ -2948,15 +2948,17 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
 
-	/* we make the assumption that the netbios name is the same 
-	   as the DNS name sinc ethe former will be what we used to 
+	/* we make the assumption that the netbios name is the same
+	   as the DNS name sinc ethe former will be what we used to
 	   join the domain */
 
-	if ( get_mydnsdomname( dnssuffix ) )
+	dnssuffix = get_mydnsdomname(talloc_tos());
+	if (!dnssuffix) {
 		fstr_sprintf( longname, "%s.%s", global_myname(), dnssuffix );
-	else
+	} else {
 		fstrcpy( longname, global_myname() );
-		
+	}
+
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
 	asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename);

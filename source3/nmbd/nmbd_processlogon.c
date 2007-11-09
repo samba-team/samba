@@ -394,13 +394,18 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				else {
 					struct GUID domain_guid;
 					UUID_FLAT flat_guid;
-					pstring domain;
+					char *domain;
 					pstring hostname;
 					char *component, *dc, *q1;
 					char *q_orig = q;
 					int str_offset;
 
-					get_mydnsdomname(domain);
+					domain = get_mydnsdomname(talloc_tos());
+					if (!domain) {
+						DEBUG(2,
+						("get_mydnsdomname failed.\n"));
+						return;
+					}
 					get_myname(hostname);
 
 					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {

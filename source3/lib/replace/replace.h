@@ -357,7 +357,7 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 #define _TYPE_MAXIMUM(t) ((t) (~ (t) 0 - _TYPE_MINIMUM (t)))
 
 #ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 64
+#define HOST_NAME_MAX 255
 #endif
 
 /*
