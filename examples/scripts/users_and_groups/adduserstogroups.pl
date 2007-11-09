@@ -47,7 +47,7 @@ my $creds;
 sub usage {
 	print "USAGE: $0 [-h] -S server -U user\%pass \\\n"
 		. "\t-m member [-s startmem] [-n nummem] \\\n"
-		. "\t-g group [-G stargroup] [-N numgroups] \\\n"
+		. "\t-g group [-G startgroup] [-N numgroups] \\\n"
 		. "\t[-P path]\n";
 }
 
