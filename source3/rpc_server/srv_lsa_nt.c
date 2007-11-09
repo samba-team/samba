@@ -1928,7 +1928,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 
 				/* This should be a 'netbios domain -> DNS domain' mapping */
 				dnsdomname = get_mydnsdomname(p->mem_ctx);
-				if (!dnsdomname) {
+				if (!dnsdomname || !*dnsdomname) {
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				}
 				strlower_m(dnsdomname);
