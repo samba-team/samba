@@ -4960,6 +4960,88 @@ static bool run_local_gencache(int dummy)
 	return True;
 }
 
+static bool rbt_testval(struct db_context *db, const char *key,
+			const char *value)
+{
+	struct db_record *rec;
+	TDB_DATA data = string_tdb_data(value);
+	bool ret = false;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, db, string_tdb_data(key));
+	if (rec == NULL) {
+		d_fprintf(stderr, "fetch_locked failed\n");
+		goto done;
+	}
+	status = rec->store(rec, data, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "store failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+	TALLOC_FREE(rec);
+
+	rec = db->fetch_locked(db, db, string_tdb_data(key));
+	if (rec == NULL) {
+		d_fprintf(stderr, "second fetch_locked failed\n");
+		goto done;
+	}
+	if ((rec->value.dsize != data.dsize)
+	    || (memcmp(rec->value.dptr, data.dptr, data.dsize) != 0)) {
+		d_fprintf(stderr, "Got wrong data back\n");
+		goto done;
+	}
+
+	ret = true;
+ done:
+	TALLOC_FREE(rec);
+	return ret;
+}
+
+static bool run_local_rbtree(int dummy)
+{
+	struct db_context *db;
+	bool ret = false;
+	int i;
+
+	db = db_open_rbt(NULL);
+
+	if (db == NULL) {
+		d_fprintf(stderr, "db_open_rbt failed\n");
+		return false;
+	}
+
+	for (i=0; i<1000; i++) {
+		char *key, *value;
+
+		asprintf(&key, "key%ld", random());
+		asprintf(&value, "value%ld", random());
+
+		if (!rbt_testval(db, key, value)) {
+			SAFE_FREE(key);
+			SAFE_FREE(value);
+			goto done;
+		}
+
+		SAFE_FREE(value);
+		asprintf(&value, "value%ld", random());
+
+		if (!rbt_testval(db, key, value)) {
+			SAFE_FREE(key);
+			SAFE_FREE(value);
+			goto done;
+		}
+
+		SAFE_FREE(key);
+		SAFE_FREE(value);
+	}
+
+	ret = true;
+
+ done:
+	TALLOC_FREE(db);
+	return ret;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -5113,6 +5195,7 @@ static struct {
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
+	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{NULL, NULL, 0}};
 
 
