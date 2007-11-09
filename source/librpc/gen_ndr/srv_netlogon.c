@@ -11,7 +11,7 @@ static bool api_netr_LogonUasLogon(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonUasLogon *r;
 	
@@ -34,8 +34,8 @@ static bool api_netr_LogonUasLogon(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -67,8 +67,8 @@ static bool api_netr_LogonUasLogon(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -89,7 +89,7 @@ static bool api_netr_LogonUasLogoff(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonUasLogoff *r;
 	
@@ -112,8 +112,8 @@ static bool api_netr_LogonUasLogoff(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -145,8 +145,8 @@ static bool api_netr_LogonUasLogoff(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -167,7 +167,7 @@ static bool api_netr_LogonSamLogon(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonSamLogon *r;
 	
@@ -190,8 +190,8 @@ static bool api_netr_LogonSamLogon(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -230,8 +230,8 @@ static bool api_netr_LogonSamLogon(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -252,7 +252,7 @@ static bool api_netr_LogonSamLogoff(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonSamLogoff *r;
 	
@@ -275,8 +275,8 @@ static bool api_netr_LogonSamLogoff(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -303,8 +303,8 @@ static bool api_netr_LogonSamLogoff(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -325,7 +325,7 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerReqChallenge *r;
 	
@@ -348,8 +348,8 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -376,8 +376,8 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -398,7 +398,7 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerAuthenticate *r;
 	
@@ -421,8 +421,8 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -449,8 +449,8 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -471,7 +471,7 @@ static bool api_netr_ServerPasswordSet(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerPasswordSet *r;
 	
@@ -494,8 +494,8 @@ static bool api_netr_ServerPasswordSet(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -527,8 +527,8 @@ static bool api_netr_ServerPasswordSet(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -549,7 +549,7 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DatabaseDeltas *r;
 	
@@ -572,8 +572,8 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -607,8 +607,8 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -629,7 +629,7 @@ static bool api_netr_DatabaseSync(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DatabaseSync *r;
 	
@@ -652,8 +652,8 @@ static bool api_netr_DatabaseSync(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -687,8 +687,8 @@ static bool api_netr_DatabaseSync(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -709,7 +709,7 @@ static bool api_netr_AccountDeltas(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_AccountDeltas *r;
 	
@@ -732,8 +732,8 @@ static bool api_netr_AccountDeltas(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -784,8 +784,8 @@ static bool api_netr_AccountDeltas(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -806,7 +806,7 @@ static bool api_netr_AccountSync(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_AccountSync *r;
 	
@@ -829,8 +829,8 @@ static bool api_netr_AccountSync(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -882,8 +882,8 @@ static bool api_netr_AccountSync(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -904,7 +904,7 @@ static bool api_netr_GetDcName(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_GetDcName *r;
 	
@@ -927,8 +927,8 @@ static bool api_netr_GetDcName(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -960,8 +960,8 @@ static bool api_netr_GetDcName(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -982,7 +982,7 @@ static bool api_netr_LogonControl(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonControl *r;
 	
@@ -1005,8 +1005,8 @@ static bool api_netr_LogonControl(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1038,8 +1038,8 @@ static bool api_netr_LogonControl(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1060,7 +1060,7 @@ static bool api_netr_GetAnyDCName(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_GetAnyDCName *r;
 	
@@ -1083,8 +1083,8 @@ static bool api_netr_GetAnyDCName(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1116,8 +1116,8 @@ static bool api_netr_GetAnyDCName(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1138,7 +1138,7 @@ static bool api_netr_LogonControl2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonControl2 *r;
 	
@@ -1161,8 +1161,8 @@ static bool api_netr_LogonControl2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1194,8 +1194,8 @@ static bool api_netr_LogonControl2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1216,7 +1216,7 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerAuthenticate2 *r;
 	
@@ -1239,8 +1239,8 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1268,8 +1268,8 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1290,7 +1290,7 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DatabaseSync2 *r;
 	
@@ -1313,8 +1313,8 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1348,8 +1348,8 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1370,7 +1370,7 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DatabaseRedo *r;
 	
@@ -1393,8 +1393,8 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1427,8 +1427,8 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1449,7 +1449,7 @@ static bool api_netr_LogonControl2Ex(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonControl2Ex *r;
 	
@@ -1472,8 +1472,8 @@ static bool api_netr_LogonControl2Ex(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1505,8 +1505,8 @@ static bool api_netr_LogonControl2Ex(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1527,7 +1527,7 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRENUMERATETRUSTEDDOMAINS *r;
 	
@@ -1550,8 +1550,8 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1576,8 +1576,8 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINS(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1598,7 +1598,7 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DsRGetDCName *r;
 	
@@ -1621,8 +1621,8 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1654,8 +1654,8 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1676,7 +1676,7 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONDUMMYROUTINE1 *r;
 	
@@ -1699,8 +1699,8 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1725,8 +1725,8 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1747,7 +1747,7 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONSETSERVICEBITS *r;
 	
@@ -1770,8 +1770,8 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1796,8 +1796,8 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1818,7 +1818,7 @@ static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONGETTRUSTRID *r;
 	
@@ -1841,8 +1841,8 @@ static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1867,8 +1867,8 @@ static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1889,7 +1889,7 @@ static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONCOMPUTESERVERDIGEST *r;
 	
@@ -1912,8 +1912,8 @@ static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1938,8 +1938,8 @@ static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1960,7 +1960,7 @@ static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r;
 	
@@ -1983,8 +1983,8 @@ static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2009,8 +2009,8 @@ static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2031,7 +2031,7 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerAuthenticate3 *r;
 	
@@ -2054,8 +2054,8 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2089,8 +2089,8 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2111,7 +2111,7 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DsRGetDCNameEx *r;
 	
@@ -2134,8 +2134,8 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2167,8 +2167,8 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2189,7 +2189,7 @@ static bool api_netr_DsRGetSiteName(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DsRGetSiteName *r;
 	
@@ -2212,8 +2212,8 @@ static bool api_netr_DsRGetSiteName(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2245,8 +2245,8 @@ static bool api_netr_DsRGetSiteName(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2267,7 +2267,7 @@ static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonGetDomainInfo *r;
 	
@@ -2290,8 +2290,8 @@ static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2324,8 +2324,8 @@ static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2346,7 +2346,7 @@ static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_ServerPasswordSet2 *r;
 	
@@ -2369,8 +2369,8 @@ static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2402,8 +2402,8 @@ static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2424,7 +2424,7 @@ static bool api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRSERVERPASSWORDGET *r;
 	
@@ -2447,8 +2447,8 @@ static bool api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2473,8 +2473,8 @@ static bool api_netr_NETRSERVERPASSWORDGET(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2495,7 +2495,7 @@ static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONSENDTOSAM *r;
 	
@@ -2518,8 +2518,8 @@ static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2544,8 +2544,8 @@ static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2566,7 +2566,7 @@ static bool api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DSRADDRESSTOSITENAMESW *r;
 	
@@ -2589,8 +2589,8 @@ static bool api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2615,8 +2615,8 @@ static bool api_netr_DSRADDRESSTOSITENAMESW(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2637,7 +2637,7 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DsRGetDCNameEx2 *r;
 	
@@ -2660,8 +2660,8 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2693,8 +2693,8 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2715,7 +2715,7 @@ static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r;
 	
@@ -2738,8 +2738,8 @@ static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2764,8 +2764,8 @@ static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2786,7 +2786,7 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r;
 	
@@ -2809,8 +2809,8 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2835,8 +2835,8 @@ static bool api_netr_NETRENUMERATETRUSTEDDOMAINSEX(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2857,7 +2857,7 @@ static bool api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DSRADDRESSTOSITENAMESEXW *r;
 	
@@ -2880,8 +2880,8 @@ static bool api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2906,8 +2906,8 @@ static bool api_netr_DSRADDRESSTOSITENAMESEXW(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2928,7 +2928,7 @@ static bool api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DSRGETDCSITECOVERAGEW *r;
 	
@@ -2951,8 +2951,8 @@ static bool api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2977,8 +2977,8 @@ static bool api_netr_DSRGETDCSITECOVERAGEW(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2999,7 +2999,7 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonSamLogonEx *r;
 	
@@ -3022,8 +3022,8 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3062,8 +3062,8 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3084,7 +3084,7 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DsrEnumerateDomainTrusts *r;
 	
@@ -3107,8 +3107,8 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3146,8 +3146,8 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3168,7 +3168,7 @@ static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DSRDEREGISTERDNSHOSTRECORDS *r;
 	
@@ -3191,8 +3191,8 @@ static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3217,8 +3217,8 @@ static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3239,7 +3239,7 @@ static bool api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRSERVERTRUSTPASSWORDSGET *r;
 	
@@ -3262,8 +3262,8 @@ static bool api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3288,8 +3288,8 @@ static bool api_netr_NETRSERVERTRUSTPASSWORDSGET(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3310,7 +3310,7 @@ static bool api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_DSRGETFORESTTRUSTINFORMATION *r;
 	
@@ -3333,8 +3333,8 @@ static bool api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3359,8 +3359,8 @@ static bool api_netr_DSRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3381,7 +3381,7 @@ static bool api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRGETFORESTTRUSTINFORMATION *r;
 	
@@ -3404,8 +3404,8 @@ static bool api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3430,8 +3430,8 @@ static bool api_netr_NETRGETFORESTTRUSTINFORMATION(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3452,7 +3452,7 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_LogonSamLogonWithFlags *r;
 	
@@ -3475,8 +3475,8 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3516,8 +3516,8 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3538,7 +3538,7 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netr_NETRSERVERGETTRUSTINFO *r;
 	
@@ -3561,8 +3561,8 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -3587,8 +3587,8 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}

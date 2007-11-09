@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
 
-_PUBLIC_ NTSTATUS ndr_push_messaging_rec(struct ndr_push *ndr, int ndr_flags, const struct messaging_rec *r)
+_PUBLIC_ enum ndr_err_code ndr_push_messaging_rec(struct ndr_push *ndr, int ndr_flags, const struct messaging_rec *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -17,10 +17,10 @@ _PUBLIC_ NTSTATUS ndr_push_messaging_rec(struct ndr_push *ndr, int ndr_flags, co
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_BUFFERS, &r->dest));
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_BUFFERS, &r->src));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_messaging_rec(struct ndr_pull *ndr, int ndr_flags, struct messaging_rec *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_messaging_rec(struct ndr_pull *ndr, int ndr_flags, struct messaging_rec *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -34,7 +34,7 @@ _PUBLIC_ NTSTATUS ndr_pull_messaging_rec(struct ndr_pull *ndr, int ndr_flags, st
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_BUFFERS, &r->dest));
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_BUFFERS, &r->src));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_messaging_rec(struct ndr_print *ndr, const char *name, const struct messaging_rec *r)
@@ -49,7 +49,7 @@ _PUBLIC_ void ndr_print_messaging_rec(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_messaging_array(struct ndr_push *ndr, int ndr_flags, const struct messaging_array *r)
+_PUBLIC_ enum ndr_err_code ndr_push_messaging_array(struct ndr_push *ndr, int ndr_flags, const struct messaging_array *r)
 {
 	uint32_t cntr_messages_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -64,10 +64,10 @@ _PUBLIC_ NTSTATUS ndr_push_messaging_array(struct ndr_push *ndr, int ndr_flags, 
 			NDR_CHECK(ndr_push_messaging_rec(ndr, NDR_BUFFERS, &r->messages[cntr_messages_0]));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_messaging_array(struct ndr_pull *ndr, int ndr_flags, struct messaging_array *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_messaging_array(struct ndr_pull *ndr, int ndr_flags, struct messaging_array *r)
 {
 	uint32_t cntr_messages_0;
 	TALLOC_CTX *_mem_save_messages_0;
@@ -90,7 +90,7 @@ _PUBLIC_ NTSTATUS ndr_pull_messaging_array(struct ndr_pull *ndr, int ndr_flags, 
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_messaging_array(struct ndr_print *ndr, const char *name, const struct messaging_array *r)

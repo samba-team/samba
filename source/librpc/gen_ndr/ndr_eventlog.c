@@ -5,7 +5,7 @@
 
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_security.h"
-static NTSTATUS ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, const struct eventlog_OpenUnknown0 *r)
+static enum ndr_err_code ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, const struct eventlog_OpenUnknown0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -14,10 +14,10 @@ static NTSTATUS ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_fla
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_OpenUnknown0(struct ndr_pull *ndr, int ndr_flags, struct eventlog_OpenUnknown0 *r)
+static enum ndr_err_code ndr_pull_eventlog_OpenUnknown0(struct ndr_pull *ndr, int ndr_flags, struct eventlog_OpenUnknown0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -26,7 +26,7 @@ static NTSTATUS ndr_pull_eventlog_OpenUnknown0(struct ndr_pull *ndr, int ndr_fla
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char *name, const struct eventlog_OpenUnknown0 *r)
@@ -38,7 +38,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r)
+_PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r)
 {
 	uint32_t cntr_strings_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -88,10 +88,10 @@ _PUBLIC_ NTSTATUS ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r)
 {
 	uint32_t cntr_strings_0;
 	TALLOC_CTX *_mem_save_strings_0;
@@ -146,7 +146,7 @@ _PUBLIC_ NTSTATUS ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name, const struct eventlog_Record *r)
@@ -187,7 +187,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogW *r)
+static enum ndr_err_code ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -202,10 +202,10 @@ static NTSTATUS ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogW *r)
+static enum ndr_err_code ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogW *r)
 {
 	uint32_t _ptr_unknown;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -234,7 +234,7 @@ static NTSTATUS ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogW *r)
@@ -268,24 +268,24 @@ _PUBLIC_ void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_BackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogW *r)
+static enum ndr_err_code ndr_push_eventlog_BackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_BackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogW *r)
+static enum ndr_err_code ndr_pull_eventlog_BackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogW *r)
@@ -309,7 +309,7 @@ _PUBLIC_ void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags, const struct eventlog_CloseEventLog *r)
+static enum ndr_err_code ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags, const struct eventlog_CloseEventLog *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -324,10 +324,10 @@ static NTSTATUS ndr_push_eventlog_CloseEventLog(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_CloseEventLog(struct ndr_pull *ndr, int flags, struct eventlog_CloseEventLog *r)
+static enum ndr_err_code ndr_pull_eventlog_CloseEventLog(struct ndr_pull *ndr, int flags, struct eventlog_CloseEventLog *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -353,7 +353,7 @@ static NTSTATUS ndr_pull_eventlog_CloseEventLog(struct ndr_pull *ndr, int flags,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_CloseEventLog *r)
@@ -385,24 +385,24 @@ _PUBLIC_ void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_DeregisterEventSource(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterEventSource *r)
+static enum ndr_err_code ndr_push_eventlog_DeregisterEventSource(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterEventSource *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_DeregisterEventSource(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterEventSource *r)
+static enum ndr_err_code ndr_pull_eventlog_DeregisterEventSource(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterEventSource *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_DeregisterEventSource(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_DeregisterEventSource *r)
@@ -426,7 +426,7 @@ _PUBLIC_ void ndr_print_eventlog_DeregisterEventSource(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags, const struct eventlog_GetNumRecords *r)
+static enum ndr_err_code ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags, const struct eventlog_GetNumRecords *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -441,10 +441,10 @@ static NTSTATUS ndr_push_eventlog_GetNumRecords(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.number));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_GetNumRecords(struct ndr_pull *ndr, int flags, struct eventlog_GetNumRecords *r)
+static enum ndr_err_code ndr_pull_eventlog_GetNumRecords(struct ndr_pull *ndr, int flags, struct eventlog_GetNumRecords *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_number_0;
@@ -471,7 +471,7 @@ static NTSTATUS ndr_pull_eventlog_GetNumRecords(struct ndr_pull *ndr, int flags,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_number_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_GetNumRecords(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetNumRecords *r)
@@ -503,24 +503,24 @@ _PUBLIC_ void ndr_print_eventlog_GetNumRecords(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, const struct eventlog_GetOldestRecord *r)
+static enum ndr_err_code ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, const struct eventlog_GetOldestRecord *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_GetOldestRecord(struct ndr_pull *ndr, int flags, struct eventlog_GetOldestRecord *r)
+static enum ndr_err_code ndr_pull_eventlog_GetOldestRecord(struct ndr_pull *ndr, int flags, struct eventlog_GetOldestRecord *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_GetOldestRecord(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetOldestRecord *r)
@@ -544,24 +544,24 @@ _PUBLIC_ void ndr_print_eventlog_GetOldestRecord(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ChangeNotify(struct ndr_push *ndr, int flags, const struct eventlog_ChangeNotify *r)
+static enum ndr_err_code ndr_push_eventlog_ChangeNotify(struct ndr_push *ndr, int flags, const struct eventlog_ChangeNotify *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ChangeNotify(struct ndr_pull *ndr, int flags, struct eventlog_ChangeNotify *r)
+static enum ndr_err_code ndr_pull_eventlog_ChangeNotify(struct ndr_pull *ndr, int flags, struct eventlog_ChangeNotify *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ChangeNotify(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ChangeNotify *r)
@@ -585,7 +585,7 @@ _PUBLIC_ void ndr_print_eventlog_ChangeNotify(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogW *r)
+static enum ndr_err_code ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.unknown0));
@@ -604,10 +604,10 @@ static NTSTATUS ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogW *r)
+static enum ndr_err_code ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogW *r)
 {
 	uint32_t _ptr_unknown0;
 	TALLOC_CTX *_mem_save_unknown0_0;
@@ -644,7 +644,7 @@ static NTSTATUS ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, int flags,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenEventLogW *r)
@@ -682,24 +682,24 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_RegisterEventSourceW(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceW *r)
+static enum ndr_err_code ndr_push_eventlog_RegisterEventSourceW(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_RegisterEventSourceW(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceW *r)
+static enum ndr_err_code ndr_pull_eventlog_RegisterEventSourceW(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterEventSourceW *r)
@@ -723,24 +723,24 @@ _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceW(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_OpenBackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogW *r)
+static enum ndr_err_code ndr_push_eventlog_OpenBackupEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_OpenBackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogW *r)
+static enum ndr_err_code ndr_pull_eventlog_OpenBackupEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenBackupEventLogW *r)
@@ -764,7 +764,7 @@ _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogW(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogW *r)
+static enum ndr_err_code ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogW *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -791,10 +791,10 @@ static NTSTATUS ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.real_size));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogW *r)
+static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogW *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sent_size_0;
@@ -844,7 +844,7 @@ static NTSTATUS ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, int flags,
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.data, r->in.number_of_bytes));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ReadEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReadEventLogW *r)
@@ -887,24 +887,24 @@ _PUBLIC_ void ndr_print_eventlog_ReadEventLogW(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventW *r)
+static enum ndr_err_code ndr_push_eventlog_ReportEventW(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ReportEventW(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventW *r)
+static enum ndr_err_code ndr_pull_eventlog_ReportEventW(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventW *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ReportEventW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventW *r)
@@ -928,24 +928,24 @@ _PUBLIC_ void ndr_print_eventlog_ReportEventW(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ClearEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogA *r)
+static enum ndr_err_code ndr_push_eventlog_ClearEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ClearEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogA *r)
+static enum ndr_err_code ndr_pull_eventlog_ClearEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ClearEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogA *r)
@@ -969,24 +969,24 @@ _PUBLIC_ void ndr_print_eventlog_ClearEventLogA(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_BackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogA *r)
+static enum ndr_err_code ndr_push_eventlog_BackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_BackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_BackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogA *r)
+static enum ndr_err_code ndr_pull_eventlog_BackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_BackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_BackupEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogA *r)
@@ -1010,24 +1010,24 @@ _PUBLIC_ void ndr_print_eventlog_BackupEventLogA(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_OpenEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogA *r)
+static enum ndr_err_code ndr_push_eventlog_OpenEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_OpenEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogA *r)
+static enum ndr_err_code ndr_pull_eventlog_OpenEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_OpenEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenEventLogA *r)
@@ -1051,24 +1051,24 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogA(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_RegisterEventSourceA(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceA *r)
+static enum ndr_err_code ndr_push_eventlog_RegisterEventSourceA(struct ndr_push *ndr, int flags, const struct eventlog_RegisterEventSourceA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_RegisterEventSourceA(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceA *r)
+static enum ndr_err_code ndr_pull_eventlog_RegisterEventSourceA(struct ndr_pull *ndr, int flags, struct eventlog_RegisterEventSourceA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterEventSourceA *r)
@@ -1092,24 +1092,24 @@ _PUBLIC_ void ndr_print_eventlog_RegisterEventSourceA(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_OpenBackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogA *r)
+static enum ndr_err_code ndr_push_eventlog_OpenBackupEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_OpenBackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_OpenBackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogA *r)
+static enum ndr_err_code ndr_pull_eventlog_OpenBackupEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_OpenBackupEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_OpenBackupEventLogA *r)
@@ -1133,24 +1133,24 @@ _PUBLIC_ void ndr_print_eventlog_OpenBackupEventLogA(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ReadEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogA *r)
+static enum ndr_err_code ndr_push_eventlog_ReadEventLogA(struct ndr_push *ndr, int flags, const struct eventlog_ReadEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ReadEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogA *r)
+static enum ndr_err_code ndr_pull_eventlog_ReadEventLogA(struct ndr_pull *ndr, int flags, struct eventlog_ReadEventLogA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ReadEventLogA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReadEventLogA *r)
@@ -1174,24 +1174,24 @@ _PUBLIC_ void ndr_print_eventlog_ReadEventLogA(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_ReportEventA(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventA *r)
+static enum ndr_err_code ndr_push_eventlog_ReportEventA(struct ndr_push *ndr, int flags, const struct eventlog_ReportEventA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_ReportEventA(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventA *r)
+static enum ndr_err_code ndr_pull_eventlog_ReportEventA(struct ndr_pull *ndr, int flags, struct eventlog_ReportEventA *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_ReportEventA(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventA *r)
@@ -1215,24 +1215,24 @@ _PUBLIC_ void ndr_print_eventlog_ReportEventA(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_RegisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_RegisterClusterSvc *r)
+static enum ndr_err_code ndr_push_eventlog_RegisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_RegisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_RegisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_RegisterClusterSvc *r)
+static enum ndr_err_code ndr_pull_eventlog_RegisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_RegisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_RegisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterClusterSvc *r)
@@ -1256,24 +1256,24 @@ _PUBLIC_ void ndr_print_eventlog_RegisterClusterSvc(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_DeregisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterClusterSvc *r)
+static enum ndr_err_code ndr_push_eventlog_DeregisterClusterSvc(struct ndr_push *ndr, int flags, const struct eventlog_DeregisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_DeregisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterClusterSvc *r)
+static enum ndr_err_code ndr_pull_eventlog_DeregisterClusterSvc(struct ndr_pull *ndr, int flags, struct eventlog_DeregisterClusterSvc *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_DeregisterClusterSvc *r)
@@ -1297,24 +1297,24 @@ _PUBLIC_ void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_WriteClusterEvents(struct ndr_push *ndr, int flags, const struct eventlog_WriteClusterEvents *r)
+static enum ndr_err_code ndr_push_eventlog_WriteClusterEvents(struct ndr_push *ndr, int flags, const struct eventlog_WriteClusterEvents *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_WriteClusterEvents(struct ndr_pull *ndr, int flags, struct eventlog_WriteClusterEvents *r)
+static enum ndr_err_code ndr_pull_eventlog_WriteClusterEvents(struct ndr_pull *ndr, int flags, struct eventlog_WriteClusterEvents *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_WriteClusterEvents *r)
@@ -1338,24 +1338,24 @@ _PUBLIC_ void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_GetLogIntormation(struct ndr_push *ndr, int flags, const struct eventlog_GetLogIntormation *r)
+static enum ndr_err_code ndr_push_eventlog_GetLogIntormation(struct ndr_push *ndr, int flags, const struct eventlog_GetLogIntormation *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_GetLogIntormation(struct ndr_pull *ndr, int flags, struct eventlog_GetLogIntormation *r)
+static enum ndr_err_code ndr_pull_eventlog_GetLogIntormation(struct ndr_pull *ndr, int flags, struct eventlog_GetLogIntormation *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogIntormation *r)
@@ -1379,7 +1379,7 @@ _PUBLIC_ void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags, const struct eventlog_FlushEventLog *r)
+static enum ndr_err_code ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags, const struct eventlog_FlushEventLog *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -1390,10 +1390,10 @@ static NTSTATUS ndr_push_eventlog_FlushEventLog(struct ndr_push *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_eventlog_FlushEventLog(struct ndr_pull *ndr, int flags, struct eventlog_FlushEventLog *r)
+static enum ndr_err_code ndr_pull_eventlog_FlushEventLog(struct ndr_pull *ndr, int flags, struct eventlog_FlushEventLog *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -1408,7 +1408,7 @@ static NTSTATUS ndr_pull_eventlog_FlushEventLog(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_FlushEventLog *r)

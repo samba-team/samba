@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 
-static NTSTATUS ndr_push_initshutdown_String_sub(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String_sub *r)
+static enum ndr_err_code ndr_push_initshutdown_String_sub(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String_sub *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -17,10 +17,10 @@ static NTSTATUS ndr_push_initshutdown_String_sub(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_initshutdown_String_sub(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String_sub *r)
+static enum ndr_err_code ndr_pull_initshutdown_String_sub(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String_sub *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -34,7 +34,7 @@ static NTSTATUS ndr_pull_initshutdown_String_sub(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const char *name, const struct initshutdown_String_sub *r)
@@ -46,7 +46,7 @@ _PUBLIC_ void ndr_print_initshutdown_String_sub(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r)
+_PUBLIC_ enum ndr_err_code ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_flags, const struct initshutdown_String *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -59,10 +59,10 @@ _PUBLIC_ NTSTATUS ndr_push_initshutdown_String(struct ndr_push *ndr, int ndr_fla
 			NDR_CHECK(ndr_push_initshutdown_String_sub(ndr, NDR_SCALARS, r->name));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_flags, struct initshutdown_String *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -85,7 +85,7 @@ _PUBLIC_ NTSTATUS ndr_pull_initshutdown_String(struct ndr_pull *ndr, int ndr_fla
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *name, const struct initshutdown_String *r)
@@ -103,7 +103,7 @@ _PUBLIC_ void ndr_print_initshutdown_String(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_initshutdown_Init(struct ndr_push *ndr, int flags, const struct initshutdown_Init *r)
+static enum ndr_err_code ndr_push_initshutdown_Init(struct ndr_push *ndr, int flags, const struct initshutdown_Init *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.hostname));
@@ -121,10 +121,10 @@ static NTSTATUS ndr_push_initshutdown_Init(struct ndr_push *ndr, int flags, cons
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_initshutdown_Init(struct ndr_pull *ndr, int flags, struct initshutdown_Init *r)
+static enum ndr_err_code ndr_pull_initshutdown_Init(struct ndr_pull *ndr, int flags, struct initshutdown_Init *r)
 {
 	uint32_t _ptr_hostname;
 	uint32_t _ptr_message;
@@ -162,7 +162,7 @@ static NTSTATUS ndr_pull_initshutdown_Init(struct ndr_pull *ndr, int flags, stru
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Init *r)
@@ -201,7 +201,7 @@ _PUBLIC_ void ndr_print_initshutdown_Init(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_initshutdown_Abort(struct ndr_push *ndr, int flags, const struct initshutdown_Abort *r)
+static enum ndr_err_code ndr_push_initshutdown_Abort(struct ndr_push *ndr, int flags, const struct initshutdown_Abort *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server));
@@ -212,10 +212,10 @@ static NTSTATUS ndr_push_initshutdown_Abort(struct ndr_push *ndr, int flags, con
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_initshutdown_Abort(struct ndr_pull *ndr, int flags, struct initshutdown_Abort *r)
+static enum ndr_err_code ndr_pull_initshutdown_Abort(struct ndr_pull *ndr, int flags, struct initshutdown_Abort *r)
 {
 	uint32_t _ptr_server;
 	TALLOC_CTX *_mem_save_server_0;
@@ -236,7 +236,7 @@ static NTSTATUS ndr_pull_initshutdown_Abort(struct ndr_pull *ndr, int flags, str
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_initshutdown_Abort(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_Abort *r)
@@ -266,7 +266,7 @@ _PUBLIC_ void ndr_print_initshutdown_Abort(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_initshutdown_InitEx(struct ndr_push *ndr, int flags, const struct initshutdown_InitEx *r)
+static enum ndr_err_code ndr_push_initshutdown_InitEx(struct ndr_push *ndr, int flags, const struct initshutdown_InitEx *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.hostname));
@@ -285,10 +285,10 @@ static NTSTATUS ndr_push_initshutdown_InitEx(struct ndr_push *ndr, int flags, co
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_initshutdown_InitEx(struct ndr_pull *ndr, int flags, struct initshutdown_InitEx *r)
+static enum ndr_err_code ndr_pull_initshutdown_InitEx(struct ndr_pull *ndr, int flags, struct initshutdown_InitEx *r)
 {
 	uint32_t _ptr_hostname;
 	uint32_t _ptr_message;
@@ -327,7 +327,7 @@ static NTSTATUS ndr_pull_initshutdown_InitEx(struct ndr_pull *ndr, int flags, st
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_initshutdown_InitEx(struct ndr_print *ndr, const char *name, int flags, const struct initshutdown_InitEx *r)

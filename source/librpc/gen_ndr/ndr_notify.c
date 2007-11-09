@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 
-_PUBLIC_ NTSTATUS ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r)
+_PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -22,10 +22,10 @@ _PUBLIC_ NTSTATUS ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, con
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_BUFFERS, &r->server));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, struct notify_entry *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, struct notify_entry *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -44,7 +44,7 @@ _PUBLIC_ NTSTATUS ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, str
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_BUFFERS, &r->server));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, const struct notify_entry *r)
@@ -60,7 +60,7 @@ _PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct notify_depth *r)
+static enum ndr_err_code ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct notify_depth *r)
 {
 	uint32_t cntr_entries_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -77,10 +77,10 @@ static NTSTATUS ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const
 			NDR_CHECK(ndr_push_notify_entry(ndr, NDR_BUFFERS, &r->entries[cntr_entries_0]));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_flags, struct notify_depth *r)
+static enum ndr_err_code ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_flags, struct notify_depth *r)
 {
 	uint32_t cntr_entries_0;
 	TALLOC_CTX *_mem_save_entries_0;
@@ -105,7 +105,7 @@ static NTSTATUS ndr_pull_notify_depth(struct ndr_pull *ndr, int ndr_flags, struc
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, const struct notify_depth *r)
@@ -130,7 +130,7 @@ _PUBLIC_ void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_notify_array(struct ndr_push *ndr, int ndr_flags, const struct notify_array *r)
+_PUBLIC_ enum ndr_err_code ndr_push_notify_array(struct ndr_push *ndr, int ndr_flags, const struct notify_array *r)
 {
 	uint32_t cntr_depth_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -145,10 +145,10 @@ _PUBLIC_ NTSTATUS ndr_push_notify_array(struct ndr_push *ndr, int ndr_flags, con
 			NDR_CHECK(ndr_push_notify_depth(ndr, NDR_BUFFERS, &r->depth[cntr_depth_0]));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_flags, struct notify_array *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_flags, struct notify_array *r)
 {
 	uint32_t cntr_depth_0;
 	TALLOC_CTX *_mem_save_depth_0;
@@ -171,7 +171,7 @@ _PUBLIC_ NTSTATUS ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_flags, str
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_depth_0, 0);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_notify_array(struct ndr_print *ndr, const char *name, const struct notify_array *r)
@@ -194,7 +194,7 @@ _PUBLIC_ void ndr_print_notify_array(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_notify_event(struct ndr_push *ndr, int ndr_flags, const struct notify_event *r)
+_PUBLIC_ enum ndr_err_code ndr_push_notify_event(struct ndr_push *ndr, int ndr_flags, const struct notify_event *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -209,10 +209,10 @@ _PUBLIC_ NTSTATUS ndr_push_notify_event(struct ndr_push *ndr, int ndr_flags, con
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_notify_event(struct ndr_pull *ndr, int ndr_flags, struct notify_event *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_notify_event(struct ndr_pull *ndr, int ndr_flags, struct notify_event *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -227,7 +227,7 @@ _PUBLIC_ NTSTATUS ndr_pull_notify_event(struct ndr_pull *ndr, int ndr_flags, str
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_notify_event(struct ndr_print *ndr, const char *name, const struct notify_event *r)
