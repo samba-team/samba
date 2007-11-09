@@ -21,6 +21,7 @@ not, see <http://www.gnu.org/licenses/>.  */
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "system/terminal.h"
+#include "system/passwd.h"
 
 /*
  * Define additional missing types
