@@ -247,7 +247,8 @@ PASSCHANGE_OBJ = libsmb/passchange.o
 
 
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o
+	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+	     librpc/ndr/uuid.o
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
