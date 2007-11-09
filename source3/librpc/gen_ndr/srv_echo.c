@@ -11,7 +11,7 @@ static bool api_echo_AddOne(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_AddOne *r;
 	
@@ -34,8 +34,8 @@ static bool api_echo_AddOne(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -67,8 +67,8 @@ static bool api_echo_AddOne(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -89,7 +89,7 @@ static bool api_echo_EchoData(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_EchoData *r;
 	
@@ -112,8 +112,8 @@ static bool api_echo_EchoData(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -145,8 +145,8 @@ static bool api_echo_EchoData(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -167,7 +167,7 @@ static bool api_echo_SinkData(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_SinkData *r;
 	
@@ -190,8 +190,8 @@ static bool api_echo_SinkData(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -216,8 +216,8 @@ static bool api_echo_SinkData(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -238,7 +238,7 @@ static bool api_echo_SourceData(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_SourceData *r;
 	
@@ -261,8 +261,8 @@ static bool api_echo_SourceData(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -294,8 +294,8 @@ static bool api_echo_SourceData(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -316,7 +316,7 @@ static bool api_echo_TestCall(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestCall *r;
 	
@@ -339,8 +339,8 @@ static bool api_echo_TestCall(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -372,8 +372,8 @@ static bool api_echo_TestCall(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -394,7 +394,7 @@ static bool api_echo_TestCall2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestCall2 *r;
 	
@@ -417,8 +417,8 @@ static bool api_echo_TestCall2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -450,8 +450,8 @@ static bool api_echo_TestCall2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -472,7 +472,7 @@ static bool api_echo_TestSleep(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestSleep *r;
 	
@@ -495,8 +495,8 @@ static bool api_echo_TestSleep(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -521,8 +521,8 @@ static bool api_echo_TestSleep(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -543,7 +543,7 @@ static bool api_echo_TestEnum(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestEnum *r;
 	
@@ -566,8 +566,8 @@ static bool api_echo_TestEnum(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -596,8 +596,8 @@ static bool api_echo_TestEnum(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -618,7 +618,7 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestSurrounding *r;
 	
@@ -641,8 +641,8 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -669,8 +669,8 @@ static bool api_echo_TestSurrounding(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -691,7 +691,7 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct echo_TestDoublePointer *r;
 	
@@ -714,8 +714,8 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -740,8 +740,8 @@ static bool api_echo_TestDoublePointer(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}

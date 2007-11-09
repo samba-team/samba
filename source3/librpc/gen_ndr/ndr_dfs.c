@@ -3,18 +3,18 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
 
-static NTSTATUS ndr_push_dfs_ManagerVersion(struct ndr_push *ndr, int ndr_flags, enum dfs_ManagerVersion r)
+static enum ndr_err_code ndr_push_dfs_ManagerVersion(struct ndr_push *ndr, int ndr_flags, enum dfs_ManagerVersion r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_ManagerVersion(struct ndr_pull *ndr, int ndr_flags, enum dfs_ManagerVersion *r)
+static enum ndr_err_code ndr_pull_dfs_ManagerVersion(struct ndr_pull *ndr, int ndr_flags, enum dfs_ManagerVersion *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *name, enum dfs_ManagerVersion r)
@@ -29,24 +29,24 @@ _PUBLIC_ void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *na
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static NTSTATUS ndr_push_dfs_Info0(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info0 *r)
+static enum ndr_err_code ndr_push_dfs_Info0(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info0(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info0 *r)
+static enum ndr_err_code ndr_pull_dfs_Info0(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info0(struct ndr_print *ndr, const char *name, const struct dfs_Info0 *r)
@@ -56,7 +56,7 @@ _PUBLIC_ void ndr_print_dfs_Info0(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info1(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info1 *r)
+static enum ndr_err_code ndr_push_dfs_Info1(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -70,10 +70,10 @@ static NTSTATUS ndr_push_dfs_Info1(struct ndr_push *ndr, int ndr_flags, const st
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->path, ndr_charset_length(r->path, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info1(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info1 *r)
+static enum ndr_err_code ndr_pull_dfs_Info1(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info1 *r)
 {
 	uint32_t _ptr_path;
 	TALLOC_CTX *_mem_save_path_0;
@@ -100,7 +100,7 @@ static NTSTATUS ndr_pull_dfs_Info1(struct ndr_pull *ndr, int ndr_flags, struct d
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_path_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, const struct dfs_Info1 *r)
@@ -116,18 +116,18 @@ _PUBLIC_ void ndr_print_dfs_Info1(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_dfs_VolumeState(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_dfs_VolumeState(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_dfs_VolumeState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dfs_VolumeState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_VolumeState(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -143,7 +143,7 @@ _PUBLIC_ void ndr_print_dfs_VolumeState(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info2(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info2 *r)
+static enum ndr_err_code ndr_push_dfs_Info2(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -166,10 +166,10 @@ static NTSTATUS ndr_push_dfs_Info2(struct ndr_push *ndr, int ndr_flags, const st
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info2(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info2 *r)
+static enum ndr_err_code ndr_pull_dfs_Info2(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info2 *r)
 {
 	uint32_t _ptr_path;
 	TALLOC_CTX *_mem_save_path_0;
@@ -218,7 +218,7 @@ static NTSTATUS ndr_pull_dfs_Info2(struct ndr_pull *ndr, int ndr_flags, struct d
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info2(struct ndr_print *ndr, const char *name, const struct dfs_Info2 *r)
@@ -242,18 +242,18 @@ _PUBLIC_ void ndr_print_dfs_Info2(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_dfs_StorageState(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_dfs_StorageState(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_dfs_StorageState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dfs_StorageState(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_StorageState(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -266,7 +266,7 @@ _PUBLIC_ void ndr_print_dfs_StorageState(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_StorageInfo(struct ndr_push *ndr, int ndr_flags, const struct dfs_StorageInfo *r)
+static enum ndr_err_code ndr_push_dfs_StorageInfo(struct ndr_push *ndr, int ndr_flags, const struct dfs_StorageInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -288,10 +288,10 @@ static NTSTATUS ndr_push_dfs_StorageInfo(struct ndr_push *ndr, int ndr_flags, co
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->share, ndr_charset_length(r->share, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_StorageInfo(struct ndr_pull *ndr, int ndr_flags, struct dfs_StorageInfo *r)
+static enum ndr_err_code ndr_pull_dfs_StorageInfo(struct ndr_pull *ndr, int ndr_flags, struct dfs_StorageInfo *r)
 {
 	uint32_t _ptr_server;
 	TALLOC_CTX *_mem_save_server_0;
@@ -339,7 +339,7 @@ static NTSTATUS ndr_pull_dfs_StorageInfo(struct ndr_pull *ndr, int ndr_flags, st
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_share_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_StorageInfo(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo *r)
@@ -362,7 +362,7 @@ _PUBLIC_ void ndr_print_dfs_StorageInfo(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info3(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info3 *r)
+static enum ndr_err_code ndr_push_dfs_Info3(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info3 *r)
 {
 	uint32_t cntr_stores_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -396,10 +396,10 @@ static NTSTATUS ndr_push_dfs_Info3(struct ndr_push *ndr, int ndr_flags, const st
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info3(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info3 *r)
+static enum ndr_err_code ndr_pull_dfs_Info3(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info3 *r)
 {
 	uint32_t _ptr_path;
 	TALLOC_CTX *_mem_save_path_0;
@@ -477,7 +477,7 @@ static NTSTATUS ndr_pull_dfs_Info3(struct ndr_pull *ndr, int ndr_flags, struct d
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->stores, r->num_stores));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const struct dfs_Info3 *r)
@@ -518,7 +518,7 @@ _PUBLIC_ void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info4 *r)
+static enum ndr_err_code ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info4 *r)
 {
 	uint32_t cntr_stores_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -555,10 +555,10 @@ static NTSTATUS ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags, const st
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info4 *r)
+static enum ndr_err_code ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info4 *r)
 {
 	uint32_t _ptr_path;
 	TALLOC_CTX *_mem_save_path_0;
@@ -639,7 +639,7 @@ static NTSTATUS ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags, struct d
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->stores, r->num_stores));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const struct dfs_Info4 *r)
@@ -682,18 +682,18 @@ _PUBLIC_ void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_dfs_PropertyFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_dfs_PropertyFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_dfs_PropertyFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dfs_PropertyFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_PropertyFlags(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -708,7 +708,7 @@ _PUBLIC_ void ndr_print_dfs_PropertyFlags(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info5(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info5 *r)
+static enum ndr_err_code ndr_push_dfs_Info5(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -736,10 +736,10 @@ static NTSTATUS ndr_push_dfs_Info5(struct ndr_push *ndr, int ndr_flags, const st
 		}
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->guid));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info5(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info5 *r)
+static enum ndr_err_code ndr_pull_dfs_Info5(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info5 *r)
 {
 	uint32_t _ptr_path;
 	TALLOC_CTX *_mem_save_path_0;
@@ -793,7 +793,7 @@ static NTSTATUS ndr_pull_dfs_Info5(struct ndr_pull *ndr, int ndr_flags, struct d
 		}
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->guid));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info5(struct ndr_print *ndr, const char *name, const struct dfs_Info5 *r)
@@ -821,18 +821,18 @@ _PUBLIC_ void ndr_print_dfs_Info5(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Target_PriorityClass(struct ndr_push *ndr, int ndr_flags, enum dfs_Target_PriorityClass r)
+static enum ndr_err_code ndr_push_dfs_Target_PriorityClass(struct ndr_push *ndr, int ndr_flags, enum dfs_Target_PriorityClass r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Target_PriorityClass(struct ndr_pull *ndr, int ndr_flags, enum dfs_Target_PriorityClass *r)
+static enum ndr_err_code ndr_pull_dfs_Target_PriorityClass(struct ndr_pull *ndr, int ndr_flags, enum dfs_Target_PriorityClass *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Target_PriorityClass(struct ndr_print *ndr, const char *name, enum dfs_Target_PriorityClass r)
@@ -850,7 +850,7 @@ _PUBLIC_ void ndr_print_dfs_Target_PriorityClass(struct ndr_print *ndr, const ch
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static NTSTATUS ndr_push_dfs_Target_Priority(struct ndr_push *ndr, int ndr_flags, const struct dfs_Target_Priority *r)
+static enum ndr_err_code ndr_push_dfs_Target_Priority(struct ndr_push *ndr, int ndr_flags, const struct dfs_Target_Priority *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -860,10 +860,10 @@ static NTSTATUS ndr_push_dfs_Target_Priority(struct ndr_push *ndr, int ndr_flags
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Target_Priority(struct ndr_pull *ndr, int ndr_flags, struct dfs_Target_Priority *r)
+static enum ndr_err_code ndr_pull_dfs_Target_Priority(struct ndr_pull *ndr, int ndr_flags, struct dfs_Target_Priority *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -873,7 +873,7 @@ static NTSTATUS ndr_pull_dfs_Target_Priority(struct ndr_pull *ndr, int ndr_flags
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Target_Priority(struct ndr_print *ndr, const char *name, const struct dfs_Target_Priority *r)
@@ -886,7 +886,7 @@ _PUBLIC_ void ndr_print_dfs_Target_Priority(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_StorageInfo2(struct ndr_push *ndr, int ndr_flags, const struct dfs_StorageInfo2 *r)
+static enum ndr_err_code ndr_push_dfs_StorageInfo2(struct ndr_push *ndr, int ndr_flags, const struct dfs_StorageInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -896,10 +896,10 @@ static NTSTATUS ndr_push_dfs_StorageInfo2(struct ndr_push *ndr, int ndr_flags, c
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_dfs_StorageInfo(ndr, NDR_BUFFERS, &r->info));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_StorageInfo2(struct ndr_pull *ndr, int ndr_flags, struct dfs_StorageInfo2 *r)
+static enum ndr_err_code ndr_pull_dfs_StorageInfo2(struct ndr_pull *ndr, int ndr_flags, struct dfs_StorageInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -909,7 +909,7 @@ static NTSTATUS ndr_pull_dfs_StorageInfo2(struct ndr_pull *ndr, int ndr_flags, s
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_dfs_StorageInfo(ndr, NDR_BUFFERS, &r->info));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_StorageInfo2(struct ndr_print *ndr, const char *name, const struct dfs_StorageInfo2 *r)
@@ -921,7 +921,7 @@ _PUBLIC_ void ndr_print_dfs_StorageInfo2(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info6(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info6 *r)
+static enum ndr_err_code ndr_push_dfs_Info6(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info6 *r)
 {
 	uint32_t cntr_stores_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -960,10 +960,10 @@ static NTSTATUS ndr_push_dfs_Info6(struct ndr_push *ndr, int ndr_flags, const st
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info6(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info6 *r)
+static enum ndr_err_code ndr_pull_dfs_Info6(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info6 *r)
 {
 	uint32_t _ptr_entry_path;
 	TALLOC_CTX *_mem_save_entry_path_0;
@@ -1046,7 +1046,7 @@ static NTSTATUS ndr_pull_dfs_Info6(struct ndr_pull *ndr, int ndr_flags, struct d
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->stores, r->num_stores));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const struct dfs_Info6 *r)
@@ -1091,7 +1091,7 @@ _PUBLIC_ void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info7(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info7 *r)
+static enum ndr_err_code ndr_push_dfs_Info7(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info7 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1100,10 +1100,10 @@ static NTSTATUS ndr_push_dfs_Info7(struct ndr_push *ndr, int ndr_flags, const st
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->generation_guid));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info7(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info7 *r)
+static enum ndr_err_code ndr_pull_dfs_Info7(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info7 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1112,7 +1112,7 @@ static NTSTATUS ndr_pull_dfs_Info7(struct ndr_pull *ndr, int ndr_flags, struct d
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->generation_guid));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info7(struct ndr_print *ndr, const char *name, const struct dfs_Info7 *r)
@@ -1123,7 +1123,7 @@ _PUBLIC_ void ndr_print_dfs_Info7(struct ndr_print *ndr, const char *name, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info100(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info100 *r)
+static enum ndr_err_code ndr_push_dfs_Info100(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info100 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1137,10 +1137,10 @@ static NTSTATUS ndr_push_dfs_Info100(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info100(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info100 *r)
+static enum ndr_err_code ndr_pull_dfs_Info100(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info100 *r)
 {
 	uint32_t _ptr_comment;
 	TALLOC_CTX *_mem_save_comment_0;
@@ -1167,7 +1167,7 @@ static NTSTATUS ndr_pull_dfs_Info100(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info100(struct ndr_print *ndr, const char *name, const struct dfs_Info100 *r)
@@ -1183,7 +1183,7 @@ _PUBLIC_ void ndr_print_dfs_Info100(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info101(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info101 *r)
+static enum ndr_err_code ndr_push_dfs_Info101(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info101 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1191,10 +1191,10 @@ static NTSTATUS ndr_push_dfs_Info101(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info101(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info101 *r)
+static enum ndr_err_code ndr_pull_dfs_Info101(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info101 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1202,7 +1202,7 @@ static NTSTATUS ndr_pull_dfs_Info101(struct ndr_pull *ndr, int ndr_flags, struct
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info101(struct ndr_print *ndr, const char *name, const struct dfs_Info101 *r)
@@ -1213,7 +1213,7 @@ _PUBLIC_ void ndr_print_dfs_Info101(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info102(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info102 *r)
+static enum ndr_err_code ndr_push_dfs_Info102(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info102 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1221,10 +1221,10 @@ static NTSTATUS ndr_push_dfs_Info102(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info102(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info102 *r)
+static enum ndr_err_code ndr_pull_dfs_Info102(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info102 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1232,7 +1232,7 @@ static NTSTATUS ndr_pull_dfs_Info102(struct ndr_pull *ndr, int ndr_flags, struct
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info102(struct ndr_print *ndr, const char *name, const struct dfs_Info102 *r)
@@ -1243,7 +1243,7 @@ _PUBLIC_ void ndr_print_dfs_Info102(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info103(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info103 *r)
+static enum ndr_err_code ndr_push_dfs_Info103(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info103 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1251,10 +1251,10 @@ static NTSTATUS ndr_push_dfs_Info103(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info103(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info103 *r)
+static enum ndr_err_code ndr_pull_dfs_Info103(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info103 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1262,7 +1262,7 @@ static NTSTATUS ndr_pull_dfs_Info103(struct ndr_pull *ndr, int ndr_flags, struct
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info103(struct ndr_print *ndr, const char *name, const struct dfs_Info103 *r)
@@ -1273,7 +1273,7 @@ _PUBLIC_ void ndr_print_dfs_Info103(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info104(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info104 *r)
+static enum ndr_err_code ndr_push_dfs_Info104(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info104 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1281,10 +1281,10 @@ static NTSTATUS ndr_push_dfs_Info104(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info104(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info104 *r)
+static enum ndr_err_code ndr_pull_dfs_Info104(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info104 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1292,7 +1292,7 @@ static NTSTATUS ndr_pull_dfs_Info104(struct ndr_pull *ndr, int ndr_flags, struct
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info104(struct ndr_print *ndr, const char *name, const struct dfs_Info104 *r)
@@ -1303,7 +1303,7 @@ _PUBLIC_ void ndr_print_dfs_Info104(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info105(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info105 *r)
+static enum ndr_err_code ndr_push_dfs_Info105(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info105 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1321,10 +1321,10 @@ static NTSTATUS ndr_push_dfs_Info105(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->comment, ndr_charset_length(r->comment, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info105(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info105 *r)
+static enum ndr_err_code ndr_pull_dfs_Info105(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info105 *r)
 {
 	uint32_t _ptr_comment;
 	TALLOC_CTX *_mem_save_comment_0;
@@ -1355,7 +1355,7 @@ static NTSTATUS ndr_pull_dfs_Info105(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info105(struct ndr_print *ndr, const char *name, const struct dfs_Info105 *r)
@@ -1375,7 +1375,7 @@ _PUBLIC_ void ndr_print_dfs_Info105(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info106(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info106 *r)
+static enum ndr_err_code ndr_push_dfs_Info106(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info106 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1384,10 +1384,10 @@ static NTSTATUS ndr_push_dfs_Info106(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info106(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info106 *r)
+static enum ndr_err_code ndr_pull_dfs_Info106(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info106 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -1396,7 +1396,7 @@ static NTSTATUS ndr_pull_dfs_Info106(struct ndr_pull *ndr, int ndr_flags, struct
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info106(struct ndr_print *ndr, const char *name, const struct dfs_Info106 *r)
@@ -1408,7 +1408,7 @@ _PUBLIC_ void ndr_print_dfs_Info106(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info200(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info200 *r)
+static enum ndr_err_code ndr_push_dfs_Info200(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info200 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1422,10 +1422,10 @@ static NTSTATUS ndr_push_dfs_Info200(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->dom_root, ndr_charset_length(r->dom_root, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info200(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info200 *r)
+static enum ndr_err_code ndr_pull_dfs_Info200(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info200 *r)
 {
 	uint32_t _ptr_dom_root;
 	TALLOC_CTX *_mem_save_dom_root_0;
@@ -1452,7 +1452,7 @@ static NTSTATUS ndr_pull_dfs_Info200(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dom_root_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info200(struct ndr_print *ndr, const char *name, const struct dfs_Info200 *r)
@@ -1468,18 +1468,18 @@ _PUBLIC_ void ndr_print_dfs_Info200(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_VolumeFlavor(struct ndr_push *ndr, int ndr_flags, enum dfs_VolumeFlavor r)
+static enum ndr_err_code ndr_push_dfs_VolumeFlavor(struct ndr_push *ndr, int ndr_flags, enum dfs_VolumeFlavor r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_VolumeFlavor(struct ndr_pull *ndr, int ndr_flags, enum dfs_VolumeFlavor *r)
+static enum ndr_err_code ndr_pull_dfs_VolumeFlavor(struct ndr_pull *ndr, int ndr_flags, enum dfs_VolumeFlavor *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_VolumeFlavor(struct ndr_print *ndr, const char *name, enum dfs_VolumeFlavor r)
@@ -1493,7 +1493,7 @@ _PUBLIC_ void ndr_print_dfs_VolumeFlavor(struct ndr_print *ndr, const char *name
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static NTSTATUS ndr_push_dfs_Info300(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info300 *r)
+static enum ndr_err_code ndr_push_dfs_Info300(struct ndr_push *ndr, int ndr_flags, const struct dfs_Info300 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1508,10 +1508,10 @@ static NTSTATUS ndr_push_dfs_Info300(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->dom_root, ndr_charset_length(r->dom_root, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info300(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info300 *r)
+static enum ndr_err_code ndr_pull_dfs_Info300(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info300 *r)
 {
 	uint32_t _ptr_dom_root;
 	TALLOC_CTX *_mem_save_dom_root_0;
@@ -1539,7 +1539,7 @@ static NTSTATUS ndr_pull_dfs_Info300(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dom_root_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info300(struct ndr_print *ndr, const char *name, const struct dfs_Info300 *r)
@@ -1556,7 +1556,7 @@ _PUBLIC_ void ndr_print_dfs_Info300(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, const union dfs_Info *r)
+static enum ndr_err_code ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, const union dfs_Info *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -1723,10 +1723,10 @@ static NTSTATUS ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, const uni
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, union dfs_Info *r)
+static enum ndr_err_code ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, union dfs_Info *r)
 {
 	int level;
 	uint32_t _level;
@@ -2047,7 +2047,7 @@ static NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, union dfs
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Info(struct ndr_print *ndr, const char *name, const union dfs_Info *r)
@@ -2196,7 +2196,7 @@ _PUBLIC_ void ndr_print_dfs_Info(struct ndr_print *ndr, const char *name, const 
 	}
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray1(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray1 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray1(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray1 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2215,10 +2215,10 @@ static NTSTATUS ndr_push_dfs_EnumArray1(struct ndr_push *ndr, int ndr_flags, con
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray1(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray1 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray1(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray1 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2255,7 +2255,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray1(struct ndr_pull *ndr, int ndr_flags, str
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray1 *r)
@@ -2283,7 +2283,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray2(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray2 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray2(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray2 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2302,10 +2302,10 @@ static NTSTATUS ndr_push_dfs_EnumArray2(struct ndr_push *ndr, int ndr_flags, con
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray2(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray2 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray2(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray2 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2342,7 +2342,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray2(struct ndr_pull *ndr, int ndr_flags, str
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray2 *r)
@@ -2370,7 +2370,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray3(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray3 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray3(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray3 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2389,10 +2389,10 @@ static NTSTATUS ndr_push_dfs_EnumArray3(struct ndr_push *ndr, int ndr_flags, con
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray3(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray3 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray3(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray3 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2429,7 +2429,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray3(struct ndr_pull *ndr, int ndr_flags, str
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray3 *r)
@@ -2457,7 +2457,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray4(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray4 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray4(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray4 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2476,10 +2476,10 @@ static NTSTATUS ndr_push_dfs_EnumArray4(struct ndr_push *ndr, int ndr_flags, con
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray4(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray4 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray4(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray4 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2516,7 +2516,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray4(struct ndr_pull *ndr, int ndr_flags, str
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray4 *r)
@@ -2544,7 +2544,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray200(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray200 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray200(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray200 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2563,10 +2563,10 @@ static NTSTATUS ndr_push_dfs_EnumArray200(struct ndr_push *ndr, int ndr_flags, c
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray200(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray200 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray200(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray200 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2603,7 +2603,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray200(struct ndr_pull *ndr, int ndr_flags, s
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray200 *r)
@@ -2631,7 +2631,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumArray300(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray300 *r)
+static enum ndr_err_code ndr_push_dfs_EnumArray300(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumArray300 *r)
 {
 	uint32_t cntr_s_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2650,10 +2650,10 @@ static NTSTATUS ndr_push_dfs_EnumArray300(struct ndr_push *ndr, int ndr_flags, c
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumArray300(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray300 *r)
+static enum ndr_err_code ndr_pull_dfs_EnumArray300(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray300 *r)
 {
 	uint32_t _ptr_s;
 	uint32_t cntr_s_1;
@@ -2690,7 +2690,7 @@ static NTSTATUS ndr_pull_dfs_EnumArray300(struct ndr_pull *ndr, int ndr_flags, s
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->s, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray300 *r)
@@ -2718,7 +2718,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, const union dfs_EnumInfo *r)
+static enum ndr_err_code ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, const union dfs_EnumInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -2795,10 +2795,10 @@ static NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, const
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, union dfs_EnumInfo *r)
+static enum ndr_err_code ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, union dfs_EnumInfo *r)
 {
 	int level;
 	uint32_t _level;
@@ -2939,7 +2939,7 @@ static NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, union
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumInfo(struct ndr_print *ndr, const char *name, const union dfs_EnumInfo *r)
@@ -3007,7 +3007,7 @@ _PUBLIC_ void ndr_print_dfs_EnumInfo(struct ndr_print *ndr, const char *name, co
 	}
 }
 
-static NTSTATUS ndr_push_dfs_EnumStruct(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumStruct *r)
+static enum ndr_err_code ndr_push_dfs_EnumStruct(struct ndr_push *ndr, int ndr_flags, const struct dfs_EnumStruct *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3018,10 +3018,10 @@ static NTSTATUS ndr_push_dfs_EnumStruct(struct ndr_push *ndr, int ndr_flags, con
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_dfs_EnumInfo(ndr, NDR_BUFFERS, &r->e));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumStruct *r)
+static enum ndr_err_code ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumStruct *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3032,7 +3032,7 @@ static NTSTATUS ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, str
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_BUFFERS, &r->e));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumStruct(struct ndr_print *ndr, const char *name, const struct dfs_EnumStruct *r)
@@ -3045,7 +3045,7 @@ _PUBLIC_ void ndr_print_dfs_EnumStruct(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_UnknownStruct(struct ndr_push *ndr, int ndr_flags, const struct dfs_UnknownStruct *r)
+static enum ndr_err_code ndr_push_dfs_UnknownStruct(struct ndr_push *ndr, int ndr_flags, const struct dfs_UnknownStruct *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3060,10 +3060,10 @@ static NTSTATUS ndr_push_dfs_UnknownStruct(struct ndr_push *ndr, int ndr_flags, 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->unknown2, ndr_charset_length(r->unknown2, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_UnknownStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs_UnknownStruct *r)
+static enum ndr_err_code ndr_pull_dfs_UnknownStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs_UnknownStruct *r)
 {
 	uint32_t _ptr_unknown2;
 	TALLOC_CTX *_mem_save_unknown2_0;
@@ -3091,7 +3091,7 @@ static NTSTATUS ndr_pull_dfs_UnknownStruct(struct ndr_pull *ndr, int ndr_flags, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown2_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_UnknownStruct(struct ndr_print *ndr, const char *name, const struct dfs_UnknownStruct *r)
@@ -3108,7 +3108,7 @@ _PUBLIC_ void ndr_print_dfs_UnknownStruct(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags, const struct dfs_GetManagerVersion *r)
+_PUBLIC_ enum ndr_err_code ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags, const struct dfs_GetManagerVersion *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -3118,10 +3118,10 @@ _PUBLIC_ NTSTATUS ndr_push_dfs_GetManagerVersion(struct ndr_push *ndr, int flags
 		}
 		NDR_CHECK(ndr_push_dfs_ManagerVersion(ndr, NDR_SCALARS, *r->out.version));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_dfs_GetManagerVersion(struct ndr_pull *ndr, int flags, struct dfs_GetManagerVersion *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dfs_GetManagerVersion(struct ndr_pull *ndr, int flags, struct dfs_GetManagerVersion *r)
 {
 	TALLOC_CTX *_mem_save_version_0;
 	if (flags & NDR_IN) {
@@ -3139,7 +3139,7 @@ _PUBLIC_ NTSTATUS ndr_pull_dfs_GetManagerVersion(struct ndr_pull *ndr, int flags
 		NDR_CHECK(ndr_pull_dfs_ManagerVersion(ndr, NDR_SCALARS, r->out.version));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_version_0, LIBNDR_FLAG_REF_ALLOC);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_GetManagerVersion(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetManagerVersion *r)
@@ -3166,7 +3166,7 @@ _PUBLIC_ void ndr_print_dfs_GetManagerVersion(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Add(struct ndr_push *ndr, int flags, const struct dfs_Add *r)
+static enum ndr_err_code ndr_push_dfs_Add(struct ndr_push *ndr, int flags, const struct dfs_Add *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.path == NULL) {
@@ -3202,10 +3202,10 @@ static NTSTATUS ndr_push_dfs_Add(struct ndr_push *ndr, int flags, const struct d
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Add(struct ndr_pull *ndr, int flags, struct dfs_Add *r)
+static enum ndr_err_code ndr_pull_dfs_Add(struct ndr_pull *ndr, int flags, struct dfs_Add *r)
 {
 	uint32_t _ptr_share;
 	uint32_t _ptr_comment;
@@ -3267,7 +3267,7 @@ static NTSTATUS ndr_pull_dfs_Add(struct ndr_pull *ndr, int flags, struct dfs_Add
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add *r)
@@ -3312,7 +3312,7 @@ _PUBLIC_ void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int fla
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Remove(struct ndr_push *ndr, int flags, const struct dfs_Remove *r)
+static enum ndr_err_code ndr_push_dfs_Remove(struct ndr_push *ndr, int flags, const struct dfs_Remove *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.dfs_entry_path == NULL) {
@@ -3340,10 +3340,10 @@ static NTSTATUS ndr_push_dfs_Remove(struct ndr_push *ndr, int flags, const struc
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Remove(struct ndr_pull *ndr, int flags, struct dfs_Remove *r)
+static enum ndr_err_code ndr_pull_dfs_Remove(struct ndr_pull *ndr, int flags, struct dfs_Remove *r)
 {
 	uint32_t _ptr_servername;
 	uint32_t _ptr_sharename;
@@ -3397,7 +3397,7 @@ static NTSTATUS ndr_pull_dfs_Remove(struct ndr_pull *ndr, int flags, struct dfs_
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove *r)
@@ -3437,7 +3437,7 @@ _PUBLIC_ void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_SetInfo(struct ndr_push *ndr, int flags, const struct dfs_SetInfo *r)
+static enum ndr_err_code ndr_push_dfs_SetInfo(struct ndr_push *ndr, int flags, const struct dfs_SetInfo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dfs_entry_path, CH_UTF16)));
@@ -3468,10 +3468,10 @@ static NTSTATUS ndr_push_dfs_SetInfo(struct ndr_push *ndr, int flags, const stru
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_SetInfo(struct ndr_pull *ndr, int flags, struct dfs_SetInfo *r)
+static enum ndr_err_code ndr_pull_dfs_SetInfo(struct ndr_pull *ndr, int flags, struct dfs_SetInfo *r)
 {
 	uint32_t _ptr_servername;
 	uint32_t _ptr_sharename;
@@ -3535,7 +3535,7 @@ static NTSTATUS ndr_pull_dfs_SetInfo(struct ndr_pull *ndr, int flags, struct dfs
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_SetInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetInfo *r)
@@ -3578,7 +3578,7 @@ _PUBLIC_ void ndr_print_dfs_SetInfo(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_GetInfo(struct ndr_push *ndr, int flags, const struct dfs_GetInfo *r)
+static enum ndr_err_code ndr_push_dfs_GetInfo(struct ndr_push *ndr, int flags, const struct dfs_GetInfo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dfs_entry_path, CH_UTF16)));
@@ -3609,10 +3609,10 @@ static NTSTATUS ndr_push_dfs_GetInfo(struct ndr_push *ndr, int flags, const stru
 		NDR_CHECK(ndr_push_dfs_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_GetInfo(struct ndr_pull *ndr, int flags, struct dfs_GetInfo *r)
+static enum ndr_err_code ndr_pull_dfs_GetInfo(struct ndr_pull *ndr, int flags, struct dfs_GetInfo *r)
 {
 	uint32_t _ptr_servername;
 	uint32_t _ptr_sharename;
@@ -3680,7 +3680,7 @@ static NTSTATUS ndr_pull_dfs_GetInfo(struct ndr_pull *ndr, int flags, struct dfs
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_GetInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetInfo *r)
@@ -3723,7 +3723,7 @@ _PUBLIC_ void ndr_print_dfs_GetInfo(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Enum(struct ndr_push *ndr, int flags, const struct dfs_Enum *r)
+static enum ndr_err_code ndr_push_dfs_Enum(struct ndr_push *ndr, int flags, const struct dfs_Enum *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
@@ -3748,10 +3748,10 @@ static NTSTATUS ndr_push_dfs_Enum(struct ndr_push *ndr, int flags, const struct 
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Enum(struct ndr_pull *ndr, int flags, struct dfs_Enum *r)
+static enum ndr_err_code ndr_pull_dfs_Enum(struct ndr_pull *ndr, int flags, struct dfs_Enum *r)
 {
 	uint32_t _ptr_info;
 	uint32_t _ptr_total;
@@ -3814,7 +3814,7 @@ static NTSTATUS ndr_pull_dfs_Enum(struct ndr_pull *ndr, int flags, struct dfs_En
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Enum(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Enum *r)
@@ -3864,24 +3864,24 @@ _PUBLIC_ void ndr_print_dfs_Enum(struct ndr_print *ndr, const char *name, int fl
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Rename(struct ndr_push *ndr, int flags, const struct dfs_Rename *r)
+static enum ndr_err_code ndr_push_dfs_Rename(struct ndr_push *ndr, int flags, const struct dfs_Rename *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Rename(struct ndr_pull *ndr, int flags, struct dfs_Rename *r)
+static enum ndr_err_code ndr_pull_dfs_Rename(struct ndr_pull *ndr, int flags, struct dfs_Rename *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Rename(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Rename *r)
@@ -3905,24 +3905,24 @@ _PUBLIC_ void ndr_print_dfs_Rename(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Move(struct ndr_push *ndr, int flags, const struct dfs_Move *r)
+static enum ndr_err_code ndr_push_dfs_Move(struct ndr_push *ndr, int flags, const struct dfs_Move *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Move(struct ndr_pull *ndr, int flags, struct dfs_Move *r)
+static enum ndr_err_code ndr_pull_dfs_Move(struct ndr_pull *ndr, int flags, struct dfs_Move *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Move(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Move *r)
@@ -3946,24 +3946,24 @@ _PUBLIC_ void ndr_print_dfs_Move(struct ndr_print *ndr, const char *name, int fl
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_ManagerGetConfigInfo(struct ndr_push *ndr, int flags, const struct dfs_ManagerGetConfigInfo *r)
+static enum ndr_err_code ndr_push_dfs_ManagerGetConfigInfo(struct ndr_push *ndr, int flags, const struct dfs_ManagerGetConfigInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_ManagerGetConfigInfo(struct ndr_pull *ndr, int flags, struct dfs_ManagerGetConfigInfo *r)
+static enum ndr_err_code ndr_pull_dfs_ManagerGetConfigInfo(struct ndr_pull *ndr, int flags, struct dfs_ManagerGetConfigInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_ManagerGetConfigInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerGetConfigInfo *r)
@@ -3987,24 +3987,24 @@ _PUBLIC_ void ndr_print_dfs_ManagerGetConfigInfo(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_ManagerSendSiteInfo(struct ndr_push *ndr, int flags, const struct dfs_ManagerSendSiteInfo *r)
+static enum ndr_err_code ndr_push_dfs_ManagerSendSiteInfo(struct ndr_push *ndr, int flags, const struct dfs_ManagerSendSiteInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_ManagerSendSiteInfo(struct ndr_pull *ndr, int flags, struct dfs_ManagerSendSiteInfo *r)
+static enum ndr_err_code ndr_pull_dfs_ManagerSendSiteInfo(struct ndr_pull *ndr, int flags, struct dfs_ManagerSendSiteInfo *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_ManagerSendSiteInfo(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerSendSiteInfo *r)
@@ -4028,7 +4028,7 @@ _PUBLIC_ void ndr_print_dfs_ManagerSendSiteInfo(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_AddFtRoot(struct ndr_push *ndr, int flags, const struct dfs_AddFtRoot *r)
+static enum ndr_err_code ndr_push_dfs_AddFtRoot(struct ndr_push *ndr, int flags, const struct dfs_AddFtRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4075,10 +4075,10 @@ static NTSTATUS ndr_push_dfs_AddFtRoot(struct ndr_push *ndr, int flags, const st
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_AddFtRoot(struct ndr_pull *ndr, int flags, struct dfs_AddFtRoot *r)
+static enum ndr_err_code ndr_pull_dfs_AddFtRoot(struct ndr_pull *ndr, int flags, struct dfs_AddFtRoot *r)
 {
 	uint32_t _ptr_unknown2;
 	TALLOC_CTX *_mem_save_unknown2_0;
@@ -4180,7 +4180,7 @@ static NTSTATUS ndr_pull_dfs_AddFtRoot(struct ndr_pull *ndr, int flags, struct d
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_AddFtRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddFtRoot *r)
@@ -4234,7 +4234,7 @@ _PUBLIC_ void ndr_print_dfs_AddFtRoot(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_RemoveFtRoot(struct ndr_push *ndr, int flags, const struct dfs_RemoveFtRoot *r)
+static enum ndr_err_code ndr_push_dfs_RemoveFtRoot(struct ndr_push *ndr, int flags, const struct dfs_RemoveFtRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4272,10 +4272,10 @@ static NTSTATUS ndr_push_dfs_RemoveFtRoot(struct ndr_push *ndr, int flags, const
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_RemoveFtRoot(struct ndr_pull *ndr, int flags, struct dfs_RemoveFtRoot *r)
+static enum ndr_err_code ndr_pull_dfs_RemoveFtRoot(struct ndr_pull *ndr, int flags, struct dfs_RemoveFtRoot *r)
 {
 	uint32_t _ptr_unknown;
 	TALLOC_CTX *_mem_save_unknown_0;
@@ -4362,7 +4362,7 @@ static NTSTATUS ndr_pull_dfs_RemoveFtRoot(struct ndr_pull *ndr, int flags, struc
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_RemoveFtRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_RemoveFtRoot *r)
@@ -4413,7 +4413,7 @@ _PUBLIC_ void ndr_print_dfs_RemoveFtRoot(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_AddStdRoot(struct ndr_push *ndr, int flags, const struct dfs_AddStdRoot *r)
+static enum ndr_err_code ndr_push_dfs_AddStdRoot(struct ndr_push *ndr, int flags, const struct dfs_AddStdRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4433,10 +4433,10 @@ static NTSTATUS ndr_push_dfs_AddStdRoot(struct ndr_push *ndr, int flags, const s
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_AddStdRoot(struct ndr_pull *ndr, int flags, struct dfs_AddStdRoot *r)
+static enum ndr_err_code ndr_pull_dfs_AddStdRoot(struct ndr_pull *ndr, int flags, struct dfs_AddStdRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
@@ -4465,7 +4465,7 @@ static NTSTATUS ndr_pull_dfs_AddStdRoot(struct ndr_pull *ndr, int flags, struct 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_AddStdRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddStdRoot *r)
@@ -4493,7 +4493,7 @@ _PUBLIC_ void ndr_print_dfs_AddStdRoot(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_RemoveStdRoot(struct ndr_push *ndr, int flags, const struct dfs_RemoveStdRoot *r)
+static enum ndr_err_code ndr_push_dfs_RemoveStdRoot(struct ndr_push *ndr, int flags, const struct dfs_RemoveStdRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4509,10 +4509,10 @@ static NTSTATUS ndr_push_dfs_RemoveStdRoot(struct ndr_push *ndr, int flags, cons
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_RemoveStdRoot(struct ndr_pull *ndr, int flags, struct dfs_RemoveStdRoot *r)
+static enum ndr_err_code ndr_pull_dfs_RemoveStdRoot(struct ndr_pull *ndr, int flags, struct dfs_RemoveStdRoot *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
@@ -4534,7 +4534,7 @@ static NTSTATUS ndr_pull_dfs_RemoveStdRoot(struct ndr_pull *ndr, int flags, stru
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_RemoveStdRoot(struct ndr_print *ndr, const char *name, int flags, const struct dfs_RemoveStdRoot *r)
@@ -4561,7 +4561,7 @@ _PUBLIC_ void ndr_print_dfs_RemoveStdRoot(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_ManagerInitialize(struct ndr_push *ndr, int flags, const struct dfs_ManagerInitialize *r)
+static enum ndr_err_code ndr_push_dfs_ManagerInitialize(struct ndr_push *ndr, int flags, const struct dfs_ManagerInitialize *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.servername == NULL) {
@@ -4576,10 +4576,10 @@ static NTSTATUS ndr_push_dfs_ManagerInitialize(struct ndr_push *ndr, int flags, 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_ManagerInitialize(struct ndr_pull *ndr, int flags, struct dfs_ManagerInitialize *r)
+static enum ndr_err_code ndr_pull_dfs_ManagerInitialize(struct ndr_pull *ndr, int flags, struct dfs_ManagerInitialize *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
@@ -4594,7 +4594,7 @@ static NTSTATUS ndr_pull_dfs_ManagerInitialize(struct ndr_pull *ndr, int flags, 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_ManagerInitialize(struct ndr_print *ndr, const char *name, int flags, const struct dfs_ManagerInitialize *r)
@@ -4623,7 +4623,7 @@ _PUBLIC_ void ndr_print_dfs_ManagerInitialize(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_AddStdRootForced(struct ndr_push *ndr, int flags, const struct dfs_AddStdRootForced *r)
+static enum ndr_err_code ndr_push_dfs_AddStdRootForced(struct ndr_push *ndr, int flags, const struct dfs_AddStdRootForced *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4646,10 +4646,10 @@ static NTSTATUS ndr_push_dfs_AddStdRootForced(struct ndr_push *ndr, int flags, c
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_AddStdRootForced(struct ndr_pull *ndr, int flags, struct dfs_AddStdRootForced *r)
+static enum ndr_err_code ndr_pull_dfs_AddStdRootForced(struct ndr_pull *ndr, int flags, struct dfs_AddStdRootForced *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
@@ -4684,7 +4684,7 @@ static NTSTATUS ndr_pull_dfs_AddStdRootForced(struct ndr_pull *ndr, int flags, s
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_AddStdRootForced(struct ndr_print *ndr, const char *name, int flags, const struct dfs_AddStdRootForced *r)
@@ -4712,24 +4712,24 @@ _PUBLIC_ void ndr_print_dfs_AddStdRootForced(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_GetDcAddress(struct ndr_push *ndr, int flags, const struct dfs_GetDcAddress *r)
+static enum ndr_err_code ndr_push_dfs_GetDcAddress(struct ndr_push *ndr, int flags, const struct dfs_GetDcAddress *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_GetDcAddress(struct ndr_pull *ndr, int flags, struct dfs_GetDcAddress *r)
+static enum ndr_err_code ndr_pull_dfs_GetDcAddress(struct ndr_pull *ndr, int flags, struct dfs_GetDcAddress *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_GetDcAddress(struct ndr_print *ndr, const char *name, int flags, const struct dfs_GetDcAddress *r)
@@ -4753,24 +4753,24 @@ _PUBLIC_ void ndr_print_dfs_GetDcAddress(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_SetDcAddress(struct ndr_push *ndr, int flags, const struct dfs_SetDcAddress *r)
+static enum ndr_err_code ndr_push_dfs_SetDcAddress(struct ndr_push *ndr, int flags, const struct dfs_SetDcAddress *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_SetDcAddress(struct ndr_pull *ndr, int flags, struct dfs_SetDcAddress *r)
+static enum ndr_err_code ndr_pull_dfs_SetDcAddress(struct ndr_pull *ndr, int flags, struct dfs_SetDcAddress *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_SetDcAddress(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetDcAddress *r)
@@ -4794,7 +4794,7 @@ _PUBLIC_ void ndr_print_dfs_SetDcAddress(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_FlushFtTable(struct ndr_push *ndr, int flags, const struct dfs_FlushFtTable *r)
+static enum ndr_err_code ndr_push_dfs_FlushFtTable(struct ndr_push *ndr, int flags, const struct dfs_FlushFtTable *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
@@ -4809,10 +4809,10 @@ static NTSTATUS ndr_push_dfs_FlushFtTable(struct ndr_push *ndr, int flags, const
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_FlushFtTable(struct ndr_pull *ndr, int flags, struct dfs_FlushFtTable *r)
+static enum ndr_err_code ndr_pull_dfs_FlushFtTable(struct ndr_pull *ndr, int flags, struct dfs_FlushFtTable *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
@@ -4833,7 +4833,7 @@ static NTSTATUS ndr_pull_dfs_FlushFtTable(struct ndr_pull *ndr, int flags, struc
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_FlushFtTable(struct ndr_print *ndr, const char *name, int flags, const struct dfs_FlushFtTable *r)
@@ -4859,24 +4859,24 @@ _PUBLIC_ void ndr_print_dfs_FlushFtTable(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Add2(struct ndr_push *ndr, int flags, const struct dfs_Add2 *r)
+static enum ndr_err_code ndr_push_dfs_Add2(struct ndr_push *ndr, int flags, const struct dfs_Add2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Add2(struct ndr_pull *ndr, int flags, struct dfs_Add2 *r)
+static enum ndr_err_code ndr_pull_dfs_Add2(struct ndr_pull *ndr, int flags, struct dfs_Add2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Add2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Add2 *r)
@@ -4900,24 +4900,24 @@ _PUBLIC_ void ndr_print_dfs_Add2(struct ndr_print *ndr, const char *name, int fl
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_Remove2(struct ndr_push *ndr, int flags, const struct dfs_Remove2 *r)
+static enum ndr_err_code ndr_push_dfs_Remove2(struct ndr_push *ndr, int flags, const struct dfs_Remove2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_Remove2(struct ndr_pull *ndr, int flags, struct dfs_Remove2 *r)
+static enum ndr_err_code ndr_pull_dfs_Remove2(struct ndr_pull *ndr, int flags, struct dfs_Remove2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_Remove2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_Remove2 *r)
@@ -4941,7 +4941,7 @@ _PUBLIC_ void ndr_print_dfs_Remove2(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_dfs_EnumEx(struct ndr_push *ndr, int flags, const struct dfs_EnumEx *r)
+_PUBLIC_ enum ndr_err_code ndr_push_dfs_EnumEx(struct ndr_push *ndr, int flags, const struct dfs_EnumEx *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dfs_name, CH_UTF16)));
@@ -4970,10 +4970,10 @@ _PUBLIC_ NTSTATUS ndr_push_dfs_EnumEx(struct ndr_push *ndr, int flags, const str
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_dfs_EnumEx(struct ndr_pull *ndr, int flags, struct dfs_EnumEx *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_dfs_EnumEx(struct ndr_pull *ndr, int flags, struct dfs_EnumEx *r)
 {
 	uint32_t _ptr_info;
 	uint32_t _ptr_total;
@@ -5043,7 +5043,7 @@ _PUBLIC_ NTSTATUS ndr_pull_dfs_EnumEx(struct ndr_pull *ndr, int flags, struct df
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_EnumEx(struct ndr_print *ndr, const char *name, int flags, const struct dfs_EnumEx *r)
@@ -5094,24 +5094,24 @@ _PUBLIC_ void ndr_print_dfs_EnumEx(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_dfs_SetInfo2(struct ndr_push *ndr, int flags, const struct dfs_SetInfo2 *r)
+static enum ndr_err_code ndr_push_dfs_SetInfo2(struct ndr_push *ndr, int flags, const struct dfs_SetInfo2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_dfs_SetInfo2(struct ndr_pull *ndr, int flags, struct dfs_SetInfo2 *r)
+static enum ndr_err_code ndr_pull_dfs_SetInfo2(struct ndr_pull *ndr, int flags, struct dfs_SetInfo2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_dfs_SetInfo2(struct ndr_print *ndr, const char *name, int flags, const struct dfs_SetInfo2 *r)

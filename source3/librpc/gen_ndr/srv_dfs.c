@@ -11,7 +11,7 @@ static bool api_dfs_GetManagerVersion(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_GetManagerVersion *r;
 	
@@ -34,8 +34,8 @@ static bool api_dfs_GetManagerVersion(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -67,8 +67,8 @@ static bool api_dfs_GetManagerVersion(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -89,7 +89,7 @@ static bool api_dfs_Add(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Add *r;
 	
@@ -112,8 +112,8 @@ static bool api_dfs_Add(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -138,8 +138,8 @@ static bool api_dfs_Add(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -160,7 +160,7 @@ static bool api_dfs_Remove(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Remove *r;
 	
@@ -183,8 +183,8 @@ static bool api_dfs_Remove(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -209,8 +209,8 @@ static bool api_dfs_Remove(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -231,7 +231,7 @@ static bool api_dfs_SetInfo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_SetInfo *r;
 	
@@ -254,8 +254,8 @@ static bool api_dfs_SetInfo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -280,8 +280,8 @@ static bool api_dfs_SetInfo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -302,7 +302,7 @@ static bool api_dfs_GetInfo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_GetInfo *r;
 	
@@ -325,8 +325,8 @@ static bool api_dfs_GetInfo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -358,8 +358,8 @@ static bool api_dfs_GetInfo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -380,7 +380,7 @@ static bool api_dfs_Enum(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Enum *r;
 	
@@ -403,8 +403,8 @@ static bool api_dfs_Enum(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -432,8 +432,8 @@ static bool api_dfs_Enum(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -454,7 +454,7 @@ static bool api_dfs_Rename(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Rename *r;
 	
@@ -477,8 +477,8 @@ static bool api_dfs_Rename(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -503,8 +503,8 @@ static bool api_dfs_Rename(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -525,7 +525,7 @@ static bool api_dfs_Move(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Move *r;
 	
@@ -548,8 +548,8 @@ static bool api_dfs_Move(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -574,8 +574,8 @@ static bool api_dfs_Move(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -596,7 +596,7 @@ static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_ManagerGetConfigInfo *r;
 	
@@ -619,8 +619,8 @@ static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -645,8 +645,8 @@ static bool api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -667,7 +667,7 @@ static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_ManagerSendSiteInfo *r;
 	
@@ -690,8 +690,8 @@ static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -716,8 +716,8 @@ static bool api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -738,7 +738,7 @@ static bool api_dfs_AddFtRoot(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_AddFtRoot *r;
 	
@@ -761,8 +761,8 @@ static bool api_dfs_AddFtRoot(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -789,8 +789,8 @@ static bool api_dfs_AddFtRoot(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -811,7 +811,7 @@ static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_RemoveFtRoot *r;
 	
@@ -834,8 +834,8 @@ static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -862,8 +862,8 @@ static bool api_dfs_RemoveFtRoot(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -884,7 +884,7 @@ static bool api_dfs_AddStdRoot(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_AddStdRoot *r;
 	
@@ -907,8 +907,8 @@ static bool api_dfs_AddStdRoot(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -933,8 +933,8 @@ static bool api_dfs_AddStdRoot(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -955,7 +955,7 @@ static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_RemoveStdRoot *r;
 	
@@ -978,8 +978,8 @@ static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1004,8 +1004,8 @@ static bool api_dfs_RemoveStdRoot(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1026,7 +1026,7 @@ static bool api_dfs_ManagerInitialize(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_ManagerInitialize *r;
 	
@@ -1049,8 +1049,8 @@ static bool api_dfs_ManagerInitialize(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1075,8 +1075,8 @@ static bool api_dfs_ManagerInitialize(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1097,7 +1097,7 @@ static bool api_dfs_AddStdRootForced(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_AddStdRootForced *r;
 	
@@ -1120,8 +1120,8 @@ static bool api_dfs_AddStdRootForced(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1146,8 +1146,8 @@ static bool api_dfs_AddStdRootForced(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1168,7 +1168,7 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_GetDcAddress *r;
 	
@@ -1191,8 +1191,8 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1217,8 +1217,8 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1239,7 +1239,7 @@ static bool api_dfs_SetDcAddress(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_SetDcAddress *r;
 	
@@ -1262,8 +1262,8 @@ static bool api_dfs_SetDcAddress(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1288,8 +1288,8 @@ static bool api_dfs_SetDcAddress(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1310,7 +1310,7 @@ static bool api_dfs_FlushFtTable(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_FlushFtTable *r;
 	
@@ -1333,8 +1333,8 @@ static bool api_dfs_FlushFtTable(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1359,8 +1359,8 @@ static bool api_dfs_FlushFtTable(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1381,7 +1381,7 @@ static bool api_dfs_Add2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Add2 *r;
 	
@@ -1404,8 +1404,8 @@ static bool api_dfs_Add2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1430,8 +1430,8 @@ static bool api_dfs_Add2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1452,7 +1452,7 @@ static bool api_dfs_Remove2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_Remove2 *r;
 	
@@ -1475,8 +1475,8 @@ static bool api_dfs_Remove2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1501,8 +1501,8 @@ static bool api_dfs_Remove2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1523,7 +1523,7 @@ static bool api_dfs_EnumEx(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_EnumEx *r;
 	
@@ -1546,8 +1546,8 @@ static bool api_dfs_EnumEx(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1575,8 +1575,8 @@ static bool api_dfs_EnumEx(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1597,7 +1597,7 @@ static bool api_dfs_SetInfo2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dfs_SetInfo2 *r;
 	
@@ -1620,8 +1620,8 @@ static bool api_dfs_SetInfo2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1646,8 +1646,8 @@ static bool api_dfs_SetInfo2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}

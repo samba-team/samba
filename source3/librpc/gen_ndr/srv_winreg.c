@@ -11,7 +11,7 @@ static bool api_winreg_OpenHKCR(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKCR *r;
 	
@@ -34,8 +34,8 @@ static bool api_winreg_OpenHKCR(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -67,8 +67,8 @@ static bool api_winreg_OpenHKCR(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -89,7 +89,7 @@ static bool api_winreg_OpenHKCU(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKCU *r;
 	
@@ -112,8 +112,8 @@ static bool api_winreg_OpenHKCU(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -145,8 +145,8 @@ static bool api_winreg_OpenHKCU(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -167,7 +167,7 @@ static bool api_winreg_OpenHKLM(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKLM *r;
 	
@@ -190,8 +190,8 @@ static bool api_winreg_OpenHKLM(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -223,8 +223,8 @@ static bool api_winreg_OpenHKLM(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -245,7 +245,7 @@ static bool api_winreg_OpenHKPD(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKPD *r;
 	
@@ -268,8 +268,8 @@ static bool api_winreg_OpenHKPD(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -301,8 +301,8 @@ static bool api_winreg_OpenHKPD(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -323,7 +323,7 @@ static bool api_winreg_OpenHKU(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKU *r;
 	
@@ -346,8 +346,8 @@ static bool api_winreg_OpenHKU(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -379,8 +379,8 @@ static bool api_winreg_OpenHKU(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -401,7 +401,7 @@ static bool api_winreg_CloseKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_CloseKey *r;
 	
@@ -424,8 +424,8 @@ static bool api_winreg_CloseKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -452,8 +452,8 @@ static bool api_winreg_CloseKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -474,7 +474,7 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_CreateKey *r;
 	
@@ -497,8 +497,8 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -531,8 +531,8 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -553,7 +553,7 @@ static bool api_winreg_DeleteKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_DeleteKey *r;
 	
@@ -576,8 +576,8 @@ static bool api_winreg_DeleteKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -602,8 +602,8 @@ static bool api_winreg_DeleteKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -624,7 +624,7 @@ static bool api_winreg_DeleteValue(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_DeleteValue *r;
 	
@@ -647,8 +647,8 @@ static bool api_winreg_DeleteValue(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -673,8 +673,8 @@ static bool api_winreg_DeleteValue(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -695,7 +695,7 @@ static bool api_winreg_EnumKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_EnumKey *r;
 	
@@ -718,8 +718,8 @@ static bool api_winreg_EnumKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -748,8 +748,8 @@ static bool api_winreg_EnumKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -770,7 +770,7 @@ static bool api_winreg_EnumValue(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_EnumValue *r;
 	
@@ -793,8 +793,8 @@ static bool api_winreg_EnumValue(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -825,8 +825,8 @@ static bool api_winreg_EnumValue(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -847,7 +847,7 @@ static bool api_winreg_FlushKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_FlushKey *r;
 	
@@ -870,8 +870,8 @@ static bool api_winreg_FlushKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -896,8 +896,8 @@ static bool api_winreg_FlushKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -918,7 +918,7 @@ static bool api_winreg_GetKeySecurity(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_GetKeySecurity *r;
 	
@@ -941,8 +941,8 @@ static bool api_winreg_GetKeySecurity(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -969,8 +969,8 @@ static bool api_winreg_GetKeySecurity(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -991,7 +991,7 @@ static bool api_winreg_LoadKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_LoadKey *r;
 	
@@ -1014,8 +1014,8 @@ static bool api_winreg_LoadKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1040,8 +1040,8 @@ static bool api_winreg_LoadKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1062,7 +1062,7 @@ static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_NotifyChangeKeyValue *r;
 	
@@ -1085,8 +1085,8 @@ static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1111,8 +1111,8 @@ static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1133,7 +1133,7 @@ static bool api_winreg_OpenKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenKey *r;
 	
@@ -1156,8 +1156,8 @@ static bool api_winreg_OpenKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1189,8 +1189,8 @@ static bool api_winreg_OpenKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1211,7 +1211,7 @@ static bool api_winreg_QueryInfoKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_QueryInfoKey *r;
 	
@@ -1234,8 +1234,8 @@ static bool api_winreg_QueryInfoKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1310,8 +1310,8 @@ static bool api_winreg_QueryInfoKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1332,7 +1332,7 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_QueryValue *r;
 	
@@ -1355,8 +1355,8 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1386,8 +1386,8 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1408,7 +1408,7 @@ static bool api_winreg_ReplaceKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_ReplaceKey *r;
 	
@@ -1431,8 +1431,8 @@ static bool api_winreg_ReplaceKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1457,8 +1457,8 @@ static bool api_winreg_ReplaceKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1479,7 +1479,7 @@ static bool api_winreg_RestoreKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_RestoreKey *r;
 	
@@ -1502,8 +1502,8 @@ static bool api_winreg_RestoreKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1528,8 +1528,8 @@ static bool api_winreg_RestoreKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1550,7 +1550,7 @@ static bool api_winreg_SaveKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_SaveKey *r;
 	
@@ -1573,8 +1573,8 @@ static bool api_winreg_SaveKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1599,8 +1599,8 @@ static bool api_winreg_SaveKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1621,7 +1621,7 @@ static bool api_winreg_SetKeySecurity(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_SetKeySecurity *r;
 	
@@ -1644,8 +1644,8 @@ static bool api_winreg_SetKeySecurity(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1670,8 +1670,8 @@ static bool api_winreg_SetKeySecurity(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1692,7 +1692,7 @@ static bool api_winreg_SetValue(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_SetValue *r;
 	
@@ -1715,8 +1715,8 @@ static bool api_winreg_SetValue(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1741,8 +1741,8 @@ static bool api_winreg_SetValue(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1763,7 +1763,7 @@ static bool api_winreg_UnLoadKey(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_UnLoadKey *r;
 	
@@ -1786,8 +1786,8 @@ static bool api_winreg_UnLoadKey(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1812,8 +1812,8 @@ static bool api_winreg_UnLoadKey(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1834,7 +1834,7 @@ static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_InitiateSystemShutdown *r;
 	
@@ -1857,8 +1857,8 @@ static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1883,8 +1883,8 @@ static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1905,7 +1905,7 @@ static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_AbortSystemShutdown *r;
 	
@@ -1928,8 +1928,8 @@ static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1954,8 +1954,8 @@ static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -1976,7 +1976,7 @@ static bool api_winreg_GetVersion(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_GetVersion *r;
 	
@@ -1999,8 +1999,8 @@ static bool api_winreg_GetVersion(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2032,8 +2032,8 @@ static bool api_winreg_GetVersion(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2054,7 +2054,7 @@ static bool api_winreg_OpenHKCC(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKCC *r;
 	
@@ -2077,8 +2077,8 @@ static bool api_winreg_OpenHKCC(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2110,8 +2110,8 @@ static bool api_winreg_OpenHKCC(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2132,7 +2132,7 @@ static bool api_winreg_OpenHKDD(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKDD *r;
 	
@@ -2155,8 +2155,8 @@ static bool api_winreg_OpenHKDD(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2188,8 +2188,8 @@ static bool api_winreg_OpenHKDD(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2210,7 +2210,7 @@ static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_QueryMultipleValues *r;
 	
@@ -2233,8 +2233,8 @@ static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2263,8 +2263,8 @@ static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2285,7 +2285,7 @@ static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_InitiateSystemShutdownEx *r;
 	
@@ -2308,8 +2308,8 @@ static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2334,8 +2334,8 @@ static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2356,7 +2356,7 @@ static bool api_winreg_SaveKeyEx(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_SaveKeyEx *r;
 	
@@ -2379,8 +2379,8 @@ static bool api_winreg_SaveKeyEx(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2405,8 +2405,8 @@ static bool api_winreg_SaveKeyEx(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2427,7 +2427,7 @@ static bool api_winreg_OpenHKPT(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKPT *r;
 	
@@ -2450,8 +2450,8 @@ static bool api_winreg_OpenHKPT(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2483,8 +2483,8 @@ static bool api_winreg_OpenHKPT(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2505,7 +2505,7 @@ static bool api_winreg_OpenHKPN(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_OpenHKPN *r;
 	
@@ -2528,8 +2528,8 @@ static bool api_winreg_OpenHKPN(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2561,8 +2561,8 @@ static bool api_winreg_OpenHKPN(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2583,7 +2583,7 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct winreg_QueryMultipleValues2 *r;
 	
@@ -2606,8 +2606,8 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 	}
 	
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = call->ndr_pull(pull, NDR_IN, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}
@@ -2632,8 +2632,8 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 		return False;
 	}
 	
-	status = call->ndr_push(push, NDR_OUT, r);
-	if (NT_STATUS_IS_ERR(status)) {
+	ndr_err = call->ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
 		return False;
 	}

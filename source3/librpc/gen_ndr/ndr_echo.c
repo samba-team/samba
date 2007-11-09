@@ -3,7 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 
-static NTSTATUS ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const struct echo_info1 *r)
+static enum ndr_err_code ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const struct echo_info1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
@@ -11,10 +11,10 @@ static NTSTATUS ndr_push_echo_info1(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r)
+static enum ndr_err_code ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct echo_info1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
@@ -22,7 +22,7 @@ static NTSTATUS ndr_pull_echo_info1(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, const struct echo_info1 *r)
@@ -33,7 +33,7 @@ _PUBLIC_ void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info2(struct ndr_push *ndr, int ndr_flags, const struct echo_info2 *r)
+static enum ndr_err_code ndr_push_echo_info2(struct ndr_push *ndr, int ndr_flags, const struct echo_info2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 2));
@@ -41,10 +41,10 @@ static NTSTATUS ndr_push_echo_info2(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info2(struct ndr_pull *ndr, int ndr_flags, struct echo_info2 *r)
+static enum ndr_err_code ndr_pull_echo_info2(struct ndr_pull *ndr, int ndr_flags, struct echo_info2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
@@ -52,7 +52,7 @@ static NTSTATUS ndr_pull_echo_info2(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, const struct echo_info2 *r)
@@ -63,7 +63,7 @@ _PUBLIC_ void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info3(struct ndr_push *ndr, int ndr_flags, const struct echo_info3 *r)
+static enum ndr_err_code ndr_push_echo_info3(struct ndr_push *ndr, int ndr_flags, const struct echo_info3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -71,10 +71,10 @@ static NTSTATUS ndr_push_echo_info3(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info3(struct ndr_pull *ndr, int ndr_flags, struct echo_info3 *r)
+static enum ndr_err_code ndr_pull_echo_info3(struct ndr_pull *ndr, int ndr_flags, struct echo_info3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -82,7 +82,7 @@ static NTSTATUS ndr_pull_echo_info3(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, const struct echo_info3 *r)
@@ -93,7 +93,7 @@ _PUBLIC_ void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info4(struct ndr_push *ndr, int ndr_flags, const struct echo_info4 *r)
+static enum ndr_err_code ndr_push_echo_info4(struct ndr_push *ndr, int ndr_flags, const struct echo_info4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -101,10 +101,10 @@ static NTSTATUS ndr_push_echo_info4(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct echo_info4 *r)
+static enum ndr_err_code ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct echo_info4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -112,7 +112,7 @@ static NTSTATUS ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r)
@@ -123,7 +123,7 @@ _PUBLIC_ void ndr_print_echo_info4(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info5(struct ndr_push *ndr, int ndr_flags, const struct echo_info5 *r)
+static enum ndr_err_code ndr_push_echo_info5(struct ndr_push *ndr, int ndr_flags, const struct echo_info5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -132,10 +132,10 @@ static NTSTATUS ndr_push_echo_info5(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info5(struct ndr_pull *ndr, int ndr_flags, struct echo_info5 *r)
+static enum ndr_err_code ndr_pull_echo_info5(struct ndr_pull *ndr, int ndr_flags, struct echo_info5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -144,7 +144,7 @@ static NTSTATUS ndr_pull_echo_info5(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info5(struct ndr_print *ndr, const char *name, const struct echo_info5 *r)
@@ -156,7 +156,7 @@ _PUBLIC_ void ndr_print_echo_info5(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info6(struct ndr_push *ndr, int ndr_flags, const struct echo_info6 *r)
+static enum ndr_err_code ndr_push_echo_info6(struct ndr_push *ndr, int ndr_flags, const struct echo_info6 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
@@ -165,10 +165,10 @@ static NTSTATUS ndr_push_echo_info6(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags, struct echo_info6 *r)
+static enum ndr_err_code ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags, struct echo_info6 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
@@ -177,7 +177,7 @@ static NTSTATUS ndr_pull_echo_info6(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, const struct echo_info6 *r)
@@ -189,7 +189,7 @@ _PUBLIC_ void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_info7(struct ndr_push *ndr, int ndr_flags, const struct echo_info7 *r)
+static enum ndr_err_code ndr_push_echo_info7(struct ndr_push *ndr, int ndr_flags, const struct echo_info7 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -198,10 +198,10 @@ static NTSTATUS ndr_push_echo_info7(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags, struct echo_info7 *r)
+static enum ndr_err_code ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags, struct echo_info7 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -210,7 +210,7 @@ static NTSTATUS ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, const struct echo_info7 *r)
@@ -222,7 +222,7 @@ _PUBLIC_ void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags, const union echo_Info *r)
+static enum ndr_err_code ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags, const union echo_Info *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -288,10 +288,10 @@ static NTSTATUS ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags, const un
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, union echo_Info *r)
+static enum ndr_err_code ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, union echo_Info *r)
 {
 	int level;
 	uint16_t _level;
@@ -361,7 +361,7 @@ static NTSTATUS ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags, union ec
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, const union echo_Info *r)
@@ -403,18 +403,18 @@ _PUBLIC_ void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, const
 	}
 }
 
-static NTSTATUS ndr_push_echo_Enum1(struct ndr_push *ndr, int ndr_flags, enum echo_Enum1 r)
+static enum ndr_err_code ndr_push_echo_Enum1(struct ndr_push *ndr, int ndr_flags, enum echo_Enum1 r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, enum echo_Enum1 *r)
+static enum ndr_err_code ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, enum echo_Enum1 *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Enum1(struct ndr_print *ndr, const char *name, enum echo_Enum1 r)
@@ -428,18 +428,18 @@ _PUBLIC_ void ndr_print_echo_Enum1(struct ndr_print *ndr, const char *name, enum
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static NTSTATUS ndr_push_echo_Enum1_32(struct ndr_push *ndr, int ndr_flags, enum echo_Enum1_32 r)
+static enum ndr_err_code ndr_push_echo_Enum1_32(struct ndr_push *ndr, int ndr_flags, enum echo_Enum1_32 r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Enum1_32(struct ndr_pull *ndr, int ndr_flags, enum echo_Enum1_32 *r)
+static enum ndr_err_code ndr_pull_echo_Enum1_32(struct ndr_pull *ndr, int ndr_flags, enum echo_Enum1_32 *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Enum1_32(struct ndr_print *ndr, const char *name, enum echo_Enum1_32 r)
@@ -453,7 +453,7 @@ _PUBLIC_ void ndr_print_echo_Enum1_32(struct ndr_print *ndr, const char *name, e
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static NTSTATUS ndr_push_echo_Enum2(struct ndr_push *ndr, int ndr_flags, const struct echo_Enum2 *r)
+static enum ndr_err_code ndr_push_echo_Enum2(struct ndr_push *ndr, int ndr_flags, const struct echo_Enum2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -462,10 +462,10 @@ static NTSTATUS ndr_push_echo_Enum2(struct ndr_push *ndr, int ndr_flags, const s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Enum2(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum2 *r)
+static enum ndr_err_code ndr_pull_echo_Enum2(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -474,7 +474,7 @@ static NTSTATUS ndr_pull_echo_Enum2(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Enum2(struct ndr_print *ndr, const char *name, const struct echo_Enum2 *r)
@@ -486,7 +486,7 @@ _PUBLIC_ void ndr_print_echo_Enum2(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_Enum3(struct ndr_push *ndr, int ndr_flags, const union echo_Enum3 *r)
+static enum ndr_err_code ndr_push_echo_Enum3(struct ndr_push *ndr, int ndr_flags, const union echo_Enum3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -517,10 +517,10 @@ static NTSTATUS ndr_push_echo_Enum3(struct ndr_push *ndr, int ndr_flags, const u
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, union echo_Enum3 *r)
+static enum ndr_err_code ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, union echo_Enum3 *r)
 {
 	int level;
 	uint16_t _level;
@@ -555,7 +555,7 @@ static NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, union e
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Enum3(struct ndr_print *ndr, const char *name, const union echo_Enum3 *r)
@@ -577,7 +577,7 @@ _PUBLIC_ void ndr_print_echo_Enum3(struct ndr_print *ndr, const char *name, cons
 	}
 }
 
-static NTSTATUS ndr_push_echo_Surrounding(struct ndr_push *ndr, int ndr_flags, const struct echo_Surrounding *r)
+static enum ndr_err_code ndr_push_echo_Surrounding(struct ndr_push *ndr, int ndr_flags, const struct echo_Surrounding *r)
 {
 	uint32_t cntr_surrounding_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -590,10 +590,10 @@ static NTSTATUS ndr_push_echo_Surrounding(struct ndr_push *ndr, int ndr_flags, c
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_Surrounding(struct ndr_pull *ndr, int ndr_flags, struct echo_Surrounding *r)
+static enum ndr_err_code ndr_pull_echo_Surrounding(struct ndr_pull *ndr, int ndr_flags, struct echo_Surrounding *r)
 {
 	uint32_t cntr_surrounding_0;
 	TALLOC_CTX *_mem_save_surrounding_0;
@@ -614,7 +614,7 @@ static NTSTATUS ndr_pull_echo_Surrounding(struct ndr_pull *ndr, int ndr_flags, s
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_Surrounding(struct ndr_print *ndr, const char *name, const struct echo_Surrounding *r)
@@ -637,7 +637,7 @@ _PUBLIC_ void ndr_print_echo_Surrounding(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_AddOne(struct ndr_push *ndr, int flags, const struct echo_AddOne *r)
+static enum ndr_err_code ndr_push_echo_AddOne(struct ndr_push *ndr, int flags, const struct echo_AddOne *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.in_data));
@@ -648,10 +648,10 @@ static NTSTATUS ndr_push_echo_AddOne(struct ndr_push *ndr, int flags, const stru
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.out_data));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_AddOne(struct ndr_pull *ndr, int flags, struct echo_AddOne *r)
+static enum ndr_err_code ndr_pull_echo_AddOne(struct ndr_pull *ndr, int flags, struct echo_AddOne *r)
 {
 	TALLOC_CTX *_mem_save_out_data_0;
 	if (flags & NDR_IN) {
@@ -670,7 +670,7 @@ static NTSTATUS ndr_pull_echo_AddOne(struct ndr_pull *ndr, int flags, struct ech
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.out_data));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_out_data_0, LIBNDR_FLAG_REF_ALLOC);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_AddOne(struct ndr_print *ndr, const char *name, int flags, const struct echo_AddOne *r)
@@ -698,7 +698,7 @@ _PUBLIC_ void ndr_print_echo_AddOne(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, int flags, const struct echo_EchoData *r)
+static enum ndr_err_code ndr_push_echo_EchoData(struct ndr_push *ndr, int flags, const struct echo_EchoData *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.len));
@@ -709,10 +709,10 @@ static NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, int flags, const st
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.len));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.out_data, r->in.len));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_EchoData(struct ndr_pull *ndr, int flags, struct echo_EchoData *r)
+static enum ndr_err_code ndr_pull_echo_EchoData(struct ndr_pull *ndr, int flags, struct echo_EchoData *r)
 {
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -733,7 +733,7 @@ static NTSTATUS ndr_pull_echo_EchoData(struct ndr_pull *ndr, int flags, struct e
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.out_data, r->in.len));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_EchoData(struct ndr_print *ndr, const char *name, int flags, const struct echo_EchoData *r)
@@ -759,7 +759,7 @@ _PUBLIC_ void ndr_print_echo_EchoData(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, int flags, const struct echo_SinkData *r)
+static enum ndr_err_code ndr_push_echo_SinkData(struct ndr_push *ndr, int flags, const struct echo_SinkData *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.len));
@@ -768,10 +768,10 @@ static NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, int flags, const st
 	}
 	if (flags & NDR_OUT) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_SinkData(struct ndr_pull *ndr, int flags, struct echo_SinkData *r)
+static enum ndr_err_code ndr_pull_echo_SinkData(struct ndr_pull *ndr, int flags, struct echo_SinkData *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.len));
@@ -784,7 +784,7 @@ static NTSTATUS ndr_pull_echo_SinkData(struct ndr_pull *ndr, int flags, struct e
 	}
 	if (flags & NDR_OUT) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_SinkData(struct ndr_print *ndr, const char *name, int flags, const struct echo_SinkData *r)
@@ -809,7 +809,7 @@ _PUBLIC_ void ndr_print_echo_SinkData(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, int flags, const struct echo_SourceData *r)
+static enum ndr_err_code ndr_push_echo_SourceData(struct ndr_push *ndr, int flags, const struct echo_SourceData *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.len));
@@ -818,10 +818,10 @@ static NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, int flags, const 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.len));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.data, r->in.len));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, int flags, struct echo_SourceData *r)
+static enum ndr_err_code ndr_pull_echo_SourceData(struct ndr_pull *ndr, int flags, struct echo_SourceData *r)
 {
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -836,7 +836,7 @@ static NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, int flags, struct
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.data, r->in.len));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name, int flags, const struct echo_SourceData *r)
@@ -861,7 +861,7 @@ _PUBLIC_ void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestCall(struct ndr_push *ndr, int flags, const struct echo_TestCall *r)
+static enum ndr_err_code ndr_push_echo_TestCall(struct ndr_push *ndr, int flags, const struct echo_TestCall *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.s1 == NULL) {
@@ -885,10 +885,10 @@ static NTSTATUS ndr_push_echo_TestCall(struct ndr_push *ndr, int flags, const st
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.s2, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.s2, ndr_charset_length(*r->out.s2, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestCall(struct ndr_pull *ndr, int flags, struct echo_TestCall *r)
+static enum ndr_err_code ndr_pull_echo_TestCall(struct ndr_pull *ndr, int flags, struct echo_TestCall *r)
 {
 	uint32_t _ptr_s2;
 	TALLOC_CTX *_mem_save_s2_0;
@@ -921,7 +921,7 @@ static NTSTATUS ndr_pull_echo_TestCall(struct ndr_pull *ndr, int flags, struct e
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.s2, ndr_get_array_length(ndr, r->out.s2), sizeof(uint16_t), CH_UTF16));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_s2_0, LIBNDR_FLAG_REF_ALLOC);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestCall(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestCall *r)
@@ -955,7 +955,7 @@ _PUBLIC_ void ndr_print_echo_TestCall(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestCall2(struct ndr_push *ndr, int flags, const struct echo_TestCall2 *r)
+static enum ndr_err_code ndr_push_echo_TestCall2(struct ndr_push *ndr, int flags, const struct echo_TestCall2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
@@ -968,10 +968,10 @@ static NTSTATUS ndr_push_echo_TestCall2(struct ndr_push *ndr, int flags, const s
 		NDR_CHECK(ndr_push_echo_Info(ndr, NDR_SCALARS, r->out.info));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestCall2(struct ndr_pull *ndr, int flags, struct echo_TestCall2 *r)
+static enum ndr_err_code ndr_pull_echo_TestCall2(struct ndr_pull *ndr, int flags, struct echo_TestCall2 *r)
 {
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -992,7 +992,7 @@ static NTSTATUS ndr_pull_echo_TestCall2(struct ndr_pull *ndr, int flags, struct 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestCall2(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestCall2 *r)
@@ -1022,7 +1022,7 @@ _PUBLIC_ void ndr_print_echo_TestCall2(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestSleep(struct ndr_push *ndr, int flags, const struct echo_TestSleep *r)
+static enum ndr_err_code ndr_push_echo_TestSleep(struct ndr_push *ndr, int flags, const struct echo_TestSleep *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.seconds));
@@ -1030,10 +1030,10 @@ static NTSTATUS ndr_push_echo_TestSleep(struct ndr_push *ndr, int flags, const s
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestSleep(struct ndr_pull *ndr, int flags, struct echo_TestSleep *r)
+static enum ndr_err_code ndr_pull_echo_TestSleep(struct ndr_pull *ndr, int flags, struct echo_TestSleep *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.seconds));
@@ -1041,7 +1041,7 @@ static NTSTATUS ndr_pull_echo_TestSleep(struct ndr_pull *ndr, int flags, struct 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestSleep(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestSleep *r)
@@ -1066,7 +1066,7 @@ _PUBLIC_ void ndr_print_echo_TestSleep(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const struct echo_TestEnum *r)
+static enum ndr_err_code ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const struct echo_TestEnum *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.foo1 == NULL) {
@@ -1098,10 +1098,10 @@ static NTSTATUS ndr_push_echo_TestEnum(struct ndr_push *ndr, int flags, const st
 		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.foo3, *r->out.foo1));
 		NDR_CHECK(ndr_push_echo_Enum3(ndr, NDR_SCALARS, r->out.foo3));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestEnum(struct ndr_pull *ndr, int flags, struct echo_TestEnum *r)
+static enum ndr_err_code ndr_pull_echo_TestEnum(struct ndr_pull *ndr, int flags, struct echo_TestEnum *r)
 {
 	TALLOC_CTX *_mem_save_foo1_0;
 	TALLOC_CTX *_mem_save_foo2_0;
@@ -1162,7 +1162,7 @@ static NTSTATUS ndr_pull_echo_TestEnum(struct ndr_pull *ndr, int flags, struct e
 		NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_SCALARS, r->out.foo3));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_foo3_0, LIBNDR_FLAG_REF_ALLOC);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestEnum *r)
@@ -1211,7 +1211,7 @@ _PUBLIC_ void ndr_print_echo_TestEnum(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestSurrounding(struct ndr_push *ndr, int flags, const struct echo_TestSurrounding *r)
+static enum ndr_err_code ndr_push_echo_TestSurrounding(struct ndr_push *ndr, int flags, const struct echo_TestSurrounding *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.data == NULL) {
@@ -1225,10 +1225,10 @@ static NTSTATUS ndr_push_echo_TestSurrounding(struct ndr_push *ndr, int flags, c
 		}
 		NDR_CHECK(ndr_push_echo_Surrounding(ndr, NDR_SCALARS, r->out.data));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestSurrounding(struct ndr_pull *ndr, int flags, struct echo_TestSurrounding *r)
+static enum ndr_err_code ndr_pull_echo_TestSurrounding(struct ndr_pull *ndr, int flags, struct echo_TestSurrounding *r)
 {
 	TALLOC_CTX *_mem_save_data_0;
 	if (flags & NDR_IN) {
@@ -1253,7 +1253,7 @@ static NTSTATUS ndr_pull_echo_TestSurrounding(struct ndr_pull *ndr, int flags, s
 		NDR_CHECK(ndr_pull_echo_Surrounding(ndr, NDR_SCALARS, r->out.data));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, LIBNDR_FLAG_REF_ALLOC);
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestSurrounding(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestSurrounding *r)
@@ -1284,7 +1284,7 @@ _PUBLIC_ void ndr_print_echo_TestSurrounding(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_echo_TestDoublePointer(struct ndr_push *ndr, int flags, const struct echo_TestDoublePointer *r)
+static enum ndr_err_code ndr_push_echo_TestDoublePointer(struct ndr_push *ndr, int flags, const struct echo_TestDoublePointer *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.data == NULL) {
@@ -1303,10 +1303,10 @@ static NTSTATUS ndr_push_echo_TestDoublePointer(struct ndr_push *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_echo_TestDoublePointer(struct ndr_pull *ndr, int flags, struct echo_TestDoublePointer *r)
+static enum ndr_err_code ndr_pull_echo_TestDoublePointer(struct ndr_pull *ndr, int flags, struct echo_TestDoublePointer *r)
 {
 	uint32_t _ptr_data;
 	TALLOC_CTX *_mem_save_data_0;
@@ -1338,7 +1338,7 @@ static NTSTATUS ndr_pull_echo_TestDoublePointer(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_echo_TestDoublePointer(struct ndr_print *ndr, const char *name, int flags, const struct echo_TestDoublePointer *r)

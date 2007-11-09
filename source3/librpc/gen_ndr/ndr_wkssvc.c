@@ -4,7 +4,7 @@
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 
 #include "librpc/gen_ndr/ndr_srvsvc.h"
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo100(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo100 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo100(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo100 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -28,10 +28,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo100(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->domain_name, ndr_charset_length(r->domain_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo100(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo100 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo100(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo100 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -81,7 +81,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo100(struct ndr_pull *ndr, int ndr_fl
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo100(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo100 *r)
@@ -106,7 +106,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo100(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo101(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo101 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo101(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo101 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -137,10 +137,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo101(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->lan_root, ndr_charset_length(r->lan_root, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo101(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo101 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo101(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo101 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -210,7 +210,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo101(struct ndr_pull *ndr, int ndr_fl
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lan_root_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo101(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo101 *r)
@@ -241,7 +241,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo101(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo102(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo102 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo102(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo102 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -273,10 +273,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo102(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->lan_root, ndr_charset_length(r->lan_root, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo102(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo102 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo102(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo102 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -347,7 +347,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo102(struct ndr_pull *ndr, int ndr_fl
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lan_root_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo102(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo102 *r)
@@ -379,7 +379,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo102(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo502(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo502 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo502(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo502 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -421,10 +421,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo502(struct ndr_push *ndr, int ndr_fl
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo502(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo502 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo502(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo502 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -466,7 +466,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo502(struct ndr_pull *ndr, int ndr_fl
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo502(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo502 *r)
@@ -511,7 +511,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo502(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1010(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1010 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1010(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1010 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -519,10 +519,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1010(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1010(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1010 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1010(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1010 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -530,7 +530,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1010(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1010(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1010 *r)
@@ -541,7 +541,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1010(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1011(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1011 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1011(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1011 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -549,10 +549,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1011(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1011(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1011 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1011(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1011 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -560,7 +560,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1011(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1011(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1011 *r)
@@ -571,7 +571,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1011(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1012(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1012 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1012(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1012 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -579,10 +579,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1012(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1012(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1012 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1012(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1012 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -590,7 +590,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1012(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1012(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1012 *r)
@@ -601,7 +601,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1012(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1013(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1013 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1013(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1013 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -609,10 +609,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1013(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1013(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1013 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1013(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1013 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -620,7 +620,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1013(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1013(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1013 *r)
@@ -631,7 +631,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1013(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1018(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1018 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1018(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1018 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -639,10 +639,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1018(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1018(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1018 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1018(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1018 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -650,7 +650,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1018(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1018(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1018 *r)
@@ -661,7 +661,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1018(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1023(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1023 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1023(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1023 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -669,10 +669,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1023(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1023(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1023 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1023(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1023 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -680,7 +680,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1023(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1023(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1023 *r)
@@ -691,7 +691,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1023(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1027(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1027 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1027(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1027 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -699,10 +699,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1027(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1027(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1027 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1027(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1027 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -710,7 +710,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1027(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1027(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1027 *r)
@@ -721,7 +721,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1027(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1033(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1033 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo1033(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaInfo1033 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -729,10 +729,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo1033(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1033(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1033 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo1033(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaInfo1033 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -740,7 +740,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo1033(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1033(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaInfo1033 *r)
@@ -751,7 +751,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo1033(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaInfo *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -890,10 +890,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int ndr_flags
 
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo(struct ndr_pull *ndr, int ndr_flags, union wkssvc_NetWkstaInfo *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaInfo(struct ndr_pull *ndr, int ndr_flags, union wkssvc_NetWkstaInfo *r)
 {
 	int level;
 	uint32_t _level;
@@ -1156,7 +1156,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaInfo(struct ndr_pull *ndr, int ndr_flags
 
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo(struct ndr_print *ndr, const char *name, const union wkssvc_NetWkstaInfo *r)
@@ -1279,7 +1279,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaInfo(struct ndr_print *ndr, const char *n
 	}
 }
 
-static NTSTATUS ndr_push_USER_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0 *r)
+static enum ndr_err_code ndr_push_USER_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1293,10 +1293,10 @@ static NTSTATUS ndr_push_USER_INFO_0(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->user, ndr_charset_length(r->user, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_USER_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0 *r)
+static enum ndr_err_code ndr_pull_USER_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0 *r)
 {
 	uint32_t _ptr_user;
 	TALLOC_CTX *_mem_save_user_0;
@@ -1323,7 +1323,7 @@ static NTSTATUS ndr_pull_USER_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_USER_INFO_0(struct ndr_print *ndr, const char *name, const struct USER_INFO_0 *r)
@@ -1339,7 +1339,7 @@ _PUBLIC_ void ndr_print_USER_INFO_0(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_USER_INFO_0_CONTAINER(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0_CONTAINER *r)
+static enum ndr_err_code ndr_push_USER_INFO_0_CONTAINER(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0_CONTAINER *r)
 {
 	uint32_t cntr_user0_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1358,10 +1358,10 @@ static NTSTATUS ndr_push_USER_INFO_0_CONTAINER(struct ndr_push *ndr, int ndr_fla
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_USER_INFO_0_CONTAINER(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0_CONTAINER *r)
+static enum ndr_err_code ndr_pull_USER_INFO_0_CONTAINER(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0_CONTAINER *r)
 {
 	uint32_t _ptr_user0;
 	uint32_t cntr_user0_1;
@@ -1398,7 +1398,7 @@ static NTSTATUS ndr_pull_USER_INFO_0_CONTAINER(struct ndr_pull *ndr, int ndr_fla
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->user0, r->entries_read));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_USER_INFO_0_CONTAINER(struct ndr_print *ndr, const char *name, const struct USER_INFO_0_CONTAINER *r)
@@ -1426,7 +1426,7 @@ _PUBLIC_ void ndr_print_USER_INFO_0_CONTAINER(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1 *r)
+static enum ndr_err_code ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1461,10 +1461,10 @@ static NTSTATUS ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->logon_server, ndr_charset_length(r->logon_server, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1 *r)
+static enum ndr_err_code ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1 *r)
 {
 	uint32_t _ptr_user_name;
 	TALLOC_CTX *_mem_save_user_name_0;
@@ -1551,7 +1551,7 @@ static NTSTATUS ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, const struct USER_INFO_1 *r)
@@ -1585,7 +1585,7 @@ _PUBLIC_ void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_USER_INFO_1_CONTAINER(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1_CONTAINER *r)
+static enum ndr_err_code ndr_push_USER_INFO_1_CONTAINER(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1_CONTAINER *r)
 {
 	uint32_t cntr_user1_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1604,10 +1604,10 @@ static NTSTATUS ndr_push_USER_INFO_1_CONTAINER(struct ndr_push *ndr, int ndr_fla
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_USER_INFO_1_CONTAINER(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1_CONTAINER *r)
+static enum ndr_err_code ndr_pull_USER_INFO_1_CONTAINER(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1_CONTAINER *r)
 {
 	uint32_t _ptr_user1;
 	uint32_t cntr_user1_1;
@@ -1644,7 +1644,7 @@ static NTSTATUS ndr_pull_USER_INFO_1_CONTAINER(struct ndr_pull *ndr, int ndr_fla
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->user1, r->entries_read));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_USER_INFO_1_CONTAINER(struct ndr_print *ndr, const char *name, const struct USER_INFO_1_CONTAINER *r)
@@ -1672,7 +1672,7 @@ _PUBLIC_ void ndr_print_USER_INFO_1_CONTAINER(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKS_USER_ENUM_UNION(struct ndr_push *ndr, int ndr_flags, const union WKS_USER_ENUM_UNION *r)
+static enum ndr_err_code ndr_push_WKS_USER_ENUM_UNION(struct ndr_push *ndr, int ndr_flags, const union WKS_USER_ENUM_UNION *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -1709,10 +1709,10 @@ static NTSTATUS ndr_push_WKS_USER_ENUM_UNION(struct ndr_push *ndr, int ndr_flags
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKS_USER_ENUM_UNION(struct ndr_pull *ndr, int ndr_flags, union WKS_USER_ENUM_UNION *r)
+static enum ndr_err_code ndr_pull_WKS_USER_ENUM_UNION(struct ndr_pull *ndr, int ndr_flags, union WKS_USER_ENUM_UNION *r)
 {
 	int level;
 	uint32_t _level;
@@ -1773,7 +1773,7 @@ static NTSTATUS ndr_pull_WKS_USER_ENUM_UNION(struct ndr_pull *ndr, int ndr_flags
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKS_USER_ENUM_UNION(struct ndr_print *ndr, const char *name, const union WKS_USER_ENUM_UNION *r)
@@ -1805,7 +1805,7 @@ _PUBLIC_ void ndr_print_WKS_USER_ENUM_UNION(struct ndr_print *ndr, const char *n
 	}
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaTransportInfo0(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaTransportInfo0 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaTransportInfo0(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaTransportInfo0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1829,10 +1829,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaTransportInfo0(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->address, ndr_charset_length(r->address, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportInfo0(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaTransportInfo0 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaTransportInfo0(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaTransportInfo0 *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -1882,7 +1882,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportInfo0(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_address_0, 0);
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportInfo0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaTransportInfo0 *r)
@@ -1907,7 +1907,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportInfo0(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr0(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaTransportCtr0 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaTransportCtr0(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_NetWkstaTransportCtr0 *r)
 {
 	uint32_t cntr_array_1;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1926,10 +1926,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr0(struct ndr_push *ndr, int 
 			}
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportCtr0(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaTransportCtr0 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaTransportCtr0(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_NetWkstaTransportCtr0 *r)
 {
 	uint32_t _ptr_array;
 	uint32_t cntr_array_1;
@@ -1966,7 +1966,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportCtr0(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->array, r->count));
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr0(struct ndr_print *ndr, const char *name, const struct wkssvc_NetWkstaTransportCtr0 *r)
@@ -1994,7 +1994,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr0(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaTransportCtr *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *ndr, int ndr_flags, const union wkssvc_NetWkstaTransportCtr *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -2023,10 +2023,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *ndr, int n
 
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportCtr(struct ndr_pull *ndr, int ndr_flags, union wkssvc_NetWkstaTransportCtr *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaTransportCtr(struct ndr_pull *ndr, int ndr_flags, union wkssvc_NetWkstaTransportCtr *r)
 {
 	int level;
 	uint32_t _level;
@@ -2069,7 +2069,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportCtr(struct ndr_pull *ndr, int n
 
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr(struct ndr_print *ndr, const char *name, const union wkssvc_NetWkstaTransportCtr *r)
@@ -2093,7 +2093,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr(struct ndr_print *ndr, const
 	}
 }
 
-static NTSTATUS ndr_push_wkssvc_PasswordBuffer(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_PasswordBuffer *r)
+static enum ndr_err_code ndr_push_wkssvc_PasswordBuffer(struct ndr_push *ndr, int ndr_flags, const struct wkssvc_PasswordBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
@@ -2101,10 +2101,10 @@ static NTSTATUS ndr_push_wkssvc_PasswordBuffer(struct ndr_push *ndr, int ndr_fla
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_PasswordBuffer(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_PasswordBuffer *r)
+static enum ndr_err_code ndr_pull_wkssvc_PasswordBuffer(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_PasswordBuffer *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
@@ -2112,7 +2112,7 @@ static NTSTATUS ndr_pull_wkssvc_PasswordBuffer(struct ndr_pull *ndr, int ndr_fla
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_PasswordBuffer(struct ndr_print *ndr, const char *name, const struct wkssvc_PasswordBuffer *r)
@@ -2123,18 +2123,18 @@ _PUBLIC_ void ndr_print_wkssvc_PasswordBuffer(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_joinflags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static enum ndr_err_code ndr_push_wkssvc_joinflags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_joinflags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static enum ndr_err_code ndr_pull_wkssvc_joinflags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_joinflags(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -2152,18 +2152,18 @@ _PUBLIC_ void ndr_print_wkssvc_joinflags(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_renameflags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+static enum ndr_err_code ndr_push_wkssvc_renameflags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_renameflags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+static enum ndr_err_code ndr_pull_wkssvc_renameflags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
 {
 	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_renameflags(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -2174,7 +2174,7 @@ _PUBLIC_ void ndr_print_wkssvc_renameflags(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaGetInfo(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaGetInfo *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaGetInfo(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaGetInfo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -2194,10 +2194,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaGetInfo(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_wkssvc_NetWkstaInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaGetInfo(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaGetInfo *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaGetInfo(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaGetInfo *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -2238,7 +2238,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaGetInfo(struct ndr_pull *ndr, int flags,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaGetInfo *r)
@@ -2274,7 +2274,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaGetInfo(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaSetInfo(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaSetInfo *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaSetInfo(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaSetInfo *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -2302,10 +2302,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaSetInfo(struct ndr_push *ndr, int flags,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.parm_error));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaSetInfo(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaSetInfo *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaSetInfo(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaSetInfo *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -2361,7 +2361,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaSetInfo(struct ndr_pull *ndr, int flags,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_parm_error_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaSetInfo *r)
@@ -2405,7 +2405,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaSetInfo(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaEnumUsers(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaEnumUsers *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaEnumUsers(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaEnumUsers *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -2445,10 +2445,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaEnumUsers(struct ndr_push *ndr, int flag
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resumehandle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaEnumUsers(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaEnumUsers *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaEnumUsers(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaEnumUsers *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_entriesread;
@@ -2541,7 +2541,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaEnumUsers(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resumehandle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsers(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaEnumUsers *r)
@@ -2601,24 +2601,24 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsers(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTAUSERGETINFO *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTAUSERGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTAUSERGETINFO *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTAUSERGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRWKSTAUSERGETINFO *r)
@@ -2642,24 +2642,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTAUSERGETINFO(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTAUSERSETINFO *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTAUSERSETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTAUSERSETINFO *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTAUSERSETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRWKSTAUSERSETINFO *r)
@@ -2683,7 +2683,7 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTAUSERSETINFO(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaTransportEnum *r)
+static enum ndr_err_code ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int flags, const struct wkssvc_NetWkstaTransportEnum *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -2728,10 +2728,10 @@ static NTSTATUS ndr_push_wkssvc_NetWkstaTransportEnum(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaTransportEnum *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int flags, struct wkssvc_NetWkstaTransportEnum *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_totalentries;
@@ -2828,7 +2828,7 @@ static NTSTATUS ndr_pull_wkssvc_NetWkstaTransportEnum(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetWkstaTransportEnum *r)
@@ -2891,24 +2891,24 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportEnum(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTATRANSPORTADD *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTATRANSPORTADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTATRANSPORTADD *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTATRANSPORTADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRWKSTATRANSPORTADD *r)
@@ -2932,24 +2932,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTATRANSPORTADD(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
@@ -2973,24 +2973,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRWKSTATRANSPORTDEL(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRUSEADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEADD *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRUSEADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRUSEADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEADD *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRUSEADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRUSEADD(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRUSEADD *r)
@@ -3014,24 +3014,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRUSEADD(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRUSEGETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEGETINFO *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRUSEGETINFO(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRUSEGETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEGETINFO *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRUSEGETINFO(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEGETINFO *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRUSEGETINFO(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRUSEGETINFO *r)
@@ -3055,24 +3055,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRUSEGETINFO(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRUSEDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEDEL *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRUSEDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRUSEDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEDEL *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRUSEDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRUSEDEL(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRUSEDEL *r)
@@ -3096,24 +3096,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRUSEDEL(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRUSEENUM(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEENUM *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRUSEENUM(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUSEENUM *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRUSEENUM(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEENUM *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRUSEENUM(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUSEENUM *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRUSEENUM(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRUSEENUM *r)
@@ -3137,24 +3137,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRUSEENUM(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
@@ -3178,24 +3178,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRMESSAGEBUFFERSEND(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
@@ -3219,24 +3219,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct ndr_print *nd
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
@@ -3260,24 +3260,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRLOGONDOMAINNAMEADD(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
@@ -3301,24 +3301,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRJOINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRJOINDOMAIN *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRJOINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRJOINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRJOINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRJOINDOMAIN *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRJOINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRJOINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRJOINDOMAIN(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRJOINDOMAIN *r)
@@ -3342,24 +3342,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRJOINDOMAIN(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRUNJOINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUNJOINDOMAIN *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRUNJOINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRUNJOINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRUNJOINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUNJOINDOMAIN *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRUNJOINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRUNJOINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRUNJOINDOMAIN(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRUNJOINDOMAIN *r)
@@ -3383,24 +3383,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRUNJOINDOMAIN(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
@@ -3424,24 +3424,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct ndr_print *ndr, 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRVALIDATENAME(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRVALIDATENAME *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRVALIDATENAME(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRVALIDATENAME *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRVALIDATENAME(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRVALIDATENAME *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRVALIDATENAME(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRVALIDATENAME *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRVALIDATENAME(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRVALIDATENAME *r)
@@ -3465,24 +3465,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRVALIDATENAME(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRGETJOININFORMATION(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOININFORMATION *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRGETJOININFORMATION(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOININFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRGETJOININFORMATION(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOININFORMATION *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRGETJOININFORMATION(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOININFORMATION *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOININFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRGETJOININFORMATION *r)
@@ -3506,24 +3506,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOININFORMATION(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRGETJOINABLEOUS(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOINABLEOUS *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRGETJOINABLEOUS(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOINABLEOUS *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRGETJOINABLEOUS(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOINABLEOUS *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRGETJOINABLEOUS(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOINABLEOUS *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOINABLEOUS(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRGETJOINABLEOUS *r)
@@ -3547,7 +3547,7 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOINABLEOUS(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetrJoinDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrJoinDomain2 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetrJoinDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrJoinDomain2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -3587,10 +3587,10 @@ static NTSTATUS ndr_push_wkssvc_NetrJoinDomain2(struct ndr_push *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetrJoinDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrJoinDomain2 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetrJoinDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrJoinDomain2 *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_account_name;
@@ -3679,7 +3679,7 @@ static NTSTATUS ndr_pull_wkssvc_NetrJoinDomain2(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetrJoinDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrJoinDomain2 *r)
@@ -3732,7 +3732,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrJoinDomain2(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetrUnjoinDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrUnjoinDomain2 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetrUnjoinDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrUnjoinDomain2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -3758,10 +3758,10 @@ static NTSTATUS ndr_push_wkssvc_NetrUnjoinDomain2(struct ndr_push *ndr, int flag
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetrUnjoinDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrUnjoinDomain2 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetrUnjoinDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrUnjoinDomain2 *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_account;
@@ -3823,7 +3823,7 @@ static NTSTATUS ndr_pull_wkssvc_NetrUnjoinDomain2(struct ndr_pull *ndr, int flag
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetrUnjoinDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrUnjoinDomain2 *r)
@@ -3866,7 +3866,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrUnjoinDomain2(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetrRenameMachineInDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrRenameMachineInDomain2 *r)
+static enum ndr_err_code ndr_push_wkssvc_NetrRenameMachineInDomain2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrRenameMachineInDomain2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -3899,10 +3899,10 @@ static NTSTATUS ndr_push_wkssvc_NetrRenameMachineInDomain2(struct ndr_push *ndr,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetrRenameMachineInDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrRenameMachineInDomain2 *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetrRenameMachineInDomain2(struct ndr_pull *ndr, int flags, struct wkssvc_NetrRenameMachineInDomain2 *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_NewMachineName;
@@ -3984,7 +3984,7 @@ static NTSTATUS ndr_pull_wkssvc_NetrRenameMachineInDomain2(struct ndr_pull *ndr,
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetrRenameMachineInDomain2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrRenameMachineInDomain2 *r)
@@ -4033,24 +4033,24 @@ _PUBLIC_ void ndr_print_wkssvc_NetrRenameMachineInDomain2(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRVALIDATENAME2(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRVALIDATENAME2 *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRVALIDATENAME2(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRVALIDATENAME2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRVALIDATENAME2(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRVALIDATENAME2 *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRVALIDATENAME2(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRVALIDATENAME2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRVALIDATENAME2(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRVALIDATENAME2 *r)
@@ -4074,24 +4074,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRVALIDATENAME2(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOINABLEOUS2 *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRGETJOINABLEOUS2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOINABLEOUS2 *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRGETJOINABLEOUS2 *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRGETJOINABLEOUS2 *r)
@@ -4115,7 +4115,7 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRGETJOINABLEOUS2(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetrAddAlternateComputerName(struct ndr_push *ndr, int flags, const struct wkssvc_NetrAddAlternateComputerName *r)
+static enum ndr_err_code ndr_push_wkssvc_NetrAddAlternateComputerName(struct ndr_push *ndr, int flags, const struct wkssvc_NetrAddAlternateComputerName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -4148,10 +4148,10 @@ static NTSTATUS ndr_push_wkssvc_NetrAddAlternateComputerName(struct ndr_push *nd
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetrAddAlternateComputerName(struct ndr_pull *ndr, int flags, struct wkssvc_NetrAddAlternateComputerName *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetrAddAlternateComputerName(struct ndr_pull *ndr, int flags, struct wkssvc_NetrAddAlternateComputerName *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_NewAlternateMachineName;
@@ -4233,7 +4233,7 @@ static NTSTATUS ndr_pull_wkssvc_NetrAddAlternateComputerName(struct ndr_pull *nd
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetrAddAlternateComputerName(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrAddAlternateComputerName *r)
@@ -4282,7 +4282,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrAddAlternateComputerName(struct ndr_print *nd
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_wkssvc_NetrRemoveAlternateComputerName(struct ndr_push *ndr, int flags, const struct wkssvc_NetrRemoveAlternateComputerName *r)
+static enum ndr_err_code ndr_push_wkssvc_NetrRemoveAlternateComputerName(struct ndr_push *ndr, int flags, const struct wkssvc_NetrRemoveAlternateComputerName *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
@@ -4315,10 +4315,10 @@ static NTSTATUS ndr_push_wkssvc_NetrRemoveAlternateComputerName(struct ndr_push 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_wkssvc_NetrRemoveAlternateComputerName(struct ndr_pull *ndr, int flags, struct wkssvc_NetrRemoveAlternateComputerName *r)
+static enum ndr_err_code ndr_pull_wkssvc_NetrRemoveAlternateComputerName(struct ndr_pull *ndr, int flags, struct wkssvc_NetrRemoveAlternateComputerName *r)
 {
 	uint32_t _ptr_server_name;
 	uint32_t _ptr_AlternateMachineNameToRemove;
@@ -4400,7 +4400,7 @@ static NTSTATUS ndr_pull_wkssvc_NetrRemoveAlternateComputerName(struct ndr_pull 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wkssvc_NetrRemoveAlternateComputerName(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrRemoveAlternateComputerName *r)
@@ -4449,24 +4449,24 @@ _PUBLIC_ void ndr_print_wkssvc_NetrRemoveAlternateComputerName(struct ndr_print 
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
@@ -4490,24 +4490,24 @@ _PUBLIC_ void ndr_print_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-static NTSTATUS ndr_push_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
+static enum ndr_err_code ndr_push_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_push *ndr, int flags, const struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-static NTSTATUS ndr_pull_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
+static enum ndr_err_code ndr_pull_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_pull *ndr, int flags, struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
 {
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct ndr_print *ndr, const char *name, int flags, const struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
