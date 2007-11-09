@@ -69,11 +69,12 @@ static char *		uri_unescape_alloc(const char *);
 		*printer;	/* Printer name */
   const char	*workgroup;	/* Workgroup */
   FILE		*fp;		/* File to print */
-  int		status=0;		/* Status of LPD job */
+  int		status=1;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
   char null_str[1];
   int tries = 0;
   const char *dev_uri;
+  TALLOC_CTX *frame = talloc_stackframe();
 
   null_str[0] = '\0';
 
@@ -93,7 +94,8 @@ static char *		uri_unescape_alloc(const char *);
     */
 
     list_devices();
-    return (0);
+    status = 0;
+    goto done;
   }
 
   if (argc < 6 || argc > 7)
@@ -104,7 +106,7 @@ static char *		uri_unescape_alloc(const char *);
     fputs("       destination printer:\n", stderr);
     fputs("\n", stderr);
     fputs("           smb://[username:password@][workgroup/]server[:port]/printer\n", stderr);
-    return (1);
+    goto done;
   }
 
  /*
@@ -125,7 +127,7 @@ static char *		uri_unescape_alloc(const char *);
   else if ((fp = fopen(argv[6], "rb")) == NULL)
   {
     perror("ERROR: Unable to open print file");
-    return (1);
+    goto done;
   }
   else
     copies = atoi(argv[4]);
@@ -142,7 +144,7 @@ static char *		uri_unescape_alloc(const char *);
   else
   {
     fputs("ERROR: No device URI found in DEVICE_URI environment variable or argv[0] !\n", stderr);
-    return (1);
+    goto done;
   }
 
   uri[sizeof(uri) - 1] = '\0';
@@ -184,7 +186,7 @@ static char *		uri_unescape_alloc(const char *);
   if ((sep = strchr_m(tmp, '/')) == NULL)
   {
     fputs("ERROR: Bad URI - need printer name!\n", stderr);
-    return (1);
+    goto done;
   }
 
   *sep++ = '\0';
@@ -231,7 +233,7 @@ static char *		uri_unescape_alloc(const char *);
   if (!lp_load(dyn_CONFIGFILE, True, False, False, True))
   {
     fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-    return (1);
+    goto done;
   }
 
   if (workgroup == NULL)
@@ -252,7 +254,7 @@ static char *		uri_unescape_alloc(const char *);
       else
       {
         fprintf(stderr, "ERROR: Unable to connect to CIFS host, trying next printer...\n");
-        return (1);
+    	goto done;
       }
     }
   }
@@ -260,7 +262,7 @@ static char *		uri_unescape_alloc(const char *);
 
   if (cli == NULL) {
         fprintf(stderr, "ERROR: Unable to connect to CIFS host after (tried %d times)\n", tries);
-        return (1);
+    	goto done;
   }
 
  /*
@@ -287,6 +289,9 @@ static char *		uri_unescape_alloc(const char *);
   * Return the queue status...
   */
 
+  done:
+
+  TALLOC_FREE(frame);
   return (status);
 }
 
@@ -480,14 +485,17 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
       const char *jobusername)   /* I - User who issued the print job */
 {
   struct cli_state  *cli;    /* New connection */
-  pstring    myname;    /* Client name */
+  char *myname = NULL;    /* Client name */
   struct passwd *pwd;
 
  /*
   * Get the names and addresses of the client and server...
   */
 
-  get_myname(myname);  
+  myname = get_myname(talloc_tos());
+  if (!myname) {
+	return NULL;
+  }
 
   /* See if we have a username first.  This is for backwards compatible 
      behavior with 3.0.14a */

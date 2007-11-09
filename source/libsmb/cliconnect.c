@@ -1772,12 +1772,9 @@ struct cli_state *get_ipc_connect(char *server,
 				struct user_auth_info *user_info)
 {
         struct cli_state *cli;
-        pstring myname;
 	NTSTATUS nt_status;
 
-        get_myname(myname);
-
-	nt_status = cli_full_connection(&cli, myname, server, server_ss, 0, "IPC$", "IPC", 
+	nt_status = cli_full_connection(&cli, NULL, server, server_ss, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
 					CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, Undefined, NULL);
 

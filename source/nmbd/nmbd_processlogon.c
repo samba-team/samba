@@ -395,7 +395,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					struct GUID domain_guid;
 					UUID_FLAT flat_guid;
 					char *domain;
-					pstring hostname;
+					char *hostname;
 					char *component, *dc, *q1;
 					char *q_orig = q;
 					int str_offset;
@@ -406,7 +406,12 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						("get_mydnsdomname failed.\n"));
 						return;
 					}
-					get_myname(hostname);
+					hostname = get_myname(talloc_tos());
+					if (!hostname) {
+						DEBUG(2,
+						("get_myname failed.\n"));
+						return;
+					}
 
 					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
 						return;

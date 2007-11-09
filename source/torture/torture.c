@@ -5175,6 +5175,7 @@ static void usage(void)
 	int gotuser = 0;
 	int gotpass = 0;
 	bool correct = True;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	dbf = x_stdout;
 
@@ -5207,7 +5208,11 @@ static void usage(void)
 	*p = 0;
 	fstrcpy(share, p+1);
 
-	get_myname(myname);
+	fstrcpy(myname, get_myname(talloc_tos()));
+	if (!*myname) {
+		fprintf(stderr, "Failed to get my hostname.\n");
+		return 1;
+	}
 
 	if (*username == 0 && getenv("LOGNAME")) {
 	  fstrcpy(username,getenv("LOGNAME"));
@@ -5308,6 +5313,8 @@ static void usage(void)
 			}
 		}
 	}
+
+	TALLOC_FREE(frame);
 
 	if (correct) {
 		return(0);

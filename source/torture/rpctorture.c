@@ -228,6 +228,7 @@ enum client_action
 	int nprocs = 1;
 	int numops = 100;
 	pstring logfile;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	struct client_info cli_info;
 
@@ -292,8 +293,8 @@ enum client_action
 
 	setup_logging(pname, True);
 
-	if (!get_myname(global_myname))
-	{
+	global_myname = get_myname(global_myname);
+	if (!global_myname) {
 		fprintf(stderr, "Failed to get my hostname.\n");
 	}
 
