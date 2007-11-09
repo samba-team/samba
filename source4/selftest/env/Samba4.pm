@@ -647,7 +647,6 @@ nogroup:x:65534:nobody
 		DOMAIN => $domain,
 		USERNAME => $username,
 		REALM => $realm,
-		LDB_MODULES_PATH => "$self->{bindir}/modules/ldb",
 		PASSWORD => $password,
 		LDAPDIR => $ldapdir,
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,

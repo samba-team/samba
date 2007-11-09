@@ -403,7 +403,7 @@ if (defined($ENV{RUN_FROM_BUILD_FARM}) and
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
-$ENV{LD_LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
+$ENV{LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
 $ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
 if (defined($ENV{LD_LIBRARY_PATH})) {
 	$ENV{LD_LIBRARY_PATH} = "$old_pwd/bin/shared:$ENV{LD_LIBRARY_PATH}";
@@ -546,7 +546,7 @@ sub write_clientconf($$)
 	torture:basedir = $prefix_abs/client
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
-	modules dir = $prefix_abs/../bin/modules
+	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
 ";
 	close(CF);
 }
