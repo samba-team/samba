@@ -166,7 +166,7 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		return WERR_OK;
 	} else if (strcmp("OSVersion", r->in.value_name) == 0) {
 		DATA_BLOB blob;
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
 		os.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
@@ -174,8 +174,8 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		os.build		= dcesrv_common_get_version_build(mem_ctx, NULL);
 		os.extra_string		= "";
 
-		status = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
 		}
 
@@ -184,7 +184,7 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		return WERR_OK;
 	} else if (strcmp("OSVersionEx", r->in.value_name) == 0) {
 		DATA_BLOB blob;
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersionEx os_ex;
 
 		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
@@ -194,8 +194,8 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		os_ex.unknown2		= 0;
 		os_ex.unknown3		= 0;
 
-		status = ndr_push_struct_blob(&blob, mem_ctx, &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
 		}
 

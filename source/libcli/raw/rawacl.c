@@ -61,6 +61,7 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 	NTSTATUS status;
 	struct smb_nttrans nt;
 	struct ndr_pull *ndr;
+	enum ndr_err_code ndr_err;
 
 	status = smb_raw_nttrans_recv(req, mem_ctx, &nt);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -84,10 +85,13 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 	if (!io->query_secdesc.out.sd) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, 
-					      io->query_secdesc.out.sd);
+	ndr_err = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS,
+					       io->query_secdesc.out.sd);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 
@@ -114,7 +118,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	uint8_t params[8];
 	struct ndr_push *ndr;
 	struct smbcli_request *req;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = 0;
@@ -133,8 +137,8 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return NULL;
 
-	status = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(ndr);
 		return NULL;
 	}

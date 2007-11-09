@@ -1027,6 +1027,7 @@ static int dcesrv_call_dequeue(struct dcesrv_call_state *call)
 NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 {
 	struct ndr_pull *ndr;
+	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
 	DATA_BLOB blob;
@@ -1059,11 +1060,11 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(dce_conn->partial_input.data);
 		talloc_free(call);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	/* we have to check the signing here, before combining the

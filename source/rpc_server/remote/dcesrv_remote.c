@@ -124,7 +124,7 @@ static void remote_op_unbind(struct dcesrv_connection_context *context, const st
 
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	const struct ndr_interface_table *table = (const struct ndr_interface_table *)dce_call->context->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
@@ -141,8 +141,8 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 	}
 
         /* unravel the NDR for the packet */
-	status = table->calls[opnum].ndr_pull(pull, NDR_IN, *r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = table->calls[opnum].ndr_pull(pull, NDR_IN, *r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		dcerpc_log_packet(table, opnum, NDR_IN,
 				  &dce_call->pkt.u.request.stub_and_verifier);
 		dce_call->fault_code = DCERPC_FAULT_NDR;
@@ -188,13 +188,13 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	const struct ndr_interface_table *table = dce_call->context->iface->private;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
         /* unravel the NDR for the packet */
-	status = table->calls[opnum].ndr_push(push, NDR_OUT, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = table->calls[opnum].ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		dce_call->fault_code = DCERPC_FAULT_NDR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}

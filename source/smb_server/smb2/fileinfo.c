@@ -143,12 +143,14 @@ static NTSTATUS smb2srv_getinfo_fs(struct smb2srv_getinfo_op *op, uint8_t smb2_l
 static NTSTATUS smb2srv_getinfo_security_send(struct smb2srv_getinfo_op *op)
 {
 	union smb_fileinfo *io = talloc_get_type(op->io_ptr, union smb_fileinfo);
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
-	status = ndr_push_struct_blob(&op->info->out.blob, op->req,
-				      io->query_secdesc.out.sd,
-				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ndr_err = ndr_push_struct_blob(&op->info->out.blob, op->req,
+				       io->query_secdesc.out.sd,
+				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -294,7 +296,7 @@ static NTSTATUS smb2srv_setinfo_fs(struct smb2srv_setinfo_op *op, uint8_t smb2_l
 static NTSTATUS smb2srv_setinfo_security(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
 {
 	union smb_setfileinfo *io;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	switch (smb2_level) {
 	case 0x00:
@@ -308,10 +310,12 @@ static NTSTATUS smb2srv_setinfo_security(struct smb2srv_setinfo_op *op, uint8_t 
 		io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
 		NT_STATUS_HAVE_NO_MEMORY(io->set_secdesc.in.sd);
 
-		status = ndr_pull_struct_blob(&op->info->in.blob, io, 
-					      io->set_secdesc.in.sd, 
-					      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-		NT_STATUS_NOT_OK_RETURN(status);
+		ndr_err = ndr_pull_struct_blob(&op->info->in.blob, io,
+					       io->set_secdesc.in.sd,
+					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
 
 		return ntvfs_setfileinfo(op->req->ntvfs, io);
 	}

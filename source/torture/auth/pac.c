@@ -262,6 +262,7 @@ static const uint8_t saved_pac[] = {
 static bool torture_pac_saved_check(struct torture_context *tctx)
 {
 	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB tmp_blob, validate_blob;
 	struct PAC_DATA *pac_data, pac_data2;
 	struct PAC_LOGON_INFO *logon_info;
@@ -514,8 +515,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	 * pointer, padding etc algorithms as win2k3.
 	 */
 	if (tmp_blob.length != validate_blob.length) {
-		nt_status = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
-						 (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		ndr_err = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
+					       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		torture_assert_ntstatus_ok(tctx, nt_status, "can't parse the PAC");
 		
 		NDR_PRINT_DEBUG(PAC_DATA, pac_data);
@@ -534,8 +536,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	if (memcmp(tmp_blob.data, validate_blob.data, tmp_blob.length) != 0) {
-		nt_status = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
-						 (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		ndr_err = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
+					       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		torture_assert_ntstatus_ok(tctx, nt_status, "can't parse the PAC");
 		
 		NDR_PRINT_DEBUG(PAC_DATA, pac_data);

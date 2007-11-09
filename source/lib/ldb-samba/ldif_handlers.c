@@ -36,16 +36,16 @@
 static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
+	enum ndr_err_code ndr_err;
 	struct dom_sid *sid;
-	NTSTATUS status;
 	sid = dom_sid_parse_talloc(mem_ctx, (const char *)in->data);
 	if (sid == NULL) {
 		return -1;
 	}
-	status = ndr_push_struct_blob(out, mem_ctx, sid, 
-				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
 	return 0;
@@ -58,14 +58,15 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *in, struct ldb_val *out)
 {
 	struct dom_sid *sid;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+
 	sid = talloc(mem_ctx, struct dom_sid);
 	if (sid == NULL) {
 		return -1;
 	}
-	status = ndr_pull_struct_blob(in, sid, sid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(in, sid, sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
 		return -1;
 	}
@@ -141,15 +142,16 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	status = GUID_from_string((const char *)in->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
-	status = ndr_push_struct_blob(out, mem_ctx, &guid,
-				      (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, &guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
 	return 0;
@@ -162,10 +164,10 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
-	NTSTATUS status;
-	status = ndr_pull_struct_blob(in, mem_ctx, &guid,
-				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	if (!NT_STATUS_IS_OK(status)) {
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_pull_struct_blob(in, mem_ctx, &guid,
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
 	out->data = (uint8_t *)GUID_string(mem_ctx, &guid);
@@ -246,16 +248,16 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 					  const struct ldb_val *in, struct ldb_val *out)
 {
 	struct security_descriptor *sd;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	sd = sddl_decode(mem_ctx, (const char *)in->data, NULL);
 	if (sd == NULL) {
 		return -1;
 	}
-	status = ndr_push_struct_blob(out, mem_ctx, sd, 
-				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, sd,
+				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	talloc_free(sd);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
 	return 0;
@@ -268,15 +270,15 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 					   const struct ldb_val *in, struct ldb_val *out)
 {
 	struct security_descriptor *sd;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	sd = talloc(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
 		return -1;
 	}
-	status = ndr_pull_struct_blob(in, sd, sd, 
-				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(in, sd, sd,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sd);
 		return -1;
 	}

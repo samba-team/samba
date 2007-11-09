@@ -51,7 +51,7 @@ static NTSTATUS get_ntacl(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB blob;
 	ssize_t size;
-	NTSTATUS result;
+	enum ndr_err_code ndr_err;
 	struct ndr_pull *ndr;
 
 	*ntacl = talloc(mem_ctx, struct xattr_NTACL);
@@ -73,10 +73,9 @@ static NTSTATUS get_ntacl(TALLOC_CTX *mem_ctx,
 
 	ndr = ndr_pull_init_blob(&blob, NULL);
 
-	result = ndr_pull_xattr_NTACL(ndr, NDR_SCALARS|NDR_BUFFERS, *ntacl);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+	ndr_err = ndr_pull_xattr_NTACL(ndr, NDR_SCALARS|NDR_BUFFERS, *ntacl);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;

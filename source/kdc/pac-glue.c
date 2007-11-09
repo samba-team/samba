@@ -52,6 +52,7 @@ static krb5_error_code make_pac(krb5_context context,
 	struct netr_SamInfo3 *info3;
 	krb5_data pac_data;
 	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB pac_out;
 	krb5_error_code ret;
 
@@ -70,9 +71,10 @@ static krb5_error_code make_pac(krb5_context context,
 
 	logon_info.info->info3 = *info3;
 
-	nt_status = ndr_push_struct_blob(&pac_out, mem_ctx, &logon_info,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, &logon_info,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
 		return EINVAL;
 	}
@@ -147,6 +149,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 				struct hdb_entry_ex *server, krb5_pac *pac)
 {
 	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	krb5_error_code ret;
 
 	unsigned int userAccountControl;
@@ -184,9 +187,10 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 		
-	nt_status = ndr_pull_struct_blob(&pac_in, mem_ctx, &logon_info, 
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
-	if (!NT_STATUS_IS_OK(nt_status) || !logon_info.info) {
+	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, &logon_info,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !logon_info.info) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 		talloc_free(mem_ctx);
 		return EINVAL;

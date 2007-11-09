@@ -103,6 +103,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	uint32_t sd_length, ea_length;
 	NTSTATUS status;
 	uint8_t *params;
+	enum ndr_err_code ndr_err;
 
 	if (trans->in.params.length < 54) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -155,11 +156,11 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 		if (io->ntcreatex.in.sec_desc == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = ndr_pull_struct_blob(&blob, io, 
-					      io->ntcreatex.in.sec_desc, 
-					      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		ndr_err = ndr_pull_struct_blob(&blob, io,
+					       io->ntcreatex.in.sec_desc,
+					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
 		}
 	}
 
@@ -196,15 +197,18 @@ static NTSTATUS nttrans_query_sec_desc_send(struct nttrans_op *op)
 	union smb_fileinfo *io = talloc_get_type(op->op_info, union smb_fileinfo);
 	uint8_t *params;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	status = nttrans_setup_reply(op, op->trans, 4, 0, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
 	params = op->trans->out.params.data;
 
-	status = ndr_push_struct_blob(&op->trans->out.data, op, 
-				      io->query_secdesc.out.sd, 
-				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ndr_err = ndr_push_struct_blob(&op->trans->out.data, op,
+				       io->query_secdesc.out.sd,
+				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	SIVAL(params, 0, op->trans->out.data.length);
 
@@ -248,7 +252,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 {
 	struct smb_nttrans *trans = op->trans;
 	union smb_setfileinfo *io;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (trans->in.params.length < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -265,10 +269,12 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
 	NT_STATUS_HAVE_NO_MEMORY(io->set_secdesc.in.sd);
 
-	status = ndr_pull_struct_blob(&trans->in.data, req, 
-				      io->set_secdesc.in.sd, 
-				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ndr_err = ndr_pull_struct_blob(&trans->in.data, req,
+				       io->set_secdesc.in.sd,
+				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(io->set_secdesc.in.file.ntvfs);
 	return ntvfs_setfileinfo(req->ntvfs, io);

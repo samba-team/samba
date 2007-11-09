@@ -544,11 +544,12 @@ static bool samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	if (user->user_private_info.SensitiveData) {
 		DATA_BLOB data;
 		struct netr_USER_KEYS keys;
+		enum ndr_err_code ndr_err;
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
 		creds_arcfour_crypt(samsync_state->creds, data.data, data.length);
-		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (NT_STATUS_IS_OK(nt_status)) {
+		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
 				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
 				lm_hash_p = &lm_hash;

@@ -55,6 +55,7 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	DATA_BLOB packet_out_blob;
 	struct wrepl_wrap packet_out_wrap;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	call = talloc_zero(wreplconn, struct wreplsrv_in_call);
 	NT_STATUS_HAVE_NO_MEMORY(call);
@@ -64,9 +65,11 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	packet_in_blob.data = blob.data + 4;
 	packet_in_blob.length = blob.length - 4;
 
-	status = ndr_pull_struct_blob(&packet_in_blob, call, &call->req_packet,
-				      (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ndr_err = ndr_pull_struct_blob(&packet_in_blob, call, &call->req_packet,
+				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Received WINS-Replication packet of length %u\n", 
@@ -85,9 +88,11 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 
 	/* and now encode the reply */
 	packet_out_wrap.packet = call->rep_packet;
-	status = ndr_push_struct_blob(&packet_out_blob, call, &packet_out_wrap,
+	ndr_err = ndr_push_struct_blob(&packet_out_blob, call, &packet_out_wrap,
 				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Sending WINS-Replication packet of length %d\n", (int)packet_out_blob.length));

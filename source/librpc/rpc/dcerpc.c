@@ -192,6 +192,7 @@ static NTSTATUS ncacn_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_
 			    struct ncacn_packet *pkt)
 {
 	struct ndr_pull *ndr;
+	enum ndr_err_code ndr_err;
 
 	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
 	if (!ndr) {
@@ -202,7 +203,12 @@ static NTSTATUS ncacn_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	return ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -242,6 +248,7 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 	NTSTATUS status;
 	struct dcerpc_auth auth;
 	DATA_BLOB auth_blob;
+	enum ndr_err_code ndr_err;
 
 	if (pkt->auth_length == 0 &&
 	    c->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
@@ -270,11 +277,12 @@ static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX 
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
-	
+	status = NT_STATUS_OK;
+
 	/* check signature or unseal the packet */
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -333,6 +341,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	struct ndr_push *ndr;
 	DATA_BLOB creds2;
 	size_t payload_length;
+	enum ndr_err_code ndr_err;
 
 	/* non-signed packets are simpler */
 	if (!c->security_state.auth_info || 
@@ -353,10 +362,11 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
-	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
+	status = NT_STATUS_OK;
 
 	/* pad to 16 byte multiple in the payload portion of the
 	   packet. This matches what w2k3 does */
@@ -398,10 +408,11 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	}	
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, c->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, c->security_state.auth_info);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
+	status = NT_STATUS_OK;
 
 	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
@@ -651,11 +662,15 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 	/* the bind_ack might contain a reply set of credentials */
 	if (conn->security_state.auth_info &&
 	    pkt->u.bind_ack.auth_info.length) {
-		c->status = ndr_pull_struct_blob(
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(
 			&pkt->u.bind_ack.auth_info, conn,
 			conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-		if (!composite_is_ok(c)) return;
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			c->status = ndr_map_error2ntstatus(ndr_err);
+			if (!composite_is_ok(c)) return;
+		}
 	}
 
 	req->p->assoc_group_id = pkt->u.bind_ack.assoc_group_id;
@@ -1155,8 +1170,8 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	void *st;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
 	DATA_BLOB blob2;
+	enum ndr_err_code ndr_err;
 
 	st = talloc_size(mem_ctx, struct_size);
 	if (!st) {
@@ -1169,11 +1184,13 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	}
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	status = ndr_pull(pull, NDR_IN, st);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
-				      "failed input validation pull - %s",
-				      nt_errstr(status));
+	ndr_err = ndr_pull(pull, NDR_IN, st);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ndr_err = ndr_pull_error(pull, NDR_ERR_VALIDATE,
+					 "failed input validation pull - %s",
+					 nt_errstr(status));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1181,11 +1198,13 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 		return NT_STATUS_NO_MEMORY;
 	}	
 
-	status = ndr_push(push, NDR_IN, st);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "failed input validation push - %s",
-				      nt_errstr(status));
+	ndr_err = ndr_push(push, NDR_IN, st);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ndr_err = ndr_pull_error(pull, NDR_ERR_VALIDATE,
+					 "failed input validation push - %s",
+					 nt_errstr(status));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	blob2 = ndr_push_blob(push);
@@ -1195,9 +1214,9 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 		dump_data(3, blob.data, blob.length);
 		DEBUG(3,("secondary:\n"));
 		dump_data(3, blob2.data, blob2.length);
-		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "failed input validation data - %s",
-				      nt_errstr(status));
+		ndr_err = ndr_pull_error(pull, NDR_ERR_VALIDATE,
+					 "failed input validation blobs doesn't match");
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
@@ -1221,10 +1240,10 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	void *st;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	NTSTATUS status;
 	DATA_BLOB blob, blob2;
 	TALLOC_CTX *mem_ctx = pull_in;
 	char *s1, *s2;
+	enum ndr_err_code ndr_err;
 
 	st = talloc_size(mem_ctx, struct_size);
 	if (!st) {
@@ -1237,11 +1256,13 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return NT_STATUS_NO_MEMORY;
 	}	
 
-	status = ndr_push(push, NDR_OUT, struct_ptr);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "failed output validation push - %s",
-				      nt_errstr(status));
+	ndr_err = ndr_push(push, NDR_OUT, struct_ptr);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ndr_err = ndr_push_error(push, NDR_ERR_VALIDATE,
+					 "failed output validation push - %s",
+					 nt_errstr(status));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	blob = ndr_push_blob(push);
@@ -1252,11 +1273,13 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	}
 
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	status = ndr_pull(pull, NDR_OUT, st);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
-				      "failed output validation pull - %s",
-				      nt_errstr(status));
+	ndr_err = ndr_pull(pull, NDR_OUT, st);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ndr_err = ndr_pull_error(pull, NDR_ERR_VALIDATE,
+					 "failed output validation pull - %s",
+					 nt_errstr(status));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	push = ndr_push_init_ctx(mem_ctx);
@@ -1264,11 +1287,13 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return NT_STATUS_NO_MEMORY;
 	}	
 
-	status = ndr_push(push, NDR_OUT, st);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "failed output validation push2 - %s",
-				      nt_errstr(status));
+	ndr_err = ndr_push(push, NDR_OUT, st);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ndr_err = ndr_push_error(push, NDR_ERR_VALIDATE,
+					 "failed output validation push2 - %s",
+					 nt_errstr(status));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	blob2 = ndr_push_blob(push);
@@ -1278,9 +1303,9 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		dump_data(3, blob.data, blob.length);
 		DEBUG(3,("secondary:\n"));
 		dump_data(3, blob2.data, blob2.length);
-		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "failed output validation data - %s",
-				      nt_errstr(status));
+		ndr_err = ndr_push_error(push, NDR_ERR_VALIDATE,
+					 "failed output validation blobs doesn't match");
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	/* this checks the printed forms of the two structures, which effectively
@@ -1299,8 +1324,9 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		file_save("gen.dat", s2, strlen(s2));
 		system("diff -u wire.dat gen.dat");
 #endif
-		return ndr_push_error(push, NDR_ERR_VALIDATE,
-				      "failed output validation strings doesn't match");
+		ndr_err = ndr_push_error(push, NDR_ERR_VALIDATE,
+					 "failed output validation strings doesn't match");
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
@@ -1322,6 +1348,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	DATA_BLOB request;
 	struct rpc_request *req;
+	enum ndr_err_code ndr_err;
 
 	call = &table->calls[opnum];
 
@@ -1336,8 +1363,9 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	}
 
 	/* push the structure into a blob */
-	status = call->ndr_push(push, NDR_IN, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = call->ndr_push(push, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(2,("Unable to ndr_push structure in dcerpc_ndr_request_send - %s\n",
 			 nt_errstr(status)));
 		talloc_free(push);
@@ -1392,6 +1420,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	uint32_t opnum = req->ndr.opnum;
 	const struct ndr_interface_table *table = req->ndr.table;
 	const struct ndr_interface_call *call = &table->calls[opnum];
+	enum ndr_err_code ndr_err;
 
 	/* make sure the recv code doesn't free the request, as we
 	   need to grab the flags element before it is freed */
@@ -1427,8 +1456,9 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	dump_data(10, pull->data, pull->data_size);
 
 	/* pull the structure from the blob */
-	status = call->ndr_pull(pull, NDR_OUT, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = call->ndr_pull(pull, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		dcerpc_log_packet(table, opnum, NDR_OUT, 
 				  &response);
 		return status;
@@ -1547,11 +1577,15 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 	/* the alter_resp might contain a reply set of credentials */
 	if (recv_pipe->conn->security_state.auth_info &&
 	    pkt->u.alter_resp.auth_info.length) {
-		c->status = ndr_pull_struct_blob(
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(
 			&pkt->u.alter_resp.auth_info, recv_pipe,
 			recv_pipe->conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-		if (!composite_is_ok(c)) return;
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			c->status = ndr_map_error2ntstatus(ndr_err);
+			if (!composite_is_ok(c)) return;
+		}
 	}
 
 	composite_done(c);

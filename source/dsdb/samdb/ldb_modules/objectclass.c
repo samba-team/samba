@@ -250,7 +250,7 @@ static int objectclass_sort(struct ldb_module *module,
 static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 			 const struct dsdb_class *objectclass) 
 {
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB *linear_sd;
 	struct auth_session_info *session_info
 		= ldb_get_opaque(module->ldb, "sessionInfo");
@@ -271,10 +271,9 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = ndr_push_struct_blob(linear_sd, mem_ctx, sd, 
-				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx, sd,
+				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;
 	}
 	

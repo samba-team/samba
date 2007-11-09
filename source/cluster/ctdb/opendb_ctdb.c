@@ -193,7 +193,7 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 {
 	TDB_DATA dbuf;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	dbuf = lck->data;
 
@@ -205,9 +205,12 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
 
-	status = ndr_pull_struct_blob(&blob, lck, file, (ndr_pull_flags_fn_t)ndr_pull_opendb_file);
+	ndr_err = ndr_pull_struct_blob(&blob, lck, file, (ndr_pull_flags_fn_t)ndr_pull_opendb_file);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -217,7 +220,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 {
 	TDB_DATA dbuf;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	int ret;
 
 	if (!file->num_entries) {
@@ -228,8 +231,10 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 		return NT_STATUS_OK;
 	}
 
-	status = ndr_push_struct_blob(&blob, lck, file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
-	NT_STATUS_NOT_OK_RETURN(status);
+	ndr_err = ndr_push_struct_blob(&blob, lck, file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	dbuf.dptr = blob.data;
 	dbuf.dsize = blob.length;

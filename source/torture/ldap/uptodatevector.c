@@ -43,7 +43,7 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 	bool ok = true;
 	uint32_t i;
 	int ret;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct ldb_result *r;
 	const struct ldb_val *utdv_val1;
 	struct replUpToDateVectorBlob utdv1;
@@ -70,9 +70,9 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 	ZERO_STRUCT(utdv1);
 	utdv_val1 = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 	if (utdv_val1) {
-		status = ndr_pull_struct_blob_all(utdv_val1, torture, &utdv1,
-						 (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob_all(utdv_val1, torture, &utdv1,
+						   (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return false;
 		}
 	}
@@ -116,9 +116,9 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 		ZERO_STRUCT(utdv);
 		utdv_val = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 		if (utdv_val) {
-			status = ndr_pull_struct_blob_all(utdv_val, torture, &utdv,
-							 (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
-			if (!NT_STATUS_IS_OK(status)) {
+			ndr_err = ndr_pull_struct_blob_all(utdv_val, torture, &utdv,
+							   (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return false;
 			}
 		}

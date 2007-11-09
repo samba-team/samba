@@ -27,6 +27,32 @@
 #include "libcli/libcli.h"
 #include "librpc/ndr/libndr.h"
 
+#define RAP_GOTO(call) do { \
+	NTSTATUS _status; \
+	_status = call; \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		result = _status; \
+		goto done; \
+	} \
+} while (0)
+
+#define NDR_GOTO(call) do { \
+	enum ndr_err_code _ndr_err; \
+	_ndr_err = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+		result = ndr_map_error2ntstatus(_ndr_err); \
+		goto done; \
+	} \
+} while (0)
+
+#define NDR_RETURN(call) do { \
+	enum ndr_err_code _ndr_err; \
+	_ndr_err = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+		return ndr_map_error2ntstatus(_ndr_err); \
+	} \
+} while (0)
+
 struct rap_call {
 	uint16_t callno;
 	char *paramdesc;
@@ -141,8 +167,8 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	const char *p;
 	size_t len;
 
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &string_offset));
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &ignore));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &string_offset));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &ignore));
 
 	string_offset -= convert;
 
@@ -184,14 +210,14 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree, struct rap_call *call)
 	trans.in.setup = NULL;
 	trans.in.trans_name = "\\PIPE\\LANMAN";
 
-	NDR_CHECK(ndr_push_uint16(params, NDR_SCALARS, call->callno));
+	NDR_RETURN(ndr_push_uint16(params, NDR_SCALARS, call->callno));
 	if (call->paramdesc)
-		NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
+		NDR_RETURN(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
 	if (call->datadesc)
-		NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->datadesc));
+		NDR_RETURN(ndr_push_string(params, NDR_SCALARS, call->datadesc));
 
 	param_blob = ndr_push_blob(call->ndr_push_param);
-	NDR_CHECK(ndr_push_bytes(params, param_blob.data,
+	NDR_RETURN(ndr_push_bytes(params, param_blob.data,
 				 param_blob.length));
 
 	trans.in.params = ndr_push_blob(params);
@@ -211,11 +237,6 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree, struct rap_call *call)
 	return result;
 }
 
-#define NDR_OK(call) do { NTSTATUS _status; \
-                             _status = call; \
-                             if (!NT_STATUS_IS_OK(_status)) \
-				goto done; \
-                        } while (0)
 
 static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 					TALLOC_CTX *mem_ctx,
@@ -248,10 +269,10 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
 	r->out.info = talloc_array(mem_ctx, union rap_shareenum_info, r->out.count);
 
@@ -263,17 +284,17 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
 		case 0:
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)r->out.info[i].info0.name, 13));
 			break;
 		case 1:
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)r->out.info[i].info1.name, 13));
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)&r->out.info[i].info1.pad, 1));
-			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
 					       NDR_SCALARS, &r->out.info[i].info1.type));
-			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 			break;
@@ -345,10 +366,10 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
 	r->out.info = talloc_array(mem_ctx, union rap_server_info, r->out.count);
 
@@ -360,19 +381,19 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
 		case 0:
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)r->out.info[i].info0.name, 16));
 			break;
 		case 1:
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)r->out.info[i].info1.name, 16));
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      &r->out.info[i].info1.version_major, 1));
-			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 					      &r->out.info[i].info1.version_minor, 1));
-			NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
+			NDR_GOTO(ndr_pull_uint32(call->ndr_pull_data,
 					       NDR_SCALARS, &r->out.info[i].info1.servertype));
-			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 		}
@@ -450,25 +471,25 @@ _PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
 	switch(r->in.level) {
 	case 0:
-		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 				      (uint8_t *)r->out.info.info0.name, 16));
 		break;
 	case 1:
-		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 				      (uint8_t *)r->out.info.info1.name, 16));
-		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 				      &r->out.info.info1.version_major, 1));
-		NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
+		NDR_GOTO(ndr_pull_bytes(call->ndr_pull_data,
 				      &r->out.info.info1.version_minor, 1));
-		NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
+		NDR_GOTO(ndr_pull_uint32(call->ndr_pull_data,
 				       NDR_SCALARS, &r->out.info.info1.servertype));
-		NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+		RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
 				       r->out.convert,
 				       &r->out.info.info1.comment));
 	}

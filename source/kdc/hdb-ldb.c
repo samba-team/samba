@@ -186,7 +186,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 					      hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct samr_Password *hash;
 	const struct ldb_val *sc_val;
 	struct supplementalCredentialsBlob scb;
@@ -213,9 +213,9 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 	/* supplementalCredentials if present */
 	if (sc_val) {
-		status = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
-						  (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
+						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			dump_data(0, sc_val->data, sc_val->length);
 			ret = EINVAL;
 			goto out;
@@ -250,9 +250,9 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		talloc_steal(mem_ctx, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		status = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
-					      (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
+					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			ret = EINVAL;

@@ -666,16 +666,18 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_message *m)
 {
 	struct irpc_request *irpc;
+	enum ndr_err_code ndr_err;
 
 	irpc = (struct irpc_request *)idr_find(msg_ctx->idr, m->header.callid);
 	if (irpc == NULL) return;
 
 	/* parse the reply data */
-	irpc->status = irpc->table->calls[irpc->callnum].ndr_pull(m->ndr, NDR_OUT, irpc->r);
-	if (NT_STATUS_IS_OK(irpc->status)) {
+	ndr_err = irpc->table->calls[irpc->callnum].ndr_pull(m->ndr, NDR_OUT, irpc->r);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		irpc->status = m->header.status;
 		talloc_steal(irpc->mem_ctx, m);
 	} else {
+		irpc->status = ndr_map_error2ntstatus(ndr_err);
 		talloc_steal(irpc, m);
 	}
 	irpc->done = true;
@@ -691,6 +693,7 @@ NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 {
 	struct ndr_push *push;
 	DATA_BLOB packet;
+	enum ndr_err_code ndr_err;
 
 	m->header.status = status;
 
@@ -704,11 +707,17 @@ NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 	m->header.flags |= IRPC_FLAG_REPLY;
 
 	/* construct the packet */
-	status = ndr_push_irpc_header(push, NDR_SCALARS|NDR_BUFFERS, &m->header);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = ndr_push_irpc_header(push, NDR_SCALARS|NDR_BUFFERS, &m->header);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto failed;
+	}
 
-	status = m->irpc->table->calls[m->irpc->callnum].ndr_push(push, NDR_OUT, m->data);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = m->irpc->table->calls[m->irpc->callnum].ndr_push(push, NDR_OUT, m->data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto failed;
+	}
 
 	/* send the reply message */
 	packet = ndr_push_blob(push);
@@ -728,7 +737,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 {
 	struct irpc_list *i;
 	void *r;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	for (i=msg_ctx->irpc; i; i=i->next) {
 		if (GUID_equal(&i->uuid, &m->header.uuid) &&
@@ -749,8 +758,8 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	if (r == NULL) goto failed;
 
 	/* parse the request data */
-	status = i->table->calls[i->callnum].ndr_pull(m->ndr, NDR_IN, r);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = i->table->calls[i->callnum].ndr_pull(m->ndr, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	/* make the call */
 	m->private     = i->private;
@@ -782,7 +791,7 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *packet)
 {
 	struct irpc_message *m;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	m = talloc(msg_ctx, struct irpc_message);
 	if (m == NULL) goto failed;
@@ -794,8 +803,8 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 
 	m->ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	status = ndr_pull_irpc_header(m->ndr, NDR_BUFFERS|NDR_SCALARS, &m->header);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = ndr_pull_irpc_header(m->ndr, NDR_BUFFERS|NDR_SCALARS, &m->header);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	if (m->header.flags & IRPC_FLAG_REPLY) {
 		irpc_handler_reply(msg_ctx, m);
@@ -853,6 +862,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	NTSTATUS status;
 	DATA_BLOB packet;
 	struct irpc_request *irpc;
+	enum ndr_err_code ndr_err;
 
 	irpc = talloc(msg_ctx, struct irpc_request);
 	if (irpc == NULL) goto failed;
@@ -883,11 +893,11 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	ndr = ndr_push_init_ctx(irpc);
 	if (ndr == NULL) goto failed;
 
-	status = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
-	status = table->calls[callnum].ndr_push(ndr, NDR_IN, r);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = table->calls[callnum].ndr_push(ndr, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	/* and send it */
 	packet = ndr_push_blob(ndr);

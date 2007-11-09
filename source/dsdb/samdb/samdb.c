@@ -388,7 +388,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 {
 	const struct ldb_val *v;
 	struct dom_sid *sid;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	v = ldb_msg_find_ldb_val(msg, attr);
 	if (v == NULL) {
 		return NULL;
@@ -397,9 +397,9 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	if (sid == NULL) {
 		return NULL;
 	}
-	status = ndr_pull_struct_blob(v, sid, sid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(v, sid, sid,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
 		return NULL;
 	}
@@ -412,7 +412,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 {
 	const struct ldb_val *v;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct GUID guid;
 	TALLOC_CTX *mem_ctx;
 
@@ -423,10 +423,10 @@ struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 
 	mem_ctx = talloc_named_const(NULL, 0, "samdb_result_guid");
 	if (!mem_ctx) return guid;
-	status = ndr_pull_struct_blob(v, mem_ctx, &guid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	ndr_err = ndr_pull_struct_blob(v, mem_ctx, &guid,
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(mem_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return guid;
 	}
 
@@ -758,10 +758,11 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 			 const char *attr_name, struct dom_sid *sid)
 {
 	struct ldb_val v;
-	NTSTATUS status;
-	status = ndr_push_struct_blob(&v, mem_ctx, sid, 
-				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(&v, mem_ctx, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
 	return ldb_msg_add_value(msg, attr_name, &v, NULL);

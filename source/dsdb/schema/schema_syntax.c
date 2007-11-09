@@ -839,7 +839,7 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 
 	for (i=0; i < out->num_values; i++) {
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 
 		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
@@ -849,10 +849,11 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 			return WERR_FOOBAR;
 		}
 
-		status = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						  out->values, &id3,
-						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
+						   out->values, &id3,
+						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(status);
 		}
 
@@ -887,8 +888,8 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		NTSTATUS status;
 		struct drsuapi_DsReplicaObjectIdentifier3 id3;
+		enum ndr_err_code ndr_err;
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
@@ -896,9 +897,10 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		ZERO_STRUCT(id3);
 		id3.dn = (const char *)in->values[i].data;
 
-		status = ndr_push_struct_blob(&blobs[i], blobs, &id3,
-					      (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, &id3,
+					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(status);
 		}
 	}
@@ -926,7 +928,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
 		char *binary;
 		char *str;
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 
 		if (in->value_ctr.values[i].blob == NULL) {
 			return WERR_FOOBAR;
@@ -936,10 +938,11 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 			return WERR_FOOBAR;
 		}
 
-		status = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						  out->values, &id3b,
-						  (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
+						   out->values, &id3b,
+						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(status);
 		}
 
@@ -984,8 +987,8 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		NTSTATUS status;
 		struct drsuapi_DsReplicaObjectIdentifier3Binary id3b;
+		enum ndr_err_code ndr_err;
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
@@ -994,9 +997,10 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 		id3b.dn		= (const char *)in->values[i].data;
 		id3b.binary	= data_blob(NULL, 0);
 
-		status = ndr_push_struct_blob(&blobs[i], blobs, &id3b,
-					      (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
-		if (!NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, &id3b,
+					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(status);
 		}
 	}

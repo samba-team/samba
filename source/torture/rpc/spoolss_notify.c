@@ -44,7 +44,7 @@ static void spoolss__op_unbind(struct dcesrv_connection_context *context, const 
 
 static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
@@ -58,8 +58,8 @@ static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_
 	NT_STATUS_HAVE_NO_MEMORY(*r);
 
         /* unravel the NDR for the packet */
-	status = ndr_table_spoolss.calls[opnum].ndr_pull(pull, NDR_IN, *r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_table_spoolss.calls[opnum].ndr_pull(pull, NDR_IN, *r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		dcerpc_log_packet(&ndr_table_spoolss, opnum, NDR_IN,
 				  &dce_call->pkt.u.request.stub_and_verifier);
 		dce_call->fault_code = DCERPC_FAULT_NDR;
@@ -117,11 +117,11 @@ static NTSTATUS spoolss__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 static NTSTATUS spoolss__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
-	status = ndr_table_spoolss.calls[opnum].ndr_push(push, NDR_OUT, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_table_spoolss.calls[opnum].ndr_push(push, NDR_OUT, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		dce_call->fault_code = DCERPC_FAULT_NDR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}

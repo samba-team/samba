@@ -76,6 +76,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
 	struct PAC_SIGNATURE_DATA *srv_sig_wipe = NULL;
@@ -110,10 +111,12 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ndr_pull_struct_blob(&blob, pac_data, pac_data,
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the PAC\n"));
+	ndr_err = ndr_pull_struct_blob(&blob, pac_data, pac_data,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
@@ -123,10 +126,12 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = ndr_pull_struct_blob(&blob, pac_data_raw, pac_data_raw,
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the PAC\n"));
+	ndr_err = ndr_pull_struct_blob(&blob, pac_data_raw, pac_data_raw,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
@@ -201,43 +206,53 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	/* Find and zero out the signatures, as required by the signing algorithm */
 
 	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
-	status = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe, kdc_sig_wipe,
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the KDC signature\n"));
+	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe, kdc_sig_wipe,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the KDC signature: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 	
-	status = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe, srv_sig_wipe,
-				      (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the SRV signature\n"));
+	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe, srv_sig_wipe,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the SRV signature: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
-	
+
 	/* Now zero the decoded structure */
 	memset(kdc_sig_wipe->signature.data, '\0', kdc_sig_wipe->signature.length);
 	memset(srv_sig_wipe->signature.data, '\0', srv_sig_wipe->signature.length);
 	
 	/* and reencode, back into the same place it came from */
-	status = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw, kdc_sig_wipe,
-				      (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't repack the KDC signature\n"));
+	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw, kdc_sig_wipe,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the KDC signature: %s\n",
+			nt_errstr(status)));
 		return status;
-	}	
-	status = ndr_push_struct_blob(srv_sig_blob, pac_data_raw, srv_sig_wipe,
-				      (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't repack the SRV signature\n"));
+	}
+	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw, srv_sig_wipe,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the SRV signature: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
 	/* push out the whole structure, but now with zero'ed signatures */
-	status = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw, pac_data_raw,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't repack the RAW PAC\n"));
+	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw, pac_data_raw,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the RAW PAC: %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
@@ -309,7 +324,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		 logon_info->info3.base.full_name.string));
 	*pac_data_out = pac_data;
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
@@ -404,6 +419,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	krb5_error_code ret;
+	enum ndr_err_code ndr_err;
 	DATA_BLOB zero_blob = data_blob(NULL, 0);
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
@@ -456,9 +472,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	memset(kdc_checksum->signature.data, '\0', kdc_checksum->signature.length);
 	memset(srv_checksum->signature.data, '\0', srv_checksum->signature.length);
 
-	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;
@@ -478,9 +495,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
-	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(1, ("PAC (final) push failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;

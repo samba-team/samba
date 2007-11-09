@@ -42,8 +42,10 @@ _PUBLIC_ void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, cons
 /*
   pull one component of a nbt_string
 */
-static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
-				   uint32_t *offset, uint32_t *max_offset)
+static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
+					    uint8_t **component,
+					    uint32_t *offset,
+					    uint32_t *max_offset)
 {
 	uint8_t len;
 	uint_t loops = 0;
@@ -57,7 +59,7 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 			*offset += 1;
 			*max_offset = MAX(*max_offset, *offset);
 			*component = NULL;
-			return NT_STATUS_OK;
+			return NDR_ERR_SUCCESS;
 		}
 		if ((len & 0xC0) == 0xC0) {
 			/* its a label pointer */
@@ -81,10 +83,10 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 					      "BAD NBT NAME component");
 		}
 		*component = (uint8_t*)talloc_strndup(ndr, (const char *)&ndr->data[1 + *offset], len);
-		NT_STATUS_HAVE_NO_MEMORY(*component);
+		NDR_ERR_HAVE_NO_MEMORY(*component);
 		*offset += len + 1;
 		*max_offset = MAX(*max_offset, *offset);
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	/* too many pointers */
@@ -94,7 +96,7 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 /**
   pull a nbt_string from the wire
 */
-_PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	uint32_t offset = ndr->offset;
 	uint32_t max_offset = offset;
@@ -102,7 +104,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 	char *name;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	name = NULL;
@@ -114,7 +116,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 		if (component == NULL) break;
 		if (name) {
 			name = talloc_asprintf_append_buffer(name, ".%s", component);
-			NT_STATUS_HAVE_NO_MEMORY(name);
+			NDR_ERR_HAVE_NO_MEMORY(name);
 		} else {
 			name = (char *)component;
 		}
@@ -125,26 +127,26 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const
 	}
 	if (num_components == 0) {
 		name = talloc_strdup(ndr, "");
-		NT_STATUS_HAVE_NO_MEMORY(name);
+		NDR_ERR_HAVE_NO_MEMORY(name);
 	}
 
 	(*s) = name;
 	ndr->offset = max_offset;
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /**
   push a nbt string to the wire
 */
-_PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	while (s && *s) {
-		NTSTATUS status;
+		enum ndr_err_code ndr_err;
 		char *compname;
 		size_t complen;
 		uint32_t offset;
@@ -152,8 +154,8 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const
 		/* see if we have pushed the remaing string allready,
 		 * if so we use a label pointer to this string
 		 */
-		status = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, false);
-		if (NT_STATUS_IS_OK(status)) {
+		ndr_err = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, false);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			uint8_t b[2];
 			
 			if (offset > 0x3FFF) {
@@ -181,7 +183,7 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const
 						(unsigned char)complen,
 						(unsigned char)complen,
 						(unsigned char)complen, s);
-		NT_STATUS_HAVE_NO_MEMORY(compname);
+		NDR_ERR_HAVE_NO_MEMORY(compname);
 
 		/* remember the current componemt + the rest of the string
 		 * so it can be reused later
@@ -279,7 +281,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 /**
   pull a nbt name from the wire
 */
-_PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
 {
 	uint8_t *scope;
 	char *cname;
@@ -287,7 +289,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 	bool ok;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	NDR_CHECK(ndr_pull_nbt_string(ndr, ndr_flags, &s));
@@ -296,7 +298,7 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 	if (scope) {
 		*scope = 0;
 		r->scope = talloc_strdup(ndr->current_mem_ctx, (const char *)&scope[1]);
-		NT_STATUS_HAVE_NO_MEMORY(r->scope);
+		NDR_ERR_HAVE_NO_MEMORY(r->scope);
 	} else {
 		r->scope = NULL;
 	}
@@ -318,23 +320,23 @@ _PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct 
 	}
 
 	r->name = talloc_strdup(ndr->current_mem_ctx, cname);
-	NT_STATUS_HAVE_NO_MEMORY(r->name);
+	NDR_ERR_HAVE_NO_MEMORY(r->name);
 
 	talloc_free(cname);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /**
   push a nbt name to the wire
 */
-_PUBLIC_ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *cname, *fullname;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	if (strlen(r->name) > 15) {
@@ -344,19 +346,19 @@ _PUBLIC_ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const s
 	}
 
 	cname = compress_name(ndr, (const uint8_t *)r->name, r->type);
-	NT_STATUS_HAVE_NO_MEMORY(cname);
+	NDR_ERR_HAVE_NO_MEMORY(cname);
 
 	if (r->scope) {
 		fullname = (uint8_t *)talloc_asprintf(ndr, "%s.%s", cname, r->scope);
-		NT_STATUS_HAVE_NO_MEMORY(fullname);
+		NDR_ERR_HAVE_NO_MEMORY(fullname);
 		talloc_free(cname);
 	} else {
 		fullname = cname;
 	}
 	
-	status = ndr_push_nbt_string(ndr, ndr_flags, (const char *)fullname);
+	ndr_err = ndr_push_nbt_string(ndr, ndr_flags, (const char *)fullname);
 
-	return status;
+	return ndr_err;
 }
 
 
@@ -380,18 +382,31 @@ _PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struc
 */
 _PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name)
 {
-	return ndr_push_struct_blob(blob, mem_ctx, name, 
-				    (ndr_push_flags_fn_t)ndr_push_nbt_name);
-}
+	enum ndr_err_code ndr_err;
 
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, name,
+				       (ndr_push_flags_fn_t)ndr_push_nbt_name);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
+}
 
 /**
   pull a nbt name from a blob
 */
 _PUBLIC_ NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name)
 {
-	return ndr_pull_struct_blob(blob, mem_ctx, name, 
-				    (ndr_pull_flags_fn_t)ndr_pull_nbt_name);
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, name,
+				       (ndr_pull_flags_fn_t)ndr_pull_nbt_name);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -485,14 +500,14 @@ _PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 /**
   pull a nbt name, WINS Replication uses another on wire format for nbt name
 */
-_PUBLIC_ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
+_PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
 {
 	struct nbt_name *r;
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -521,7 +536,7 @@ _PUBLIC_ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, s
 
 		talloc_free(namebuf);
 		*_r = r;
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	r->type = namebuf[15];
@@ -540,13 +555,13 @@ _PUBLIC_ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, s
 
 	talloc_free(namebuf);
 	*_r = r;
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /**
   push a nbt name, WINS Replication uses another on wire format for nbt name
 */
-_PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ enum ndr_err_code ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
@@ -559,7 +574,7 @@ _PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, c
 	}
 
 	if (!(ndr_flags & NDR_SCALARS)) {
-		return NT_STATUS_OK;
+		return NDR_ERR_SUCCESS;
 	}
 
 	name_len = strlen(r->name);
@@ -602,7 +617,7 @@ _PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, c
 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
 
 	talloc_free(namebuf);
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r)

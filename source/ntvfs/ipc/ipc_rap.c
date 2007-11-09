@@ -24,6 +24,33 @@
 #include "ntvfs/ipc/proto.h"
 #include "librpc/ndr/libndr.h"
 
+#define NDR_RETURN(call) do { \
+	enum ndr_err_code _ndr_err; \
+	_ndr_err = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+		return ndr_map_error2ntstatus(_ndr_err); \
+	} \
+} while (0)
+
+#define RAP_GOTO(call) do { \
+	result = call; \
+	if (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) {\
+		goto buffer_overflow; \
+	} \
+	if (!NT_STATUS_IS_OK(result)) { \
+		goto done; \
+	} \
+} while (0)
+
+#define NDR_GOTO(call) do { \
+	enum ndr_err_code _ndr_err; \
+	_ndr_err = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
+		RAP_GOTO(ndr_map_error2ntstatus(_ndr_err)); \
+	} \
+} while (0)
+
+
 #define NERR_Success 0
 #define NERR_badpass 86
 #define NERR_notsupported 50
@@ -108,22 +135,37 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS rap_srv_pull_word(struct rap_call *call, uint16_t *result)
 {
+	enum ndr_err_code ndr_err;
+
 	if (*call->paramdesc++ != 'W')
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, result);
+	ndr_err = ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, result);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rap_srv_pull_dword(struct rap_call *call, uint32_t *result)
 {
+	enum ndr_err_code ndr_err;
+
 	if (*call->paramdesc++ != 'D')
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return ndr_pull_uint32(call->ndr_pull_param, NDR_SCALARS, result);
+	ndr_err = ndr_pull_uint32(call->ndr_pull_param, NDR_SCALARS, result);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rap_srv_pull_string(struct rap_call *call, const char **result)
 {
+	enum ndr_err_code ndr_err;
 	char paramdesc = *call->paramdesc++;
 
 	if (paramdesc == 'O') {
@@ -134,20 +176,25 @@ static NTSTATUS rap_srv_pull_string(struct rap_call *call, const char **result)
 	if (paramdesc != 'z')
 		return NT_STATUS_INVALID_PARAMETER;
 
-	return ndr_pull_string(call->ndr_pull_param, NDR_SCALARS, result);
+	ndr_err = ndr_pull_string(call->ndr_pull_param, NDR_SCALARS, result);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rap_srv_pull_bufsize(struct rap_call *call, uint16_t *bufsize)
 {
-	NTSTATUS result;
+	enum ndr_err_code ndr_err;
 
 	if ( (*call->paramdesc++ != 'r') || (*call->paramdesc++ != 'L') )
 		return NT_STATUS_INVALID_PARAMETER;
 
-	result = ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, bufsize);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	ndr_err = ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, bufsize);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	call->heap->offset = *bufsize;
 
@@ -178,8 +225,8 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 
 	heap->offset -= space;
 
-	NDR_CHECK(ndr_push_uint16(data_push, NDR_SCALARS, heap->offset));
-	NDR_CHECK(ndr_push_uint16(data_push, NDR_SCALARS, 0));
+	NDR_RETURN(ndr_push_uint16(data_push, NDR_SCALARS, heap->offset));
+	NDR_RETURN(ndr_push_uint16(data_push, NDR_SCALARS, 0));
 
 	heap->strings = talloc_realloc(heap->mem_ctx,
 					 heap->strings,
@@ -195,21 +242,14 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 	return NT_STATUS_OK;
 }
 
-#define NDR_OK(call) do { result = call; \
-			     if (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) \
-				goto buffer_overflow; \
-                             if (!NT_STATUS_IS_OK(result)) \
-				goto done; \
-                        } while (0)
-
 static NTSTATUS _rap_netshareenum(struct rap_call *call)
 {
 	struct rap_NetShareEnum r;
 	NTSTATUS result;
 
-	NDR_OK(rap_srv_pull_word(call, &r.in.level));
-	NDR_OK(rap_srv_pull_bufsize(call, &r.in.bufsize));
-	NDR_OK(rap_srv_pull_expect_multiple(call));
+	RAP_GOTO(rap_srv_pull_word(call, &r.in.level));
+	RAP_GOTO(rap_srv_pull_bufsize(call, &r.in.bufsize));
+	RAP_GOTO(rap_srv_pull_expect_multiple(call));
 
 	switch(r.in.level) {
 	case 0:
@@ -241,20 +281,20 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 
 		switch(r.in.level) {
 		case 0:
-			NDR_OK(ndr_push_bytes(call->ndr_push_data,
+			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
 					      (const uint8_t *)r.out.info[i].info0.name,
 					      sizeof(r.out.info[i].info0.name)));
 			break;
 		case 1:
-			NDR_OK(ndr_push_bytes(call->ndr_push_data,
+			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
 					      (const uint8_t *)r.out.info[i].info1.name,
 					      sizeof(r.out.info[i].info1.name)));
-			NDR_OK(ndr_push_uint8(call->ndr_push_data,
+			NDR_GOTO(ndr_push_uint8(call->ndr_push_data,
 					      NDR_SCALARS, r.out.info[i].info1.pad));
-			NDR_OK(ndr_push_uint16(call->ndr_push_data,
+			NDR_GOTO(ndr_push_uint16(call->ndr_push_data,
 					       NDR_SCALARS, r.out.info[i].info1.type));
 
-			NDR_OK(rap_push_string(call->ndr_push_data,
+			RAP_GOTO(rap_push_string(call->ndr_push_data,
 					       call->heap,
 					       r.out.info[i].info1.comment));
 
@@ -273,8 +313,8 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 
 	call->status = r.out.status;
 
-	NDR_CHECK(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.count));
-	NDR_CHECK(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.available));
+	NDR_RETURN(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.count));
+	NDR_RETURN(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.available));
 
 	result = NT_STATUS_OK;
 
@@ -287,11 +327,11 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 	struct rap_NetServerEnum2 r;
 	NTSTATUS result;
 
-	NDR_OK(rap_srv_pull_word(call, &r.in.level));
-	NDR_OK(rap_srv_pull_bufsize(call, &r.in.bufsize));
-	NDR_OK(rap_srv_pull_expect_multiple(call));
-	NDR_OK(rap_srv_pull_dword(call, &r.in.servertype));
-	NDR_OK(rap_srv_pull_string(call, &r.in.domain));
+	RAP_GOTO(rap_srv_pull_word(call, &r.in.level));
+	RAP_GOTO(rap_srv_pull_bufsize(call, &r.in.bufsize));
+	RAP_GOTO(rap_srv_pull_expect_multiple(call));
+	RAP_GOTO(rap_srv_pull_dword(call, &r.in.servertype));
+	RAP_GOTO(rap_srv_pull_string(call, &r.in.domain));
 
 	switch(r.in.level) {
 	case 0:
@@ -323,22 +363,22 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 
 		switch(r.in.level) {
 		case 0:
-			NDR_OK(ndr_push_bytes(call->ndr_push_data,
+			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
 					      (const uint8_t *)r.out.info[i].info0.name,
 					      sizeof(r.out.info[i].info0.name)));
 			break;
 		case 1:
-			NDR_OK(ndr_push_bytes(call->ndr_push_data,
+			NDR_GOTO(ndr_push_bytes(call->ndr_push_data,
 					      (const uint8_t *)r.out.info[i].info1.name,
 					      sizeof(r.out.info[i].info1.name)));
-			NDR_OK(ndr_push_uint8(call->ndr_push_data,
+			NDR_GOTO(ndr_push_uint8(call->ndr_push_data,
 					      NDR_SCALARS, r.out.info[i].info1.version_major));
-			NDR_OK(ndr_push_uint8(call->ndr_push_data,
+			NDR_GOTO(ndr_push_uint8(call->ndr_push_data,
 					      NDR_SCALARS, r.out.info[i].info1.version_minor));
-			NDR_OK(ndr_push_uint32(call->ndr_push_data,
+			NDR_GOTO(ndr_push_uint32(call->ndr_push_data,
 					       NDR_SCALARS, r.out.info[i].info1.servertype));
 
-			NDR_OK(rap_push_string(call->ndr_push_data,
+			RAP_GOTO(rap_push_string(call->ndr_push_data,
 					       call->heap,
 					       r.out.info[i].info1.comment));
 
@@ -357,8 +397,8 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 
 	call->status = r.out.status;
 
-	NDR_CHECK(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.count));
-	NDR_CHECK(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.available));
+	NDR_RETURN(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.count));
+	NDR_RETURN(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r.out.available));
 
 	result = NT_STATUS_OK;
 
@@ -398,10 +438,10 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	NDR_CHECK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &call->callno));
-	NDR_CHECK(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
+	NDR_RETURN(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &call->callno));
+	NDR_RETURN(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->paramdesc));
-	NDR_CHECK(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
+	NDR_RETURN(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->datadesc));
 
 	call->ndr_push_param = ndr_push_init_ctx(call);
@@ -439,17 +479,17 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	final_param->flags = RAPNDR_FLAGS;
 	final_data->flags = RAPNDR_FLAGS;
 
-	NDR_CHECK(ndr_push_uint16(final_param, NDR_SCALARS, call->status));
-	NDR_CHECK(ndr_push_uint16(final_param,
+	NDR_RETURN(ndr_push_uint16(final_param, NDR_SCALARS, call->status));
+	NDR_RETURN(ndr_push_uint16(final_param,
 				  NDR_SCALARS, call->heap->offset - result_data.length));
-	NDR_CHECK(ndr_push_bytes(final_param, result_param.data,
+	NDR_RETURN(ndr_push_bytes(final_param, result_param.data,
 				 result_param.length));
 
-	NDR_CHECK(ndr_push_bytes(final_data, result_data.data,
+	NDR_RETURN(ndr_push_bytes(final_data, result_data.data,
 				 result_data.length));
 
 	for (i=call->heap->num_strings-1; i>=0; i--)
-		NDR_CHECK(ndr_push_string(final_data, NDR_SCALARS,
+		NDR_RETURN(ndr_push_string(final_data, NDR_SCALARS,
 					  call->heap->strings[i]));
 
 	trans->out.setup_count = 0;

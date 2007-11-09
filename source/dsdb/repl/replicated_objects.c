@@ -195,6 +195,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 				  struct dsdb_extended_replicated_object *out)
 {
 	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
 	WERROR status;
 	uint32_t i;
 	struct ldb_message *msg;
@@ -321,9 +322,10 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	whenChanged_s = ldb_timestring(msg, whenChanged_t);
 	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
 
-	nt_status = ndr_push_struct_blob(&guid_value, msg, &in->object.identifier->guid,
+	ndr_err = ndr_push_struct_blob(&guid_value, msg, &in->object.identifier->guid,
 					 (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		return ntstatus_to_werror(nt_status);
 	}
 

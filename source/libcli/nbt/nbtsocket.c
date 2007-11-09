@@ -157,6 +157,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(nbtsock);
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	struct socket_address *src;
 	DATA_BLOB blob;
 	size_t nread, dsize;
@@ -189,9 +190,10 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	/* parse the request */
-	status = ndr_pull_struct_blob(&blob, packet, packet, 
-				      (ndr_pull_flags_fn_t)ndr_pull_nbt_name_packet);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_pull_struct_blob(&blob, packet, packet,
+				       (ndr_pull_flags_fn_t)ndr_pull_nbt_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(2,("Failed to parse incoming NBT name packet - %s\n",
 			 nt_errstr(status)));
 		talloc_free(tmp_ctx);
@@ -359,7 +361,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req;
 	int id;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	req = talloc_zero(nbtsock, struct nbt_name_request);
 	if (req == NULL) goto failed;
@@ -392,9 +394,9 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
-	status = ndr_push_struct_blob(&req->encoded, req, request, 
-				      (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, request,
+				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
 
@@ -422,7 +424,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct nbt_name_packet *request)
 {
 	struct nbt_name_request *req;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	req = talloc_zero(nbtsock, struct nbt_name_request);
 	NT_STATUS_HAVE_NO_MEMORY(req);
@@ -439,11 +441,11 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 		NDR_PRINT_DEBUG(nbt_name_packet, request);		
 	}
 
-	status = ndr_push_struct_blob(&req->encoded, req, request, 
-				      (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
-	if (!NT_STATUS_IS_OK(status)) {
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, request,
+				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(req);
-		return status;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
