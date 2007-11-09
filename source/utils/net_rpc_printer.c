@@ -2070,7 +2070,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 	REGVAL_CTR *reg_ctr;
 	struct cli_state *cli_dst = NULL;
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
-	fstring longname;
+	const char *longname;
 
 	uint16 *keylist = NULL, *curkey;
 
@@ -2094,12 +2094,16 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
-	} 
-	
+	}
+
 
 	/* needed for dns-strings in regkeys */
-	get_mydnsfullname(longname);
-	
+	longname = get_mydnsfullname();
+	if (!longname) {
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
 

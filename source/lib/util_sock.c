@@ -1978,34 +1978,34 @@ out_umask:
  Get my own canonical name, including domain.
 ****************************************************************************/
 
-static fstring dnshostname_cache;
-
-bool get_mydnsfullname(fstring my_dnsname)
+const char *get_mydnsfullname(void)
 {
-	if (!*dnshostname_cache) {
+	static char *dnshostname_cache;
+
+	if (dnshostname_cache == NULL || !*dnshostname_cache) {
 		struct addrinfo *res = NULL;
+		char my_hostname[HOST_NAME_MAX];
 		bool ret;
 
 		/* get my host name */
-		if (gethostname(dnshostname_cache, sizeof(dnshostname_cache)) == -1) {
-			*dnshostname_cache = '\0';
+		if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
 			DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
-			return false;
+			return NULL;
 		}
 
 		/* Ensure null termination. */
-		dnshostname_cache[sizeof(dnshostname_cache)-1] = '\0';
+		my_hostname[sizeof(my_hostname)-1] = '\0';
 
 		ret = interpret_string_addr_internal(&res,
-					dnshostname_cache,
+					my_hostname,
 					AI_ADDRCONFIG|AI_CANONNAME);
 
 		if (!ret || res == NULL) {
 			DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
 				"name %s [%s]\n",
-				dnshostname_cache,
+				my_hostname,
 				gai_strerror(ret) ));
-			return false;
+			return NULL;
 		}
 
 		/*
@@ -2015,17 +2015,15 @@ bool get_mydnsfullname(fstring my_dnsname)
 		if (res->ai_canonname == NULL) {
 			DEBUG(3,("get_mydnsfullname: failed to get "
 				"canonical name for %s\n",
-				dnshostname_cache));
+				my_hostname));
 			freeaddrinfo(res);
-			return false;
+			return NULL;
 		}
 
-
-		fstrcpy(dnshostname_cache, res->ai_canonname);
+		dnshostname_cache = SMB_STRDUP(res->ai_canonname);
 		freeaddrinfo(res);
 	}
-	fstrcpy(my_dnsname, dnshostname_cache);
-	return true;
+	return dnshostname_cache;
 }
 
 /************************************************************
@@ -2034,15 +2032,20 @@ bool get_mydnsfullname(fstring my_dnsname)
 
 bool is_myname_or_ipaddr(const char *s)
 {
-	fstring name, dnsname;
-	char *servername;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name = NULL;
+	const char *dnsname;
+	char *servername = NULL;
 
 	if (!s) {
 		return false;
 	}
 
 	/* Santize the string from '\\name' */
-	fstrcpy(name, s);
+	name = talloc_strdup(ctx, s);
+	if (!name) {
+		return false;
+	}
 
 	servername = strrchr_m(name, '\\' );
 	if (!servername) {
@@ -2072,10 +2075,9 @@ bool is_myname_or_ipaddr(const char *s)
 	}
 
 	/* Maybe it's my dns name */
-	if (get_mydnsfullname(dnsname)) {
-		if (strequal(servername, dnsname)) {
-			return true;
-		}
+	dnsname = get_mydnsfullname();
+	if (dnsname && strequal(servername, dnsname)) {
+		return true;
 	}
 
 	/* Handle possible CNAME records - convert to an IP addr. */
@@ -2104,7 +2106,7 @@ bool is_myname_or_ipaddr(const char *s)
 			return false;
 		}
 
-		nics = TALLOC_ARRAY(talloc_tos(), struct iface_struct,
+		nics = TALLOC_ARRAY(ctx, struct iface_struct,
 					MAX_INTERFACES);
 		if (!nics) {
 			return false;

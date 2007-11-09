@@ -892,7 +892,7 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
  * defined.
  */
 #ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 254
+#define MAXHOSTNAMELEN 255
 #endif
 
 /* yuck, I'd like a better way of doing this */

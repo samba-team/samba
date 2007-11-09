@@ -2401,20 +2401,20 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "DNSMachineName")) {			
-		pstring hostname;
-		
-		if (!get_mydnsfullname(hostname))
+	if (!StrCaseCmp(value, "DNSMachineName")) {
+		const char *hostname = get_mydnsfullname();
+
+		if (!hostname)
 			return WERR_BADFILE;
 		*type = REG_SZ;
-		*needed = 2*(strlen(hostname)+1);	
+		*needed = 2*(strlen(hostname)+1);
 		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
 			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(hostname); i++) {
 			(*data)[2*i]=hostname[i];
 			(*data)[2*i+1]='\0';
-		}			
+		}
 		return WERR_OK;
 	}
 

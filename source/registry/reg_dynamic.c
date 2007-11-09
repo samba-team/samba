@@ -83,17 +83,20 @@ static int tcpip_params( REGVAL_CTR *regvals )
 	fstring                 value;
 	int                     value_length;
 	char   			*hname;
-	fstring 		mydomainname;
-	
+	char *mydomainname = NULL;
 
 	hname = myhostname();
 	value_length = push_ucs2( value, value, hname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
 	regval_ctr_addvalue( regvals, "Hostname",REG_SZ, value, value_length );
-	
-	get_mydnsdomname( mydomainname );		
+
+	mydomainname = get_mydnsdomname(talloc_tos());
+	if (!mydomainname) {
+		return -1;
+	}
+
 	value_length = push_ucs2( value, value, mydomainname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
 	regval_ctr_addvalue( regvals, "Domain", REG_SZ, value, value_length );
-		
+
 	return regval_ctr_numvals( regvals );
 }
 
