@@ -239,7 +239,7 @@ static bool nwrap_parse_file(struct nwrap_cache *nwrap)
 		goto failed;
 	}
 
-	buf = malloc(nwrap->st.st_size + 1);
+	buf = (uint8_t *)malloc(nwrap->st.st_size + 1);
 	if (!buf) {
 		NWRAP_ERROR(("%s: malloc failed\n",__location__));
 		goto failed;
