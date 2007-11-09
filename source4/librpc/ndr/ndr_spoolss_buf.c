@@ -56,7 +56,7 @@
 	if (r->in.buffer) {\
 		DATA_BLOB _data_blob_info;\
 		_ndr_info = ndr_push_init_ctx(ndr);\
-		NT_STATUS_HAVE_NO_MEMORY(_ndr_info);\
+		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->out.info) {\
 			struct __##fn __r;\
@@ -121,7 +121,7 @@
 	r->out.result	= _r.out.result;\
 	if (_r.out.info) {\
 		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr);\
-		NT_STATUS_HAVE_NO_MEMORY(_ndr_info);\
+		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->in.offered != _ndr_info->data_size) {\
 			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
@@ -153,9 +153,9 @@
 } while(0)
 
 #define _NDR_CHECK_UINT32(call) do {\
-	NTSTATUS _status; \
-        _status = call; \
-        if (!NT_STATUS_IS_OK(_status)) {\
+	enum ndr_err_code _ndr_err; \
+        _ndr_err = call; \
+	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
         	return 0; \
 	}\
 } while (0)
@@ -178,7 +178,7 @@
 /*
   spoolss_EnumPrinters
 */
-NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinters *r)
+enum ndr_err_code ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinters *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrinters,{
 		_r.in.flags	= r->in.flags;
@@ -187,10 +187,10 @@ NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const st
 		_r.in.flags	= r->in.flags;
 		_r.in.server	= r->in.server;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinters *r)
+enum ndr_err_code ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinters *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrinters,{
 		r->in.flags	= _r.in.flags;
@@ -199,7 +199,7 @@ NTSTATUS ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct s
 		_r.in.flags	= r->in.flags;
 		_r.in.server	= r->in.server;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PrinterInfo *info)
@@ -210,7 +210,7 @@ uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, uint32_t level,
 /*
   spoolss_EnumJobs
 */
-NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, const struct spoolss_EnumJobs *r)
+enum ndr_err_code ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, const struct spoolss_EnumJobs *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumJobs,{
 		_r.in.handle	= r->in.handle;
@@ -221,10 +221,10 @@ NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, const struct
 		_r.in.firstjob	= r->in.firstjob;
 		_r.in.numjobs	= r->in.numjobs;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, struct spoolss_EnumJobs *r)
+enum ndr_err_code ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, struct spoolss_EnumJobs *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumJobs,{
 		r->in.handle	= _r.in.handle;
@@ -235,7 +235,7 @@ NTSTATUS ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, struct spool
 		_r.in.firstjob	= r->in.firstjob;
 		_r.in.numjobs	= r->in.numjobs;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_JobInfo *info)
@@ -246,7 +246,7 @@ uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumPrinterDrivers
 */
-NTSTATUS ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinterDrivers *r)
+enum ndr_err_code ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinterDrivers *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrinterDrivers,{
 		_r.in.server		= r->in.server;
@@ -255,10 +255,10 @@ NTSTATUS ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, co
 		_r.in.server		= r->in.server;
 		_r.in.environment	= r->in.environment;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterDrivers *r)
+enum ndr_err_code ndr_pull_spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterDrivers *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrinterDrivers,{
 		r->in.server		= _r.in.server;
@@ -267,7 +267,7 @@ NTSTATUS ndr_pull_spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, st
 		_r.in.server		= r->in.server;
 		_r.in.environment	= r->in.environment;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_DriverInfo *info)
@@ -278,24 +278,24 @@ uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, uint32_t 
 /*
   spoolss_EnumForms
 */
-NTSTATUS ndr_push_spoolss_EnumForms(struct ndr_push *ndr, int flags, const struct spoolss_EnumForms *r)
+enum ndr_err_code ndr_push_spoolss_EnumForms(struct ndr_push *ndr, int flags, const struct spoolss_EnumForms *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumForms,{
 		_r.in.handle	= r->in.handle;
 	},{
 		_r.in.handle	= r->in.handle;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumForms(struct ndr_pull *ndr, int flags, struct spoolss_EnumForms *r)
+enum ndr_err_code ndr_pull_spoolss_EnumForms(struct ndr_pull *ndr, int flags, struct spoolss_EnumForms *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumForms,{
 		r->in.handle	= _r.in.handle;
 	},{
 		_r.in.handle	= r->in.handle;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumForms_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_FormInfo *info)
@@ -306,24 +306,24 @@ uint32_t ndr_size_spoolss_EnumForms_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumPorts
 */
-NTSTATUS ndr_push_spoolss_EnumPorts(struct ndr_push *ndr, int flags, const struct spoolss_EnumPorts *r)
+enum ndr_err_code ndr_push_spoolss_EnumPorts(struct ndr_push *ndr, int flags, const struct spoolss_EnumPorts *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPorts,{
 		_r.in.servername= r->in.servername;
 	},{
 		_r.in.servername= r->in.servername;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumPorts(struct ndr_pull *ndr, int flags, struct spoolss_EnumPorts *r)
+enum ndr_err_code ndr_pull_spoolss_EnumPorts(struct ndr_pull *ndr, int flags, struct spoolss_EnumPorts *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPorts,{
 		r->in.servername= _r.in.servername;
 	},{
 		_r.in.servername= r->in.servername;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumPorts_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PortInfo *info)
@@ -334,24 +334,24 @@ uint32_t ndr_size_spoolss_EnumPorts_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumMonitors
 */
-NTSTATUS ndr_push_spoolss_EnumMonitors(struct ndr_push *ndr, int flags, const struct spoolss_EnumMonitors *r)
+enum ndr_err_code ndr_push_spoolss_EnumMonitors(struct ndr_push *ndr, int flags, const struct spoolss_EnumMonitors *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumMonitors,{
 		_r.in.servername= r->in.servername;
 	},{
 		_r.in.servername= r->in.servername;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumMonitors(struct ndr_pull *ndr, int flags, struct spoolss_EnumMonitors *r)
+enum ndr_err_code ndr_pull_spoolss_EnumMonitors(struct ndr_pull *ndr, int flags, struct spoolss_EnumMonitors *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumMonitors,{
 		r->in.servername= _r.in.servername;
 	},{
 		_r.in.servername= r->in.servername;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_MonitorInfo *info)
@@ -362,7 +362,7 @@ uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, uint32_t level,
 /*
   spoolss_EnumPrintProcessors
 */
-NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcessors *r)
+enum ndr_err_code ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcessors *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrintProcessors,{
 		_r.in.servername	= r->in.servername;
@@ -371,10 +371,10 @@ NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, c
 		_r.in.servername	= r->in.servername;
 		_r.in.environment	= r->in.environment;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
+enum ndr_err_code ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrintProcessors,{
 		r->in.servername	= _r.in.servername;
@@ -383,7 +383,7 @@ NTSTATUS ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, s
 		_r.in.servername	= r->in.servername;
 		_r.in.environment	= r->in.environment;
 	});
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info)
@@ -394,7 +394,7 @@ uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, uint32
 /*
   spoolss_GetPrinterData
 */
-NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r)
+enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r)
 {
 	struct _spoolss_GetPrinterData _r;
 	if (flags & NDR_IN) {
@@ -415,7 +415,7 @@ NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const 
 		{
 			struct __spoolss_GetPrinterData __r;
 			_ndr_info = ndr_push_init_ctx(ndr);
-			NT_STATUS_HAVE_NO_MEMORY(_ndr_info);
+			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
 			__r.in.type	= r->out.type;
 			__r.out.data	= r->out.data;
@@ -428,10 +428,10 @@ NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const 
 		}
 		NDR_CHECK(ndr_push__spoolss_GetPrinterData(ndr, flags, &_r));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r)
+enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r)
 {
 	struct _spoolss_GetPrinterData _r;
 	if (flags & NDR_IN) {
@@ -470,7 +470,7 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);
-			NT_STATUS_HAVE_NO_MEMORY(_ndr_data);
+			NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 			_ndr_data->flags= ndr->flags;
 			__r.in.type	= r->out.type;
 			__r.out.data	= r->out.data;
@@ -480,13 +480,13 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 			r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   spoolss_SetPrinterData
 */
-NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r)
+enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r)
 {
 	struct _spoolss_SetPrinterData _r;
 	if (flags & NDR_IN) {
@@ -495,7 +495,7 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const 
 		DATA_BLOB _data_blob_data;
 
 		_ndr_data = ndr_push_init_ctx(ndr);
-		NT_STATUS_HAVE_NO_MEMORY(_ndr_data);
+		NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 		_ndr_data->flags= ndr->flags;
 
 		__r.in.type	= r->in.type;
@@ -520,7 +520,7 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const 
 		_r.out.result	= r->out.result;
 		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, uint32_t flags)
