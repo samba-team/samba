@@ -222,7 +222,7 @@ static int getaddr_info_name(const char *node,
 	}
 
 	for(pptr = hp->h_addr_list; *pptr; pptr++) {
-		struct in_addr ip = *(struct in_addr *)pptr;
+		struct in_addr ip = *(struct in_addr *)*pptr;
 		struct addrinfo *ai = alloc_entry(hints, ip, port);
 
 		if (!ai) {
@@ -407,7 +407,7 @@ static int gethostnameinfo(const struct sockaddr *sa,
 		if (ret == 0) {
 			/* Name looked up successfully. */
 			ret = snprintf(node, nodelen, "%s", hp->h_name);
-			if (ret == -1 || ret > nodelen) {
+			if (ret < 0 || (size_t)ret >= nodelen) {
 				return EAI_MEMORY;
 			}
 			if (flags & NI_NOFQDN) {
@@ -428,7 +428,7 @@ static int gethostnameinfo(const struct sockaddr *sa,
 	}
 	p = inet_ntoa(((struct sockaddr_in *)sa)->sin_addr);
 	ret = snprintf(node, nodelen, "%s", p);
-	if (ret == -1 || ret > nodelen) {
+	if (ret < 0 || (size_t)ret >= nodelen) {
 		return EAI_MEMORY;
 	}
 	return 0;
@@ -449,7 +449,7 @@ static int getservicenameinfo(const struct sockaddr *sa,
 		if (se && se->s_name) {
 			/* Service name looked up successfully. */
 			ret = snprintf(service, servicelen, "%s", se->s_name);
-			if (ret == -1 || ret > servicelen) {
+			if (ret < 0 || (size_t)ret >= servicelen) {
 				return EAI_MEMORY;
 			}
 			return 0;
@@ -457,7 +457,7 @@ static int getservicenameinfo(const struct sockaddr *sa,
 		/* Otherwise just fall into the numeric service code... */
 	}
 	ret = snprintf(service, servicelen, "%d", port);
-	if (ret == -1 || ret > servicelen) {
+	if (ret < 0 || (size_t)ret >= servicelen) {
 		return EAI_MEMORY;
 	}
 	return 0;
