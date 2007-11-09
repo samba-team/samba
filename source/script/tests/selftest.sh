@@ -30,8 +30,8 @@ export TORTURE_MAXTIME
 SERVER=localhost2
 SERVER_IP=127.0.0.2
 USERNAME=`PATH=/usr/ucb:$PATH whoami`
-USERID=`PATH=/usr/ucb:$PATH id -u`
-GROUPID=`PATH=/usr/ucb:$PATH id -g`
+USERID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f1 | sed -e 's/uid=\([0-9]*\).*/\1/g'`
+GROUPID=`PATH=/usr/ucb:$PATH id | cut -d ' ' -f2 | sed -e 's/gid=\([0-9]*\).*/\1/g'`
 PASSWORD=test
 
 SRCDIR="`dirname $0`/../.."
