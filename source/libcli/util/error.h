@@ -22,6 +22,7 @@
 #include "libcli/util/werror.h"
 #include "libcli/util/doserr.h"
 #include "libcli/util/ntstatus.h"
+#include "librpc/ndr/libndr.h"
 
 /** NT error on DOS connection! (NT_STATUS_OK) */
 bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2);
@@ -46,6 +47,9 @@ WERROR ntstatus_to_werror(NTSTATUS error);
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix(int unix_error);
 
-
+/*********************************************************************
+ Map an NT error code from a NDR error code.
+*********************************************************************/
+NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
 
 #endif /* _SAMBA_ERROR_H */
