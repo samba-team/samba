@@ -401,6 +401,12 @@ mcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
     return 0;
 }
 
+/**
+ * Variable containing the MEMORY based credential cache implemention.
+ *
+ * @ingroup krb5_ccache
+ */
+
 const krb5_cc_ops krb5_mcc_ops = {
     "MEMORY",
     mcc_get_name,
