@@ -108,6 +108,19 @@ krb5_have_error_string(krb5_context context)
     return str != NULL;
 }
 
+/**
+ * Return the error message for `code' in context. On error the
+ * function returns NULL.
+ *
+ * @param context Kerberos 5 context
+ * @param code Error code related to the error
+ *
+ * @return an error string, needs to be freed with krb5_xfree(). The
+ * functions return NULL on error.
+ *
+ * @ingroup krb5_error
+ */
+
 char * KRB5_LIB_FUNCTION
 krb5_get_error_message(krb5_context context, krb5_error_code code)
 {
