@@ -86,6 +86,7 @@ dist_libkrb5_la_SOURCES =			\
 	crc.c					\
 	creds.c					\
 	crypto.c				\
+	doxygen.c				\
 	data.c					\
 	digest.c				\
 	eai_to_heim_errno.c			\
