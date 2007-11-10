@@ -1491,30 +1491,32 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
-			pstring pass;
+			char *pass = NULL;
 			bool unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
-
-#if 0
-			/* This was the previous fix. Not sure if it's still
-			 * valid. JRA. */
-			if ((ra_type == RA_WINNT) && (passlen2 == 0)
-					&& unic && passlen1) {
-				/* NT4.0 stuffs up plaintext unicode password
-				 * lengths... */
-				srvstr_pull(inbuf, pass, smb_buf(inbuf) + 1,
-					sizeof(pass), passlen1, STR_TERMINATE);
-#endif
 
 			if (unic && (passlen2 == 0) && passlen1) {
 				/* Only a ascii plaintext password was sent. */
-				srvstr_pull(req->inbuf, req->flags2, pass,
-					    smb_buf(req->inbuf), sizeof(pass),
-					    passlen1, STR_TERMINATE|STR_ASCII);
+				(void)srvstr_pull_talloc(talloc_tos(),
+							req->inbuf,
+							req->flags2,
+							&pass,
+							smb_buf(req->inbuf),
+							passlen1,
+							STR_TERMINATE|STR_ASCII);
 			} else {
-				srvstr_pull(req->inbuf, req->flags2, pass,
-					    smb_buf(req->inbuf), sizeof(pass),
-					    unic ? passlen2 : passlen1,
-					    STR_TERMINATE);
+				(void)srvstr_pull_talloc(talloc_tos(),
+							req->inbuf,
+							req->flags2,
+							&pass,
+							smb_buf(req->inbuf),
+							unic ? passlen2 : passlen1,
+							STR_TERMINATE);
+			}
+			if (!pass) {
+				reply_nterror(req, nt_status_squash(
+					      NT_STATUS_INVALID_PARAMETER));
+				END_PROFILE(SMBsesssetupX);
+				return;
 			}
 			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
