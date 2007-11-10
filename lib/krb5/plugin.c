@@ -117,6 +117,18 @@ loadlib(krb5_context context,
 }
 #endif /* HAVE_DLOPEN */
 
+/**
+ * Register a plugin symbol name of specific type.
+ * @param context a Keberos context
+ * @param type type of plugin symbol
+ * @param name name of plugin symbol
+ * @param symbol a pointer to the named symbol
+ * @return In case of error a non zero error com_err error is returned
+ * and the Kerberos error string is set.
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_error_code
 krb5_plugin_register(krb5_context context,
 		     enum krb5_plugin_type type,
@@ -250,4 +262,3 @@ _krb5_plugin_free(struct krb5_plugin *list)
 	list = next;
     }
 }
-
