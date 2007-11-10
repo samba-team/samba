@@ -767,6 +767,12 @@ fcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
     return 0;
 }
 
+/**
+ * Variable containing the FILE based credential cache implemention.
+ *
+ * @ingroup krb5_ccache
+ */
+
 const krb5_cc_ops krb5_fcc_ops = {
     "FILE",
     fcc_get_name,
