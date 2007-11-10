@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,10 +35,18 @@
 
 RCSID("$Id$");
 
-/*
+/**
  * Add a new ccache type with operations `ops', overwriting any
  * existing one if `override'.
- * Return an error code or 0.
+ *
+ * @param context a Keberos context
+ * @param ops type of plugin symbol
+ * @param override flag to select if the registration is to overide
+ * an existing ops with the same name.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -101,8 +109,7 @@ _krb5_cc_allocate(krb5_context context,
 
 /*
  * Allocate memory for a new ccache in `id' with operations `ops'
- * and name `residual'.
- * Return 0 or an error code.
+ * and name `residual'. Return 0 or an error code.
  */
 
 static krb5_error_code
@@ -122,11 +129,20 @@ allocate_ccache (krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Find and allocate a ccache in `id' from the specification in `residual'.
  * If the ccache name doesn't contain any colon, interpret it as a file name.
- * Return 0 or an error code.
+ *
+ * @param context a Keberos context.
+ * @param name string name of a credential cache.
+ * @param id return pointer to a found credential cache.
+ *
+ * @return Return 0 or an error code. In case of an error, id is set
+ * to NULL.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_resolve(krb5_context context,
@@ -134,6 +150,8 @@ krb5_cc_resolve(krb5_context context,
 		krb5_ccache *id)
 {
     int i;
+
+    *id = NULL;
 
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	size_t prefix_len = strlen(context->cc_ops[i].prefix);
@@ -153,10 +171,14 @@ krb5_cc_resolve(krb5_context context,
     }
 }
 
-/*
+/**
  * Generate a new ccache of type `ops' in `id'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_gen_new(krb5_context context,
@@ -171,14 +193,16 @@ krb5_cc_gen_new(krb5_context context,
     return (*id)->ops->gen_new(context, id);
 }
 
-/*
+/**
  * Generates a new unique ccache of `type` in `id'. If `type' is NULL,
  * the library chooses the default credential cache type. The supplied
  * `hint' (that can be NULL) is a string that the credential cache
  * type can use to base the name of the credential on, this is to make
  * its easier for the user to differentiate the credentials.
  *
- *  Returns 0 or an error code.
+ * @return Returns 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -200,9 +224,12 @@ krb5_cc_new_unique(krb5_context context, const char *type,
     return krb5_cc_gen_new(context, ops, id);
 }
 
-/*
+/**
  * Return the name of the ccache `id'
+ *
+ * @ingroup krb5_ccache
  */
+
 
 const char* KRB5_LIB_FUNCTION
 krb5_cc_get_name(krb5_context context,
@@ -211,9 +238,12 @@ krb5_cc_get_name(krb5_context context,
     return id->ops->get_name(context, id);
 }
 
-/*
+/**
  * Return the type of the ccache `id'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 const char* KRB5_LIB_FUNCTION
 krb5_cc_get_type(krb5_context context,
@@ -222,11 +252,14 @@ krb5_cc_get_type(krb5_context context,
     return id->ops->prefix;
 }
 
-/*
+/**
  * Return the complete resolvable name the ccache `id' in `str´.
  * `str` should be freed with free(3).
  * Returns 0 or an error (and then *str is set to NULL).
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_full_name(krb5_context context,
@@ -257,9 +290,12 @@ krb5_cc_get_full_name(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Return krb5_cc_ops of a the ccache `id'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 const krb5_cc_ops *
 krb5_cc_get_ops(krb5_context context, krb5_ccache id)
@@ -367,9 +403,12 @@ environment_changed(krb5_context context)
     return 0;
 }
 
-/*
+/**
  * Set the default cc name for `context' to `name'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_default_name(krb5_context context, const char *name)
@@ -414,10 +453,15 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     return ret;
 }
 
-/*
+/**
  * Return a pointer to a context static string containing the default
  * ccache name.
+ *
+ * @return String to the default credential cache name.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 const char* KRB5_LIB_FUNCTION
 krb5_cc_default_name(krb5_context context)
@@ -428,10 +472,14 @@ krb5_cc_default_name(krb5_context context)
     return context->default_cc_name;
 }
 
-/*
+/**
  * Open the default ccache in `id'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_default(krb5_context context,
@@ -446,10 +494,14 @@ krb5_cc_default(krb5_context context,
     return krb5_cc_resolve(context, p, id);
 }
 
-/*
+/**
  * Create a new ccache in `id' for `primary_principal'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_initialize(krb5_context context,
@@ -460,10 +512,14 @@ krb5_cc_initialize(krb5_context context,
 }
 
 
-/*
+/**
  * Remove the ccache `id'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_destroy(krb5_context context,
@@ -476,10 +532,14 @@ krb5_cc_destroy(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Stop using the ccache `id' and free the related resources.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_close(krb5_context context,
@@ -491,10 +551,14 @@ krb5_cc_close(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Store `creds' in the ccache `id'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_store_cred(krb5_context context,
@@ -504,12 +568,16 @@ krb5_cc_store_cred(krb5_context context,
     return (*id->ops->store)(context, id, creds);
 }
 
-/*
+/**
  * Retrieve the credential identified by `mcreds' (and `whichfields')
  * from `id' in `creds'. 'creds' must be free by the caller using
  * krb5_free_cred_contents.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_retrieve_cred(krb5_context context,
@@ -540,10 +608,14 @@ krb5_cc_retrieve_cred(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Return the principal of `id' in `principal'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_principal(krb5_context context,
@@ -553,11 +625,15 @@ krb5_cc_get_principal(krb5_context context,
     return (*id->ops->get_princ)(context, id, principal);
 }
 
-/*
+/**
  * Start iterating over `id', `cursor' is initialized to the
  * beginning.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_start_seq_get (krb5_context context,
@@ -567,11 +643,15 @@ krb5_cc_start_seq_get (krb5_context context,
     return (*id->ops->get_first)(context, id, cursor);
 }
 
-/*
+/**
  * Retrieve the next cred pointed to by (`id', `cursor') in `creds'
  * and advance `cursor'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_next_cred (krb5_context context,
@@ -582,7 +662,12 @@ krb5_cc_next_cred (krb5_context context,
     return (*id->ops->get_next)(context, id, cursor, creds);
 }
 
-/* like krb5_cc_next_cred, but allow for selective retrieval */
+/**
+ * Like krb5_cc_next_cred, but allow for selective retrieval
+ *
+ * @ingroup krb5_ccache
+ */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_next_cred_match(krb5_context context,
@@ -603,9 +688,12 @@ krb5_cc_next_cred_match(krb5_context context,
     }
 }
 
-/*
+/**
  * Destroy the cursor `cursor'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_end_seq_get (krb5_context context,
@@ -615,9 +703,12 @@ krb5_cc_end_seq_get (krb5_context context,
     return (*id->ops->end_get)(context, id, cursor);
 }
 
-/*
+/**
  * Remove the credential identified by `cred', `which' from `id'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_remove_cred(krb5_context context,
@@ -634,9 +725,12 @@ krb5_cc_remove_cred(krb5_context context,
     return (*id->ops->remove_cred)(context, id, which, cred);
 }
 
-/*
+/**
  * Set the flags of `id' to `flags'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_flags(krb5_context context,
@@ -646,9 +740,12 @@ krb5_cc_set_flags(krb5_context context,
     return (*id->ops->set_flags)(context, id, flags);
 }
 		    
-/*
+/**
  * Copy the contents of `from' to `to'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache_match(krb5_context context,
@@ -691,6 +788,13 @@ krb5_cc_copy_cache_match(krb5_context context,
     return ret;
 }
 
+/**
+ * Just like krb5_cc_copy_cache_match, but copy everything.
+ *
+ * @ingroup krb5_ccache
+ */
+
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache(krb5_context context,
 		   const krb5_ccache from,
@@ -699,9 +803,12 @@ krb5_cc_copy_cache(krb5_context context,
     return krb5_cc_copy_cache_match(context, from, to, 0, NULL, NULL);
 }
 
-/*
+/**
  * Return the version of `id'.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_version(krb5_context context,
@@ -713,9 +820,12 @@ krb5_cc_get_version(krb5_context context,
 	return 0;
 }
 
-/*
+/**
  * Clear `mcreds' so it can be used with krb5_cc_retrieve_cred
+ *
+ * @ingroup krb5_ccache
  */
+
 
 void KRB5_LIB_FUNCTION
 krb5_cc_clear_mcred(krb5_creds *mcred)
@@ -723,12 +833,16 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
     memset(mcred, 0, sizeof(*mcred));
 }
 
-/*
+/**
  * Get the cc ops that is registered in `context' to handle the
  * `prefix'. `prefix' can be a complete credential cache name or a
  * prefix, the function will only use part up to the first colon (:)
- * if there is one.  Returns NULL if ops not found.
+ * if there is one.
+ * Returns NULL if ops not found.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 const krb5_cc_ops *
 krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
@@ -763,11 +877,15 @@ struct krb5_cc_cache_cursor_data {
     krb5_cc_cursor cursor;
 };
 
-/*
+/**
  * Start iterating over all caches of `type'. If `type' is NULL, the
  * default type is * used. `cursor' is initialized to the beginning.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_cache_get_first (krb5_context context,
@@ -809,11 +927,15 @@ krb5_cc_cache_get_first (krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Retrieve the next cache pointed to by (`cursor') in `id'
  * and advance `cursor'.
- * Return 0 or an error code.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_cache_next (krb5_context context,
@@ -823,9 +945,14 @@ krb5_cc_cache_next (krb5_context context,
     return cursor->ops->get_cache_next(context, cursor->cursor, id);
 }
 
-/*
+/**
  * Destroy the cursor `cursor'.
+ *
+ * @return Return 0 or an error code.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_cache_end_seq_get (krb5_context context,
@@ -838,13 +965,17 @@ krb5_cc_cache_end_seq_get (krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Search for a matching credential cache of type `type' that have the
  * `principal' as the default principal. If NULL is used for `type',
  * the default type is used. On success, `id' needs to be freed with
- * krb5_cc_close or krb5_cc_destroy. On failure, error code is
- * returned and `id' is set to NULL.
+ * krb5_cc_close or krb5_cc_destroy.
+ *
+ * @return On failure, error code is returned and `id' is set to NULL.
+ *
+ * @ingroup krb5_ccache
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_cache_match (krb5_context context,
