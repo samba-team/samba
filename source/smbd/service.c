@@ -38,7 +38,7 @@ static bool canonicalize_connect_path(connection_struct *conn)
 #else
         pstring resolved_name_buf;
 #endif
-	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
+	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath,resolved_name_buf);
 	if (!resolved_name) {
 		return false;
 	}
