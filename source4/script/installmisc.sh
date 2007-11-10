@@ -25,6 +25,7 @@ cp setup/*.ldif $SETUPDIR || exit 1
 cp setup/*.reg $SETUPDIR || exit 1
 cp setup/*.zone $SETUPDIR || exit 1
 cp setup/*.conf $SETUPDIR || exit 1
+cp setup/*.php $SETUPDIR || exit 1
 cp setup/provision.smb.conf.dc $SETUPDIR || exit 1
 cp setup/provision.smb.conf.member $SETUPDIR || exit 1
 cp setup/provision.smb.conf.standalone $SETUPDIR || exit 1
