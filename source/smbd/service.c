@@ -21,16 +21,17 @@
 
 extern userdom_struct current_user_info;
 
-static bool canonicalize_path(connection_struct *conn, pstring path)
+static bool canonicalize_connect_path(connection_struct *conn)
 {
 #ifdef REALPATH_TAKES_NULL
-	char *resolved_name = SMB_VFS_REALPATH(conn,path,NULL);
+	bool ret;
+	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath,NULL);
 	if (!resolved_name) {
-		return False;
+		return false;
 	}
-	pstrcpy(path, resolved_name);
+	ret = set_conn_connectpath(conn,resolved_name);
 	SAFE_FREE(resolved_name);
-	return True;
+	return ret;
 #else
 #ifdef PATH_MAX
         char resolved_name_buf[PATH_MAX+1];
@@ -39,10 +40,9 @@ static bool canonicalize_path(connection_struct *conn, pstring path)
 #endif
 	char *resolved_name = SMB_VFS_REALPATH(conn,path,resolved_name_buf);
 	if (!resolved_name) {
-		return False;
+		return false;
 	}
-	pstrcpy(path, resolved_name);
-	return True;
+	return set_conn_connectpath(conn,resolved_name);
 #endif /* REALPATH_TAKES_NULL */
 }
 
@@ -52,12 +52,18 @@ static bool canonicalize_path(connection_struct *conn, pstring path)
  Observent people will notice a similarity between this and check_path_syntax :-).
 ****************************************************************************/
 
-void set_conn_connectpath(connection_struct *conn, const char *connectpath)
+bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 {
-	pstring destname;
-	char *d = destname;
+	char *destname;
+	char *d;
 	const char *s = connectpath;
-        bool start_of_name_component = True;
+        bool start_of_name_component = true;
+
+	destname = SMB_STRDUP(connectpath);
+	if (!destname) {
+		return false;
+	}
+	d = destname;
 
 	*d++ = '/'; /* Always start with root. */
 
@@ -142,7 +148,7 @@ void set_conn_connectpath(connection_struct *conn, const char *connectpath)
 					break;
 			}
 		}
-		start_of_name_component = False;
+		start_of_name_component = false;
 	}
 	*d = '\0';
 
@@ -155,6 +161,8 @@ void set_conn_connectpath(connection_struct *conn, const char *connectpath)
 		lp_servicename(SNUM(conn)), destname ));
 
 	string_set(&conn->connectpath, destname);
+	SAFE_FREE(destname);
+	return true;
 }
 
 /****************************************************************************
@@ -422,13 +430,17 @@ int find_service(fstring service)
 			 * could get overwritten by the recursive find_service() call
 			 * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
 			 */
-			pstring defservice;
-			pstrcpy(defservice, pdefservice);
+			char *defservice = SMB_STRDUP(pdefservice);
+
+			if (!defservice) {
+				goto fail;
+			}
 
 			/* Disallow anything except explicit share names. */
 			if (strequal(defservice,HOMES_NAME) ||
 					strequal(defservice, PRINTERS_NAME) ||
 					strequal(defservice, "IPC$")) {
+				SAFE_FREE(defservice);
 				goto fail;
 			}
 
@@ -437,6 +449,7 @@ int find_service(fstring service)
 				all_string_sub(service, "_","/",0);
 				iService = lp_add_service(service, iService);
 			}
+			SAFE_FREE(defservice);
 		}
 	}
 
@@ -642,6 +655,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	fstring dev;
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
+	bool on_err_call_dis_hook = false;
 
 	*user = 0;
 	fstrcpy(dev, pdev);
@@ -889,16 +903,27 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	{
-		pstring s;
-		pstrcpy(s,lp_pathname(snum));
-		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-				      conn->connectpath, conn->gid,
-				      get_current_username(),
-				      current_user_info.domain,
-				      s, sizeof(s));
-		set_conn_connectpath(conn,s);
+		char *s = talloc_sub_advanced(talloc_tos(),
+					lp_servicename(SNUM(conn)), conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					lp_pathname(snum));
+		if (!s) {
+			conn_free(conn);
+			*status = NT_STATUS_NO_MEMORY;
+			return NULL;
+		}
+
+		if (!set_conn_connectpath(conn,s)) {
+			TALLOC_FREE(s);
+			conn_free(conn);
+			*status = NT_STATUS_NO_MEMORY;
+			return NULL;
+		}
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
 			 lp_servicename(snum)));
+		TALLOC_FREE(s);
 	}
 
 	/*
@@ -969,10 +994,15 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 * depend on the realpath() pointer in the vfs table. JRA.
 	 */
 	if (!lp_widelinks(snum)) {
-		pstring s;
-		pstrcpy(s,conn->connectpath);
-		canonicalize_path(conn, s);
-		set_conn_connectpath(conn,s);
+		if (!canonicalize_connect_path(conn)) {
+			DEBUG(0, ("canonicalize_connect_path failed "
+			"for service %s, path %s\n",
+				lp_servicename(snum),
+				conn->connectpath));
+			conn_free(conn);
+			*status = NT_STATUS_BAD_NETWORK_NAME;
+			return NULL;
+		}
 	}
 
 	if ((!conn->printer) && (!conn->ipc)) {
@@ -1012,15 +1042,15 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 * to below */
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(snum)) {
-		pstring cmd;
-		pstrcpy(cmd,lp_rootpreexec(snum));
-		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-				      conn->connectpath, conn->gid,
-				      get_current_username(),
-				      current_user_info.domain,
-				      cmd, sizeof(cmd));
+		char *cmd = talloc_sub_advanced(talloc_tos(),
+					lp_servicename(SNUM(conn)), conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					lp_rootpreexec(snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
+		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_rootpreexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
@@ -1049,22 +1079,19 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	/* execute any "preexec = " line */
 	if (*lp_preexec(snum)) {
-		pstring cmd;
-		pstrcpy(cmd,lp_preexec(snum));
-		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-				      conn->connectpath, conn->gid,
-				      get_current_username(),
-				      current_user_info.domain,
-				      cmd, sizeof(cmd));
+		char *cmd = talloc_sub_advanced(talloc_tos(),
+					lp_servicename(SNUM(conn)), conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					lp_preexec(snum));
 		ret = smbrun(cmd,NULL);
+		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n",
 				 ret));
-			change_to_root_user();
-			yield_connection(conn, lp_servicename(snum));
-			conn_free(conn);
 			*status = NT_STATUS_ACCESS_DENIED;
-			return NULL;
+			goto err_root_exit;
 		}
 	}
 
@@ -1087,12 +1114,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		change_to_root_user();
-		yield_connection(conn, lp_servicename(snum));
-		conn_free(conn);
 		*status = NT_STATUS_UNSUCCESSFUL;
-		return NULL;
+		goto err_root_exit;
 	}
+
+	/* Any error exit after here needs to call the disconnect hook. */
+	on_err_call_dis_hook = true;
 
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
@@ -1111,13 +1138,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 conn->connectpath, lp_servicename(snum),
 				 strerror(errno) ));
 		}
-		change_to_root_user();
-		/* Call VFS disconnect hook */
-		SMB_VFS_DISCONNECT(conn);
-		yield_connection(conn, lp_servicename(snum));
-		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
-		return NULL;
+		goto err_root_exit;
 	}
 
 	string_set(&conn->origpath,conn->connectpath);
@@ -1129,9 +1151,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		char *s = vfs_GetWd(ctx,s);
 		if (!s) {
 			*status = map_nt_error_from_unix(errno);
-			return NULL;
+			TALLOC_FREE(ctx);
+			goto err_root_exit;
 		}
-		set_conn_connectpath(conn,s);
+		if (!set_conn_connectpath(conn,s)) {
+			*status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE(ctx);
+			goto err_root_exit;
+		}
 		vfs_ChDir(conn,conn->connectpath);
 		TALLOC_FREE(ctx);
 	}
@@ -1156,6 +1183,17 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* we've finished with the user stuff - go back to root */
 	change_to_root_user();
 	return(conn);
+
+  err_root_exit:
+
+	change_to_root_user();
+	if (on_err_call_dis_hook) {
+		/* Call VFS disconnect hook */
+		SMB_VFS_DISCONNECT(conn);
+	}
+	yield_connection(conn, lp_servicename(snum));
+	conn_free(conn);
+	return NULL;
 }
 
 /***************************************************************************************
@@ -1356,28 +1394,28 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
 	    change_to_user(conn, vuid))  {
-		pstring cmd;
-		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-				      conn->connectpath, conn->gid,
-				      get_current_username(),
-				      current_user_info.domain,
-				      cmd, sizeof(cmd));
+		char *cmd = talloc_sub_advanced(talloc_tos(),
+					lp_servicename(SNUM(conn)), conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					lp_postexec(SNUM(conn)));
 		smbrun(cmd,NULL);
+		TALLOC_FREE(cmd);
 		change_to_root_user();
 	}
 
 	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
-		pstring cmd;
-		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-				      conn->connectpath, conn->gid,
-				      get_current_username(),
-				      current_user_info.domain,
-				      cmd, sizeof(cmd));
+		char *cmd = talloc_sub_advanced(talloc_tos(),
+					lp_servicename(SNUM(conn)), conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					lp_rootpostexec(SNUM(conn)));
 		smbrun(cmd,NULL);
+		TALLOC_FREE(cmd);
 	}
 
 	conn_free(conn);
