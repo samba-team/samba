@@ -1,0 +1,11 @@
+# Doxyfile 1.5.3
+
+PROJECT_NAME           = heimdal-krb5
+PROJECT_NUMBER         = @PACKAGE_VERSION@
+OUTPUT_DIRECTORY       = @objdir@/krb5
+INPUT                  = @srcdir@/../lib/krb5
+
+PERL_PATH              = /usr/bin/perl
+
+@INCLUDE = "@srcdir@/doxytmpl.dxy"
+
