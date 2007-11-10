@@ -152,6 +152,51 @@ acl_match_acl(krb5_context context,
     return TRUE;
 }
 
+/**
+ * krb5_acl_match_string matches ACL format against a string.
+ *
+ * The ACL format has three format specifiers: s, f, and r.  Each
+ * specifier will retrieve one argument from the variable arguments
+ * for either matching or storing data.  The input string is split up
+ * using " " (space) and "\t" (tab) as a delimiter; multiple and "\t"
+ * in a row are considered to be the same.
+ *
+ * List of format specifiers:
+ * - s Matches a string using strcmp(3) (case sensitive).
+ * - f Matches the string with fnmatch(3). Theflags
+ *     argument (the last argument) passed to the fnmatch function is 0.
+ * - r Returns a copy of the string in the char ** passed in; the copy
+ *     must be freed with free(3). There is no need to free(3) the
+ *     string on error: the function will clean up and set the pointer
+ *     to NULL.
+ *
+ * @param context Kerberos 5 context
+ * @param string string to match with
+ * @param format format to match
+ * @param ... parameter to format string
+ *
+ * @return Return an error code or 0.
+ *
+ *
+ * @code
+ * char *s;
+ * 
+ * ret = krb5_acl_match_string(context, "foo", "s", "foo");
+ * if (ret)
+ *     krb5_errx(context, 1, "acl didn't match");
+ * ret = krb5_acl_match_string(context, "foo foo baz/kaka",
+ *     "ss", "foo", &s, "foo/*");
+ * if (ret) {
+ *     // no need to free(s) on error
+ *     assert(s == NULL);
+ *     krb5_errx(context, 1, "acl didn't match");
+ * }
+ * free(s);
+ * @endcode
+ *
+ * @sa krb5_acl_match_file
+ * @ingroup krb5_support
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_acl_match_string(krb5_context context,
@@ -180,6 +225,22 @@ krb5_acl_match_string(krb5_context context,
     }
 }
 	       
+/**
+ * krb5_acl_match_file matches ACL format against each line in a file
+ * using krb5_acl_match_string(). Lines starting with # are treated
+ * like comments and ignored.
+ *
+ * @param context Kerberos 5 context.
+ * @param file file with acl listed in the file.
+ * @param format format to match.
+ * @param ... parameter to format string.
+ *
+ * @return Return an error code or 0.
+ *
+ * @sa krb5_acl_match_string
+ * @ingroup krb5_support
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_acl_match_file(krb5_context context,
 		    const char *file,
