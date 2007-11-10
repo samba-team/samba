@@ -243,7 +243,7 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 {
 	struct messaging_rec *result;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if ((overall_length < offsetof(struct ctdb_req_message, data))
 	    || (overall_length
@@ -259,20 +259,20 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 
 	blob = data_blob_const(msg->data, msg->datalen);
 
-	status = ndr_pull_struct_blob(
+	ndr_err = ndr_pull_struct_blob(
 		&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_pull_struct_blob failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		TALLOC_FREE(result);
+		return NULL;
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("ctdb_pull_messaging_rec:\n"));
 		NDR_PRINT_DEBUG(messaging_rec, result);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ndr_pull_struct_blob failed: %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(result);
-		return NULL;
 	}
 
 	return result;
@@ -620,19 +620,20 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB blob;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (!(mem_ctx = talloc_init("ctdbd_messaging_send"))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ndr_push_struct_blob(
+	ndr_err = ndr_push_struct_blob(
 		&blob, mem_ctx, msg,
 		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
-			  nt_errstr(status)));
+			  ndr_errstr(ndr_err)));
 		goto fail;
 	}
 
