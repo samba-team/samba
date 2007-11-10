@@ -509,6 +509,7 @@ static NTSTATUS add_socket(struct event_context *event_context,
 */
 static void ldapsrv_task_init(struct task_server *task)
 {	
+	char *ldapi_path;
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
 	const struct model_ops *model_ops;
@@ -554,6 +555,19 @@ static void ldapsrv_task_init(struct task_server *task)
 		status = add_socket(task->event_ctx, model_ops, 
 				    lp_socket_address(global_loadparm), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
+	}
+
+	ldapi_path = private_path(ldap_service, global_loadparm, "ldapi");
+	if (!ldapi_path) {
+		goto failed;
+	}
+
+	status = stream_setup_socket(task->event_ctx, model_ops, &ldap_stream_ops, 
+				     "unix", ldapi_path, NULL, ldap_service);
+	talloc_free(ldapi_path);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",
+			 ldapi_path, nt_errstr(status)));
 	}
 
 	return;
