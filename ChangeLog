@@ -1,6 +1,10 @@
 2007-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc: add doxygen
+
 	* lib/krb5/plugin.c: doxygen documentation
+
+	* lib/krb5/kcm.c: doxygen documentation
 
 	* lib/krb5/fcache.c: doxygen documentation
 
