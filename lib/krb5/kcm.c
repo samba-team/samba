@@ -829,6 +829,12 @@ kcm_get_version(krb5_context context,
     return 0;
 }
 
+/**
+ * Variable containing the KCM based credential cache implemention.
+ *
+ * @ingroup krb5_ccache
+ */
+
 const krb5_cc_ops krb5_kcm_ops = {
     "KCM",
     kcm_get_name,
