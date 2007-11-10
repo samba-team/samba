@@ -1,3 +1,15 @@
+2007-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/plugin.c: doxygen documentation
+
+	* lib/krb5/fcache.c: doxygen documentation
+
+	* lib/krb5/cache.c: doxygen documentations
+	
+	* lib/krb5/doxygen.c: doxygen introduction
+
+	* lib/krb5/error_string.c: Doxygen documentation.
+
 2007-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_plugin.c: expose krb5_plugin_register
