@@ -376,6 +376,72 @@ NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
 }
 
 /*
+ * Convert an ndr error to string
+ */
+
+const char *ndr_errstr(enum ndr_err_code err)
+{
+	switch (err) {
+	case NDR_ERR_SUCCESS:
+		return "NDR_ERR_SUCCESS";
+		break;
+	case NDR_ERR_ARRAY_SIZE:
+		return "NDR_ERR_ARRAY_SIZE";
+		break;
+	case NDR_ERR_BAD_SWITCH:
+		return "NDR_ERR_BAD_SWITCH";
+		break;
+	case NDR_ERR_OFFSET:
+		return "NDR_ERR_OFFSET";
+		break;
+	case NDR_ERR_RELATIVE:
+		return "NDR_ERR_RELATIVE";
+		break;
+	case NDR_ERR_CHARCNV:
+		return "NDR_ERR_CHARCNV";
+		break;
+	case NDR_ERR_LENGTH:
+		return "NDR_ERR_LENGTH";
+		break;
+	case NDR_ERR_SUBCONTEXT:
+		return "NDR_ERR_SUBCONTEXT";
+		break;
+	case NDR_ERR_COMPRESSION:
+		return "NDR_ERR_COMPRESSION";
+		break;
+	case NDR_ERR_STRING:
+		return "NDR_ERR_STRING";
+		break;
+	case NDR_ERR_VALIDATE:
+		return "NDR_ERR_VALIDATE";
+		break;
+	case NDR_ERR_BUFSIZE:
+		return "NDR_ERR_BUFSIZE";
+		break;
+	case NDR_ERR_ALLOC:
+		return "NDR_ERR_ALLOC";
+		break;
+	case NDR_ERR_RANGE:
+		return "NDR_ERR_RANGE";
+		break;
+	case NDR_ERR_TOKEN:
+		return "NDR_ERR_TOKEN";
+		break;
+	case NDR_ERR_IPV4ADDRESS:
+		return "NDR_ERR_IPV4ADDRESS";
+		break;
+	case NDR_ERR_INVALID_POINTER:
+		return "NDR_ERR_INVALID_POINTER";
+		break;
+	case NDR_ERR_UNREAD_BYTES:
+		return "NDR_ERR_UNREAD_BYTES";
+		break;
+	}
+
+	return talloc_asprintf(talloc_tos(), "Unknown NDR error: %d", err);
+}
+
+/*
   return and possibly log an NDR error
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
