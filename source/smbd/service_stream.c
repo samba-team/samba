@@ -266,7 +266,15 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 
 	/* TODO: set socket ACL's here when they're implemented */
 
-	if (*port == 0) {
+	if (!port) {
+		socket_address = socket_address_from_strings(stream_socket, 
+							     stream_socket->sock->backend_name,
+							     sock_addr, 0);
+		NT_STATUS_HAVE_NO_MEMORY(socket_address);
+		status = socket_listen(stream_socket->sock, socket_address, SERVER_LISTEN_BACKLOG, 0);
+		talloc_free(socket_address);
+
+	} else if (*port == 0) {
 		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
 			socket_address = socket_address_from_strings(stream_socket, 
 								     stream_socket->sock->backend_name,
