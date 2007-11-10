@@ -162,6 +162,7 @@ function ldb_erase(info, ldb)
 	/* delete the specials */
 	ldb.del("@INDEXLIST");
 	ldb.del("@ATTRIBUTES");
+	ldb.del("@OPTIONS");
 	ldb.del("@MODULES");
 	ldb.del("@PARTITION");
 	ldb.del("@KLUDGEACL");
@@ -393,6 +394,9 @@ function provision_default_paths(subobj)
 	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-config.ldif";
 	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-schema.ldif";
 
+	paths.s4_ldapi_socket = lp.get("private dir") + "/ldapi";
+	paths.phpldapadminconfig = lp.get("private dir") + "/phpldapadmin-config.php";
+
 	paths.sysvol = lp.get("sysvol", "path");
 
 	if (paths.sysvol == undefined) {
@@ -488,6 +492,9 @@ function provision_fix_subobj(subobj, paths)
 	subobj.LDAPDIR = paths.ldapdir;
 	var ldap_path_list = split("/", paths.ldapdir);
 	subobj.LDAPI_URI = "ldapi://" + join("%2F", ldap_path_list) + "%2Fldapi";
+
+	var s4ldap_path_list = split("/", paths.s4_ldapi_socket);
+	subobj.S4_LDAPI_URI = "ldapi://" + join("%2F", s4ldap_path_list);
 
 	subobj.LDAPMANAGERDN = "cn=Manager," + subobj.DOMAINDN;
 
@@ -793,6 +800,10 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 		info.message("samdb commit failed: " + samdb.errstring() + "\n");
 		assert(commit_ok);
 	}
+
+	message("Setting up phpLDAPadmin configuration\n");
+	setup_file("phpldapadmin-config.php", info.message, paths.phpldapadminconfig, subobj);
+	message("Please install the phpLDAPadmin configuration located at " + paths.phpldapadminconfig + " into /etc/phpldapadmin/config.php\n");
 
 	return true;
 }
