@@ -555,6 +555,19 @@ default_etypes(krb5_context context, krb5_enctype **etype)
     return 0;
 }
 
+/**
+ * Set the default encryption types that will be use in communcation
+ * with the KDC, clients and servers.
+ *
+ * @param context Kerberos 5 context.
+ * @param etypes Encryption types, array terminated with ETYPE_NULL (0).
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_default_in_tkt_etypes(krb5_context context, 
 			       const krb5_enctype *etypes)
@@ -583,6 +596,19 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
     return 0;
 }
 
+/**
+ * Get the default encryption types that will be use in communcation
+ * with the KDC, clients and servers.
+ *
+ * @param context Kerberos 5 context.
+ * @param etypes Encryption types, array terminated with
+ * ETYPE_NULL(0), caller should free array with krb5_xfree():
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_in_tkt_etypes(krb5_context context,
