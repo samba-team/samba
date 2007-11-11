@@ -186,6 +186,21 @@ init_context_from_config_file(krb5_context context)
     return 0;
 }
 
+/**
+ * Initializes the context structure and reads the configuration file
+ * /etc/krb5.conf. The structure should be freed by calling
+ * krb5_free_context() when it is no longer being used.
+ *
+ * @param context pointer to returned context
+ *
+ * @return Returns 0 to indicate success.  Otherwise an errno code is
+ * returned.  Failure means either that something bad happened during
+ * initialization (typically ENOMEM) or that Kerberos should not be
+ * used ENXIO.
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_context(krb5_context *context)
 {
@@ -246,6 +261,14 @@ out:
     return ret;
 }
 
+/**
+ * Frees the krb5_context allocated by krb5_init_context().
+ *
+ * @param context context to be freed.
+ *
+ *  @ingroup krb5
+*/
+
 void KRB5_LIB_FUNCTION
 krb5_free_context(krb5_context context)
 {
@@ -273,6 +296,18 @@ krb5_free_context(krb5_context context)
     memset(context, 0, sizeof(*context));
     free(context);
 }
+
+/**
+ * Reinit the context from a new set of filenames.
+ *
+ * @param context context to add configuration too.
+ * @param filenames array of filenames, end of list is indicated with a NULL filename.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_config_files(krb5_context context, char **filenames)
@@ -382,6 +417,18 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
     return 0;
 }
 
+/**
+ * Prepend the filename to the global configuration list.
+ *
+ * @param filelist a filename to add to the default list of filename
+ * @param pfilenames return array of filenames, should be freed with krb5_free_config_files().
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
 {
@@ -401,6 +448,17 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
     return 0;
 }
 
+/**
+ * Get the global configuration list.
+ *
+ * @param pfilenames return array of filenames, should be freed with krb5_free_config_files().
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION 
 krb5_get_default_config_files(char ***pfilenames)
 {
@@ -416,6 +474,17 @@ krb5_get_default_config_files(char ***pfilenames)
     return krb5_prepend_config_files(files, NULL, pfilenames);
 }
 
+/**
+ * Free a list of configuration files.
+ *
+ * @param filenames list to be freed.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_free_config_files(char **filenames)
 {
@@ -425,12 +494,17 @@ krb5_free_config_files(char **filenames)
     free(filenames);
 }
 
-/*
+/**
  * Returns the list of Kerberos encryption types sorted in order of
- * most preferred to least preferred encryption type.  The array ends
- * with ETYPE_NULL.  Note that some encryption types might be
- * disabled, so you need to check with krb5_enctype_valid() before
- * using the encryption type.
+ * most preferred to least preferred encryption type.  Note that some
+ * encryption types might be disabled, so you need to check with
+ * krb5_enctype_valid() before using the encryption type.
+ *
+ * @return list of enctypes, terminated with ETYPE_NULL. Its a static
+ * array completed into the Kerberos library so the content doesn't
+ * need to be freed.
+ *
+ * @ingroup krb5
  */
 
 const krb5_enctype * KRB5_LIB_FUNCTION
@@ -536,6 +610,18 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
   return 0;
 }
 
+/**
+ * Return the error string for the error code. The caller must not
+ * free the string.
+ *
+ * @param context Kerberos 5 context.
+ * @param code Kerberos error code.
+ *
+ * @return the error message matching code
+ *
+ * @ingroup krb5
+ */
+
 const char* KRB5_LIB_FUNCTION
 krb5_get_err_text(krb5_context context, krb5_error_code code)
 {
@@ -548,6 +634,14 @@ krb5_get_err_text(krb5_context context, krb5_error_code code)
 	p = "Unknown error";
     return p;
 }
+
+/**
+ * Init the built-in ets in the Kerberos library. 
+ *
+ * @param context kerberos context to add the ets too
+ *
+ * @ingroup krb5
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_init_ets(krb5_context context)
@@ -563,11 +657,30 @@ krb5_init_ets(krb5_context context)
     }
 }
 
+/**
+ * Make the kerberos library default to the admin KDC.
+ *
+ * @param context kerberos context
+ * @param flag boolean flag to select if the use the admin KDC or not.
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
 {
     context->use_admin_kdc = flag;
 }
+
+/**
+ * Make the kerberos library default to the admin KDC.
+ *
+ * @param context kerberos context
+ *
+ * @return boolean flag to telling the context will use admin KDC as the default KDC.
+ *
+ * @ingroup krb5
+ */
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context context)
