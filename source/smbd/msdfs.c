@@ -196,16 +196,26 @@ static NTSTATUS parse_dfs_path(const char *pathname,
  Note this CHANGES CWD !!!! JRA.
 *********************************************************/
 
-static NTSTATUS create_conn_struct(connection_struct *conn,
+static NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+				connection_struct *conn,
 				int snum,
 				const char *path)
 {
-	pstring connpath;
+	char *connpath;
 
 	ZERO_STRUCTP(conn);
 
-	pstrcpy(connpath, path);
-	pstring_sub(connpath , "%S", lp_servicename(snum));
+	connpath = talloc_strdup(ctx, path);
+	if (!connpath) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	connpath = talloc_string_sub(ctx,
+				connpath,
+				"%S",
+				lp_servicename(snum));
+	if (!connpath) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* needed for smbd_vfs_init() */
 
@@ -844,7 +854,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct(conn, snum, lp_pathname(snum));
+	status = create_conn_struct(ctx, conn, snum, lp_pathname(snum));
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -888,7 +898,7 @@ static int setup_ver2_dfs_referral(const char *pathname,
 {
 	char* pdata = *ppdata;
 
-	unsigned char uni_requestedpath[sizeof(pstring)];
+	smb_ucs2_t *uni_requestedpath = NULL;
 	int uni_reqpathoffset1,uni_reqpathoffset2;
 	int uni_curroffset;
 	int requestedpathlen=0;
@@ -898,12 +908,15 @@ static int setup_ver2_dfs_referral(const char *pathname,
 
 	DEBUG(10,("Setting up version2 referral\nRequested path:\n"));
 
-	requestedpathlen = rpcstr_push(uni_requestedpath,
-					pathname, sizeof(pstring),
-					STR_TERMINATE);
+	requestedpathlen = rpcstr_push_talloc(talloc_tos(),
+					&uni_requestedpath, pathname);
+	if (uni_requestedpath == NULL || requestedpathlen == 0) {
+		return -1;
+	}
 
 	if (DEBUGLVL(10)) {
-		dump_data(0, uni_requestedpath,requestedpathlen);
+		dump_data(0, (unsigned char *)uni_requestedpath,
+			requestedpathlen);
 	}
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
@@ -976,8 +989,10 @@ static int setup_ver2_dfs_referral(const char *pathname,
 		SSVAL(pdata,offset+16,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+18,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
-		unilen = rpcstr_push(pdata+uni_curroffset, ref->alternate_path,
-				     sizeof(pstring), STR_UNICODE);
+		unilen = rpcstr_push(pdata+uni_curroffset,
+					ref->alternate_path,
+					reply_size - uni_curroffset,
+					STR_UNICODE);
 
 		SSVAL(pdata,offset+20,uni_curroffset-offset);
 
@@ -997,7 +1012,7 @@ static int setup_ver3_dfs_referral(const char *pathname,
 {
 	char *pdata = *ppdata;
 
-	unsigned char uni_reqpath[sizeof(pstring)];
+	smb_ucs2_t *uni_reqpath = NULL;
 	int uni_reqpathoffset1, uni_reqpathoffset2;
 	int uni_curroffset;
 	int reply_size = 0;
@@ -1007,11 +1022,14 @@ static int setup_ver3_dfs_referral(const char *pathname,
 
 	DEBUG(10,("setting up version3 referral\n"));
 
-	reqpathlen = rpcstr_push(uni_reqpath, pathname,
-			sizeof(pstring), STR_TERMINATE);
+	reqpathlen = rpcstr_push_talloc(talloc_tos(), &uni_reqpath, pathname);
+	if (uni_reqpath == NULL || reqpathlen == 0) {
+		return -1;
+	}
 
 	if (DEBUGLVL(10)) {
-		dump_data(0, uni_reqpath,reqpathlen);
+		dump_data(0, (unsigned char *)uni_reqpath,
+			reqpathlen);
 	}
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE +
@@ -1069,8 +1087,8 @@ static int setup_ver3_dfs_referral(const char *pathname,
 		SSVAL(pdata,offset+14,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
 		unilen = rpcstr_push(pdata+uni_curroffset,ref->alternate_path,
-				     sizeof(pstring),
-				     STR_UNICODE | STR_TERMINATE);
+					reply_size - uni_curroffset,
+					STR_UNICODE | STR_TERMINATE);
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);
@@ -1270,7 +1288,8 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 	if(snum < 0) {
 		return False;
 	}
-	if (!NT_STATUS_IS_OK(create_conn_struct(conn_out, snum,
+	if (!NT_STATUS_IS_OK(create_conn_struct(talloc_tos(),
+					conn_out, snum,
 					lp_pathname(snum)))) {
 		return False;
 	}
@@ -1402,7 +1421,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	if (!NT_STATUS_IS_OK(create_conn_struct(&conn, snum, connect_path))) {
+	if (!NT_STATUS_IS_OK(create_conn_struct(talloc_tos(),
+					&conn, snum, connect_path))) {
 		return 0;
 	}
 
@@ -1467,7 +1487,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	if (!NT_STATUS_IS_OK(create_conn_struct(&conn, snum, connect_path))) {
+	if (!NT_STATUS_IS_OK(create_conn_struct(ctx, &conn, snum, connect_path))) {
 		return 0;
 	}
 

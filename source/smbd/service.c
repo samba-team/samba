@@ -33,11 +33,7 @@ static bool canonicalize_connect_path(connection_struct *conn)
 	SAFE_FREE(resolved_name);
 	return ret;
 #else
-#ifdef PATH_MAX
         char resolved_name_buf[PATH_MAX+1];
-#else
-        pstring resolved_name_buf;
-#endif
 	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath,resolved_name_buf);
 	if (!resolved_name) {
 		return false;
