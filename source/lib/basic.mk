@@ -16,30 +16,7 @@ include stream/config.mk
 include util/config.mk
 include tdr/config.mk
 include dbwrap/config.mk
-
-##############################
-# Start SUBSYSTEM LIBCRYPTO
-[SUBSYSTEM::LIBCRYPTO]
-OBJ_FILES = \
-		crypto/crc32.o \
-		crypto/md5.o \
-		crypto/hmacmd5.o \
-		crypto/md4.o \
-		crypto/arcfour.o \
-		crypto/sha1.o \
-		crypto/hmacsha1.o
-# End SUBSYSTEM LIBCRYPTO
-##############################
-
-[MODULE::TORTURE_LIBCRYPTO]
-OBJ_FILES = \
-		crypto/md4test.o \
-		crypto/md5test.o \
-		crypto/hmacmd5test.o \
-		crypto/sha1test.o \
-		crypto/hmacsha1test.o
-SUBSYSTEM = torture
-PRIVATE_DEPENDENCIES = LIBCRYPTO
+include crypto/config.mk
 
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
