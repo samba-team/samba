@@ -834,6 +834,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 
 	smbcli_unlink(cli->tree, fname);
 
+	ZERO_STRUCT(io);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.root_fid = 0;
