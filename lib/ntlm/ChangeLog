@@ -1,7 +1,13 @@
-2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* move doxygen into the main file
+
+	* write doxygen documentation
 
 	* export heim_ntlm_free_buf, start doxygen documentation
 	
+2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* ntlm.c: Use unsigned char * as argument to HMAC_Update to please
 	OpenSSL and gcc.
 
