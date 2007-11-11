@@ -35,12 +35,27 @@
 
 RCSID("$Id$");
 
+#undef __attribute__
+#define __attribute__(X)
+
 /* keep this for compatibility with older code */
-krb5_error_code KRB5_LIB_FUNCTION
+krb5_error_code KRB5_LIB_FUNCTION __attribute__((deprecated))
 krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
     return krb5_free_cred_contents (context, c);
 }    
+
+/**
+ * Free content of krb5_creds.
+ *
+ * @param context Kerberos 5 context.
+ * @param c krb5_creds to free.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_cred_contents (krb5_context context, krb5_creds *c)
@@ -57,6 +72,19 @@ krb5_free_cred_contents (krb5_context context, krb5_creds *c)
     memset(c, 0, sizeof(*c));
     return 0;
 }
+
+/**
+ * Copy content of krb5_creds.
+ *
+ * @param context Kerberos 5 context.
+ * @param incred source credential
+ * @param c destination credential, free with krb5_free_cred_contents().
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_creds_contents (krb5_context context,
@@ -102,6 +130,19 @@ fail:
     return ret;
 }
 
+/**
+ * Copy krb5_creds.
+ *
+ * @param context Kerberos 5 context.
+ * @param incred source credential
+ * @param outcred destination credential, free with krb5_free_creds().
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_creds (krb5_context context,
 		 const krb5_creds *incred,
@@ -118,6 +159,18 @@ krb5_copy_creds (krb5_context context,
     *outcred = c;
     return krb5_copy_creds_contents (context, incred, c);
 }
+
+/**
+ * Free krb5_creds.
+ *
+ * @param context Kerberos 5 context.
+ * @param c krb5_creds to free.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_creds (krb5_context context, krb5_creds *c)
@@ -145,9 +198,18 @@ krb5_times_equal(const krb5_times *a, const krb5_times *b)
 	a->renew_till == b->renew_till;
 }
 
-/*
+/**
  * Return TRUE if `mcreds' and `creds' are equal (`whichfields'
  * determines what equal means).
+ *
+ * @param context Kerberos 5 context.
+ * @param whichfields which fields to compare.
+ * @param mcreds cred to compare with.
+ * @param creds cred to compare with.
+ *
+ * @return return TRUE if mcred and creds are equal, FALSE if not.
+ *
+ * @ingroup krb5
  */
 
 krb5_boolean KRB5_LIB_FUNCTION
