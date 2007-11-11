@@ -479,7 +479,7 @@ krb5_get_default_config_files(char ***pfilenames)
  *
  * @param filenames list to be freed.
  *
- * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
  *
  * @ingroup krb5
@@ -660,7 +660,7 @@ krb5_init_ets(krb5_context context)
 /**
  * Make the kerberos library default to the admin KDC.
  *
- * @param context kerberos context
+ * @param context Kerberos 5 context.
  * @param flag boolean flag to select if the use the admin KDC or not.
  *
  * @ingroup krb5
@@ -675,7 +675,7 @@ krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
 /**
  * Make the kerberos library default to the admin KDC.
  *
- * @param context kerberos context
+ * @param context Kerberos 5 context.
  *
  * @return boolean flag to telling the context will use admin KDC as the default KDC.
  *
@@ -688,6 +688,19 @@ krb5_get_use_admin_kdc (krb5_context context)
     return context->use_admin_kdc;
 }
 
+/**
+ * Add extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to add
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
@@ -698,6 +711,19 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
     else
 	return krb5_set_extra_addresses(context, addresses);
 }
+
+/**
+ * Set extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to set
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
@@ -722,6 +748,19 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->extra_addresses);
 }
 
+/**
+ * Get extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to set
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
@@ -731,6 +770,19 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
     }
     return krb5_copy_addresses(context,context->extra_addresses, addresses);
 }
+
+/**
+ * Add extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to ignore
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
@@ -742,6 +794,19 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
     else
 	return krb5_set_ignore_addresses(context, addresses);
 }
+
+/**
+ * Set extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to ignore
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
@@ -765,6 +830,19 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->ignore_addresses);
 }
 
+/**
+ * Get extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses list addreses ignored
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
@@ -775,6 +853,18 @@ krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
     return krb5_copy_addresses(context, context->ignore_addresses, addresses);
 }
 
+/**
+ * Set version of fcache that the library should use.
+ *
+ * @param context Kerberos 5 context.
+ * @param version version number.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_fcache_version(krb5_context context, int version)
 {
@@ -782,12 +872,35 @@ krb5_set_fcache_version(krb5_context context, int version)
     return 0;
 }
 
+/**
+ * Get version of fcache that the library should use.
+ *
+ * @param context Kerberos 5 context.
+ * @param version version number.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_fcache_version(krb5_context context, int *version)
 {
     *version = context->fcache_vno;
     return 0;
 }
+
+/**
+ * Runtime check if the Kerberos library was complied with thread support.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return TRUE if the library was compiled with thread support, FALSE if not.
+ *
+ * @ingroup krb5
+ */
+
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_is_thread_safe(void)
@@ -799,17 +912,48 @@ krb5_is_thread_safe(void)
 #endif
 }
 
+/**
+ * Set if the library should use DNS to canonicalize hostnames.
+ *
+ * @param context Kerberos 5 context.
+ * @param flag if its dns canonicalizion is used or not.
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 {
     context->dns_canonicalize_hostname = flag;
 }
 
+/**
+ * Get if the library uses DNS to canonicalize hostnames.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return return non zero if the library uses DNS to canonicalize hostnames.
+ *
+ * @ingroup krb5
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_dns_canonicalize_hostname (krb5_context context)
 {
     return context->dns_canonicalize_hostname;
 }
+
+/**
+ * Get current offset in time to the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param sec seconds part of offset.
+ * @param usec micro seconds part of offset.
+ *
+ * @return return non zero if the library uses DNS to canonicalize hostnames.
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
@@ -821,11 +965,30 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
     return 0;
 }
 
+/**
+ * Get max time skew allowed.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return timeskew in seconds.
+ *
+ * @ingroup krb5
+ */
+
 time_t KRB5_LIB_FUNCTION
 krb5_get_max_time_skew (krb5_context context)
 {
     return context->max_skew;
 }
+
+/**
+ * Set max time skew allowed.
+ *
+ * @param context Kerberos 5 context.
+ * @param t timeskew in seconds.
+ *
+ * @ingroup krb5
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_set_max_time_skew (krb5_context context, time_t t)
