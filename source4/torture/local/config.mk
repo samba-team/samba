@@ -36,7 +36,7 @@ OBJ_FILES = \
 		../../libcli/security/tests/sddl.o \
 		../../lib/tdr/testsuite.o \
 		../../lib/events/testsuite.o \
-		share.o \
+		../../param/tests/share.o \
 		local.o \
 		dbspeed.o \
 		torture.o
