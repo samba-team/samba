@@ -20,8 +20,15 @@ krb5.dxy: krb5.din Makefile
 	chmod +x krb5.dxy.tmp
 	mv krb5.dxy.tmp krb5.dxy
 
-doxygen: krb5.dxy
+ntlm.dxy: ntlm.din Makefile
+	$(do_subst) < $(srcdir)/ntlm.din > ntlm.dxy.tmp
+	chmod +x ntlm.dxy.tmp
+	mv ntlm.dxy.tmp ntlm.dxy
+
+
+doxygen: krb5.dxy ntlm.dxy
 	doxygen krb5.dxy
+	doxygen ntlm.dxy
 
 heimdal_TEXINFOS = \
 	ack.texi \
@@ -37,6 +44,12 @@ heimdal_TEXINFOS = \
 	whatis.texi \
 	win2k.texi
 
-EXTRA_DIST = krb5.din doxytmpl.dxy
+EXTRA_DIST = \
+	krb5.din \
+	ntlm.din \
+	doxytmpl.dxy
 
-CLEANFILES = krb5.dxy.tmp krb5.dxy
+CLEANFILES = \
+	krb5.dxy* \
+	ntlm.dxy*
+
