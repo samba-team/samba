@@ -647,16 +647,14 @@ nt_err_code_struct nt_err_desc[] =
 
 const char *nt_errstr(NTSTATUS nt_code)
 {
-        static pstring msg;
         int idx = 0;
+	char *result;
 
 #ifdef HAVE_LDAP
         if (NT_STATUS_TYPE(nt_code) == NT_STATUS_TYPE_LDAP) {
                 return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
 	}
 #endif
-
-	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
@@ -665,7 +663,10 @@ const char *nt_errstr(NTSTATUS nt_code)
 		idx++;
 	}
 
-        return msg;
+	result = talloc_asprintf(talloc_tos(), "NT code 0x%08x",
+				 NT_STATUS_V(nt_code));
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /************************************************************************
@@ -694,7 +695,7 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 
 const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
-        static pstring out;
+	char *result;
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
@@ -705,9 +706,10 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
 		idx++;
 	}
 
-	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
-
-        return out;
+	result = talloc_asprintf(talloc_tos(), "NT_STATUS(0x%08x)",
+				 NT_STATUS_V(nt_code));
+	SMB_ASSERT(result);
+	return result;
 }
 
 /*****************************************************************************

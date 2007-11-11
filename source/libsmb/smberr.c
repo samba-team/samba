@@ -160,7 +160,7 @@ return a SMB error name from a class and code
 ****************************************************************************/
 const char *smb_dos_err_name(uint8 e_class, uint16 num)
 {
-	static pstring ret;
+	char *result;
 	int i,j;
 	
 	for (i=0;err_classes[i].e_class;i++)
@@ -172,12 +172,15 @@ const char *smb_dos_err_name(uint8 e_class, uint16 num)
 						return err[j].name;
 					}
 			}
-			slprintf(ret, sizeof(ret) - 1, "%d",num);
-			return ret;
+			result = talloc_asprintf(talloc_tos(), "%d", num);
+			SMB_ASSERT(result != NULL);
+			return result;
 		}
 	
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error class (%d,%d)",e_class,num);
-	return(ret);
+	result = talloc_asprintf(talloc_tos(), "Error: Unknown error class "
+				 "(%d,%d)", e_class,num);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /* Return a string for a DOS error */
@@ -196,17 +199,19 @@ return a SMB error class name as a string.
 ****************************************************************************/
 const char *smb_dos_err_class(uint8 e_class)
 {
-	static pstring ret;
+	char *result;
 	int i;
-	
+
 	for (i=0;err_classes[i].e_class;i++) {
 		if (err_classes[i].code == e_class) {
 			return err_classes[i].e_class;
 		}
 	}
-		
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown class (%d)",e_class);
-	return(ret);
+
+	result = talloc_asprintf(talloc_tos(), "Error: Unknown class (%d)",
+				 e_class);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /****************************************************************************
@@ -214,11 +219,11 @@ return a SMB string from an SMB buffer
 ****************************************************************************/
 char *smb_dos_errstr(char *inbuf)
 {
-	static pstring ret;
+	char *result;
 	int e_class = CVAL(inbuf,smb_rcls);
 	int num = SVAL(inbuf,smb_err);
 	int i,j;
-	
+
 	for (i=0;err_classes[i].e_class;i++)
 		if (err_classes[i].code == e_class) {
 			if (err_classes[i].err_msgs) {
@@ -226,22 +231,29 @@ char *smb_dos_errstr(char *inbuf)
 				for (j=0;err[j].name;j++)
 					if (num == err[j].code) {
 						if (DEBUGLEVEL > 0)
-							slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
-								 err_classes[i].e_class,
-								 err[j].name,err[j].message);
+							result = talloc_asprintf(
+								talloc_tos(), "%s - %s (%s)",
+								err_classes[i].e_class,
+								err[j].name,err[j].message);
 						else
-							slprintf(ret, sizeof(ret) - 1, "%s - %s",
-								 err_classes[i].e_class,err[j].name);
-						return ret;
+							result = talloc_asprintf(
+								talloc_tos(), "%s - %s",
+								err_classes[i].e_class,
+								err[j].name);
+						goto done;
 					}
 			}
-			
-			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].e_class,num);
-			return ret;
+
+			result = talloc_asprintf(talloc_tos(), "%s - %d",
+						 err_classes[i].e_class, num);
+			goto done;
 		}
-	
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",e_class,num);
-	return(ret);
+
+	result = talloc_asprintf(talloc_tos(), "Error: Unknown error (%d,%d)",
+				 e_class, num);
+ done:
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /*****************************************************************************

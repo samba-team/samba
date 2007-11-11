@@ -98,14 +98,15 @@ static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
 
 const char *cli_errstr(struct cli_state *cli)
 {   
-	static fstring cli_error_message;
+	fstring cli_error_message;
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
 	uint8 errclass;
 	int i;
+	char *result;
 
 	if (!cli->initialised) {
 		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
-		return cli_error_message;
+		goto done;
 	}
 
 	/* Was it server socket error ? */
@@ -137,7 +138,7 @@ const char *cli_errstr(struct cli_state *cli)
 					"Unknown error code %d\n", cli->smb_rw_error );
 				break;
 		}
-		return cli_error_message;
+		goto done;
 	}
 
 	/* Case #1: RAP error */
@@ -151,7 +152,7 @@ const char *cli_errstr(struct cli_state *cli)
 		slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d",
 			cli->rap_error);
 
-		return cli_error_message;
+		goto done;
 	}
 
 	/* Case #2: 32-bit NT errors */
@@ -166,6 +167,11 @@ const char *cli_errstr(struct cli_state *cli)
 	/* Case #3: SMB error */
 
 	return cli_smb_errstr(cli);
+
+ done:
+	result = talloc_strdup(talloc_tos(), cli_error_message);
+	SMB_ASSERT(result);
+	return result;
 }
 
 
