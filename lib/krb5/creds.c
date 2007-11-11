@@ -180,15 +180,7 @@ krb5_free_creds (krb5_context context, krb5_creds *c)
     return 0;
 }
 
-/* XXX these do not belong here */
-static krb5_boolean
-krb5_data_equal(const krb5_data *a, const krb5_data *b)
-{
-    if(a->length != b->length)
-	return FALSE;
-    return memcmp(a->data, b->data, a->length) == 0;
-}
-
+/* XXX this do not belong here */
 static krb5_boolean
 krb5_times_equal(const krb5_times *a, const krb5_times *b)
 {
@@ -263,11 +255,11 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 	    for(i = 0; match && i < mcreds->authdata.len; i++)
 		match = (mcreds->authdata.val[i].ad_type == 
 			 creds->authdata.val[i].ad_type) &&
-		    krb5_data_equal(&mcreds->authdata.val[i].ad_data,
-				    &creds->authdata.val[i].ad_data);
+		    (krb5_data_cmp(&mcreds->authdata.val[i].ad_data,
+				   &creds->authdata.val[i].ad_data) == 0);
     }
     if (match && (whichfields & KRB5_TC_MATCH_2ND_TKT))
-	match = krb5_data_equal(&mcreds->second_ticket, &creds->second_ticket);
+	match = (krb5_data_cmp(&mcreds->second_ticket, &creds->second_ticket) == 0);
 
     if (match && (whichfields & KRB5_TC_MATCH_IS_SKEY))
 	match = ((mcreds->second_ticket.length == 0) == 
