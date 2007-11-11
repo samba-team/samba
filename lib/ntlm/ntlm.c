@@ -51,13 +51,6 @@ RCSID("$Id$");
 
 #include <heimntlm.h>
 
-
-/*
- * Source of NTLM information:
- * http://davenport.sourceforge.net/ntlm.html
- */
-
-
 struct sec_buffer {
     uint16_t length;
     uint16_t allocated;
@@ -234,7 +227,7 @@ out:
 }
 
 static krb5_error_code
-put_buf(krb5_storage *sp, struct ntlm_buf *buf)
+put_buf(krb5_storage *sp, const struct ntlm_buf *buf)
 {
     krb5_error_code ret;
     CHECK(krb5_storage_write(sp, buf->data, buf->length), buf->length);
@@ -244,7 +237,7 @@ out:
 }
 
 /**
- * heim_ntlm_free_targetinfo frees the ntlm_targetinfo message
+ * Frees the ntlm_targetinfo message
  *
  * @param ti targetinfo to be freed
  *
@@ -273,11 +266,11 @@ out:
 }
 
 /**
- * heim_ntlm_encode_targetinfo encodes a ntlm_targetinfo buffer.
+ * Encodes a ntlm_targetinfo message.
  *
  * @param ti the ntlm_targetinfo message to encode.
  * @param ucs2 if the strings should be encoded with ucs2 (selected by flag in message).
- * @param data is the return buffer with the encoed message, shoumd be
+ * @param data is the return buffer with the encoded message, should be
  * freed with heim_ntlm_free_buf().
  *
  * @return In case of success 0 is return, an errors, a errno in what
@@ -287,7 +280,7 @@ out:
  */
 
 int
-heim_ntlm_encode_targetinfo(struct ntlm_targetinfo *ti,
+heim_ntlm_encode_targetinfo(const struct ntlm_targetinfo *ti,
 			    int ucs2, 
 			    struct ntlm_buf *data)
 {
@@ -325,8 +318,22 @@ out:
     return ret;
 }
 
+/**
+ * Decodes an NTLM targetinfo message
+ *
+ * @param data input data buffer with the encode NTLM targetinfo message
+ * @param ucs2 if the strings should be encoded with ucs2 (selected by flag in message).
+ * @param ti the decoded target info, should be freed with heim_ntlm_free_targetinfo().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
+ */
+
 int
-heim_ntlm_decode_targetinfo(struct ntlm_buf *data, int ucs2,
+heim_ntlm_decode_targetinfo(const struct ntlm_buf *data,
+			    int ucs2,
 			    struct ntlm_targetinfo *ti)
 {
     memset(ti, 0, sizeof(*ti));
@@ -334,7 +341,7 @@ heim_ntlm_decode_targetinfo(struct ntlm_buf *data, int ucs2,
 }
 
 /**
- * heim_ntlm_free_type1 frees the ntlm_type1 message
+ * Frees the ntlm_type1 message
  *
  * @param data message to be freed
  *
@@ -396,6 +403,19 @@ out:
 
     return ret;
 }
+
+/**
+ * Encodes an ntlm_type1 message.
+ *
+ * @param type1 the ntlm_type1 message to encode.
+ * @param data is the return buffer with the encoded message, should be
+ * freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
+ */
 
 int
 heim_ntlm_encode_type1(const struct ntlm_type1 *type1, struct ntlm_buf *data)
@@ -466,7 +486,7 @@ out:
 }
 
 /**
- * heim_ntlm_free_type2 frees the ntlm_type2 message
+ * Frees the ntlm_type2 message
  *
  * @param data message to be freed
  *
@@ -533,8 +553,21 @@ out:
     return ret;
 }
 
+/**
+ * Encodes an ntlm_type2 message.
+ *
+ * @param type2 the ntlm_type2 message to encode.
+ * @param data is the return buffer with the encoded message, should be
+ * freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
+ */
+
 int
-heim_ntlm_encode_type2(struct ntlm_type2 *type2, struct ntlm_buf *data)
+heim_ntlm_encode_type2(const struct ntlm_type2 *type2, struct ntlm_buf *data)
 {
     struct sec_buffer targetname, targetinfo;
     krb5_error_code ret;
@@ -597,7 +630,7 @@ out:
 }
 
 /**
- * heim_ntlm_free_type3 frees the ntlm_type3 message
+ * Frees the ntlm_type3 message
  *
  * @param data message to be freed
  *
@@ -679,8 +712,21 @@ out:
     return ret;
 }
 
+/**
+ * Encodes an ntlm_type3 message.
+ *
+ * @param type3 the ntlm_type3 message to encode.
+ * @param data is the return buffer with the encoded message, should be
+ * freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
+ */
+
 int
-heim_ntlm_encode_type3(struct ntlm_type3 *type3, struct ntlm_buf *data)
+heim_ntlm_encode_type3(const struct ntlm_type3 *type3, struct ntlm_buf *data)
 {
     struct sec_buffer lm, ntlm, target, username, sessionkey, ws;
     krb5_error_code ret;
@@ -804,8 +850,16 @@ splitandenc(unsigned char *hash,
     memset(key, 0, sizeof(key));
 }
 
-/*
- * String-to-key function for NTLM
+/**
+ * Calculate the NTLM key, the password is assumed to be in UTF8.
+ *
+ * @param password password to calcute the key for.
+ * @param key calcuted key, should be freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
@@ -832,8 +886,18 @@ heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
     return 0;
 }
 
-/*
+/**
  * Calculate NTLMv1 response hash
+ *
+ * @param key the ntlm v1 key
+ * @param len length of key
+ * @param challange sent by the server
+ * @param answer calculated answer, should be freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
@@ -861,8 +925,18 @@ heim_ntlm_calculate_ntlm1(void *key, size_t len,
     return 0;
 }
 
-/*
- * Calculate NTLMv1 master key
+/**
+ * Generates an NTLMv1 session random with assosited session master key.
+ *
+ * @param key the ntlm v1 key
+ * @param len length of key
+ * @param session generated session nonce, should be freed with heim_ntlm_free_buf().
+ * @param master calculated session master key, should be freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
@@ -915,8 +989,16 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
     return 0;
 }
 
-/*
+/**
+ * Generates an NTLMv2 session key.
  *
+ * @param key the ntlm key
+ * @param len length of key
+ * @param username name of the user, as sent in the message, assumed to be in UTF8.
+ * @param target the name of the target, assumed to be in UTF8.
+ * @param ntlmv2 the ntlmv2 session key
+ *
+ * @ingroup ntlm_core
  */
 
 void
@@ -970,8 +1052,22 @@ nt2unixtime(uint64_t t)
 }
 
 
-/*
+/**
  * Calculate NTLMv2 response
+ *
+ * @param key the ntlm key
+ * @param len length of key
+ * @param username name of the user, as sent in the message, assumed to be in UTF8.
+ * @param target the name of the target, assumed to be in UTF8.
+ * @param serverchallange challange as sent by the server in the type2 message.
+ * @param infotarget infotarget as sent by the server in the type2 message.
+ * @param ntlmv2 calculated session key
+ * @param answer ntlm response answer, should be freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
@@ -1058,8 +1154,23 @@ out:
 
 static const int authtimediff = 3600 * 2; /* 2 hours */
 
-/*
+/**
  * Verify NTLMv2 response.
+ *
+ * @param key the ntlm key
+ * @param len length of key
+ * @param username name of the user, as sent in the message, assumed to be in UTF8.
+ * @param target the name of the target, assumed to be in UTF8.
+ * @param now the time now (0 if the library should pick it up itself)
+ * @param serverchallange challange as sent by the server in the type2 message.
+ * @param answer ntlm response answer, should be freed with heim_ntlm_free_buf().
+ * @param infotarget infotarget as sent by the server in the type2 message.
+ * @param ntlmv2 calculated session key
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
@@ -1163,6 +1274,17 @@ out:
 
 /*
  * Calculate the NTLM2 Session Response
+ *
+ * @param clnt_nonce client nonce
+ * @param svr_chal server challage
+ * @param ntlm2_hash ntlm hash
+ * @param lm The LM response, should be freed with heim_ntlm_free_buf().
+ * @param ntlm The NTLM response, should be freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
  */
 
 int
