@@ -6,7 +6,7 @@ INIT_FUNCTION = torture_local_init
 PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
-		iconv.o \
+		../../lib/charset/tests/iconv.o \
 		../../lib/crypto/md4test.o \
 		../../lib/crypto/md5test.o \
 		../../lib/crypto/hmacmd5test.o \
