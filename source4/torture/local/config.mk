@@ -7,11 +7,6 @@ PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
 		../../lib/charset/tests/iconv.o \
-		../../lib/crypto/md4test.o \
-		../../lib/crypto/md5test.o \
-		../../lib/crypto/hmacmd5test.o \
-		../../lib/crypto/sha1test.o \
-		../../lib/crypto/hmacsha1test.o \
 		../../lib/talloc/testsuite.o \
 		../../lib/replace/test/os2_delete.o \
 		../../lib/replace/test/strptime.o \
@@ -22,17 +17,13 @@ OBJ_FILES = \
 		../../lib/util/tests/idtree.o \
 		../../lib/socket/testsuite.o \
 		../../lib/socket_wrapper/testsuite.o \
-		../../lib/registry/tests/generic.o \
-		../../lib/registry/tests/hive.o \
-		../../lib/registry/tests/diff.o \
-		../../lib/registry/tests/registry.o \
 		../../libcli/resolve/testsuite.o \
 		../../lib/util/tests/strlist.o \
 		../../lib/util/tests/str.o \
 		../../lib/util/tests/file.o \
 		../../lib/util/tests/genrand.o \
 		../../lib/compression/testsuite.o \
-		../../lib/charset/testsuite.o \
+		../../lib/charset/tests/charset.o \
 		../../libcli/security/tests/sddl.o \
 		../../lib/tdr/testsuite.o \
 		../../lib/events/testsuite.o \
@@ -46,8 +37,6 @@ PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB \
 		MESSAGING \
 		ICONV \
-		registry \
-		LIBCRYPTO \
 		POPT_CREDENTIALS \
 		TORTURE_AUTH \
 		TORTURE_UTIL \
@@ -55,4 +44,3 @@ PRIVATE_DEPENDENCIES = \
 		share
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
-

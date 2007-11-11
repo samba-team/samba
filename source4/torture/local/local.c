@@ -40,7 +40,6 @@
 	torture_local_socket, 
 	torture_local_socket_wrapper, 
 	torture_pac, 
-	torture_registry, 
 	torture_local_resolve,
 	torture_local_sddl,
 	torture_local_ndr, 
