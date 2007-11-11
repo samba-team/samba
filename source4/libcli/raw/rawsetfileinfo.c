@@ -177,7 +177,7 @@ static bool smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		smbcli_push_nttime(blob->data, 32, parms->unix_info2.in.change_time);
 		SBVAL(blob->data,  40,parms->unix_info2.in.uid);
 		SBVAL(blob->data,  48,parms->unix_info2.in.gid);
-		SIVAL(blob->data,  52,parms->unix_info2.in.file_type);
+		SIVAL(blob->data,  56,parms->unix_info2.in.file_type);
 		SBVAL(blob->data,  60,parms->unix_info2.in.dev_major);
 		SBVAL(blob->data,  68,parms->unix_info2.in.dev_minor);
 		SBVAL(blob->data,  76,parms->unix_info2.in.unique_id);
