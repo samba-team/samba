@@ -366,6 +366,7 @@ struct ctdb_context {
 	const char *event_script_dir;
 	const char *default_public_interface;
 	pid_t recoverd_pid;
+	bool done_startup;
 };
 
 struct ctdb_db_context {
