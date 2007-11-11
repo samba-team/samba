@@ -114,7 +114,7 @@ static bool test_reg_val_description_nullname(struct torture_context *ctx)
 
 _PUBLIC_ NTSTATUS torture_registry_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "REGISTRY");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LOCAL-REGISTRY");
 	torture_suite_add_simple_test(suite, "str_regtype",
 				      test_str_regtype);
 	torture_suite_add_simple_test(suite, "reg_val_data_string dword",
