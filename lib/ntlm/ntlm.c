@@ -56,8 +56,9 @@ RCSID("$Id$");
  * \section intro Introduction
  *
  * Heimdal libheimntlm library is a implementation of the NTLM
- * protocol, both version 1 and 2. It also support transport
- * encryption and integrity checking.
+ * protocol, both version 1 and 2. The GSS-API mech that uses this
+ * library adds support for transport encryption and integrity
+ * checking.
  * 
  * NTLM is a protocol for mutual authentication, its still used in
  * many protocol where Kerberos is not support, one example is
