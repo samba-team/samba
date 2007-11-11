@@ -894,8 +894,6 @@ krb5_get_fcache_version(krb5_context context, int *version)
 /**
  * Runtime check if the Kerberos library was complied with thread support.
  *
- * @param context Kerberos 5 context.
- *
  * @return TRUE if the library was compiled with thread support, FALSE if not.
  *
  * @ingroup krb5
