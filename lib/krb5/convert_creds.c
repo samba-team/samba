@@ -48,9 +48,9 @@ check_ticket_flags(TicketFlags f)
  * `in_cred' doesn't contain a DES session key, then a new one is
  * gotten from the KDC and stored in the cred cache `ccache'.
  *
- * @params context Kerberos 5 context.
- * @params in_cred the credential to convert
- * @params v4creds the converted credential
+ * @param context Kerberos 5 context.
+ * @param in_cred the credential to convert
+ * @param v4creds the converted credential
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -148,10 +148,10 @@ out2:
  * Convert the v5 credentials in in_cred to v4-dito in v4creds,
  * check the credential cache ccache before checking with the KDC.
  *
- * @params context Kerberos 5 context.
- * @params ccache credential cache used to check for des-ticket.
- * @params in_cred the credential to convert
- * @params v4creds the converted credential
+ * @param context Kerberos 5 context.
+ * @param ccache credential cache used to check for des-ticket.
+ * @param in_cred the credential to convert
+ * @param v4creds the converted credential
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
