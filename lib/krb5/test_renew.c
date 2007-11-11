@@ -114,7 +114,7 @@ main(int argc, char **argv)
     if (krb5_principal_compare(context, out.client, client) != TRUE)
 	krb5_errx(context, 1, "return principal is not as expected");
 
-    krb5_free_creds_contents(context, &out);
+    krb5_free_cred_contents(context, &out);
 
     krb5_free_context(context);
 
