@@ -75,7 +75,12 @@ RCSID("$Id$");
  * The Heimdal projects web page: http://www.h5l.org/
  */
 
-/** @defgroup ntlm_core Heimdal NTLM library */
+/** @defgroup ntlm_core Heimdal NTLM library 
+ * 
+ * The NTLM core functions implement the string2key generation
+ * function, message encode and decode function, and the hash function
+ * functions.
+ */
 
 struct sec_buffer {
     uint16_t length;
