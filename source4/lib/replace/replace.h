@@ -546,4 +546,8 @@ typedef int bool;
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */
