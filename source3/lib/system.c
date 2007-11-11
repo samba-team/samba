@@ -573,11 +573,7 @@ char *sys_getwd(char *s)
 {
 	char *wd;
 #ifdef HAVE_GETCWD
-#ifdef PATH_MAX
 	wd = (char *)getcwd(s, PATH_MAX);
-#else
-	wd = (char *)getcwd(s, sizeof (pstring));
-#endif
 #else
 	wd = (char *)getwd(s);
 #endif

@@ -350,9 +350,18 @@ char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, const UNISTR2 *src)
 /* Converts a string from internal samba format to unicode
  */ 
 
-int rpcstr_push(void* dest, const char *src, size_t dest_len, int flags)
+int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
 {
 	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
+}
+
+/* Converts a string from internal samba format to unicode. Always terminates.
+ * Actually just a wrapper round push_ucs2_talloc().
+ */ 
+
+int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
+{
+	return push_ucs2_talloc(ctx, dest, src);
 }
 
 /*******************************************************************

@@ -774,11 +774,7 @@ static void array_promote(char *array,int elsize,int element)
 
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
-#ifdef PATH_MAX
         char s[PATH_MAX+1];
-#else
-	pstring s;
-#endif
 	static bool getwd_cache_init = False;
 	SMB_STRUCT_STAT st, st2;
 	int i;
@@ -893,11 +889,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #ifdef REALPATH_TAKES_NULL
 	bool free_resolved_name = True;
 #else
-#ifdef PATH_MAX
         char resolved_name_buf[PATH_MAX+1];
-#else
-        pstring resolved_name_buf;
-#endif
 	bool free_resolved_name = False;
 #endif
 	char *resolved_name = NULL;
@@ -969,11 +961,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 					return NT_STATUS_NO_MEMORY;
 				}
 #else
-#ifdef PATH_MAX
 				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
-#else
-				pstrcpy(resolved_name_buf, tmp_fname);
-#endif
 				resolved_name = resolved_name_buf;
 #endif
 				TALLOC_FREE(tmp_ctx);
