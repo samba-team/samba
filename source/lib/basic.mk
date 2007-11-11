@@ -31,6 +31,16 @@ OBJ_FILES = \
 # End SUBSYSTEM LIBCRYPTO
 ##############################
 
+[MODULE::TORTURE_LIBCRYPTO]
+OBJ_FILES = \
+		crypto/md4test.o \
+		crypto/md5test.o \
+		crypto/hmacmd5test.o \
+		crypto/sha1test.o \
+		crypto/hmacsha1test.o
+SUBSYSTEM = torture
+PRIVATE_DEPENDENCIES = LIBCRYPTO
+
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
