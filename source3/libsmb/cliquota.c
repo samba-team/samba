@@ -562,26 +562,26 @@ cleanup:
 	return ret;	
 }
 
-static char *quota_str_static(SMB_BIG_UINT val, bool special, bool _numeric)
+static const char *quota_str_static(SMB_BIG_UINT val, bool special, bool _numeric)
 {
-	static fstring buffer;
-	
-	memset(buffer,'\0',sizeof(buffer));
+	const char *result;
 
 	if (!_numeric&&special&&(val == SMB_NTQUOTAS_NO_LIMIT)) {
-		fstr_sprintf(buffer,"NO LIMIT");
-		return buffer;
+		return "NO LIMIT";
 	}
 #if defined(HAVE_LONGLONG)
-	fstr_sprintf(buffer,"%llu",val);
+	result = talloc_asprintf(talloc_tos(), "%llu", val);
 #else
-	fstr_sprintf(buffer,"%lu",val);
-#endif	
-	return buffer;
+	result = talloc_asprintf(talloc_tos(), "%lu", val);
+#endif
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric))
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+
 	if (!qt) {
 		smb_panic("dump_ntquota() called with NULL pointer");
 	}
@@ -626,8 +626,9 @@ void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_
 			break;
 		default:
 			d_printf("dump_ntquota() invalid qtype(%d)\n",qt->qtype);
-			return;
 	}
+	TALLOC_FREE(frame);
+	return;
 }
 
 void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric))
