@@ -694,12 +694,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		if (tmp_ip->pnn == -1) {
 			continue;
 		}
-
-		if (!ctdb_validate_pnn(ctdb, tmp_ip->pnn)) {
-			tmp_ip->pnn = -1;
-			continue;
-		}
-
 		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
 			tmp_ip->pnn = -1;
 		}

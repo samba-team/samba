@@ -204,17 +204,7 @@ uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb)
 	int i;
 	uint32_t count=0;
 	for (i=0;i<ctdb->vnn_map->size;i++) {
-		uint32_t nodeid;
-		struct ctdb_node *node;
-
-		nodeid = ctdb->vnn_map->map[i];
-		if ( !ctdb_validate_pnn(ctdb, nodeid) ) {
-			DEBUG(0, ("Ignoring non-existent vnn node:%u when counting number of active nodes.\n", nodeid));
-			continue;
-		}
-
-
-		node = ctdb->nodes[nodeid];
+		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
 		if (!(node->flags & NODE_FLAGS_INACTIVE)) {
 			count++;
 		}
