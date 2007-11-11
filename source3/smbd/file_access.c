@@ -51,9 +51,7 @@ static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
 
 	/* fake a files_struct ptr: */
 
-	status = open_file_stat(conn, NULL, fname, psbuf, &fsp);
-	/* Perhaps it is a directory */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+	if (S_ISDIR(psbuf->st_mode)) {
 		status = open_directory(conn, NULL, fname, psbuf,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -62,6 +60,10 @@ static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
 					FILE_ATTRIBUTE_DIRECTORY,
 					NULL, &fsp);
 	}
+	else {
+		status = open_file_stat(conn, NULL, fname, psbuf, &fsp);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Unable to open file %s: %s\n", fname,
 			  nt_errstr(status)));
