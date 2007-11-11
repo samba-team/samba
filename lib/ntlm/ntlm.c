@@ -51,6 +51,32 @@ RCSID("$Id$");
 
 #include <heimntlm.h>
 
+/*! \mainpage Heimdal NTLM library
+ *
+ * \section intro Introduction
+ *
+ * Heimdal libheimntlm library is a implementation of the NTLM
+ * protocol, both version 1 and 2. It also support transport
+ * encryption and integrity checking.
+ * 
+ * NTLM is a protocol for mutual authentication, its still used in
+ * many protocol where Kerberos is not support, one example is
+ * EAP/X802.1x mechanism LEAP from Microsoft and Cisco.
+ *
+ * This is a support library for the core protocol, its used in
+ * Heimdal to implement and GSS-API mechanism. There is also support
+ * in the KDC to do remote digest authenticiation, this to allow
+ * services to authenticate users w/o direct access to the users ntlm
+ * hashes (same as Kerberos arcfour enctype hashes).
+ *
+ * More information about the NTLM protocol can found here
+ * http://davenport.sourceforge.net/ntlm.html .
+ * 
+ * The Heimdal projects web page: http://www.h5l.org/
+ */
+
+/** @defgroup ntlm_core Heimdal NTLM library */
+
 struct sec_buffer {
     uint16_t length;
     uint16_t allocated;

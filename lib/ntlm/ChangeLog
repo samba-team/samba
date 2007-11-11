@@ -1,5 +1,7 @@
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* export heim_ntlm_free_buf, start doxygen documentation
+	
 	* ntlm.c: Use unsigned char * as argument to HMAC_Update to please
 	OpenSSL and gcc.
 

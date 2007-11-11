@@ -6,7 +6,7 @@ lib_LTLIBRARIES	= libheimntlm.la
 
 include_HEADERS = heimntlm.h heimntlm-protos.h
 
-libheimntlm_la_SOURCES	= ntlm.c doxygen.c
+libheimntlm_la_SOURCES	= ntlm.c heimntlm.h
 
 libheimntlm_la_LDFLAGS = -version-info 1:0:1
 
