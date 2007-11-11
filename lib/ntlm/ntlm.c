@@ -73,8 +73,16 @@ static const unsigned char ntlmsigature[8] = "NTLMSSP\x00";
 #define CHECK(f, e)							\
     do { ret = f ; if (ret != (e)) { ret = EINVAL; goto out; } } while(0)
 
-static void
-_ntlm_free_buf(struct ntlm_buf *p)
+/**
+ * heim_ntlm_free_buf frees the ntlm buffer
+ *
+ * @param p buffer to be freed
+ *
+ * @ingroup ntlm_core
+ */
+
+void
+heim_ntlm_free_buf(struct ntlm_buf *p)
 {
     if (p->data)
 	free(p->data);
@@ -96,7 +104,7 @@ ascii2ucs2le(const char *string, int up, struct ntlm_buf *buf)
     buf->length = len * 2;
     buf->data = malloc(buf->length);
     if (buf->data == NULL && len != 0) {
-	_ntlm_free_buf(buf);
+	heim_ntlm_free_buf(buf);
 	return ENOMEM;
     }
 
@@ -104,7 +112,7 @@ ascii2ucs2le(const char *string, int up, struct ntlm_buf *buf)
     for (i = 0; i < len; i++) {
 	unsigned char t = (unsigned char)string[i];
 	if (t & 0x80) {
-	    _ntlm_free_buf(buf);
+	    heim_ntlm_free_buf(buf);
 	    return EINVAL;
 	}
 	if (up)
@@ -201,7 +209,7 @@ put_string(krb5_storage *sp, int ucs2, const char *s)
 
     CHECK(krb5_storage_write(sp, buf.data, buf.length), buf.length);
     if (ucs2)
-	_ntlm_free_buf(&buf);
+	heim_ntlm_free_buf(&buf);
     ret = 0;
 out:
     return ret;
@@ -235,8 +243,12 @@ out:
     return ret;
 }
 
-/*
+/**
+ * heim_ntlm_free_targetinfo frees the ntlm_targetinfo message
  *
+ * @param ti targetinfo to be freed
+ *
+ * @ingroup ntlm_core
  */
 
 void
@@ -259,6 +271,20 @@ encode_ti_blob(krb5_storage *out, uint16_t type, int ucs2, char *s)
 out:
     return ret;
 }
+
+/**
+ * heim_ntlm_encode_targetinfo encodes a ntlm_targetinfo buffer.
+ *
+ * @param ti the ntlm_targetinfo message to encode.
+ * @param ucs2 if the strings should be encoded with ucs2 (selected by flag in message).
+ * @param data is the return buffer with the encoed message, shoumd be
+ * freed with heim_ntlm_free_buf().
+ *
+ * @return In case of success 0 is return, an errors, a errno in what
+ * went wrong.
+ *
+ * @ingroup ntlm_core
+ */
 
 int
 heim_ntlm_encode_targetinfo(struct ntlm_targetinfo *ti,
@@ -307,8 +333,12 @@ heim_ntlm_decode_targetinfo(struct ntlm_buf *data, int ucs2,
     return 0;
 }
 
-/*
- * encoder/decoder type1 messages
+/**
+ * heim_ntlm_free_type1 frees the ntlm_type1 message
+ *
+ * @param data message to be freed
+ *
+ * @ingroup ntlm_core
  */
 
 void
@@ -435,8 +465,12 @@ out:
     return ret;
 }
 
-/*
- * encoder/decoder type 2 messages
+/**
+ * heim_ntlm_free_type2 frees the ntlm_type2 message
+ *
+ * @param data message to be freed
+ *
+ * @ingroup ntlm_core
  */
 
 void
@@ -444,7 +478,7 @@ heim_ntlm_free_type2(struct ntlm_type2 *data)
 {
     if (data->targetname)
 	free(data->targetname);
-    _ntlm_free_buf(&data->targetinfo);
+    heim_ntlm_free_buf(&data->targetinfo);
     memset(data, 0, sizeof(*data));
 }
 
@@ -562,22 +596,26 @@ out:
     return ret;
 }
 
-/*
- * encoder/decoder type 2 messages
+/**
+ * heim_ntlm_free_type3 frees the ntlm_type3 message
+ *
+ * @param data message to be freed
+ *
+ * @ingroup ntlm_core
  */
 
 void
 heim_ntlm_free_type3(struct ntlm_type3 *data)
 {
-    _ntlm_free_buf(&data->lm);
-    _ntlm_free_buf(&data->ntlm);
+    heim_ntlm_free_buf(&data->lm);
+    heim_ntlm_free_buf(&data->ntlm);
     if (data->targetname)
 	free(data->targetname);
     if (data->username)
 	free(data->username);
     if (data->ws)
 	free(data->ws);
-    _ntlm_free_buf(&data->sessionkey);
+    heim_ntlm_free_buf(&data->sessionkey);
     memset(data, 0, sizeof(*data));
 }
 
@@ -784,13 +822,13 @@ heim_ntlm_nt_key(const char *password, struct ntlm_buf *key)
 
     ret = ascii2ucs2le(password, 0, &buf);
     if (ret) {
-	_ntlm_free_buf(key);
+	heim_ntlm_free_buf(key);
 	return ret;
     }
     MD4_Init(&ctx);
     MD4_Update(&ctx, buf.data, buf.length);
     MD4_Final(key->data, &ctx);
-    _ntlm_free_buf(&buf);
+    heim_ntlm_free_buf(&buf);
     return 0;
 }
 
@@ -849,8 +887,8 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
     master->length = MD4_DIGEST_LENGTH;
     master->data = malloc(master->length);
     if (master->data == NULL) {
-	_ntlm_free_buf(master);
-	_ntlm_free_buf(session);
+	heim_ntlm_free_buf(master);
+	heim_ntlm_free_buf(session);
 	return EINVAL;
     }
     
@@ -866,8 +904,8 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
     }
     
     if (RAND_bytes(session->data, session->length) != 1) {
-	_ntlm_free_buf(master);
-	_ntlm_free_buf(session);
+	heim_ntlm_free_buf(master);
+	heim_ntlm_free_buf(session);
 	return EINVAL;
     }
     
@@ -1110,13 +1148,13 @@ heim_ntlm_verify_ntlm2(const void *key, size_t len,
     HMAC_CTX_cleanup(&c);
 
     if (memcmp(serveranswer, clientanswer, 16) != 0) {
-	_ntlm_free_buf(infotarget);
+	heim_ntlm_free_buf(infotarget);
 	return EINVAL;
     }
 
     return 0;
 out:
-    _ntlm_free_buf(infotarget);
+    heim_ntlm_free_buf(infotarget);
     if (sp)
 	krb5_storage_free(sp);
     return ret;

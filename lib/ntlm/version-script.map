@@ -14,6 +14,7 @@ HEIMDAL_NTLM_1.0 {
 		heim_ntlm_encode_type1;
 		heim_ntlm_encode_type2;
 		heim_ntlm_encode_type3;
+		heim_ntlm_free_buf;
 		heim_ntlm_free_targetinfo;
 		heim_ntlm_free_type1;
 		heim_ntlm_free_type2;
