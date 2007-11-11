@@ -258,7 +258,7 @@ nomem:
     krb5_set_error_string(context, "malloc - out of memory");
     
 fail:
-    krb5_free_creds_contents(context, cred);
+    krb5_free_cred_contents(context, cred);
     return ret;
 }
 
