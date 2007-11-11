@@ -38,10 +38,8 @@ static const struct dcerpc_fault_table dcerpc_faults[] =
 
 const char *dcerpc_errstr(uint32 fault_code)
 {
-	static pstring msg;
+	char *result;
 	int idx = 0;
-
-	slprintf(msg, sizeof(msg), "DCERPC fault 0x%08x", fault_code);
 
 	while (dcerpc_faults[idx].errstr != NULL) {
 		if (dcerpc_faults[idx].faultcode == fault_code) {
@@ -50,5 +48,8 @@ const char *dcerpc_errstr(uint32 fault_code)
 		idx++;
 	}
 
-	return msg;
+	result = talloc_asprintf(talloc_tos(), "DCERPC fault 0x%08x",
+				 fault_code);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
