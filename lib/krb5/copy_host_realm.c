@@ -40,7 +40,7 @@ RCSID("$Id$");
  *
  * @param context Kerberos 5 context.
  * @param from list of realms to copy from.
- * @param from list of realms to copy to, free list of krb5_free_host_realm().
+ * @param to list of realms to copy to, free list of krb5_free_host_realm().
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
