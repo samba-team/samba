@@ -1806,7 +1806,7 @@ struct cli_state *get_ipc_connect(char *server,
 struct cli_state *get_ipc_connect_master_ip(struct ip_service *mb_ip, pstring workgroup, struct user_auth_info *user_info)
 {
 	char addr[INET6_ADDRSTRLEN];
-        static fstring name;
+        fstring name;
 	struct cli_state *cli;
 	struct sockaddr_storage server_ss;
 
