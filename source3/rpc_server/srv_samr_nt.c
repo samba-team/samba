@@ -3275,33 +3275,37 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 				 struct samu *pwd)
 {
-	pstring plaintext_buf;
-	uint32 len;
+	char *plaintext_buf = NULL;
+	uint32 len = 0;
 	uint16 acct_ctrl;
 	NTSTATUS status;
- 
+
 	if (id23 == NULL) {
 		DEBUG(5, ("set_user_info_23: NULL id23\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
- 
+
 	DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
 		  pdb_get_username(pwd)));
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer(id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
+	if (!decode_pw_buffer(mem_ctx,
+				id23->pass,
+				&plaintext_buf,
+				&len,
+				STR_UNICODE)) {
 		TALLOC_FREE(pwd);
 		return NT_STATUS_INVALID_PARAMETER;
  	}
-  
+
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
 		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
- 
+
 	copy_id23_to_sam_passwd(pwd, id23);
- 
+
 	/* if it's a trust account, don't update /etc/passwd */
 	if (    ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
@@ -3320,16 +3324,16 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
-			
+
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				TALLOC_FREE(pwd);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
 	}
- 
-	ZERO_STRUCT(plaintext_buf);
- 
+
+	memset(plaintext_buf, '\0', strlen(plaintext_buf));
+
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
 	    (!NT_STATUS_IS_OK(status =  pdb_set_unix_primary_group(mem_ctx,
 								   pwd)))) {
@@ -3341,7 +3345,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 		TALLOC_FREE(pwd);
 		return status;
 	}
- 
+
 	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
@@ -3353,12 +3357,12 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 
 static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 {
-	uint32 len;
-	pstring plaintext_buf;
+	uint32 len = 0;
+	char *plaintext_buf = NULL;
 	uint32 acct_ctrl;
 	time_t last_set_time;
 	enum pdb_value_state last_set_state;
- 
+
 	DEBUG(5, ("Attempting administrator password change for user %s\n",
 		  pdb_get_username(pwd)));
 
@@ -3368,9 +3372,11 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 	last_set_state = pdb_get_init_flags(pwd, PDB_PASSLASTSET);
 	last_set_time = pdb_get_pass_last_set_time(pwd);
 
-	ZERO_STRUCT(plaintext_buf);
- 
-	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len, STR_UNICODE)) {
+	if (!decode_pw_buffer(talloc_tos(),
+				pass,
+				&plaintext_buf,
+				&len,
+				STR_UNICODE)) {
 		TALLOC_FREE(pwd);
 		return False;
  	}
@@ -3379,7 +3385,7 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 		TALLOC_FREE(pwd);
 		return False;
 	}
- 
+
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
@@ -3399,21 +3405,21 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
-			
+
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				TALLOC_FREE(pwd);
 				return False;
 			}
 		}
 	}
- 
-	ZERO_STRUCT(plaintext_buf);
- 
+
+	memset(plaintext_buf, '\0', strlen(plaintext_buf));
+
 	/* restore last set time as this is an admin change, not a user pw change */
 	pdb_set_pass_last_set_time (pwd, last_set_time, last_set_state);
- 
+
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
- 
+
 	/* update the SAMBA password */
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		TALLOC_FREE(pwd);
