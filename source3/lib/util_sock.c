@@ -1895,7 +1895,7 @@ int create_pipe_sock(const char *socket_dir,
 	struct stat st;
 	int sock;
 	mode_t old_umask;
-	pstring path;
+	char *path = NULL;
 
 	old_umask = umask(0);
 
@@ -1935,11 +1935,15 @@ int create_pipe_sock(const char *socket_dir,
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (sock == -1) {
-		perror("socket");
-                goto out_umask;
+		DEBUG(0, ("create_pipe_sock: socket error %s\n",
+			strerror(errno) ));
+                goto out_close;
 	}
 
-	pstr_sprintf(path, "%s/%s", socket_dir, socket_name);
+	asprintf(&path, "%s/%s", socket_dir, socket_name);
+	if (!path) {
+                goto out_close;
+	}
 
 	unlink(path);
 	memset(&sunaddr, 0, sizeof(sunaddr));
@@ -1958,10 +1962,13 @@ int create_pipe_sock(const char *socket_dir,
 		goto out_close;
 	}
 
+	SAFE_FREE(path);
+
 	umask(old_umask);
 	return sock;
 
 out_close:
+	SAFE_FREE(path);
 	close(sock);
 
 out_umask:
