@@ -171,7 +171,8 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret;
 
-	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED && ctdb->done_startup) {
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
+	    (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED && ctdb->done_startup)) {
 		event_add_timed(ctdb->ev, ctdb->monitor_context,
 				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 				ctdb_check_health, ctdb);
