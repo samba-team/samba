@@ -65,7 +65,9 @@ static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 		return map_nt_error_from_unix(errno);
 	}
 	/* create SMB4ACL data */
-	if((pacl = smb_create_smb4acl()) == NULL) return 0;
+	if((pacl = smb_create_smb4acl()) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	for(i=0; i<naces; i++) {
 		SMB_ACE4PROP_T aceprop;
 
