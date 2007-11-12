@@ -47,6 +47,8 @@ struct ctdb_recoverd {
 	bool need_takeover_run;
 	bool need_recovery;
 	uint32_t node_flags;
+	struct timed_event *send_election_te;
+	struct timed_event *election_timeout;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -714,6 +716,29 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
 	}
 }
 
+/*
+  called when an election times out (ends)
+ */
+static void ctdb_election_timeout(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	rec->election_timeout = NULL;
+}
+
+
+/*
+  wait for an election to finish. It finished election_timeout seconds after
+  the last election packet is received
+ */
+static void ctdb_wait_election(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	while (rec->election_timeout) {
+		event_loop_once(ctdb->ev);
+	}
+}
+
 
 /*
   update our local flags from all remote connected nodes. 
@@ -1099,7 +1124,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 /*
   send out an election request
  */
-static int send_election_request(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx, uint32_t pnn)
+static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	int ret;
 	TDB_DATA election_data;
@@ -1156,6 +1181,24 @@ static void unban_all_nodes(struct ctdb_context *ctdb)
 	talloc_free(tmp_ctx);
 }
 
+
+/*
+  we think we are winning the election - send a broadcast election request
+ */
+static void election_send_request(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	int ret;
+
+	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb));
+	if (ret != 0) {
+		DEBUG(0,("Failed to send election request!\n"));
+	}
+
+	talloc_free(rec->send_election_te);
+	rec->send_election_te = NULL;
+}
+
 /*
   handler for recovery master elections
 */
@@ -1167,6 +1210,12 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct election_message *em = (struct election_message *)data.dptr;
 	TALLOC_CTX *mem_ctx;
 
+	/* we got an election packet - update the timeout for the election */
+	talloc_free(rec->election_timeout);
+	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
+						ctdb_election_timeout, rec);
+
 	mem_ctx = talloc_new(ctdb);
 
 	/* someone called an election. check their election data
@@ -1174,14 +1223,19 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	   send a new election message to all other nodes
 	 */
 	if (ctdb_election_win(rec, em)) {
-		ret = send_election_request(rec, mem_ctx, ctdb_get_pnn(ctdb));
-		if (ret!=0) {
-			DEBUG(0, (__location__ " failed to initiate recmaster election"));
+		if (!rec->send_election_te) {
+			rec->send_election_te = event_add_timed(ctdb->ev, rec, 
+								timeval_current_ofs(0, 500000),
+								election_send_request, rec);
 		}
 		talloc_free(mem_ctx);
 		/*unban_all_nodes(ctdb);*/
 		return;
 	}
+	
+	/* we didn't win */
+	talloc_free(rec->send_election_te);
+	rec->send_election_te = NULL;
 
 	/* release the recmaster lock */
 	if (em->pnn != ctdb->pnn &&
@@ -1225,15 +1279,20 @@ static void force_election(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx, uint3
 		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
 	}
-	
-	ret = send_election_request(rec, mem_ctx, pnn);
+
+	talloc_free(rec->election_timeout);
+	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
+						ctdb_election_timeout, rec);
+
+	ret = send_election_request(rec, pnn);
 	if (ret!=0) {
 		DEBUG(0, (__location__ " failed to initiate recmaster election"));
 		return;
 	}
 
 	/* wait for a few seconds to collect all responses */
-	ctdb_wait_timeout(ctdb, ctdb->tunable.election_timeout);
+	ctdb_wait_election(rec);
 }
 
 
@@ -1550,6 +1609,11 @@ again:
 
 	/* we only check for recovery once every second */
 	ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
+
+	if (rec->election_timeout) {
+		/* an election is in progress */
+		goto again;
+	}
 
 	/* get relevant tunables */
 	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
