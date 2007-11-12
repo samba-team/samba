@@ -634,6 +634,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
 			  ndr_errstr(ndr_err)));
+		status = ndr_map_error2ntstatus(ndr_err);
 		goto fail;
 	}
 
