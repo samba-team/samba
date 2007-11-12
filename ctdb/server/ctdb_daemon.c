@@ -68,13 +68,8 @@ static void print_exit_message(void)
 
 
 /* called when the "startup" event script has finished */
-static void ctdb_start_transport(struct ctdb_context *ctdb, int status, void *p)
+static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
-	if (status != 0) {
-		DEBUG(0,("startup event failed!\n"));
-		ctdb_fatal(ctdb, "startup event script failed");		
-	}
-
 	/* start the transport running */
 	if (ctdb->methods->start(ctdb) != 0) {
 		DEBUG(0,("transport failed to start!\n"));
@@ -664,12 +659,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* release any IPs we hold from previous runs of the daemon */
 	ctdb_release_all_ips(ctdb);
 
-	ret = ctdb_event_script_callback(ctdb, timeval_zero(), ctdb, 
-					 ctdb_start_transport, NULL, "startup");
-	if (ret != 0) {
-		DEBUG(0,("Failed startup event script\n"));
-		return -1;
-	}
+	/* start the transport going */
+	ctdb_start_transport(ctdb);
 
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);

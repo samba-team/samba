@@ -138,6 +138,31 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 
 
 /*
+  called when the startup event script finishes
+ */
+static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p)
+{
+	if (status != 0) {
+		DEBUG(0,("startup event failed\n"));
+	} else if (status == 0) {
+		DEBUG(0,("startup event OK - enabling monitoring\n"));
+		ctdb->done_startup = true;
+	}
+
+	if (ctdb->done_startup) {
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
+				timeval_zero(),
+				ctdb_check_health, ctdb);
+	} else {
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
+				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
+				ctdb_check_health, ctdb);
+	}
+
+}
+
+
+/*
   see if the event scripts think we are healthy
  */
 static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
@@ -146,16 +171,25 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret;
 
-	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
+	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED && ctdb->done_startup) {
 		event_add_timed(ctdb->ev, ctdb->monitor_context,
 				timeval_current_ofs(ctdb->tunable.monitor_interval, 0), 
 				ctdb_check_health, ctdb);
 		return;
 	}
 	
-	ret = ctdb_event_script_callback(ctdb, 
-					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
-					 ctdb->monitor_context, ctdb_health_callback, ctdb, "monitor");
+	if (!ctdb->done_startup) {
+		ret = ctdb_event_script_callback(ctdb, 
+						 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+						 ctdb->monitor_context, ctdb_startup_callback, 
+						 ctdb, "startup");
+	} else {
+		ret = ctdb_event_script_callback(ctdb, 
+						 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+						 ctdb->monitor_context, ctdb_health_callback, 
+						 ctdb, "monitor");
+	}
+
 	if (ret != 0) {
 		DEBUG(0,("Unable to launch monitor event script\n"));
 		event_add_timed(ctdb->ev, ctdb->monitor_context, 
