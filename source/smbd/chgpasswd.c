@@ -25,7 +25,7 @@
  * user who is attempting to change the password.
  */
 
-/* 
+/*
  * This code was copied/borrowed and stolen from various sources.
  * The primary source was the poppasswd.c from the authors of POPMail. This software
  * was included as a client to change passwords using the 'passwd' program
@@ -50,12 +50,12 @@
 extern struct passdb_ops pdb_ops;
 
 static NTSTATUS check_oem_password(const char *user,
-				   uchar password_encrypted_with_lm_hash[516], 
+				   uchar password_encrypted_with_lm_hash[516],
 				   const uchar old_lm_hash_encrypted[16],
-				   uchar password_encrypted_with_nt_hash[516], 
+				   uchar password_encrypted_with_nt_hash[516],
 				   const uchar old_nt_hash_encrypted[16],
-				   struct samu **hnd, char *new_passwd,
-				   int new_passwd_size);
+				   struct samu **hnd,
+				   char **pp_new_passwd);
 
 #if ALLOW_CHANGE_PASSWORD
 
@@ -231,7 +231,7 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 
 static int expect(int master, char *issue, char *expected)
 {
-	pstring buffer;
+	char buffer[1024];
 	int attempts, timeout, nread, len;
 	bool match = False;
 
@@ -450,13 +450,14 @@ while we were waiting\n", WTERMSIG(wstat)));
 	return (chstat);
 }
 
-bool chgpasswd(const char *name, const struct passwd *pass, 
+bool chgpasswd(const char *name, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root)
 {
-	pstring passwordprogram;
-	pstring chatsequence;
+	char *passwordprogram = NULL;
+	char *chatsequence = NULL;
 	size_t i;
 	size_t len;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!oldpass) {
 		oldpass = "";
@@ -477,7 +478,7 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 		return (False);	/* inform the user */
 	}
 
-	/* 
+	/*
 	 * Check the old and new passwords don't contain any control
 	 * characters.
 	 */
@@ -497,7 +498,7 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 			return False;
 		}
 	}
-	
+
 #ifdef WITH_PAM
 	if (lp_pam_password_change()) {
 		bool ret;
@@ -510,7 +511,7 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 		} else {
 			ret = smb_pam_passchange(name, oldpass, newpass);
 		}
-			
+
 		if (as_root)
 			unbecome_root();
 
@@ -522,20 +523,18 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 
 	if (pass == NULL) {
 		DEBUG(0, ("chgpasswd: user %s doesn't exist in the UNIX password database.\n", name));
-		return False;
+		return false;
 	}
 
-	pstrcpy(passwordprogram, lp_passwd_program());
-	pstrcpy(chatsequence, lp_passwd_chat());
-
-	if (!*chatsequence) {
-		DEBUG(2, ("chgpasswd: Null chat sequence - no password changing\n"));
-		return (False);
-	}
-
-	if (!*passwordprogram) {
+	passwordprogram = talloc_strdup(ctx, lp_passwd_program());
+	if (!passwordprogram || !*passwordprogram) {
 		DEBUG(2, ("chgpasswd: Null password program - no password changing\n"));
-		return (False);
+		return false;
+	}
+	chatsequence = talloc_strdup(ctx, lp_passwd_chat());
+	if (!chatsequence || !*chatsequence) {
+		DEBUG(2, ("chgpasswd: Null chat sequence - no password changing\n"));
+		return false;
 	}
 
 	if (as_root) {
@@ -543,20 +542,38 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 		if (strstr_m(passwordprogram, "%u") == NULL) {
 			DEBUG(0,("chgpasswd: Running as root the 'passwd program' parameter *MUST* contain \
 the string %%u, and the given string %s does not.\n", passwordprogram ));
-			return False;
+			return false;
 		}
 	}
 
-	pstring_sub(passwordprogram, "%u", name);
+	passwordprogram = talloc_string_sub(ctx, passwordprogram, "%u", name);
+	if (!passwordprogram) {
+		return false;
+	}
+
 	/* note that we do NOT substitute the %o and %n in the password program
 	   as this would open up a security hole where the user could use
 	   a new password containing shell escape characters */
 
-	pstring_sub(chatsequence, "%u", name);
-	all_string_sub(chatsequence, "%o", oldpass, sizeof(pstring));
-	all_string_sub(chatsequence, "%n", newpass, sizeof(pstring));
-	return (chat_with_program
-		(passwordprogram, pass, chatsequence, as_root));
+	chatsequence = talloc_string_sub(ctx, chatsequence, "%u", name);
+	if (!chatsequence) {
+		return false;
+	}
+	chatsequence = talloc_all_string_sub(ctx,
+					chatsequence,
+					"%o",
+					oldpass);
+	if (!chatsequence) {
+		return false;
+	}
+	chatsequence = talloc_all_string_sub(ctx,
+					chatsequence,
+					"%n",
+					newpass);
+	return chat_with_program(passwordprogram,
+				pass,
+				chatsequence,
+				as_root);
 }
 
 #else /* ALLOW_CHANGE_PASSWORD */
@@ -695,9 +712,9 @@ bool change_lanman_password(struct samu *sampass, uchar *pass2)
 	if (!pdb_set_pass_last_set_time  (sampass, time(NULL), PDB_CHANGED)) {
 		TALLOC_FREE(sampass);
 		/* Not quite sure what this one qualifies as, but this will do */
-		return False; 
+		return False;
 	}
- 
+
 	/* Now flush the sam_passwd struct to persistent storage */
 	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
 
@@ -709,29 +726,32 @@ bool change_lanman_password(struct samu *sampass, uchar *pass2)
 ************************************************************/
 
 NTSTATUS pass_oem_change(char *user,
-			 uchar password_encrypted_with_lm_hash[516], 
+			 uchar password_encrypted_with_lm_hash[516],
 			 const uchar old_lm_hash_encrypted[16],
-			 uchar password_encrypted_with_nt_hash[516], 
+			 uchar password_encrypted_with_nt_hash[516],
 			 const uchar old_nt_hash_encrypted[16],
 			 uint32 *reject_reason)
 {
-	pstring new_passwd;
+	char *new_passwd = NULL;
 	struct samu *sampass = NULL;
-	NTSTATUS nt_status = check_oem_password(user, password_encrypted_with_lm_hash, 
-						old_lm_hash_encrypted, 
-						password_encrypted_with_nt_hash, 
+	NTSTATUS nt_status = check_oem_password(user,
+						password_encrypted_with_lm_hash,
+						old_lm_hash_encrypted,
+						password_encrypted_with_nt_hash,
 						old_nt_hash_encrypted,
-						&sampass, new_passwd, sizeof(new_passwd));
-	
-	if (!NT_STATUS_IS_OK(nt_status))
+						&sampass,
+						&new_passwd);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
+	}
 
 	/* We've already checked the old password here.... */
 	become_root();
 	nt_status = change_oem_password(sampass, NULL, new_passwd, True, reject_reason);
 	unbecome_root();
 
-	memset(new_passwd, 0, sizeof(new_passwd));
+	memset(new_passwd, 0, strlen(new_passwd));
 
 	TALLOC_FREE(sampass);
 
@@ -739,24 +759,24 @@ NTSTATUS pass_oem_change(char *user,
 }
 
 /***********************************************************
- Decrypt and verify a user password change.  
+ Decrypt and verify a user password change.
 
- The 516 byte long buffers are encrypted with the old NT and 
- old LM passwords, and if the NT passwords are present, both 
+ The 516 byte long buffers are encrypted with the old NT and
+ old LM passwords, and if the NT passwords are present, both
  buffers contain a unicode string.
 
  After decrypting the buffers, check the password is correct by
  matching the old hashed passwords with the passwords in the passdb.
- 
+
 ************************************************************/
 
 static NTSTATUS check_oem_password(const char *user,
-				   uchar password_encrypted_with_lm_hash[516], 
+				   uchar password_encrypted_with_lm_hash[516],
 				   const uchar old_lm_hash_encrypted[16],
-				   uchar password_encrypted_with_nt_hash[516], 
+				   uchar password_encrypted_with_nt_hash[516],
 				   const uchar old_nt_hash_encrypted[16],
-				   struct samu **hnd, char *new_passwd,
-				   int new_passwd_size)
+				   struct samu **hnd,
+				   char **pp_new_passwd)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
@@ -788,11 +808,11 @@ static NTSTATUS check_oem_password(const char *user,
 	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
 		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER; 
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	
+
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(2,("check_lanman_password: account %s disabled.\n", user));
 		TALLOC_FREE(sampass);
@@ -819,7 +839,7 @@ static NTSTATUS check_oem_password(const char *user,
 
 	if (nt_pw && nt_pass_set) {
 		/* IDEAL Case: passwords are in unicode, and we can
-		 * read use the password encrypted with the NT hash 
+		 * read use the password encrypted with the NT hash
 		 */
 		password_encrypted = password_encrypted_with_nt_hash;
 		encryption_key = nt_pw;
@@ -831,7 +851,7 @@ static NTSTATUS check_oem_password(const char *user,
 		DEBUG(1, ("NT password change supplied for user %s, but we have no NT password to check it with\n", 
 			  user));
 		TALLOC_FREE(sampass);
-		return NT_STATUS_WRONG_PASSWORD;	
+		return NT_STATUS_WRONG_PASSWORD;
 	} else if (lm_pass_set) {
 		if (lp_lanman_auth()) {
 			DEBUG(1, ("LM password change supplied for user %s, but we have no LanMan password to check it with\n", 
@@ -849,13 +869,16 @@ static NTSTATUS check_oem_password(const char *user,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	/* 
-	 * Decrypt the password with the key 
+	/*
+	 * Decrypt the password with the key
 	 */
 	SamOEMhash( password_encrypted, encryption_key, 516);
 
-	if ( !decode_pw_buffer(password_encrypted, new_passwd, new_passwd_size, &new_pw_len, 
-			       nt_pass_set ? STR_UNICODE : STR_ASCII)) {
+	if (!decode_pw_buffer(talloc_tos(),
+				password_encrypted,
+				pp_new_passwd,
+				&new_pw_len,
+				nt_pass_set ? STR_UNICODE : STR_ASCII)) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -867,10 +890,10 @@ static NTSTATUS check_oem_password(const char *user,
 
 	if (nt_pass_set) {
 		/* NT passwords, verify the NT hash. */
-		
+
 		/* Calculate the MD4 hash (NT compatible) of the password */
 		memset(new_nt_hash, '\0', 16);
-		E_md4hash(new_passwd, new_nt_hash);
+		E_md4hash(*pp_new_passwd, new_nt_hash);
 
 		if (nt_pw) {
 			/*
@@ -882,7 +905,7 @@ static NTSTATUS check_oem_password(const char *user,
 				TALLOC_FREE(sampass);
 				return NT_STATUS_WRONG_PASSWORD;
 			}
-			
+
 			/* We could check the LM password here, but there is
 			 * little point, we already know the password is
 			 * correct, and the LM password might not even be
@@ -894,12 +917,12 @@ static NTSTATUS check_oem_password(const char *user,
 			 * change */
 #ifdef DEBUG_PASSWORD
 			DEBUG(100,
-			      ("check_oem_password: password %s ok\n", new_passwd));
+			      ("check_oem_password: password %s ok\n", *pp_new_passwd));
 #endif
 			*hnd = sampass;
 			return NT_STATUS_OK;
 		}
-		
+
 		if (lanman_pw) {
 			/*
 			 * check the lm verifier
@@ -912,7 +935,7 @@ static NTSTATUS check_oem_password(const char *user,
 			}
 #ifdef DEBUG_PASSWORD
 			DEBUG(100,
-			      ("check_oem_password: password %s ok\n", new_passwd));
+			      ("check_oem_password: password %s ok\n", *pp_new_passwd));
 #endif
 			*hnd = sampass;
 			return NT_STATUS_OK;
@@ -921,7 +944,7 @@ static NTSTATUS check_oem_password(const char *user,
 
 	if (lanman_pw && lm_pass_set) {
 
-		E_deshash(new_passwd, new_lm_hash);
+		E_deshash(*pp_new_passwd, new_lm_hash);
 
 		/*
 		 * check the lm verifier
@@ -932,10 +955,10 @@ static NTSTATUS check_oem_password(const char *user,
 			TALLOC_FREE(sampass);
 			return NT_STATUS_WRONG_PASSWORD;
 		}
-		
+
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,
-		      ("check_oem_password: password %s ok\n", new_passwd));
+		      ("check_oem_password: password %s ok\n", *pp_new_passwd));
 #endif
 		*hnd = sampass;
 		return NT_STATUS_OK;

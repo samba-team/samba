@@ -1254,22 +1254,27 @@ char *realloc_string_sub(char *string, const char *pattern,
 	return string;
 }
 
-/* Same as string_sub, but returns a talloc'ed string */
+/*
+ * Internal guts of talloc_string_sub and talloc_all_string_sub.
+ * 'filter' differentiates between them.
+ */
 
-char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
-			const char *pattern, const char *insert)
+static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern, const char *insert, bool filter)
 {
 	char *p, *in;
 	char *s;
 	char *string;
 	ssize_t ls,lp,li,ld, i;
 
-	if (!insert || !pattern || !*pattern || !src || !*src)
+	if (!insert || !pattern || !*pattern || !src || !*src) {
 		return NULL;
+	}
 
 	string = talloc_strdup(mem_ctx, src);
 	if (string == NULL) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+		DEBUG(0, ("talloc_string_sub_internal: "
+			"talloc_strdup failed\n"));
 		return NULL;
 	}
 
@@ -1277,27 +1282,30 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 
 	in = SMB_STRDUP(insert);
 	if (!in) {
-		DEBUG(0, ("talloc_string_sub: out of memory!\n"));
+		DEBUG(0, ("talloc_string_sub_internal: ENOMEM\n"));
 		return NULL;
 	}
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 	ld = li - lp;
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '$':
-			case '%':
-			case '\r':
-			case '\n':
-				in[i] = '_';
-			default:
-				/* ok */
-				break;
+
+	if (filter) {
+		for (i=0;i<li;i++) {
+			switch (in[i]) {
+				case '`':
+				case '"':
+				case '\'':
+				case ';':
+				case '$':
+				case '%':
+				case '\r':
+				case '\n':
+					in[i] = '_';
+				default:
+					/* ok */
+					break;
+			}
 		}
 	}
 
@@ -1323,6 +1331,14 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 	}
 	SAFE_FREE(in);
 	return string;
+}
+
+/* Same as string_sub, but returns a talloc'ed string */
+
+char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern, const char *insert)
+{
+	return talloc_string_sub_internal(mem_ctx, src, pattern, insert, true);
 }
 
 /**
@@ -1365,6 +1381,14 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
+}
+
+char *talloc_all_string_sub(TALLOC_CTX *ctx,
+				const char *src,
+				const char *pattern,
+				const char *insert)
+{
+	return talloc_string_sub_internal(ctx, src, pattern, insert, false);
 }
 
 /**

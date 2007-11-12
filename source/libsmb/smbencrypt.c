@@ -522,11 +522,16 @@ bool encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
  returned password including termination.
 ************************************************************/
 
-bool decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 *new_pw_len,
-		      int string_flags)
+bool decode_pw_buffer(TALLOC_CTX *ctx,
+			uint8 in_buffer[516],
+			char **pp_new_pwrd,
+			uint32 *new_pw_len,
+			int string_flags)
 {
 	int byte_len=0;
+
+	*pp_new_pwrd = NULL;
+	*new_pw_len = 0;
 
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
@@ -550,22 +555,31 @@ bool decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 	if ( (byte_len < 0) || (byte_len > 512)) {
 		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
 		DEBUG(0, ("decode_pw_buffer: check that 'encrypt passwords = yes'\n"));
-		return False;
+		return false;
 	}
 
-	/* decode into the return buffer.  Buffer length supplied */
-	*new_pw_len = pull_string(NULL, 0, new_pwrd,
-				  &in_buffer[512 - byte_len], new_pwrd_size,
-				  byte_len, string_flags);
+	/* decode into the return buffer. */
+	*new_pw_len = pull_string_talloc(ctx,
+				NULL,
+				0,
+				pp_new_pwrd,
+				&in_buffer[512 - byte_len],
+				byte_len,
+				string_flags);
+
+	if (!*pp_new_pwrd || *new_pw_len == 0) {
+		DEBUG(0, ("decode_pw_buffer: pull_string_talloc failed\n"));
+		return false;
+	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (uint8 *)new_pwrd, *new_pw_len);
+	dump_data(100, (uint8 *)*pp_new_pwrd, *new_pw_len);
 	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
-	
-	return True;
+
+	return true;
 }
 
 /***********************************************************
