@@ -1,9 +1,17 @@
 #!/bin/sh
 
-NUMNODES="$1"
-NODES=$2
+NUMNODES=2
+if [ $# -gt 0 ]; then
+    NUMNODES=$1
+fi
+NODES="nodes.txt"
 shift
 shift
+
+rm -f nodes.txt
+for i in `seq 1 $NUMNODES`; do
+  echo 127.0.0.$i >> nodes.txt
+done
 
 killall -q ctdbd
 
