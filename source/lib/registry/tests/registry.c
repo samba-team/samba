@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
-#include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "libcli/security/security.h"
