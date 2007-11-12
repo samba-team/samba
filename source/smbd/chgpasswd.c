@@ -262,14 +262,18 @@ static int expect(int master, char *issue, char *expected)
 
 			{
 				/* Eat leading/trailing whitespace before match. */
-				pstring str;
-				pstrcpy( str, buffer);
-				trim_char( str, ' ', ' ');
+				char *str = SMB_STRDUP(buffer);
+				if (!str) {
+					DEBUG(2,("expect: ENOMEM\n"));
+					return False;
+				}
+				trim_char(str, ' ', ' ');
 
 				if ((match = unix_wild_match(expected, str)) == True) {
 					/* Now data has started to return, lower timeout. */
 					timeout = lp_passwd_chat_timeout() * 100;
 				}
+				SAFE_FREE(str);
 			}
 		}
 
