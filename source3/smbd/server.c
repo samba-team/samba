@@ -728,8 +728,7 @@ bool reload_services(bool test)
 	bool ret;
 	
 	if (lp_loaded()) {
-		pstring fname;
-		pstrcpy(fname,lp_configfile());
+		char *fname = lp_configfile();
 		if (file_exist(fname, NULL) &&
 		    !strcsequal(fname, dyn_CONFIGFILE)) {
 			pstrcpy(dyn_CONFIGFILE, fname);
