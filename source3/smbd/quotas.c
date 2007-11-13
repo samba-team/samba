@@ -45,7 +45,7 @@
  * Declare here, define at end: reduces likely "include" interaction problems.
  *	David Lee <T.D.Lee@durham.ac.uk>
  */
-bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+bool disk_quotas_vxfs(const char *name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 #endif /* VXFS_QUOTA */
 
@@ -223,17 +223,17 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	egrp_id = getegid();
 
 	/* find the block device file */
-  
+
 	if ( sys_stat(path, &S) == -1 )
 		return(False) ;
 
 	devno = S.st_dev ;
-  
+
 	if ((fp = setmntent(MOUNTED,"r")) == NULL)
 		return(False) ;
 
 	found = False ;
-  
+
 	while ((mnt = getmntent(fp))) {
 		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
 			continue ;
@@ -245,7 +245,7 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	}
 
 	endmntent(fp) ;
-  
+
 	if (!found)
 		return(False);
 
@@ -308,94 +308,81 @@ try to get the disk space from disk quotas (CRAY VERSION)
 
 bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-  struct mntent *mnt;
-  FILE *fd;
-  SMB_STRUCT_STAT sbuf;
-  SMB_DEV_T devno ;
-  static SMB_DEV_T devno_cached = 0 ;
-  static pstring name;
-  struct q_request request ;
-  struct qf_header header ;
-  static int quota_default = 0 ;
-  int found ;
-  
-  if ( sys_stat(path,&sbuf) == -1 )
-    return(False) ;
-  
-  devno = sbuf.st_dev ;
-  
-  if ( devno != devno_cached ) {
-    
-    devno_cached = devno ;
-    
-    if ((fd = setmntent(KMTAB)) == NULL)
-      return(False) ;
-    
-    found = False ;
-    
-    while ((mnt = getmntent(fd)) != NULL) {
-      
-      if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
-	continue ;
-      
-      if (sbuf.st_dev == devno) {
-	
-	found = True ;
-	break ;
-	
-      }
-      
-    }
-    
-    pstrcpy(name,mnt->mnt_dir) ;
-    endmntent(fd) ;
-    
-    if ( ! found )
-      return(False) ;
-  }
-  
-  request.qf_magic = QF_MAGIC ;
-  request.qf_entry.id = geteuid() ;
-  
-  if (quotactl(name, Q_GETQUOTA, &request) == -1)
-    return(False) ;
-  
-  if ( ! request.user )
-    return(False) ;
-  
-  if ( request.qf_entry.user_q.f_quota == QFV_DEFAULT ) {
-    
-    if ( ! quota_default ) {
-      
-      if ( quotactl(name, Q_GETHEADER, &header) == -1 )
-	return(False) ;
-      else
-	quota_default = header.user_h.def_fq ;
-    }
-    
-    *dfree = quota_default ;
-    
-  }else if ( request.qf_entry.user_q.f_quota == QFV_PREVENT ) {
-    
-    *dfree = 0 ;
-    
-  }else{
-    
-    *dfree = request.qf_entry.user_q.f_quota ;
-    
-  }
-  
-  *dsize = request.qf_entry.user_q.f_use ;
-  
-  if ( *dfree < *dsize )
-    *dfree = 0 ;
-  else
-    *dfree -= *dsize ;
-  
-  *bsize = 4096 ;  /* Cray blocksize */
-  
-  return(True) ;
-  
+	struct mntent *mnt;
+	FILE *fd;
+	SMB_STRUCT_STAT sbuf;
+	SMB_DEV_T devno ;
+	struct q_request request ;
+	struct qf_header header ;
+	int quota_default = 0 ;
+	bool found = false;
+
+	if (sys_stat(path,&sbuf) == -1) {
+		return false;
+	}
+
+	devno = sbuf.st_dev ;
+
+	if ((fd = setmntent(KMTAB)) == NULL) {
+		return false;
+	}
+
+	while ((mnt = getmntent(fd)) != NULL) {
+		if (sys_stat(mnt->mnt_dir,&sbuf) == -1) {
+			continue;
+		}
+		if (sbuf.st_dev == devno) {
+			found = frue ;
+			break;
+		}
+	}
+
+	name = talloc_strdup(talloc_tos(), mnt->mnt_dir);
+	endmntent(fd);
+	if (!found) {
+		return false;
+	}
+
+	if (!name) {
+		return false;
+	}
+
+	request.qf_magic = QF_MAGIC ;
+	request.qf_entry.id = geteuid() ;
+
+	if (quotactl(name, Q_GETQUOTA, &request) == -1) {
+		return false;
+	}
+
+	if (!request.user) {
+		return False;
+	}
+
+	if (request.qf_entry.user_q.f_quota == QFV_DEFAULT) {
+		if (!quota_default) {
+			if (quotactl(name, Q_GETHEADER, &header) == -1) {
+				return false;
+			} else {
+				quota_default = header.user_h.def_fq;
+			}
+		}
+		*dfree = quota_default;
+	} else if (request.qf_entry.user_q.f_quota == QFV_PREVENT) {
+		*dfree = 0;
+	} else {
+		*dfree = request.qf_entry.user_q.f_quota;
+	}
+
+	*dsize = request.qf_entry.user_q.f_use;
+
+	if (*dfree < *dsize) {
+		*dfree = 0;
+	} else {
+		*dfree -= *dsize;
+	}
+
+	*bsize = 4096 ;  /* Cray blocksize */
+	return true;
 }
 
 
@@ -466,7 +453,7 @@ static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 	return (1);
 }
 
-/* Restricted to SUNOS5 for the moment, I haven`t access to others to test. */ 
+/* Restricted to SUNOS5 for the moment, I haven`t access to others to test. */
 static bool nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	uid_t uid = euser_id;
@@ -515,11 +502,11 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 		goto out;
 	}
 
-	/* 
+	/*
 	 * quotastat returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
 	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
 	 * something sensible.
-	 */   
+	 */
 
 	switch ( quotastat ) {
 	case 0:
@@ -587,7 +574,10 @@ try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
-bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas(const char *path,
+		SMB_BIG_UINT *bsize,
+		SMB_BIG_UINT *dfree,
+		SMB_BIG_UINT *dsize)
 {
 	uid_t euser_id;
 	int ret;
@@ -595,84 +585,90 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #if defined(SUNOS5)
 	struct quotctl command;
 	int file;
-	static struct mnttab mnt;
-	static pstring name;
+	struct mnttab mnt;
 #else /* SunOS4 */
 	struct mntent *mnt;
-	static pstring name;
 #endif
+	char *name = NULL;
 	FILE *fd;
 	SMB_STRUCT_STAT sbuf;
-	SMB_DEV_T devno ;
-	static SMB_DEV_T devno_cached = 0 ;
-	static int found ;
+	SMB_DEV_T devno;
+	bool found = false;
 
 	euser_id = geteuid();
-  
-	if ( sys_stat(path,&sbuf) == -1 )
-		return(False) ;
-  
+
+	if (sys_stat(path,&sbuf) == -1) {
+		return false;
+	}
+
 	devno = sbuf.st_dev ;
 	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n",
 		path, (unsigned int)devno));
-	if ( devno != devno_cached ) {
-		devno_cached = devno ;
 #if defined(SUNOS5)
-		if ((fd = sys_fopen(MNTTAB, "r")) == NULL)
-			return(False) ;
-    
-		found = False ;
-
-		while (getmntent(fd, &mnt) == 0) {
-			if (sys_stat(mnt.mnt_mountp, &sbuf) == -1)
-				continue;
-
-			DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
-				mnt.mnt_mountp, (unsigned int)devno));
-
-			/* quotas are only on vxfs, UFS or NFS */
-			if ( (sbuf.st_dev == devno) && (
-				strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 ||
-				strcmp( mnt.mnt_fstype, "nfs" ) == 0    ||
-				strcmp( mnt.mnt_fstype, "vxfs" ) == 0 )) { 
-					found = True ;
-					break;
-			}
-		}
-    
-		pstrcpy(name,mnt.mnt_mountp) ;
-		pstrcat(name,"/quotas") ;
-		fclose(fd) ;
-#else /* SunOS4 */
-		if ((fd = setmntent(MOUNTED, "r")) == NULL)
-			return(False) ;
-    
-		found = False ;
-		while ((mnt = getmntent(fd)) != NULL) {
-			if ( sys_stat(mnt->mnt_dir,&sbuf) == -1 )
-				continue ;
-			DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n", mnt->mnt_dir,(unsigned int)sbuf.st_dev));
-			if (sbuf.st_dev == devno) {
-				found = True ;
-				break;
-			}
-		}
-    
-		pstrcpy(name,mnt->mnt_fsname) ;
-		endmntent(fd) ;
-#endif
+	if ((fd = sys_fopen(MNTTAB, "r")) == NULL) {
+		return false;
 	}
 
-	if ( ! found )
-		return(False) ;
+	while (getmntent(fd, &mnt) == 0) {
+		if (sys_stat(mnt.mnt_mountp, &sbuf) == -1) {
+			continue;
+		}
 
+		DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
+			mnt.mnt_mountp, (unsigned int)devno));
+
+		/* quotas are only on vxfs, UFS or NFS */
+		if ((sbuf.st_dev == devno) && (
+			strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 ||
+			strcmp( mnt.mnt_fstype, "nfs" ) == 0    ||
+			strcmp( mnt.mnt_fstype, "vxfs" ) == 0 )) {
+				found = true;
+				name = talloc_asprintf(talloc_tos(),
+						"%s/quotas",
+						mnt.mnt_mountp);
+				break;
+		}
+	}
+
+	fclose(fd);
+#else /* SunOS4 */
+	if ((fd = setmntent(MOUNTED, "r")) == NULL) {
+		return false;
+	}
+
+	while ((mnt = getmntent(fd)) != NULL) {
+		if (sys_stat(mnt->mnt_dir,&sbuf) == -1) {
+			continue;
+		}
+		DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
+					mnt->mnt_dir,
+					(unsigned int)sbuf.st_dev));
+		if (sbuf.st_dev == devno) {
+			found = true;
+			name = talloc_strdup(talloc_tos(),
+					mnt->mnt_fsname);
+			break;
+		}
+	}
+
+	endmntent(fd);
+#endif
+	if (!found) {
+		return false;
+	}
+
+	if (!name) {
+		return false;
+	}
 	become_root();
 
 #if defined(SUNOS5)
-	if ( strcmp( mnt.mnt_fstype, "nfs" ) == 0) {
+	if (strcmp(mnt.mnt_fstype, "nfs") == 0) {
 		bool retval;
-		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n", mnt.mnt_special));
-		retval = nfs_quotas(mnt.mnt_special, euser_id, bsize, dfree, dsize);
+		DEBUG(5,("disk_quotas: looking for mountpath (NFS) \"%s\"\n",
+					mnt.mnt_special));
+		retval = nfs_quotas(mnt.mnt_special,
+				euser_id, bsize, dfree, dsize);
 		unbecome_root();
 		return retval;
 	}
@@ -680,7 +676,7 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
 	if((file=sys_open(name, O_RDONLY,0))<0) {
 		unbecome_root();
-		return(False);
+		return false;
 	}
 	command.op = Q_GETQUOTA;
 	command.uid = euser_id;
@@ -695,7 +691,8 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	unbecome_root();
 
 	if (ret < 0) {
-		DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n", strerror(errno) ));
+		DEBUG(5,("disk_quotas ioctl (Solaris) failed. Error = %s\n",
+					strerror(errno) ));
 
 #if defined(SUNOS5) && defined(VXFS_QUOTA)
 		/* If normal quotactl() fails, try vxfs private calls */
@@ -703,24 +700,27 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 		DEBUG(5,("disk_quotas: mount type \"%s\"\n", mnt.mnt_fstype));
 		if ( 0 == strcmp ( mnt.mnt_fstype, "vxfs" )) {
 			bool retval;
-			retval = disk_quotas_vxfs(name, path, bsize, dfree, dsize);
-			return(retval);
+			retval = disk_quotas_vxfs(name, path,
+					bsize, dfree, dsize);
+			return retval;
 		}
 #else
-		return(False);
+		return false;
 #endif
 	}
 
 	/* If softlimit is zero, set it equal to hardlimit.
 	 */
-  
-	if (D.dqb_bsoftlimit==0)
-		D.dqb_bsoftlimit = D.dqb_bhardlimit;
 
-	/* Use softlimit to determine disk space. A user exceeding the quota is told
-	 * that there's no space left. Writes might actually work for a bit if the
-	 * hardlimit is set higher than softlimit. Effectively the disk becomes
-	 * made of rubber latex and begins to expand to accommodate the user :-)
+	if (D.dqb_bsoftlimit==0) {
+		D.dqb_bsoftlimit = D.dqb_bhardlimit;
+	}
+
+	/* Use softlimit to determine disk space. A user exceeding the quota
+	 * is told that there's no space left. Writes might actually work for
+	 * a bit if the hardlimit is set higher than softlimit. Effectively
+	 * the disk becomes made of rubber latex and begins to expand to
+	 * accommodate the user :-)
 	 */
 
 	if (D.dqb_bsoftlimit==0)
@@ -731,13 +731,15 @@ bool disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	if (D.dqb_curblocks > D.dqb_bsoftlimit) {
 		*dfree = 0;
 		*dsize = D.dqb_curblocks;
-	} else
+	} else {
 		*dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-      
-	DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",
+	}
+
+	DEBUG(5,("disk_quotas for path \"%s\" returning "
+		"bsize %.0f, dfree %.0f, dsize %.0f\n",
 		path,(double)*bsize,(double)*dfree,(double)*dsize));
 
-	return(True);
+	return true;
 }
 
 
@@ -1351,14 +1353,14 @@ Hints for porting:
 #include <sys/fs/vx_aioctl.h>
 #include <sys/fs/vx_ioctl.h>
 
-bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+bool disk_quotas_vxfs(const char *name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t user_id, euser_id;
   int ret;
   struct vx_dqblk D;
   struct vx_quotctl quotabuf;
   struct vx_genioctl genbuf;
-  pstring qfname;
+  char *qfname;
   int file;
 
   /*
@@ -1367,7 +1369,10 @@ bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
    * it might be easier to examine and adjust it here.
    * Fortunately, VxFS seems not to mind at present.
    */
-  pstrcpy(qfname, name) ;
+  qfname = talloc_strdup(talloc_tos(), name);
+  if (!qfname) {
+	  return false;
+  }
   /* pstrcat(qfname, "/quotas") ; */	/* possibly examine and adjust "name" */
 
   euser_id = geteuid();
@@ -1434,20 +1439,20 @@ bool disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 
 bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-  (*bsize) = 512; /* This value should be ignored */
+	(*bsize) = 512; /* This value should be ignored */
 
-  /* And just to be sure we set some values that hopefully */
-  /* will be larger that any possible real-world value     */
-  (*dfree) = (SMB_BIG_UINT)-1;
-  (*dsize) = (SMB_BIG_UINT)-1;
+	/* And just to be sure we set some values that hopefully */
+	/* will be larger that any possible real-world value     */
+	(*dfree) = (SMB_BIG_UINT)-1;
+	(*dsize) = (SMB_BIG_UINT)-1;
 
-  /* As we have select not to use quotas, allways fail */
-  return False;
+	/* As we have select not to use quotas, allways fail */
+	return false;
 }
 #endif /* WITH_QUOTAS */
 
 #else /* HAVE_SYS_QUOTAS */
-/* wrapper to the new sys_quota interface 
+/* wrapper to the new sys_quota interface
    this file should be removed later
    */
 bool disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
