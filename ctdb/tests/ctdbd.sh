@@ -2,7 +2,7 @@
 
 killall -q ctdbd
 
-tests/start_daemons.sh 2 tests/nodes.txt || exit 1
+tests/start_daemons.sh 2 || exit 1
 
 echo "Testing ping"
 $VALGRIND bin/ctdb ping || exit 1
