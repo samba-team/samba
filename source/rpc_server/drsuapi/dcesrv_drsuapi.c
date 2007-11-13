@@ -570,6 +570,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
 						 LDB_SCOPE_BASE, attrs_account_1, "objectClass=computer");
 			if (ret == LDB_SUCCESS && res_account->count == 1) {
+				const char *errstr;
 				ctr1->array[i].dns_name
 					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
 				ctr1->array[i].netbios_name
@@ -578,10 +579,11 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 					= ldb_dn_get_linearized(res_account->msgs[0]->dn);
 
 				/* Determine if this is the PDC */
-				domain_dn = samdb_search_for_parent_domain(b_state->sam_ctx, 
-									   mem_ctx, res_account->msgs[0]->dn);
+				ret = samdb_search_for_parent_domain(b_state->sam_ctx, 
+								     mem_ctx, res_account->msgs[0]->dn,
+								     &domain_dn, &errstr);
 				
-				if (domain_dn) {
+				if (ret == LDB_SUCCESS) {
 					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
@@ -664,6 +666,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_account, ref_dn, 
 						 LDB_SCOPE_BASE, attrs_account_2, "objectClass=computer");
 			if (ret == LDB_SUCCESS && res_account->count == 1) {
+				const char *errstr;
 				ctr2->array[i].dns_name
 					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
 				ctr2->array[i].netbios_name
@@ -673,10 +676,11 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 					= samdb_result_guid(res_account->msgs[0], "objectGUID");
 
 				/* Determine if this is the PDC */
-				domain_dn = samdb_search_for_parent_domain(b_state->sam_ctx, 
-									   mem_ctx, res_account->msgs[0]->dn);
+				ret = samdb_search_for_parent_domain(b_state->sam_ctx, 
+								     mem_ctx, res_account->msgs[0]->dn,
+								     &domain_dn, &errstr);
 				
-				if (domain_dn) {
+				if (ret == LDB_SUCCESS) {
 					ret = ldb_search_exp_fmt(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn, 
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));

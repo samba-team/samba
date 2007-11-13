@@ -37,6 +37,34 @@
 #include "dsdb/common/flags.h"
 #include "param/param.h"
 
+char *samdb_relative_path(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx, 
+				 const char *name) 
+{
+	const char *base_url = 
+		(const char *)ldb_get_opaque(ldb, "ldb_url");
+	char *path, *p, *full_name;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
+	path = talloc_strdup(mem_ctx, base_url);
+	if (path == NULL) {
+		return NULL;
+	}
+	if ( (p = strrchr(path, '/')) != NULL) {
+		p[0] = '\0';
+		full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
+	} else {
+		full_name = talloc_asprintf(mem_ctx, "./%s", name);
+	}
+	talloc_free(path);
+	return full_name;
+}
+
+
 /*
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
@@ -682,21 +710,49 @@ int samdb_copy_template(struct ldb_context *ldb,
 	struct ldb_result *res;
 	struct ldb_message *t;
 	int ret, i, j;
-	struct ldb_dn *basedn = ldb_dn_new(ldb, ldb, "cn=Templates");
+	struct ldb_context *templates_ldb;
+	char *templates_ldb_path; 
+	struct ldb_dn *basedn;
 
+	templates_ldb = talloc_get_type(ldb_get_opaque(ldb, "templates_ldb"), struct ldb_context);
+
+	if (!templates_ldb) {
+		templates_ldb_path = samdb_relative_path(ldb, 
+							msg, 
+							"templates.ldb");
+		if (!templates_ldb_path) {
+			*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to contruct path for template db");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		templates_ldb = ldb_wrap_connect(ldb, global_loadparm, 
+						templates_ldb_path, NULL,
+						NULL, 0, NULL);
+		talloc_free(templates_ldb_path);
+		if (!templates_ldb) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		ret = ldb_set_opaque(ldb, "templates_ldb", templates_ldb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 	*errstring = NULL;	
 
+	basedn = ldb_dn_new(templates_ldb, ldb, "cn=Templates");
 	if (!ldb_dn_add_child_fmt(basedn, "CN=Template%s", name)) {
+		talloc_free(basedn);
 		*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to contruct DN for template '%s'", 
 					     name);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
 	/* pull the template record */
-	ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, "cn=*", NULL, &res);
+	ret = ldb_search(templates_ldb, basedn, LDB_SCOPE_BASE, "(dn=*)", NULL, &res);	
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
-		*errstring = talloc_steal(msg, ldb_errstring(ldb));
+		*errstring = talloc_steal(msg, ldb_errstring(templates_ldb));
 		return ret;
 	}
 	if (res->count != 1) {
@@ -1439,7 +1495,8 @@ failed:
 
 
 /* Find a domain object in the parents of a particular DN.  */
-struct ldb_dn *samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
+				   struct ldb_dn **parent_dn, const char **errstring)
 {
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *sdn = dn;
@@ -1448,7 +1505,7 @@ struct ldb_dn *samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CT
 	const char *attrs[] = { NULL };
 
 	local_ctx = talloc_new(mem_ctx);
-	if (local_ctx == NULL) return NULL;
+	if (local_ctx == NULL) return LDB_ERR_OPERATIONS_ERROR;
 	
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
 		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
@@ -1458,18 +1515,28 @@ struct ldb_dn *samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CT
 			if (res->count == 1) {
 				break;
 			}
+		} else {
+			break;
 		}
 	}
 
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS) {
+		*errstring = talloc_asprintf(mem_ctx, "Error searching for parent domain of %s: %s",
+					      ldb_dn_get_linearized(sdn),
+					      ldb_errstring(ldb));
 		talloc_free(local_ctx);
-		return NULL;
+		return ret;
+	}
+	if (res->count != 1) {
+		*errstring = talloc_asprintf(mem_ctx, "Invalid dn (%s), not child of a domain object",
+					     ldb_dn_get_linearized(sdn));
+		talloc_free(local_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	talloc_steal(mem_ctx, sdn);
+	*parent_dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
 	talloc_free(local_ctx);
-
-	return sdn;
+	return ret;
 }
 
 /*

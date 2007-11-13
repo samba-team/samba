@@ -1,15 +1,21 @@
+###
+# Templates to be put in templates.ldb.  Not part of main samdb any more.
+###
+
+dn: @OPTIONS
+checkBaseOnSearch: TRUE
+
+dn: @INDEXLIST
+@IDXATTR: cn
+
+dn: @ATTRIBUTES
+cn: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+
 dn: CN=Templates
 objectClass: top
 objectClass: container
 description: Container for SAM account templates
-showInAdvancedViewOnly: TRUE
-systemFlags: 2348810240
-isCriticalSystemObject: TRUE
-
-###
-# note! the template users must not match normal searches. Be careful
-# with what classes you put them in
-###
 
 dn: CN=TemplateUser,CN=Templates
 userAccountControl: 514
