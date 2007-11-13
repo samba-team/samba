@@ -1084,7 +1084,6 @@ function newuser(username, unixname, password, message, session_info, credential
 	var ldif = sprintf("
 dn: %s
 sAMAccountName: %s
-memberOf: %s
 unixName: %s
 sambaPassword: %s
 objectClass: user
