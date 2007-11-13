@@ -707,33 +707,6 @@ static int sort_compare(void *void1,
 	return ldb_dn_compare(partition1->dn, partition2->dn);
 }
 
-static const char *relative_path(struct ldb_module *module, 
-				 TALLOC_CTX *mem_ctx, 
-				 const char *name) 
-{
-	const char *base_url = 
-		(const char *)ldb_get_opaque(module->ldb, "ldb_url");
-	char *path, *p, *full_name;
-	if (name == NULL) {
-		return NULL;
-	}
-	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
-		return talloc_strdup(mem_ctx, name);
-	}
-	path = talloc_strdup(mem_ctx, base_url);
-	if (path == NULL) {
-		return NULL;
-	}
-	if ( (p = strrchr(path, '/')) != NULL) {
-		p[0] = '\0';
-		full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
-	} else {
-		full_name = talloc_asprintf(mem_ctx, "./%s", name);
-	}
-	talloc_free(path);
-	return full_name;
-}
-
 static int partition_init(struct ldb_module *module)
 {
 	int ret, i;
@@ -822,9 +795,9 @@ static int partition_init(struct ldb_module *module)
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		data->partitions[i]->backend = relative_path(module, 
-							     data->partitions[i], 
-							     p);
+		data->partitions[i]->backend = samdb_relative_path(module->ldb, 
+								   data->partitions[i], 
+								   p);
 		if (!data->partitions[i]->backend) {
 			ldb_asprintf_errstring(module->ldb, 
 						"partition_init: unable to determine an relative path for partition: %s", base);
