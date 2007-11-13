@@ -24,6 +24,7 @@
 #include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
 #include "lib/crypto/test_proto.h"
+#include "lib/registry/tests/proto.h"
 
 /* ignore me */ static struct torture_suite *
 	(*suite_generators[]) (TALLOC_CTX *mem_ctx) =
@@ -51,6 +52,7 @@
 	torture_local_event, 
 	torture_local_torture,
 	torture_local_dbspeed, 
+	torture_registry,
 	NULL
 };
 

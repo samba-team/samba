@@ -92,10 +92,9 @@ MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################
 
-[MODULE::TORTURE_REGISTRY]
-SUBSYSTEM = torture
-INIT_FUNCTION = torture_registry_init
+[SUBSYSTEM::torture_registry]
 PRIVATE_DEPENDENCIES = registry
+PRIVATE_PROTO_HEADER = tests/proto.h
 OBJ_FILES = \
 		tests/generic.o \
 		tests/hive.o \

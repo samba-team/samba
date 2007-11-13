@@ -111,9 +111,9 @@ static bool test_reg_val_description_nullname(struct torture_context *ctx)
 	return true;
 }
 
-_PUBLIC_ NTSTATUS torture_registry_init(void)
+_PUBLIC_ struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LOCAL-REGISTRY");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "REGISTRY");
 	torture_suite_add_simple_test(suite, "str_regtype",
 				      test_str_regtype);
 	torture_suite_add_simple_test(suite, "reg_val_data_string dword",
@@ -133,7 +133,5 @@ _PUBLIC_ NTSTATUS torture_registry_init(void)
 	torture_suite_add_suite(suite, torture_registry_registry(suite));
 	torture_suite_add_suite(suite, torture_registry_diff(suite));
 
-	torture_register_suite(suite);
-	
-	return NT_STATUS_OK;
+	return suite;
 }
