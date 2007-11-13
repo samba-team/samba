@@ -77,26 +77,43 @@ static bool api_TooSmall(connection_struct *conn, uint16 vuid, char *param, char
 			 int *rdata_len, int *rparam_len);
 
 
-static int CopyExpanded(connection_struct *conn, 
-			int snum, char **dst, char *src, int *n)
+static int CopyExpanded(connection_struct *conn,
+			int snum, char **dst, char *src, int *p_space_remaining)
 {
-	pstring buf;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *buf = NULL;
 	int l;
 
-	if (!src || !dst || !n || !(*dst)) {
+	if (!src || !dst || !p_space_remaining || !(*dst) ||
+			*p_space_remaining <= 0) {
 		return 0;
 	}
 
-	StrnCpy(buf,src,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      buf, sizeof(buf));
-	l = push_ascii(*dst,buf,*n, STR_TERMINATE);
+	buf = talloc_strdup(ctx, src);
+	if (!buf) {
+		*p_space_remaining = 0;
+		return 0;
+	}
+	buf = talloc_string_sub(ctx, buf,"%S",lp_servicename(snum));
+	if (!buf) {
+		*p_space_remaining = 0;
+		return 0;
+	}
+	buf = talloc_sub_advanced(ctx,
+				lp_servicename(SNUM(conn)),
+				conn->user,
+				conn->connectpath,
+				conn->gid,
+				get_current_username(),
+				current_user_info.domain,
+				buf);
+	if (!buf) {
+		*p_space_remaining = 0;
+		return 0;
+	}
+	l = push_ascii(*dst,buf,*p_space_remaining, STR_TERMINATE);
 	(*dst) += l;
-	(*n) -= l;
+	(*p_space_remaining) -= l;
 	return l;
 }
 
@@ -114,32 +131,57 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 
 static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 {
-	pstring buf;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *buf = NULL;
 	if (!s) {
 		return 0;
 	}
-	StrnCpy(buf,s,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      buf, sizeof(buf));
+	buf = talloc_strdup(ctx,s);
+	if (!buf) {
+		return 0;
+	}
+	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(snum));
+	if (!buf) {
+		return 0;
+	}
+	buf = talloc_sub_advanced(ctx,
+				lp_servicename(SNUM(conn)),
+				conn->user,
+				conn->connectpath,
+				conn->gid,
+				get_current_username(),
+				current_user_info.domain,
+				buf);
+	if (!buf) {
+		return 0;
+	}
 	return strlen(buf) + 1;
 }
 
 static char *Expand(connection_struct *conn, int snum, char *s)
 {
-	pstring buf;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *buf = NULL;
+
 	if (!s) {
 		return NULL;
 	}
-	StrnCpy(buf,s,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
-	return talloc_sub_advanced(talloc_tos(), lp_servicename(SNUM(conn)),
-				   conn->user, conn->connectpath, conn->gid,
-				   get_current_username(),
-				   current_user_info.domain, buf);
+	buf = talloc_strdup(ctx,s);
+	if (!buf) {
+		return 0;
+	}
+	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(snum));
+	if (!buf) {
+		return 0;
+	}
+	return talloc_sub_advanced(ctx,
+				lp_servicename(SNUM(conn)),
+				conn->user,
+				conn->connectpath,
+				conn->gid,
+				get_current_username(),
+				current_user_info.domain,
+				buf);
 }
 
 /*******************************************************************
@@ -572,16 +614,20 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
  Returns True if from tdb, False otherwise.
  ********************************************************************/
 
-static bool get_driver_name(int snum, pstring drivername)
+static bool get_driver_name(int snum, char **pp_drivername)
 {
 	NT_PRINTER_INFO_LEVEL *info = NULL;
-	bool in_tdb = False;
+	bool in_tdb = false;
 
 	get_a_printer (NULL, &info, 2, lp_servicename(snum));
 	if (info != NULL) {
-		pstrcpy( drivername, info->info_2->drivername);
-		in_tdb = True;
+		*pp_drivername = talloc_strdup(talloc_tos(),
+					info->info_2->drivername);
+		in_tdb = true;
 		free_a_printer(&info, 2);
+		if (!*pp_drivername) {
+			return false;
+		}
 	}
 
 	return in_tdb;
@@ -716,7 +762,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 	}
 
 	if (uLevel == 3 || uLevel == 4) {
-		pstring drivername;
+		char *drivername = NULL;
 
 		PACKI(desc,"W",5);		/* uPriority */
 		PACKI(desc,"W",0);		/* uStarttime */
@@ -726,7 +772,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
 		PACKS(desc,"z",NULL);		/* pszParms */
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
-		/* "don't ask" that it's done this way to fix corrupted 
+		/* "don't ask" that it's done this way to fix corrupted
 		   Win9X/ME printer comments. */
 		if (!status) {
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
@@ -735,7 +781,10 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		}
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
 		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
-		get_driver_name(snum,drivername);
+		get_driver_name(snum,&drivername);
+		if (!drivername) {
+			return;
+		}
 		PACKS(desc,"z",drivername);		/* pszDriverName */
 		PackDriverData(desc);	/* pDriverData */
 	}
@@ -1817,12 +1866,12 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	fstring sharename;
 	fstring comment;
-	pstring pathname;
+	char *pathname = NULL;
 	char *command, *cmdname;
 	unsigned int offset;
 	int snum;
 	int res = ERRunsup;
-  
+
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
@@ -1881,7 +1930,11 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	if (skip_string(data,mdrcnt,data+offset) == NULL) {
 		return False;
 	}
-	pull_ascii_pstring(pathname, offset? (data+offset) : "");
+
+	pull_ascii_talloc(talloc_tos(), &pathname, offset? (data+offset) : "");
+	if (!pathname) {
+		return false;
+	}
 
 	string_replace(sharename, '"', ' ');
 	string_replace(pathname, '"', ' ');
@@ -2884,16 +2937,25 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 	if (uLevel > 0) {
 		struct srv_info_struct *servers=NULL;
 		int i,count;
-		pstring comment;
+		char *comment = NULL;
+		TALLOC_CTX *ctx = talloc_tos();
 		uint32 servertype= lp_default_server_announce();
 
-		push_ascii(comment,lp_serverstring(), MAX_SERVER_STRING_LENGTH,STR_TERMINATE);
+		comment = talloc_strdup(ctx,lp_serverstring());
+		if (!comment) {
+			return false;
+		}
 
 		if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 			for (i=0;i<count;i++) {
 				if (strequal(servers[i].name,global_myname())) {
 					servertype = servers[i].type;
-					push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);
+					TALLOC_FREE(comment);
+					comment = talloc_strdup(ctx,
+							servers[i].comment);
+					if (comment) {
+						return false;
+					}
 				}
 			}
 		}
@@ -2908,12 +2970,25 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-					      conn->connectpath, conn->gid,
-					      get_current_username(),
-					      current_user_info.domain,
-					      comment, sizeof(comment));
-			StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
+			comment = talloc_sub_advanced(ctx,
+						lp_servicename(SNUM(conn)),
+						conn->user,
+						conn->connectpath,
+						conn->gid,
+						get_current_username(),
+						current_user_info.domain,
+						comment);
+			if (comment) {
+				return false;
+			}
+			if (mdrcnt - struct_len <= 0) {
+				return false;
+			}
+			push_ascii(p2,
+				comment,
+				MIN(mdrcnt - struct_len,
+					MAX_SERVER_STRING_LENGTH),
+				STR_TERMINATE);
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
@@ -3231,7 +3306,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	   Don't depend on vuser being non-null !!. JRA */
 	user_struct *vuser = get_valid_user_struct(vuid);
 	if(vuser != NULL) {
-		DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
+		DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid,
 			vuser->user.unix_name));
 	}
 
@@ -3246,7 +3321,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
-  
+
 	/* check it's a supported variant */
 	if (strcmp(str1,"zWrLh") != 0) {
 		return False;
@@ -3279,7 +3354,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	memset(p,0,21); 
+	memset(p,0,21);
 	fstrcpy(p+usri11_name,UserName); /* 21 bytes - user name */
 
 	if (uLevel > 0) {
@@ -3410,10 +3485,29 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
 			{
-				pstring tmp;
-				pstrcpy(tmp, "\\\\%L");
-				standard_sub_basic("", "", tmp, sizeof(tmp));
-				pstrcpy(p2, tmp);
+				TALLOC_CTX *ctx = talloc_tos();
+				int space_rem = *rdata_len - (p2 - *rdata);
+				char *tmp;
+
+				if (space_rem <= 0) {
+					return false;
+				}
+				tmp = talloc_strdup(ctx, "\\\\%L");
+				if (!tmp) {
+					return false;
+				}
+				tmp = talloc_sub_basic(ctx,
+						"",
+						"",
+						tmp);
+				if (!tmp) {
+					return false;
+				}
+
+				push_ascii(p2,
+					tmp,
+					space_rem,
+					STR_TERMINATE);
 			}
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
