@@ -38,7 +38,8 @@ static fstring msgto;
 
 static void msg_deliver(void)
 {
-	pstring name;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name = NULL;
 	int i;
 	int fd;
 	char *msg;
@@ -52,7 +53,10 @@ static void msg_deliver(void)
 	}
 
 	/* put it in a temporary file */
-	slprintf(name,sizeof(name)-1, "%s/msg.XXXXXX",tmpdir());
+	name = talloc_asprintf(ctx, "%s/msg.XXXXXX",tmpdir());
+	if (!name) {
+		return;
+	}
 	fd = smb_mkstemp(name);
 
 	if (fd == -1) {
@@ -63,7 +67,7 @@ static void msg_deliver(void)
 	/*
 	 * Incoming message is in DOS codepage format. Convert to UNIX.
 	 */
-  
+
 	if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **)(void *)&msg, True)) < 0 || !msg) {
 		DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
 		for (i = 0; i < msgpos;) {
@@ -95,14 +99,39 @@ static void msg_deliver(void)
 	if (*lp_msg_command()) {
 		fstring alpha_msgfrom;
 		fstring alpha_msgto;
-		pstring s;
+		char *s = talloc_strdup(ctx,
+					lp_msg_command());
 
-		pstrcpy(s,lp_msg_command());
-		pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
-		pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-		standard_sub_basic(current_user_info.smb_name,
-				current_user_info.domain, s, sizeof(s));
-		pstring_sub(s,"%s",name);
+		if (!s) {
+			return;
+		}
+		s = talloc_string_sub(ctx, s, "%f",
+					alpha_strcpy(alpha_msgfrom,
+						msgfrom,
+						NULL,
+						sizeof(alpha_msgfrom)));
+		if (!s) {
+			return;
+		}
+		s = talloc_string_sub(ctx, s, "%t",
+					alpha_strcpy(alpha_msgto,
+						msgto,
+						NULL,
+						sizeof(alpha_msgto)));
+		if (!s) {
+			return;
+		}
+		s = talloc_sub_basic(ctx,
+				current_user_info.smb_name,
+				current_user_info.domain,
+				s);
+		if (!s) {
+			return;
+		}
+		s = talloc_string_sub(ctx, s, "%s",name);
+		if (!s) {
+			return;
+		}
 		smbrun(s,NULL);
 	}
 

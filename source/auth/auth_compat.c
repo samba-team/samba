@@ -92,7 +92,7 @@ check if a username/password pair is ok via the auth subsystem.
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-bool password_ok(char *smb_name, DATA_BLOB password_blob)
+bool password_ok(const char *smb_name, DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob_null;

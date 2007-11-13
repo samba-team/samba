@@ -669,46 +669,51 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 
 		/*
 		 * As user_ok can recurse doing a getgrent(), we must
-		 * copy the member list into a pstring on the stack before
+		 * copy the member list onto the heap before
 		 * use. Bug pointed out by leon@eatworms.swmed.edu.
 		 */
 
 		if (gptr) {
-			pstring member_list;
+			char *member_list = NULL;
+			size_t list_len = 0;
 			char *member;
-			size_t copied_len = 0;
 			int i;
+
+			for(i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
+				list_len += strlen(gptr->gr_mem[i])+1;
+			}
+			list_len++;
+
+			member_list = SMB_MALLOC(list_len);
+			if (!member_list) {
+				endgrent();
+				return NULL;
+			}
 
 			*member_list = '\0';
 			member = member_list;
 
 			for(i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
 				size_t member_len = strlen(gptr->gr_mem[i])+1;
-				if(copied_len+member_len < sizeof(pstring)) { 
 
-					DEBUG(10,("validate_group: = gr_mem = "
-						  "%s\n", gptr->gr_mem[i]));
+				DEBUG(10,("validate_group: = gr_mem = "
+					  "%s\n", gptr->gr_mem[i]));
 
-					safe_strcpy(member, gptr->gr_mem[i],
-						    sizeof(pstring) -
-						    copied_len - 1);
-					copied_len += member_len;
-					member += copied_len;
-				} else {
-					*member = '\0';
-				}
+				safe_strcpy(member, gptr->gr_mem[i],
+					list_len - (member-member_list));
+				member += member_len;
 			}
 
 			endgrent();
 
 			member = member_list;
 			while (*member) {
-				static fstring name;
-				fstrcpy(name,member);
-				if (user_ok(name,snum) &&
-				    password_ok(name,password)) {
-					endgrent();
-					return(&name[0]);
+				if (user_ok(member,snum) &&
+				    password_ok(member,password)) {
+					char *name = talloc_strdup(talloc_tos(),
+								member);
+					SAFE_FREE(member_list);
+					return name;
 				}
 
 				DEBUG(10,("validate_group = member = %s\n",
@@ -716,6 +721,8 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 
 				member += strlen(member) + 1;
 			}
+
+			SAFE_FREE(member_list);
 		} else {
 			endgrent();
 			return NULL;
@@ -790,11 +797,22 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 
 	/* check the user= fields and the given password */
 	if (!ok && lp_username(snum)) {
+		TALLOC_CTX *ctx = talloc_tos();
 		char *auser;
-		pstring user_list;
-		pstrcpy(user_list,lp_username(snum));
+		char *user_list = talloc_strdup(ctx, lp_username(snum));
 
-		pstring_sub(user_list,"%S",lp_servicename(snum));
+		if (!user_list) {
+			goto check_guest;
+		}
+
+		user_list = talloc_string_sub(ctx,
+				user_list,
+				"%S",
+				lp_servicename(snum));
+
+		if (!user_list) {
+			goto check_guest;
+		}
 
 		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
 		     auser = strtok(NULL,LIST_SEP)) {
@@ -822,6 +840,8 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 			}
 		}
 	}
+
+  check_guest:
 
 	/* check for a normal guest connection */
 	if (!ok && GUEST_OK(snum)) {
