@@ -159,6 +159,18 @@ static void cldapd_task_init(struct task_server *task)
 		return;
 	}
 
+	switch (lp_server_role(global_loadparm)) {
+	case ROLE_STANDALONE:
+		task_server_terminate(task, "cldap_server: no CLDAP server required in standalone configuration");
+		return;
+	case ROLE_DOMAIN_MEMBER:
+		task_server_terminate(task, "cldap_server: no CLDAP server required in member server configuration");
+		return;
+	case ROLE_DOMAIN_CONTROLLER:
+		/* Yes, we want an CLDAP server */
+		break;
+	}
+
 	task_server_set_title(task, "task[cldapd]");
 
 	cldapd = talloc(task, struct cldapd_server);
