@@ -190,23 +190,15 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 */
 static int samldb_get_new_sid(struct ldb_module *module, 
 			      TALLOC_CTX *mem_ctx, struct ldb_dn *obj_dn,
+			      struct ldb_dn *dom_dn, 
 			      struct dom_sid **sid)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_result *res = NULL;
-	struct ldb_dn *dom_dn;
 	int ret;
 	struct dom_sid *dom_sid;
 
 	/* get the domain component part of the provided dn */
-
-	dom_dn = samdb_search_for_parent_domain(module->ldb, mem_ctx, obj_dn);
-	if (dom_dn == NULL) {
-		ldb_asprintf_errstring(module->ldb,
-					"Invalid dn (%s) not child of a domain object!\n",
-					ldb_dn_get_linearized(obj_dn));
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
 
 	/* find the domain sid */
 
@@ -338,13 +330,14 @@ int samldb_notice_sid(struct ldb_module *module,
 }
 
 static int samldb_handle_sid(struct ldb_module *module, 
-					 TALLOC_CTX *mem_ctx, struct ldb_message *msg2)
+			     TALLOC_CTX *mem_ctx, struct ldb_message *msg2,
+			     struct ldb_dn *parent_dn)
 {
 	int ret;
 	
 	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg2, "objectSid");
 	if (sid == NULL) { 
-		ret = samldb_get_new_sid(module, msg2, msg2->dn, &sid);
+		ret = samldb_get_new_sid(module, msg2, msg2->dn, parent_dn, &sid);
 		if (ret != 0) {
 			return ret;
 		}
@@ -361,31 +354,35 @@ static int samldb_handle_sid(struct ldb_module *module,
 	return ret;
 }
 
-static char *samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CTX *mem_ctx) 
+static int samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
+					  struct ldb_dn *dom_dn, char **name) 
 {
-	char *name;
 	const char *attrs[] = { NULL };
-	struct ldb_message **msgs;
+	struct ldb_result *res;
 	int ret;
 	
 	/* Format: $000000-000000000000 */
 	
 	do {
-		name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)random(), (unsigned int)random(), (unsigned int)random());
+		*name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)random(), (unsigned int)random(), (unsigned int)random());
 		/* TODO: Figure out exactly what this is meant to conflict with */
-		ret = gendb_search(module->ldb,
-				   mem_ctx, NULL, &msgs, attrs,
-				   "samAccountName=%s",
-				   ldb_binary_encode_string(mem_ctx, name));
-		if (ret == 0) {
+		ret = ldb_search_exp_fmt(module->ldb,
+					 mem_ctx, &res, dom_dn, LDB_SCOPE_SUBTREE, attrs,
+					 "samAccountName=%s",
+					 ldb_binary_encode_string(mem_ctx, *name));
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(module->ldb, "samldb: Failure searching to determine if samAccountName %s is unique: %s",
+					       *name, ldb_errstring(module->ldb));
+			return ret;
+		}
+
+		if (res->count == 0) {
+			talloc_free(res);
 			/* Great. There are no conflicting users/groups/etc */
-			return name;
-		} else if (ret == -1) {
-			/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
-			return NULL;
+			return LDB_SUCCESS;
 		} else {
-			talloc_free(name);
-                        /* gah, there are conflicting sids, lets move around the loop again... */
+			talloc_free(*name);
+                        /* gah, there is a conflicting name, lets move around the loop again... */
 		}
 	} while (1);
 }
@@ -394,8 +391,9 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 						    struct ldb_message **ret_msg)
 {
 	int ret;
-	const char *name;
+	char *name;
 	struct ldb_message *msg2;
+	struct ldb_dn *dom_dn;
 	const char *rdn_name;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
 	const char *errstr;
@@ -428,12 +426,19 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	ret = samdb_search_for_parent_domain(module->ldb, mem_ctx, msg2->dn, &dom_dn, &errstr);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(module->ldb,
+				       "samldb_fill_group_object: %s", errstr);
+		return ret;
+	}
+
 	/* Generate a random name, if no samAccountName was supplied */
 	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
-		name = samldb_generate_samAccountName(module, mem_ctx);
-		if (!name) {
+		ret = samldb_generate_samAccountName(module, mem_ctx, dom_dn, &name);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 		ret = samdb_find_or_add_attribute(module->ldb, msg2, "sAMAccountName", name);
 		if (ret) {
@@ -443,7 +448,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	}
 	
 	/* Manage SID allocation, conflicts etc */
-	ret = samldb_handle_sid(module, mem_ctx, msg2); 
+	ret = samldb_handle_sid(module, mem_ctx, msg2, dom_dn); 
 
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(msg, msg2);
@@ -459,6 +464,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	int ret;
 	char *name;
 	struct ldb_message *msg2;
+	struct ldb_dn *dom_dn;
 	const char *rdn_name;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
 	const char *errstr;
@@ -514,11 +520,18 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	ret = samdb_search_for_parent_domain(module->ldb, mem_ctx, msg2->dn, &dom_dn, &errstr);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(module->ldb,
+				       "samldb_fill_group_object: %s", errstr);
+		return ret;
+	}
+
 	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
-		name = samldb_generate_samAccountName(module, mem_ctx);
-		if (!name) {
+		ret = samldb_generate_samAccountName(module, mem_ctx, dom_dn, &name);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 		ret = samdb_find_or_add_attribute(module->ldb, msg2, "sAMAccountName", name);
 		if (ret) {
@@ -532,7 +545,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	*/
 
 	/* Manage SID allocation, conflicts etc */
-	ret = samldb_handle_sid(module, mem_ctx, msg2); 
+	ret = samldb_handle_sid(module, mem_ctx, msg2, dom_dn); 
 
 	/* TODO: objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
 

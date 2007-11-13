@@ -383,6 +383,7 @@ function provision_default_paths(subobj)
 	paths.shareconf = lp.get("private dir") + "/" + "share.ldb";
 	paths.samdb = lp.get("sam database");
 	paths.secrets = lp.get("secrets database");
+	paths.templates = lp.get("private dir") + "/" + "templates.ldb";
 	paths.keytab = "secrets.keytab";
 	paths.dns_keytab = "dns.keytab";
 	paths.dns_keytab_abs = lp.get("private dir") + "/" + paths.dns_keytab;
@@ -528,6 +529,9 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 	info.message = message;
 	info.session_info = session_info;
 
+	message("Setting up teplates into " + paths.templates + "\n");
+	setup_ldb("provision_templates.ldif", info, paths.templates);
+
 	/* Also wipes the database */
 	message("Setting up " + paths.samdb + " partitions\n");
 	setup_ldb("provision_partitions.ldif", info, paths.samdb);
@@ -547,9 +551,6 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 
 	message("Setting up " + paths.samdb + " indexes\n");
 	setup_add_ldif("provision_index.ldif", info, samdb, false);
-
-	message("Setting up " + paths.samdb + " templates\n");
-	setup_add_ldif("provision_templates.ldif", info, samdb, false);
 
 	ok = samdb.transaction_commit();
 	assert(ok);
@@ -622,6 +623,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Setting up the registry\n");
 	var reg = reg_open();
 	reg.apply_patchfile(lp.get("setup directory") + "/provision.reg")
+
+	message("Setting up teplates into " + paths.templates + "\n");
+	setup_ldb("provision_templates.ldif", info, paths.templates);
 
 	message("Setting up sam.ldb partitions\n");
 	/* Also wipes the database */
@@ -707,8 +711,6 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	message("Setting up display specifiers\n");
 	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
-	message("Setting up sam.ldb templates\n");
-	setup_add_ldif("provision_templates.ldif", info, samdb, false);
 
 	message("Adding users container (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_users_add.ldif", info, samdb, true);
