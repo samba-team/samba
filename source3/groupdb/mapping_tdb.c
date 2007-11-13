@@ -91,25 +91,38 @@ static bool init_group_mapping(void)
 static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA dbuf;
-	pstring key, buf;
+	char *key = NULL;
+	char *buf = NULL;
 	fstring string_sid="";
 	int len;
+	bool ret;
 
 	sid_to_string(string_sid, &map->sid);
 
-	len = tdb_pack((uint8 *)buf, sizeof(buf), "ddff",
-			map->gid, map->sid_name_use, map->nt_name, map->comment);
+	len = tdb_pack(NULL, sizeof(buf), "ddff",
+		map->gid, map->sid_name_use, map->nt_name, map->comment);
+	if (len) {
+		buf = SMB_MALLOC_ARRAY(char, len);
+		if (!buf) {
+			return false;
+		}
+		len = tdb_pack((uint8 *)buf, sizeof(buf), "ddff", map->gid,
+				map->sid_name_use, map->nt_name, map->comment);
+	}
 
-	if (len > sizeof(buf))
-		return False;
-
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
+		SAFE_FREE(buf);
+		return false;
+	}
 
 	dbuf.dsize = len;
 	dbuf.dptr = (uint8 *)buf;
-	if (tdb_store_bystring(tdb, key, dbuf, flag) != 0) return False;
 
-	return True;
+	ret = (tdb_store_bystring(tdb, key, dbuf, flag) == 0);
+
+	SAFE_FREE(key);
+	SAFE_FREE(buf);
+	return ret;
 }
 
 
@@ -120,31 +133,38 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	TDB_DATA dbuf;
-	pstring key;
+	char *key = NULL;
 	fstring string_sid;
 	int ret = 0;
-	
+
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, &sid);
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
+		return false;
+	}
 
 	dbuf = tdb_fetch_bystring(tdb, key);
-	if (!dbuf.dptr)
-		return False;
+	if (!dbuf.dptr) {
+		SAFE_FREE(key);
+		return false;
+	}
+
+	SAFE_FREE(key);
 
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
-				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+			&map->gid, &map->sid_name_use,
+			&map->nt_name, &map->comment);
 
 	SAFE_FREE(dbuf.dptr);
-	
+
 	if ( ret == -1 ) {
 		DEBUG(3,("get_group_map_from_sid: tdb_unpack failure\n"));
 		return False;
 	}
 
 	sid_copy(&map->sid, &sid);
-	
+
 	return True;
 }
 
@@ -160,12 +180,12 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 	/* we need to enumerate the TDB to find the GID */
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp((const char *)kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
+
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
@@ -173,7 +193,7 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 		fstrcpy(string_sid, (const char *)kbuf.dptr+strlen(GROUP_PREFIX));
 
 		string_to_sid(&map->sid, string_sid);
-		
+
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
 				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
 
@@ -183,7 +203,7 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 			DEBUG(3,("get_group_map_from_gid: tdb_unpack failure\n"));
 			return False;
 		}
-	
+
 		if (gid==map->gid) {
 			SAFE_FREE(kbuf.dptr);
 			return True;
@@ -205,12 +225,12 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 
 	/* we need to enumerate the TDB to find the name */
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp((const char *)kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
+
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr)
 			continue;
@@ -218,12 +238,12 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 		fstrcpy(string_sid, (const char *)kbuf.dptr+strlen(GROUP_PREFIX));
 
 		string_to_sid(&map->sid, string_sid);
-		
+
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
 				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
 
 		SAFE_FREE(dbuf.dptr);
-		
+
 		if ( ret == -1 ) {
 			DEBUG(3,("get_group_map_from_ntname: tdb_unpack failure\n"));
 			return False;
@@ -245,24 +265,28 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 static bool group_map_remove(const DOM_SID *sid)
 {
 	TDB_DATA dbuf;
-	pstring key;
+	char *key = NULL;
 	fstring string_sid;
-	
+	bool ret;
+
 	/* the key is the SID, retrieving is direct */
 
 	sid_to_string(string_sid, sid);
-	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
+	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
+		return false;
+	}
 
 	dbuf = tdb_fetch_bystring(tdb, key);
-	if (!dbuf.dptr)
-		return False;
-	
+	if (!dbuf.dptr) {
+		SAFE_FREE(key);
+		return false;
+	}
+
 	SAFE_FREE(dbuf.dptr);
 
-	if(tdb_delete_bystring(tdb, key) != TDB_SUCCESS)
-		return False;
-
-	return True;
+	ret = (tdb_delete_bystring(tdb, key) == TDB_SUCCESS);
+	SAFE_FREE(key);
+	return ret;
 }
 
 /****************************************************************************
@@ -436,7 +460,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	GROUP_MAP map;
 	TDB_DATA dbuf;
-	pstring key;
+	char *key = NULL;
 	fstring string_sid;
 	char *new_memberstring;
 	int result;
@@ -452,7 +476,9 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		return NT_STATUS_MEMBER_IN_ALIAS;
 
 	sid_to_string(string_sid, member);
-	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
+	if (asprintf(&key, "%s%s", MEMBEROF_PREFIX, string_sid) < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dbuf = tdb_fetch_bystring(tdb, key);
 
@@ -465,8 +491,10 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		new_memberstring = SMB_STRDUP(string_sid);
 	}
 
-	if (new_memberstring == NULL)
+	if (new_memberstring == NULL) {
+		SAFE_FREE(key);
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	SAFE_FREE(dbuf.dptr);
 	dbuf = string_term_tdb_data(new_memberstring);
@@ -474,6 +502,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	result = tdb_store_bystring(tdb, key, dbuf, 0);
 
 	SAFE_FREE(new_memberstring);
+	SAFE_FREE(key);
 
 	return (result == 0 ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
 }
@@ -564,7 +593,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	bool found = False;
 	char *member_string;
 	TDB_DATA dbuf;
-	pstring key;
+	char *key = NULL;
 	fstring sid_string;
 
 	result = alias_memberships(member, 1, &sids, &num);
@@ -590,16 +619,24 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	num -= 1;
 
 	sid_to_string(sid_string, member);
-	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, sid_string);
+	if (asprintf(&key, "%s%s", MEMBEROF_PREFIX, sid_string) < 0) {
+		TALLOC_FREE(sids);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (num == 0)
-		return tdb_delete_bystring(tdb, key) == 0 ?
-			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	if (num == 0) {
+		NTSTATUS ret = (tdb_delete_bystring(tdb, key) == 0 ?
+			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+		TALLOC_FREE(sids);
+		SAFE_FREE(key);
+		return ret;
+	}
 
 	member_string = SMB_STRDUP("");
 
 	if (member_string == NULL) {
 		TALLOC_FREE(sids);
+		SAFE_FREE(key);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -612,6 +649,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		SAFE_FREE(s);
 		if (member_string == NULL) {
 			TALLOC_FREE(sids);
+			SAFE_FREE(key);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -623,6 +661,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	TALLOC_FREE(sids);
 	SAFE_FREE(member_string);
+	SAFE_FREE(key);
 
 	return result;
 }
