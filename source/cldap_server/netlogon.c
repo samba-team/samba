@@ -49,8 +49,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 {
 	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
 	const char *dom_attrs[] = {"objectGUID", NULL};
-	struct ldb_message **ref_res, **dom_res;
-	int ret, count = 0;
+	struct ldb_result *ref_res = NULL, *dom_res = NULL;
+	int ret;
 	const char **services = lp_server_services(global_loadparm);
 	uint32_t server_type;
 	const char *pdc_name;
@@ -72,52 +72,89 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	}
 
 	if (domain) {
-		struct ldb_result *dom_ldb_result;
 		struct ldb_dn *dom_dn;
 		/* try and find the domain */
-		count = gendb_search(cldapd->samctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs, 
-				   "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))", 
-				   domain);
-		if (count == 1) {
-			dom_dn = samdb_result_dn(cldapd->samctx, mem_ctx, ref_res[0], "ncName", NULL);
+
+		ret = ldb_search_exp_fmt(cldapd->samctx, mem_ctx, &ref_res, 
+					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
+					 ref_attrs, 
+					 "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))",
+					 domain);
+	
+		if (ret != LDB_SUCCESS) {
+			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
+				 domain, 
+				 ldb_errstring(cldapd->samctx)));
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		} else if (ref_res->count == 1) {
+			talloc_steal(mem_ctx, dom_res);
+			dom_dn = ldb_msg_find_attr_as_dn(cldapd->samctx, mem_ctx, ref_res->msgs[0], "ncName");
 			if (!dom_dn) {
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
 			ret = ldb_search(cldapd->samctx, dom_dn,
 					 LDB_SCOPE_BASE, "objectClass=domain", 
-					 dom_attrs, &dom_ldb_result);
+					 dom_attrs, &dom_res);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(dom_dn), ldb_errstring(cldapd->samctx)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			talloc_steal(mem_ctx, dom_ldb_result);
-			if (dom_ldb_result->count != 1) {
+			talloc_steal(mem_ctx, dom_res);
+			if (dom_res->count != 1) {
 				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(dom_dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
-			dom_res = dom_ldb_result->msgs;
+		} else if (ref_res->count > 1) {
+			talloc_free(ref_res);
+			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
-	if (count == 0 && domain_guid) {
-		/* OK, so no dice with the name, try and find the domain with the GUID */
-		count = gendb_search(cldapd->samctx, mem_ctx, NULL, &dom_res, dom_attrs, 
-				   "(&(objectClass=domainDNS)(objectGUID=%s))", 
-				   domain_guid);
-		if (count == 1) {
+	if ((dom_res == NULL || dom_res->count == 0) && domain_guid) {
+		ref_res = NULL;
+
+		ret = ldb_search_exp_fmt(cldapd->samctx, mem_ctx, &dom_res,
+				 NULL, LDB_SCOPE_SUBTREE, 
+				 dom_attrs, 
+				 "(&(objectClass=domainDNS)(objectGUID=%s))", 
+				 domain_guid);
+		
+		if (ret != LDB_SUCCESS) {
+			DEBUG(2,("Unable to find referece to GUID '%s' in sam: %s\n",
+				 domain_guid, 
+				 ldb_errstring(cldapd->samctx)));
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		} else if (dom_res->count == 1) {
 			/* try and find the domain */
-			ret = gendb_search(cldapd->samctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs, 
-					   "(&(objectClass=crossRef)(ncName=%s))", 
-					   ldb_dn_get_linearized(dom_res[0]->dn));
-			if (ret != 1) {
+			ret = ldb_search_exp_fmt(cldapd->samctx, mem_ctx, &ref_res,
+						 partitions_basedn, LDB_SCOPE_ONELEVEL, 
+						 ref_attrs, 
+						 "(&(objectClass=crossRef)(ncName=%s))", 
+						 ldb_dn_get_linearized(dom_res->msgs[0]->dn));
+			
+			if (ret != LDB_SUCCESS) {
+				DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
+					 ldb_dn_get_linearized(dom_res->msgs[0]->dn), 
+					 ldb_errstring(cldapd->samctx)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+				
+			} else if (ref_res->count != 1) {
 				DEBUG(2,("Unable to find referece to '%s' in sam\n",
-					 ldb_dn_get_linearized(dom_res[0]->dn)));
+					 ldb_dn_get_linearized(dom_res->msgs[0]->dn)));
 				return NT_STATUS_NO_SUCH_DOMAIN;
 			}
+		} else if (dom_res->count > 1) {
+			talloc_free(ref_res);
+			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
-	if (count == 0) {
+	if ((ref_res == NULL || ref_res->count == 0)) {
+		DEBUG(2,("Unable to find domain reference with name %s or GUID {%s}\n", domain, domain_guid));
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	if ((dom_res == NULL || dom_res->count == 0)) {
 		DEBUG(2,("Unable to find domain with name %s or GUID {%s}\n", domain, domain_guid));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -137,15 +174,15 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	}
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(global_loadparm));
-	domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
-	realm            = samdb_result_string(ref_res[0], "dnsRoot", lp_realm(global_loadparm));
-	dns_domain       = samdb_result_string(ref_res[0], "dnsRoot", lp_realm(global_loadparm));
+	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
+	realm            = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(global_loadparm));
+	dns_domain       = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(global_loadparm));
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
 							   lp_netbios_name(global_loadparm)), 
 					   dns_domain);
 
-	flatname         = samdb_result_string(ref_res[0], "nETBIOSName", 
+	flatname         = samdb_result_string(ref_res->msgs[0], "nETBIOSName", 
 					       lp_workgroup(global_loadparm));
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
