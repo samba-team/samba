@@ -41,6 +41,7 @@ PRIVATE_DEPENDENCIES = \
 		TORTURE_AUTH \
 		TORTURE_UTIL \
 		TORTURE_NDR \
-		share
+		share \
+		torture_registry
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
