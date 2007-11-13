@@ -67,7 +67,12 @@ static int pdc_fsmo_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE,
 			 NULL, pdc_attrs,
 			 &pdc_res);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)");
+		talloc_free(mem_ctx);
+		return ldb_next_init(module);
+	} else if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
 			      "pdc_fsmo_init: failed to search the domain object: %d:%s",
 			      ret, ldb_strerror(ret));

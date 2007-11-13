@@ -90,7 +90,12 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE,
 			 NULL, schema_attrs,
 			 &schema_res);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+			  "schema_fsmo_init: no schema head present: (skip schema loading)");
+		talloc_free(mem_ctx);
+		return ldb_next_init(module);
+	} else if (ret != LDB_SUCCESS) {
 		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
 			      "schema_fsmo_init: failed to search the schema head: %d:%s",
 			      ret, ldb_strerror(ret));

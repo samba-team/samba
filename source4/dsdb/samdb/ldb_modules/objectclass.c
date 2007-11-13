@@ -68,6 +68,8 @@ struct class_list {
 	const struct dsdb_class *objectclass;
 };
 
+static int objectclass_do_add(struct ldb_handle *h);
+
 static struct ldb_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
 {
 	struct oc_context *ac;
@@ -388,11 +390,17 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* return or own handle to deal with this call */
 	req->handle = h;
 
-	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.mod.message->dn);
+	/* If there isn't a parent, just go on to the add processing */
+	if (ldb_dn_get_comp_num(ac->orig_req->op.add.message->dn) == 1) {
+		return objectclass_do_add(h);
+	}
+
+	parent_dn = ldb_dn_get_parent(ac, ac->orig_req->op.add.message->dn);
 	if (parent_dn == NULL) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
 	ret = ldb_build_search_req(&ac->search_req, module->ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
@@ -443,9 +451,7 @@ static int objectclass_do_add(struct ldb_handle *h)
 	
 	/* Check we have a valid parent */
 	if (ac->search_res == NULL) {
-		if (ldb_dn_get_comp_num(ac->orig_req->op.add.message->dn) <= 1) {
-			/* Allow cn=rootdse and cn=templates for now... */
-		} else if (ldb_dn_compare(ldb_get_root_basedn(ac->module->ldb), ac->orig_req->op.add.message->dn) == 0) {
+		if (ldb_dn_compare(ldb_get_root_basedn(ac->module->ldb), ac->orig_req->op.add.message->dn) == 0) {
 			/* Allow the tree to be started */
 		} else {
 			ldb_asprintf_errstring(ac->module->ldb, "objectclass: Cannot add %s, parent does not exist!", 
@@ -461,6 +467,8 @@ static int objectclass_do_add(struct ldb_handle *h)
 			     &msg->dn);
 
 		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ac->module->ldb, "Could not munge DN %s into normal form", 
+					       ldb_dn_get_linearized(ac->orig_req->op.add.message->dn));
 			return ret;
 		}
 
@@ -601,7 +609,9 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	switch (objectclass_element->flags & LDB_FLAG_MOD_MASK) {
 	case LDB_FLAG_MOD_DELETE:
-		return LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED;
+		if (objectclass_element->num_values == 0) {
+			return LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED;
+		}
 		break;
 	case LDB_FLAG_MOD_REPLACE:
 	{
@@ -1026,11 +1036,12 @@ static int oc_wait(struct ldb_handle *handle) {
 	case OC_SEARCH_ADD_PARENT:
 		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 
-		if (ret != LDB_SUCCESS) {
+		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req->handle->status != LDB_SUCCESS) {
+		if (ac->search_req->handle->status != LDB_SUCCESS
+		    && ac->search_req->handle->status != LDB_ERR_NO_SUCH_OBJECT) {
 			handle->status = ac->search_req->handle->status;
 			goto done;
 		}
@@ -1063,11 +1074,11 @@ static int oc_wait(struct ldb_handle *handle) {
 	case OC_SEARCH_RENAME_PARENT:
 		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 
-		if (ret != LDB_SUCCESS) {
+		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req->handle->status != LDB_SUCCESS) {
+		if (ac->search_req->handle->status != LDB_SUCCESS && ac->search_req->handle->status != LDB_ERR_NO_SUCH_OBJECT) {
 			handle->status = ac->search_req->handle->status;
 			goto done;
 		}

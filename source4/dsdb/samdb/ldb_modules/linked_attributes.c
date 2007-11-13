@@ -34,10 +34,12 @@
 #include "dsdb/samdb/samdb.h"
 
 struct linked_attributes_context {
+	enum la_step {LA_SEARCH, LA_DO_OPS} step;
 	struct ldb_module *module;
 	struct ldb_handle *handle;
 	struct ldb_request *orig_req;
 
+	struct ldb_request *search_req;
 	struct ldb_request **down_req;
 	int num_requests;
 	int finished_requests;
@@ -82,7 +84,7 @@ static struct linked_attributes_context *linked_attributes_init_handle(struct ld
 
 static int setup_modifies(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
 			  struct linked_attributes_context *ac,
-			  struct ldb_message *msg, 
+			  const struct ldb_message *msg, 
 			  struct ldb_dn *olddn, struct ldb_dn *newdn) 
 {
 	int i, j, ret = LDB_SUCCESS;
@@ -192,6 +194,7 @@ static int setup_modifies(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			ac->down_req[ac->num_requests] = new_req;
 			ac->num_requests++;
 			
+
 			/* Run the new request */
 			ret = ldb_next_request(ac->module, new_req);
 			if (ret != LDB_SUCCESS) {
@@ -272,6 +275,8 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		
 		/* Even link IDs are for the originating attribute */
 	}
+
+	ac->step = LA_DO_OPS;
 	
 	/* Now call the common routine to setup the modifies across all the attributes */
 	return setup_modifies(module->ldb, ac, ac, req->op.add.message, NULL, req->op.add.message->dn);
@@ -322,6 +327,8 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	
 	ac->num_requests++;
 	
+	ac->step = LA_DO_OPS;
+
 	/* Run the original request */
 	ret = ldb_next_request(module, ac->down_req[0]);
 	if (ret != LDB_SUCCESS) {
@@ -539,18 +546,8 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 
 	talloc_steal(new_req, attrs);
 
-	ac->down_req = talloc_realloc(ac, ac->down_req, 
-					struct ldb_request *, ac->num_requests + 1);
-	if (!ac->down_req) {
-		ldb_oom(ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->down_req[ac->num_requests] = new_req;
-	if (req == NULL) {
-		ldb_oom(ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->num_requests++;
+	ac->search_req = new_req;
+	ac->step = LA_SEARCH;
 	return ldb_next_request(module, new_req);
 }
 
@@ -602,18 +599,8 @@ static int linked_attributes_delete(struct ldb_module *module, struct ldb_reques
 
 	talloc_steal(new_req, attrs);
 
-	ac->down_req = talloc_realloc(ac, ac->down_req, 
-					struct ldb_request *, ac->num_requests + 1);
-	if (!ac->down_req) {
-		ldb_oom(ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->down_req[ac->num_requests] = new_req;
-	if (req == NULL) {
-		ldb_oom(ac->module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ac->num_requests++;
+	ac->search_req = new_req;
+	ac->step = LA_SEARCH;
 	return ldb_next_request(module, new_req);
 }
 
@@ -634,20 +621,41 @@ static int linked_attributes_wait_none(struct ldb_handle *handle) {
 
 	ac = talloc_get_type(handle->private_data, struct linked_attributes_context);
 
-	for (i=0; i < ac->num_requests; i++) {
-		ret = ldb_wait(ac->down_req[i]->handle, LDB_WAIT_NONE);
+	switch (ac->step) {
+	case LA_SEARCH:
+		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 		
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->down_req[i]->handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req[i]->handle->status;
+		if (ac->search_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req->handle->status;
 			goto done;
 		}
 		
-		if (ac->down_req[i]->handle->state != LDB_ASYNC_DONE) {
+		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
+		}
+		ac->step = LA_DO_OPS;
+		return LDB_SUCCESS;
+
+	case LA_DO_OPS:
+		for (i=0; i < ac->num_requests; i++) {
+			ret = ldb_wait(ac->down_req[i]->handle, LDB_WAIT_NONE);
+			
+			if (ret != LDB_SUCCESS) {
+				handle->status = ret;
+				goto done;
+			}
+			if (ac->down_req[i]->handle->status != LDB_SUCCESS) {
+				handle->status = ac->down_req[i]->handle->status;
+				goto done;
+			}
+			
+			if (ac->down_req[i]->handle->state != LDB_ASYNC_DONE) {
+				return LDB_SUCCESS;
+			}
 		}
 	}
 

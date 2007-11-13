@@ -265,6 +265,19 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE ldb_subtree_rename
+[MODULE::ldb_subtree_delete]
+INIT_FUNCTION = ldb_subtree_delete_init
+OUTPUT_TYPE = SHARED_LIBRARY
+CFLAGS = -Ilib/ldb/include
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		subtree_delete.o
+# End MODULE ldb_subtree_rename
+################################################
+
+################################################
 # Start MODULE ldb_linked_attributes
 [MODULE::ldb_linked_attributes]
 INIT_FUNCTION = ldb_linked_attributes_init
