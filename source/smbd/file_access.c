@@ -76,12 +76,14 @@ static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
 				    &secdesc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Unable to get NT ACL for file %s\n", fname));
-		return status;
+		goto done;
 	}
 
 	*psd = talloc_move(mem_ctx, &secdesc);
+
+done:
 	close_file(fsp, NORMAL_CLOSE);
-	return NT_STATUS_OK;
+	return status;
 }
 
 static bool can_access_file_acl(struct connection_struct *conn,
