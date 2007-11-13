@@ -171,17 +171,28 @@ bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 int smb_create_group(const char *unix_group, gid_t *new_gid)
 {
-	pstring add_script;
+	char *add_script = NULL;
 	int 	ret = -1;
 	int 	fd = 0;
-	
+
 	*new_gid = 0;
 
 	/* defer to scripts */
-	
+
 	if ( *lp_addgroup_script() ) {
-		pstrcpy(add_script, lp_addgroup_script());
-		pstring_sub(add_script, "%g", unix_group);
+		TALLOC_CTX *ctx = talloc_tos();
+
+		add_script = talloc_strdup(ctx,
+					lp_addgroup_script());
+		if (!add_script) {
+			return -1;
+		}
+		add_script = talloc_string_sub(ctx,
+				add_script, "%g", unix_group);
+		if (!add_script) {
+			return -1;
+		}
+
 		ret = smbrun(add_script, &fd);
 		DEBUG(ret ? 0 : 3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret == 0) {
@@ -197,7 +208,7 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 			if (read(fd, output, sizeof(output)) > 0) {
 				*new_gid = (gid_t)strtoul(output, NULL, 10);
 			}
-			
+
 			close(fd);
 		}
 
@@ -209,8 +220,8 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 		if (grp != NULL)
 			*new_gid = grp->gr_gid;
 	}
-			
-	return ret;	
+
+	return ret;
 }
 
 /****************************************************************************
@@ -219,14 +230,24 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 
 int smb_delete_group(const char *unix_group)
 {
-	pstring del_script;
-	int ret;
+	char *del_script = NULL;
+	int ret = -1;
 
 	/* defer to scripts */
-	
+
 	if ( *lp_delgroup_script() ) {
-		pstrcpy(del_script, lp_delgroup_script());
-		pstring_sub(del_script, "%g", unix_group);
+		TALLOC_CTX *ctx = talloc_tos();
+
+		del_script = talloc_strdup(ctx,
+				lp_delgroup_script());
+		if (!del_script) {
+			return -1;
+		}
+		del_script = talloc_string_sub(ctx,
+				del_script, "%g", unix_group);
+		if (!del_script) {
+			return -1;
+		}
 		ret = smbrun(del_script,NULL);
 		DEBUG(ret ? 0 : 3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 		if (ret == 0) {
@@ -234,24 +255,36 @@ int smb_delete_group(const char *unix_group)
 		}
 		return ret;
 	}
-		
+
 	return -1;
 }
 
 /****************************************************************************
  Set a user's primary UNIX group.
 ****************************************************************************/
+
 int smb_set_primary_group(const char *unix_group, const char* unix_user)
 {
-	pstring add_script;
-	int ret;
+	char *add_script = NULL;
+	int ret = -1;
 
 	/* defer to scripts */
-	
+
 	if ( *lp_setprimarygroup_script() ) {
-		pstrcpy(add_script, lp_setprimarygroup_script());
-		all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
-		all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
+		TALLOC_CTX *ctx = talloc_tos();
+
+		add_script = talloc_strdup(ctx,
+				lp_setprimarygroup_script());
+		if (!add_script) {
+			return -1;
+		}
+		add_script = talloc_all_string_sub(ctx,
+					add_script,
+					"%g",
+					unix_group);
+		if (!add_script) {
+			return -1;
+		}
 		ret = smbrun(add_script,NULL);
 		flush_pwnam_cache();
 		DEBUG(ret ? 0 : 3,("smb_set_primary_group: "
@@ -271,15 +304,29 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 
 int smb_add_user_group(const char *unix_group, const char *unix_user)
 {
-	pstring add_script;
-	int ret;
+	char *add_script = NULL;
+	int ret = -1;
 
 	/* defer to scripts */
-	
+
 	if ( *lp_addusertogroup_script() ) {
-		pstrcpy(add_script, lp_addusertogroup_script());
-		pstring_sub(add_script, "%g", unix_group);
-		pstring_sub(add_script, "%u", unix_user);
+		TALLOC_CTX *ctx = talloc_tos();
+
+		add_script = talloc_strdup(ctx,
+				lp_addusertogroup_script());
+		if (!add_script) {
+			return -1;
+		}
+		add_script = talloc_string_sub(ctx,
+				add_script, "%g", unix_group);
+		if (!add_script) {
+			return -1;
+		}
+		add_script = talloc_string_sub(ctx,
+				add_script, "%u", unix_user);
+		if (!add_script) {
+			return -1;
+		}
 		ret = smbrun(add_script,NULL);
 		DEBUG(ret ? 0 : 3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret == 0) {
@@ -287,7 +334,7 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 		}
 		return ret;
 	}
-	
+
 	return -1;
 }
 
@@ -297,15 +344,29 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 
 int smb_delete_user_group(const char *unix_group, const char *unix_user)
 {
-	pstring del_script;
-	int ret;
+	char *del_script = NULL;
+	int ret = -1;
 
 	/* defer to scripts */
-	
+
 	if ( *lp_deluserfromgroup_script() ) {
-		pstrcpy(del_script, lp_deluserfromgroup_script());
-		pstring_sub(del_script, "%g", unix_group);
-		pstring_sub(del_script, "%u", unix_user);
+		TALLOC_CTX *ctx = talloc_tos();
+
+		del_script = talloc_strdup(ctx,
+				lp_deluserfromgroup_script());
+		if (!del_script) {
+			return -1;
+		}
+		del_script = talloc_string_sub(ctx,
+				del_script, "%g", unix_group);
+		if (!del_script) {
+			return -1;
+		}
+		del_script = talloc_string_sub(ctx,
+				del_script, "%u", unix_user);
+		if (!del_script) {
+			return -1;
+		}
 		ret = smbrun(del_script,NULL);
 		DEBUG(ret ? 0 : 3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 		if (ret == 0) {
@@ -313,7 +374,7 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 		}
 		return ret;
 	}
-	
+
 	return -1;
 }
 

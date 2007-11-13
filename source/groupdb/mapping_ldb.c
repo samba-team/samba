@@ -618,8 +618,6 @@ static bool mapping_upgrade(const char *tdb_path)
 {
 	static TDB_CONTEXT *tdb;
 	int ret, status=0;
-	pstring old_path;
-	pstring new_path;
 
 	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDWR, 0600);
 	if (tdb == NULL) goto failed;
@@ -637,12 +635,17 @@ static bool mapping_upgrade(const char *tdb_path)
 		tdb = NULL;
 	}
 
-	pstrcpy(old_path, tdb_path);
-	pstrcpy(new_path, state_path("group_mapping.tdb.upgraded"));
+	{
+		const char *old_path = tdb_path;
+		char *new_path = state_path("group_mapping.tdb.upgraded");
 
-	if (rename(old_path, new_path) != 0) {
-		DEBUG(0,("Failed to rename old group mapping database\n"));
-		goto failed;
+		if (!new_path) {
+			goto failed;
+		}
+		if (rename(old_path, new_path) != 0) {
+			DEBUG(0,("Failed to rename old group mapping database\n"));
+			goto failed;
+		}
 	}
 	return True;
 
