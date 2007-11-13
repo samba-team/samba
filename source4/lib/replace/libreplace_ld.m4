@@ -157,7 +157,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*hpux*)
-			SONAMEFLAG="-Wl,+h "
+			SONAMEFLAG="-Wl,+h,"
 			;;
 		*osf*)
 			SONAMEFLAG="-Wl,-soname,"
