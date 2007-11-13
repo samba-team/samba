@@ -39,30 +39,36 @@ bool map_username(fstring user)
 	XFILE *f;
 	char *mapfile = lp_username_map();
 	char *s;
-	pstring buf;
+	char buf[512];
 	bool mapped_user = False;
 	char *cmd = lp_username_map_script();
-	
+
 	if (!*user)
-		return False;
-		
+		return false;
+
 	if (strequal(user,last_to))
-		return False;
+		return false;
 
 	if (strequal(user,last_from)) {
 		DEBUG(3,("Mapped user %s to %s\n",user,last_to));
 		fstrcpy(user,last_to);
-		return True;
+		return true;
 	}
-	
+
 	/* first try the username map script */
-	
+
 	if ( *cmd ) {
 		char **qlines;
-		pstring command;
+		char *command = NULL;
 		int numlines, ret, fd;
 
-		pstr_sprintf( command, "%s \"%s\"", cmd, user );
+		command = talloc_asprintf(talloc_tos(),
+					"%s \"%s\"",
+					cmd,
+					user);
+		if (!command) {
+			return false;
+		}
 
 		DEBUG(10,("Running [%s]\n", command));
 		ret = smbrun(command, &fd);
@@ -87,7 +93,7 @@ bool map_username(fstring user)
 		}
 
 		file_lines_free(qlines);
-		
+
 		return numlines != 0;
 	}
 
