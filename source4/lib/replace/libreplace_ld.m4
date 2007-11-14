@@ -168,5 +168,9 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 		*darwin*)
 			SONAMEFLAG="-install_name "
 			;;
+		*aix*)
+			# Not supported
+			SONAMEFLAG="#"
+			;;
 		esac
 ])

@@ -364,7 +364,7 @@ __EOD__
 
 	my $soarg = "";
 	my $lns = "";
-	if ($self->{config}->{SONAMEFLAG} ne "" and defined($ctx->{LIBRARY_SONAME})) {
+	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
 			$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
@@ -372,7 +372,7 @@ __EOD__
 		}
 	}
 
-	if ($self->{config}->{SONAMEFLAG} ne "" and 
+	if ($self->{config}->{SONAMEFLAG} ne "#" and 
 		defined($ctx->{LIBRARY_SONAME}) and 
 		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
 		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
