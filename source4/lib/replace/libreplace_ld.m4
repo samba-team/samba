@@ -1,3 +1,8 @@
+#
+# This offers a nice overview how to build shared libraries on all platforms
+#        http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html
+#
+
 AC_DEFUN([AC_LD_EXPORT_DYNAMIC],
 [
 saved_LDFLAGS="$LDFLAGS"
