@@ -1376,6 +1376,7 @@ server_lookup:
 		    ret = krb5_unparse_name(context, sp, &spn);	
 		    if (ret)
 			goto out;
+		    auth_data = NULL; /* ms don't handle AD in referals */
 		    goto server_lookup;
 		}
 	    }
@@ -1393,6 +1394,7 @@ server_lookup:
 		if (ret)
 		    goto out;
 		krb5_free_host_realm(context, realms);
+		auth_data = NULL; /* ms don't handle AD in referals */
 		goto server_lookup;
 	    }
 	    krb5_free_host_realm(context, realms);
