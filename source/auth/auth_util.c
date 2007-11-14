@@ -32,20 +32,44 @@
 
 static int smb_create_user(const char *domain, const char *unix_username, const char *homedir)
 {
-	pstring add_script;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *add_script;
 	int ret;
 
-	pstrcpy(add_script, lp_adduser_script());
-	if (! *add_script)
+	add_script = talloc_strdup(ctx, lp_adduser_script());
+	if (!add_script || !*add_script) {
 		return -1;
-	all_string_sub(add_script, "%u", unix_username, sizeof(pstring));
-	if (domain)
-		all_string_sub(add_script, "%D", domain, sizeof(pstring));
-	if (homedir)
-		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
+	}
+	add_script = talloc_all_string_sub(ctx,
+				add_script,
+				"%u",
+				unix_username);
+	if (!add_script) {
+		return -1;
+	}
+	if (domain) {
+		add_script = talloc_all_string_sub(ctx,
+					add_script,
+					"%D",
+					domain);
+		if (!add_script) {
+			return -1;
+		}
+	}
+	if (homedir) {
+		add_script = talloc_all_string_sub(ctx,
+				add_script,
+				"%H",
+				homedir);
+		if (!add_script) {
+			return -1;
+		}
+	}
 	ret = smbrun(add_script,NULL);
 	flush_pwnam_cache();
-	DEBUG(ret ? 0 : 3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+	DEBUG(ret ? 0 : 3,
+		("smb_create_user: Running the command `%s' gave %d\n",
+		 add_script,ret));
 	return ret;
 }
 
@@ -53,15 +77,15 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-static NTSTATUS make_user_info(auth_usersupplied_info **user_info, 
-                               const char *smb_name, 
+static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
+                               const char *smb_name,
                                const char *internal_username,
-                               const char *client_domain, 
+                               const char *client_domain,
                                const char *domain,
-                               const char *wksta_name, 
+                               const char *wksta_name,
                                DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
                                DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
-                               DATA_BLOB *plaintext, 
+                               DATA_BLOB *plaintext,
                                bool encrypted)
 {
 

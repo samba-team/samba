@@ -599,7 +599,7 @@ return NT_STATUS_OK on correct match, appropriate error otherwise
 NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
 		    int pwlen, bool (*fn) (const char *, const char *), bool run_cracker)
 {
-	pstring pass2;
+	char *pass2 = NULL;
 	int level = lp_passwordlevel();
 
 	NTSTATUS nt_status;
@@ -758,7 +758,10 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	}
 
 	/* make a copy of it */
-	pstrcpy(pass2, password);
+	pass2 = talloc_strdup(talloc_tos(), password);
+	if (!pass2) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(pass2)) {
