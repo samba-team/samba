@@ -263,7 +263,20 @@ function test_map_search(ldb, s3, s4)
 	var dn;
 	var attrs;
 
-	/* Add a set of split records */
+
+	var ldif = "
+dn: " + "sambaDomainName=TESTS," + s3.BASEDN + "
+objectclass: sambaDomain
+objectclass: top
+sambaSID: S-1-5-21-4231626423-2410014848-2360679739
+sambaNextRid: 2000
+sambaDomainName: TESTS"
+	ldif = substitute_var(ldif, s3);
+	assert(ldif != undefined);
+	var ok = s3.db.add(ldif);
+	assert(ok.error == 0);
+
+	printf("Add a set of split records");
 	var ldif = "
 dn: " + s4.dn("cn=X") + "
 objectClass: user
@@ -297,6 +310,7 @@ nextRid: y
 lastLogon: z
 description: y
 ";
+
 	ldif = substitute_var(ldif, s4);
 	assert(ldif != undefined);
 	var ok = ldb.add(ldif);
@@ -305,7 +319,8 @@ description: y
 		assert(ok.error == 0);
 	}
 
-	/* Add a set of remote records */
+	println("Add a set of remote records");
+
 	var ldif = "
 dn: " + s3.dn("cn=A") + "
 objectClass: posixAccount
@@ -429,7 +444,7 @@ description: y
 	*/
 	res = ldb.search("(objectSid=*)", NULL, ldb. SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 2);
+	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=X"));
 	assert(res.msgs[0].dnsHostName == "x");
 	assert(res.msgs[0].lastLogon == "x");
@@ -610,7 +625,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(revision=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 4);
+	assert(res.msgs.length == 5);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
 	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
@@ -628,7 +643,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(description=x))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 2);
+	assert(res.msgs.length == 3);
 	assert(res.msgs[0].dn == s4.dn("cn=Z"));
 	assert(res.msgs[0].dnsHostName == "z");
 	assert(res.msgs[0].lastLogon == "z");
@@ -640,7 +655,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(revision=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 4);
+	assert(res.msgs.length == 5);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
 	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
@@ -658,7 +673,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(lastLogon=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 4);
+	assert(res.msgs.length == 5);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
 	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
@@ -676,7 +691,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(&(codePage=x)(description=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 4);
+	assert(res.msgs.length == 5);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
 	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
@@ -711,7 +726,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(|(badPwdCount=x)(lastLogon=x)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 3);
+	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=Y"));
 	assert(res.msgs[0].dnsHostName == "y");
 	assert(res.msgs[0].lastLogon == "y");
@@ -726,7 +741,7 @@ description: y
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(!(|(revision=x)(lastLogon=y)))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 3);
+	assert(res.msgs.length == 4);
 	assert(res.msgs[0].dn == s4.dn("cn=A"));
 	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "x");
@@ -737,11 +752,11 @@ description: y
 	assert(res.msgs[2].dnsHostName == undefined);
 	assert(res.msgs[2].lastLogon == "z");
 
-	/* Search by complex parse tree */
+	println("Search by complex parse tree");
 	attrs = new Array("dnsHostName", "lastLogon");
 	res = ldb.search("(|(&(revision=x)(dnsHostName=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res.error == 0);
-	assert(res.msgs.length == 5);
+	assert(res.msgs.length == 6);
 	assert(res.msgs[0].dn == s4.dn("cn=B"));
 	assert(res.msgs[0].dnsHostName == undefined);
 	assert(res.msgs[0].lastLogon == "y");
@@ -1174,18 +1189,28 @@ samba3.BASEDN = "cn=Samba3Sam";
 samba3.db = ldb_init();
 samba3.dn = make_dn;
 
+var templates = new Object("templates partition info");
+templates.file = prefix + "/" + "templates.ldb";
+templates.url = "tdb://" + templates.file;
+templates.BASEDN = "cn=templates";
+templates.db = ldb_init();
+
 sys.unlink(ldbfile);
 sys.unlink(samba3.file);
+sys.unlink(templates.file);
 sys.unlink(samba4.file);
 
 var ok = ldb.connect(ldburl);
 assert(ok);
 var ok = samba3.db.connect(samba3.url);
 assert(ok);
+var ok = templates.db.connect(templates.url);
+assert(ok);
 var ok = samba4.db.connect(samba4.url);
 assert(ok);
 
 setup_data(samba3, sys.file_load(datadir + "/" + "samba3.ldif"));
+setup_data(templates, sys.file_load(datadir + "/" + "provision_samba3sam_templates.ldif"));
 setup_modules(ldb, samba3, samba4, sys.file_load(datadir + "/" + "provision_samba3sam.ldif"));
 
 ldb = ldb_init();
@@ -1197,6 +1222,7 @@ test_s3sam_modify(ldb, samba3);
 
 sys.unlink(ldbfile);
 sys.unlink(samba3.file);
+sys.unlink(templates.file);
 sys.unlink(samba4.file);
 
 ldb = ldb_init();
@@ -1205,10 +1231,14 @@ assert(ok);
 samba3.db = ldb_init();
 var ok = samba3.db.connect(samba3.url);
 assert(ok);
+templates.db = ldb_init();
+var ok = templates.db.connect(templates.url);
+assert(ok);
 samba4.db = ldb_init();
 var ok = samba4.db.connect(samba4.url);
 assert(ok);
 
+setup_data(templates, sys.file_load(datadir + "/" + "provision_samba3sam_templates.ldif"));
 setup_modules(ldb, samba3, samba4, sys.file_load(datadir + "provision_samba3sam.ldif"));
 
 ldb = ldb_init();
