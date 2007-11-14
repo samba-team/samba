@@ -55,7 +55,7 @@ certificate request
 
 x509 issues:
 
- OtherName is left unspecified, but its used by other
+ OtherName is left unspecified, but it's used by other
  specs. creating this hole where a application/CA can't specify
  policy for SubjectAltName what covers whole space. For example, a
  CA is trusted to provide authentication but not authorization.

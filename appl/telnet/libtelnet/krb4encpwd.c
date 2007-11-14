@@ -354,7 +354,7 @@ krb4encpwd_printsub(data, cnt, buf, buflen)
 {
 	int i;
 
-	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
+	buf[buflen-1] = '\0';		/* make sure it's NULL terminated */
 	buflen -= 1;
 
 	switch(data[3]) {

@@ -244,7 +244,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 /*
  * Generate the `key_set' from the [kadmin]default_keys statement. If
  * `no_salt' is set, salt is not important (and will not be set) since
- * its random keys that is going to be created.
+ * it's random keys that is going to be created.
  */
 
 krb5_error_code

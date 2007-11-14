@@ -403,7 +403,7 @@ p11_get_session(hx509_context context,
      * prompter or known to work pin code.
      *
      * This code is very conversative and only uses the prompter in
-     * the hx509_lock, the reason is that its bad to try many
+     * the hx509_lock, the reason is that it's bad to try many
      * passwords on a pkcs11 token, it might lock up and have to be
      * unlocked by a administrator.
      *

@@ -822,7 +822,7 @@ tgs_make_reply(krb5_context context,
     if(rspac->length) {
 	/*
 	 * No not need to filter out the any PAC from the
-	 * auth_data since its signed by the KDC.
+	 * auth_data since it's signed by the KDC.
 	 */
 	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
 					  KRB5_AUTHDATA_WIN2K_PAC,
@@ -1439,8 +1439,8 @@ server_lookup:
     }
     
     /*
-     * Check that service is in the same realm as the krbtgt. If its
-     * not the same, its someone that is using a uni-directional trust
+     * Check that service is in the same realm as the krbtgt. If it's
+     * not the same, it's someone that is using a uni-directional trust
      * backward.
      */
     

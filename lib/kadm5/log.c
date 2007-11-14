@@ -836,7 +836,7 @@ kadm5_log_goto_end (int fd)
  * 
  * The pointer in `sp´ is assumed to be at the top of the entry before
  * previous entry. On success, the `sp´ pointer is set to data portion
- * of previous entry. In case of error, its not changed at all.
+ * of previous entry. In case of error, it's not changed at all.
  */
 
 kadm5_ret_t

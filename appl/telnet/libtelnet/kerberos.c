@@ -541,7 +541,7 @@ kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
     int i;
 
-    buf[buflen-1] = '\0';		/* make sure its NULL terminated */
+    buf[buflen-1] = '\0';		/* make sure it's NULL terminated */
     buflen -= 1;
 
     switch(data[3]) {

@@ -82,8 +82,8 @@ test_default_name(krb5_context context)
 }
 
 /*
- * Check that a closed cc still keeps it data and that its no longer
- * there when its destroyed.
+ * Check that a closed cc still keeps it data and that it's no longer
+ * there when it's destroyed.
  */
 
 static void

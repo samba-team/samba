@@ -1045,7 +1045,7 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     /*
-     * If its not pkcs7-data send signedAttributes
+     * If it isn't pkcs7-data send signedAttributes
      */
 
     if (der_heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {

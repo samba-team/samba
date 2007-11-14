@@ -97,7 +97,7 @@ found'', the user might back ``failed to find
 host/host.example.com@@EXAMLE.COM(kvno 3) in keytab /etc/krb5.keytab
 (des-cbc-crc)''.  This improves the chance that the user find the
 cause of the error so you should use the customised error message
-whenever its available.
+whenever it's available.
 
 See also manual page for @manpage{krb5_get_error_string,3} and
 @manpage{krb5_get_err_text,3}.
@@ -141,7 +141,7 @@ reason @code{err()} is used when @code{krb5_init_context()} fails.
 First the client needs to call @code{krb5_init_context} to initialise
 the Kerberos 5 library. This is only needed once per thread
 in the program. If the function returns a non-zero value it indicates
-that either the Kerberos implementation is failing or its disabled on
+that either the Kerberos implementation is failing or it's disabled on
 this host.
 
 @example

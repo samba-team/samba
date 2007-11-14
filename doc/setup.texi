@@ -668,7 +668,7 @@ default encryption will be used.
 
 @item @code{afs3-salt}
 
-@code{afs3-salt} is the salt that is used with Transarc kaserver. Its
+@code{afs3-salt} is the salt that is used with Transarc kaserver. It's
 the cell name appended to the password.
 
 @end itemize
@@ -885,7 +885,7 @@ local transport. (A patch to support SASL EXTERNAL authentication is
 necessary in order to use OpenLDAP 2.1.x.)
 
 @item
-Add the hdb schema to the LDAP server, its included in the source-tree
+Add the hdb schema to the LDAP server, it's included in the source-tree
 in @file{lib/hdb/hdb.schema}. Example from slapd.conf:
 
 @example
@@ -915,7 +915,7 @@ Another option is to create an admins group and add the dn to that
 group.
 
 Since Heimdal talks to the LDAP server over a UNIX domain socket, and
-uses external sasl authentication, its not possible to require
+uses external sasl authentication, it's not possible to require
 security layer quality (ssf in cyrus-sasl lingo). So that requirement
 has to be turned off in OpenLDAP @command{slapd} configuration file
 @file{slapd.conf}.
@@ -1080,8 +1080,8 @@ PK-INIT is levering the existing PKI infrastructure to use
 certificates to get the initial ticket, that is usually the krbtgt.
 
 To use PK-INIT you must first have a PKI, so if you don't have one,
-now its time to create it. Note that you should read the whole chapter
-of the document to see the requirements on the CA sortware.
+it is time to create it. Note that you should read the whole chapter
+of the document to see the requirements on the CA software.
 
 There needs to exist a mapping between the certificate and what
 principals that certificate is allowed to use. There are several ways
@@ -1107,7 +1107,7 @@ name of the TGS of the target realm.
 
 Both of these two requirements are not required by the standard to be
 checked by the client if it have external information what the
-certificate the KDC is supposed to be used. So its in the interst of
+certificate the KDC is supposed to be used. So it's in the interest of
 minimum amount of configuration on the clients they should be included.
 
 Remember that if the client would accept any certificate as the KDC's

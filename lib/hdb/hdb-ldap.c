@@ -417,7 +417,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
 	/*
 	 * If this is just a "account" entry and no other objectclass
-	 * is hanging on this entry, its really a new entry.
+	 * is hanging on this entry, it's really a new entry.
 	 */
 	if (is_samba_account == FALSE && is_heimdal_principal == FALSE && 
 	    is_heimdal_entry == FALSE) {
@@ -671,7 +671,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	int add_krb5EncryptionType = 0;
 
 	/* 
-	 * Only add/modify krb5EncryptionType if its a new heimdal
+	 * Only add/modify krb5EncryptionType if it's a new heimdal
 	 * entry or krb5EncryptionType already exists on the entry.
 	 */
 

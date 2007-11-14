@@ -30,7 +30,7 @@ second.
 01110000 01110000 01110000 01110000 01111000 01111000 01111000 01111000 
 00001111 00001111 00001111 00001111 00000111 00000111 00000111 00000111 
 
-The pattern is getting more obvious if its printed out where the bits
+The pattern is getting more obvious if it's printed out where the bits
 are coming from.
 
  8 16 24  -  -  -  -  - 
@@ -64,7 +64,7 @@ gen_pattern("pc1_d_4", 15, [ 57, 53, 45, 37 ], 32, 0x1000000);
 PC2 transformations
 ===================
 
-PC2 is also a table lookup, since its a 24 bit field, I use 4 6-bit
+PC2 is also a table lookup, since it's a 24 bit field, I use 4 6-bit
 lookup tables. Printing the reverse of the PC2 table reveal that some
 of the bits are not used, namely (9, 18, 22, 25) from c and (7, 10,
 15, 26) from d.

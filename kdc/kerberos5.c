@@ -418,8 +418,8 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 	*ent->salttype = key->salt->type;
 #else
 	/* 
-	 * We shouldn't sent salttype since its incompatible with the
-	 * specification and its break windows clients.  The afs
+	 * We shouldn't sent salttype since it is incompatible with the
+	 * specification and it breaks windows clients.  The afs
 	 * salting problem is solved by using KRB5-PADATA-AFS3-SALT
 	 * implemented in Heimdal 0.7 and later.
 	 */

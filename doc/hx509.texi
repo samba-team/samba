@@ -285,7 +285,7 @@ depth.
 
 @item Proxy certificates
 
-Remember that End Entity can't issue certificates by them own, its not
+Remember that End Entity can't issue certificates by them own, it's not
 really true. There there is an extension called proxy certificates,
 defined in RFC3820, that allows certificates to be issued by end entity
 certificates. The service that receives the proxy certificates must have
@@ -323,19 +323,19 @@ evaluates the policy.
 @node Setting up a CA, Creating a CA certificate, What is X.509 ?, Top
 @chapter Setting up a CA
 
-Do not let this chapter scare you off, its just to give you an idea how
+Do not let this chapter scare you off, it's just to give you an idea how
 to complicated setting up a CA can be. If you are just playing around,
 skip all this and go to the next chapter, @pxref{Creating a CA
 certificate}.
 
 Creating a CA certificate should be more the just creating a
-certificate, there is the policy of the CA. If its just you and your
+certificate, there is the policy of the CA. If it's just you and your
 friend that is playing around then it probably doesn't matter what the
 policy is. But then it comes to trust in an organisation, it will
 probably matter more whom your users and sysadmins will find it
 acceptable to trust.
 
-At the same time, try to keep thing simple, its not very hard to run a
+At the same time, try to keep thing simple, it's not very hard to run a
 Certificate authority and the process to get new certificates should
 simple.
 
@@ -599,7 +599,7 @@ The certificate may also contain a jabber identifier (JID) that, if the
 receiver allows it, authorises the server or client to use that JID.
 
 When storing a JID inside the certificate, both for server and client,
-its stored inside a UTF8String within an otherName entity inside the
+it's stored inside a UTF8String within an otherName entity inside the
 subjectAltName, using the OID id-on-xmppAddr (1.3.6.1.5.5.7.8.5).
 
 To read more about the requirements, see RFC3920, Extensible Messaging
@@ -620,7 +620,7 @@ hxtool issue-certificate \
 @chapter CMS signing and encryption
 
 CMS is the Cryptographic Message System that among other, is used by
-S/MIME (secure email) and Kerberos PK-INIT. Its an extended version of
+S/MIME (secure email) and Kerberos PK-INIT. It's an extended version of
 the RSA, Inc standard PKCS7.
 
 @node CMS background, , CMS signing and encryption, Top

@@ -137,7 +137,7 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     krb5_error_code ret;
 	    
     /* 
-     * Windows 2000 and 2003 uses this inside their TGT so its normaly
+     * Windows 2000 and 2003 uses this inside their TGT so it's normaly
      * not seen by others, however, samba4 joined with a Windows AD as
      * a Domain Controller gets exposed to this.
      */

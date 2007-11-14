@@ -202,7 +202,7 @@ KeyFile.
 @subsection What is 2b ?
 
 2b is the name of the proposal that was implemented to give basic
-Kerberos 5 support to AFS in rxkad. Its not real Kerberos 5 support
+Kerberos 5 support to AFS in rxkad. It's not real Kerberos 5 support
 since it still uses fcrypt for data encryption and not Kerberos
 encryption types.
 

@@ -695,7 +695,7 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
     memset(&si, 0, sizeof(si));
 
     /*
-     * Try to find AuthorityKeyIdentifier, if its not present in the
+     * Try to find AuthorityKeyIdentifier, if it's not present in the
      * subject certificate nor the parent.
      */
 
@@ -789,7 +789,7 @@ certificate_is_self_signed(const Certificate *cert)
 }
 
 /*
- * The subjectName is "null" when its empty set of relative DBs.
+ * The subjectName is "null" when it's empty set of relative DBs.
  */
 
 static int

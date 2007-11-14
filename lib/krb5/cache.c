@@ -198,7 +198,7 @@ krb5_cc_gen_new(krb5_context context,
  * the library chooses the default credential cache type. The supplied
  * `hint' (that can be NULL) is a string that the credential cache
  * type can use to base the name of the credential on, this is to make
- * its easier for the user to differentiate the credentials.
+ * it easier for the user to differentiate the credentials.
  *
  * @return Returns 0 or an error code.
  *

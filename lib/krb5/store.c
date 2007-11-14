@@ -838,8 +838,8 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
     if(ret) goto cleanup;
     /*
      * Runtime detect the what is the higher bits of the bitfield. If
-     * any of the higher bits are set in the input data, its either a
-     * new ticket flag (and this code need to be removed), or its a
+     * any of the higher bits are set in the input data, it's either a
+     * new ticket flag (and this code need to be removed), or it's a
      * MIT cache (or new Heimdal cache), lets change it to our current
      * format.
      */
@@ -993,8 +993,8 @@ krb5_ret_creds_tag(krb5_storage *sp,
     if(ret) goto cleanup;
     /*
      * Runtime detect the what is the higher bits of the bitfield. If
-     * any of the higher bits are set in the input data, its either a
-     * new ticket flag (and this code need to be removed), or its a
+     * any of the higher bits are set in the input data, it's either a
+     * new ticket flag (and this code need to be removed), or it's a
      * MIT cache (or new Heimdal cache), lets change it to our current
      * format.
      */

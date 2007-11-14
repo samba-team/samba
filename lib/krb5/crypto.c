@@ -184,7 +184,7 @@ krb5_DES_schedule(krb5_context context,
 #ifdef ENABLE_AFS_STRING_TO_KEY
 
 /* This defines the Andrew string_to_key function.  It accepts a password
- * string as input and converts its via a one-way encryption algorithm to a DES
+ * string as input and converts it via a one-way encryption algorithm to a DES
  * encryption key.  It is compatible with the original Andrew authentication
  * service password database.
  */
