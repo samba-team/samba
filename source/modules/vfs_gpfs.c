@@ -236,7 +236,7 @@ static NTSTATUS gpfsacl_get_nt_acl_common(files_struct *fsp,
 	result = gpfs_get_nfs4_acl(fsp->fsp_name, &pacl);
 
 	if (result == 0)
-		return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+		return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
