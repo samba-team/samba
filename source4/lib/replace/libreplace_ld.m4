@@ -67,6 +67,7 @@ case "$host_os" in
 		PICFLAG="-KPIC"
 		;;
 	*darwin*)
+		PICFLAG="-fno-common"
 		;;
 esac
 AC_SUBST(PICFLAG)
@@ -166,7 +167,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*darwin*)
-			SONAMEFLAG="-install_name "
+			SONAMEFLAG="-compatibility_version "
 			;;
 		*aix*)
 			# Not supported
