@@ -246,6 +246,10 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			# Not supported
 			SONAMEFLAG="#"
 			;;
+		*aix*)
+			# Not supported
+			SONAMEFLAG="#"
+			;;
 		esac
 ])
 
