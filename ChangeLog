@@ -1,4 +1,30 @@
+2007-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Should pass different key usage constants
+	depending on whether or not optional sub-session key was passed by
+	the client for the check of authorization data. The constant is
+	used to derive "specific key" and its values are specified in
+	7.5.1 of RFC4120.
+	
+	Patch from Andy Polyakov.
+
+	* kdc/krb5tgs.c: Don't send auth data in referrals, microsoft
+	clients have started to not like that. Thanks to Andy Polyakov for
+	excellent research.
+
+2007-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/creds.c: use krb5_data_cmp
+
+	* lib/krb5/acache.c: use krb5_free_cred_contents
+
+	* lib/krb5/test_renew.c: use krb5_free_cred_contents
+	
 2007-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acl.c: doxygen documentation
+
+	* lib/krb5/addr_families.c: doxygen documentation
 
 	* doc: add doxygen
 
