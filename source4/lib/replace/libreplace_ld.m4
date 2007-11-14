@@ -111,7 +111,7 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 			fi
 			;;
 		*darwin*)
-			SHLD_FLAGS="-dynamiclib"
+			SHLD_FLAGS="-bundle -flat_namespace -undefined suppress -Wl,-search_paths_first"
 			;;
 	esac
 
