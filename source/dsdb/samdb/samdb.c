@@ -1521,15 +1521,16 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	if (ret != LDB_SUCCESS) {
-		*errstring = talloc_asprintf(mem_ctx, "Error searching for parent domain of %s: %s",
-					      ldb_dn_get_linearized(sdn),
-					      ldb_errstring(ldb));
+		*errstring = talloc_asprintf(mem_ctx, "Error searching for parent domain of %s, failed searching for %s: %s",
+					     ldb_dn_get_linearized(dn),
+					     ldb_dn_get_linearized(sdn),
+					     ldb_errstring(ldb));
 		talloc_free(local_ctx);
 		return ret;
 	}
 	if (res->count != 1) {
 		*errstring = talloc_asprintf(mem_ctx, "Invalid dn (%s), not child of a domain object",
-					     ldb_dn_get_linearized(sdn));
+					     ldb_dn_get_linearized(dn));
 		talloc_free(local_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}

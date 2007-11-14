@@ -475,7 +475,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	/* build the new msg */
 	msg2 = ldb_msg_copy(mem_ctx, msg);
 	if (!msg2) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: ldb_msg_copy failed!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: ldb_msg_copy failed!\n");
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -523,7 +523,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	ret = samdb_search_for_parent_domain(module->ldb, mem_ctx, msg2->dn, &dom_dn, &errstr);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(module->ldb,
-				       "samldb_fill_group_object: %s", errstr);
+				       "samldb_fill_user_or_computer_object: %s", errstr);
 		return ret;
 	}
 
