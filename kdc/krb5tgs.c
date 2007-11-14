@@ -1166,8 +1166,10 @@ tgs_parse_request(krb5_context context,
     }
 
     if (b->enc_authorization_data) {
+	unsigned usage = KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY;
 	krb5_keyblock *subkey;
 	krb5_data ad;
+
 	ret = krb5_auth_con_getremotesubkey(context,
 					    ac,
 					    &subkey);
@@ -1178,6 +1180,7 @@ tgs_parse_request(krb5_context context,
 	    goto out;
 	}
 	if(subkey == NULL){
+	    usage = KRB5_KU_TGS_REQ_AUTH_DAT_SESSION;
 	    ret = krb5_auth_con_getkey(context, ac, &subkey);
 	    if(ret) {
 		krb5_auth_con_free(context, ac);
@@ -1202,7 +1205,7 @@ tgs_parse_request(krb5_context context,
 	}
 	ret = krb5_decrypt_EncryptedData (context,
 					  crypto,
-					  KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
+					  usage,
 					  b->enc_authorization_data,
 					  &ad);
 	krb5_crypto_destroy(context, crypto);
