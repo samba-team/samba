@@ -1420,7 +1420,7 @@ static void init_printer_values(service *pService)
 static void init_globals(bool first_time_only)
 {
 	static bool done_init = False;
-	pstring s;
+	char *s = NULL;
 
         /* If requested to initialize only once and we've already done it... */
         if (first_time_only && done_init) {
@@ -1483,23 +1483,29 @@ static void init_globals(bool first_time_only)
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
-	
+
 	set_global_myname(myhostname());
 	string_set(&Globals.szNetbiosName,global_myname());
 
 	set_global_myworkgroup(WORKGROUP);
 	string_set(&Globals.szWorkgroup, lp_workgroup());
-	
+
 	string_set(&Globals.szPasswdProgram, "");
 	string_set(&Globals.szPidDir, dyn_PIDDIR);
 	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
-	pstrcpy(s, "Samba ");
-	pstrcat(s, SAMBA_VERSION_STRING);
+
+	if (asprintf(&s, "Samba %s", SAMBA_VERSION_STRING) < 0) {
+		smb_panic("init_globals: ENOMEM");
+	}
 	string_set(&Globals.szServerString, s);
-	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
-		 DEFAULT_MINOR_VERSION);
+	SAFE_FREE(s);
+	if (asprintf(&s, "%d.%d", DEFAULT_MAJOR_VERSION,
+			DEFAULT_MINOR_VERSION) < 0) {
+		smb_panic("init_globals: ENOMEM");
+	}
 	string_set(&Globals.szAnnounceVersion, s);
+	SAFE_FREE(s);
 #ifdef DEVELOPER
 	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
 #endif
@@ -1693,11 +1699,13 @@ static void init_globals(bool first_time_only)
 	Globals.bEnablePrivileges = True;
 	Globals.bHostMSDfs        = True;
 	Globals.bASUSupport       = False;
-	
+
 	/* User defined shares. */
-	pstrcpy(s, dyn_STATEDIR());
-	pstrcat(s, "/usershares");
+	if (asprintf(&s, "%s/usershares", dyn_STATEDIR()) < 0) {
+		smb_panic("init_globals: ENOMEM");
+	}
 	string_set(&Globals.szUsersharePath, s);
+	SAFE_FREE(s);
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
@@ -2649,15 +2657,14 @@ static bool hash_a_service(const char *name, int idx)
 }
 
 /***************************************************************************
- Add a new home service, with the specified home directory, defaults coming 
+ Add a new home service, with the specified home directory, defaults coming
  from service ifrom.
 ***************************************************************************/
 
-bool lp_add_home(const char *pszHomename, int iDefaultService, 
+bool lp_add_home(const char *pszHomename, int iDefaultService,
 		 const char *user, const char *pszHomedir)
 {
 	int i;
-	pstring newHomedir;
 
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
@@ -2666,15 +2673,16 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
-		pstrcpy(newHomedir, pszHomedir);
-		string_set(&ServicePtrs[i]->szPath, newHomedir);
-	} 
+		string_set(&ServicePtrs[i]->szPath, pszHomedir);
+	}
 
 	if (!(*(ServicePtrs[i]->comment))) {
-		pstring comment;
-		slprintf(comment, sizeof(comment) - 1,
-			 "Home directory of %s", user);
+		char *comment = NULL;
+		if (asprintf(&comment, "Home directory of %s", user) < 0) {
+			return false;
+		}
 		string_set(&ServicePtrs[i]->comment, comment);
+		SAFE_FREE(comment);
 	}
 
 	/* set the browseable flag from the global default */
@@ -2685,7 +2693,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, ServicePtrs[i]->szPath ));
-	
+
 	return (True);
 }
 
@@ -2708,14 +2716,16 @@ int lp_add_service(const char *pszService, int iDefaultService)
 
 static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 {
-	pstring comment;
+	char *comment = NULL;
 	int i = add_a_service(&sDefault, ipc_name);
 
 	if (i < 0)
 		return (False);
 
-	slprintf(comment, sizeof(comment) - 1,
-		 "IPC Service (%s)", Globals.szServerString);
+	if (asprintf(&comment, "IPC Service (%s)",
+				Globals.szServerString) < 0) {
+		return (False);
+	}
 
 	string_set(&ServicePtrs[i]->szPath, tmpdir());
 	string_set(&ServicePtrs[i]->szUsername, "");
@@ -2731,6 +2741,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 
 	DEBUG(3, ("adding IPC service\n"));
 
+	SAFE_FREE(comment);
 	return (True);
 }
 
@@ -3391,7 +3402,6 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	uint32 size;
 	uint32 num_values = 0;
 	uint8 *data_p;
-	pstring valname;
 	char * valstr;
 	struct registry_value *value = NULL;
 
@@ -3408,7 +3418,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	/* reg_tdb is from now on used as talloc ctx.
 	 * freeing it closes the tdb (if refcount is 0) */
 
-	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX, 
+	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX,
 				 KEY_SMBCONF, GLOBAL_NAME);
 	normalize_dbkey(keystr);
 
@@ -3431,6 +3441,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 
 	/* unpack the values */
 	for (i=0; i < num_values; i++) {
+		fstring valname;
 		type = REG_NONE;
 		size = 0;
 		data_p = NULL;
@@ -3447,7 +3458,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		DEBUG(10, ("process_registry_globals: got value '%s'\n",
 			   valname));
 		if (size && data_p) {
-			err = registry_pull_value(reg_tdb, 
+			err = registry_pull_value(reg_tdb,
 						  &value,
 						  type,
 						  data_p,
@@ -3459,7 +3470,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 			}
 			switch(type) {
 			case REG_DWORD:
-				valstr = talloc_asprintf(reg_tdb, "%d", 
+				valstr = talloc_asprintf(reg_tdb, "%d",
 							 value->v.dword);
 				pfunc(valname, valstr);
 				break;
@@ -3624,19 +3635,20 @@ bool lp_file_list_changed(void)
 			DEBUGADD(6, ("regdb seqnum changed: old = %d, new = %d\n",
 				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
 			TALLOC_FREE(reg_tdb);
-			return True;
+			return true;
 		}
 	}
 
 	while (f) {
-		pstring n2;
+		char *n2 = NULL;
 		time_t mod_time;
 
-		pstrcpy(n2, f->name);
-		standard_sub_basic( get_current_username(),
+		n2 = alloc_sub_basic(get_current_username(),
 				    current_user_info.domain,
-				    n2, sizeof(n2) );
-
+				    f->name);
+		if (!n2) {
+			return false;
+		}
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
 
@@ -3648,9 +3660,12 @@ bool lp_file_list_changed(void)
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
 			SAFE_FREE(f->subfname);
-			f->subfname = SMB_STRDUP(n2);
-			return (True);
+			f->subfname = n2; /* Passing ownership of
+					     return from alloc_sub_basic
+					     above. */
+			return true;
 		}
+		SAFE_FREE(n2);
 		f = f->next;
 	}
 	return (False);
@@ -3665,16 +3680,14 @@ bool lp_file_list_changed(void)
 static bool handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret;
-	pstring netbios_name;
-
-	pstrcpy(netbios_name, pszParmValue);
-
-	standard_sub_basic(get_current_username(), current_user_info.domain,
-			   netbios_name, sizeof(netbios_name));
+	char *netbios_name = alloc_sub_basic(get_current_username(),
+					current_user_info.domain,
+					pszParmValue);
 
 	ret = set_global_myname(netbios_name);
+	SAFE_FREE(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
-	
+
 	DEBUG(4, ("handle_netbios_name: set global_myname to: %s\n",
 	       global_myname()));
 
@@ -3725,33 +3738,36 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
-	pstring fname;
-	pstrcpy(fname, pszParmValue);
+	char *fname;
 
-	if (strequal(fname, INCLUDE_REGISTRY_NAME)) {
+	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
 		if (bInGlobalSection) {
 			return process_registry_globals(do_parameter);
 		}
 		else {
 			DEBUG(1, ("\"include = registry\" only effective "
 				  "in %s section\n", GLOBAL_NAME));
-			return False;
+			return false;
 		}
 	}
 
-	standard_sub_basic(get_current_username(), current_user_info.domain,
-			   fname,sizeof(fname));
+	fname = alloc_sub_basic(get_current_username(),
+				current_user_info.domain,
+				pszParmValue);
 
 	add_to_file_list(pszParmValue, fname);
 
 	string_set(ptr, fname);
 
-	if (file_exist(fname, NULL))
-		return (pm_process(fname, do_section, do_parameter));
+	if (file_exist(fname, NULL)) {
+		bool ret = pm_process(fname, do_section, do_parameter);
+		SAFE_FREE(fname);
+		return ret;
+	}
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
-
-	return (False);
+	SAFE_FREE(fname);
+	return false;
 }
 
 /***************************************************************************
@@ -3879,11 +3895,8 @@ static bool handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 
 static bool handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
 {
-	pstring pszParmValue;
-
-	pstrcpy(pszParmValue, pszParmValueIn);
 	string_set(ptr, pszParmValueIn);
-	return debug_parse_levels( pszParmValue );
+	return debug_parse_levels(pszParmValueIn);
 }
 
 /***************************************************************************
@@ -4018,7 +4031,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	int parmnum, i, slen;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
-	pstring param_key;
+	char *param_key = NULL;
 	char *sep;
 	param_opt_struct *paramo, *data;
 	bool not_added;
@@ -4027,14 +4040,23 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	if (parmnum < 0) {
 		if ((sep=strchr(pszParmName, ':')) != NULL) {
+			TALLOC_CTX *frame = talloc_stackframe();
+
 			*sep = '\0';
-			ZERO_STRUCT(param_key);
-			pstr_sprintf(param_key, "%s:", pszParmName);
+			param_key = talloc_asprintf(frame, "%s:", pszParmName);
+			if (!param_key) {
+				TALLOC_FREE(frame);
+				return false;
+			}
 			slen = strlen(param_key);
-			pstrcat(param_key, sep+1);
+			param_key = talloc_asprintf_append(param_key, sep+1);
+			if (!param_key) {
+				TALLOC_FREE(frame);
+				return false;
+			}
 			trim_char(param_key+slen, ' ', ' ');
 			not_added = True;
-			data = (snum < 0) ? Globals.param_opt : 
+			data = (snum < 0) ? Globals.param_opt :
 				ServicePtrs[snum]->param_opt;
 			/* Traverse destination */
 			while (data) {
@@ -4061,6 +4083,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			}
 
 			*sep = ':';
+			TALLOC_FREE(frame);
 			return (True);
 		}
 		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
@@ -4955,14 +4978,14 @@ static bool check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
  Parse the contents of a usershare file.
 ***************************************************************************/
 
-enum usershare_err parse_usershare_file(TALLOC_CTX *ctx, 
+enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			SMB_STRUCT_STAT *psbuf,
 			const char *servicename,
 			int snum,
 			char **lines,
 			int numlines,
-			pstring sharepath,
-			pstring comment,
+			char **pp_sharepath,
+			char **pp_comment,
 			SEC_DESC **ppsd,
 			bool *pallow_guest)
 {
@@ -4971,6 +4994,11 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	int us_vers;
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
+	char *sharepath = NULL;
+	char *comment = NULL;
+
+	*pp_sharepath = NULL;
+	*pp_comment = NULL;
 
 	*pallow_guest = False;
 
@@ -4993,14 +5021,20 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		return USERSHARE_MALFORMED_PATH;
 	}
 
-	pstrcpy(sharepath, &lines[1][5]);
+	sharepath = talloc_strdup(ctx, &lines[1][5]);
+	if (!sharepath) {
+		return USERSHARE_POSIX_ERR;
+	}
 	trim_string(sharepath, " ", " ");
 
 	if (strncmp(lines[2], "comment=", 8) != 0) {
 		return USERSHARE_MALFORMED_COMMENT_DEF;
 	}
 
-	pstrcpy(comment, &lines[2][8]);
+	comment = talloc_strdup(ctx, &lines[2][8]);
+	if (!comment) {
+		return USERSHARE_POSIX_ERR;
+	}
 	trim_string(comment, " ", " ");
 	trim_char(comment, '"', '"');
 
@@ -5023,6 +5057,8 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 
 	if (snum != -1 && (strcmp(sharepath, ServicePtrs[snum]->szPath) == 0)) {
 		/* Path didn't change, no checks needed. */
+		*pp_sharepath = sharepath;
+		*pp_comment = comment;
 		return USERSHARE_OK;
 	}
 
@@ -5107,6 +5143,8 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		}
 	}
 
+	*pp_sharepath = sharepath;
+	*pp_comment = comment;
 	return USERSHARE_OK;
 }
 
@@ -5123,9 +5161,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 {
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT lsbuf;
-	pstring fname;
-	pstring sharepath;
-	pstring comment;
+	char *fname = NULL;
+	char *sharepath = NULL;
+	char *comment = NULL;
 	fstring service_name;
 	char **lines = NULL;
 	int numlines = 0;
@@ -5145,9 +5183,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	fstrcpy(service_name, file_name);
 
-	pstrcpy(fname, dir_name);
-	pstrcat(fname, "/");
-	pstrcat(fname, file_name);
+	if (asprintf(&fname, "%s/%s", dir_name, file_name) < 0) {
+	}
 
 	/* Minimize the race condition by doing an lstat before we
 	   open and fstat. Ensure this isn't a symlink link. */
@@ -5155,12 +5192,14 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (sys_lstat(fname, &lsbuf) != 0) {
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
+		SAFE_FREE(fname);
 		return -1;
 	}
 
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
 	if (!check_usershare_stat(fname, &lsbuf)) {
+		SAFE_FREE(fname);
 		return -1;
 	}
 
@@ -5173,6 +5212,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		DEBUG(10,("process_usershare_file: service %s not changed.\n",
 			service_name ));
 		ServicePtrs[iService]->usershare = USERSHARE_VALID;
+		SAFE_FREE(fname);
 		return iService;
 	}
 
@@ -5186,6 +5226,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (fd == -1) {
 		DEBUG(0,("process_usershare_file: unable to open %s. %s\n",
 			fname, strerror(errno) ));
+		SAFE_FREE(fname);
 		return -1;
 	}
 
@@ -5194,6 +5235,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
 			fname, strerror(errno) ));
+		SAFE_FREE(fname);
 		return -1;
 	}
 
@@ -5202,12 +5244,14 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s is a different file from lstat. "
 			"Symlink spoofing going on ?\n", fname ));
+		SAFE_FREE(fname);
 		return -1;
 	}
 
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
 	if (!check_usershare_stat(fname, &sbuf)) {
+		SAFE_FREE(fname);
 		return -1;
 	}
 
@@ -5217,8 +5261,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (lines == NULL) {
 		DEBUG(0,("process_usershare_file: loading file %s owned by %u failed.\n",
 			fname, (unsigned int)sbuf.st_uid ));
+		SAFE_FREE(fname);
 		return -1;
 	}
+
+	SAFE_FREE(fname);
 
 	/* Should we allow printers to be shared... ? */
 	ctx = talloc_init("usershare_sd_xctx");
@@ -5228,8 +5275,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	if (parse_usershare_file(ctx, &sbuf, service_name,
-			iService, lines, numlines, sharepath,
-			comment, &psd, &guest_ok) != USERSHARE_OK) {
+			iService, lines, numlines, &sharepath,
+			&comment, &psd, &guest_ok) != USERSHARE_OK) {
 		talloc_destroy(ctx);
 		file_lines_free(lines);
 		return -1;
@@ -5265,8 +5312,6 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return -1;
 	}
 
-	talloc_destroy(ctx);
-
 	/* If from a template it may be marked invalid. */
 	ServicePtrs[iService]->valid = True;
 
@@ -5283,6 +5328,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	string_set(&ServicePtrs[iService]->szPath, sharepath);
 	string_set(&ServicePtrs[iService]->comment, comment);
 
+	talloc_destroy(ctx);
+
 	return iService;
 }
 
@@ -5294,22 +5341,27 @@ static bool usershare_exists(int iService, time_t *last_mod)
 {
 	SMB_STRUCT_STAT lsbuf;
 	const char *usersharepath = Globals.szUsersharePath;
-	pstring fname;
+	char *fname;
 
-	pstrcpy(fname, usersharepath);
-	pstrcat(fname, "/");
-	pstrcat(fname, ServicePtrs[iService]->szService);
+	if (asprintf(&fname, "%s/%s",
+				usersharepath,
+				ServicePtrs[iService]->szService) < 0) {
+		return false;
+	}
 
 	if (sys_lstat(fname, &lsbuf) != 0) {
-		return False;
+		SAFE_FREE(fname);
+		return false;
 	}
 
 	if (!S_ISREG(lsbuf.st_mode)) {
-		return False;
+		SAFE_FREE(fname);
+		return false;
 	}
 
+	SAFE_FREE(fname);
 	*last_mod = lsbuf.st_mtime;
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -5596,21 +5648,23 @@ bool lp_load(const char *pszFname,
 	     bool add_ipc,
              bool initialize_globals)
 {
-	pstring n2;
+	char *n2 = NULL;
 	bool bRetval;
 	param_opt_struct *data, *pdata;
 
-	pstrcpy(n2, pszFname);
-	
-	standard_sub_basic( get_current_username(), current_user_info.domain,
-			    n2,sizeof(n2) );
+	n2 = alloc_sub_basic(get_current_username(),
+				current_user_info.domain,
+				pszFname);
+	if (!n2) {
+		smb_panic("lp_load: out of memory");
+	}
 
 	add_to_file_list(pszFname, n2);
 
 	bRetval = False;
 
 	DEBUG(3, ("lp_load: refreshing parameters\n"));
-	
+
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
 
@@ -5634,16 +5688,19 @@ bool lp_load(const char *pszFname,
 		}
 		Globals.param_opt = NULL;
 	}
-	
+
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
 	bRetval = pm_process(n2, do_section, do_parameter);
+	SAFE_FREE(n2);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
-	if (bRetval)
-		if (iServiceIndex >= 0)
+	if (bRetval) {
+		if (iServiceIndex >= 0) {
 			bRetval = service_ok(iServiceIndex);
+		}
+	}
 
 	lp_add_auto_services(lp_auto_services());
 
@@ -5651,8 +5708,9 @@ bool lp_load(const char *pszFname,
 		/* When 'restrict anonymous = 2' guest connections to ipc$
 		   are denied */
 		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
-		if ( lp_enable_asu_support() )
-			lp_add_ipc("ADMIN$", False);
+		if ( lp_enable_asu_support() ) {
+			lp_add_ipc("ADMIN$", false);
+		}
 	}
 
 	set_server_role();

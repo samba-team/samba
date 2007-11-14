@@ -298,8 +298,8 @@ static int info_fn(struct file_list *fl, void *priv)
 	int numlines = 0;
 	SEC_DESC *psd = NULL;
 	pstring basepath;
-	pstring sharepath;
-	pstring comment;
+	char *sharepath = NULL;
+	char *comment = NULL;
 	pstring acl_str;
 	int num_aces;
 	char sep_str[2];
@@ -349,8 +349,8 @@ static int info_fn(struct file_list *fl, void *priv)
 
 	/* Ensure it's well formed. */
 	us_err = parse_usershare_file(ctx, &sbuf, fl->pathname, -1, lines, numlines,
-				sharepath,
-				comment,
+				&sharepath,
+				&comment,
 				&psd,
 				&guest_ok);
 
