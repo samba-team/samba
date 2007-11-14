@@ -268,29 +268,24 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	return True;
 }
 
-NTSTATUS smb_get_nt_acl_nfs4(files_struct *fsp,
+static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uint32 security_info,
 	SEC_DESC **ppdesc, SMB4ACL_T *acl)
 {
 	int	good_aces = 0;
-	SMB_STRUCT_STAT sbuf;
 	DOM_SID sid_owner, sid_group;
 	size_t sd_size = 0;
 	SEC_ACE *nt_ace_list = NULL;
 	SEC_ACL *psa = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 
-	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
-
 	if (acl==NULL || smb_get_naces(acl)==0)
 		return NT_STATUS_ACCESS_DENIED; /* special because we
 						 * shouldn't alloc 0 for
 						 * win */
 
-	if (smbacl4_fGetFileOwner(fsp, &sbuf))
-		return map_nt_error_from_unix(errno);
-	uid_to_sid(&sid_owner, sbuf.st_uid);
-	gid_to_sid(&sid_group, sbuf.st_gid);
+	uid_to_sid(&sid_owner, sbuf->st_uid);
+	gid_to_sid(&sid_group, sbuf->st_gid);
 
 	if (smbacl4_nfs42win(mem_ctx, acl, &sid_owner, &sid_group, &nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
@@ -313,10 +308,41 @@ NTSTATUS smb_get_nt_acl_nfs4(files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(10, ("smb_get_nt_acl_nfs4 successfully exited with sd_size %d\n",
+	DEBUG(10, ("smb_get_nt_acl_nfs4_common successfully exited with sd_size %d\n",
 		   sec_desc_size(*ppdesc)));
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
+			       uint32 security_info,
+			       SEC_DESC **ppdesc, SMB4ACL_T *acl)
+{
+	SMB_STRUCT_STAT sbuf;
+
+	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
+
+	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	return smb_get_nt_acl_nfs4_common(&sbuf, security_info, ppdesc, acl);
+}
+
+NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
+			      const char *name,
+			      uint32 security_info,
+			      SEC_DESC **ppdesc, SMB4ACL_T *acl)
+{
+	SMB_STRUCT_STAT sbuf;
+
+	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", name));
+
+	if (smbacl4_GetFileOwner(conn, name, &sbuf)) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	return smb_get_nt_acl_nfs4_common(&sbuf, security_info, ppdesc, acl);
 }
 
 enum smbacl4_mode_enum {e_simple=0, e_special=1};

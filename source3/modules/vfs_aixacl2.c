@@ -175,7 +175,7 @@ static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;
 
-	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 }
 
 NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,

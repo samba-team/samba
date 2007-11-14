@@ -92,7 +92,7 @@ static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 			return NT_STATUS_NO_MEMORY;
 	}
 
-	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 }
 
 /* call-back function processing the NT acl -> ZFS acl using NFSv4 conv. */
