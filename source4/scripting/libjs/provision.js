@@ -990,6 +990,7 @@ function provision_guess()
 					"kludge_acl",
 					"operational",
 					"subtree_rename",
+					"subtree_delete",
 					"linked_attributes",
 					"show_deleted",
 					"partition");
