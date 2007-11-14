@@ -372,13 +372,6 @@ __EOD__
 		}
 	}
 
-	if ($self->{config}->{SONAMEFLAG} ne "#" and 
-		defined($ctx->{LIBRARY_SONAME}) and 
-		$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
-		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
-	}
-
 	if (defined($ctx->{LIBRARY_SONAME})) {
 		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
