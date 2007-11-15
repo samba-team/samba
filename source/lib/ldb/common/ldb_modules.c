@@ -321,28 +321,29 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			return -1;
 		}
 
-		ret = ldb_search(ldb, mods_dn, LDB_SCOPE_BASE, "", attrs, &res);
+		ret = ldb_search_exp_fmt(ldb, mods_dn, &res, mods_dn, LDB_SCOPE_BASE, attrs, "@LIST=*");
 		
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 		} else if (ret != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out\n", ldb_errstring(ldb));
 			talloc_free(mem_ctx);
-			return -1;
+			return ret;
 		} else {
-			talloc_steal(mods_dn, res);
-			if (res->count == 0 || res->msgs[0]->num_elements == 0) {
+			const char *module_list;
+			if (res->count == 0) {
 				ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
+			} else if (res->count > 1) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
+				talloc_free(mem_ctx);
+				return -1;
 			} else {
-				if (res->count > 1) {
-					ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
-					talloc_free(mem_ctx);
-					return -1;
+				module_list = ldb_msg_find_attr_as_string(res->msgs[0], "@LIST", NULL);
+				if (!module_list) {
+					ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 				}
-				
 				modules = ldb_modules_list_from_string(ldb, mem_ctx,
-								       (const char *)res->msgs[0]->elements[0].values[0].data);
-				
+							       module_list);
 			}
 		}
 
