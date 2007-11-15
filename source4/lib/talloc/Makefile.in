@@ -18,7 +18,6 @@ PICFLAG = @PICFLAG@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 SHLIBEXT = @SHLIBEXT@
 SHLD_FLAGS = @SHLD_FLAGS@
-SONAMEFLAG = @SONAMEFLAG@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
 
@@ -45,7 +44,7 @@ libtalloc.a: $(LIBOBJ)
 	@-ranlib $@
 
 $(SOLIB): $(LIBOBJ)
-	$(CC) $(SHLD_FLAGS) -o $@ $(LIBOBJ) $(SONAMEFLAG)$(SONAME)
+	$(CC) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
 
 install: all 
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
