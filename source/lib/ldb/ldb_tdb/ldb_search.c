@@ -547,24 +547,6 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 				       ldb_dn_get_linearized(req->op.search.base));
 		ret = LDB_ERR_INVALID_DN_SYNTAX;
 
-	} else if (ldb_dn_is_null(req->op.search.base) == true) {
-
-		/* Check what we should do with a NULL dn */
-		switch (req->op.search.scope) {
-		case LDB_SCOPE_BASE:
-			ldb_asprintf_errstring(module->ldb, 
-					       "NULL Base DN invalid for a base search");
-			ret = LDB_ERR_INVALID_DN_SYNTAX;
-		case LDB_SCOPE_ONELEVEL:
-			ldb_asprintf_errstring(module->ldb, 
-					       "NULL Base DN invalid for a one-level search");
-			ret = LDB_ERR_INVALID_DN_SYNTAX;	
-		case LDB_SCOPE_SUBTREE:
-		default:
-			/* We accept subtree searches from a NULL base DN, ie over the whole DB */
-			ret = LDB_SUCCESS;
-		}
-
 	} else if (ltdb->check_base) {
 		/* This database has been marked as 'checkBaseOnSearch', so do a spot check of the base dn */
 		ret = ltdb_search_base(module, req->op.search.base);
