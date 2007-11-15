@@ -72,8 +72,9 @@ bool set_local_machine_name(const char *local_name, bool perm)
 		SAFE_FREE(tmp_local_machine);
 		return false;
 	}
+	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(local_machine,tmp_local_machine,
-			SAFE_NETBIOS_CHARS,len);
+			SAFE_NETBIOS_CHARS,len+1);
 	strlower_m(local_machine);
 	SAFE_FREE(tmp_local_machine);
 
@@ -123,8 +124,9 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 		return false;
 	}
 
+	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(remote_machine,tmp_remote_machine,
-			SAFE_NETBIOS_CHARS,len);
+			SAFE_NETBIOS_CHARS,len+1);
 	strlower_m(remote_machine);
 	SAFE_FREE(tmp_remote_machine);
 
@@ -185,9 +187,10 @@ void sub_set_smb_name(const char *name)
 		return;
 	}
 
+	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(smb_user_name, tmp,
 			SAFE_NETBIOS_CHARS,
-			len);
+			len+1);
 
 	SAFE_FREE(tmp);
 
