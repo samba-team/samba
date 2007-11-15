@@ -307,7 +307,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	options = talloc(ltdb->cache, struct ldb_message);
 	if (options == NULL) goto failed;
 
-	options_dn = ldb_dn_new(module, module->ldb, LTDB_OPTIONS);
+	options_dn = ldb_dn_new(options, module->ldb, LTDB_OPTIONS);
 	if (options_dn == NULL) goto failed;
 
 	r= ltdb_search_dn1(module, options_dn, options);
@@ -315,7 +315,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 	
-	/* possibly initialise the baseinfo */
+	/* set flag for checking base DN on searches */
 	if (r == LDB_SUCCESS) {
 		ltdb->check_base = ldb_msg_find_attr_as_bool(options, LTDB_CHECK_BASE, false);
 	} else {
@@ -350,7 +350,6 @@ int ltdb_cache_load(struct ldb_module *module)
 
 done:
 	talloc_free(options);
-	talloc_free(options_dn);
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
@@ -358,7 +357,6 @@ done:
 
 failed:
 	talloc_free(options);
-	talloc_free(options_dn);
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
