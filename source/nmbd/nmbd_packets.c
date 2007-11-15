@@ -963,6 +963,12 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	nmb->answers->ttl      = ttl;
   
 	if (data && len) {
+		if (len < 0 || len > sizeof(nmb->answers->rdata)) {
+			DEBUG(5,("reply_netbios_packet: "
+				"invalid packet len (%d)\n",
+				len ));
+			return;
+		}
 		nmb->answers->rdlength = len;
 		memcpy(nmb->answers->rdata, data, len);
 	}
