@@ -60,12 +60,15 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PkgConfig($key, $OUTPUT) if $key->{TYPE} eq "LIBRARY" 
 		                    and defined($key->{VERSION});
-	$mkenv->SharedLibrary($key) if grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->SharedLibrary($key) if $key->{TYPE} eq "LIBRARY" and
+					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->SharedModule($key) if $key->{TYPE} eq "MODULE" and
+					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
-								 defined($key->{PUBLIC_PROTO_HEADER});
+					 defined($key->{PUBLIC_PROTO_HEADER});
 }
 
 $mkenv->write("Makefile");
