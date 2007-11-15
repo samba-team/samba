@@ -19,7 +19,6 @@ EXEEXT = @EXEEXT@
 SHLD_FLAGS = @SHLD_FLAGS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PICFLAG = @PICFLAG@
-SONAMEFLAG = @SONAMEFLAG@
 SHLIBEXT = @SHLIBEXT@
 
 .PHONY: test
@@ -67,14 +66,14 @@ install: all
 libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
 
-libtdb.(SHLIBEXT): $(SOLIB)
+libtdb.$(SHLIBEXT): $(SOLIB)
 	ln -s $< $@
 
 $(SONAME): $(SOLIB)
 	ln -s $< $@
 
 $(SOLIB): $(TDB_OBJ)
-	$(CC) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) $(SONAMEFLAG)$(SONAME) 
+	$(CC) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(SONAME)
 
 TDB_LIB = libtdb.a
 
