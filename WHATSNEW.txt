@@ -1,11 +1,44 @@
+                   ==============================
+                   Release Notes for Samba 3.0.27
+                            Nov 15, 2007
+                   ==============================
+
+Samba 3.0.27 is a security release in order to address the following
+defects:
+
+  o CVS-2007-4572
+    Stack buffer overflow in nmbd's logon request processing.
+
+  o CVE-2007-5398
+    Remote code execution in Samba's WINS server daemon (nmbd) 
+    when processing name registration followed name query requests.
+
+The original security announcement for this and past advisories can 
+be found http://www.samba.org/samba/security/
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.26a
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix for CVS-2007-4572.
+    * Fix for CVE-2007-5398.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Additional fixes for CVS-2007-4572.
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
                    ===============================
                    Release Notes for Samba 3.0.26a
                              Sep 11, 2007
                    ===============================
-
-This is a bug fix release of the Samba 3.0.26 code base and is the 
-version that servers should be run for for all current bug Samba 3.0.x
-fixes.  
 
 Major bug fixes included in Samba 3.0.26a are:
 
