@@ -1007,6 +1007,7 @@ int main(int argc, char **argv, char **envp)
 	};
 	poptContext pc;
 	int opt;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
@@ -1232,8 +1233,9 @@ int main(int argc, char **argv, char **envp)
 
 	/* Loop waiting for requests */
 
+	TALLOC_FREE(frame);
 	while (1) {
-		TALLOC_CTX *frame = talloc_stackframe();
+		frame = talloc_stackframe();
 		process_loop();
 		TALLOC_FREE(frame);
 	}

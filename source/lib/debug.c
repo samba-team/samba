@@ -29,7 +29,8 @@
  *                    for a terminating null byte.
  */
 
-#define FORMAT_BUFR_MAX ( sizeof( format_bufr ) - 1 )
+#define FORMAT_BUFR_SIZE 1024
+#define FORMAT_BUFR_MAX (FORMAT_BUFR_SIZE - 1)
 
 /* -------------------------------------------------------------------------- **
  * This module implements Samba's debugging utility.
@@ -78,16 +79,16 @@
  */
 
 XFILE   *dbf        = NULL;
-pstring debugf     = "";
+static char *debugf = NULL;
 bool    debug_warn_unknown_class = True;
 bool    debug_auto_add_unknown_class = True;
 bool    AllowDebugChange = True;
 
-/* 
-   used to check if the user specified a 
-   logfile on the command line 
+/*
+   used to check if the user specified a
+   logfile on the command line
 */
-bool    override_logfile;		
+bool    override_logfile;
 
 
 /*
@@ -137,7 +138,7 @@ static int     debug_count    = 0;
 #ifdef WITH_SYSLOG
 static int     syslog_level   = 0;
 #endif
-static pstring format_bufr    = { '\0' };
+static char *format_bufr = NULL;
 static size_t     format_pos     = 0;
 static bool    log_overflow   = False;
 
@@ -536,6 +537,10 @@ void debug_init(void)
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
 	}
+	format_bufr = SMB_MALLOC(FORMAT_BUFR_SIZE);
+	if (!format_bufr) {
+		smb_panic("debug_init: unable to create buffer");
+	}
 }
 
 void debug_register_msgs(struct messaging_context *msg_ctx)
@@ -583,6 +588,16 @@ void setup_logging(const char *pname, bool interactive)
 #endif
 }
 
+/***************************************************************************
+ Set the logfile name.
+**************************************************************************/
+
+void debug_set_logfile(const char *name)
+{
+	SAFE_FREE(debugf);
+	debugf = SMB_STRDUP(name);
+}
+
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -593,7 +608,7 @@ void setup_logging(const char *pname, bool interactive)
 
 bool reopen_logs( void )
 {
-	pstring fname;
+	char *fname = NULL;
 	mode_t oldumask;
 	XFILE *new_dbf = NULL;
 	XFILE *old_dbf = NULL;
@@ -603,19 +618,27 @@ bool reopen_logs( void )
 		return True;
 
 	oldumask = umask( 022 );
-  
-	pstrcpy(fname, debugf );
-	debugf[0] = '\0';
+
+	fname = debugf;
+	if (!fname) {
+		return false;
+	}
+	debugf = NULL;
 
 	if (lp_loaded()) {
 		char *logfname;
 
 		logfname = lp_logfile();
-		if (*logfname)
-			pstrcpy(fname, logfname);
+		if (*logfname) {
+			SAFE_FREE(fname);
+			fname = SMB_STRDUP(logfname);
+			if (!fname) {
+				return false;
+			}
+		}
 	}
 
-	pstrcpy( debugf, fname );
+	debugf = fname;
 	new_dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
 
 	if (!new_dbf) {
@@ -702,15 +725,18 @@ void check_log_size( void )
 	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
 		(void)reopen_logs();
 		if( dbf && get_file_size( debugf ) > maxlog ) {
-			pstring name;
+			char *name = NULL;
 
-			slprintf( name, sizeof(name)-1, "%s.old", debugf );
-			(void)rename( debugf, name );
-      
+			if (asprintf(&name, "%s.old", debugf ) < 0) {
+				return;
+			}
+			(void)rename(debugf, name);
+
 			if (!reopen_logs()) {
 				/* We failed to reopen a log - continue using the old name. */
 				(void)rename(name, debugf);
 			}
+			SAFE_FREE(name);
 		}
 	}
 
@@ -747,7 +773,7 @@ void check_log_size( void )
 
  int Debug1( const char *format_str, ... )
 {
-	va_list ap;  
+	va_list ap;
 	int old_errno = errno;
 
 	debug_count++;
@@ -762,8 +788,8 @@ void check_log_size( void )
 	}
 
 	/* prevent recursion by checking if reopen_logs() has temporaily
-	   set the debugf string to "" */
-	if( debugf[0] == '\0')
+	   set the debugf string to NULL */
+	if( debugf == NULL)
 		return( 0 );
 
 #ifdef WITH_SYSLOG
@@ -789,29 +815,31 @@ void check_log_size( void )
 		/* map debug levels to syslog() priorities
 		 * note that not all DEBUG(0, ...) calls are
 		 * necessarily errors */
-		static int priority_map[] = { 
+		static int priority_map[] = {
 			LOG_ERR,     /* 0 */
 			LOG_WARNING, /* 1 */
 			LOG_NOTICE,  /* 2 */
 			LOG_INFO,    /* 3 */
 		};
 		int     priority;
-		pstring msgbuf;
+		char *msgbuf = NULL;
 
 		if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) ) || syslog_level < 0)
 			priority = LOG_DEBUG;
 		else
 			priority = priority_map[syslog_level];
 
-		va_start( ap, format_str );
-		vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-		va_end( ap );
+		va_start(ap, format_str);
+		vasprintf(&msgbuf, format_str, ap);
+		va_end(ap);
 
-		msgbuf[255] = '\0';
-		syslog( priority, "%s", msgbuf );
+		if (msgbuf) {
+			syslog(priority, "%s", msgbuf);
+		}
+		SAFE_FREE(msgbuf);
 	}
 #endif
-  
+
 	check_log_size();
 
 #ifdef WITH_SYSLOG
@@ -1018,13 +1046,18 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
  bool dbgtext( const char *format_str, ... )
 {
 	va_list ap;
-	pstring msgbuf;
+	char *msgbuf = NULL;
+	bool ret = true;
 
-	va_start( ap, format_str ); 
-	vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-	va_end( ap );
+	va_start(ap, format_str);
+	vasprintf(&msgbuf, format_str, ap);
+	va_end(ap);
 
-	format_debug_text( msgbuf );
-
-  return( True );
+	if (msgbuf) {
+		format_debug_text(msgbuf);
+	} else {
+		ret = false;
+	}
+	SAFE_FREE(msgbuf);
+	return ret;
 }

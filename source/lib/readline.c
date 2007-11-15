@@ -53,7 +53,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 				char **(completion_fn)(const char *text, int start, int end))
 {
 	fd_set fds;
-	static pstring line;
+	static char *line;
 	struct timeval timeout;
 	int fd = x_fileno(x_stdin);
 	char *ret;
@@ -64,15 +64,22 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 		x_fflush(x_stdout);
 	}
 
+	if (line == NULL) {
+		line = SMB_MALLOC(BUFSIZ);
+		if (!line) {
+			return NULL;
+		}
+	}
+
 	while (1) {
 		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;
 
 		FD_ZERO(&fds);
 		FD_SET(fd,&fds);
-	
+
 		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
-			ret = x_fgets(line, sizeof(line), x_stdin);
+			ret = x_fgets(line, BUFSIZ, x_stdin);
 			return ret;
 		}
 		if (callback)

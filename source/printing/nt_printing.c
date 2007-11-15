@@ -659,18 +659,25 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
  Function to allow filename parsing "the old way".
 ********************************************************************/
 
-static void driver_unix_convert(connection_struct *conn,
-		pstring name,
+static char *driver_unix_convert(connection_struct *conn,
+		const char *old_name,
 		SMB_STRUCT_STAT *pst)
 {
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name = talloc_strdup(ctx, old_name);
 	char *new_name = NULL;
-	unix_format(name);
-	unix_clean_name(name);
-	trim_string(name,"/","/");
-	unix_convert(talloc_tos(),conn, name, False, &new_name, NULL, pst);
-	if (new_name) {
-		pstrcpy(name, new_name);
+
+	if (!name) {
+		return NULL;
 	}
+	unix_format(name);
+	name = unix_clean_name(ctx, name);
+	if (!name) {
+		return NULL;
+	}
+	trim_string(name,"/","/");
+	unix_convert(ctx,conn, name, false, &new_name, NULL, pst);
+	return new_name;
 }
 
 /*******************************************************************
@@ -1149,7 +1156,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
 							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
 							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
-							
+
 							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
 									  fname, *major, *minor,
 									  (*major>>16)&0xffff, *major&0xffff,
@@ -1268,8 +1275,8 @@ the modification date). Otherwise chose the numerically larger version number.
 
 static int file_version_is_newer(connection_struct *conn, fstring new_file, fstring old_file)
 {
-	bool   use_version = True;
-	pstring filepath;
+	bool use_version = true;
+	char *filepath = NULL;
 
 	uint32 new_major;
 	uint32 new_minor;
@@ -1291,9 +1298,10 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	old_create_time = (time_t)0;
 
 	/* Get file version info (if available) for previous file (if it exists) */
-	pstrcpy(filepath, old_file);
-
-	driver_unix_convert(conn,filepath,&stat_buf);
+	filepath = driver_unix_convert(conn,old_file,&stat_buf);
+	if (!filepath) {
+		goto error_exit;
+	}
 
 	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
 				FILE_GENERIC_READ,
@@ -1308,7 +1316,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
 				filepath, errno));
-		return True;
+		return 1;
 
 	} else {
 		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
@@ -1319,8 +1327,10 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
-			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
+			use_version = false;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+				 goto error_exit;
+			}
 			old_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
@@ -1328,8 +1338,10 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	close_file(fsp, NORMAL_CLOSE);
 
 	/* Get file version info (if available) for new file */
-	pstrcpy(filepath, new_file);
-	driver_unix_convert(conn,filepath,&stat_buf);
+	filepath = driver_unix_convert(conn,new_file,&stat_buf);
+	if (!filepath) {
+		goto error_exit;
+	}
 
 	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
 				FILE_GENERIC_READ,
@@ -1355,8 +1367,10 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
-			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
+			use_version = false;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+				goto error_exit;
+			}
 			new_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
@@ -1367,24 +1381,24 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		/* Compare versions and choose the larger version number */
 		if (new_major > old_major ||
 			(new_major == old_major && new_minor > old_minor)) {
-			
+
 			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return True;
+			return 1;
 		}
 		else {
 			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return False;
+			return 0;
 		}
 
 	} else {
 		/* Compare modification time/dates and choose the newest time/date */
 		if (new_create_time > old_create_time) {
 			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return True;
+			return 1;
 		}
 		else {
 			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return False;
+			return 0;
 		}
 	}
 
@@ -1402,7 +1416,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 {
 	int               cversion;
 	NTSTATUS          nt_status;
- 	pstring           driverpath;
+ 	char *driverpath = NULL;
 	DATA_BLOB         null_pw;
 	fstring           res_type;
 	files_struct      *fsp = NULL;
@@ -1455,11 +1469,22 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 
 	/* Open the driver file (Portable Executable format) and determine the
 	 * deriver the cversion. */
-	slprintf(driverpath, sizeof(driverpath)-1, "%s/%s", architecture, driverpath_in);
+	driverpath = talloc_asprintf(talloc_tos(),
+					"%s/%s",
+					architecture,
+					driverpath_in);
+	if (!driverpath) {
+		*perr = WERR_NOMEM;
+		goto error_exit;
+	}
 
-	driver_unix_convert(conn,driverpath,&st);
+	driverpath = driver_unix_convert(conn,driverpath,&st);
+	if (!driverpath) {
+		*perr = WERR_NOMEM;
+		goto error_exit;
+	}
 
-	if ( !vfs_file_exist( conn, driverpath, &st ) ) {
+	if (!vfs_file_exist(conn, driverpath, &st)) {
 		*perr = WERR_BADFILE;
 		goto error_exit;
 	}
@@ -1734,22 +1759,18 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
 	const char *architecture;
-	pstring new_dir;
-	pstring old_name;
-	pstring new_name;
+	char *new_dir = NULL;
+	char *old_name = NULL;
+	char *new_name = NULL;
 	DATA_BLOB null_pw;
 	connection_struct *conn;
 	NTSTATUS nt_status;
-	pstring inbuf;
-	pstring outbuf;
 	fstring res_type;
 	SMB_STRUCT_STAT st;
-	int ver = 0;
 	int i;
 	TALLOC_CTX *ctx = talloc_tos();
+	int ver = 0;
 
-	memset(inbuf, '\0', sizeof(inbuf));
-	memset(outbuf, '\0', sizeof(outbuf));
 	*perr = WERR_OK;
 
 	if (level==3)
@@ -1793,13 +1814,27 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		return WERR_ACCESS_DENIED;
 	}
 
+	/* WE ARE NOW RUNNING AS USER conn->vuid !!!!! */
+
 	/*
 	 * make the directories version and version\driver_name
 	 * under the architecture directory.
 	 */
 	DEBUG(5,("Creating first directory\n"));
-	slprintf(new_dir, sizeof(new_dir)-1, "%s/%d", architecture, driver->cversion);
-	driver_unix_convert(conn,new_dir,&st);
+	new_dir = talloc_asprintf(ctx,
+				"%s/%d",
+				architecture,
+				driver->cversion);
+	if (!new_dir) {
+		*perr = WERR_NOMEM;
+		goto err_exit;
+	}
+	new_dir = driver_unix_convert(conn,new_dir,&st);
+	if (!new_dir) {
+		*perr = WERR_NOMEM;
+		goto err_exit;
+	}
+
 	create_directory(conn, new_dir);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
@@ -1822,10 +1857,29 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	DEBUG(5,("Moving files now !\n"));
 
 	if (driver->driverpath && strlen(driver->driverpath)) {
-		slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->driverpath);	
-		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
+		new_name = talloc_asprintf(ctx,
+					"%s/%s",
+					architecture,
+					driver->driverpath);
+		if (!new_name) {
+			*perr = WERR_NOMEM;
+			goto err_exit;
+		}
+		old_name = talloc_asprintf(ctx,
+					"%s/%s",
+					new_dir,
+					driver->driverpath);
+		if (!old_name) {
+			*perr = WERR_NOMEM;
+			goto err_exit;
+		}
+
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			driver_unix_convert(conn,new_name,&st);
+			new_name = driver_unix_convert(conn,new_name,&st);
+			if (!new_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
 			if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1833,15 +1887,33 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				*perr = WERR_ACCESS_DENIED;
 				ver = -1;
 			}
-		} 
+		}
 	}
 
 	if (driver->datafile && strlen(driver->datafile)) {
 		if (!strequal(driver->datafile, driver->driverpath)) {
-			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->datafile);	
-			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
+			new_name = talloc_asprintf(ctx,
+					"%s/%s",
+					architecture,
+					driver->datafile);
+			if (!new_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
+			old_name = talloc_asprintf(ctx,
+					"%s/%s",
+					new_dir,
+					driver->datafile);
+			if (!old_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(conn,new_name,&st);
+				new_name = driver_unix_convert(conn,new_name,&st);
+				if (!new_name) {
+					*perr = WERR_NOMEM;
+					goto err_exit;
+				}
 				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1856,10 +1928,28 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	if (driver->configfile && strlen(driver->configfile)) {
 		if (!strequal(driver->configfile, driver->driverpath) &&
 			!strequal(driver->configfile, driver->datafile)) {
-			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->configfile);	
-			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
+			new_name = talloc_asprintf(ctx,
+						"%s/%s",
+						architecture,
+						driver->configfile);
+			if (!new_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
+			old_name = talloc_asprintf(ctx,
+						"%s/%s",
+						new_dir,
+						driver->configfile);
+			if (!old_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(conn,new_name,&st);
+				new_name = driver_unix_convert(conn,new_name,&st);
+				if (!new_name) {
+					*perr = WERR_NOMEM;
+					goto err_exit;
+				}
 				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1875,10 +1965,28 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		if (!strequal(driver->helpfile, driver->driverpath) &&
 			!strequal(driver->helpfile, driver->datafile) &&
 			!strequal(driver->helpfile, driver->configfile)) {
-			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->helpfile);	
-			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
+			new_name = talloc_asprintf(ctx,
+					"%s/%s",
+					architecture,
+					driver->helpfile);
+			if (!new_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
+			old_name = talloc_asprintf(ctx,
+					"%s/%s",
+					new_dir,
+					driver->helpfile);
+			if (!old_name) {
+				*perr = WERR_NOMEM;
+				goto err_exit;
+			}
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				driver_unix_convert(conn,new_name,&st);
+				new_name = driver_unix_convert(conn,new_name,&st);
+				if (!new_name) {
+					*perr = WERR_NOMEM;
+					goto err_exit;
+				}
 				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
 						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
@@ -1903,10 +2011,28 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 					}
 				}
 
-				slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->dependentfiles[i]);	
-				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
+				new_name = talloc_asprintf(ctx,
+						"%s/%s",
+						architecture,
+						driver->dependentfiles[i]);
+				if (!new_name) {
+					*perr = WERR_NOMEM;
+					goto err_exit;
+				}
+				old_name = talloc_asprintf(ctx,
+						"%s/%s",
+						new_dir,
+						driver->dependentfiles[i]);
+				if (!old_name) {
+					*perr = WERR_NOMEM;
+					goto err_exit;
+				}
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					driver_unix_convert(conn,new_name,&st);
+					new_name = driver_unix_convert(conn,new_name,&st);
+					if (!new_name) {
+						*perr = WERR_NOMEM;
+						goto err_exit;
+					}
 					if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name,
 							OPENX_FILE_EXISTS_TRUNCATE|
 							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
@@ -1921,10 +2047,18 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		}
 	}
 
+  err_exit:
+
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 
-	return ver != -1 ? WERR_OK : WERR_UNKNOWN_PRINTER_DRIVER;
+	if (W_ERROR_EQUAL(*perr, WERR_OK)) {
+		return WERR_OK;
+	}
+	if (ver == -1) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
+	return (*perr);
 }
 
 /****************************************************************************

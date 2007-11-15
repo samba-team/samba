@@ -81,11 +81,14 @@ void load_case_tables(void)
 	static int initialised;
 	char *old_locale = NULL, *saved_locale = NULL;
 	int i;
+	TALLOC_CTX *frame = NULL;
 
 	if (initialised) {
 		return;
 	}
 	initialised = 1;
+
+	frame = talloc_stackframe();
 
 	upcase_table = (smb_ucs2_t *)map_file(data_path("upcase.dat"),
 					      0x20000);
@@ -147,6 +150,7 @@ void load_case_tables(void)
 		SAFE_FREE(saved_locale);
 	}
 #endif
+	TALLOC_FREE(frame);
 }
 
 /*
@@ -157,7 +161,7 @@ void load_case_tables(void)
 int check_dos_char(smb_ucs2_t c)
 {
 	lazy_initialize_conv();
-	
+
 	/* Find the right byte, and right bit within the byte; return
 	 * 1 or 0 */
 	return (doschar_table[(c & 0xffff) / 8] & (1 << (c & 7))) != 0;
@@ -329,26 +333,54 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
  * copy because I don't really know how pull_ucs2 and friends calculate the
  * target size. If this turns out to be a major bottleneck someone with deeper
  * multi-byte knowledge needs to revisit this.
+ * I just did (JRA :-). No longer uses copy.
  * My (VL) use is dsr_getdcname, which returns 6 strings, the alternative would
  * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
  */
 
-char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, const UNISTR2 *src)
+char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src)
 {
-	pstring tmp;
-	size_t result;
-
-	result = pull_ucs2(NULL, tmp, src->buffer, sizeof(tmp),
-			   src->uni_str_len * 2, 0);
-	if (result == (size_t)-1) {
+	char *dest = NULL;
+	size_t dest_len = convert_string_talloc(ctx,
+				CH_UTF16LE,
+				CH_UNIX,
+				src->buffer,
+				src->uni_str_len * 2,
+				(void **)&dest,
+				true);
+	if (dest_len == (size_t)-1) {
 		return NULL;
 	}
 
-	return talloc_strdup(mem_ctx, tmp);
+	/* Ensure we're returning a null terminated string. */
+	if (dest_len) {
+		/* Did we already process the terminating zero ? */
+		if (dest[dest_len-1] != 0) {
+			size_t size = talloc_get_size(dest);
+			/* Have we got space to append the '\0' ? */
+			if (size <= dest_len) {
+				/* No, realloc. */
+				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
+						dest_len+1);
+				if (!dest) {
+					/* talloc fail. */
+					dest_len = (size_t)-1;
+					return NULL;
+				}
+			}
+			/* Yay - space ! */
+			dest[dest_len] = '\0';
+			dest_len++;
+		}
+	} else if (dest) {
+		dest[0] = 0;
+	}
+
+	return dest;
 }
 
 /* Converts a string from internal samba format to unicode
- */ 
+ */
 
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
 {

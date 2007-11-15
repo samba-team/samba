@@ -583,80 +583,128 @@ ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob)
  Reduce a file name, removing .. elements.
 ********************************************************************/
 
-void dos_clean_name(char *s)
+static char *dos_clean_name(TALLOC_CTX *ctx, const char *s)
 {
-	char *p=NULL;
+	char *p = NULL;
+	char *str = NULL;
 
 	DEBUG(3,("dos_clean_name [%s]\n",s));
 
 	/* remove any double slashes */
-	all_string_sub(s, "\\\\", "\\", 0);
-
-	/* Remove leading .\\ characters */
-	if(strncmp(s, ".\\", 2) == 0) {
-		trim_string(s, ".\\", NULL);
-		if(*s == 0)
-			pstrcpy(s,".\\");
+	str = talloc_all_string_sub(ctx, s, "\\\\", "\\");
+	if (!str) {
+		return NULL;
 	}
 
-	while ((p = strstr_m(s,"\\..\\")) != NULL) {
-		pstring s1;
+	/* Remove leading .\\ characters */
+	if(strncmp(str, ".\\", 2) == 0) {
+		trim_string(str, ".\\", NULL);
+		if(*str == 0) {
+			str = talloc_strdup(ctx, ".\\");
+			if (!str) {
+				return NULL;
+			}
+		}
+	}
+
+	while ((p = strstr_m(str,"\\..\\")) != NULL) {
+		char *s1;
 
 		*p = 0;
-		pstrcpy(s1,p+3);
+		s1 = p+3;
 
-		if ((p=strrchr_m(s,'\\')) != NULL)
+		if ((p=strrchr_m(str,'\\')) != NULL) {
 			*p = 0;
-		else
-			*s = 0;
-		pstrcat(s,s1);
-	}  
+		} else {
+			*str = 0;
+		}
+		str = talloc_asprintf(ctx,
+				"%s%s",
+				str,
+				s1);
+		if (!str) {
+			return NULL;
+		}
+	}
 
-	trim_string(s,NULL,"\\..");
-	all_string_sub(s, "\\.\\", "\\", 0);
+	trim_string(str,NULL,"\\..");
+	return talloc_all_string_sub(ctx, str, "\\.\\", "\\");
 }
 
 /*******************************************************************
- Reduce a file name, removing .. elements. 
+ Reduce a file name, removing .. elements.
 ********************************************************************/
 
-void unix_clean_name(char *s)
+char *unix_clean_name(TALLOC_CTX *ctx, const char *s)
 {
-	char *p=NULL;
+	char *p = NULL;
+	char *str = NULL;
 
 	DEBUG(3,("unix_clean_name [%s]\n",s));
 
 	/* remove any double slashes */
-	all_string_sub(s, "//","/", 0);
-
-	/* Remove leading ./ characters */
-	if(strncmp(s, "./", 2) == 0) {
-		trim_string(s, "./", NULL);
-		if(*s == 0)
-			pstrcpy(s,"./");
+	str = talloc_all_string_sub(ctx, s, "//","/");
+	if (!str) {
+		return NULL;
 	}
 
-	while ((p = strstr_m(s,"/../")) != NULL) {
-		pstring s1;
+	/* Remove leading ./ characters */
+	if(strncmp(str, "./", 2) == 0) {
+		trim_string(str, "./", NULL);
+		if(*str == 0) {
+			str = talloc_strdup(ctx, "./");
+			if (!str) {
+				return NULL;
+			}
+		}
+	}
+
+	while ((p = strstr_m(str,"/../")) != NULL) {
+		char *s1;
 
 		*p = 0;
-		pstrcpy(s1,p+3);
+		s1 = p+3;
 
-		if ((p=strrchr_m(s,'/')) != NULL)
+		if ((p=strrchr_m(str,'/')) != NULL) {
 			*p = 0;
-		else
-			*s = 0;
-		pstrcat(s,s1);
-	}  
+		} else {
+			*str = 0;
+		}
+		str = talloc_asprintf(ctx,
+				"%s%s",
+				str,
+				s1);
+		if (!str) {
+			return NULL;
+		}
+	}
 
-	trim_string(s,NULL,"/..");
-	all_string_sub(s, "/./", "/", 0);
+	trim_string(str,NULL,"/..");
+	return talloc_all_string_sub(ctx, str, "/./", "/");
 }
 
-void clean_name(char *s)
+char *clean_name(TALLOC_CTX *ctx, const char *s)
 {
-	dos_clean_name(s);
-	unix_clean_name(s);
+	char *str = dos_clean_name(ctx, s);
+	if (!str) {
+		return NULL;
+	}
+	return unix_clean_name(ctx, str);
+}
+
+/*******************************************************************
+ Horrible temporary hack until pstring is dead.
+********************************************************************/
+
+char *pstring_clean_name(pstring s)
+{
+	char *str = clean_name(NULL,s);
+	if (!str) {
+		return NULL;
+	}
+	pstrcpy(s, str);
+	TALLOC_FREE(str);
+	return s;
 }
 
 /*******************************************************************
@@ -911,9 +959,9 @@ void become_daemon(bool Fork, bool no_process_group)
  Put up a yes/no prompt.
 ****************************************************************************/
 
-bool yesno(char *p)
+bool yesno(const char *p)
 {
-	pstring ans;
+	char ans[20];
 	printf("%s",p);
 
 	if (!fgets(ans,sizeof(ans)-1,stdin))
@@ -1250,23 +1298,22 @@ int interpret_protocol(const char *str,int def)
 /******************************************************************
  Remove any mount options such as -rsize=2048,wsize=2048 etc.
  Based on a fix from <Thomas.Hepper@icem.de>.
+ Returns a malloc'ed string.
 *******************************************************************/
 
-static void strip_mount_options( pstring *str)
+static char *strip_mount_options(const char *str)
 {
-	if (**str == '-') { 
-		char *p = *str;
+	if (*str == '-') {
+		char *p = str;
 		while(*p && !isspace(*p))
 			p++;
 		while(*p && isspace(*p))
 			p++;
 		if(*p) {
-			pstring tmp_str;
-
-			pstrcpy(tmp_str, p);
-			pstrcpy(*str, tmp_str);
+			return SMB_STRDUP(p);
 		}
 	}
+	return NULL;
 }
 
 /*******************************************************************
@@ -1288,6 +1335,7 @@ char *automount_lookup(const char *user_name)
 	nis_result *result;
 	nis_object *object;
 	entry_obj  *entry;
+	char *tmpstr = NULL;
  
 	if (strcmp(user_name, last_key)) {
 		slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
@@ -1313,7 +1361,11 @@ char *automount_lookup(const char *user_name)
 		nis_freeresult(result);
 	}
 
-	strip_mount_options(&last_value);
+	tmpstr = strip_mount_options(last_value);
+	if (tmpstr) {
+		pstrcpy(last_value, tmpstr);
+		SAFE_FREE(tmpstr);
+	}
 
 	DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
 	return last_value;
@@ -1345,9 +1397,14 @@ char *automount_lookup(const char *user_name)
   	} else {
 		if ((nis_error = yp_match(nis_domain, nis_map, user_name, strlen(user_name),
 				&nis_result, &nis_result_len)) == 0) {
+			char *tmpstr = NULL;
 			fstrcpy(last_key, user_name);
 			pstrcpy(last_value, nis_result);
-			strip_mount_options(&last_value);
+			tmpstr = strip_mount_options(last_value);
+			if (tmpstr) {
+				pstrcpy(last_value, tmpstr);
+				SAFE_FREE(tmpstr);
+			}
 
 		} else if(nis_error == YPERR_KEY) {
 
@@ -2103,8 +2160,13 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 char *tab_depth(int depth)
 {
 	static pstring spaces;
-	memset(spaces, ' ', depth * 4);
-	spaces[depth * 4] = 0;
+	size_t len = depth * 4;
+	if (len > sizeof(pstring)-1) {
+		len = sizeof(pstring)-1;
+	}
+
+	memset(spaces, ' ', len);
+	spaces[len] = 0;
 	return spaces;
 }
 
@@ -2814,46 +2876,6 @@ void *talloc_check_name_abort(const void *ptr, const char *name)
 	/* Keep the compiler happy */
 	return NULL;
 }
-
-
-#ifdef __INSURE__
-
-/*******************************************************************
-This routine is a trick to immediately catch errors when debugging
-with insure. A xterm with a gdb is popped up when insure catches
-a error. It is Linux specific.
-********************************************************************/
-
-int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
-{
-	static int (*fn)();
-	int ret;
-	char pidstr[10];
-	/* you can get /usr/bin/backtrace from 
-           http://samba.org/ftp/unpacked/junkcode/backtrace */
-	pstring cmd = "/usr/bin/backtrace %d";
-
-	slprintf(pidstr, sizeof(pidstr)-1, "%d", sys_getpid());
-	pstring_sub(cmd, "%d", pidstr);
-
-	if (!fn) {
-		static void *h;
-		h = dlopen("/usr/local/parasoft/insure++lite/lib.linux2/libinsure.so", RTLD_LAZY);
-		fn = dlsym(h, "_Insure_trap_error");
-
-		if (!h || h == _Insure_trap_error) {
-			h = dlopen("/usr/local/parasoft/lib.linux2/libinsure.so", RTLD_LAZY);
-			fn = dlsym(h, "_Insure_trap_error");
-		}		
-	}
-
-	ret = fn(a1, a2, a3, a4, a5, a6);
-
-	system(cmd);
-
-	return ret;
-}
-#endif
 
 uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 {

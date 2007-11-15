@@ -208,8 +208,12 @@ static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
 	}
 	
 	if ( p ) {
-		pstrcpy( p->mount, mnt );
-		clean_name(p->mount);
+		char *name = clean_name(NULL, p->mount);
+		if (!name) {
+			return;
+		}
+		pstrcpy( p->mount, name );
+		TALLOC_FREE(name);
 	}
 }
 

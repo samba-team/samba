@@ -283,7 +283,7 @@ static int do_cd(char *newdir)
 		}
 	}
 	
-	clean_name(cur_dir);
+	pstring_clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
 	
 	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
@@ -313,7 +313,7 @@ static int do_cd(char *newdir)
 		}		
 	} else {
 		pstrcat( targetpath, CLI_DIRSEP_STR );
-		clean_name( targetpath );
+		pstring_clean_name( targetpath );
 		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
@@ -953,7 +953,7 @@ static int cmd_get(void)
 		return 1;
 	}
 	pstrcpy(lname,p);
-	clean_name(rname);
+	pstring_clean_name(rname);
 	
 	next_token_nr(NULL,lname,NULL,sizeof(lname));
 	
@@ -1054,7 +1054,7 @@ static int cmd_more(void)
 		unlink(lname);
 		return 1;
 	}
-	clean_name(rname);
+	pstring_clean_name(rname);
 
 	rc = do_get(rname, lname, False);
 
@@ -1393,7 +1393,7 @@ static int cmd_put(void)
 	else
 		pstrcat(rname,lname);
 	
-	clean_name(rname);
+	pstring_clean_name(rname);
 
 	{
 		SMB_STRUCT_STAT st;
@@ -2949,7 +2949,7 @@ static int cmd_reget(void)
 		return 1;
 	}
 	pstrcpy(local_name, p);
-	clean_name(remote_name);
+	pstring_clean_name(remote_name);
 	
 	next_token_nr(NULL, local_name, NULL, sizeof(local_name));
 	
@@ -2987,7 +2987,7 @@ static int cmd_reput(void)
 	else
 		pstrcat(remote_name, local_name);
 	
-	clean_name(remote_name);
+	pstring_clean_name(remote_name);
 
 	return do_put(remote_name, local_name, True);
 }
@@ -3960,6 +3960,7 @@ static int do_message_op(void)
 		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
+	TALLOC_CTX *frame = talloc_stackframe();
 	
 	load_case_tables();
 
@@ -4205,5 +4206,6 @@ static int do_message_op(void)
 	}
 
 	talloc_destroy( ctx);
+	talloc_destroy(frame);
 	return rc;
 }

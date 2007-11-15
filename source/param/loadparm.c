@@ -6151,7 +6151,7 @@ const char *lp_printername(int snum)
 void lp_set_logfile(const char *name)
 {
 	string_set(&Globals.szLogFile, name);
-	pstrcpy(debugf, name);
+	debug_set_logfile(name);
 }
 
 /*******************************************************************

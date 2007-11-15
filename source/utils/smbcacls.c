@@ -867,7 +867,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	};
 
 	struct cli_state *cli;
-	TALLOC_CTX *frame;
+	TALLOC_CTX *frame = talloc_stackframe();
 	pstring owner_username;
 	fstring server;
 
@@ -875,7 +875,6 @@ static struct cli_state *connect_one(const char *server, const char *share)
 
 	load_case_tables();
 
-	frame = talloc_stackframe();
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", True );
