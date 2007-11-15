@@ -295,57 +295,44 @@ sub Integrated($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 }
 
-sub SharedLibrary($$)
+sub SharedModule($$)
 {
 	my ($self,$ctx) = @_;
 
 	my $init_obj = "";
-	my $has_static_lib = 0;
 
-	if ($ctx->{TYPE} eq "LIBRARY") {
-		push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-		push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-	} elsif ($ctx->{TYPE} eq "MODULE") {
-		my $sane_subsystem = lc($ctx->{SUBSYSTEM});
-		$sane_subsystem =~ s/^lib//;
+	my $sane_subsystem = lc($ctx->{SUBSYSTEM});
+	$sane_subsystem =~ s/^lib//;
 	
-		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
-		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+	push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
+	push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 
-		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/\n";
-		$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-			}
+	$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+	$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/\n";
+	$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+	$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+	$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+	if (defined($ctx->{ALIASES})) {
+		foreach (@{$ctx->{ALIASES}}) {
+			$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+			$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+			$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
 		}
 	}
 
-	$has_static_lib = 1 if grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}});
-
-	if (not $has_static_lib) {
-		$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-		$self->_prepare_list($ctx, "OBJ_LIST");
-		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	}
+	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-#	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
-	my $extraflags = "";
-	if ($ctx->{TYPE} eq "MODULE" and defined($ctx->{INIT_FUNCTION})) {
+	if (defined($ctx->{INIT_FUNCTION})) {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
 		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
-		$extraflags = "\$(SHLD_UNDEF_FLAGS)";
 
 		$self->output(<< "__EOD__"
 bin/$ctx->{NAME}_init_module.c:
@@ -362,10 +349,53 @@ __EOD__
 		$init_obj = "bin/$ctx->{NAME}_init_module.o";
 	}
 
+	$self->output(<< "__EOD__"
+#
+
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+	\@echo Linking \$\@
+	\@mkdir -p $ctx->{SHAREDDIR}
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \$(SHLD_UNDEF_FLAGS)
+__EOD__
+);
+
+	if (defined($ctx->{ALIASES})) {
+		foreach (@{$ctx->{ALIASES}}) {
+			$self->output("\t\@rm -f $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
+			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
+		}
+	}
+	$self->output("\n");
+}
+
+sub SharedLibrary($$)
+{
+	my ($self,$ctx) = @_;
+
+	my $has_static_lib = 0;
+
+	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+
+	$has_static_lib = 1 if grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}});
+
+	if (not $has_static_lib) {
+		$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+		$self->_prepare_list($ctx, "OBJ_LIST");
+		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	}
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
+#	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
+
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
+
 	my $soarg = "";
 	my $lns = "";
 	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
-		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
+		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME}";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
 			$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 			$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
@@ -380,23 +410,15 @@ __EOD__
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $extraflags \\
-		 $soarg \\
-		$init_obj $lns
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		$soarg$lns
 __EOD__
 );
-
-	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@rm -f $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
-		}
-	}
 	$self->output("\n");
 }
 
