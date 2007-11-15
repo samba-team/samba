@@ -129,7 +129,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	DEBUG(10, ("solarisacl_sys_acl_get_fd %s.\n", 
 		   ((result == NULL) ? "failed" : "succeeded")));
 	SAFE_FREE(solaris_acl);
-	return NULL;
+	return result;
 }
 
 int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
