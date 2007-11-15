@@ -204,7 +204,10 @@ STLD_FLAGS=$self->{config}->{STLD_FLAGS}
 
 SHLD=$self->{config}->{SHLD}
 SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L\$(builddir)/bin/shared
-SHLD_UNDEF_FLAGS=$self->{config}->{SHLD_UNDEF_FLAGS}
+
+MDLD=$self->{config}->{MDLD}
+MDLD_FLAGS=$self->{config}->{MDLD_FLAGS} -L\$(builddir)/bin/shared
+
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
@@ -355,9 +358,9 @@ __EOD__
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(MDLD) \$(MDLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \$(SHLD_UNDEF_FLAGS)
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 __EOD__
 );
 
