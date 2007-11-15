@@ -70,7 +70,7 @@ static int ejs_randguid(MprVarHandle eid, int argc, struct MprVar **argv)
 */
 static int ejs_randsid(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	char *s = talloc_asprintf(mprMemCtx(), "S-1-5-21-%8u-%8u-%8u", 
+	char *s = talloc_asprintf(mprMemCtx(), "S-1-5-21-%u-%u-%u", 
 				  (unsigned)generate_random(), 
 				  (unsigned)generate_random(), 
 				  (unsigned)generate_random());
