@@ -684,7 +684,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 			}
 			list_len++;
 
-			member_list = SMB_MALLOC(list_len);
+			member_list = (char *)SMB_MALLOC(list_len);
 			if (!member_list) {
 				endgrent();
 				return NULL;
