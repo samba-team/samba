@@ -4,6 +4,7 @@ partition: ${CONFIGDN}:${CONFIGDN_LDB}
 partition: ${DOMAINDN}:${DOMAINDN_LDB}
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
+replicateEntries: @OPTIONS
 modules:${SCHEMADN}:${SCHEMADN_MOD}${SCHEMADN_MOD2}
 modules:${CONFIGDN}:${CONFIGDN_MOD}${CONFIGDN_MOD2}
 modules:${DOMAINDN}:${DOMAINDN_MOD}${DOMAINDN_MOD2}

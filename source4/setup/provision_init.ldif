@@ -23,6 +23,9 @@ sAMAccountType: INTEGER
 systemFlags: INTEGER
 userAccountControl: INTEGER
 
+dn: @OPTIONS
+checkBaseOnSearch: TRUE
+
 dn: @KLUDGEACL
 passwordAttribute: sambaPassword
 passwordAttribute: ntPwdHash

@@ -300,10 +300,6 @@ reply:
 			DEBUG(10,("SearchRequest: results: [%d]\n", res->count));
 			result = LDAP_SUCCESS;
 			errstr = NULL;
-		} else if (res->count == 0) {
-			DEBUG(10,("SearchRequest: no results\n"));
-			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb);
 		}
 		if (res->controls) {
 			done_r->msg->controls = res->controls;
