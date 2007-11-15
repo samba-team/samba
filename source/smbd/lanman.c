@@ -404,7 +404,7 @@ static void PackDriverData(struct pack_desc* desc)
 	SIVAL(drivdata,0,sizeof drivdata); /* cb */
 	SIVAL(drivdata,4,1000);	/* lVersion */
 	memset(drivdata+8,0,32);	/* szDeviceName */
-	push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
+	push_ascii(drivdata+8,"NULL",32, STR_TERMINATE);
 	PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
