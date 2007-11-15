@@ -87,19 +87,6 @@ fi
 rm -f conftest*
 ])])
 
-AC_DEFUN([AC_EXTENSION_FLAG],
-[
-  cat >>confdefs.h <<\EOF
-#ifndef $1
-# define $1 1
-#endif
-EOF
-AH_VERBATIM([$1], [#ifndef $1
-# define $1 1
-#endif])
-])
-
-
 dnl see if a declaration exists for a function or variable
 dnl defines HAVE_function_DECL if it exists
 dnl AC_HAVE_DECL(var, includes)
