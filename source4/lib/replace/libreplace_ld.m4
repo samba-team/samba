@@ -180,3 +180,53 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			;;
 		esac
 ])
+
+AC_DEFUN([AC_LIBREPLACE_MDLD],
+[
+	MDLD="${CC}"
+
+	case "$host_os" in
+		*irix*)
+			MDLD="${PROG_LD}"
+			;;
+	esac
+
+	AC_SUBST(MDLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
+[
+	MDLD_FLAGS="-shared"
+
+	case "$host_os" in
+		*linux*)
+			MDLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined"
+			;;
+		*solaris*)
+			MDLD_FLAGS="-G"
+			if test "${GCC}" = "no"; then
+				## ${CFLAGS} added for building 64-bit shared
+				## libs using Sun's Compiler
+				NDLD_FLAGS="-G \${CFLAGS}"
+			fi
+			;;
+		*sunos*)
+			MDLD_FLAGS="-G"
+			;;
+		*aix*)
+			MDLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			;;
+		*hpux*)
+			if test "${GCC}" = "yes"; then
+				MDLD_FLAGS="-shared"
+			else
+				MDLD_FLAGS="-b"
+			fi
+			;;
+		*darwin*)
+			MDLD_FLAGS="-bundle -flat_namespace -undefined suppress -Wl,-search_paths_first"
+			;;
+	esac
+
+	AC_SUBST(MDLD_FLAGS)
+])
