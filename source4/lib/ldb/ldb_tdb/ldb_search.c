@@ -200,6 +200,35 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 	return ret;
 }
 
+/*
+  search the database for a single simple dn.
+  return LDB_ERR_NO_SUCH_OBJECT on record-not-found
+  and LDB_SUCCESS on success
+*/
+int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
+{
+	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	TDB_DATA tdb_key, tdb_data;
+
+	if (ldb_dn_is_null(dn)) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	/* form the key */
+	tdb_key = ltdb_key(module, dn);
+	if (!tdb_key.dptr) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
+	talloc_free(tdb_key.dptr);
+	if (!tdb_data.dptr) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	
+	free(tdb_data.dptr);
+	return LDB_SUCCESS;
+}
 
 /*
   search the database for a single simple dn, returning all attributes
@@ -227,7 +256,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	if (!tdb_data.dptr) {
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-
+	
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
@@ -473,10 +502,6 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_reply *ares;
 	int ret;
 
-	if ((( ! ldb_dn_is_valid(req->op.search.base)) || ldb_dn_is_null(req->op.search.base)) &&
-	    (req->op.search.scope == LDB_SCOPE_BASE || req->op.search.scope == LDB_SCOPE_ONELEVEL))
-		return LDB_ERR_OPERATIONS_ERROR;
-
 	if (ltdb_lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -496,6 +521,65 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		ltdb_unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	if ((req->op.search.base == NULL) || (ldb_dn_is_null(req->op.search.base) == true)) {
+
+		/* Check what we should do with a NULL dn */
+		switch (req->op.search.scope) {
+		case LDB_SCOPE_BASE:
+			ldb_asprintf_errstring(module->ldb, 
+					       "NULL Base DN invalid for a base search");
+			ret = LDB_ERR_INVALID_DN_SYNTAX;
+		case LDB_SCOPE_ONELEVEL:
+			ldb_asprintf_errstring(module->ldb, 
+					       "NULL Base DN invalid for a one-level search");
+			ret = LDB_ERR_INVALID_DN_SYNTAX;	
+		case LDB_SCOPE_SUBTREE:
+		default:
+			/* We accept subtree searches from a NULL base DN, ie over the whole DB */
+			ret = LDB_SUCCESS;
+		}
+	} else if (ldb_dn_is_valid(req->op.search.base) == false) {
+
+		/* We don't want invalid base DNs here */
+		ldb_asprintf_errstring(module->ldb, 
+				       "Invalid Base DN: %s", 
+				       ldb_dn_get_linearized(req->op.search.base));
+		ret = LDB_ERR_INVALID_DN_SYNTAX;
+
+	} else if (ldb_dn_is_null(req->op.search.base) == true) {
+
+		/* Check what we should do with a NULL dn */
+		switch (req->op.search.scope) {
+		case LDB_SCOPE_BASE:
+			ldb_asprintf_errstring(module->ldb, 
+					       "NULL Base DN invalid for a base search");
+			ret = LDB_ERR_INVALID_DN_SYNTAX;
+		case LDB_SCOPE_ONELEVEL:
+			ldb_asprintf_errstring(module->ldb, 
+					       "NULL Base DN invalid for a one-level search");
+			ret = LDB_ERR_INVALID_DN_SYNTAX;	
+		case LDB_SCOPE_SUBTREE:
+		default:
+			/* We accept subtree searches from a NULL base DN, ie over the whole DB */
+			ret = LDB_SUCCESS;
+		}
+
+	} else if (ltdb->check_base) {
+		/* This database has been marked as 'checkBaseOnSearch', so do a spot check of the base dn */
+		ret = ltdb_search_base(module, req->op.search.base);
+		
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			ldb_asprintf_errstring(module->ldb, 
+					       "No such Base DN: %s", 
+					       ldb_dn_get_linearized(req->op.search.base));
+		}
+			
+	} else {
+		/* If we are not checking the base DN life is easy */
+		ret = LDB_SUCCESS;
+	}
+
 	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
 
 	ltdb_ac->tree = req->op.search.tree;
@@ -503,12 +587,23 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	ltdb_ac->base = req->op.search.base;
 	ltdb_ac->attrs = req->op.search.attrs;
 
-	ret = ltdb_search_indexed(req->handle);
-	if (ret == LDB_ERR_OPERATIONS_ERROR) {
-		ret = ltdb_search_full(req->handle);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ltdb_search_indexed(req->handle);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			/* Not in the index, therefore OK! */
+			ret = LDB_SUCCESS;
+			
+		} else if (ret == LDB_ERR_OPERATIONS_ERROR) {
+			/* Not indexed, so we need to do a full scan */
+			ret = ltdb_search_full(req->handle);
+			if (ret != LDB_SUCCESS) {
+				ldb_set_errstring(module->ldb, "Indexed and full searches both failed!\n");
+			}
+		}
 	}
+
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, "Indexed and full searches both failed!\n");
 		req->handle->state = LDB_ASYNC_DONE;
 		req->handle->status = ret;
 	}
@@ -522,10 +617,13 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	req->handle->state = LDB_ASYNC_DONE;
-	ares->type = LDB_REPLY_DONE;
 
-	ret = req->callback(module->ldb, req->context, ares);
-	req->handle->status = ret;
+	if (ret == LDB_SUCCESS) {
+		ares->type = LDB_REPLY_DONE;
+		
+		ret = req->callback(module->ldb, req->context, ares);
+		req->handle->status = ret;
+	}
 
 	ltdb_unlock_read(module);
 

@@ -31,6 +31,8 @@ struct ltdb_private {
 	} *cache;
 
 	int in_transaction;
+
+	bool check_base;
 };
 
 /*
@@ -58,10 +60,12 @@ struct ltdb_context {
 #define LTDB_IDXATTR    "@IDXATTR"
 #define LTDB_IDXONE     "@IDXONE"
 #define LTDB_BASEINFO   "@BASEINFO"
+#define LTDB_OPTIONS    "@OPTIONS"
 #define LTDB_ATTRIBUTES "@ATTRIBUTES"
 
 /* special attribute types */
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"
+#define LTDB_CHECK_BASE "checkBaseOnSearch"
 #define LTDB_MOD_TIMESTAMP "whenChanged"
 #define LTDB_OBJECTCLASS "objectClass"
 

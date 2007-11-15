@@ -113,11 +113,13 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	if (dn == NULL) goto failed;
 
 	r = ltdb_search_dn1(module, dn, msg);
+	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
-		talloc_free(dn);
 		goto failed;
 	}
-	talloc_free(dn);
+	if (r == LDB_ERR_NO_SUCH_OBJECT) {
+		return 0;
+	}
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
 	for (i=0;i<msg->num_elements;i++) {
@@ -247,10 +249,10 @@ int ltdb_cache_reload(struct ldb_module *module)
 int ltdb_cache_load(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
-	struct ldb_dn *baseinfo_dn = NULL;
+	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
-	struct ldb_message *baseinfo = NULL;
+	struct ldb_message *baseinfo = NULL, *options = NULL;
 	int r;
 
 	/* a very fast check to avoid extra database reads */
@@ -282,7 +284,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 	
 	/* possibly initialise the baseinfo */
-	if (!baseinfo->dn) {
+	if (r == LDB_ERR_NO_SUCH_OBJECT) {
 		if (ltdb_baseinfo_init(module) != LDB_SUCCESS) {
 			goto failed;
 		}
@@ -300,6 +302,25 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto done;
 	}
 	ltdb->sequence_number = seq;
+
+	/* Read an interpret database options */
+	options = talloc(ltdb->cache, struct ldb_message);
+	if (options == NULL) goto failed;
+
+	options_dn = ldb_dn_new(module, module->ldb, LTDB_OPTIONS);
+	if (options_dn == NULL) goto failed;
+
+	r= ltdb_search_dn1(module, options_dn, options);
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
+		goto failed;
+	}
+	
+	/* possibly initialise the baseinfo */
+	if (r == LDB_SUCCESS) {
+		ltdb->check_base = ldb_msg_find_attr_as_bool(options, LTDB_CHECK_BASE, false);
+	} else {
+		ltdb->check_base = false;
+	}
 
 	talloc_free(ltdb->cache->last_attribute.name);
 	memset(&ltdb->cache->last_attribute, 0, sizeof(ltdb->cache->last_attribute));
@@ -328,12 +349,16 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 done:
+	talloc_free(options);
+	talloc_free(options_dn);
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
+	talloc_free(options);
+	talloc_free(options_dn);
 	talloc_free(baseinfo);
 	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
