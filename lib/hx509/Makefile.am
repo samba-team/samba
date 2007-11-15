@@ -294,8 +294,6 @@ EXTRA_DIST = \
 	data/crl1.crl \
 	data/crl1.der \
 	data/gen-req.sh \
-	data/index.txt \
-	data/index.txt.attr \
 	data/j.pem \
 	data/kdc.crt \
 	data/kdc.key \
