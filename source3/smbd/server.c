@@ -954,6 +954,7 @@ extern void build_options(bool screen);
 	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
 	};
+	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
 	load_case_tables();
 
@@ -1231,7 +1232,7 @@ extern void build_options(bool screen);
 	/* Setup oplocks */
 	if (!init_oplocks(smbd_messaging_context()))
 		exit(1);
-	
+
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
 
@@ -1261,6 +1262,8 @@ extern void build_options(bool screen);
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
+
+	TALLOC_FREE(frame);
 
 	smbd_process();
 

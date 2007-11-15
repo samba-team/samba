@@ -24,7 +24,7 @@
 #endif
 
 static void (*cont_fn)(void *);
-static pstring corepath;
+static char *corepath;
 
 /*******************************************************************
 report a fault
@@ -93,11 +93,13 @@ make all the preparations to safely dump a core file
 
 void dump_core_setup(const char *progname)
 {
-	pstring logbase;
-	char * end;
+	char *logbase = NULL;
+	char *end = NULL;
 
 	if (lp_logfile() && *lp_logfile()) {
-		snprintf(logbase, sizeof(logbase), "%s", lp_logfile());
+		if (asprintf(&logbase, "%s", lp_logfile()) < 0) {
+			return;
+		}
 		if ((end = strrchr_m(logbase, '/'))) {
 			*end = '\0';
 		}
@@ -106,20 +108,31 @@ void dump_core_setup(const char *progname)
 		 * line by the -l option but the "log file" option is not set
 		 * in smb.conf.
 		 */
-		snprintf(logbase, sizeof(logbase), "%s", dyn_LOGFILEBASE);
+		if (asprintf(&logbase, "%s", dyn_LOGFILEBASE) < 0) {
+			return;
+		}
 	}
 
 	SMB_ASSERT(progname != NULL);
 
-	snprintf(corepath, sizeof(corepath), "%s/cores", logbase);
+	if (asprintf(&corepath, "%s/cores", logbase) < 0) {
+		SAFE_FREE(logbase);
+		return;
+	}
 	mkdir(corepath,0700);
 
-	snprintf(corepath, sizeof(corepath), "%s/cores/%s",
-		logbase, progname);
+	SAFE_FREE(corepath);
+	if (asprintf(&corepath, "%s/cores/%s",
+			logbase, progname) < 0) {
+		SAFE_FREE(logbase);
+		return;
+	}
 	mkdir(corepath,0700);
 
 	sys_chown(corepath,getuid(),getgid());
 	chmod(corepath,0700);
+
+	SAFE_FREE(corepath);
 
 #ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE

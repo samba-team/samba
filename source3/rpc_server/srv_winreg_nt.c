@@ -580,17 +580,16 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShu
 	
 	if ( can_shutdown )
 		become_root();
-		
+
 	ret = smbrun( abort_shutdown_script, NULL );
-	
+
 	if ( can_shutdown )
 		unbecome_root();
-		
+
 	/********** END SeRemoteShutdownPrivilege BLOCK **********/
 
 	DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",
 		abort_shutdown_script, ret));
-		
 
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
@@ -605,19 +604,19 @@ static int validate_reg_filename( pstring fname )
 	int snum;
 	pstring share_path;
 	pstring unix_fname;
-	
+
 	/* convert to a unix path, stripping the C:\ along the way */
-	
-	if ( !(p = valid_share_pathname( fname ) ))
+
+	if ( !(p = valid_share_pathname(NULL, fname)))
 		return -1;
 
 	/* has to exist within a valid file share */
-			
+
 	for ( snum=0; snum<num_services; snum++ ) {
-	
+
 		if ( !lp_snum_ok(snum) || lp_print_ok(snum) )
 			continue;
-		
+
 		pstrcpy( share_path, lp_pathname(snum) );
 
 		/* make sure we have a path (e.g. [homes] ) */
@@ -628,12 +627,14 @@ static int validate_reg_filename( pstring fname )
 		if ( strncmp( share_path, p, strlen( share_path )) == 0 )
 			break;
 	}
-	
+
 	/* p and fname are overlapping memory so copy out and back in again */
-	
+
 	pstrcpy( unix_fname, p );
 	pstrcpy( fname, unix_fname );
-	
+
+	TALLOC_FREE(p);
+
 	return (snum < num_services) ? snum : -1;
 }
 

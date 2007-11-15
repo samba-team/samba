@@ -651,7 +651,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
-	clean_name(rname);
+	pstring_clean_name(rname);
 
 	if (fnum == -1) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",

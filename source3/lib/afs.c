@@ -213,10 +213,10 @@ bool afs_login(connection_struct *conn)
 	extern userdom_struct current_user_info;
 	extern struct current_user current_user;
 	DATA_BLOB ticket;
-	pstring afs_username;
-	char *cell;
+	char *afs_username = NULL;
+	char *cell = NULL;
 	bool result;
-	char *ticket_str;
+	char *ticket_str = NULL;
 	const DOM_SID *user_sid;
 
 	struct ClearToken ct;
@@ -229,7 +229,13 @@ bool afs_login(connection_struct *conn)
 			      afs_username, sizeof(afs_username));
 
 	user_sid = &current_user.nt_user_token->user_sids[0];
-	pstring_sub(afs_username, "%s", sid_string_static(user_sid));
+	afs_username = talloc_string_sub(talloc_tos(),
+					lp_afs_username_map(),
+					"%s",
+					sid_string_static(user_sid));
+	if (!afs_username) {
+		return false;
+	}
 
 	/* The pts command always generates completely lower-case user
 	 * names. */
@@ -240,13 +246,13 @@ bool afs_login(connection_struct *conn)
 	if (cell == NULL) {
 		DEBUG(1, ("AFS username doesn't contain a @, "
 			  "could not find cell\n"));
-		return False;
+		return false;
 	}
 
 	*cell = '\0';
 	cell += 1;
 
-	DEBUG(10, ("Trying to log into AFS for user %s@%s\n", 
+	DEBUG(10, ("Trying to log into AFS for user %s@%s\n",
 		   afs_username, cell));
 
 	if (!afs_createtoken(afs_username, cell, &ticket, &ct))

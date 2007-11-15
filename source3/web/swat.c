@@ -1368,6 +1368,7 @@ const char *lang_msg_rotate(const char *msgid)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	fault_setup(NULL);
 	umask(S_IWGRP | S_IWOTH);
@@ -1454,6 +1455,8 @@ const char *lang_msg_rotate(const char *msgid)
 	}
 
 	print_footer();
+
+	TALLOC_FREE(frame);
 	return 0;
 }
 

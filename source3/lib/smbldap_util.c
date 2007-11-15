@@ -36,7 +36,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 	int i, rc;
 	uint32 policy_default;
 	const char *policy_attr = NULL;
-	pstring dn;
+	char *dn = NULL;
 	LDAPMod **mods = NULL;
 	char *escape_domain_name;
 
@@ -48,15 +48,17 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pstr_sprintf(dn, "%s=%s,%s", 
+	if (asprintf(&dn, "%s=%s,%s",
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		escape_domain_name, lp_ldap_suffix());
+		escape_domain_name, lp_ldap_suffix()) < 0) {
+		SAFE_FREE(escape_domain_name);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	SAFE_FREE(escape_domain_name);
 
 	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-
-		pstring val;
+		char *val = NULL;
 
 		policy_attr = get_account_policy_attr(i);
 		if (!policy_attr) {
@@ -66,16 +68,22 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 
 		if (!account_policy_get_default(i, &policy_default)) {
 			DEBUG(0,("add_new_domain_account_policies: failed to get default account policy\n"));
+			SAFE_FREE(dn);
 			return ntstatus;
 		}
 
 		DEBUG(10,("add_new_domain_account_policies: adding \"%s\" with value: %d\n", policy_attr, policy_default));
 
-		pstr_sprintf(val, "%d", policy_default); 
+		if (asprintf(&val, "%d", policy_default) < 0) {
+			SAFE_FREE(dn);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		smbldap_set_mod( &mods, LDAP_MOD_REPLACE, policy_attr, val);
 
 		rc = smbldap_modify(ldap_state, dn, mods);
+
+		SAFE_FREE(val);
 
 		if (rc!=LDAP_SUCCESS) {
 			char *ld_error = NULL;
@@ -84,11 +92,13 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 				dn, ldap_err2string(rc),
 				ld_error ? ld_error : "unknown"));
 			SAFE_FREE(ld_error);
+			SAFE_FREE(dn);
 			ldap_mods_free(mods, True);
 			return ntstatus;
 		}
 	}
 
+	SAFE_FREE(dn);
 	ldap_mods_free(mods, True);
 
 	return NT_STATUS_OK;
@@ -101,12 +111,13 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
  TODO:  Add other attributes, and allow modification.
 *********************************************************************/
 
-static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state, 
-                                    const char *domain_name) 
+static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
+                                    const char *domain_name)
 {
 	fstring sid_string;
 	fstring algorithmic_rid_base_string;
-	pstring filter, dn;
+	char *filter = NULL;
+	char *dn = NULL;
 	LDAPMod **mods = NULL;
 	int rc;
 	LDAPMessage *result = NULL;
@@ -121,29 +132,33 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
-		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		  escape_domain_name, LDAP_OBJ_DOMINFO);
+	if (asprintf(&filter, "(&(%s=%s)(objectclass=%s))",
+		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+			escape_domain_name, LDAP_OBJ_DOMINFO) < 0) {
+		SAFE_FREE(escape_domain_name);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	SAFE_FREE(escape_domain_name);
 
-	attr_list = get_attr_list( NULL, dominfo_attr_list );
+	attr_list = get_attr_list(NULL, dominfo_attr_list );
 	rc = smbldap_search_suffix(ldap_state, filter, attr_list, &result);
 	TALLOC_FREE( attr_list );
+	SAFE_FREE(filter);
 
 	if (rc != LDAP_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	num_result = ldap_count_entries(ldap_state->ldap_struct, result);
-	
+
 	if (num_result > 1) {
 		DEBUG (0, ("add_new_domain_info: More than domain with that name exists: bailing "
 			   "out!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	/* Check if we need to add an entry */
 	DEBUG(3,("add_new_domain_info: Adding new domain\n"));
 
@@ -154,9 +169,12 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pstr_sprintf(dn, "%s=%s,%s",
+	if (asprintf(&dn, "%s=%s,%s",
 		     get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		     escape_domain_name, lp_ldap_suffix());
+		     escape_domain_name, lp_ldap_suffix()) < 0) {
+		SAFE_FREE(escape_domain_name);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	SAFE_FREE(escape_domain_name);
 
@@ -168,7 +186,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			get_attr_key2string(dominfo_attr_list,
-					    LDAP_ATTR_DOMAIN), 
+					    LDAP_ATTR_DOMAIN),
 			domain_name);
 
 	/* If we don't have an entry, then ask secrets.tdb for what it thinks.
@@ -185,21 +203,21 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 		 algorithmic_rid_base());
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			get_attr_key2string(dominfo_attr_list,
-					    LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+					    LDAP_ATTR_ALGORITHMIC_RID_BASE),
 			algorithmic_rid_base_string);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
-	
+
 	/* add the sambaNextUserRid attributes. */
-	
+
 	{
 		uint32 rid = BASE_RID;
 		fstring rid_str;
-		
+
 		fstr_sprintf( rid_str, "%i", rid );
 		DEBUG(10,("add_new_domain_info: setting next available user rid [%s]\n", rid_str));
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			get_attr_key2string(dominfo_attr_list,
-					    LDAP_ATTR_NEXT_USERRID), 
+					    LDAP_ATTR_NEXT_USERRID),
 			rid_str);
         }
 
@@ -214,13 +232,14 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 			 dn, ldap_err2string(rc),
 			 ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
-
+		SAFE_FREE(dn);
 		ldap_mods_free(mods, True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2,("add_new_domain_info: added: domain = %s in the LDAP database\n", domain_name));
 	ldap_mods_free(mods, True);
+	SAFE_FREE(dn);
 	return NT_STATUS_OK;
 }
 
@@ -233,22 +252,25 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
                                     bool try_add)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	pstring filter;
+	char *filter = NULL;
 	int rc;
 	const char **attr_list;
 	int count;
 	char *escape_domain_name;
-	
+
 	escape_domain_name = escape_ldap_string_alloc(domain_name);
 	if (!escape_domain_name) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",
+	if (asprintf(&filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_DOMINFO,
-		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		escape_domain_name);
+		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+		escape_domain_name) < 0) {
+		SAFE_FREE(escape_domain_name);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	SAFE_FREE(escape_domain_name);
 
@@ -264,14 +286,17 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 		goto failed;
 	}
 
+	SAFE_FREE(filter);
+
 	count = ldap_count_entries(ldap_state->ldap_struct, *result);
 
-	if (count == 1)
+	if (count == 1) {
 		return NT_STATUS_OK;
+	}
 
 	ldap_msgfree(*result);
 	*result = NULL;
-	
+
 	if (count < 1) {
 
 		DEBUG(3, ("smbldap_search_domain_info: Got no domain info entries for domain\n"));
@@ -285,7 +310,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 				domain_name, nt_errstr(status)));
 			goto failed;
 		}
-			
+
 		status = add_new_domain_account_policies(ldap_state, domain_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("smbldap_search_domain_info: Adding domain account policies for %s failed with %s\n", 
@@ -294,7 +319,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 		}
 
 		return smbldap_search_domain_info(ldap_state, result, domain_name, False);
-		
+
 	} 
 	
 	if (count > 1 ) {

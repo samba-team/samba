@@ -105,9 +105,9 @@ static char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
 	char *p;
-	pstring buf;
+	char buf[1024];
 	size_t total;
-	
+
 	fd = sys_popen(syscmd);
 	if (fd == -1) {
 		return NULL;

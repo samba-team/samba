@@ -49,7 +49,6 @@ bool dbghdr( int level, int cls, const char *file, const char *func, int line );
 #endif
 
 extern XFILE *dbf;
-extern pstring debugf;
 
 /* If we have these macros, we can add additional info to the header. */
 

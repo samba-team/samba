@@ -1463,17 +1463,22 @@ WERROR _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
  Check a given DOS pathname is valid for a share.
 ********************************************************************/
 
-char *valid_share_pathname(char *dos_pathname)
+char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
 {
-	char *ptr;
+	char *ptr = talloc_strdup(ctx, dos_pathname);
 
+	if (!ptr) {
+		return NULL;
+	}
 	/* Convert any '\' paths to '/' */
-	unix_format(dos_pathname);
-	unix_clean_name(dos_pathname);
+	unix_format(ptr);
+	ptr = unix_clean_name(talloc_tos(), ptr);
+	if (!ptr) {
+		return NULL;
+	}
 
 	/* NT is braindead - it wants a C: prefix to a pathname ! So strip it. */
-	ptr = dos_pathname;
-	if (strlen(dos_pathname) > 2 && ptr[1] == ':' && ptr[0] != '/')
+	if (strlen(ptr) > 2 && ptr[1] == ':' && ptr[0] != '/')
 		ptr += 2;
 
 	/* Only absolute paths allowed. */
@@ -1602,7 +1607,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		return WERR_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
-	if (!(path = valid_share_pathname( pathname )))
+	if (!(path = valid_share_pathname(p->mem_ctx, pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
@@ -1774,7 +1779,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
-	if (!(path = valid_share_pathname( pathname )))
+	if (!(path = valid_share_pathname(p->mem_ctx, pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */

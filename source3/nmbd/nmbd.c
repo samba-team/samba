@@ -733,6 +733,7 @@ static bool open_sockets(bool isdaemon, int port)
 	POPT_COMMON_SAMBA
 	{ NULL }
 	};
+	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
 	load_case_tables();
 
@@ -927,6 +928,7 @@ static bool open_sockets(bool isdaemon, int port)
 	/* We can only take signals in the select. */
 	BlockSignals( True, SIGTERM );
 
+	TALLOC_FREE(frame);
 	process();
 
 	if (dbf)

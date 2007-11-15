@@ -41,19 +41,22 @@ struct user_auth_info cmdline_auth_info;
 static void set_logfile(poptContext con, const char * arg)
 {
 
-	pstring logfile;
+	char *logfile = NULL;
 	const char *pname;
-	
+
 	/* Find out basename of current program */
 	pname = strrchr_m(poptGetInvocationName(con),'/');
 
 	if (!pname)
 		pname = poptGetInvocationName(con);
-	else 
+	else
 		pname++;
 
-	pstr_sprintf(logfile, "%s/log.%s", arg, pname);
+	if (asprintf(&logfile, "%s/log.%s", arg, pname) < 0) {
+		return;
+	}
 	lp_set_logfile(logfile);
+	SAFE_FREE(logfile);
 }
 
 static bool PrintSambaVersionString;
@@ -285,22 +288,24 @@ const struct poptOption popt_common_dynconfig[] = {
  * get a password from a a file or file descriptor
  * exit on failure
  * ****************************************************************************/
+
 static void get_password_file(struct user_auth_info *a)
 {
 	int fd = -1;
 	char *p;
 	bool close_it = False;
-	pstring spec;
+	char *spec = NULL;
 	char pass[128];
 
 	if ((p = getenv("PASSWD_FD")) != NULL) {
-		pstrcpy(spec, "descriptor ");
-		pstrcat(spec, p);
+		if (asprintf(&spec, "descriptor %s", p) < 0) {
+			return;
+		}
 		sscanf(p, "%d", &fd);
-		close_it = False;
+		close_it = false;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
 		fd = sys_open(p, O_RDONLY, 0);
-		pstrcpy(spec, p);
+		spec = SMB_STRDUP(p);
 		if (fd < 0) {
 			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
 					spec, strerror(errno));
@@ -325,15 +330,18 @@ static void get_password_file(struct user_auth_info *a)
 			} else {
 				fprintf(stderr, "Error reading password from file %s: %s\n",
 						spec, "empty password\n");
+				SAFE_FREE(spec);
 				exit(1);
 			}
 
 		default:
 			fprintf(stderr, "Error reading password from file %s: %s\n",
 					spec, strerror(errno));
+			SAFE_FREE(spec);
 			exit(1);
 		}
 	}
+	SAFE_FREE(spec);
 	pstrcpy(a->password, pass);
 	if (close_it)
 		close(fd);
