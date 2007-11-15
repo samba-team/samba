@@ -127,7 +127,7 @@ lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(LIBS) bin/libldb.a
 	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)libnss_ldb.$(SHLIBEXT).2 -o lib/libnss_ldb.$(SHLIBEXT).2 $(NSS_OBJ) $(OBJS) $(LIB_FLAGS)
 
 sample_module.$(SHLIBEXT): tests/sample_module.o 
-	$(CC) $(SHLD_FLAGS) $(LIBS) $(LDFLAGS) -o $@ tests/sample_module.o 
+	$(CC) $(SHLD_FLAGS) $(LDFLAGS) -o $@ tests/sample_module.o 
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
