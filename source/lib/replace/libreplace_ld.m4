@@ -172,7 +172,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*darwin*)
-			SONAMEFLAG="-compatibility_version "
+			SONAMEFLAG="#"
 			;;
 		*aix*)
 			# Not supported
