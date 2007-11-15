@@ -152,7 +152,8 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			break;
 		case 'C':
 			s = va_arg(ap, char *);
-			head_ofs += push_string(NULL, blob->data+head_ofs, s, -1, 
+			n = str_charnum(s) + 1;
+			head_ofs += push_string(NULL, blob->data+head_ofs, s, n,
 						STR_ASCII|STR_TERMINATE);
 			break;
 		}
