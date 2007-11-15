@@ -1187,14 +1187,17 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 }
 
 /**
- Similar to string_sub, but it will accept only allocated strings
+ Similar to string_sub2, but it will accept only allocated strings
  and may realloc them so pay attention at what you pass on no
  pointers inside strings, no pstrings or const may be passed
  as string.
 **/
 
-char *realloc_string_sub(char *string, const char *pattern,
-			 const char *insert)
+char *realloc_string_sub2(char *string,
+			const char *pattern,
+			const char *insert,
+			bool remove_unsafe_characters,
+			bool allow_trailing_dollar)
 {
 	char *p, *in;
 	char *s;
@@ -1221,10 +1224,18 @@ char *realloc_string_sub(char *string, const char *pattern,
 			case '\'':
 			case ';':
 			case '$':
+				/* allow a trailing $
+				 * (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
+					break;
+				}
 			case '%':
 			case '\r':
 			case '\n':
-				in[i] = '_';
+				if ( remove_unsafe_characters ) {
+					in[i] = '_';
+					break;
+				}
 			default:
 				/* ok */
 				break;
@@ -1252,6 +1263,13 @@ char *realloc_string_sub(char *string, const char *pattern,
 	}
 	SAFE_FREE(in);
 	return string;
+}
+
+char *realloc_string_sub(char *string,
+			const char *pattern,
+			const char *insert)
+{
+	return realloc_string_sub2(string, pattern, insert, true, false);
 }
 
 /*
