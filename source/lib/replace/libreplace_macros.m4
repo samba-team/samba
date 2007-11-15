@@ -248,11 +248,18 @@ m4_define([AH_CHECK_FUNC_EXT],
 
 dnl Define an AC_DEFINE with ifndef guard.
 dnl AC_N_DEFINE(VARIABLE [, VALUE])
-define(AC_N_DEFINE,
-[cat >> confdefs.h <<\EOF
-[#ifndef] $1
-[#define] $1 ifelse($#, 2, [$2], $#, 3, [$2], 1)
-[#endif]
+AC_DEFUN([AC_N_DEFINE],
+[
+AH_VERBATIM([$1], [
+#ifndef $1
+# undef $1
+#endif
+])
+
+ cat >>confdefs.h <<\EOF
+#ifndef $1
+[#define] $1 m4_if($#, 1, 1, [$2])
+#endif
 EOF
 ])
 
