@@ -49,8 +49,6 @@ AC_PROG_INSTALL
 
 AC_ISC_POSIX
 AC_N_DEFINE(_XOPEN_SOURCE_EXTENDED)
-AC_N_DEFINE(_XOPEN_SOURCE,600)
-AC_N_DEFINE(_OSF_SOURCE)
 
 AC_SYS_LARGEFILE
 
@@ -77,6 +75,11 @@ case "$host_os" in
 			## for funky AIX compiler using strncpy()
 			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 		fi
+		;;
+	*osf*)
+		# this brings in socklen_t
+		AC_N_DEFINE(_XOPEN_SOURCE,600)
+		AC_N_DEFINE(_OSF_SOURCE)
 		;;
 	#
 	# VOS may need to have POSIX support and System V compatibility enabled.
