@@ -64,6 +64,9 @@ int gendb_search_v(struct ldb_context *ldb,
 		ret = res->count;
 		*msgs = res->msgs;
 		talloc_free(res);
+	} else if (scope == LDB_SCOPE_BASE && ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = 0;
+		*msgs = NULL;
 	} else {
 		DEBUG(4,("gendb_search_v: search failed: %s", ldb_errstring(ldb)));
 		ret = -1;
