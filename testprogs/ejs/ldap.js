@@ -45,6 +45,7 @@ member: cn=ldaptestuser,cn=useRs," + base_dn + "
 		assert(ok.error == 32);
 	}
 
+	println("Testing user add");
 	var ok = ldb.add("
 dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectclass: user
@@ -339,7 +340,19 @@ cn: LDAPtestUSER4
 		assert(res.msgs.length == 1);
 	}
 
-	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
+	println("Testing subtree ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + base_dn);
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer," + base_dn, ldb.SCOPE_SUBTREE);
+	if (res.error != 32) {
+		println(res.errstr);
+		assert(res.error == 32);
+	}
+
+	println("Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + base_dn);
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer," + base_dn, ldb.SCOPE_ONELEVEL);
+	if (res.error != 32) {
+		println(res.errstr);
+		assert(res.error == 32);
+	}
 
 	println("Testing ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in renamed container");
 	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer2," + base_dn, ldb.SCOPE_SUBTREE);
@@ -371,8 +384,31 @@ cn: LDAPtestUSER4
 		println(ok.errstr);
 		assert(ok.error == 66);
 	}
-	println("Testing delete of subtree renamed "+res.msgs[0].dn);
-	ok = ldb.del(res.msgs[0].dn);
+
+	println("Testing base ldb.search for CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn);
+	var res = ldb.search("(objectclass=*)", ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn), ldb.SCOPE_BASE);
+	if (res.error == 0 && res.count == 1) {
+		assert(res.error == 0 && res.count == 1);
+	}
+	var res = ldb.search("(cn=ldaptestuser40)", ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn), ldb.SCOPE_BASE);
+	if (res.error == 0 && res.count == 0) {
+		assert(res.error == 0 && res.count == 0);
+	}
+
+	println("Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + base_dn);
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer2," + base_dn, ldb.SCOPE_ONELEVEL);
+	if (res.error == 0 && res.count == 0) {
+		assert(res.error == 0 && res.count == 0);
+	}
+
+	println("Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + base_dn);
+	var res = ldb.search("(&(cn=ldaptestuser4)(objectClass=user))", "cn=ldaptestcontainer2," + base_dn, ldb.SCOPE_SUBTREE);
+	if (res.error == 0 && res.count == 0) {
+		assert(res.error == 0 && res.count == 0);
+	}
+
+	println("Testing delete of subtree renamed "+("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
+	ok = ldb.del(("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
 	if (ok.error != 0) {
 		println(ok.errstr);
 		assert(ok.error == 0);
@@ -904,6 +940,7 @@ gc_ldb.credentials = options.get_credentials();
 
 var ok = ldb.connect("ldap://" + host);
 var base_dn = find_basedn(ldb);
+
 var configuration_dn = find_configurationdn(ldb);
 var schema_dn = find_schemadn(ldb);
 
