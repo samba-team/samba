@@ -340,7 +340,7 @@ uint32 pdb_decode_acct_ctrl(const char *p)
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
 
-void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
+void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32 acct_ctrl)
 {
 	if (pwd != NULL) {
 		int i;

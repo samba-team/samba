@@ -292,14 +292,6 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return True;
 }
 
- bool smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
-				  const char *attribute, pstring value)
-{
-	return smbldap_get_single_attribute(ldap_struct, entry,
-					    attribute, value, 
-					    sizeof(pstring));
-}
-
  char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 					const char *attribute,
 					TALLOC_CTX *mem_ctx)
