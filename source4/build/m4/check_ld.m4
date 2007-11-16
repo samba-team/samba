@@ -17,7 +17,6 @@ AC_SUBST(STLD_FLAGS)
 AC_SUBST(BLDSHARED)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
-AC_SUBST(SHLD)
 
 # Assume non-shared by default and override below
 # these are the defaults, good for lots of systems
@@ -25,7 +24,6 @@ STLD=${PROG_AR}
 STLD_FLAGS="-rcs"
 BLDSHARED="false"
 LD="${CC}"
-SHLD="${CC}"
 PICFLAG=""
 
 # allow for --with-hostld=gcc
@@ -68,7 +66,6 @@ case "$host_os" in
 		;;
 	*irix*)
 		BLDSHARED="true"
-		SHLD="${PROG_LD}"
 		;;
 	*aix*)
 		BLDSHARED="true"
@@ -112,6 +109,7 @@ AC_LD_PICFLAG
 AC_LD_EXPORT_DYNAMIC
 AC_LD_SHLIBEXT
 AC_LD_SONAMEFLAG
+AC_LIBREPLACE_SHLD
 AC_LIBREPLACE_SHLD_FLAGS
 AC_LIBREPLACE_MDLD
 AC_LIBREPLACE_MDLD_FLAGS
