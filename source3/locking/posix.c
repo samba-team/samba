@@ -933,9 +933,12 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 				 * This logic case should never happen. Ensure this is the
 				 * case by forcing an abort.... Remove in production.
 				 */
-				pstring msg;
+				char *msg = NULL;
 
-				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
+				/* Don't check if alloc succeeds here - we're
+				 * forcing a core dump anyway. */
+
+				asprintf(&msg, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
 lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
 
 				smb_panic(msg);

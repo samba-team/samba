@@ -1802,8 +1802,8 @@ const char *get_peer_name(int fd,
 	socklen_t length = sizeof(ss);
 	const char *p;
 	int ret;
-	char name_buf[HOST_NAME_MAX];
-	char tmp_name[HOST_NAME_MAX];
+	char name_buf[MAX_DNS_NAME_LENGTH];
+	char tmp_name[MAX_DNS_NAME_LENGTH];
 
 	/* reverse lookups can be *very* expensive, and in many
 	   situations won't work because many networks don't link dhcp

@@ -444,11 +444,9 @@ static TDB_DATA locking_key(struct file_id id)
  Print out a share mode.
 ********************************************************************/
 
-char *share_mode_str(int num, struct share_mode_entry *e)
+char *share_mode_str(TALLOC_CTX *ctx, int num, struct share_mode_entry *e)
 {
-	static pstring share_str;
-
-	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: %s "
+	return talloc_asprintf(ctx, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, gen_id = %lu, "
 		 "uid = %u, flags = %u, file_id %s",
@@ -459,8 +457,6 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
 		 file_id_string_tos(&e->id));
-
-	return share_str;
 }
 
 /*******************************************************************
@@ -476,10 +472,12 @@ static void print_share_mode_table(struct locking_data *data)
 
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry entry;
+		char *str = share_mode_str(NULL, i, &entry);
 
 		memcpy(&entry, &shares[i], sizeof(struct share_mode_entry));
 		DEBUG(10,("print_share_mode_table: %s\n",
-			  share_mode_str(i, &entry)));
+			  str ? str : ""));
+		TALLOC_FREE(str);
 	}
 }
 
@@ -603,14 +601,16 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	for (i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *entry_p = &lck->share_modes[i];
+		char *str = share_mode_str(NULL, i, entry_p);
 		DEBUG(10,("parse_share_modes: %s\n",
-			  share_mode_str(i, entry_p) ));
+			str ? str : ""));
 		if (!process_exists(entry_p->pid)) {
 			DEBUG(10,("parse_share_modes: deleted %s\n",
-				  share_mode_str(i, entry_p) ));
+				str ? str : ""));
 			entry_p->op_type = UNUSED_SHARE_MODE_ENTRY;
 			lck->modified = True;
 		}
+		TALLOC_FREE(str);
 	}
 
 	return True;

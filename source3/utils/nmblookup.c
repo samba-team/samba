@@ -197,7 +197,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 	for (j=0;j<count;j++) {
 		char addr[INET6_ADDRSTRLEN];
 		if (translate_addresses) {
-			char h_name[HOST_NAME_MAX];
+			char h_name[MAX_DNS_NAME_LENGTH];
 			h_name[0] = '\0';
 			if (sys_getnameinfo((const struct sockaddr *)&ip_list[j],
 					sizeof(struct sockaddr_storage),
