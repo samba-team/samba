@@ -105,6 +105,7 @@ AC_LIBREPLACE_SHLD
 AC_LIBREPLACE_SHLD_FLAGS
 AC_LIBREPLACE_MDLD
 AC_LIBREPLACE_MDLD_FLAGS
+AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
 
 #######################################################
 # test whether building a shared library actually works

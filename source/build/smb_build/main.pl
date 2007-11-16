@@ -54,6 +54,8 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
 }
 
+my $shared_libs_used = 0;
+
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
@@ -62,6 +64,10 @@ foreach my $key (values %$OUTPUT) {
 		                    and defined($key->{VERSION});
 	$mkenv->SharedLibrary($key) if $key->{TYPE} eq "LIBRARY" and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	if ($key->{TYPE} eq "LIBRARY" and 
+	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
+		$shared_libs_used = 1;
+	}
 	$mkenv->SharedModule($key) if $key->{TYPE} eq "MODULE" and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
@@ -77,7 +83,13 @@ header::create_smb_build_h($OUTPUT, "include/build.h");
 cflags::create_cflags($OUTPUT, $config::config{srcdir},
 		    $config::config{builddir}, "extra_cflags.txt");
 
-
 summary::show($OUTPUT, \%config::config);
+
+if ($shared_libs_used) {
+	print <<EOF;
+To run binaries without installing, set the following environment variable:
+	$config::config{LIB_PATH_VAR}=$config::config{builddir}/bin/shared
+EOF
+}
 
 1;
