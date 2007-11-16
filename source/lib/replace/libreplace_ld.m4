@@ -214,54 +214,32 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 
 AC_DEFUN([AC_LIBREPLACE_MDLD],
 [
-	MDLD="${CC}"
-
-	case "$host_os" in
-		*irix*)
-			MDLD="${PROG_LD}"
-			;;
-	esac
-
+	AC_LIBREPLACE_SHLD()
+	MDLD=$SHLD
 	AC_SUBST(MDLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_ALLOW_SHLIB_UNDEF_FLAG],
+[
+	case "$host_os" in
+		*linux*)
+			SHLD_ALLOW_SHLIB_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
+			;;
+		*osf*)
+			SHLD_ALLOW_SHLIB_UNDEF_FLAG="-expect_unresolved '*'"
+			;;
+		*darwin*)
+			SHLD_ALLOW_SHLIB_UNDEF_FLAG="-undefined suppress"
+			;;
+		esac
+		AC_SUBST(SHLD_ALLOW_SHLIB_UNDEF_FLAG)
 ])
 
 AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 [
-	MDLD_FLAGS="-shared"
-
-	case "$host_os" in
-		*linux*)
-			MDLD_FLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined"
-			;;
-		*solaris*)
-			MDLD_FLAGS="-G"
-			if test "${GCC}" = "no"; then
-				## ${CFLAGS} added for building 64-bit shared
-				## libs using Sun's Compiler
-				NDLD_FLAGS="-G \${CFLAGS}"
-			fi
-			;;
-		*sunos*)
-			MDLD_FLAGS="-G"
-			;;
-		*aix*)
-			MDLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
-			;;
-		*hpux*)
-			if test "${GCC}" = "yes"; then
-				MDLD_FLAGS="-shared"
-			else
-				MDLD_FLAGS="-b"
-			fi
-			;;
-		*osf*)
-			MDLD_FLAGS="-shared -expect_unresolved '*'"
-			;;
-		*darwin*)
-			MDLD_FLAGS="-bundle -flat_namespace -undefined suppress -Wl,-search_paths_first"
-			;;
-	esac
-
+	AC_LIBREPLACE_SHLD_FLAGS()
+	AC_LIBREPLACE_LD_ALLOW_SHLIB_UNDEF_FLAG()
+	MDLD_FLAGS="$SHLD_FLAGS $SHLD_ALLOW_SHLIB_UNDEF_FLAG"
 	AC_SUBST(MDLD_FLAGS)
 ])
 
