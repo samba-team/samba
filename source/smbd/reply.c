@@ -524,7 +524,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,2,0,True);
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, server_devicetype, -1, 
+		p += srvstr_push(outbuf, p, server_devicetype, BUFFER_SIZE - (p - outbuf),
 				 STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
@@ -554,9 +554,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		}
 
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, server_devicetype, -1, 
+		p += srvstr_push(outbuf, p, server_devicetype, BUFFER_SIZE - (p - outbuf),
 				 STR_TERMINATE|STR_ASCII);
-		p += srvstr_push(outbuf, p, fstype, -1, 
+		p += srvstr_push(outbuf, p, fstype, BUFFER_SIZE - (p - outbuf),
 				 STR_TERMINATE);
 		
 		set_message_end(outbuf,p);
@@ -1766,7 +1766,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	   thing in the byte section. JRA */
 	SSVALS(p, 0, -1); /* what is this? not in spec */
 #endif
-	namelen = srvstr_push(outbuf, p, s, -1, STR_ASCII|STR_TERMINATE);
+	namelen = srvstr_push(outbuf, p, s, BUFFER_SIZE - (p - outbuf), STR_ASCII|STR_TERMINATE);
 	p += namelen;
 	outsize = set_message_end(outbuf, p);
 

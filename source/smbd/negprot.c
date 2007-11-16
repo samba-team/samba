@@ -346,7 +346,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 			SCVAL(outbuf,smb_vwv16+1,8);
 			p += 8;
 		}
-		p += srvstr_push(outbuf, p, lp_workgroup(), -1, 
+		p += srvstr_push(outbuf, p, lp_workgroup(), BUFFER_SIZE - (p-outbuf), 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
