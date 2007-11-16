@@ -18,7 +18,6 @@ AC_SUBST(BLDSHARED)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(SHLD)
-AC_SUBST(SHLD_UNDEF_FLAGS)
 
 # Assume non-shared by default and override below
 # these are the defaults, good for lots of systems
@@ -46,7 +45,6 @@ AC_MSG_CHECKING([whether to try to build shared libraries on $host_os])
 case "$host_os" in
 	*linux*)
 		BLDSHARED="true"
-		SHLD_UNDEF_FLAGS="-Wl,--allow-shlib-undefined"
 		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
 		;;
 	*solaris*)
