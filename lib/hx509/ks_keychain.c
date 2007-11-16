@@ -38,11 +38,13 @@ RCSID("$Id$");
 
 #include <Security/Security.h>
 
-/* Missing function decls */
+/* Missing function decls in pre Leopard */
+#ifndef kSecCredentialTypeDefault
 OSStatus SecKeyGetCSPHandle(SecKeyRef, CSSM_CSP_HANDLE *);
 OSStatus SecKeyGetCredentials(SecKeyRef, CSSM_ACL_AUTHORIZATION_TAG,
 			      int, const CSSM_ACCESS_CREDENTIALS **);
 #define kSecCredentialTypeDefault 0
+#endif
 
 
 static int
@@ -50,7 +52,7 @@ getAttribute(SecKeychainItemRef itemRef, SecItemAttr item,
 	     SecKeychainAttributeList **attrs)
 {	     
     SecKeychainAttributeInfo attrInfo;
-    uint32 attrFormat = 0;
+    UInt32 attrFormat = 0;
     OSStatus ret;
 
     *attrs = NULL;
@@ -408,7 +410,7 @@ keychain_iter(hx509_context context,
 {
     SecKeychainAttributeList *attrs = NULL;
     SecKeychainAttributeInfo attrInfo;
-    uint32 attrFormat[1] = { 0 };
+    UInt32 attrFormat[1] = { 0 };
     SecKeychainItemRef itemRef;
     SecItemAttr item[1];
     struct iter *iter = cursor;
