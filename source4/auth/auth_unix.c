@@ -236,7 +236,7 @@ static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, con
 
 	pam_error = pam_start("samba", account_name, pconv, pamh);
 	if (pam_error != PAM_SUCCESS) {
-		/* no vaild pamh here, can we reliably call pam_strerror ? */
+		/* no valid pamh here, can we reliably call pam_strerror ? */
 		DEBUG(4,("smb_pam_start: pam_start failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

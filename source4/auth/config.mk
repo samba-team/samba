@@ -49,15 +49,11 @@ OBJ_FILES = auth_developer.o
 # End MODULE auth_developer
 #######################
 
-#######################
-# Start MODULE auth_unix
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
 OBJ_FILES = auth_unix.o
 PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS NSS_WRAPPER
-# End MODULE auth_unix
-#######################
 
 [SUBSYSTEM::PAM_ERRORS]
 PRIVATE_PROTO_HEADER = pam_errors.h
