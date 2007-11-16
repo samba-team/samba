@@ -190,8 +190,8 @@ PICFLAG=$self->{config}->{PICFLAG}
 
 INSTALL_LINK_FLAGS=$extra_link_flags
 
-LD=$self->{config}->{LD} 
-LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
+BNLD=$self->{config}->{LD} 
+BNLD_FLAGS=$self->{config}->{LDFLAGS} -L$libdir
 
 STLD=$self->{config}->{STLD}
 STLD_FLAGS=$self->{config}->{STLD_FLAGS}
@@ -511,7 +511,7 @@ __EOD__
 		);
 	} else {
 		$self->output(<< "__EOD__"
-	\@\$(LD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(BNLD) \$(BNLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
