@@ -24,7 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 
 /*
   add privilege bits for one sid to a security_token

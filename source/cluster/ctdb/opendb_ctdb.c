@@ -42,7 +42,7 @@
 #include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #include "messaging/messaging.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
 #include "ntvfs/ntvfs.h"

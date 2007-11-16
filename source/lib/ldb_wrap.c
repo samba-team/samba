@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   database wrap functions
+   LDB wrap functions
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -27,17 +27,14 @@
 */
 
 #include "includes.h"
-#include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
-#include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb-samba/ldif_handlers.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/schema/proto.h"
 #include "param/param.h"
-
-static struct tdb_wrap *tdb_list;
 
 /*
   this is used to catch debug messages from ldb
@@ -69,11 +66,6 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	if (!s) return;
 	DEBUG(level, ("ldb: %s\n", s));
 	free(s);
-}
-
-char *wrap_casefold(void *context, void *mem_ctx, const char *s)
-{
-	return strupper_talloc(mem_ctx, s);
 }
 
 /* check for memory leaks on the ldb context */
@@ -192,91 +184,4 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 }
 
 
-/*
- Log tdb messages via DEBUG().
-*/
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...)
-{
-	va_list ap;
-	char *ptr = NULL;
-	int debug_level;
-
-	va_start(ap, format);
-	vasprintf(&ptr, format, ap);
-	va_end(ap);
-	
-	switch (level) {
-	case TDB_DEBUG_FATAL:
-		debug_level = 0;
-		break;
-	case TDB_DEBUG_ERROR:
-		debug_level = 1;
-		break;
-	case TDB_DEBUG_WARNING:
-		debug_level = 2;
-		break;
-	case TDB_DEBUG_TRACE:
-		debug_level = 5;
-		break;
-	default:
-		debug_level = 0;
-	}		
-
-	if (ptr != NULL) {
-		const char *name = tdb_name(tdb);
-		DEBUG(debug_level, ("tdb(%s): %s", name ? name : "unnamed", ptr));
-		free(ptr);
-	}
-}
-
-
-/* destroy the last connection to a tdb */
-static int tdb_wrap_destructor(struct tdb_wrap *w)
-{
-	tdb_close(w->tdb);
-	DLIST_REMOVE(tdb_list, w);
-	return 0;
-}				 
-
-/*
-  wrapped connection to a tdb database
-  to close just talloc_free() the tdb_wrap pointer
- */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
-			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode)
-{
-	struct tdb_wrap *w;
-	struct tdb_logging_context log_ctx;
-	log_ctx.log_fn = tdb_wrap_log;
-
-	for (w=tdb_list;w;w=w->next) {
-		if (strcmp(name, w->name) == 0) {
-			return talloc_reference(mem_ctx, w);
-		}
-	}
-
-	w = talloc(mem_ctx, struct tdb_wrap);
-	if (w == NULL) {
-		return NULL;
-	}
-
-	w->name = talloc_strdup(w, name);
-
-	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-			     open_flags, mode, &log_ctx, NULL);
-	if (w->tdb == NULL) {
-		talloc_free(w);
-		return NULL;
-	}
-
-	talloc_set_destructor(w, tdb_wrap_destructor);
-
-	DLIST_ADD(tdb_list, w);
-
-	return w;
-}

@@ -22,7 +22,8 @@
 #include "includes.h"
 #include "system/time.h"
 #include "auth/auth.h"
-#include "db_wrap.h"
+#include <ldb.h>
+#include "util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"

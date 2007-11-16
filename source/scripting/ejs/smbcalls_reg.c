@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
-#include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/registry/registry.h"

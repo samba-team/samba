@@ -30,7 +30,7 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #endif
 
 

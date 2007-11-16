@@ -28,7 +28,7 @@
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/samr/proto.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_state.h"
 #include "libcli/security/security.h"

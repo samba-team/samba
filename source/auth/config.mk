@@ -7,7 +7,7 @@ include credentials/config.mk
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
 OBJ_FILES = sam.o auth_sam_reply.o ntlm_check.o 
-PUBLIC_DEPENDENCIES = SAMDB
+PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB
 
 #######################
 # Start MODULE auth_sam

@@ -25,7 +25,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 

@@ -23,7 +23,6 @@
 #include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #include "messaging/messaging.h"
-#include "db_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
