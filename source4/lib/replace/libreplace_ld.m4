@@ -110,8 +110,11 @@ AC_DEFUN([AC_LD_SHLDFLAGS],
 				SHLD_FLAGS="-b"
 			fi
 			;;
+		*osf*)
+			SHLD_FLAGS="-shared -warning_unresolved"
+			;;
 		*darwin*)
-			SHLD_FLAGS="-bundle -flat_namespace -undefined suppress -Wl,-search_paths_first"
+			SHLD_FLAGS="-bundle -flat_namespace -undefined warning -Wl,-search_paths_first"
 			;;
 	esac
 
