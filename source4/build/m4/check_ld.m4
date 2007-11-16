@@ -29,13 +29,7 @@ PICFLAG=""
 # allow for --with-hostld=gcc
 AC_ARG_WITH(hostld,[  --with-hostld=linker    choose host linker],
 [HOSTLD=$withval],
-[
-if test z"$cross_compiling" = "yes"; then
-	HOSTLD='$(HOSTCC)'
-else
-	HOSTLD='$(LD)'
-fi
-])
+[HOSTLD=$HOSTCC])
 
 AC_MSG_CHECKING([whether to try to build shared libraries on $host_os])
 
