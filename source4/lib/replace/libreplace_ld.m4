@@ -223,6 +223,9 @@ AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 				MDLD_FLAGS="-b"
 			fi
 			;;
+		*osf*)
+			MDLD_FLAGS="-shared -expect_unresolved '*'"
+			;;
 		*darwin*)
 			MDLD_FLAGS="-bundle -flat_namespace -undefined suppress -Wl,-search_paths_first"
 			;;
