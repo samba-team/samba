@@ -24,7 +24,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "system/filesys.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 #include "param/param.h"
 
 struct db_tdb_ctx {

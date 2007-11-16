@@ -19,6 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _TDB_WRAP_H_
+#define _TDB_WRAP_H_
+
+#include "tdb.h"
 
 struct tdb_wrap {
 	struct tdb_context *tdb;
@@ -27,10 +31,8 @@ struct tdb_wrap {
 	struct tdb_wrap *next, *prev;
 };
 
-struct auth_session_info;
-struct ldb_message;
-struct ldb_dn;
-struct cli_credentials;
-struct loadparm_context;
+struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
+			       const char *name, int hash_size, int tdb_flags,
+			       int open_flags, mode_t mode);
 
-#include "lib/db_wrap_proto.h"
+#endif /* _TDB_WRAP_H_ */

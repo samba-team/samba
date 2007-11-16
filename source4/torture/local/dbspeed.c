@@ -24,7 +24,8 @@
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/db_wrap.h"
+#include "lib/ldb_wrap.h"
+#include "lib/tdb_wrap.h"
 #include "torture/torture.h"
 #include "param/param.h"
 

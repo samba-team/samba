@@ -39,7 +39,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 
 int samldb_notice_sid(struct ldb_module *module, 
 		      TALLOC_CTX *mem_ctx, const struct dom_sid *sid);

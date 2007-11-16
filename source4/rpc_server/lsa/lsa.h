@@ -30,7 +30,7 @@
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/secrets.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "param/param.h"
 

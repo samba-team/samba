@@ -29,7 +29,7 @@
 #include "smbd/process_model.h"
 #include "smb_server/smb_server.h"
 #include "lib/socket/netif.h"
-#include "dlinklist.h"
+#include "util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 

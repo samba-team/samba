@@ -27,7 +27,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "system/time.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"

@@ -35,7 +35,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
 #include "auth/auth.h"
-#include "lib/db_wrap.h"
+#include "lib/ldb_wrap.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"

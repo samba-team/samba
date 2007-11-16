@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"

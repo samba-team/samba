@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/db_wrap.h"
 
 /*
   search the sam for the specified attributes - va_list variant
@@ -123,3 +122,10 @@ int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string)
 	talloc_free(ldif);
 	return ret;
 }
+
+char *wrap_casefold(void *context, void *mem_ctx, const char *s)
+{
+	return strupper_talloc(mem_ctx, s);
+}
+
+

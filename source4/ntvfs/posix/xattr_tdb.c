@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "lib/tdb/include/tdb.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 
 #define XATTR_LIST_ATTR ".xattr_list"
 

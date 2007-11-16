@@ -25,7 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 #include "libcli/security/security.h"
 
 /*

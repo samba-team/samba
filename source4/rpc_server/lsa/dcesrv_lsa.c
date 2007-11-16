@@ -21,6 +21,7 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
+#include "util/util_ldb.h"
 
 /*
   this type allows us to distinguish handle types

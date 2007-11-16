@@ -30,7 +30,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"

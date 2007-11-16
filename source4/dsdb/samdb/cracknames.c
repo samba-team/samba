@@ -31,7 +31,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "auth/auth.h"
-#include "db_wrap.h"
+#include "util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,

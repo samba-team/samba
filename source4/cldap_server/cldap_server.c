@@ -31,7 +31,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "auth/auth.h"
 #include "param/param.h"
 

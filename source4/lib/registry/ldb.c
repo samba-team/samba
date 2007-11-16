@@ -21,7 +21,7 @@
 #include "registry.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "db_wrap.h"
+#include "ldb_wrap.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
 
