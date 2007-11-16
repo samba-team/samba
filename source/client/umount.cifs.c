@@ -342,6 +342,13 @@ int main(int argc, char ** argv)
 
 	/* fixup path if needed */
 
+	/* Trim any trailing slashes */
+	while ((strlen(mountpoint) > 1) &&
+		(mountpoint[strlen(mountpoint)-1] == '/'))
+	{
+		mountpoint[strlen(mountpoint)-1] = '\0';
+	}
+
 	/* make sure that this is a cifs filesystem */
 	rc = statfs(mountpoint, &statbuf);
 	
