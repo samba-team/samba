@@ -65,7 +65,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	}
 
 	if (line == NULL) {
-		line = SMB_MALLOC(BUFSIZ);
+		line = (char *)SMB_MALLOC(BUFSIZ);
 		if (!line) {
 			return NULL;
 		}
