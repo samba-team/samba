@@ -19,7 +19,7 @@ OBJ_FILES = \
 		service_stream.o \
 		service_task.o
 PRIVATE_DEPENDENCIES = \
-		MESSAGING
+		MESSAGING samba-socket
 # End SUBSYSTEM SERVER
 #######################
 

@@ -27,7 +27,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
 		POPT_SAMBA \
-		NDR_TABLE
+		NDR_TABLE \
+		LIBSAMBA-ERRORS
 MANPAGE = tools/ndrdump.1
 # FIXME: ndrdump shouldn't have to depend on RPC...
 # End BINARY ndrdump
