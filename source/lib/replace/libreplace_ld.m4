@@ -249,3 +249,32 @@ AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 
 	AC_SUBST(MDLD_FLAGS)
 ])
+
+AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
+[
+	case "$host_os" in
+		*linux*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*solaris*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*hpux*)
+			LIB_PATH_VAR=SHLIB_PATH
+		;;
+		*tru64*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*aix*)
+			LIB_PATH_VAR=LIB_PATH
+			;;
+		*irix*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+			;;
+		*darwin*)
+			LIB_PATH_VAR=DYLD_LIBRARY_PATH
+			;;
+	esac
+
+	AC_SUBST(LIB_PATH_VAR)
+])
