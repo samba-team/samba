@@ -123,7 +123,7 @@ DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
 # Dependencies for host objects
 HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
     `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_CFLAGS) \$(FIRST_PREREQ) -o \$@
+    \$(HOSTCC_FLAGS) \$(FIRST_PREREQ) -o \$@
 # Dependencies for precompiled headers
 PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
     \$(CFLAGS) \$(FIRST_PREREQ) -o \$@
@@ -146,7 +146,7 @@ COMPILE = \$(CC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
 
 # Run the compiler for the build host
 HCOMPILE = \$(HOSTCC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_CFLAGS) -c \$(FIRST_PREREQ) -o \$@
+    \$(HOSTCC_FLAGS) -c \$(FIRST_PREREQ) -o \$@
 
 # Precompile headers
 PCHCOMPILE = @\$(CC) -Ilib/replace \\
@@ -188,16 +188,10 @@ CC=$self->{config}->{CC}
 CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
 
-HOSTCC=$self->{config}->{HOSTCC}
-HOSTCC_CFLAGS=-D_SAMBA_HOSTCC_ $self->{config}->{CFLAGS} \$(CPPFLAGS)
-
 INSTALL_LINK_FLAGS=$extra_link_flags
 
 LD=$self->{config}->{LD} 
 LDFLAGS=$self->{config}->{LDFLAGS} -L$libdir
-
-HOSTLD=$self->{config}->{HOSTLD}
-# It's possible that we ought to have HOSTLD_LDFLAGS as well
 
 STLD=$self->{config}->{STLD}
 STLD_FLAGS=$self->{config}->{STLD_FLAGS}
@@ -209,6 +203,12 @@ MDLD=$self->{config}->{MDLD}
 MDLD_FLAGS=$self->{config}->{MDLD_FLAGS} -L\$(builddir)/bin/shared
 
 SHLIBEXT=$self->{config}->{SHLIBEXT}
+
+HOSTCC=$self->{config}->{HOSTCC}
+HOSTCC_FLAGS=-D_SAMBA_HOSTCC_ $self->{config}->{CFLAGS} \$(CPPFLAGS)
+
+HOSTLD=$self->{config}->{HOSTLD}
+HOSTLD_FLAGS=$self->{config}->{LDFLAGS}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
 
@@ -505,7 +505,7 @@ __EOD__
 
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
 		$self->output(<< "__EOD__"
-	\@\$(HOSTLD) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 __EOD__
 		);
