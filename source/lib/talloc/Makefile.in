@@ -17,6 +17,7 @@ EXTRA_TARGETS = @DOC_TARGET@
 PICFLAG = @PICFLAG@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 SHLIBEXT = @SHLIBEXT@
+SHLD = @SHLD@
 SHLD_FLAGS = @SHLD_FLAGS@
 
 .SUFFIXES: .c .o .3 .3.xml .xml .html
@@ -44,7 +45,7 @@ libtalloc.a: $(LIBOBJ)
 	@-ranlib $@
 
 $(SOLIB): $(LIBOBJ)
-	$(CC) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
 
 install: all 
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
