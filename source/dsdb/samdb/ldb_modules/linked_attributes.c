@@ -127,8 +127,18 @@ static int setup_modifies(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		for (j=0; j < el->num_values; j++) {
 			struct ldb_message_element *ret_el;
 			struct ldb_request *new_req;
+			struct ldb_message *new_msg;
+
+			/* Create a spot in the list for the requests */
+			ac->down_req = talloc_realloc(ac, ac->down_req, 
+						      struct ldb_request *, ac->num_requests + 1);
+			if (!ac->down_req) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
 			/* Create the modify request */
-			struct ldb_message *new_msg = ldb_msg_new(ac->down_req);
+			new_msg = ldb_msg_new(ac->down_req);
 			if (!new_msg) {
 				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
@@ -184,13 +194,6 @@ static int setup_modifies(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			
 			ldb_set_timeout_from_prev_req(ldb, ac->orig_req, new_req);
 			
-			/* Now add it to the list */
-			ac->down_req = talloc_realloc(ac, ac->down_req, 
-						      struct ldb_request *, ac->num_requests + 1);
-			if (!ac->down_req) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
 			ac->down_req[ac->num_requests] = new_req;
 			ac->num_requests++;
 			
