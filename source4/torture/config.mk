@@ -366,17 +366,21 @@ MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
 
-GCOV_FLAGS = -ftest-coverage -fprofile-arcs
-GCOV_LIBS = -lgcov
+GCOV_CFLAGS = -ftest-coverage -fprofile-arcs
+GCOV_LDFLAGS = $(GCOV_CFLAGS) -lgcov
 
 COV_TARGET = test
 
+COV_VARS = \
+	CFLAGS="$(CFLAGS) $(GCOV_CFLAGS)" \
+	BNLD_FLAGS="$(BNLD_FLAGS) $(GCOV_LDFLAGS)" \
+	SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_LDFLAGS)" \
+	MDLD_FLAGS="$(MDLD_FLAGS) $(GCOV_LDFLAGS)" \
+	HOSTCC_FLAGS="$(HOSTCC_FLAGS) $(GCOV_CFLAGS)" \
+	HOSTLD_FLAGS="$(HOSTLD_FLAGS) $(GCOV_LDLAGS)"
+
 test_cov:
-	@$(MAKE) $(COV_TARGET) \
-		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
-		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
-		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
-		SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)"
+	@$(MAKE) $(COV_TARGET) $(COV_VARS)
 
 gcov: test_cov
 	for I in $(sort $(dir $(ALL_OBJS))); \
@@ -385,11 +389,7 @@ gcov: test_cov
 
 lcov-split: 
 	rm -f samba.info
-	@$(MAKE) $(COV_TARGET) \
-		HOSTCC_CFLAGS="$(HOSTCC_CFLAGS) $(GCOV_FLAGS)" \
-		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
-		LDFLAGS="$(LDFLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
-		SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_FLAGS) $(GCOV_LIBS)" \
+	@$(MAKE) $(COV_TARGET) $(COV_VARS) \
 		TEST_OPTIONS="--analyse-cmd=\"lcov --base-directory `pwd` --directory . --capture --output-file samba.info -t\""
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	genhtml -o coverage samba.info
