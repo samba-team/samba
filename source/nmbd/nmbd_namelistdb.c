@@ -192,6 +192,10 @@ bool add_name_to_subnet( struct subnet_record *subrec,
 	struct name_record *namerec;
 	time_t time_now = time(NULL);
 
+	if (num_ips == 0) {
+		return false;
+	}
+
 	namerec = SMB_MALLOC_P(struct name_record);
 	if( NULL == namerec ) {
 		DEBUG( 0, ( "add_name_to_subnet: malloc fail.\n" ) );
@@ -504,8 +508,12 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
 			return;
 		}
 
-		for( bcast_subrecs = FIRST_SUBNET, i = 0; bcast_subrecs; bcast_subrecs = NEXT_SUBNET_EXCLUDING_UNICAST(bcast_subrecs), i++ )
+		for( bcast_subrecs = FIRST_SUBNET, i = 0; bcast_subrecs &&
+				i < num_ips;
+				bcast_subrecs = NEXT_SUBNET_EXCLUDING_UNICAST(bcast_subrecs), i++ ) {
 			iplist[i] = bcast_subrecs->myip;
+		}
+		num_ips = i;
 	}
 
 	add_name_to_subnet(subrec,"*",0x0,samba_nb_type, PERMANENT_TTL,
