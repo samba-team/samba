@@ -78,6 +78,19 @@ esac
 AC_SUBST(PICFLAG)
 ])
 
+AC_DEFUN([AC_LIBREPLACE_SHLD],
+[
+	SHLD="${CC}"
+
+	case "$host_os" in
+		*irix*)
+			SHLD="${PROG_LD}"
+			;;
+	esac
+
+	AC_SUBST(SHLD)
+])
+
 AC_DEFUN([AC_LIBREPLACE_SHLD_FLAGS],
 [
 	SHLD_FLAGS="-shared"
