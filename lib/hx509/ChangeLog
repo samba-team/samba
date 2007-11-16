@@ -1,5 +1,9 @@
-2007-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_keychain.c: Check if SecKeyGetCSPHandle needs prototype.
+
+2007-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* data/nist-data: Make work on case senstive filesystems too.
 	
 2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
