@@ -37,6 +37,7 @@ LIBDL = @LIBDL@
 SHLIBEXT = @SHLIBEXT@
 
 LD_EXPORT_DYNAMIC = @LD_EXPORT_DYNAMIC@
+SHLD = @SHLD@
 SHLD_FLAGS = @SHLD_FLAGS@
 
 LDFLAGS = @LDFLAGS@
@@ -99,7 +100,7 @@ SOLIB = lib/libldb.$(SHLIBEXT).0.9.0
 STATICLIB = lib/libldb.a
 
 $(SOLIB): $(OBJS)
-	$(CC) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
 
 all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
 
@@ -126,7 +127,7 @@ lib/libldb.a: $(OBJS)
 	@-ranlib $@
 
 lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(SOLIB)
-	$(CC) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
 
 sample_module.$(SHLIBEXT): tests/sample_module.o
 	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
