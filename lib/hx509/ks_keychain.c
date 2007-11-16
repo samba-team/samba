@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <Security/Security.h>
 
 /* Missing function decls in pre Leopard */
-#ifndef kSecCredentialTypeDefault
+#ifdef NEED_SECKEYGETCSPHANDLE_PROTO
 OSStatus SecKeyGetCSPHandle(SecKeyRef, CSSM_CSP_HANDLE *);
 OSStatus SecKeyGetCredentials(SecKeyRef, CSSM_ACL_AUTHORIZATION_TAG,
 			      int, const CSSM_ACCESS_CREDENTIALS **);
