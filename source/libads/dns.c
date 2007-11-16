@@ -77,7 +77,7 @@ static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                           uint8 **ptr, struct dns_query *q )
 {
 	uint8 *p = *ptr;
-	pstring hostname;
+	char hostname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
 	ZERO_STRUCTP( q );
@@ -115,7 +115,7 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
                        uint8 **ptr, struct dns_rr *rr )
 {
 	uint8 *p = *ptr;
-	pstring hostname;
+	char hostname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
 	if ( !start || !end || !rr || !*ptr)
@@ -170,7 +170,7 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 {
 	struct dns_rr rr;
 	uint8 *p;
-	pstring dcname;
+	char dcname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
 	if ( !start || !end || !srv || !*ptr)
@@ -216,7 +216,7 @@ static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 {
 	struct dns_rr rr;
 	uint8 *p;
-	pstring nsname;
+	char nsname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
 	if ( !start || !end || !nsrec || !*ptr)

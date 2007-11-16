@@ -31,7 +31,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 				 char **unix_path)
 {
 	fstring tok;
-	pstring path;
+	char *path = NULL;
 
 	*server = NULL;
 	*service = NULL;
@@ -63,15 +63,22 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pstrcpy(path, lock_path(GPO_CACHE_DIR));
-	pstrcat(path, "/");
-	pstrcat(path, file_sys_path);
-	pstring_sub(path, "\\", "/");
+	if ((path = talloc_asprintf(mem_ctx,
+					"%s/%s",
+					lock_path(GPO_CACHE_DIR),
+					file_sys_path)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	path = talloc_string_sub(mem_ctx, path, "\\", "/");
+	if (!path) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ((*unix_path = talloc_strdup(mem_ctx, path)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	TALLOC_FREE(path);
 	return NT_STATUS_OK;
 }
 

@@ -99,7 +99,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
 	int ret;
-	char h_name[HOST_NAME_MAX];
+	char h_name[MAX_DNS_NAME_LENGTH];
 
 	if (argc > 0)
 		domain = argv[0];

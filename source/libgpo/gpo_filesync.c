@@ -24,7 +24,7 @@ struct sync_context {
 	struct cli_state *cli;
 	char *remote_path;
 	char *local_path;
-	pstring mask;
+	char *mask;
 	uint16_t attribute;
 };
 
@@ -171,9 +171,13 @@ static void gpo_sync_func(const char *mnt,
 		old_unix_dir = ctx->local_path;
 		ctx->local_path = talloc_strdup(ctx->mem_ctx, unix_dir);
 
-		pstrcpy(ctx->mask, nt_dir);
-		pstrcat(ctx->mask, "\\*");
-
+		ctx->mask = talloc_asprintf(ctx->mem_ctx,
+					"%s\\*",
+					nt_dir);
+		if (!ctx->local_path || !ctx->mask) {
+			DEBUG(0,("gpo_sync_func: ENOMEM\n"));
+			return;
+		}
 		if (!gpo_sync_files(ctx)) {
 			DEBUG(0,("could not sync files\n"));
 		}
@@ -219,8 +223,12 @@ NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
 	ctx.local_path	= CONST_DISCARD(char *, local_path);
 	ctx.attribute 	= (aSYSTEM | aHIDDEN | aDIR);
 
-	pstrcpy(ctx.mask, nt_path);
-	pstrcat(ctx.mask, "\\*");
+	ctx.mask = talloc_asprintf(mem_ctx,
+				"%s\\*",
+				nt_path);
+	if (!ctx.mask) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!gpo_sync_files(&ctx)) {
 		return NT_STATUS_NO_SUCH_FILE;
