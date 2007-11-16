@@ -47,6 +47,9 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
        $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
+MDLD = @MDLD@
+MDLD_FLAGS = @MDLD_FLAGS@
+
 LDB_LIB = $(STATICLIB)
 
 LIB_FLAGS=$(LDFLAGS) -Llib $(LDB_LIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
@@ -125,8 +128,8 @@ lib/libldb.a: $(OBJS)
 lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(SOLIB)
 	$(CC) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
 
-sample_module.$(SHLIBEXT): tests/sample_module.o 
-	$(CC) $(SHLD_FLAGS) $(LDFLAGS) -o $@ tests/sample_module.o 
+sample_module.$(SHLIBEXT): tests/sample_module.o
+	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
