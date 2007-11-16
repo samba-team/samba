@@ -18,7 +18,14 @@ fi
 
 if test "$rk_cv_framework_security" = yes; then
    AC_DEFINE(HAVE_FRAMEWORK_SECURITY, 1, [Have -framework Security])
+   AC_MSG_RESULT(yes)
+else
+   AC_MSG_RESULT(no)
 fi
 AM_CONDITIONAL(FRAMEWORK_SECURITY, test "$rk_cv_framework_security" = yes)
+
+if test "$rk_cv_framework_security" = yes; then
+   AC_NEED_PROTO([#include <Security/Security.h>],SecKeyGetCSPHandle)
+fi
 
 ])
