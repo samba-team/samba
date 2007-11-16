@@ -83,6 +83,8 @@ showflags:
 	@echo '  STLD_FLAGS = $(STLD_FLAGS)'
 	@echo '  SHLD       = $(SHLD)'
 	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
+	@echo '  MDLD       = $(MDLD)'
+	@echo '  MDLD_FLAGS = $(MDLD_FLAGS)'
 	@echo '  SHLIBEXT   = $(SHLIBEXT)'
 	@echo '  srcdir     = $(srcdir)'
 	@echo '  builddir   = $(builddir)'
