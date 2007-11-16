@@ -3,6 +3,21 @@
 #        http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html
 #
 
+AC_DEFUN([AC_LIBREPLACE_STLD],
+[
+	AC_PATH_PROG(PROG_AR, ar)
+
+	STLD=${PROG_AR}
+
+	AC_SUBST(STLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_STLD_FLAGS],
+[
+	STLD_FLAGS="-rcs"
+	AC_SUBST(STLD_FLAGS)
+])
+
 AC_DEFUN([AC_LD_EXPORT_DYNAMIC],
 [
 saved_LDFLAGS="$LDFLAGS"
