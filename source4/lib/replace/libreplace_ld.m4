@@ -255,7 +255,7 @@ AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 		*hpux*)
 			LIB_PATH_VAR=SHLIB_PATH
 		;;
-		*tru64*)
+		*osf*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*aix*)
