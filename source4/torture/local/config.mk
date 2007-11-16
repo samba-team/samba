@@ -28,6 +28,7 @@ OBJ_FILES = \
 		../../lib/tdr/testsuite.o \
 		../../lib/events/testsuite.o \
 		../../param/tests/share.o \
+		../../auth/credentials/tests/simple.o \
 		local.o \
 		dbspeed.o \
 		torture.o
