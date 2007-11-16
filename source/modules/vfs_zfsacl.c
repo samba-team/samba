@@ -34,8 +34,9 @@
  * read the local file's acls and return it in NT form
  * using the NFSv4 format conversion
  */
-static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
-			     struct security_descriptor **ppdesc)
+static NTSTATUS zfs_get_nt_acl_common(const char *name,
+				      uint32 security_info,
+				      SMB4ACL_T **ppacl)
 {
 	int naces, i;
 	ace_t *acebuf;
@@ -43,11 +44,11 @@ static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 	TALLOC_CTX	*mem_ctx;
 
 	/* read the number of file aces */
-	if((naces = acl(fsp->fsp_name, ACE_GETACLCNT, 0, NULL)) == -1) {
+	if((naces = acl(name, ACE_GETACLCNT, 0, NULL)) == -1) {
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not supported on the filesystem where the file reside"));
 		} else {
-			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", fsp->fsp_name,
+			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", name,
 					strerror(errno)));
 		}
 		return map_nt_error_from_unix(errno);
@@ -59,8 +60,8 @@ static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 	/* read the aces into the field */
-	if(acl(fsp->fsp_name, ACE_GETACL, naces, acebuf) < 0) {
-		DEBUG(9, ("acl(ACE_GETACL, %s): %s ", fsp->fsp_name,
+	if(acl(name, ACE_GETACL, naces, acebuf) < 0) {
+		DEBUG(9, ("acl(ACE_GETACL, %s): %s ", name,
 				strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
@@ -92,7 +93,8 @@ static NTSTATUS zfs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 			return NT_STATUS_NO_MEMORY;
 	}
 
-	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+	*ppacl = pacl;
+	return NT_STATUS_OK;
 }
 
 /* call-back function processing the NT acl -> ZFS acl using NFSv4 conv. */
@@ -171,7 +173,15 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				 int fd,  uint32 security_info,
 				 struct security_descriptor **ppdesc)
 {
-	return zfs_get_nt_acl(fsp, security_info, ppdesc);
+	SMB4ACL_T *pacl;
+	NTSTATUS status;
+
+	status = zfs_get_nt_acl_common(fsp->fsp_name, security_info, &pacl);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
@@ -179,7 +189,16 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 				const char *name,  uint32 security_info,
 				struct security_descriptor **ppdesc)
 {
-	return zfs_get_nt_acl(fsp, security_info, ppdesc);
+	SMB4ACL_T *pacl;
+	NTSTATUS status;
+
+	status = zfs_get_nt_acl_common(name, security_info, &pacl);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return smb_get_nt_acl_nfs4(handle->conn, name, security_info, ppdesc,
+				   pacl);
 }
 
 static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
