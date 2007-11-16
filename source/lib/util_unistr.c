@@ -365,7 +365,7 @@ char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src)
 				CH_UNIX,
 				src->buffer,
 				src->uni_str_len * 2,
-				(void **)&dest,
+				(void *)&dest,
 				true);
 	if (dest_len == (size_t)-1) {
 		return NULL;
