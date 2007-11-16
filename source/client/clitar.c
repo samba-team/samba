@@ -609,7 +609,6 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	SMB_BIG_UINT nread=0;
 	char ftype;
 	file_info2 finfo;
-	BOOL close_done = False;
 	BOOL shallitime=True;
 	char data[65520];
 	int read_size = 65520;
@@ -695,7 +694,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		DEBUG(3,("getting file %s of size %.0f bytes as a tar file %s",
 			finfo.name, (double)finfo.size, lname));
       
-		while (nread < finfo.size && !close_done) {
+		do {
 	      
 			DEBUG(3,("nread=%.0f\n",(double)nread));
 	      
@@ -734,13 +733,13 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 				break;
 			}
 	      
-			if (datalen == 0) {
+			if ( (datalen == 0) && (finfo.size != 0) ) {
 				DEBUG(0,("Error reading file %s. Got 0 bytes\n", rname));
 				break;
 			}
 
 			datalen=0;
-		}
+		} while ( nread < finfo.size );
 
 		if (wrote_tar_header) {
 			/* pad tar file with zero's if we couldn't get entire file */
