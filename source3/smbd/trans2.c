@@ -4168,7 +4168,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
-				char *buffer = TALLOC_ARRAY(ctx, char, 1024);
+				char *buffer = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
 
 				if (!buffer) {
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -4187,7 +4187,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return;
 #endif
 				len = SMB_VFS_READLINK(conn,fullpathname,
-						buffer, 1023);
+						buffer, PATH_MAX);
 				if (len == -1) {
 					reply_unixerror(req, ERRDOS,
 							ERRnoaccess);
