@@ -681,18 +681,22 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 	return priority;
 }
 
-static char *audit_prefix(connection_struct *conn)
+static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 {
-	static pstring prefix;
+	char *prefix = NULL;
 
-	pstrcpy(prefix, lp_parm_const_string(SNUM(conn), "full_audit",
+	prefix = talloc_strdup(ctx,
+			lp_parm_const_string(SNUM(conn), "full_audit",
 					     "prefix", "%u|%I"));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      prefix, sizeof(prefix));
-	return prefix;
+	if (!prefix) {
+		return NULL;
+	}
+	return talloc_sub_advanced(ctx,
+			lp_servicename(SNUM(conn)), conn->user,
+			conn->connectpath, conn->gid,
+			get_current_username(),
+			current_user_info.domain,
+			prefix);
 }
 
 static bool log_success(vfs_handle_struct *handle, vfs_op_type op)
@@ -790,8 +794,9 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		   const char *format, ...)
 {
 	fstring err_msg;
-	pstring op_msg;
+	char *audit_pre = NULL;
 	va_list ap;
+	char *op_msg = NULL;
 
 	if (success && (!log_success(handle, op)))
 		return;
@@ -805,11 +810,20 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		fstr_sprintf(err_msg, "fail (%s)", strerror(errno));
 
 	va_start(ap, format);
-	vsnprintf(op_msg, sizeof(op_msg), format, ap);
+	op_msg = talloc_vasprintf(NULL, format, ap);
 	va_end(ap);
 
+	if (!op_msg) {
+		return;
+	}
+
+	audit_pre = audit_prefix(NULL, handle->conn);
 	syslog(audit_syslog_priority(handle), "%s|%s|%s|%s\n",
-	       audit_prefix(handle->conn), audit_opname(op), err_msg, op_msg);
+		audit_pre ? audit_pre : "",
+		audit_opname(op), err_msg, op_msg);
+
+	TALLOC_FREE(audit_pre);
+	TALLOC_FREE(op_msg);
 
 	return;
 }

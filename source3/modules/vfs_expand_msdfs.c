@@ -37,19 +37,19 @@ extern userdom_struct current_user_info;
   This is to redirect a DFS client to a host close to it.
 ***********************************************************/
 
-static bool read_target_host(const char *mapfile, pstring targethost)
+static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile)
 {
 	XFILE *f;
-	pstring buf;
+	char buf[1024];
 	char *space = buf;
-	bool found = False;
-	
+	bool found = false;
+
 	f = x_fopen(mapfile, O_RDONLY, 0);
 
 	if (f == NULL) {
 		DEBUG(0,("can't open IP map %s. Error %s\n",
 			 mapfile, strerror(errno) ));
-		return False;
+		return NULL;
 	}
 
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
@@ -73,23 +73,23 @@ static bool read_target_host(const char *mapfile, pstring targethost)
 
 		if (strncmp(client_addr(get_client_fd(),addr,sizeof(addr)),
 				buf, strlen(buf)) == 0) {
-			found = True;
+			found = true;
 			break;
 		}
 	}
 
 	x_fclose(f);
 
-	if (!found)
-		return False;
+	if (!found) {
+		return NULL;
+	}
 
 	space += 1;
 
 	while (isspace(*space))
 		space += 1;
 
-	pstrcpy(targethost, space);
-	return True;
+	return talloc_strdup(ctx, space);
 }
 
 /**********************************************************
@@ -105,65 +105,83 @@ static bool read_target_host(const char *mapfile, pstring targethost)
 
 ***********************************************************/
 
-static bool expand_msdfs_target(connection_struct* conn, pstring target)
+static char *expand_msdfs_target(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				char *target)
 {
-	pstring mapfilename;
+	char *mapfilename = NULL;
 	char *filename_start = strchr_m(target, '@');
-	char *filename_end;
-	int filename_len;
-	pstring targethost;
-	pstring new_target;
+	char *filename_end = NULL;
+	int filename_len = 0;
+	char *targethost = NULL;
+	char *new_target = NULL;
 
 	if (filename_start == NULL) {
 		DEBUG(10, ("No filename start in %s\n", target));
-		return False;
+		return NULL;
 	}
 
 	filename_end = strchr_m(filename_start+1, '@');
 
 	if (filename_end == NULL) {
 		DEBUG(10, ("No filename end in %s\n", target));
-		return False;
+		return NULL;
 	}
 
 	filename_len = PTR_DIFF(filename_end, filename_start+1);
-	pstrcpy(mapfilename, filename_start+1);
+	mapfilename = talloc_strdup(ctx, filename_start+1);
+	if (!mapfilename) {
+		return NULL;
+	}
 	mapfilename[filename_len] = '\0';
 
 	DEBUG(10, ("Expanding from table [%s]\n", mapfilename));
 
-	if (!read_target_host(mapfilename, targethost)) {
+	if ((targethost = read_target_host(ctx, mapfilename)) == NULL) {
 		DEBUG(1, ("Could not expand target host from file %s\n",
 			  mapfilename));
-		return False;
+		return NULL;
 	}
 
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      mapfilename, sizeof(mapfilename));
+	targethost = talloc_sub_advanced(ctx,
+				lp_servicename(SNUM(conn)),
+				conn->user,
+				conn->connectpath,
+				conn->gid,
+				get_current_username(),
+				current_user_info.domain,
+				targethost);
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));
 
+	/* Replace the part between '@...@' */
 	*filename_start = '\0';
-	pstrcpy(new_target, target);
-	pstrcat(new_target, targethost);
-	pstrcat(new_target, filename_end+1);
+	new_target = talloc_asprintf(ctx,
+				"%s%s%s",
+				target,
+				targethost,
+				filename_end+1);
+	if (!new_target) {
+		return NULL;
+	}
 
 	DEBUG(10, ("New DFS target: %s\n", new_target));
-	pstrcpy(target, new_target);
-	return True;
+	return new_target;
 }
 
 static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 				 const char *path, char *buf, size_t bufsiz)
 {
-	pstring target;
+	TALLOC_CTX *ctx = talloc_tos();
 	int result;
+	char *target = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
 
+	if (!target) {
+		errno = ENOMEM;
+		return -1;
+	}
 	result = SMB_VFS_NEXT_READLINK(handle, path, target,
-				       sizeof(target));
+				       PATH_MAX);
 
 	if (result < 0)
 		return result;
@@ -172,7 +190,8 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
 	    (strchr_m(target, '@') != NULL)) {
-		if (!expand_msdfs_target(handle->conn, target)) {
+		target = expand_msdfs_target(ctx, handle->conn, target);
+		if (!target) {
 			errno = ENOENT;
 			return -1;
 		}
@@ -184,7 +203,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 /* VFS operations structure */
 
-static vfs_op_tuple expand_msdfs_ops[] = {	
+static vfs_op_tuple expand_msdfs_ops[] = {
 	{SMB_VFS_OP(expand_msdfs_readlink), SMB_VFS_OP_READLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}

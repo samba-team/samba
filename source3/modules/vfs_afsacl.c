@@ -891,7 +891,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	char acl_string[2049];
 	struct afs_iob iob;
 	int ret = -1;
-	pstring name;
+	char *name = NULL;
 	const char *fileacls;
 
 	fileacls = lp_parm_const_string(SNUM(handle->conn), "afsacl", "fileacls",
@@ -904,7 +904,10 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	ZERO_STRUCT(dir_acl);
 	ZERO_STRUCT(file_acl);
 
-	pstrcpy(name, fsp->fsp_name);
+	name = talloc_strdup(talloc_tos(), fsp->fsp_name);
+	if (!name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!fsp->is_directory) {
 		/* We need to get the name of the directory containing the
@@ -913,7 +916,10 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		if (p != NULL) {
 			*p = '\0';
 		} else {
-			pstrcpy(name, ".");
+			name = talloc_strdup(talloc_tos(), ".");
+			if (!name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
@@ -1017,7 +1023,7 @@ static int afsacl_connect(vfs_handle_struct *handle,
 			  const char *service, 
 			  const char *user)
 {
-	const char *spc;
+			const char *spc;
 
 	spc = lp_parm_const_string(SNUM(handle->conn), "afsacl", "space", "%");
 
