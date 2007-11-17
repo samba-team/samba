@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "system/filesys.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 #include "lib/gencache/gencache.h"
 
 #define TIMEOUT_LEN 12
