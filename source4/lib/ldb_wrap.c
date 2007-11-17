@@ -33,7 +33,6 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/schema/proto.h"
 #include "param/param.h"
 
 /*
