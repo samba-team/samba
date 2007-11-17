@@ -27,7 +27,8 @@ OBJ_FILES = compression/mszip.o
 
 [SUBSYSTEM::GENCACHE]
 PRIVATE_PROTO_HEADER = gencache/gencache.h
-OBJ_FILES = gencache/gencache.o \
+OBJ_FILES = gencache/gencache.o
+PRIVATE_DEPENDENCIES = TDB_WRAP
 
 [SUBSYSTEM::LDB_WRAP]
 PUBLIC_HEADERS = ldb_wrap.h
