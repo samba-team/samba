@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
-#include "tdb_wrap.h"
 #include "util/util_ldb.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
