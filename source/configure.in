@@ -3671,10 +3671,12 @@ if test x"$with_ads_support" != x"no"; then
           KRB5_CFLAGS="-I/usr/include/heimdal"
           KRB5_CPPFLAGS="-I/usr/include/heimdal"
           KRB5_LDFLAGS="-L/usr/lib/heimdal/lib"
+	  FOUND_KRB5=yes
           AC_MSG_RESULT(yes)
       else
           KRB5_CFLAGS="-I/usr/include/heimdal"
           KRB5_CPPFLAGS="-I/usr/include/heimdal"
+	  FOUND_KRB5=yes
           AC_MSG_RESULT(yes)
       fi
     else
@@ -3690,6 +3692,21 @@ if test x"$with_ads_support" != x"no"; then
       KRB5_LDFLAGS="-L/usr/kerberos/lib"
       KRB5_CFLAGS="-I/usr/kerberos/include"
       KRB5_CPPFLAGS="-I/usr/kerberos/include"
+      FOUND_KRB5=yes
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+
+  if test x$FOUND_KRB5 = x"no"; then
+    #################################################
+    # see if this box has the OpenBSD location for heimdal krb5
+    AC_MSG_CHECKING(for /usr/include/kerberosV)
+    if test -d /usr/include/kerberosV; then
+      KRB5_CPPFLAGS="-I/usr/include/kerberosV"
+      KRB5_LIBS="-lcrypto"
+      FOUND_KRB5=yes
       AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no)
