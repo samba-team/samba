@@ -474,8 +474,14 @@ static void print_share_mode_table(struct locking_data *data)
 		struct share_mode_entry entry;
 		char *str;
 
+		/*
+		 * We need to memcpy the entry here due to alignment
+		 * restrictions that are not met when directly accessing
+		 * shares[i]
+		 */
+
 		memcpy(&entry, &shares[i], sizeof(struct share_mode_entry));
-		str = share_mode_str(NULL, i, &entry);
+		str = share_mode_str(talloc_tos(), i, &entry);
 
 		DEBUG(10,("print_share_mode_table: %s\n", str ? str : ""));
 		TALLOC_FREE(str);
