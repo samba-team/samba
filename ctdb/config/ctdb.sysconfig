@@ -33,6 +33,10 @@
 # default is to not manage Samba
 # CTDB_MANAGES_SAMBA=yes
 
+# should ctdb manage starting/stopping Winbind service?
+# if left comented out then it will be autodetected based on smb.conf
+# CTDB_MANAGES_WINBIND=yes
+
 # you may wish to raise the file descriptor limit for ctdb
 # use a ulimit command here. ctdb needs one file descriptor per
 # connected client (ie. one per connected client in Samba)

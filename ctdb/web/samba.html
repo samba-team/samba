@@ -64,7 +64,7 @@ A suitable file can be found in the dbench distribution at http://samba.org/ftp/
 
 <h3>CTDB_MANAGES_SAMBA</h3>
 This is a parameter in /etc/sysconfig/ctdb<br><br>
-When this parameter is set to "yes" CTDB will start/stop/restart the localo samba daemon as the cluster configuration changes.<br><br>
+When this parameter is set to "yes" CTDB will start/stop/restart the local samba daemon as the cluster configuration changes.<br><br>
 When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots:
 <pre>
   chkconfig samba off
@@ -76,6 +76,22 @@ Example:
 </pre>
 
 It is strongly recommended that you set this parameter to "yes" if you intend to use clustered samba.
+
+<h3>CTDB_MANAGES_WINBIND</h3>
+This is a parameter in /etc/sysconfig/ctdb<br><br>
+When this parameter is set to "yes" CTDB will start/stop/restart the local winbind daemon as the cluster configuration changes.<br><br>
+When this parameter is set you should also make sure that winbind is NOT started by default by the linux system when it boots:
+<pre>
+  chkconfig winbind off
+</pre>
+
+Example:
+<pre>
+  CTDB_MANAGES_WINBIND="yes"
+</pre>
+
+It is strongly recommended that you set this parameter to "yes" if you
+intend to use clustered samba in DOMAIN or ADS security mode.
 
 <!--#include virtual="footer.html" -->
 

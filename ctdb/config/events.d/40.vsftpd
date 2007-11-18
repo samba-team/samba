@@ -42,7 +42,7 @@ case $cmd in
 	;;
 
      monitor)
-	ctdb_check_tcp_ports "ftp" 20 21
+	ctdb_check_tcp_ports "ftp" 21
 	;;
 esac
 

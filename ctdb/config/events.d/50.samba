@@ -16,6 +16,20 @@ shift
     SAMBA_CLEANUP_PERIOD=10
 }
 
+
+# autodetect use of winbind if not set in config file
+[ -z "$CTDB_MANAGES_WINBIND" ] && {
+    secmode=`testparm -s --parameter-name=security 2> /dev/null`
+    case $secmode in
+	ADS|DOMAIN)
+	    CTDB_MANAGES_WINBIND="yes";
+	    ;;
+	*)
+	    CTDB_MANAGES_WINBIND="no";
+	    ;;
+    esac
+}
+
 ###########################
 # periodic cleanup function
 periodic_cleanup() {
@@ -32,17 +46,21 @@ case $cmd in
 
 	# make sure samba is not already started
 	service smb stop > /dev/null 2>&1
-	service winbind stop > /dev/null 2>&1
-	killall -0 -q smbd winbindd && {
-	    sleep 1
-	    # make absolutely sure samba is dead
-	    killall -q -9 smbd winbindd
+
+	# restart the winbind service
+	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+		service winbind stop > /dev/null 2>&1
+		killall -0 -q smbd winbindd && {
+		    sleep 1
+		    # make absolutely sure samba is dead
+		    killall -q -9 smbd winbindd
+		}
+		service winbind start
 	}
 
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	service winbind start
 	nice service smb start
 	;;
 	
@@ -62,7 +80,11 @@ case $cmd in
      shutdown)
 	# shutdown Samba when ctdb goes down
 	service smb stop
-	service winbind stop
+
+	# stop the winbind service
+	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+		service winbind stop
+	}
 	;;
 
      monitor)
@@ -89,7 +111,9 @@ case $cmd in
 	ctdb_check_tcp_ports "Samba" $smb_ports
 
 	# check winbind is OK
-	ctdb_check_command "winbind" "wbinfo -p"
+	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+		ctdb_check_command "winbind" "wbinfo -p"
+	}
 	;;
 
 esac
