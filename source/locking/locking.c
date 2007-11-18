@@ -472,11 +472,12 @@ static void print_share_mode_table(struct locking_data *data)
 
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry entry;
-		char *str = share_mode_str(NULL, i, &entry);
+		char *str;
 
 		memcpy(&entry, &shares[i], sizeof(struct share_mode_entry));
-		DEBUG(10,("print_share_mode_table: %s\n",
-			  str ? str : ""));
+		str = share_mode_str(NULL, i, &entry);
+
+		DEBUG(10,("print_share_mode_table: %s\n", str ? str : ""));
 		TALLOC_FREE(str);
 	}
 }
