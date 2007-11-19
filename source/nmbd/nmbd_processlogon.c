@@ -450,6 +450,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						size = push_ascii(&q[1], component,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+						if (size == (uint8)-1) {
+							return;
+						}
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
@@ -470,6 +473,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], hostname,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (uint8)-1) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -485,6 +491,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], lp_workgroup(),
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							STR_UPPER);
+					if (size == (uint8)-1) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -499,6 +508,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], my_name,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (uint8)-1) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 
@@ -514,6 +526,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						size = push_ascii(&q[1], ascuser,
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+						if (size == (uint8)-1) {
+							return;
+						}
 						SCVAL(q, 0, size);
 						q += (size + 1);
 					}
@@ -526,6 +541,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					size = push_ascii(&q[1], "Default-First-Site-Name",
 							sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
 							0);
+					if (size == (uint8)-1) {
+						return;
+					}
 					SCVAL(q, 0, size);
 					q += (size + 1);
 

@@ -871,6 +871,7 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
 	pstring tmpbuf;
+	size_t ret;
 
 	/* No longer allow a length of -1 */
 	if (dest_len == (size_t)-1)
@@ -885,7 +886,13 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
-	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	ret =convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, True);
+	if (ret == (size_t)-1 &&
+			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
+			&& dest_len > 0) {
+		((char *)dest)[0] = '\0';
+	}
+	return ret;
 }
 
 size_t push_ascii_fstring(void *dest, const char *src)

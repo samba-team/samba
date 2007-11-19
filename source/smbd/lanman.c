@@ -82,6 +82,9 @@ static int CopyExpanded(connection_struct *conn,
 			      current_user_info.domain,
 			      buf, sizeof(buf));
 	l = push_ascii(*dst,buf,*n, STR_TERMINATE);
+	if (l == -1) {
+		return 0;
+	}
 	(*dst) += l;
 	(*n) -= l;
 	return l;
@@ -94,6 +97,9 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 		return 0;
 	}
 	l = push_ascii(*dst,src,*n, STR_TERMINATE);
+	if (l == -1) {
+		return 0;
+	}
 	(*dst) += l;
 	(*n) -= l;
 	return l;
