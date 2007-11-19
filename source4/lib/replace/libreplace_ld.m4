@@ -93,59 +93,96 @@ esac
 AC_SUBST(PICFLAG)
 ])
 
-AC_DEFUN([AC_LIBREPLACE_SHLD],
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_LINKER],
 [
-	SHLD="${CC}"
+	LD_SHLIB_LINKER="${CC}"
 
 	case "$host_os" in
 		*irix*)
-			SHLD="${PROG_LD}"
+			LD_SHLIB_LINKER="${PROG_LD}"
 			;;
 	esac
 
+	AC_SUBST(LD_SHLIB_LINKER)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_FLAGS],
+[
+	LD_SHLIB_FLAGS="-shared"
+
+	case "$host_os" in
+		*linux*)
+			LD_SHLIB_FLAGS="-shared -Wl,-Bsymbolic"
+			;;
+		*solaris*)
+			LD_SHLIB_FLAGS="-G"
+			if test "${GCC}" = "no"; then
+				## ${CFLAGS} added for building 64-bit shared 
+				## libs using Sun's Compiler
+				LD_SHLIB_FLAGS="-G \${CFLAGS}"
+			fi
+			;;
+		*sunos*)
+			LD_SHLIB_FLAGS="-G"
+			;;
+		*irix*)
+			LD_SHLIB_FLAGS="-shared"
+			;;
+		*aix*)
+			LD_SHLIB_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			;;
+		*hpux*)
+			if test "${GCC}" = "yes"; then
+				LD_SHLIB_FLAGS="-shared"
+			else
+				LD_SHLIB_FLAGS="-b"
+			fi
+			;;
+		*osf*)
+			LD_SHLIB_FLAGS="-shared"
+			;;
+		*darwin*)
+			LD_SHLIB_FLAGS="-bundle -flat_namespace -Wl,-search_paths_first"
+			;;
+	esac
+
+	AC_SUBST(LD_SHLIB_FLAGS)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_DISALLOW_UNDEF_FLAG],
+[
+	LD_SHLIB_DISALLOW_UNDEF_FLAG=""
+
+	#
+	# TODO: enforce error not only warnings
+	#
+	# NOTE: -Wl,--no-allow-shlib-undefined isn't what we want...
+	#       as it bails out on broken system libraries
+	#
+	case "$host_os" in
+		*osf*)
+			LD_SHLIB_DISALLOW_UNDEF_FLAG="-warning_unresolved"
+			;;
+		*darwin*)
+			LD_SHLIB_DISALLOW_UNDEF_FLAG="-undefined warning"
+			;;
+	esac
+
+	AC_SUBST(LD_SHLIB_DISALLOW_UNDEF_FLAG)
+])
+
+AC_DEFUN([AC_LIBREPLACE_SHLD],
+[
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
+	SHLD="$LD_SHLIB_LINKER"
 	AC_SUBST(SHLD)
 ])
 
 AC_DEFUN([AC_LIBREPLACE_SHLD_FLAGS],
 [
-	SHLD_FLAGS="-shared"
-
-	case "$host_os" in
-		*linux*)
-			SHLD_FLAGS="-shared -Wl,-Bsymbolic"
-			;;
-		*solaris*)
-			SHLD_FLAGS="-G"
-			if test "${GCC}" = "no"; then
-				## ${CFLAGS} added for building 64-bit shared 
-				## libs using Sun's Compiler
-				SHLD_FLAGS="-G \${CFLAGS}"
-			fi
-			;;
-		*sunos*)
-			SHLD_FLAGS="-G"
-			;;
-		*irix*)
-			SHLD_FLAGS="-shared"
-			;;
-		*aix*)
-			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
-			;;
-		*hpux*)
-			if test "${GCC}" = "yes"; then
-				SHLD_FLAGS="-shared"
-			else
-				SHLD_FLAGS="-b"
-			fi
-			;;
-		*osf*)
-			SHLD_FLAGS="-shared -warning_unresolved"
-			;;
-		*darwin*)
-			SHLD_FLAGS="-bundle -flat_namespace -undefined warning -Wl,-search_paths_first"
-			;;
-	esac
-
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_FLAGS])
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_DISALLOW_UNDEF_FLAG])
+	SHLD_FLAGS="$LD_SHLIB_FLAGS $LD_SHLIB_DISALLOW_UNDEF_FLAG"
 	AC_SUBST(SHLD_FLAGS)
 ])
 
@@ -214,8 +251,8 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 
 AC_DEFUN([AC_LIBREPLACE_MDLD],
 [
-	AC_LIBREPLACE_SHLD()
-	MDLD=$SHLD
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
+	MDLD="$LD_SHLIB_LINKER"
 	AC_SUBST(MDLD)
 ])
 
@@ -240,9 +277,9 @@ AC_DEFUN([AC_LIBREPLACE_LD_ALLOW_SHLIB_UNDEF_FLAG],
 
 AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 [
-	AC_LIBREPLACE_SHLD_FLAGS()
-	AC_LIBREPLACE_LD_ALLOW_SHLIB_UNDEF_FLAG()
-	MDLD_FLAGS="$SHLD_FLAGS $LD_ALLOW_SHLIB_UNDEF_FLAG"
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_FLAGS])
+	AC_REQUIRE([AC_LIBREPLACE_LD_ALLOW_SHLIB_UNDEF_FLAG])
+	MDLD_FLAGS="$LD_SHLIB_FLAGS $LD_ALLOW_SHLIB_UNDEF_FLAG"
 	AC_SUBST(MDLD_FLAGS)
 ])
 
