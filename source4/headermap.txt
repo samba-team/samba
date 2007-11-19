@@ -101,14 +101,15 @@ libcli/util/asn_1.h: samba/asn1.h
 libcli/util/asn1_proto.h: samba/asn1/proto.h
 libcli/util/error.h: core/error.h
 libcli/util/proto.h: core/error_proto.h
-lib/db_wrap.h: db_wrap.h
-lib/db_wrap_proto.h: db_wrap/proto.h
+lib/tdb_wrap.h: tdb_wrap.h
+lib/ldb_wrap.h: ldb_wrap.h
 torture/ui.h: torture/ui.h
 torture/torture.h: torture/torture.h
 librpc/gen_ndr/winbind.h: winbind.h
 param/share.h: param/share.h
 param/share_proto.h: param/share_proto.h
 lib/util/util_tdb.h: util_tdb.h
+lib/util/util_ldb.h: util_ldb.h
 lib/util/wrap_xattr.h: wrap_xattr.h
 lib/events/events.h: events/events.h
 lib/events/events_internal.h: events/events_internal.h
