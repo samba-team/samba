@@ -534,13 +534,13 @@ done:
   Send a backup list response.
 *****************************************************************************/
 
-static void send_backup_list_response(struct subnet_record *subrec, 
+static void send_backup_list_response(struct subnet_record *subrec,
 				      struct work_record *work,
 				      struct nmb_name *send_to_name,
 				      unsigned char max_number_requested,
 				      uint32 token, struct in_addr sendto_ip,
 				      int port)
-{                     
+{
 	char outbuf[1024];
 	char *p, *countptr;
 	unsigned int count = 0;
@@ -554,9 +554,9 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	DEBUG(3,("send_backup_list_response: sending backup list for workgroup %s to %s IP %s\n",
 		work->work_group, nmb_namestr(send_to_name), inet_ntoa(sendto_ip)));
-  
+
 	p = outbuf;
-  
+
 	SCVAL(p,0,ANN_GetBackupListResp); /* Backup list response opcode. */
 	p++;
 
@@ -565,13 +565,13 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	SIVAL(p,0,token); /* The sender's unique info. */
 	p += 4;
-  
+
 	/* We always return at least one name - our own. */
 	count = 1;
 	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
-	push_pstring_base(p, myname, outbuf);
+	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 
 	p = skip_string(outbuf,sizeof(outbuf),p);
 

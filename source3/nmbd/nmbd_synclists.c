@@ -32,7 +32,7 @@ struct sync_record {
 	struct sync_record *next, *prev;
 	unstring workgroup;
 	unstring server;
-	pstring fname;
+	char *fname;
 	struct in_addr ip;
 	pid_t pid;
 };
@@ -159,15 +159,18 @@ done:
 	if (!s) goto done;
 
 	ZERO_STRUCTP(s);
-	
+
 	unstrcpy(s->workgroup, work->work_group);
 	unstrcpy(s->server, name);
 	s->ip = ip;
 
-	slprintf(s->fname, sizeof(pstring)-1,
-		 "%s/sync.%d", lp_lockdir(), counter++);
+	if (asprintf(&s->fname, "%s/sync.%d", lp_lockdir(), counter++) < 0) {
+		SAFE_FREE(s);
+		goto done;
+	}
+	/* Safe to use as 0 means no size change. */
 	all_string_sub(s->fname,"//", "/", 0);
-	
+
 	DLIST_ADD(syncs, s);
 
 	/* the parent forks and returns, leaving the child to do the
@@ -183,7 +186,7 @@ done:
 	fp = x_fopen(s->fname,O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	if (!fp) {
 		END_PROFILE(sync_browse_lists);
-		_exit(1);	
+		_exit(1);
 	}
 
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
@@ -247,7 +250,7 @@ static void complete_one(struct sync_record *s,
 	/* Create the server in the workgroup. */ 
 	create_server_on_workgroup(work, sname,stype, lp_max_ttl(), comment);
 }
-		
+
 /**********************************************************************
  Read the completed sync info.
 **********************************************************************/
@@ -257,8 +260,8 @@ static void complete_sync(struct sync_record *s)
 	XFILE *f;
 	unstring server, type_str;
 	unsigned type;
-	pstring comment;
-	pstring line;
+	fstring comment;
+	char line[1024];
 	const char *ptr;
 	int count=0;
 
@@ -266,12 +269,12 @@ static void complete_sync(struct sync_record *s)
 
 	if (!f)
 		return;
-	
+
 	while (!x_feof(f)) {
-		
-		if (!fgets_slash(line,sizeof(pstring),f))
+
+		if (!fgets_slash(line,sizeof(line),f))
 			continue;
-		
+
 		ptr = line;
 
 		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
@@ -309,7 +312,7 @@ void sync_check_completion(void)
 			/* it has completed - grab the info */
 			complete_sync(s);
 			DLIST_REMOVE(syncs, s);
-			ZERO_STRUCTP(s);
+			SAFE_FREE(s->fname);
 			SAFE_FREE(s);
 		}
 	}

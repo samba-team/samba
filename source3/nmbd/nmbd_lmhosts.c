@@ -29,24 +29,27 @@ Load a lmhosts file.
 ****************************************************************************/
 
 void load_lmhosts_file(const char *fname)
-{  
-	pstring name;
+{
+	char *name = NULL;
 	int name_type;
 	struct sockaddr_storage ss;
+	TALLOC_CTX *ctx = talloc_init("load_lmhosts_file");
 	XFILE *fp = startlmhosts( fname );
 
 	if (!fp) {
 		DEBUG(2,("load_lmhosts_file: Can't open lmhosts file %s. Error was %s\n",
 			fname, strerror(errno)));
+		TALLOC_FREE(ctx);
 		return;
 	}
-   
-	while (getlmhostsent(fp, name, &name_type, &ss) ) {
+
+	while (getlmhostsent(ctx, fp, &name, &name_type, &ss) ) {
 		struct in_addr ipaddr;
 		struct subnet_record *subrec = NULL;
 		enum name_source source = LMHOSTS_NAME;
 
 		if (ss.ss_family != AF_INET) {
+			TALLOC_FREE(name);
 			continue;
 		}
 
@@ -58,7 +61,7 @@ void load_lmhosts_file(const char *fname)
 			if(same_net_v4(ipaddr, subrec->bcast_ip, subrec->mask_ip))
 				break;
 		}
-  
+
 		/* If none match add the name to the remote_broadcast_subnet. */
 		if(subrec == NULL)
 			subrec = remote_broadcast_subnet;
@@ -72,7 +75,8 @@ void load_lmhosts_file(const char *fname)
 			(void)add_name_to_subnet(subrec,name,name_type,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
 		}
 	}
-   
+
+	TALLOC_FREE(ctx);
 	endlmhosts(fp);
 }
 

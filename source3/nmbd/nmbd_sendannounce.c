@@ -457,7 +457,7 @@ void announce_remote(time_t t)
 	char *s;
 	const char *ptr;
 	static time_t last_time = 0;
-	pstring s2;
+	fstring s2;
 	struct in_addr addr;
 	char *comment;
 	int stype = lp_default_server_announce();
@@ -474,7 +474,7 @@ void announce_remote(time_t t)
 	comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
 
 	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
-		/* The entries are of the form a.b.c.d/WORKGROUP with 
+		/* The entries are of the form a.b.c.d/WORKGROUP with
 				WORKGROUP being optional */
 		const char *wgroup;
 		char *pwgroup;
@@ -489,7 +489,7 @@ void announce_remote(time_t t)
 			wgroup = pwgroup;
 
 		(void)interpret_addr2(&addr,s2);
-    
+
 		/* Announce all our names including aliases */
 		/* Give the ip address as the address of our first
 				broadcast subnet. */
@@ -518,20 +518,20 @@ void announce_remote(time_t t)
 **************************************************************************/
 
 void browse_sync_remote(time_t t)
-{  
+{
 	char *s;
 	const char *ptr;
-	static time_t last_time = 0; 
-	pstring s2;
+	static time_t last_time = 0;
+	fstring s2;
 	struct in_addr addr;
 	struct work_record *work;
-	pstring outbuf;
+	char outbuf[1024];
 	char *p;
 	unstring myname;
- 
+
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
-   
+
 	last_time = t;
 
 	s = lp_remote_browse_sync();
@@ -548,12 +548,12 @@ void browse_sync_remote(time_t t)
 			lp_workgroup(), FIRST_SUBNET->subnet_name ));
 		return;
 	}
-         
+
 	if(!AM_LOCAL_MASTER_BROWSER(work)) {
 		DEBUG(5,("browse_sync_remote: We can only do this if we are a local master browser \
 for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 		return;
-	} 
+	}
 
 	memset(outbuf,'\0',sizeof(outbuf));
 	p = outbuf;
@@ -563,7 +563,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
-	push_pstring_base(p, myname, outbuf);
+	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 
 	p = skip_string(outbuf,sizeof(outbuf),p);
 
