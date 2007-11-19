@@ -289,17 +289,19 @@ void write_browse_list_entry(XFILE *fp, const char *name, uint32 rec_type,
 }
 
 void write_browse_list(time_t t, bool force_write)
-{   
+{
 	struct subnet_record *subrec;
 	struct work_record *work;
 	struct server_record *servrec;
-	pstring fname,fnamenew;
+	char *fname;
+	char *fnamenew;
 	uint32 stype;
 	int i;
 	XFILE *fp;
 	bool list_changed = force_write;
 	static time_t lasttime = 0;
-    
+	TALLOC_CTX *ctx = talloc_tos();
+
 	/* Always dump if we're being told to by a signal. */
 	if(force_write == False) {
 		if (!lasttime)
@@ -311,7 +313,7 @@ void write_browse_list(time_t t, bool force_write)
 	lasttime = t;
 
 	dump_workgroups(force_write);
- 
+
 	for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
 		if(subrec->work_changed) {
 			list_changed = True;
@@ -323,22 +325,32 @@ void write_browse_list(time_t t, bool force_write)
 		return;
 
 	updatecount++;
-    
-	pstrcpy(fname,lp_lockdir());
+
+	fname = talloc_strdup(ctx, lp_lockdir());
+	if (!fname) {
+		return;
+	}
 	trim_char(fname,'\0' ,'/');
-	pstrcat(fname,"/");
-	pstrcat(fname,SERVER_LIST);
-	pstrcpy(fnamenew,fname);
-	pstrcat(fnamenew,".");
- 
+	fname = talloc_asprintf_append(fname,
+			"/%s",
+			SERVER_LIST);
+	if (!fname) {
+		return;
+	}
+	fnamenew = talloc_asprintf(ctx, "%s.",
+				fname);
+	if (!fnamenew) {
+		return;
+	}
+
 	fp = x_fopen(fnamenew,O_WRONLY|O_CREAT|O_TRUNC, 0644);
- 
+
 	if (!fp) {
 		DEBUG(0,("write_browse_list: Can't open file %s. Error was %s\n",
 			fnamenew,strerror(errno)));
 		return;
-	} 
-  
+	}
+
 	/*
 	 * Write out a record for our workgroup. Use the record from the first
 	 * subnet.
@@ -355,7 +367,7 @@ void write_browse_list(time_t t, bool force_write)
 		SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY,
 		work->local_master_browser_name, work->work_group);
 
-	/* 
+	/*
 	 * We need to do something special for our own names.
 	 * This is due to the fact that we may be a local master browser on
 	 * one of our broadcast subnets, and a domain master on the unicast
@@ -378,7 +390,7 @@ void write_browse_list(time_t t, bool force_write)
 		write_browse_list_entry(fp, my_netbios_names(i), stype,
 			string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), lp_workgroup());
 	}
-      
+
 	for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) { 
 		subrec->work_changed = False;
 
@@ -399,7 +411,7 @@ void write_browse_list(time_t t, bool force_write)
 
 				/* We have already written our names here. */
 				if(is_myname(servrec->serv.name))
-					continue; 
+					continue;
 
 				serv_type = write_this_server_name(subrec, work, servrec);
 				if(serv_type) {
@@ -409,8 +421,8 @@ void write_browse_list(time_t t, bool force_write)
 				}
 			}
 		}
-	} 
-  
+	}
+
 	x_fclose(fp);
 	unlink(fname);
 	chmod(fnamenew,0644);

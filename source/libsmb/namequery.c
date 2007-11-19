@@ -783,20 +783,25 @@ XFILE *startlmhosts(const char *fname)
  Parse the next line in the lmhosts file.
 *********************************************************/
 
-bool getlmhostsent(XFILE *fp, pstring name, int *name_type,
+bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 		struct sockaddr_storage *pss)
 {
-	pstring line;
+	char line[1024];
+
+	*pp_name = NULL;
 
 	while(!x_feof(fp) && !x_ferror(fp)) {
-		pstring ip,flags,extra;
+		char ip[INET6_ADDRSTRLEN];
+		fstring flags;
+		fstring extra;
+		fstring name;
 		const char *ptr;
 		char *ptr1;
 		int count = 0;
 
 		*name_type = -1;
 
-		if (!fgets_slash(line,sizeof(pstring),fp)) {
+		if (!fgets_slash(line,sizeof(line),fp)) {
 			continue;
 		}
 
@@ -804,15 +809,15 @@ bool getlmhostsent(XFILE *fp, pstring name, int *name_type,
 			continue;
 		}
 
-		pstrcpy(ip,"");
-		pstrcpy(name,"");
-		pstrcpy(flags,"");
+		ip[0] = '\0';
+		name[0] = '\0';
+		flags[0] = '\0';
 
 		ptr = line;
 
 		if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
 			++count;
-		if (next_token(&ptr,name ,NULL, sizeof(pstring)))
+		if (next_token(&ptr,name ,NULL, sizeof(name)))
 			++count;
 		if (next_token(&ptr,flags,NULL, sizeof(flags)))
 			++count;
@@ -864,6 +869,10 @@ bool getlmhostsent(XFILE *fp, pstring name, int *name_type,
 			*(--ptr1) = '\0'; /* Truncate at the '#' */
 		}
 
+		*pp_name = talloc_strdup(ctx, name);
+		if (!*pp_name) {
+			return false;
+		}
 		return true;
 	}
 
@@ -1135,10 +1144,11 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 	 */
 
 	XFILE *fp;
-	pstring lmhost_name;
+	char *lmhost_name = NULL;
 	int name_type2;
 	struct sockaddr_storage return_ss;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	TALLOC_CTX *ctx = NULL;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -1152,19 +1162,30 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 	if ( fp == NULL )
 		return NT_STATUS_NO_SUCH_FILE;
 
-	while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ss)) {
+	ctx = talloc_init("resolve_lmhosts");
+	if (!ctx) {
+		endlmhosts(fp);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-		if (!strequal(name, lmhost_name))
-			continue;
+	while (getlmhostsent(ctx, fp, &lmhost_name, &name_type2, &return_ss)) {
 
-		if ((name_type2 != -1) && (name_type != name_type2))
+		if (!strequal(name, lmhost_name)) {
+			TALLOC_FREE(lmhost_name);
 			continue;
+		}
+
+		if ((name_type2 != -1) && (name_type != name_type2)) {
+			TALLOC_FREE(lmhost_name);
+			continue;
+		}
 
 		*return_iplist = SMB_REALLOC_ARRAY((*return_iplist),
 					struct ip_service,
 					(*return_count)+1);
 
 		if ((*return_iplist) == NULL) {
+			TALLOC_FREE(ctx);
 			endlmhosts(fp);
 			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
 			return NT_STATUS_NO_MEMORY;
@@ -1182,6 +1203,7 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 			break;
 	}
 
+	TALLOC_FREE(ctx);
 	endlmhosts(fp);
 	return status;
 }

@@ -98,7 +98,7 @@ As a local master browser, send an announce packet to the domain master browser.
 
 static void announce_local_master_browser_to_domain_master_browser( struct work_record *work)
 {
-	pstring outbuf;
+	char outbuf[1024];
 	unstring myname;
 	unstring dmb_name;
 	char *p;
@@ -122,7 +122,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	strupper_m(myname);
 	myname[15]='\0';
 	/* The call below does CH_UNIX -> CH_DOS conversion. JRA */
-	push_pstring_base(p, myname, outbuf);
+	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 
 	p = skip_string(outbuf,sizeof(outbuf),p);
 
@@ -136,7 +136,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	/* Target name for send_mailslot must be in UNIX charset. */
 	pull_ascii_nstring(dmb_name, sizeof(dmb_name), work->dmb_name.name);
 	send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-		global_myname(), 0x0, dmb_name, 0x0, 
+		global_myname(), 0x0, dmb_name, 0x0,
 		work->dmb_addr, FIRST_SUBNET->myip, DGRAM_PORT);
 }
 

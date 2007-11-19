@@ -39,9 +39,9 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
                           const char *mailslot)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
-	pstring my_name;
+	fstring my_name;
 	fstring reply_name;
-	pstring outbuf;
+	char outbuf[1024];
 	int code;
 	uint16 token = 0;
 	uint32 ntversion = 0;
@@ -51,7 +51,7 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	bool short_request = False;
 	char *getdc;
 	char *uniuser; /* Unicode user name. */
-	pstring ascuser;
+	fstring ascuser;
 	char *unicomp; /* Unicode computer name. */
 	size_t size;
 	struct sockaddr_storage ss;
@@ -76,7 +76,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		return;
 	}
 
-	pstrcpy(my_name, global_myname());
+	fstrcpy(my_name, global_myname());
 
 	code = get_safe_SVAL(buf,len,buf,0,-1);
 	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
@@ -107,7 +107,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				}
 				token = SVAL(q,3);
 
-				fstrcpy(reply_name,my_name); 
+				fstrcpy(reply_name,my_name);
 
 				pull_ascii_fstring(mach_str, machine);
 				pull_ascii_fstring(user_str, user);
@@ -237,12 +237,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 					q = ALIGN2(q, outbuf);
 
 					q += dos_PutUniCode(q, my_name,
-						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						sizeof(outbuf) - PTR_DIFF(q, outbuf),
 						True); /* PDC name */
 					q += dos_PutUniCode(q, lp_workgroup(),
-						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						sizeof(outbuf) - PTR_DIFF(q, outbuf),
 						True); /* Domain name*/
-					if (sizeof(pstring) - PTR_DIFF(q, outbuf) < 8) {
+					if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
 						return;
 					}
 					SIVAL(q, 0, 1); /* our nt version */
@@ -355,7 +355,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				 * database. If it isn't then we let smbd send an appropriate error.
 				 * Let's ignore the SID.
 				 */
-				pull_ucs2_pstring(ascuser, uniuser);
+				pull_ucs2_fstring(ascuser, uniuser);
 				pull_ucs2_fstring(asccomp, unicomp);
 				DEBUG(5,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
@@ -381,13 +381,13 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					q += 2;
 
 					q += dos_PutUniCode(q, reply_name,
-						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						sizeof(outbuf) - PTR_DIFF(q, outbuf),
 						True);
 					q += dos_PutUniCode(q, ascuser,
-						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						sizeof(outbuf) - PTR_DIFF(q, outbuf),
 						True);
 					q += dos_PutUniCode(q, lp_workgroup(),
-						sizeof(pstring) - PTR_DIFF(q, outbuf),
+						sizeof(outbuf) - PTR_DIFF(q, outbuf),
 						True);
 				}
 #ifdef HAVE_ADS

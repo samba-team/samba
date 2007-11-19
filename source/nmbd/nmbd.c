@@ -287,8 +287,7 @@ static bool reload_nmbd_services(bool test)
 	set_remote_machine_name("nmbd", False);
 
 	if ( lp_loaded() ) {
-		pstring fname;
-		pstrcpy( fname,lp_configfile());
+		const char *fname = lp_configfile();
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
 			pstrcpy(dyn_CONFIGFILE,fname);
 			test = False;
@@ -710,7 +709,6 @@ static bool open_sockets(bool isdaemon, int port)
 	static bool Fork = true;
 	static bool no_process_group;
 	static bool log_stdout;
-	pstring logfile;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
 	int opt;
@@ -773,8 +771,12 @@ static bool open_sockets(bool isdaemon, int port)
 	sys_srandom(time(NULL) ^ sys_getpid());
 	
 	if (!override_logfile) {
-		slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
+		char *logfile = NULL;
+		if (asprintf(&logfile, "%s/log.nmbd", dyn_LOGFILEBASE) < 0) {
+			exit(1);
+		}
 		lp_set_logfile(logfile);
+		SAFE_FREE(logfile);
 	}
 	
 	fault_setup((void (*)(void *))fault_continue );

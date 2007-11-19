@@ -32,7 +32,7 @@ extern time_t StartupTime;
 static void send_election_dgram(struct subnet_record *subrec, const char *workgroup_name,
                                 uint32 criterion, int timeup,const char *server_name)
 {
-	pstring outbuf;
+	char outbuf[1024];
 	unstring srv_name;
 	char *p;
 
@@ -51,9 +51,9 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
 	unstrcpy(srv_name, server_name);
 	strupper_m(srv_name);
 	/* The following call does UNIX -> DOS charset conversion. */
-	pstrcpy_base(p, srv_name, outbuf);
+	push_ascii(p, srv_name, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 	p = skip_string(outbuf,sizeof(outbuf),p);
-  
+
 	send_mailslot(False, BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
 		global_myname(), 0,
 		workgroup_name, 0x1e,

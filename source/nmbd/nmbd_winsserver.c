@@ -437,10 +437,11 @@ static void get_global_id_and_update(SMB_BIG_UINT *current_id, bool update)
 
 static void wins_hook(const char *operation, struct name_record *namerec, int ttl)
 {
-	pstring command;
+	char *command = NULL;
 	char *cmd = lp_wins_hook();
 	char *p, *namestr;
 	int i;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	wins_store_changed_namerec(namerec);
 
@@ -462,20 +463,29 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 		*p = 0;
 	}
 
-	p = command;
-	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
-		      cmd,
-		      operation, 
-		      namestr,
-		      namerec->name.name_type,
-		      ttl);
+	command = talloc_asprintf(ctx,
+				"%s %s %s %02x %d",
+				cmd,
+				operation,
+				namestr,
+				namerec->name.name_type,
+				ttl);
+	if (!command) {
+		return;
+	}
 
 	for (i=0;i<namerec->data.num_ips;i++) {
-		p += slprintf(p, sizeof(command) - (p-command) -1, " %s", inet_ntoa(namerec->data.ip[i]));
+		command = talloc_asprintf_append(command,
+						" %s",
+						inet_ntoa(namerec->data.ip[i]));
+		if (!command) {
+			return;
+		}
 	}
 
 	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
 	smbrun(command, NULL);
+	TALLOC_FREE(command);
 }
 
 /****************************************************************************
@@ -566,7 +576,7 @@ bool initialise_wins(void)
 {
 	time_t time_now = time(NULL);
 	XFILE *fp;
-	pstring line;
+	char line[1024];
 
 	if(!lp_we_are_a_wins_server()) {
 		return True;
@@ -591,9 +601,11 @@ bool initialise_wins(void)
 	}
 
 	while (!x_feof(fp)) {
-		pstring name_str, ip_str, ttl_str, nb_flags_str;
+		fstring name_str;
+		char ip_str[1024];
+		fstring ttl_str, nb_flags_str;
 		unsigned int num_ips;
-		pstring name;
+		char *name;
 		struct in_addr *ip_list;
 		int type = 0;
 		int nb_flags;
@@ -608,9 +620,9 @@ bool initialise_wins(void)
 
 		/* Read a line from the wins.dat file. Strips whitespace
 			from the beginning and end of the line.  */
-		if (!fgets_slash(line,sizeof(pstring),fp))
+		if (!fgets_slash(line,sizeof(line),fp))
 			continue;
-      
+
 		if (*line == '#')
 			continue;
 
@@ -626,7 +638,7 @@ bool initialise_wins(void)
 
 		ptr = line;
 
-		/* 
+		/*
 		 * Now we handle multiple IP addresses per name we need
 		 * to iterate over the line twice. The first time to
 		 * determine how many IP addresses there are, the second
@@ -673,10 +685,10 @@ bool initialise_wins(void)
 			x_fclose(fp);
 			return False;
 		}
- 
+
 		/* Reset and re-parse the line. */
 		ptr = line;
-		next_token(&ptr,name_str,NULL,sizeof(name_str)); 
+		next_token(&ptr,name_str,NULL,sizeof(name_str));
 		next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
 		for(i = 0; i < num_ips; i++) {
 			next_token(&ptr, ip_str, NULL, sizeof(ip_str));
@@ -694,19 +706,19 @@ bool initialise_wins(void)
 			SAFE_FREE(ip_list);
 			continue;
 		}
-      
+
 		if(nb_flags_str[strlen(nb_flags_str)-1] == 'R') {
 			nb_flags_str[strlen(nb_flags_str)-1] = '\0';
 		}
-      
+
 		/* Netbios name. # divides the name from the type (hex): netbios#xx */
-		pstrcpy(name,name_str);
-      
+		name = name_str;
+
 		if((p = strchr(name,'#')) != NULL) {
 			*p = 0;
 			sscanf(p+1,"%x",&type);
 		}
-      
+
 		/* Decode the netbios flags (hex) and the time-to-live (in seconds). */
 		sscanf(nb_flags_str,"%x",&nb_flags);
 		sscanf(ttl_str,"%d",&ttl);
@@ -716,7 +728,7 @@ bool initialise_wins(void)
 			if(ttl != PERMANENT_TTL) {
 				ttl -= time_now;
 			}
-    
+
 			DEBUG( 4, ("initialise_wins: add name: %s#%02x ttl = %d first IP %s flags = %2x\n",
 				name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 
@@ -2310,10 +2322,11 @@ static int wins_writedb_traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA db
 void wins_write_database(time_t t, bool background)
 {
 	static time_t last_write_time = 0;
-	pstring fname, fnamenew;
+	char *fname = NULL;
+	char *fnamenew = NULL;
 
 	XFILE *fp;
-   
+
 	if (background) {
 		if (!last_write_time) {
 			last_write_time = t;
@@ -2342,28 +2355,37 @@ void wins_write_database(time_t t, bool background)
 		}
 	}
 
-	slprintf(fname,sizeof(fname)-1,"%s/%s", dyn_STATEDIR(), WINS_LIST);
+	if (asprintf(&fname, "%s/%s", dyn_STATEDIR(), WINS_LIST) < 0) {
+		goto err_exit;
+	}
+	/* This is safe as the 0 length means "don't expand". */
 	all_string_sub(fname,"//", "/", 0);
-	slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
+
+	if (asprintf(&fnamenew, "%s.%u", fname, (unsigned int)sys_getpid()) < 0) {
+		goto err_exit;
+	}
 
 	if((fp = x_fopen(fnamenew,O_WRONLY|O_CREAT,0644)) == NULL) {
 		DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
-		if (background) {
-			_exit(0);
-		}
-		return;
+		goto err_exit;
 	}
 
 	DEBUG(4,("wins_write_database: Dump of WINS name list.\n"));
 
 	x_fprintf(fp,"VERSION %d %u\n", WINS_VERSION, 0);
- 
+
 	tdb_traverse(wins_tdb, wins_writedb_traverse_fn, fp);
 
 	x_fclose(fp);
 	chmod(fnamenew,0644);
 	unlink(fname);
 	rename(fnamenew,fname);
+
+  err_exit:
+
+	SAFE_FREE(fname);
+	SAFE_FREE(fnamenew);
+
 	if (background) {
 		_exit(0);
 	}
