@@ -376,7 +376,7 @@ NTSTATUS idmap_init(void)
 	 */
 	DEBUG(1, ("Initializing idmap domains\n"));
 
-	for (i = 0; dom_list[i]; i++) {
+	for (i=0, num_domains=0; dom_list[i]; i++) {
 	       	const char *parm_backend;
 		char *config_option;
 
@@ -384,7 +384,7 @@ NTSTATUS idmap_init(void)
 		if (strequal(dom_list[i], "BUILTIN")
 		     || strequal(dom_list[i], get_global_sam_name()))
 		{
-			DEBUG(0,("idmap_init: Ignoring invalid domain %s\n",
+			DEBUG(0,("idmap_init: Ignoring domain %s\n",
 				 dom_list[i]));
 			continue;
 		}
@@ -492,12 +492,16 @@ NTSTATUS idmap_init(void)
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		idmap_domains[i] = dom;
+		idmap_domains[num_domains] = dom;
 
 		/* save default domain position for future uses */
 		if (dom->default_domain) {
-			def_dom_num = i;
+			def_dom_num = num_domains;
 		}
+
+		/* Bump counter to next available slot */
+
+		num_domains++;
 
 		DEBUG(10, ("Domain %s - Backend %s - %sdefault - %sreadonly\n",
 				dom->name, parm_backend,
@@ -506,9 +510,6 @@ NTSTATUS idmap_init(void)
 
 		talloc_free(config_option);
 	}
-
-	/* save the number of domains we have */
-	num_domains = i;
 
 	/* automatically add idmap_nss backend if needed */
 	if ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
