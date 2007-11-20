@@ -1274,11 +1274,15 @@ char *realloc_string_sub(char *string,
 
 /*
  * Internal guts of talloc_string_sub and talloc_all_string_sub.
- * 'filter' differentiates between them.
+ * talloc version of string_sub2.
  */
 
-static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
-			const char *pattern, const char *insert, bool filter)
+char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern,
+			const char *insert,
+			bool remove_unsafe_characters,
+			bool replace_once,
+			bool allow_trailing_dollar)
 {
 	char *p, *in;
 	char *s;
@@ -1291,7 +1295,7 @@ static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
 
 	string = talloc_strdup(mem_ctx, src);
 	if (string == NULL) {
-		DEBUG(0, ("talloc_string_sub_internal: "
+		DEBUG(0, ("talloc_string_sub2: "
 			"talloc_strdup failed\n"));
 		return NULL;
 	}
@@ -1300,7 +1304,7 @@ static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
 
 	in = SMB_STRDUP(insert);
 	if (!in) {
-		DEBUG(0, ("talloc_string_sub_internal: ENOMEM\n"));
+		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
 		return NULL;
 	}
 	ls = (ssize_t)strlen(s);
@@ -1308,22 +1312,28 @@ static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
 	li = (ssize_t)strlen(insert);
 	ld = li - lp;
 
-	if (filter) {
-		for (i=0;i<li;i++) {
-			switch (in[i]) {
-				case '`':
-				case '"':
-				case '\'':
-				case ';':
-				case '$':
-				case '%':
-				case '\r':
-				case '\n':
-					in[i] = '_';
-				default:
-					/* ok */
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '$':
+				/* allow a trailing $
+				 * (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
 					break;
-			}
+				}
+			case '%':
+			case '\r':
+			case '\n':
+				if (remove_unsafe_characters) {
+					in[i] = '_';
+					break;
+				}
+			default:
+				/* ok */
+				break;
 		}
 	}
 
@@ -1346,6 +1356,10 @@ static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
 		memcpy(p, in, li);
 		s = p + li;
 		ls += ld;
+
+		if (replace_once) {
+			break;
+		}
 	}
 	SAFE_FREE(in);
 	return string;
@@ -1353,10 +1367,13 @@ static char *talloc_string_sub_internal(TALLOC_CTX *mem_ctx, const char *src,
 
 /* Same as string_sub, but returns a talloc'ed string */
 
-char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
-			const char *pattern, const char *insert)
+char *talloc_string_sub(TALLOC_CTX *mem_ctx,
+			const char *src,
+			const char *pattern,
+			const char *insert)
 {
-	return talloc_string_sub_internal(mem_ctx, src, pattern, insert, true);
+	return talloc_string_sub2(mem_ctx, src, pattern, insert,
+			true, false, false);
 }
 
 /**
@@ -1406,73 +1423,8 @@ char *talloc_all_string_sub(TALLOC_CTX *ctx,
 				const char *pattern,
 				const char *insert)
 {
-	return talloc_string_sub_internal(ctx, src, pattern, insert, false);
-}
-
-/**
- Similar to all_string_sub but for unicode strings.
- Return a new allocated unicode string.
- similar to string_sub() but allows for any character to be substituted.
- Use with caution!
-**/
-
-static smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s,
-				const smb_ucs2_t *pattern,
-				const smb_ucs2_t *insert)
-{
-	smb_ucs2_t *r, *rp;
-	const smb_ucs2_t *sp;
-	size_t	lr, lp, li, lt;
-
-	if (!insert || !pattern || !*pattern || !s)
-		return NULL;
-
-	lt = (size_t)strlen_w(s);
-	lp = (size_t)strlen_w(pattern);
-	li = (size_t)strlen_w(insert);
-
-	if (li > lp) {
-		const smb_ucs2_t *st = s;
-		int ld = li - lp;
-		while ((sp = strstr_w(st, pattern))) {
-			st = sp + lp;
-			lt += ld;
-		}
-	}
-
-	r = rp = SMB_MALLOC_ARRAY(smb_ucs2_t, lt + 1);
-	if (!r) {
-		DEBUG(0, ("all_string_sub_w: out of memory!\n"));
-		return NULL;
-	}
-
-	while ((sp = strstr_w(s, pattern))) {
-		memcpy(rp, s, (sp - s));
-		rp += ((sp - s) / sizeof(smb_ucs2_t));
-		memcpy(rp, insert, (li * sizeof(smb_ucs2_t)));
-		s = sp + lp;
-		rp += li;
-	}
-	lr = ((rp - r) / sizeof(smb_ucs2_t));
-	if (lr < lt) {
-		memcpy(rp, s, ((lt - lr) * sizeof(smb_ucs2_t)));
-		rp += (lt - lr);
-	}
-	*rp = 0;
-
-	return r;
-}
-
-smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
-					     const char *insert)
-{
-	wpstring p, i;
-
-	if (!insert || !pattern || !s)
-		return NULL;
-	push_ucs2(NULL, p, pattern, sizeof(wpstring) - 1, STR_TERMINATE);
-	push_ucs2(NULL, i, insert, sizeof(wpstring) - 1, STR_TERMINATE);
-	return all_string_sub_w(s, p, i);
+	return talloc_string_sub2(ctx, src, pattern, insert,
+			false, false, false);
 }
 
 #if 0

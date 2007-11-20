@@ -180,13 +180,11 @@ static int get_queue_status(const char* sharename, print_status_struct *);
 bool print_backend_init(struct messaging_context *msg_ctx)
 {
 	const char *sversion = "INFO/version";
-	pstring printing_path;
 	int services = lp_numservices();
 	int snum;
 
 	unlink(lock_path("printing.tdb"));
-	pstrcpy(printing_path,lock_path("printing"));
-	mkdir(printing_path,0755);
+	mkdir(lock_path("printing"),0755);
 
 	/* handle a Samba upgrade */
 
@@ -1443,43 +1441,66 @@ static void print_queue_update(int snum, bool force)
 {
 	fstring key;
 	fstring sharename;
-	pstring lpqcommand, lprmcommand;
+	char *lpqcommand = NULL;
+	char *lprmcommand = NULL;
 	uint8 *buffer = NULL;
 	size_t len = 0;
 	size_t newlen;
 	struct tdb_print_db *pdb;
 	int type;
 	struct printif *current_printif;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	fstrcpy( sharename, lp_const_servicename(snum));
 
 	/* don't strip out characters like '$' from the printername */
-	
-	pstrcpy( lpqcommand, lp_lpqcommand(snum));
-	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
-		     False, False, False );
-	standard_sub_advanced(lp_servicename(snum),
-			      current_user_info.unix_name, "",
-			      current_user.ut.gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      lpqcommand, sizeof(lpqcommand) );
-	
+
+	lpqcommand = talloc_string_sub2(ctx,
+			lp_lpqcommand(snum),
+			"%p",
+			PRINTERNAME(snum),
+			false, false, false);
+	if (!lpqcommand) {
+		return;
+	}
+	lpqcommand = talloc_sub_advanced(ctx,
+			lp_servicename(snum),
+			current_user_info.unix_name,
+			"",
+			current_user.ut.gid,
+			get_current_username(),
+			current_user_info.domain,
+			lpqcommand);
+	if (!lpqcommand) {
+		return;
+	}
+
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
-	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
-		     False, False, False );
-	standard_sub_advanced(lp_servicename(snum),
-			      current_user_info.unix_name, "",
-			      current_user.ut.gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      lprmcommand, sizeof(lprmcommand) );
-	
-	/* 
-	 * Make sure that the background queue process exists.  
-	 * Otherwise just do the update ourselves 
+	lprmcommand = talloc_string_sub2(ctx,
+			lp_lprmcommand(snum),
+			"%p",
+			PRINTERNAME(snum),
+			false, false, false);
+	if (!lprmcommand) {
+		return;
+	}
+	lprmcommand = talloc_sub_advanced(ctx,
+			lp_servicename(snum),
+			current_user_info.unix_name,
+			"",
+			current_user.ut.gid,
+			get_current_username(),
+			current_user_info.domain,
+			lprmcommand);
+	if (!lprmcommand) {
+		return;
+	}
+
+	/*
+	 * Make sure that the background queue process exists.
+	 * Otherwise just do the update ourselves
 	 */
-	
+
 	if ( force || background_lpq_updater_pid == -1 ) {
 		DEBUG(4,("print_queue_update: updating queue [%s] myself\n", sharename));
 		current_printif = get_printer_fns( snum );
@@ -1489,13 +1510,13 @@ static void print_queue_update(int snum, bool force)
 	}
 
 	type = lp_printing(snum);
-	
+
 	/* get the length */
 
 	len = tdb_pack( NULL, 0, "fdPP",
 		sharename,
 		type,
-		lpqcommand, 
+		lpqcommand,
 		lprmcommand );
 
 	buffer = SMB_XMALLOC_ARRAY( uint8, len );
