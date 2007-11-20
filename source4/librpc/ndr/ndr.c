@@ -914,12 +914,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const vo
 */
 _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 {
-	struct ndr_push_save save;
+	uint32_t save_offset;
 	uint32_t ptr_offset = 0xFFFFFFFF;
 	if (p == NULL) {
 		return NDR_ERR_SUCCESS;
 	}
-	ndr_push_save(ndr, &save);
+	save_offset = ndr->offset;
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
@@ -927,13 +927,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const vo
 				      ptr_offset, ndr->offset);
 	}
 	ndr->offset = ptr_offset;
-	if (save.offset < ndr->relative_base_offset) {
+	if (save_offset < ndr->relative_base_offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
-				      "ndr_push_relative_ptr2 save.offset(%u) < ndr->relative_base_offset(%u)",
-				      save.offset, ndr->relative_base_offset);
+				      "ndr_push_relative_ptr2 save_offset(%u) < ndr->relative_base_offset(%u)",
+				      save_offset, ndr->relative_base_offset);
 	}	
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset - ndr->relative_base_offset));
-	ndr_push_restore(ndr, &save);
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
+	ndr->offset = save_offset;
 	return NDR_ERR_SUCCESS;
 }
 
