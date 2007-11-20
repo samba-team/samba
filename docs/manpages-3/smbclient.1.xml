@@ -713,6 +713,7 @@
 		<term>lowercase</term>
 		<listitem><para>Toggle lowercasing of filenames for the get and
 		<term>link target linkname</term>
+		</para>	
 
 		<para>When lowercasing is toggled ON, local filenames are converted
 		to lowercase when using the get and mget commands. This is
