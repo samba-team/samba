@@ -67,12 +67,6 @@ struct ndr_pull {
 	uint32_t ptr_count;
 };
 
-struct ndr_pull_save {
-	uint32_t data_size;
-	uint32_t offset;
-	struct ndr_pull_save *next;
-};
-
 /* structure passed to functions that generate NDR formatted data */
 struct ndr_push {
 	uint32_t flags; /* LIBNDR_FLAG_* */
@@ -91,12 +85,6 @@ struct ndr_push {
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;
 };
-
-struct ndr_push_save {
-	uint32_t offset;
-	struct ndr_push_save *next;
-};
-
 
 /* structure passed to functions that print IDL structures */
 struct ndr_print {
