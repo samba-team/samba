@@ -98,21 +98,6 @@ static enum ndr_err_code ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 	return NDR_ERR_SUCCESS;
 }
 
-/* save the offset/size of the current ndr state */
-_PUBLIC_ void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save)
-{
-	save->offset = ndr->offset;
-	save->data_size = ndr->data_size;
-}
-
-/* restore the size/offset of a ndr structure */
-_PUBLIC_ void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save)
-{
-	ndr->offset = save->offset;
-	ndr->data_size = save->data_size;
-}
-
-
 /* create a ndr_push structure, ready for some marshalling */
 _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 {
