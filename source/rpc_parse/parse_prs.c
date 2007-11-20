@@ -48,14 +48,18 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
 		     int from_off, int to_off)
 {
 	int fd, i;
-	pstring fname;
+	char *fname = NULL;
 	ssize_t sz;
 	if (DEBUGLEVEL < 50) return;
 	for (i=1;i<100;i++) {
 		if (v != -1) {
-			slprintf(fname,sizeof(fname)-1, "/tmp/%s_%d.%d.prs", name, v, i);
+			if (asprintf(&fname,"/tmp/%s_%d.%d.prs", name, v, i) < 0) {
+				return;
+			}
 		} else {
-			slprintf(fname,sizeof(fname)-1, "/tmp/%s.%d.prs", name, i);
+			if (asprintf(&fname,"/tmp/%s.%d.prs", name, i) < 0) {
+				return;
+			}
 		}
 		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
 		if (fd != -1 || errno != EEXIST) break;
@@ -69,6 +73,7 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
 			DEBUG(0,("created %s\n", fname));
 		}
 	}
+	SAFE_FREE(fname);
 }
 
 /*******************************************************************
