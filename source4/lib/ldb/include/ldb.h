@@ -203,7 +203,7 @@ struct ldb_debug_ops {
 */
 struct ldb_utf8_fns {
 	void *context;
-	char *(*casefold)(void *context, void *mem_ctx, const char *s);
+	char *(*casefold)(void *context, TALLOC_CTX *mem_ctx, const char *s);
 };
 
 /**
@@ -280,8 +280,8 @@ struct ldb_parse_tree {
 	} u;
 };
 
-struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
-char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
+struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s);
+char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, struct ldb_parse_tree *tree);
 
 /**
    Encode a binary blob
@@ -297,7 +297,7 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
 
    \sa <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>.
 */
-char *ldb_binary_encode(void *ctx, struct ldb_val val);
+char *ldb_binary_encode(TALLOC_CTX *mem_ctx, struct ldb_val val);
 
 /**
    Encode a string
@@ -313,13 +313,13 @@ char *ldb_binary_encode(void *ctx, struct ldb_val val);
 
    \sa <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>.
 */
-char *ldb_binary_encode_string(void *mem_ctx, const char *string);
+char *ldb_binary_encode_string(TALLOC_CTX *mem_ctx, const char *string);
 
 /*
   functions for controlling attribute handling
 */
-typedef int (*ldb_attr_handler_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, struct ldb_val *);
-typedef int (*ldb_attr_comparison_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, const struct ldb_val *);
+typedef int (*ldb_attr_handler_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, const struct ldb_val *, struct ldb_val *);
+typedef int (*ldb_attr_comparison_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, const struct ldb_val *, const struct ldb_val *);
 
 /*
   attribute handler structure
@@ -803,7 +803,7 @@ int ldb_global_init(void);
   \return pointer to ldb_context that should be free'd (using talloc_free())
   at the end of the program.
 */
-struct ldb_context *ldb_init(void *mem_ctx);
+struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
 
 /**
    Connect to a database.
@@ -893,7 +893,7 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 
 int ldb_build_search_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
-			void *mem_ctx,
+			TALLOC_CTX *mem_ctx,
 			struct ldb_dn *base,
 	       		enum ldb_scope scope,
 			const char *expression,
@@ -918,7 +918,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 
 int ldb_build_add_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
-			void *mem_ctx,
+			TALLOC_CTX *mem_ctx,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
@@ -940,7 +940,7 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 
 int ldb_build_mod_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
-			void *mem_ctx,
+			TALLOC_CTX *mem_ctx,
 			const struct ldb_message *message,
 			struct ldb_control **controls,
 			void *context,
@@ -962,7 +962,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 
 int ldb_build_del_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
-			void *mem_ctx,
+			TALLOC_CTX *mem_ctx,
 			struct ldb_dn *dn,
 			struct ldb_control **controls,
 			void *context,
@@ -985,7 +985,7 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 
 int ldb_build_rename_req(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
-			void *mem_ctx,
+			TALLOC_CTX *mem_ctx,
 			struct ldb_dn *olddn,
 			struct ldb_dn *newdn,
 			struct ldb_control **controls,
@@ -1143,7 +1143,7 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
 */
 int ldb_build_extended_req(struct ldb_request **ret_req,
 			   struct ldb_context *ldb,
-			   void *mem_ctx,
+			   TALLOC_CTX *mem_ctx,
 			   const char *oid,
 			   void *data,/* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 			   struct ldb_control **controls,
@@ -1213,7 +1213,7 @@ void ldb_set_utf8_default(struct ldb_context *ldb);
    \note The default function is not yet UTF8 aware. Provide your own
          set of functions through ldb_set_utf8_fns()
 */
-char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s);
+char *ldb_casefold(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *s);
 
 /**
    Check the attribute name is valid according to rfc2251
@@ -1357,7 +1357,7 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 
    \note The caller is responsible for freeing the result
 */
-char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
+char *ldb_base64_encode(TALLOC_CTX *mem_ctx, const char *buf, int len);
 
 /**
    Base64 decode a buffer
@@ -1375,15 +1375,15 @@ int ldb_base64_decode(char *s);
 
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
-struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *dn);
-struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
+struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *dn);
+struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
 bool ldb_dn_validate(struct ldb_dn *dn);
 
-char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
+char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value);
 const char *ldb_dn_get_linearized(struct ldb_dn *dn);
 const char *ldb_dn_get_casefold(struct ldb_dn *dn);
-char *ldb_dn_alloc_linearized(void *mem_ctx, struct ldb_dn *dn);
-char *ldb_dn_alloc_casefold(void *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_alloc_casefold(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn);
 int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
@@ -1395,10 +1395,10 @@ bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...) PRINTF_
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num);
 bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num);
 
-struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn);
-struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn);
-char *ldb_dn_canonical_string(void *mem_ctx, struct ldb_dn *dn);
-char *ldb_dn_canonical_ex_string(void *mem_ctx, struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_copy(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_get_parent(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_canonical_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
+char *ldb_dn_canonical_ex_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 int ldb_dn_get_comp_num(struct ldb_dn *dn);
 const char *ldb_dn_get_component_name(struct ldb_dn *dn, unsigned int num);
 const struct ldb_val *ldb_dn_get_component_val(struct ldb_dn *dn, unsigned int num);
@@ -1429,7 +1429,7 @@ bool ldb_dn_is_null(struct ldb_dn *dn);
   return 0 for match
 */
 #define ldb_attr_cmp(a, b) strcasecmp(a, b)
-char *ldb_attr_casefold(void *mem_ctx, const char *s);
+char *ldb_attr_casefold(TALLOC_CTX *mem_ctx, const char *s);
 int ldb_attr_dn(const char *attr);
 
 /**
@@ -1439,7 +1439,7 @@ int ldb_attr_dn(const char *attr);
    to get the top level context, however the ldb context (from
    ldb_init()) may be a better choice
 */
-struct ldb_message *ldb_msg_new(void *mem_ctx);
+struct ldb_message *ldb_msg_new(TALLOC_CTX *mem_ctx);
 
 /**
    Find an element within an message
@@ -1533,15 +1533,15 @@ const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,
 					const char *default_value);
 
 struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
-				       void *mem_ctx,
+				       TALLOC_CTX *mem_ctx,
 				       const struct ldb_message *msg,
 				       const char *attr_name);
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 
-struct ldb_message *ldb_msg_copy_shallow(void *mem_ctx, 
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
 					 const struct ldb_message *msg);
-struct ldb_message *ldb_msg_copy(void *mem_ctx, 
+struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
 				 const struct ldb_message *msg);
 
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
@@ -1583,7 +1583,7 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 
    \return the duplicated ldb_val structure.
 */
-struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
+struct ldb_val ldb_val_dup(TALLOC_CTX *mem_ctx, const struct ldb_val *v);
 
 /**
   this allows the user to set a debug function for error reporting
@@ -1609,8 +1609,8 @@ int ldb_set_debug_stderr(struct ldb_context *ldb);
 int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value);
 void *ldb_get_opaque(struct ldb_context *ldb, const char *name);
 
-const char **ldb_attr_list_copy(void *mem_ctx, const char * const *attrs);
-const char **ldb_attr_list_copy_add(void *mem_ctx, const char * const *attrs, const char *new_attr);
+const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs);
+const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *attrs, const char *new_attr);
 int ldb_attr_in_list(const char * const *attrs, const char *attr);
 
 
@@ -1634,7 +1634,7 @@ void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
    \return the formatted string, or NULL if the time structure could
    not be converted
 */
-char *ldb_timestring(void *mem_ctx, time_t t);
+char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t);
 
 /**
    Convert a string to a time structure
@@ -1660,7 +1660,7 @@ time_t ldb_string_to_time(const char *s);
    \return the formatted string, or NULL if the time structure could
    not be converted
 */
-char *ldb_timestring_utc(void *mem_ctx, time_t t);
+char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t);
 
 /**
    Convert a string to a time structure
@@ -1687,6 +1687,6 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque
 
    \return array of ldb_control elements
 */
-struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *mem_ctx, const char **control_strings);
+struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings);
 
 #endif
