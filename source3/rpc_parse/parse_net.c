@@ -1086,7 +1086,7 @@ bool net_io_r_srv_pwset(const char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, 
 static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsids)
 {
 	const char *ptr;
-	pstring s2;
+	fstring s2;
 	int count = 0;
 
 	DEBUG(4,("init_dom_sid2s: %s\n", sids_str ? sids_str:""));
