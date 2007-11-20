@@ -101,8 +101,8 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 			uint32_t _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			if (r->info) {
-				struct ndr_pull_save _relative_save;
-				ndr_pull_save(ndr, &_relative_save);
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->info));
 				_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->info, 0);
@@ -114,7 +114,7 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 0, r->_ndr_size));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
-				ndr_pull_restore(ndr, &_relative_save);
+				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_PAC_INFO;
 		}
