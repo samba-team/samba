@@ -273,10 +273,10 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 	for (r.out.count = 0; r.out.count < r.out.available; r.out.count++) {
 
 		int i = r.out.count;
-		struct ndr_push_save data_save;
+		uint32_t offset_save;
 		struct rap_heap_save heap_save;
 
-		ndr_push_save(call->ndr_push_data, &data_save);
+		offset_save = call->ndr_push_data->offset;
 		rap_heap_save(call->heap, &heap_save);
 
 		switch(r.in.level) {
@@ -305,7 +305,7 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 
 	buffer_overflow:
 
-			ndr_push_restore(call->ndr_push_data, &data_save);
+			call->ndr_push_data->offset = offset_save;
 			rap_heap_restore(call->heap, &heap_save);
 			break;
 		}
@@ -355,10 +355,10 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 	for (r.out.count = 0; r.out.count < r.out.available; r.out.count++) {
 
 		int i = r.out.count;
-		struct ndr_push_save data_save;
+		uint32_t offset_save;
 		struct rap_heap_save heap_save;
 
-		ndr_push_save(call->ndr_push_data, &data_save);
+		offset_save = call->ndr_push_data->offset;
 		rap_heap_save(call->heap, &heap_save);
 
 		switch(r.in.level) {
@@ -389,7 +389,7 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 
 	buffer_overflow:
 
-			ndr_push_restore(call->ndr_push_data, &data_save);
+			call->ndr_push_data->offset = offset_save;
 			rap_heap_restore(call->heap, &heap_save);
 			break;
 		}
