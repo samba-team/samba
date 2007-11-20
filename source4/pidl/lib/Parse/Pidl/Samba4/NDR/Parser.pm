@@ -1095,8 +1095,8 @@ sub ParseElementPullLevel
 			$self->indent;
 
 			if ($l->{POINTER_TYPE} eq "relative") {
-				$self->pidl("struct ndr_pull_save _relative_save;");
-				$self->pidl("ndr_pull_save(ndr, &_relative_save);");
+				$self->pidl("uint32_t _relative_save_offset;");
+				$self->pidl("_relative_save_offset = ndr->offset;");
 				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_name));");
 			}
 		}
@@ -1110,7 +1110,7 @@ sub ParseElementPullLevel
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
-				$self->pidl("ndr_pull_restore(ndr, &_relative_save);");
+				$self->pidl("ndr->offset = _relative_save_offset;");
 			}
 			$self->deindent;
 			$self->pidl("}");
