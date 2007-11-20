@@ -650,21 +650,21 @@ _PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
 	uint32_t i;
-	struct ndr_pull_save save_offset;
+	uint32_t save_offset;
 
-	ndr_pull_save(ndr, &save_offset);
+	save_offset = ndr->offset;
 	ndr_pull_advance(ndr, (count - 1) * element_size);
 	NDR_PULL_NEED_BYTES(ndr, element_size);
 
 	for (i = 0; i < element_size; i++) {
 		 if (ndr->data[ndr->offset+i] != 0) {
-			ndr_pull_restore(ndr, &save_offset);
+			ndr->offset = save_offset;
 
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "String terminator not present or outside string boundaries");
 		 }
 	}
 
-	ndr_pull_restore(ndr, &save_offset);
+	ndr->offset = save_offset;
 
 	return NDR_ERR_SUCCESS;
 }
