@@ -1297,7 +1297,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
-	bool ret = true;
+	struct spoolss_ClosePrinter cp;
 
 	/* only makes sense on SMB */
 	if (p->conn->transport.transport != NCACN_NP) {
@@ -1315,10 +1315,12 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	status = dcerpc_bind_auth_none(p2, &ndr_table_spoolss);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
 
-	if (test_ClosePrinter(tctx, p2, handle)) {
-		torture_comment(tctx, "ERROR: Allowed close on secondary connection!\n");
-		ret = false;
-	}
+	cp.in.handle = handle;
+	cp.out.handle = handle;
+
+	status = dcerpc_spoolss_ClosePrinter(p2, tctx, &cp);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NET_WRITE_FAULT,
+			"ERROR: Allowed close on secondary connection");
 
 	torture_assert_int_equal(tctx, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
 				 "Unexpected fault code");
