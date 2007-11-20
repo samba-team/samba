@@ -422,16 +422,33 @@ void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
 	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
 	          STR_NOALIGN);
 }
-	
+
 /*******************************************************************
- Give a static string for displaying a UNISTR2.
+ Return a string for displaying a UNISTR2. Guarentees to return a
+ valid string - "" if nothing else.
+ Changed to use talloc_tos() under the covers.... JRA.
 ********************************************************************/
 
 const char *unistr2_static(const UNISTR2 *str)
 {
-	static pstring ret;
-	unistr2_to_ascii(ret, str, sizeof(ret));
-	return ret;
+	size_t ret = (size_t)-1;
+	char *dest = NULL;
+
+	if ((str == NULL) || (str->uni_str_len == 0)) {
+		return "";
+	}
+
+	ret = pull_ucs2_base_talloc(talloc_tos(),
+				NULL,
+				&dest,
+				str->buffer,
+				str->uni_str_len*2,
+				STR_NOALIGN);
+	if (ret == (size_t)-1 || dest == NULL) {
+		return "";
+	}
+
+	return dest;
 }
 
 /*******************************************************************
@@ -990,24 +1007,6 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 	}
 
 	return NULL;
-}
-
-bool trim_string_wa(smb_ucs2_t *s, const char *front,
-				  const char *back)
-{
-	wpstring f, b;
-
-	if (front) {
-		push_ucs2(NULL, f, front, sizeof(wpstring) - 1, STR_TERMINATE);
-	} else {
-		*f = 0;
-	}
-	if (back) {
-		push_ucs2(NULL, b, back, sizeof(wpstring) - 1, STR_TERMINATE);
-	} else {
-		*b = 0;
-	}
-	return trim_string_w(s, f, b);
 }
 
 /*******************************************************************

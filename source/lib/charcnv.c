@@ -993,11 +993,6 @@ size_t push_ascii_fstring(void *dest, const char *src)
 	return push_ascii(dest, src, sizeof(fstring), STR_TERMINATE);
 }
 
-size_t push_ascii_pstring(void *dest, const char *src)
-{
-	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
-}
-
 /********************************************************************
  Push an nstring - ensure null terminated. Written by
  moriyama@miraclelinux.com (MORIYAMA Masayuki).
@@ -1471,7 +1466,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
  The resulting string in "dest" is always null terminated.
 **/
 
-static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
+size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			const void *base_ptr,
 			char **ppdest,
 			const void *src,
@@ -1559,11 +1554,6 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 
 	*ppdest = dest;
 	return src_len;
-}
-
-size_t pull_ucs2_pstring(char *dest, const void *src)
-{
-	return pull_ucs2(NULL, dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
 size_t pull_ucs2_fstring(char *dest, const void *src)
