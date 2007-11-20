@@ -125,9 +125,13 @@ static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 
 	char *tok[MAXTOK];
 	int  count = 0;
-	pstring line2;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *line2 = NULL;
 
-	pstrcpy(line2,line);
+	line2 = talloc_strdup(ctx, line);
+	if (!line2) {
+		return false;
+	}
 
 #ifdef	OSF1
 	{
