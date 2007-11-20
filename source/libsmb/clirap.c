@@ -216,6 +216,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	pstring param;
 	int uLevel = 1;
 	int count = -1;
+	size_t len;
 
 	errno = 0; /* reset */
 
@@ -235,7 +236,11 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += push_ascii(p, workgroup, sizeof(pstring)-PTR_DIFF(p,param)-1, STR_TERMINATE|STR_UPPER);
+	len = push_ascii(p, workgroup, sizeof(pstring)-PTR_DIFF(p,param)-1, STR_TERMINATE|STR_UPPER);
+	if (len == (size_t)-1) {
+		return false;
+	}
+	p += len;
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
