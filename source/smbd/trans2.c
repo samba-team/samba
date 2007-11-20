@@ -1093,7 +1093,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 char *path_mask,uint32 dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
-				 char *base_data, int space_remaining, 
+				 char *base_data, char *end_data, int space_remaining, 
 				 BOOL *out_of_space, BOOL *got_exact_match,
 				 int *last_entry_off, struct ea_list *name_list, TALLOC_CTX *ea_ctx)
 {
@@ -1283,7 +1283,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 23;
 			nameptr = p;
 			p += align_string(outbuf, p, 0);
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					SCVAL(nameptr, -1, len - 2);
@@ -1318,7 +1318,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 			p += 27;
 			nameptr = p - 1;
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE | STR_NOALIGN);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					len -= 2;
@@ -1374,7 +1374,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			/* Push the ea_data followed by the name. */
 			p += fill_ea_buffer(ea_ctx, p, space_remaining - (p - pdata), conn, name_list);
 			nameptr = p;
-			len = srvstr_push(outbuf, p + 1, fname, space_remaining - (p - pdata), STR_TERMINATE | STR_NOALIGN);
+			len = srvstr_push(outbuf, p + 1, fname, PTR_DIFF(end_data, p+1), STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
 				if (len > 2) {
 					len -= 2;
@@ -1431,7 +1431,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				memset(p,'\0',26);
 			}
 			p += 2 + 24;
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1452,7 +1452,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,file_size); p += 8;
 			SOFF_T(p,0,allocation_size); p += 8;
 			SIVAL(p,0,nt_extmode); p += 4;
-			len = srvstr_push(outbuf, p + 4, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p + 4, fname, PTR_DIFF(end_data, p+4), STR_TERMINATE_ASCII);
 			SIVAL(p,0,len);
 			p += 4 + len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1479,7 +1479,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,ea_size); /* Extended attributes */
 				p +=4;
 			}
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len;
 
@@ -1497,7 +1497,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			/* this must *not* be null terminated or w2k gets in a loop trying to set an
 			   acl on a dir (tridge) */
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE_ASCII);
 			SIVAL(p, -4, len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1527,7 +1527,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
 			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
 			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len; 
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1578,7 +1578,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
 			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
 			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
-			len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE_ASCII);
+			len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
 			SIVAL(p,0,0); /* Ensure any padding is null. */
@@ -1601,14 +1601,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX\n"));
 				p = store_file_unix_basic(conn, p,
 							NULL, &sbuf);
-				len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), STR_TERMINATE);
+				len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), STR_TERMINATE);
 			} else {
 				DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_UNIX_INFO2\n"));
 				p = store_file_unix_basic_info2(conn, p,
 							NULL, &sbuf);
 				nameptr = p;
 				p += 4;
-				len = srvstr_push(outbuf, p, fname, space_remaining - (p - pdata), 0);
+				len = srvstr_push(outbuf, p, fname, PTR_DIFF(end_data, p), 0);
 				SIVAL(nameptr, 0, len);
 			}
 
@@ -1659,6 +1659,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
+	char *data_end;
 	uint32 dirtype;
 	int maxentries;
 	uint16 findfirst_flags;
@@ -1804,6 +1805,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	pdata = *ppdata;
+	data_end = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
 
 	/* Realloc the params space */
 	*pparams = (char *)SMB_REALLOC(*pparams, 10);
@@ -1858,7 +1860,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					inbuf, outbuf,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
-					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+					&p,pdata,data_end,space_remaining, &out_of_space, &got_exact_match,
 					&last_entry_off, ea_list, ea_ctx);
 		}
 
@@ -1952,6 +1954,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
+	char *data_end;
 	int dptr_num;
 	int maxentries;
 	uint16 info_level;
@@ -2078,6 +2081,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	pdata = *ppdata;
+	data_end = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
 
 	/* Realloc the params space */
 	*pparams = (char *)SMB_REALLOC(*pparams, 6*SIZEOFWORD);
@@ -2170,7 +2174,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 						inbuf, outbuf,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
-						&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+						&p,pdata,data_end,space_remaining, &out_of_space, &got_exact_match,
 						&last_entry_off, ea_list, ea_ctx);
 		}
 
