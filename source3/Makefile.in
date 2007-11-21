@@ -735,7 +735,8 @@ MOUNT_OBJ = client/smbmount.o \
 
 MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-UMOUNT_OBJ = client/smbumount.o $(SOCKET_WRAPPER_OBJ)
+UMOUNT_OBJ = client/smbumount.o $(SOCKET_WRAPPER_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) \
+	     $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 CIFS_MOUNT_OBJ = client/mount.cifs.o
 
@@ -1188,7 +1189,7 @@ bin/smbmnt@EXEEXT@: $(BINARY_PREREQS) $(MNT_OBJ)
 
 bin/smbumount@EXEEXT@: $(BINARY_PREREQS) $(UMOUNT_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
+	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ)
 	@echo Linking $@
