@@ -296,4 +296,5 @@ if which trial 2>/dev/null >/dev/null
 then
 	plantest "ldb.python" none PYTHONPATH=bin/python trial lib/ldb/tests/python/api.py
 	plantest "credentials.python" none PYTHONPATH=bin/python trial auth/credentials/tests/bindings.py
+	plantest "registry.python" none PYTHONPATH=bin/python trial lib/registry/tests/bindings.py
 fi
