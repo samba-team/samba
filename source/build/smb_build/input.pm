@@ -8,6 +8,7 @@
 use smb_build::config;
 use strict;
 package smb_build::input;
+use File::Basename;
 
 my $srcdir = $config::config{srcdir};
 
@@ -115,7 +116,9 @@ sub check_library($$$)
 
 	return if ($lib->{ENABLE} ne "YES");
 
-	$lib->{OUTPUT_TYPE} = $default_ot;
+	unless (defined($lib->{OUTPUT_TYPE})) {
+		$lib->{OUTPUT_TYPE} = $default_ot;
+	}
 
 	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
 		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
@@ -131,8 +134,32 @@ sub check_library($$$)
 		$lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
 
-	$lib->{INSTALLDIR} = "LIBDIR";
+	unless(defined($lib->{INSTALLDIR})) {
+		$lib->{INSTALLDIR} = "LIBDIR";
+	}
 	add_libreplace($lib);
+}
+
+sub check_python($$)
+{
+	my ($INPUT, $python) = @_;
+
+	$python->{INSTALLDIR} = "PYTHONDIR";
+	push (@{$python->{PUBLIC_DEPENDENCIES}}, "LIBPYTHON");
+	if (defined($python->{SWIG_FILE})) {
+		my $dirname = dirname($python->{SWIG_FILE});
+		my $basename = basename($python->{SWIG_FILE}, ".i");
+
+		$python->{OBJ_FILES} = ["$dirname/$basename\_wrap.o"];
+		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
+		$python->{PYTHON_FILES} = ["$dirname/$basename.py"];
+	} else {
+		my $basename = $python->{NAME};
+		$basename =~ s/^python_//g;
+		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
+	}
+
+	check_library($INPUT, $python, ["SHARED_LIBRARY"]);
 }
 
 sub check_binary($$)
@@ -235,10 +262,20 @@ sub check($$$$$)
 		$part->{LINK_FLAGS} = [];
 		$part->{FULL_OBJ_LIST} = ["\$($part->{TYPE}_$part->{NAME}_OBJ_LIST)"];
 
-		check_subsystem($INPUT, $part, $subsys_ot) if ($part->{TYPE} eq "SUBSYSTEM");
-		check_module($INPUT, $part, $module_ot) if ($part->{TYPE} eq "MODULE");
-		check_library($INPUT, $part, $lib_ot) if ($part->{TYPE} eq "LIBRARY");
-		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
+		if ($part->{TYPE} eq "SUBSYSTEM") { 
+			check_subsystem($INPUT, $part, $subsys_ot);
+		} elsif ($part->{TYPE} eq "MODULE") {
+			check_module($INPUT, $part, $module_ot);
+		} elsif ($part->{TYPE} eq "LIBRARY") {
+			check_library($INPUT, $part, $lib_ot);
+		} elsif ($part->{TYPE} eq "BINARY") {
+			check_binary($INPUT, $part);
+		} elsif ($part->{TYPE} eq "PYTHON") {
+			check_python($INPUT, $part);
+		} elsif ($part->{TYPE} eq "EXT_LIB") {
+		} else {
+			die("Unknown type $part->{TYPE}");
+		}
 	}
 
 	foreach my $part (values %$INPUT) {

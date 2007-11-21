@@ -49,9 +49,10 @@ sub generate_shared_library($)
 		$lib_name = "lib$link_name";
 	}
 
-	if (defined($lib->{LIBRARY_REALNAME})) {
+	if ($lib->{TYPE} eq "PYTHON") {
+		$lib->{SHAREDDIR} = "bin/python";
+	} elsif (defined($lib->{LIBRARY_REALNAME})) {
 		$lib->{BASEDIR} =~ s/^\.\///g;
-		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}";
 		$lib->{SHAREDDIR} = $lib->{BASEDIR};
 	} else {
 		if ($lib->{TYPE} eq "MODULE") {

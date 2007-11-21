@@ -62,7 +62,8 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PkgConfig($key, $OUTPUT) if $key->{TYPE} eq "LIBRARY" 
 		                    and defined($key->{VERSION});
-	$mkenv->SharedLibrary($key) if $key->{TYPE} eq "LIBRARY" and
+	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY" or 
+		                            $key->{TYPE} eq "PYTHON") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if ($key->{TYPE} eq "LIBRARY" and 
 	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
@@ -71,6 +72,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->SharedModule($key) if $key->{TYPE} eq "MODULE" and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 

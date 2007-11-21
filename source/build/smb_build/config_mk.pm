@@ -19,6 +19,14 @@ my $section_types = {
 		"CPPFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		},
+	"PYTHON" => {
+		SWIG_FILE => "string",
+		"PRIVATE_DEPENDENCIES"	=> "list",
+		"PUBLIC_DEPENDENCIES"	=> "list",
+		"OBJ_FILES" => "list",
+		"ENABLE"		=> "bool",
+		"LDFLAGS"		=> "list",
+	},
 	"SUBSYSTEM" => {
 		"OBJ_FILES"		=> "list",
 
@@ -80,6 +88,7 @@ my $section_types = {
 		"LIBRARY_REALNAME" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
+		"OUTPUT_TYPE"		=> "list",
 
 		"OBJ_FILES"		=> "list",
 
