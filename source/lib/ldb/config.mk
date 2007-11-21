@@ -194,10 +194,9 @@ PRIVATE_DEPENDENCIES = \
 
 #######################
 # Start LIBRARY swig_ldb
-[LIBRARY::swig_ldb]
-PUBLIC_DEPENDENCIES = LIBLDB DYNCONFIG
-LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
-OBJ_FILES = swig/ldb_wrap.o
+[PYTHON::swig_ldb]
+PUBLIC_DEPENDENCIES = LIBLDB LIBPYTHON
+SWIG_FILE = ldb.i
 # End LIBRARY swig_ldb
 #######################
 

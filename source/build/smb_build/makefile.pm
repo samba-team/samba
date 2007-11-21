@@ -398,7 +398,7 @@ sub SharedLibrary($$)
 
 	if ($ctx->{TYPE} eq "PYTHON") {
 		push (@{$self->{python_dsos}}, 
-		"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 	}
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");

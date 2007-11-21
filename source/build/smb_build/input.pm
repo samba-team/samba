@@ -137,6 +137,7 @@ sub check_library($$$)
 	unless(defined($lib->{INSTALLDIR})) {
 		$lib->{INSTALLDIR} = "LIBDIR";
 	}
+
 	add_libreplace($lib);
 }
 
