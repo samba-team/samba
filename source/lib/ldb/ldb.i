@@ -553,8 +553,8 @@ int ldb_valid_attr_name(const char *s);
 
 typedef unsigned long time_t;
 
-%{
-char *timestring(time_t t)
+%inline %{
+static char *timestring(time_t t)
 {
     char *tresult = ldb_timestring(NULL, t);
     char *result = strdup(tresult);
@@ -562,7 +562,6 @@ char *timestring(time_t t)
     return result; 
 }
 %}
-char *timestring(time_t t);
 
 %rename(string_to_time) ldb_string_to_time;
 time_t ldb_string_to_time(const char *s);

@@ -208,3 +208,6 @@ source/lib/ldb/tdbtest.ldb
 libtdb.so.*
 libtalloc.so.*
 source/auth/credentials/credentials.py
+source/lib/ldb/ldb.py
+source/lib/registry/registry.py
+source/libcli/swig/libcli_nbt.py
