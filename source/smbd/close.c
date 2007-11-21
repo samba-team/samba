@@ -541,7 +541,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
  Close a 'stat file' opened internally.
 ****************************************************************************/
   
-NTSTATUS close_stat(files_struct *fsp)
+static NTSTATUS close_stat(files_struct *fsp)
 {
 	/*
 	 * Do the code common to files and directories.
