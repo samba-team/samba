@@ -28,7 +28,7 @@
 /**
  * Dump a prs to a file: from the current location through to the end.
  **/
-void prs_dump(char *name, int v, prs_struct *ps)
+void prs_dump(const char *name, int v, prs_struct *ps)
 {
 	prs_dump_region(name, v, ps, ps->data_offset, ps->buffer_size);
 }
@@ -36,7 +36,7 @@ void prs_dump(char *name, int v, prs_struct *ps)
 /**
  * Dump from the start of the prs to the current location.
  **/
-void prs_dump_before(char *name, int v, prs_struct *ps)
+void prs_dump_before(const char *name, int v, prs_struct *ps)
 {
 	prs_dump_region(name, v, ps, 0, ps->data_offset);
 }
@@ -44,7 +44,7 @@ void prs_dump_before(char *name, int v, prs_struct *ps)
 /**
  * Dump everything from the start of the prs up to the current location.
  **/
-void prs_dump_region(char *name, int v, prs_struct *ps,
+void prs_dump_region(const char *name, int v, prs_struct *ps,
 		     int from_off, int to_off)
 {
 	int fd, i;
