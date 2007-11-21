@@ -52,4 +52,3 @@ NSS-TEST						# Fails
 samba4.ldb.python				# Fails to link properly
 samba4.credentials.python		# Fails to link properly
 samba4.registry.python			# Fails to link properly
-samba4.tdb.python				# Fails to link properly
