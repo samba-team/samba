@@ -26,7 +26,7 @@ clean::
 	@echo "Removing SWIG output files"
 	@-rm -f bin/python/*
 	# FIXME: Remove _wrap.c files
-	#
+
 pythonmods: $(PYTHON_DSOS)
 
 PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py
