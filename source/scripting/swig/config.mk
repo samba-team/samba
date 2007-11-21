@@ -1,16 +1,19 @@
 # Swig extensions
-swig: lib/tdb/swig/_tdb.$(SHLIBEXT) lib/ldb/swig/_ldb.$(SHLIBEXT) \
-	libcli/swig/_libcli_nbt.$(SHLIBEXT) libcli/swig/_libcli_smb.$(SHLIBEXT)
+swig: pythonmods
 
+pythonmods: $(PYTHON_DSOS)
+	
 .SUFFIXES: _wrap.c .i
 
 .i_wrap.c:
-	swig -I$(srcdir)/scripting/swig -python $<
+	swig -Wall -I$(srcdir)/scripting/swig -python $<
 
 clean::
 	@echo "Removing SWIG output files"
-	@-rm -f scripting/swig/tdb.pyc scripting/swig/tdb.py
+	@-rm -f bin/python/*
+	# FIXME: Remove _wrap.c files
 
-# Swig testing
-swigtest: swig
-	./selftest/test_swig.sh
+PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py
+
+pydoctor::
+	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --make-html --docformat=restructedtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
