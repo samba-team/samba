@@ -3,6 +3,7 @@ AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 	will be appended to the Python interpreter
 	canonical name.])
 
+AC_PATH_PROG(SWIG,swig,no)
 AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
 if test -z "$PYTHON"; then
 	working_python=no
@@ -115,10 +116,9 @@ AC_SUBST(PYTHON_EXTRA_LDFLAGS)
 
 SMB_EXT_LIB(LIBPYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CPPFLAGS])
 
-if test x$working_python = xyes
+if test x$working_python = xyes && test x$SWIG != xno
 then
 	SMB_ENABLE(LIBPYTHON,YES)
 else
 	SMB_ENABLE(LIBPYTHON,NO)
 fi
-

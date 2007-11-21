@@ -20,7 +20,7 @@ swig: pythonmods
 .SUFFIXES: _wrap.c .i
 
 .i_wrap.c:
-	swig -Wall -I$(srcdir)/scripting/swig -python $<
+	$(SWIG) -Wall -I$(srcdir)/scripting/swig -python $<
 
 clean::
 	@echo "Removing SWIG output files"

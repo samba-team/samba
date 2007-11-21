@@ -217,3 +217,4 @@ source/librpc/rpc/dcerpc.py
 source/scripting/python/misc.py
 source/scripting/python/misc_wrap.c
 source/auth/auth.py
+source/lib/registry/tests/proto.h
