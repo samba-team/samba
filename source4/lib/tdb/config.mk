@@ -60,9 +60,8 @@ PRIVATE_DEPENDENCIES = \
 
 #######################
 # Start LIBRARY swig_tdb
-[LIBRARY::swig_tdb]
-LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
-OBJ_FILES = swig/tdb_wrap.o
+[PYTHON::swig_tdb]
+SWIG_FILE = tdb.i
 PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
 # End LIBRARY swig_tdb
 #######################
