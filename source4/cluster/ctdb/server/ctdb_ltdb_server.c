@@ -23,7 +23,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
-#include "db_wrap.h"
+#include "tdb_wrap.h"
 #include "lib/util/dlinklist.h"
 
 /*

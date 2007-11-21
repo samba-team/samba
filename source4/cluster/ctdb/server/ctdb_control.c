@@ -24,7 +24,6 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
-#include "db_wrap.h"
 
 struct ctdb_control_state {
 	struct ctdb_context *ctdb;
