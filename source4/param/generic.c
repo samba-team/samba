@@ -64,6 +64,9 @@ static struct param_opt *param_get_add(struct param_context *ctx, const char *se
 	struct param_section *section;
 	struct param_opt *p;
 
+	SMB_ASSERT(section_name != NULL);
+	SMB_ASSERT(name != NULL);
+
 	section = param_get_section(ctx, section_name);
 
 	if (section == NULL) {
@@ -72,7 +75,7 @@ static struct param_opt *param_get_add(struct param_context *ctx, const char *se
 			return NULL;
 
 		section->name = talloc_strdup(section, section_name);
-		DLIST_ADD(ctx->sections, section);
+		DLIST_ADD_END(ctx->sections, section, struct param_section *);
 	}
 
 	p = param_section_get(section, name);
@@ -82,7 +85,7 @@ static struct param_opt *param_get_add(struct param_context *ctx, const char *se
 			return NULL;
 
 		p->key = talloc_strdup(p, name);
-		DLIST_ADD(section->parameters, p);
+		DLIST_ADD_END(section->parameters, p, struct param_opt *);
 	}
 	
 	return p;
@@ -185,7 +188,7 @@ static bool param_sfunc (const char *name, void *_ctx)
 
 		section->name = talloc_strdup(section, name);
 
-		DLIST_ADD(ctx->sections, section);
+		DLIST_ADD_END(ctx->sections, section, struct param_section *);
 	}
 
 	/* Make sure this section is on top of the list for param_pfunc */
@@ -232,6 +235,32 @@ int param_read(struct param_context *ctx, const char *fn)
 		return -1;
 	}
 
+	return 0;
+}
+
+int param_use(struct loadparm_context *lp_ctx, struct param_context *ctx)
+{
+	struct param_section *section;
+
+	for (section = ctx->sections; section; section = section->next) {
+		struct param_opt *param;
+		bool isglobal = strcmp(section->name, "global") == 0;
+		for (param = section->parameters; param; param = param->next) {
+			if (isglobal)
+				lp_do_global_parameter(lp_ctx, param->key,
+						       param->value);
+			else {
+				struct loadparm_service *service = 
+							lp_service(lp_ctx, section->name);
+				if (service == NULL)
+					service = lp_add_service(lp_ctx, &sDefault, section->name);
+				lp_do_service_parameter(lp_ctx, 
+							service,
+							param->key,
+							param->value);
+			}
+		}
+	}
 	return 0;
 }
 

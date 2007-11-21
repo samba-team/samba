@@ -63,5 +63,6 @@ struct loadparm_service;
 #include "param/proto.h"
 
 extern struct loadparm_context *global_loadparm;
+extern struct loadparm_service sDefault;
 
 #endif /* _PARAM_H */
