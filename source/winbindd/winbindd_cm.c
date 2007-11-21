@@ -923,6 +923,8 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 	}
 
 	(*addrs)[*num] = *pss;
+	set_sockaddr_port(&(*addrs)[*num], port);
+
 	*num += 1;
 	return True;
 }
