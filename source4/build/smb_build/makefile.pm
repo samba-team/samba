@@ -7,6 +7,7 @@
 
 package smb_build::makefile;
 use smb_build::env;
+use File::Basename;
 use strict;
 
 use base 'smb_build::env';
@@ -24,6 +25,7 @@ sub new($$$)
 	$self->{bin_progs} = [];
 	$self->{torture_progs} = [];
 	$self->{static_libs} = [];
+	$self->{python_dsos} = [];
 	$self->{shared_libs} = [];
 	$self->{installable_shared_libs} = [];
 	$self->{headers} = [];
@@ -180,6 +182,7 @@ sub _prepare_compiler_linker($)
 SHELL=$self->{config}->{SHELL}
 
 PERL=$self->{config}->{PERL}
+PYTHON=$self->{config}->{PYTHON}
 
 CPP=$self->{config}->{CPP}
 CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
@@ -393,6 +396,11 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 #	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
+	if ($ctx->{TYPE} eq "PYTHON") {
+		push (@{$self->{python_dsos}}, 
+		"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+	}
+
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
 	my $soarg = "";
@@ -517,6 +525,18 @@ __EOD__
 __EOD__
 		);
 	}
+}
+
+sub PythonFiles($$)
+{
+	my ($self,$ctx) = @_;
+
+	foreach (@{$ctx->{PYTHON_FILES}}) {
+		my $target = "bin/python/".basename($_);
+		$self->output("$target: $ctx->{BASEDIR}/$_\n" .
+		              "\tcp $ctx->{BASEDIR}/$_ \$@\n\n");
+		push (@{$self->{python_dsos}}, $target);
+  }
 }
 
 sub Manpage($$)
@@ -672,6 +692,7 @@ sub write($$)
 	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
+	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("INSTALLABLE_SHARED_LIBS = " . array2oneperline($self->{installable_shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
