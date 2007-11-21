@@ -26,7 +26,6 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "auth_util.h"
 %}
 
 %include "carrays.i"
