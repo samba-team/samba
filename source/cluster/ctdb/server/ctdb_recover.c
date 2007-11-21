@@ -25,7 +25,6 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
-#include "db_wrap.h"
 
 /*
   lock all databases - mark only
