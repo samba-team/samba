@@ -29,7 +29,7 @@ include librpc/config.mk
 include client/config.mk
 include libcli/config.mk
 include scripting/ejs/config.mk
-include scripting/swig/config.mk
+include scripting/python/config.mk
 include kdc/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \

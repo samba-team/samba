@@ -36,4 +36,15 @@
     }
 };
 
+%typemap(in) NTSTATUS {
+	if (PyLong_Check($input))
+		$1 = NT_STATUS(PyLong_AsUnsignedLong($input));
+	else if (PyInt_Check($input))
+		$1 = NT_STATUS(PyInt_AsLong($input));
+	else {
+		PyErr_SetString(PyExc_TypeError, "Expected a long or an int");
+		return NULL;
+	}
+}
+
 #endif
