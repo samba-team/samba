@@ -160,7 +160,9 @@ sub check_python($$)
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
 	}
 
-	check_library($INPUT, $python, ["SHARED_LIBRARY"]);
+	$python->{SUBSYSTEM} = "LIBPYTHON";
+
+	check_module($INPUT, $python, ["SHARED_LIBRARY"]);
 }
 
 sub check_binary($$)
