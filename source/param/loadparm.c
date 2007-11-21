@@ -222,7 +222,7 @@ struct loadparm_service
 
 
 /* This is a default service used to prime a services structure */
-static struct loadparm_service sDefault = {
+struct loadparm_service sDefault = {
 	.szService = NULL,
 	.szPath = NULL,
 	.szCopy = NULL,
@@ -1031,7 +1031,7 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
  service. 
 ***************************************************************************/
 
-static struct loadparm_service *add_a_service(struct loadparm_context *lp_ctx, 
+struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx, 
 				     const struct loadparm_service *pservice, 
 				     const char *name)
 {
@@ -1073,7 +1073,7 @@ static struct loadparm_service *add_a_service(struct loadparm_context *lp_ctx,
 				num_to_alloc);
 					   
 		if (!tsp) {
-			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
+			DEBUG(0,("lp_add_service: failed to enlarge ServicePtrs!\n"));
 			return NULL;
 		}
 		else {
@@ -1086,7 +1086,7 @@ static struct loadparm_service *add_a_service(struct loadparm_context *lp_ctx,
 
 	lp_ctx->ServicePtrs[i] = init_service(talloc_autofree_context());
 	if (lp_ctx->ServicePtrs[i] == NULL) {
-		DEBUG(0,("add_a_service: out of memory!\n"));
+		DEBUG(0,("lp_add_service: out of memory!\n"));
 		return NULL;
 	}
 	copy_service(lp_ctx->ServicePtrs[i], &tservice, NULL);
@@ -1107,7 +1107,7 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 {
 	struct loadparm_service *service;
 
-	service = add_a_service(lp_ctx, default_service, pszHomename);
+	service = lp_add_service(lp_ctx, default_service, pszHomename);
 
 	if (service == NULL)
 		return false;
@@ -1132,24 +1132,13 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 }
 
 /***************************************************************************
- Add a new service, based on an old one.
-***************************************************************************/
-
-struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx, 
-			       const char *pszService, 
-			       struct loadparm_service *default_service)
-{
-	return add_a_service(lp_ctx, default_service, pszService);
-}
-
-/***************************************************************************
  Add the IPC service.
 ***************************************************************************/
 
 static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name, 
 			  const char *fstype)
 {
-	struct loadparm_service *service = add_a_service(lp_ctx, &sDefault, name);
+	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, name);
 
 	if (service == NULL)
 		return false;
@@ -1185,7 +1174,7 @@ bool lp_add_printer(struct loadparm_context *lp_ctx,
 {
 	const char *comment = "From Printcap";
 	struct loadparm_service *service;
-	service = add_a_service(lp_ctx, default_service, pszPrintername);
+	service = lp_add_service(lp_ctx, default_service, pszPrintername);
 
 	if (service == NULL)
 		return false;
@@ -2024,7 +2013,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((lp_ctx->currentService = add_a_service(lp_ctx, &sDefault, 
+		if ((lp_ctx->currentService = lp_add_service(lp_ctx, &sDefault, 
 							     pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
