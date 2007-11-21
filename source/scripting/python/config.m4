@@ -5,10 +5,8 @@ AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 
 AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
 if test -z "$PYTHON"; then
+	working_python=no
 	AC_MSG_WARN([No python found])
-	SMB_ENABLE(LIBPYTHON,NO)
-else
-	SMB_ENABLE(LIBPYTHON,YES)
 fi
 
 #
@@ -19,8 +17,8 @@ ac_supports_python_ver=`$PYTHON -c "import sys, string; \
 	ver = string.split(sys.version)[[0]]; \
 	print ver >= '2.1.0'"`
 if test "$ac_supports_python_ver" != "True"; then
+	working_python=no
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([No recent version of python found])
 else 
 	AC_MSG_RESULT([yes])
 fi
@@ -32,9 +30,10 @@ AC_MSG_CHECKING([for the distutils Python package])
 ac_distutils_result=`$PYTHON -c "import distutils" 2>&1`
 if test -z "$ac_distutils_result"; then
 	AC_MSG_RESULT([yes])
+	working_python=yes
 else
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([distutils not available])
+	working_python=no
 fi
 
 #
@@ -115,3 +114,11 @@ AC_MSG_RESULT([$PYTHON_EXTRA_LDFLAGS])
 AC_SUBST(PYTHON_EXTRA_LDFLAGS)
 
 SMB_EXT_LIB(LIBPYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CPPFLAGS])
+
+if test x$working_python = xyes
+then
+	SMB_ENABLE(LIBPYTHON,YES)
+else
+	SMB_ENABLE(LIBPYTHON,NO)
+fi
+
