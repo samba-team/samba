@@ -864,6 +864,7 @@ static void parse_mount_smb(int argc, char **argv)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *p;
 
 	DEBUGLEVEL = 1;
@@ -940,5 +941,6 @@ static void parse_mount_smb(int argc, char **argv)
 	strupper_m(my_netbios_name);
 
 	init_mount();
+	TALLOC_FREE(frame);
 	return 0;
 }
