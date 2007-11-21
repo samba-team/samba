@@ -290,3 +290,9 @@ if test -f $samba4bindir/nsstest
 then
 	plantest "NSS-TEST using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
 fi
+
+# if trial is available, run the python tests:
+if which trial 2>/dev/null >/dev/null
+then
+	plantest "ldb.python" none PYTHONPATH=bin/python trial lib/ldb/tests/python/api.py
+fi

@@ -1,6 +1,7 @@
 #######################
 # Start LIBRARY swig_dcerpc
 [LIBRARY::swig_dcerpc]
+ENABLE = NO
 LIBRARY_REALNAME = _dcerpc.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
 OBJ_FILES = dcerpc_wrap.o
