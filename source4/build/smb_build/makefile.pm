@@ -310,6 +310,11 @@ sub SharedModule($$)
 	my $sane_subsystem = lc($ctx->{SUBSYSTEM});
 	$sane_subsystem =~ s/^lib//;
 	
+	if ($ctx->{TYPE} eq "PYTHON") {
+		push (@{$self->{python_dsos}}, 
+			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+	}
+
 	push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 	push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 
@@ -395,11 +400,6 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 #	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
-
-	if ($ctx->{TYPE} eq "PYTHON") {
-		push (@{$self->{python_dsos}}, 
-			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
-	}
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 

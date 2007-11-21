@@ -41,7 +41,6 @@
 
 %}
 
-%include "samba.i"
 %include "../../lib/talloc/talloc.i"
 %include "../../auth/credentials/credentials.i"
 
