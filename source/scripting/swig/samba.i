@@ -23,28 +23,6 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-%apply int { uint8_t };
-%apply int { int8_t };
-%apply unsigned int { uint16_t };
-%apply int { int16_t };
-%apply unsigned long long { uint64_t };
-%apply long long { int64_t };
-
-%typemap(in) uint32_t {
-	if (PyLong_Check($input))
-		$1 = PyLong_AsUnsignedLong($input);
-	else if (PyInt_Check($input))
-		$1 = PyInt_AsLong($input);
-	else {
-		PyErr_SetString(PyExc_TypeError,"Expected a long or an int");
-		return NULL;
-	}
-}
-
-%typemap(out) uint32_t {
-	$result = PyLong_FromUnsignedLong($1);
-}
-
 %typemap(in) NTSTATUS {
 	if (PyLong_Check($input))
 		$1 = NT_STATUS(PyLong_AsUnsignedLong($input));
@@ -56,13 +34,8 @@
 	}
 }
 
-%typemap(out) NTSTATUS {
-        $result = PyLong_FromUnsignedLong(NT_STATUS_V($1));
-}
-
 %typemap(in) struct cli_credentials * {
 	$1 = cli_credentials_init(arg1);
-	cli_credentials_set_conf($1);
 	if ($input == Py_None) {
 		cli_credentials_set_anonymous($1);
 	} else {
