@@ -92,7 +92,6 @@ m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
 m4_include(lib/appweb/config.m4)
 m4_include(nsswitch/config.m4)
-m4_include(libcli/config.m4)
 
 #################################################
 # add *_CFLAGS only for the real build
