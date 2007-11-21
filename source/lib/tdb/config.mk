@@ -57,11 +57,3 @@ PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbbackup
 ################################################
-
-#######################
-# Start LIBRARY swig_tdb
-[PYTHON::swig_tdb]
-SWIG_FILE = tdb.i
-PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
-# End LIBRARY swig_tdb
-#######################

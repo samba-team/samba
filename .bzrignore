@@ -211,3 +211,9 @@ source/auth/credentials/credentials.py
 source/lib/ldb/ldb.py
 source/lib/registry/registry.py
 source/libcli/swig/libcli_nbt.py
+source/lib/tdb/tdb.py
+source/lib/tdb/tdb_wrap.c
+source/librpc/rpc/dcerpc.py
+source/scripting/python/misc.py
+source/scripting/python/misc_wrap.c
+source/auth/auth.py
