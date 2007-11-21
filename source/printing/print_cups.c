@@ -564,8 +564,8 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 	const char 	*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
-	pstring		new_jobname;
-	int		num_options = 0; 
+	char *new_jobname = NULL;
+	int		num_options = 0;
 	cups_option_t 	*options = NULL;
 	char addr[INET6_ADDRSTRLEN];
 
@@ -627,8 +627,10 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	             "job-originating-host-name", NULL,
 		      clientname);
 
-        pstr_sprintf(new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX, 
-		(unsigned int)pjob->smbjob, pjob->jobname);
+	if (asprintf(&new_jobname,"%s%.8u %s", PRINT_SPOOL_PREFIX,
+			(unsigned int)pjob->smbjob, pjob->jobname) < 0) {
+		goto out;
+	}
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     new_jobname);
@@ -675,6 +677,8 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 
 	if (http)
 		httpClose(http);
+
+	SAFE_FREE(new_jobname);
 
 	return ret;
 }

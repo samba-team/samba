@@ -33,7 +33,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 {
 	struct tdb_print_db *p = NULL, *last_entry = NULL;
 	int num_open = 0;
-	pstring printdb_path;
+	char *printdb_path = NULL;
 	bool done_become_root = False;
 
 	SMB_ASSERT(printername != NULL);
@@ -78,7 +78,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 			p = print_db_head;
 		}
 	}
-       
+
 	if (!p)	{
 		/* Create one. */
 		p = SMB_MALLOC_P(struct tdb_print_db);
@@ -90,9 +90,13 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		DLIST_ADD(print_db_head, p);
 	}
 
-	pstrcpy(printdb_path, lock_path("printing/"));
-	pstrcat(printdb_path, printername);
-	pstrcat(printdb_path, ".tdb");
+	if (asprintf(&printdb_path, "%s%s.tdb",
+				lock_path("printing/"),
+				printername) < 0) {
+		DLIST_REMOVE(print_db_head, p);
+		SAFE_FREE(p);
+		return NULL;
+	}
 
 	if (geteuid() != 0) {
 		become_root();
@@ -109,9 +113,11 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		DEBUG(0,("get_print_db: Failed to open printer backend database %s.\n",
 					printdb_path ));
 		DLIST_REMOVE(print_db_head, p);
+		SAFE_FREE(printdb_path);
 		SAFE_FREE(p);
 		return NULL;
 	}
+	SAFE_FREE(printdb_path);
 	fstrcpy(p->printer_name, printername);
 	p->ref_count++;
 	return p;
