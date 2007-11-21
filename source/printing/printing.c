@@ -1475,7 +1475,6 @@ static void print_queue_update(int snum, bool force)
 		return;
 	}
 
-	pstrcpy( lprmcommand, lp_lprmcommand(snum));
 	lprmcommand = talloc_string_sub2(ctx,
 			lp_lprmcommand(snum),
 			"%p",
