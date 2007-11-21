@@ -2180,6 +2180,7 @@ enum {
 
  int main(int argc, const char **argv)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int opt;
 	static const char *helper_protocol;
 	static int diagnostics;
@@ -2361,5 +2362,6 @@ enum {
 	/* Exit code */
 
 	poptFreeContext(pc);
+	TALLOC_FREE(frame);
 	return 0;
 }
