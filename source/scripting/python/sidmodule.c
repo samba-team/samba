@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "scripting/python/talloc.h"
 #include "Python.h"
 #include "libcli/security/security.h"
 

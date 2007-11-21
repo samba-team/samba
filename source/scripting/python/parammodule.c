@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "scripting/python/talloc.h"
 #include "Python.h"
 #include "param/param.h"
 
