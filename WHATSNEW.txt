@@ -1,3 +1,95 @@
+                   ===============================
+                   Release Notes for Samba 3.0.27a
+                             Nov 20, 2007
+                   ===============================
+
+Samba 3.0.27a is a bug fix release and is the current release
+for production servers running the Samba 3.0 series.
+
+Important fixes in 3.0.27a include:
+
+  o A crash bug regression experienced by smbfs clients caused
+    by the fix for CVE-2007-4572.
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.27
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 4308: Add missing become_root/unbecome_root around calls of 
+      add_aliases.  Add same changes in create_token_from_username()
+      surrounding the call to getsampwsid().
+    * BUG 5083: Make solarisacl_sys_acl_get_fd() return a result when 
+      there is one (thereby fixing a memleak).
+    * BUG 5023: Fix smbd's interaction with NFSv4 ACL compatible VFS 
+      plugins such as GPFS and ZFS.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4978: Ensure that DOS attributes are copied with folders.
+    * Fix bug where tdb lock call interrupted with an alarm sig would 
+      not terminate and could lead to runaway smbd processes.
+    * Fix smbd crash bug which resulted from a regression in the patch
+      for CVE-2007-4572 patch.
+    * Prevent nmbd from adding non-initialized name to IP address
+      mappings to it's WINS database.
+
+
+o   Dmitry Butskoy <buc@odusz.so-cdu.ru>
+    * Properly catch errors in the query_user() callback to avoid
+      generated struct passwd replies with zero length usernames.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Prevent segv in winbindd running on a DC using the "idmap
+      backend" syntax.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * BUG 4781: Allow cleaning of /etc/mtab by canonicalizing mountpoint.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 4028: Fix message popup sent via "smbclient -M".
+    * BUG 4984: Filename unix_convert() fixes for WinNT 4.0 clients.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Fix crash bug in pidl generated client code caused by
+      [in,out,unique] pointers.
+    * Fix crash bug in the group mapping code.
+
+
+o   Heinrich Mislik <Heinrich.Mislik@univie.ac.at>
+    * Fixes for AIX quota support.
+
+
+o   Tomasz Ostrowski <tometzky@batory.org.pl>
+    * BUG 4393: Prevent smbclient from dropping 0 bytes files from tar 
+      archives.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fixes for internal idmap domain list when "winbind trusted
+      domains only" is enabled.
+    * Fix 32/64-bit compatibility issues in the winbind request/response
+      structures.
+
+
+o   Martin Zielinski <mz@seh.de>
+    * Error code path fix for get_mydnsdomname().
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+
                    ==============================
                    Release Notes for Samba 3.0.27
                             Nov 15, 2007
