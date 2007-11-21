@@ -864,7 +864,7 @@ bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
 	bool ret = True;
-	fstring tmpstring;
+	fstring tmp_string;
 	bool expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
@@ -930,12 +930,12 @@ bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
 	if (homedir) {
-		fstrcpy( tmpstring, homedir );
+		fstrcpy( tmp_string, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_homedir(sampass, tmpstring, PDB_SET);
+		pdb_set_homedir(sampass, tmp_string, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
@@ -950,12 +950,12 @@ bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
 
 	if (logon_script) {
-		fstrcpy( tmpstring, logon_script );
+		fstrcpy( tmp_string, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
+		pdb_set_logon_script(sampass, tmp_string, PDB_SET);
 	}
 	else {
 		pdb_set_logon_script(sampass, 
@@ -965,12 +965,12 @@ bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	}
 	
 	if (profile_path) {	
-		fstrcpy( tmpstring, profile_path );
+		fstrcpy( tmp_string, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
+		pdb_set_profile_path(sampass, tmp_string, PDB_SET);
 	} 
 	else {
 		pdb_set_profile_path(sampass, 

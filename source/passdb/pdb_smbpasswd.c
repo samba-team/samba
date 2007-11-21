@@ -53,7 +53,7 @@ struct smbpasswd_privates
 	
 	/* formerly static variables */
 	struct smb_passwd pw_buf;
-	pstring  user_name;
+	fstring user_name;
 	unsigned char smbpwd[16];
 	unsigned char smbntpwd[16];
 
@@ -437,12 +437,6 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 			continue;
 		}
 
-		/*
-		 * As 256 is shorter than a pstring we don't need to check
-		 * length here - if this ever changes....
-		 */
-		SMB_ASSERT(sizeof(pstring) > sizeof(linebuf));
-
 		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
 		user_name[PTR_DIFF(p, linebuf)] = '\0';
 
@@ -731,7 +725,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const struct smb_passwd* pwd)
 {
 	/* Static buffers we will return. */
-	pstring user_name;
+	fstring user_name;
 
 	char *status;
 	char linebuf[256];
@@ -846,13 +840,6 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 			DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no :)\n"));
 			continue;
 		}
-
-		/*
-		 * As 256 is shorter than a pstring we don't need to check
-		 * length here - if this ever changes....
-		 */
-
-		SMB_ASSERT(sizeof(user_name) > sizeof(linebuf));
 
 		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
 		user_name[PTR_DIFF(p, linebuf)] = '\0';
@@ -1091,13 +1078,18 @@ This is no longer supported.!\n", pwd->smb_name));
 static bool del_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, const char *name)
 {
 	const char *pfile = smbpasswd_state->smbpasswd_file;
-	pstring pfile2;
+	char *pfile2 = NULL;
 	struct smb_passwd *pwd = NULL;
 	FILE *fp = NULL;
 	FILE *fp_write = NULL;
 	int pfile2_lockdepth = 0;
 
-	slprintf(pfile2, sizeof(pfile2)-1, "%s.%u", pfile, (unsigned)sys_getpid() );
+	pfile2 = talloc_asprintf(talloc_tos(),
+			"%s.%u",
+			pfile, (unsigned)sys_getpid());
+	if (!pfile2) {
+		return false;
+	}
 
 	/*
 	 * Open the smbpassword file - for update. It needs to be update
@@ -1179,7 +1171,7 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
 	if(rename(pfile2,pfile) != 0) {
 		unlink(pfile2);
 	}
-  
+
 	endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
 	endsmbfilepwent(fp_write,&pfile2_lockdepth);
 	return True;
@@ -1511,9 +1503,10 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 					      struct samu *old_acct,
 					      const char *newname)
 {
-	pstring rename_script;
+	char *rename_script = NULL;
 	struct samu *new_acct = NULL;
 	bool interim_account = False;
+	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
 	if (!*(lp_renameuser_script()))
@@ -1528,7 +1521,7 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 	{
 		goto done;
 	}
-	
+
 	ret = smbpasswd_add_sam_account(my_methods, new_acct);
 	if (!NT_STATUS_IS_OK(ret))
 		goto done;
@@ -1536,15 +1529,38 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 	interim_account = True;
 
 	/* rename the posix user */
-	pstrcpy(rename_script, lp_renameuser_script());
+	rename_script = talloc_strdup(ctx,
+				lp_renameuser_script());
+	if (!rename_script) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if (*rename_script) {
 	        int rename_ret;
 
-		string_sub2(rename_script, "%unew", newname, sizeof(pstring), 
-			    True, False, True);
-		string_sub2(rename_script, "%uold", pdb_get_username(old_acct), 
-			    sizeof(pstring), True, False, True);
+		rename_script = talloc_string_sub2(ctx,
+					rename_script,
+					"%unew",
+					newname,
+					true,
+					false,
+					true);
+		if (!rename_script) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		rename_script = talloc_string_sub2(ctx,
+					rename_script,
+					"%uold",
+					pdb_get_username(old_acct),
+					true,
+					false,
+					true);
+		if (!rename_script) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
 		rename_ret = smbrun(rename_script, NULL);
 
@@ -1554,8 +1570,8 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 			smb_nscd_flush_user_cache();
 		}
 
-		if (rename_ret) 
-			goto done; 
+		if (rename_ret)
+			goto done;
         } else {
 		goto done;
 	}
@@ -1563,7 +1579,7 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 	smbpasswd_delete_sam_account(my_methods, old_acct);
 	interim_account = False;
 
-done:	
+done:
 	/* cleanup */
 	if (interim_account)
 		smbpasswd_delete_sam_account(my_methods, new_acct);

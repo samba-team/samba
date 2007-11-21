@@ -182,18 +182,20 @@ static struct pdb_methods *pdb_get_methods_reload( bool reload )
 	if ( pdb && reload ) {
 		pdb->free_private_data( &(pdb->private_data) );
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			pstring msg;
-			slprintf(msg, sizeof(msg)-1, "pdb_get_methods_reload: failed to get pdb methods for backend %s\n",
-				lp_passdb_backend() );
+			char *msg = NULL;
+			asprintf(&msg, "pdb_get_methods_reload: "
+				"failed to get pdb methods for backend %s\n",
+				lp_passdb_backend());
 			smb_panic(msg);
 		}
 	}
 
 	if ( !pdb ) {
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			pstring msg;
-			slprintf(msg, sizeof(msg)-1, "pdb_get_methods_reload: failed to get pdb methods for backend %s\n",
-				lp_passdb_backend() );
+			char *msg = NULL;
+			asprintf(&msg, "pdb_get_methods_reload: "
+				"failed to get pdb methods for backend %s\n",
+				lp_passdb_backend());
 			smb_panic(msg);
 		}
 	}
@@ -319,17 +321,19 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 	}
 
 	if ( !(pwd = Get_Pwnam_alloc(tmp_ctx, name)) ) {
-		pstring add_script;
+		char *add_script = NULL;
 		int add_ret;
 		fstring name2;
 
 		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
-			pstrcpy(add_script, lp_adduser_script());
+			add_script = talloc_strdup(tmp_ctx,
+					lp_adduser_script());
 		} else {
-			pstrcpy(add_script, lp_addmachine_script());
+			add_script = talloc_strdup(tmp_ctx,
+					lp_addmachine_script());
 		}
 
-		if (add_script[0] == '\0') {
+		if (!add_script || add_script[0] == '\0') {
 			DEBUG(3, ("Could not find user %s and no add script "
 				  "defined\n", name));
 			return NT_STATUS_NO_SUCH_USER;
@@ -339,7 +343,13 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		   compatibility with previous Samba releases */
 		fstrcpy( name2, name );
 		strlower_m( name2 );
-		all_string_sub(add_script, "%u", name2, sizeof(add_script));
+		add_script = talloc_all_string_sub(tmp_ctx,
+					add_script,
+					"%u",
+					name2);
+		if (!add_script) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		add_ret = smbrun(add_script,NULL);
 		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
@@ -399,7 +409,7 @@ NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32 flags,
 
 static int smb_delete_user(const char *unix_user)
 {
-	pstring del_script;
+	char *del_script = NULL;
 	int ret;
 
 	/* safety check */
@@ -409,10 +419,17 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	}
 
-	pstrcpy(del_script, lp_deluser_script());
-	if (! *del_script)
+	del_script = talloc_strdup(talloc_tos(), lp_deluser_script());
+	if (!del_script || !*del_script) {
 		return -1;
-	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
+	}
+	del_script = talloc_all_string_sub(talloc_tos(),
+				del_script,
+				"%u",
+				unix_user);
+	if (!del_script) {
+		return -1;
+	}
 	ret = smbrun(del_script,NULL);
 	flush_pwnam_cache();
 	if (ret == 0) {
