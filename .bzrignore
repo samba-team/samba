@@ -207,3 +207,4 @@ source/lib/ldb/tdbtest.ldb
 *.po
 libtdb.so.*
 libtalloc.so.*
+source/auth/credentials/credentials.py

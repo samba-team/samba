@@ -22,3 +22,7 @@ PUBLIC_DEPENDENCIES = \
 		HEIMDAL_GSSAPI 
 # End SUBSYSTEM CREDENTIALS
 #################################
+
+[PYTHON::swig_credentials]
+PUBLIC_DEPENDENCIES = CREDENTIALS LIBPYTHON
+SWIG_FILE = credentials.i
