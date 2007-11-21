@@ -39,29 +39,8 @@
 
 %}
 
-%apply bool { bool };
-%apply int { uint8_t };
-%apply int { int8_t };
-%apply unsigned int { uint16_t };
-%apply int { int16_t };
-
-%typemap(in) uint32_t {
-	if (PyLong_Check($input))
-		$1 = PyLong_AsUnsignedLong($input);
-	else if (PyInt_Check($input))
-		$1 = PyInt_AsLong($input);
-	else {
-		PyErr_SetString(PyExc_TypeError,"Expected a long or an int");
-		return NULL;
-	}
-}
-
-%typemap(out) uint32_t {
-	$result = PyLong_FromUnsignedLong($1);
-}
-
-%apply unsigned long long { uint64_t };
-%apply long long { int64_t };
+%import "stdint.i"
+%import "../../lib/talloc/talloc.i"
 
 %typemap(in) NTSTATUS {
         if (PyLong_Check($input))
@@ -77,9 +56,6 @@
 %typemap(out) NTSTATUS {
         $result = PyLong_FromUnsignedLong(NT_STATUS_V($1));
 }
-
-TALLOC_CTX *talloc_init(char *name);
-int talloc_free(TALLOC_CTX *ptr);
 
 /* Function prototypes */
 
@@ -137,8 +113,4 @@ NTSTATUS do_nbt_name_query(struct nbt_name_socket *nbtsock,
 {
 	return nbt_name_query(nbtsock, mem_ctx, io);
 }
-%}
-
-%init %{
-      lp_load();
 %}
