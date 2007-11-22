@@ -233,8 +233,8 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 				int local_flags)
 {
 	NTSTATUS ret;
-	pstring err_str;
-	pstring msg_str;
+	char *err_str = NULL;
+	char *msg_str = NULL;
 
 	if (remote_mach != NULL) {
 		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
@@ -250,13 +250,15 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 	}
 	
 	ret = local_password_change(username, local_flags, new_pw, 
-				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
+				     &err_str, &msg_str);
 
-	if(*msg_str)
+	if(msg_str)
 		printf("%s", msg_str);
-	if(*err_str)
+	if(err_str)
 		fprintf(stderr, "%s", err_str);
 
+	SAFE_FREE(msg_str);
+	SAFE_FREE(err_str);
 	return ret;
 }
 

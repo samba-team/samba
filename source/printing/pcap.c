@@ -159,8 +159,9 @@ void pcap_cache_reload(void)
 		goto done;
 	}
 
-	for (; (pcap_line = fgets_slash(NULL, sizeof(pstring), pcap_file)) != NULL; safe_free(pcap_line)) {
-		pstring name, comment;
+	for (; (pcap_line = fgets_slash(NULL, 1024, pcap_file)) != NULL; safe_free(pcap_line)) {
+		char name[MAXPRINTERLEN+1];
+		char comment[62];
 		char *p, *q;
 
 		if (*pcap_line == '#' || *pcap_line == 0)
@@ -186,22 +187,22 @@ void pcap_cache_reload(void)
 			                   strchr_m(p, ')'));
 
 			if (strlen(p) > strlen(comment) && has_punctuation) {
-				pstrcpy(comment, p);
+				strlcpy(comment, p, sizeof(comment));
 				continue;
 			}
 
 			if (strlen(p) <= MAXPRINTERLEN &&
 			    strlen(p) > strlen(name) && !has_punctuation) {
-				if (!*comment)
-					pstrcpy(comment, name);
-
-				pstrcpy(name, p);
+				if (!*comment) {
+					strlcpy(comment, name, sizeof(comment));
+				}
+				strlcpy(name, p, sizeof(name));
 				continue;
 			}
 
 			if (!strchr_m(comment, ' ') &&
 			    strlen(p) > strlen(comment)) {
-				pstrcpy(comment, p);
+				strlcpy(comment, p, sizeof(comment));
 				continue;
 			}
 		}

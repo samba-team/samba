@@ -829,13 +829,15 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	/* Insanity, sheer insanity..... */
 
 	if (strequal(realm, lp_realm())) {
-		pstring linkpath;
+		char linkpath[PATH_MAX+1];
 		int lret;
 
 		lret = readlink(SYSTEM_KRB5_CONF_PATH, linkpath, sizeof(linkpath)-1);
-		linkpath[sizeof(pstring)-1] = '\0';
+		if (lret != -1) {
+			linkpath[lret] = '\0';
+		}
 
-		if (lret == 0 || strcmp(linkpath, fname) == 0) {
+		if (lret != -1 || strcmp(linkpath, fname) == 0) {
 			/* Symlink already exists. */
 			TALLOC_FREE(dname);
 			return True;
@@ -843,6 +845,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 		/* Try and replace with a symlink. */
 		if (symlink(fname, SYSTEM_KRB5_CONF_PATH) == -1) {
+			const char *newpath = SYSTEM_KRB5_CONF_PATH ## ".saved";
 			if (errno != EEXIST) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: symlink "
 					"of %s to %s failed. Errno %s\n",
@@ -851,20 +854,17 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 				return True; /* Not a fatal error. */
 			}
 
-			pstrcpy(linkpath, SYSTEM_KRB5_CONF_PATH);
-			pstrcat(linkpath, ".saved");
-
 			/* Yes, this is a race conditon... too bad. */
-			if (rename(SYSTEM_KRB5_CONF_PATH, linkpath) == -1) {
+			if (rename(SYSTEM_KRB5_CONF_PATH, newpath) == -1) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: rename "
 					"of %s to %s failed. Errno %s\n",
-					SYSTEM_KRB5_CONF_PATH, linkpath,
+					SYSTEM_KRB5_CONF_PATH, newpath,
 					strerror(errno) ));
 				TALLOC_FREE(dname);
 				return True; /* Not a fatal error. */
 			}
 
-			if (symlink(fname, "/etc/krb5.conf") == -1) {
+			if (symlink(fname, SYSTEM_KRB5_CONF_PATH) == -1) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 					"forced symlink of %s to /etc/krb5.conf failed. Errno %s\n",
 					fname, strerror(errno) ));

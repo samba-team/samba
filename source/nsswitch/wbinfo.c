@@ -1273,7 +1273,7 @@ enum {
 int main(int argc, char **argv, char **envp)
 {
 	int opt;
-
+	TALLOC_CTX *frame = talloc_stackframe();	
 	poptContext pc;
 	static char *string_arg;
 	static char *opt_domain_name;
@@ -1613,6 +1613,8 @@ int main(int argc, char **argv, char **envp)
 	/* Exit code */
 
  done:
+	talloc_destroy(frame);
+
 	poptFreeContext(pc);
 	return result;
 }

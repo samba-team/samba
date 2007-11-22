@@ -32,21 +32,26 @@ bool aix_cache_reload(void)
 	int iEtat;
 	XFILE *pfile;
 	char *line = NULL, *p;
-	pstring name, comment;
+	char *name;
+	TALLOC_CTX *ctx = talloc_init("aix_cache_reload");
+
+	if (!ctx) {
+		return false;
+	}
 
 	*name = 0;
-	*comment = 0;
 
 	DEBUG(5, ("reloading aix printcap cache\n"));
 
 	if ((pfile = x_fopen(lp_printcapname(), O_RDONLY, 0)) == NULL) {
 		DEBUG(0,( "Unable to open qconfig file %s for read!\n", lp_printcapname()));
-		return False;
+		TALLOC_FREE(ctx);
+		return false;
 	}
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL, sizeof(pstring), pfile)); safe_free(line)) {
+	for (;(line = fgets_slash(NULL, 1024, pfile)); safe_free(line)) {
 		if (*line == '*' || *line == 0)
 			continue;
 
@@ -59,7 +64,13 @@ bool aix_cache_reload(void)
 				*p = '\0';
 				p = strtok(line, ":");
 				if (strcmp(p, "bsh") != 0) {
-					pstrcpy(name, p);
+					name = talloc_strdup(ctx, p);
+					if (!name) {
+						safe_free(line);
+						x_fclose(pfile);
+						TALLOC_FREE(ctx);
+						return false;
+					}
 					iEtat = 1;
 					continue;
 				}
@@ -77,11 +88,12 @@ bool aix_cache_reload(void)
 				if (!pcap_cache_add(name, NULL)) {
 					safe_free(line);
 					x_fclose(pfile);
-					return False;
+					TALLOC_FREE(ctx);
+					return false;
 				}
 				continue;
 			}
-		  	
+
 			if (strstr_m(line, "backend")) {
 				/* it's a device, not a virtual printer */
 				iEtat = 0;
@@ -91,7 +103,8 @@ bool aix_cache_reload(void)
 				if (!pcap_cache_add(name, NULL)) {
 					safe_free(line);
 					x_fclose(pfile);
-					return False;
+					TALLOC_FREE(ctx);
+					return false;
 				}
 				continue;
 			}
@@ -100,7 +113,8 @@ bool aix_cache_reload(void)
 	}
 
 	x_fclose(pfile);
-	return True;
+	TALLOC_FREE(ctx);
+	return true;
 }
 
 #else

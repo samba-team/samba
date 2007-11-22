@@ -319,6 +319,25 @@ int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
 	return pull_ucs2(NULL, dest, src, dest_len, src_len, flags|STR_UNICODE|STR_NOALIGN);
 }
 
+/* Copy a string from little-endian or big-endian unicode source (depending
+ * on flags) to internal samba format destination. Allocates on talloc ctx.
+ */
+
+int rpcstr_pull_talloc(TALLOC_CTX *ctx,
+			char **dest,
+			void *src,
+			int src_len,
+			int flags)
+{
+	return pull_ucs2_base_talloc(ctx,
+			NULL,
+			dest,
+			src,
+			src_len,
+			flags|STR_UNICODE|STR_NOALIGN);
+
+}
+
 /* Copy a string from a unistr2 source to internal samba format
    destination.  Use this instead of direct calls to rpcstr_pull() to avoid
    having to determine whether the source string is null terminated. */

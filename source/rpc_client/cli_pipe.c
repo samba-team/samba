@@ -1551,13 +1551,15 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			ret = rpc_api_pipe(cli, &outgoing_pdu, out_data, RPC_RESPONSE);
 			prs_mem_free(&outgoing_pdu);
 
-			
 			if (DEBUGLEVEL >= 50) {
-				pstring dump_name;
+				char *dump_name = NULL;
 				/* Also capture received data */
-				slprintf(dump_name, sizeof(dump_name) - 1, "%s/reply_%s_%d",
-					dyn_LOGFILEBASE, cli->pipe_name, op_num);
-				prs_dump(dump_name, op_num, out_data);
+				if (asprintf(&dump_name, "%s/reply_%s_%d",
+						dyn_LOGFILEBASE, cli->pipe_name,
+						op_num) > 0) {
+					prs_dump(dump_name, op_num, out_data);
+					SAFE_FREE(dump_name);
+				}
 			}
 
 			return ret;

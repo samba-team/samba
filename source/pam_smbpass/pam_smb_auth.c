@@ -170,98 +170,82 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 int pam_sm_setcred(pam_handle_t *pamh, int flags,
                    int argc, const char **argv)
 {
-    int retval, *pretval = NULL;
+	int retval, *pretval = NULL;
 
-    retval = PAM_SUCCESS;
+	retval = PAM_SUCCESS;
 
-    pam_get_data(pamh, "smb_setcred_return", (const void **) &pretval);
-    if(pretval) {
-	retval = *pretval;
-	SAFE_FREE(pretval);
-    }
-    pam_set_data(pamh, "smb_setcred_return", NULL, NULL);
+	pam_get_data(pamh, "smb_setcred_return", (const void **) &pretval);
+	if(pretval) {
+		retval = *pretval;
+		SAFE_FREE(pretval);
+	}
+	pam_set_data(pamh, "smb_setcred_return", NULL, NULL);
 
-    return retval;
+	return retval;
 }
-
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
                          const char *name, struct samu *sampass, bool exist)
 {
-    pstring err_str;
-    pstring msg_str;
-    const char *pass = NULL;
-    int retval;
+	char *err_str = NULL;
+	char *msg_str = NULL;
+	const char *pass = NULL;
+	int retval;
 
-    err_str[0] = '\0';
-    msg_str[0] = '\0';
+	/* Get the authtok; if we don't have one, silently fail. */
+	retval = pam_get_item( pamh, PAM_AUTHTOK, (const void **) &pass );
 
-    /* Get the authtok; if we don't have one, silently fail. */
-    retval = pam_get_item( pamh, PAM_AUTHTOK, (const void **) &pass );
-
-    if (retval != PAM_SUCCESS) {
-	_log_err( LOG_ALERT
-	          , "pam_get_item returned error to pam_sm_authenticate" );
-	return PAM_AUTHTOK_RECOVER_ERR;
-    } else if (pass == NULL) {
-	return PAM_AUTHTOK_RECOVER_ERR;
-    }
-
-    /* Add the user to the db if they aren't already there. */
-   if (!exist) {
-	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
-	                                 pass, err_str,
-	                                 sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) ));
-	if (!retval && *err_str)
-	{
-	    err_str[PSTRING_LEN-1] = '\0';
-	    make_remark( pamh, ctrl, PAM_ERROR_MSG, err_str );
+	if (retval != PAM_SUCCESS) {
+		_log_err( LOG_ALERT
+			, "pam_get_item returned error to pam_sm_authenticate" );
+		return PAM_AUTHTOK_RECOVER_ERR;
+	} else if (pass == NULL) {
+		return PAM_AUTHTOK_RECOVER_ERR;
 	}
-	else if (*msg_str)
-	{
-	    msg_str[PSTRING_LEN-1] = '\0';
-	    make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
-	}
-	pass = NULL;
 
-	return PAM_IGNORE;
-   }
-   else {
-    /* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
-    if ( pdb_get_acct_ctrl(sampass) & ~ACB_PWNOTREQ )
-    {
-	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) ));
-	if (!retval && *err_str)
-	{
-	    err_str[PSTRING_LEN-1] = '\0';
-	    make_remark( pamh, ctrl, PAM_ERROR_MSG, err_str );
+	/* Add the user to the db if they aren't already there. */
+	if (!exist) {
+		retval = NT_STATUS_IS_OK(local_password_change(name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
+					pass, &err_str, &msg_str));
+		if (!retval && err_str) {
+			make_remark(pamh, ctrl, PAM_ERROR_MSG, err_str );
+		} else if (msg_str) {
+			make_remark(pamh, ctrl, PAM_TEXT_INFO, msg_str );
+		}
+		pass = NULL;
+
+		SAFE_FREE(err_str);
+		SAFE_FREE(msg_str);
+		return PAM_IGNORE;
+	} else {
+		/* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
+		if ( pdb_get_acct_ctrl(sampass) & ~ACB_PWNOTREQ ) {
+			retval = NT_STATUS_IS_OK(local_password_change(name, LOCAL_SET_PASSWORD,
+					pass, &err_str, &msg_str));
+			if (!retval && err_str) {
+				make_remark(pamh, ctrl, PAM_ERROR_MSG, err_str );
+			} else if (msg_str) {
+				make_remark(pamh, ctrl, PAM_TEXT_INFO, msg_str );
+			}
+		}
 	}
-	else if (*msg_str)
-	{
-	    msg_str[PSTRING_LEN-1] = '\0';
-	    make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
-	}
-    }
-   }
     
-    pass = NULL;
-
-    return PAM_IGNORE;
+	SAFE_FREE(err_str);
+	SAFE_FREE(msg_str);
+	pass = NULL;
+	return PAM_IGNORE;
 }
-
 
 /* static module data */
 #ifdef PAM_STATIC
 struct pam_module _pam_smbpass_auth_modstruct = {
-     "pam_smbpass",
-     pam_sm_authenticate,
-     pam_sm_setcred,
-     NULL,
-     NULL,
-     NULL,
-     NULL
+	"pam_smbpass",
+	pam_sm_authenticate,
+	pam_sm_setcred,
+	NULL,
+	NULL,
+	NULL,
+	NULL
 };
 #endif

@@ -61,9 +61,8 @@ static bool reload_services_file(void)
 	bool ret;
 
 	if (lp_loaded()) {
-		pstring fname;
+		const char *fname = lp_configfile();
 
-		pstrcpy(fname,lp_configfile());
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
 			pstrcpy(dyn_CONFIGFILE,fname);
 		}
@@ -129,12 +128,14 @@ static void flush_caches(void)
 
 static void terminate(void)
 {
-	pstring path;
+	char *path = NULL;
 
 	/* Remove socket file */
-	pstr_sprintf(path, "%s/%s", 
-		 get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME);
-	unlink(path);
+	if (asprintf(&path, "%s/%s",
+			get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME) > 0) {
+		unlink(path);
+		SAFE_FREE(path);
+	}
 
 	idmap_close();
 	
@@ -983,7 +984,6 @@ static void process_loop(void)
 
 int main(int argc, char **argv, char **envp)
 {
-	pstring logfile;
 	static bool is_daemon = False;
 	static bool Fork = True;
 	static bool log_stdout = False;
@@ -1086,8 +1086,12 @@ int main(int argc, char **argv, char **envp)
 	poptFreeContext(pc);
 
 	if (!override_logfile) {
-		pstr_sprintf(logfile, "%s/log.winbindd", dyn_LOGFILEBASE);
-		lp_set_logfile(logfile);
+		char *logfile = NULL;
+		if (asprintf(&logfile,"%s/log.winbindd",
+				dyn_LOGFILEBASE) > 0) {
+			lp_set_logfile(logfile);
+			SAFE_FREE(logfile);
+		}
 	}
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
