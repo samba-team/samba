@@ -772,8 +772,8 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
 			DEBUG(0,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
-				 nodemap->nodes[j].pnn, nodemap->nodes[j].flags,
-				 remote_nodemap->nodes[j].flags));
+				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
+				 nodemap->nodes[j].flags));
 			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
 		}
 		talloc_free(remote_nodemap);
