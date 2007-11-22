@@ -1371,7 +1371,9 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			SSVAL(p,20,mode);
 			p += 23;
 			nameptr = p;
-			p += align_string(pdata, p, 0);
+			if (flags2 & FLAGS2_UNICODE_STRINGS) {
+				p += ucs2_align(base_data, p, 0);
+			}
 			len = srvstr_push(base_data, flags2, p,
 					  fname, PTR_DIFF(end_data, p),
 					  STR_TERMINATE);
@@ -2022,7 +2024,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		if(got_exact_match)
 			finished = True;
 
-		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+		/* Ensure space_remaining never goes -ve. */
+		if (PTR_DIFF(p,pdata) > max_data_bytes) {
+			space_remaining = 0;
+			out_of_space = true;
+		} else {
+			space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+		}
 	}
 
 	/* Check if we can close the dirptr */

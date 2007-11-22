@@ -51,21 +51,34 @@ static void get_rand_seed(int *new_seed)
 /* open up the secrets database */
 bool secrets_init(void)
 {
-	pstring fname;
+	TALLOC_CTX *ctx;
+	char *fname = NULL;
 	unsigned char dummy;
 
 	if (tdb)
 		return True;
 
-	pstrcpy(fname, lp_private_dir());
-	pstrcat(fname,"/secrets.tdb");
+	ctx = talloc_init("secrets_init");
+	if (!ctx) {
+		return false;
+	}
+	fname = talloc_asprintf(ctx,
+			"%s/secrets.tdb",
+			lp_private_dir());
+	if (!fname) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
 
 	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
+		TALLOC_FREE(ctx);
 		return False;
 	}
+
+	TALLOC_FREE(ctx);
 
 	/**
 	 * Set a reseed function for the crypto random generator
@@ -337,20 +350,36 @@ static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx;
 	size_t len = 0;
+	uint8 *p = pack_buf;
+	int remaining_space = pack_buf ? bufsize : 0;
 
-	if (!sid || !pack_buf) return -1;
+	if (!sid) {
+		return -1;
+	}
 
-	len += tdb_pack(pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
+	len += tdb_pack(p, remaining_space, "bb", sid->sid_rev_num,
 	                sid->num_auths);
+	if (pack_buf) {
+		p += len;
+		remaining_space -= len;
+	}
 
 	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "b",
+		len += tdb_pack(p, remaining_space, "b",
 				sid->id_auth[idx]);
+		if (pack_buf) {
+			p += len;
+			remaining_space -= len;
+		}
 	}
 
 	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "d",
+		len += tdb_pack(p, remaining_space, "d",
 				sid->sub_auths[idx]);
+		if (pack_buf) {
+			p += len;
+			remaining_space -= len;
+		}
 	}
 
 	return len;
@@ -400,22 +429,43 @@ static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
 					TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
+	uint8 *p = pack_buf;
+	int remaining_space = pack_buf ? bufsize : 0;
 
-	if (!pack_buf || !pass) return -1;
+	if (!pass) {
+		return -1;
+	}
 
 	/* packing unicode domain name and password */
-	len += tdb_pack(pack_buf + len, bufsize - len, "d",
+	len += tdb_pack(p, remaining_space, "d",
 			pass->uni_name_len);
+	if (pack_buf) {
+		p += len;
+		remaining_space -= len;
+	}
 
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_pack(pack_buf + len, bufsize - len, "w",
+	for (idx = 0; idx < 32; idx++) {
+		len += tdb_pack(p, remaining_space, "w",
 				 pass->uni_name[idx]);
+		if (pack_buf) {
+			p += len;
+			remaining_space -= len;
+		}
+	}
 
-	len += tdb_pack(pack_buf + len, bufsize - len, "dPd", pass->pass_len,
+	len += tdb_pack(p, remaining_space, "dPd", pass->pass_len,
 	                     pass->pass, pass->mod_time);
+	if (pack_buf) {
+		p += len;
+		remaining_space -= len;
+	}
 
 	/* packing SID structure */
-	len += tdb_sid_pack(pack_buf + len, bufsize - len, &pass->domain_sid);
+	len += tdb_sid_pack(p, remaining_space, &pass->domain_sid);
+	if (pack_buf) {
+		p += len;
+		remaining_space -= len;
+	}
 
 	return len;
 }
@@ -531,11 +581,11 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
                                            const DOM_SID *sid)
 {
 	smb_ucs2_t *uni_dom_name;
+	bool ret;
 
 	/* packing structures */
-	pstring pass_buf;
+	uint8 *pass_buf = NULL;
 	int pass_len = 0;
-	int pass_buf_len = sizeof(pass_buf);
 
 	struct trusted_dom_pass pass;
 	ZERO_STRUCT(pass);
@@ -560,9 +610,17 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	/* domain sid */
 	sid_copy(&pass.domain_sid, sid);
 
-	pass_len = tdb_trusted_dom_pass_pack((uint8 *)pass_buf, pass_buf_len, &pass);
-
-	return secrets_store(trustdom_keystr(domain), (void *)&pass_buf, pass_len);
+	/* Calculate the length. */
+	pass_len = tdb_trusted_dom_pass_pack(NULL, 0, &pass);
+	pass_buf = SMB_MALLOC_ARRAY(uint8, pass_len);
+	if (!pass_buf) {
+		return false;
+	}
+	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_len, &pass);
+	ret = secrets_store(trustdom_keystr(domain), (void *)&pass_buf,
+			pass_len);
+	SAFE_FREE(pass_buf);
+	return ret;
 }
 
 /************************************************************************

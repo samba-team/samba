@@ -251,7 +251,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	const char *c_realm;
 	int count, i=0;
 	struct ip_service *ip_list;
-	pstring realm;
+	const char *realm;
 	bool got_realm = False;
 	bool use_own_domain = False;
 	char *sitename;
@@ -261,7 +261,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 	/* realm */
 	c_realm = ads->server.realm;
-	
+
 	if ( !c_realm || !*c_realm ) {
 		/* special case where no realm and no workgroup means our own */
 		if ( !ads->server.workgroup || !*ads->server.workgroup ) {
@@ -269,33 +269,33 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			c_realm = lp_realm();
 		}
 	}
-	
-	if (c_realm && *c_realm) 
+
+	if (c_realm && *c_realm)
 		got_realm = True;
-		   
-	/* we need to try once with the realm name and fallback to the 
+
+	/* we need to try once with the realm name and fallback to the
 	   netbios domain name if we fail (if netbios has not been disabled */
-	   
+
 	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
 		if (!c_realm || !*c_realm) {
 			if ( use_own_domain )
 				c_realm = lp_workgroup();
 		}
-		
+
 		if ( !c_realm || !*c_realm ) {
 			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
 			return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 		}
 	}
-	
-	pstrcpy( realm, c_realm );
+
+	realm = c_realm;
 
 	sitename = sitename_fetch(realm);
 
  again:
 
-	DEBUG(6,("ads_find_dc: looking for %s '%s'\n", 
+	DEBUG(6,("ads_find_dc: looking for %s '%s'\n",
 		(got_realm ? "realm" : "domain"), realm));
 
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
@@ -305,7 +305,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			got_realm = False;
 			goto again;
 		}
-		
+
 		SAFE_FREE(sitename);
 		return status;
 	}
@@ -338,7 +338,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 				continue;
 			}
 		}
-			
+
 		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
 			SAFE_FREE(sitename);

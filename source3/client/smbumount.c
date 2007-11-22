@@ -44,13 +44,13 @@ umount_ok(const char *mount_point)
 	   umount filesystems they don't own */
         int fid = open(mount_point, O_RDONLY|O_NOFOLLOW, 0);
         __kernel_uid32_t mount_uid;
-	
+
         if (fid == -1) {
                 fprintf(stderr, "Could not open %s: %s\n",
                         mount_point, strerror(errno));
                 return -1;
         }
-        
+
         if (ioctl(fid, SMB_IOC_GETMOUNTUID32, &mount_uid) != 0) {
                 __kernel_uid_t mount_uid16;
                 if (ioctl(fid, SMB_IOC_GETMOUNTUID, &mount_uid16) != 0) {
@@ -94,7 +94,7 @@ canonicalize (char *path)
 
 	if (path == NULL)
 		return NULL;
-  
+
 	if (realpath (path, canonical))
 		return canonical;
 
@@ -104,7 +104,7 @@ canonicalize (char *path)
 }
 
 
-int 
+int
 main(int argc, char *argv[])
 {
         int fd;
@@ -112,6 +112,7 @@ main(int argc, char *argv[])
         struct mntent *mnt;
         FILE* mtab;
         FILE* new_mtab;
+	TALLOC_CTX *frame = talloc_stackframe();
 
         if (argc != 2) {
                 usage();
@@ -146,7 +147,7 @@ main(int argc, char *argv[])
                 return 1;
         }
         close(fd);
-	
+
         if ((mtab = setmntent(MOUNTED, "r")) == NULL) {
                 fprintf(stderr, "Can't open " MOUNTED ": %s\n",
                         strerror(errno));
@@ -190,5 +191,6 @@ main(int argc, char *argv[])
                 return 1;
         }
 
+	TALLOC_FREE(frame);
 	return 0;
-}	
+}

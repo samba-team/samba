@@ -932,7 +932,7 @@ char *strdup_lower(const char *s)
 	return out_buffer;
 }
 
-static size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 {
 	if (flags & (STR_NOALIGN|STR_ASCII))
 		return 0;

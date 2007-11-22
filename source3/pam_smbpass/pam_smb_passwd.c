@@ -48,32 +48,29 @@
 int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *pass_new )
 {
 	int retval;
-	pstring err_str;
-	pstring msg_str;
+	char *err_str = NULL;
+	char *msg_str = NULL;
 
-	err_str[0] = '\0';
-	msg_str[0] = '\0';
-
-	retval = NT_STATUS_IS_OK(local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
-	                                err_str, sizeof(err_str),
-	                                msg_str, sizeof(msg_str) ));
+	retval = NT_STATUS_IS_OK(local_password_change(user, LOCAL_SET_PASSWORD, pass_new,
+	                                &err_str,
+	                                &msg_str));
 
 	if (!retval) {
-		if (*err_str) {
-			err_str[PSTRING_LEN-1] = '\0';
-			make_remark( pamh, ctrl, PAM_ERROR_MSG, err_str );
+		if (err_str) {
+			make_remark(pamh, ctrl, PAM_ERROR_MSG, err_str );
 		}
 
 		/* FIXME: what value is appropriate here? */
 		retval = PAM_AUTHTOK_ERR;
 	} else {
-		if (*msg_str) {
-			msg_str[PSTRING_LEN-1] = '\0';
-			make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
+		if (msg_str) {
+			make_remark(pamh, ctrl, PAM_TEXT_INFO, msg_str );
 		}
 		retval = PAM_SUCCESS;
 	}
 
+	SAFE_FREE(err_str);
+	SAFE_FREE(msg_str);
 	return retval;      
 }
 

@@ -878,12 +878,9 @@ out_free:
 	/* Loop around accepting commands */
 
 	while(1) {
-		pstring prompt;
 		char *line;
 
-		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
-
-		line = smb_readline(prompt, NULL, completion_fn);
+		line = smb_readline("rpcclient $> ", NULL, completion_fn);
 
 		if (line == NULL)
 			break;

@@ -24,20 +24,25 @@
 
 static WERROR rcinit_stop( const char *service, SERVICE_STATUS *status )
 {
-	pstring command;
+	char *command = NULL;
 	int ret, fd;
-	
-	pstr_sprintf( command, "%s/%s/%s stop", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service );
-	
+
+	if (asprintf(&command, "%s/%s/%s stop",
+				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+		return WERR_NOMEM;
+	}
+
 	/* we've already performed the access check when the service was opened */
-	
+
 	become_root();
 	ret = smbrun( command , &fd );
 	unbecome_root();
-	
+
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));
 	close(fd);
-	
+
+	SAFE_FREE(command);
+
 	ZERO_STRUCTP( status );
 	status->type = 0x0020;
 	status->state = (ret == 0 ) ? 0x0001 : 0x0004;
@@ -51,19 +56,24 @@ static WERROR rcinit_stop( const char *service, SERVICE_STATUS *status )
 
 static WERROR rcinit_start( const char *service )
 {
-	pstring command;
+	char *command = NULL;
 	int ret, fd;
-	
-	pstr_sprintf( command, "%s/%s/%s start", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service );
-	
+
+	if (asprintf(&command, "%s/%s/%s start",
+				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+		return WERR_NOMEM;
+	}
+
 	/* we've already performed the access check when the service was opened */
-	
+
 	become_root();
 	ret = smbrun( command , &fd );
 	unbecome_root();
-	
+
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));
-	close(fd);	
+	close(fd);
+
+	SAFE_FREE(command);
 
 	return ( ret == 0 ) ? WERR_OK : WERR_ACCESS_DENIED;
 }
@@ -73,22 +83,27 @@ static WERROR rcinit_start( const char *service )
 
 static WERROR rcinit_status( const char *service, SERVICE_STATUS *status )
 {
-	pstring command;
+	char *command = NULL;
 	int ret, fd;
-	
-	pstr_sprintf( command, "%s/%s/%s status", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service );
-	
+
+	if (asprintf(&command, "%s/%s/%s status",
+				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+		return WERR_NOMEM;
+	}
+
 	/* we've already performed the access check when the service was opened */
 	/* assume as return code of 0 means that the service is ok.  Anything else
 	   is STOPPED */
-	
+
 	become_root();
 	ret = smbrun( command , &fd );
 	unbecome_root();
-	
+
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));
 	close(fd);
-	
+
+	SAFE_FREE(command);
+
 	ZERO_STRUCTP( status );
 	status->type = 0x0020;
 	status->state = (ret == 0 ) ? 0x0004 : 0x0001;

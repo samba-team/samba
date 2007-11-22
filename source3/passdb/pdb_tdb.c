@@ -481,7 +481,7 @@ bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	uint32 pwHistLen = 0;
 	bool ret = True;
-	fstring tmpstring;
+	fstring tmp_string;
 	bool expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
@@ -546,12 +546,12 @@ bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
 	if (homedir) {
-		fstrcpy( tmpstring, homedir );
+		fstrcpy( tmp_string, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_homedir(sampass, tmpstring, PDB_SET);
+		pdb_set_homedir(sampass, tmp_string, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
@@ -566,12 +566,12 @@ bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
 
 	if (logon_script) {
-		fstrcpy( tmpstring, logon_script );
+		fstrcpy( tmp_string, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
+		pdb_set_logon_script(sampass, tmp_string, PDB_SET);
 	}
 	else {
 		pdb_set_logon_script(sampass, 
@@ -581,12 +581,12 @@ bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	}
 	
 	if (profile_path) {	
-		fstrcpy( tmpstring, profile_path );
+		fstrcpy( tmp_string, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, domain, tmpstring,
-					    sizeof(tmpstring) );
+			standard_sub_basic( username, domain, tmp_string,
+					    sizeof(tmp_string) );
 		}
-		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
+		pdb_set_profile_path(sampass, tmp_string, PDB_SET);
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
@@ -1375,40 +1375,43 @@ static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, struct s
  - unlock the new user record
 ***************************************************************************/
 static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
-					  struct samu *old_acct, 
+					  struct samu *old_acct,
 					  const char *newname)
 {
+	TALLOC_CTX *ctx = talloc_tos();
 	struct samu      *new_acct = NULL;
-	pstring          rename_script;
+	char *rename_script = NULL;
 	bool             interim_account = False;
 	int              rename_ret;
 	fstring          oldname_lower;
 	fstring          newname_lower;
 
 	/* can't do anything without an external script */
-	
-	pstrcpy(rename_script, lp_renameuser_script() );
-	if ( ! *rename_script ) {
+
+	rename_script = talloc_strdup(ctx, lp_renameuser_script());
+	if (!rename_script) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!*rename_script) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* invalidate the existing TDB iterator if it is open */
-	
+
 	tdbsam_endsampwent( my_methods );
 
 	if ( !(new_acct = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	if ( !pdb_copy_sam_account(new_acct, old_acct) 
-		|| !pdb_set_username(new_acct, newname, PDB_CHANGED)) 
+
+	if ( !pdb_copy_sam_account(new_acct, old_acct)
+		|| !pdb_set_username(new_acct, newname, PDB_CHANGED))
 	{
 		TALLOC_FREE(new_acct );
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* open the database */
-		
 	if ( !tdbsam_open( tdbsam_filename ) ) {
 		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
 		TALLOC_FREE(new_acct );
@@ -1416,11 +1419,10 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	}
 
 	/* add the new account and lock it */
-	
 	if ( !tdb_update_samacct_only(new_acct, TDB_INSERT) ) {
 		goto done;
 	}
-	
+
 	interim_account = True;
 
 	if ( tdb_lock_bystring_with_timeout(tdbsam, newname, 30) == -1 ) {
@@ -1436,24 +1438,41 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	fstrcpy( newname_lower, newname );
 	strlower_m( newname_lower );
 
-	string_sub2(rename_script, "%unew", newname_lower, sizeof(pstring), 
-		True, False, True);
-	string_sub2(rename_script, "%uold", oldname_lower, sizeof(pstring), 
-		True, False, True);
+	rename_script = talloc_string_sub2(ctx,
+				rename_script,
+				"%unew",
+				newname_lower,
+				true,
+				false,
+				true);
+	if (!rename_script) {
+		goto done;
+	}
+	rename_script = talloc_string_sub2(ctx,
+				rename_script,
+				"%uold",
+				oldname_lower,
+				true,
+				false,
+				true);
+	if (!rename_script) {
+		goto done;
+	}
 	rename_ret = smbrun(rename_script, NULL);
 
-	DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
+	DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n",
+				rename_script, rename_ret));
 
 	if (rename_ret == 0) {
 		smb_nscd_flush_user_cache();
 	}
 
 	if (rename_ret) {
-		goto done; 
+		goto done;
 	}
 
 	/* rewrite the rid->username record */
-	
+
 	if ( !tdb_update_ridrec_only( new_acct, TDB_MODIFY) ) {
 		goto done;
 	}
@@ -1461,21 +1480,21 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	tdb_unlock_bystring( tdbsam, newname );
 
 	tdb_delete_samacct_only( old_acct );
-	
+
 	tdbsam_close();
-	
+
 	TALLOC_FREE(new_acct );
 	return NT_STATUS_OK;
 
-done:	
+done:
 	/* cleanup */
 	if (interim_account) {
 		tdb_unlock_bystring(tdbsam, newname);
 		tdb_delete_samacct_only(new_acct);
 	}
-	
+
 	tdbsam_close();
-	
+
 	if (new_acct)
 		TALLOC_FREE(new_acct);
 	
@@ -1581,7 +1600,7 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
-	pstring tdbfile;
+	char *tdbfile = NULL;
 	const char *pfile = location;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
@@ -1604,15 +1623,21 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	(*pdb_method)->new_rid = tdbsam_new_rid;
 
 	/* save the path for later */
-			   
-	if ( !location ) {
-		pstr_sprintf( tdbfile, "%s/%s", dyn_STATEDIR(), PASSDB_FILE_NAME );
+
+	if (!location) {
+		if (asprintf(&tdbfile, "%s/%s", dyn_STATEDIR(), PASSDB_FILE_NAME) < 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		pfile = tdbfile;
 	}
 	tdbsam_filename = SMB_STRDUP(pfile);
+	if (!tdbsam_filename) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	SAFE_FREE(tdbfile);
 
 	/* no private data */
-	
+
 	(*pdb_method)->private_data      = NULL;
 	(*pdb_method)->free_private_data = NULL;
 

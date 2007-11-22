@@ -987,8 +987,8 @@ static bool change_password(const char *remote_machine, const char *user_name,
 				int local_flags)
 {
 	NTSTATUS ret;
-	pstring err_str;
-	pstring msg_str;
+	char *err_str = NULL;
+	char *msg_str = NULL;
 
 	if (demo_mode) {
 		printf("%s\n<p>", _("password change in demo mode rejected"));
@@ -1008,14 +1008,16 @@ static bool change_password(const char *remote_machine, const char *user_name,
 		return False;
 	}
 	
-	ret = local_password_change(user_name, local_flags, new_passwd, err_str, sizeof(err_str),
-					 msg_str, sizeof(msg_str));
+	ret = local_password_change(user_name, local_flags, new_passwd,
+					&err_str, &msg_str);
 
-	if(*msg_str)
+	if(msg_str)
 		printf("%s\n<p>", msg_str);
-	if(*err_str)
+	if(err_str)
 		printf("%s\n<p>", err_str);
 
+	SAFE_FREE(msg_str);
+	SAFE_FREE(err_str);
 	return NT_STATUS_IS_OK(ret);
 }
 
