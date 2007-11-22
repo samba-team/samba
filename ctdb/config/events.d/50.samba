@@ -16,6 +16,20 @@ shift
     SAMBA_CLEANUP_PERIOD=10
 }
 
+
+# autodetect use of winbind if not set in config file
+[ -z "$CTDB_MANAGES_WINBIND" ] && {
+    secmode=`testparm -s --parameter-name=security 2> /dev/null`
+    case $secmode in
+	ADS|DOMAIN)
+	    CTDB_MANAGES_WINBIND="yes";
+	    ;;
+	*)
+	    CTDB_MANAGES_WINBIND="no";
+	    ;;
+    esac
+}
+
 ###########################
 # periodic cleanup function
 periodic_cleanup() {
