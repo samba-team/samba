@@ -735,7 +735,7 @@ MOUNT_OBJ = client/smbmount.o \
 
 MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-UMOUNT_OBJ = client/smbumount.o $(SOCKET_WRAPPER_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) \
+UMOUNT_OBJ = client/smbumount.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 CIFS_MOUNT_OBJ = client/mount.cifs.o
