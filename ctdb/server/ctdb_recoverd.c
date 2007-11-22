@@ -67,6 +67,7 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 	}
 
 	if (rec->banned_nodes[pnn] == NULL) {
+		DEBUG(0,("No ban recorded for this node. ctdb_unban_node() request ignored\n"));
 		return;
 	}
 
@@ -753,6 +754,8 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 	 */
 	for (j=0; j<nodemap->num; j++) {
 		struct ctdb_node_map *remote_nodemap=NULL;
+		struct ctdb_node_flag_change c;
+		TDB_DATA data;
 		int ret;
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
@@ -775,6 +778,22 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
 				 nodemap->nodes[j].flags));
 			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+
+			/* We also should tell our daemon about this so it
+			   updates its flags or else we will log the same 
+			   message again in the next iteration of recovery.
+			*/
+			c.pnn = nodemap->nodes[j].pnn;
+			c.old_flags = nodemap->nodes[j].flags;
+			c.new_flags = remote_nodemap->nodes[j].flags;
+
+			data.dptr = (uint8_t *)&c;
+			data.dsize = sizeof(c);
+
+			ctdb_send_message(ctdb, CTDB_CURRENT_NODE,
+					CTDB_SRVID_NODE_FLAGS_CHANGED, 
+					data);
+
 		}
 		talloc_free(remote_nodemap);
 	}
