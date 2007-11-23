@@ -261,8 +261,6 @@ static bool test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Stream One:$DATA", "test MORE DATA ");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Stream One:", NULL);
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream", "SECOND STREAM");
-	ret &= check_stream(cli, __location__, mem_ctx, fname,
-			    "SECOND STREAM:$DATA", "SECOND STREAM");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:$DATA", "SECOND STREAM");
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:", NULL);
 	ret &= check_stream(cli, __location__, mem_ctx, fname, "Second Stream:$FOO", NULL);
@@ -291,16 +289,6 @@ static bool test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	check_stream_list(cli, fname, 1, one);
-
-	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
-	io.ntcreatex.in.fname = sname1;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	io.ntcreatex.in.fname = sname2;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
 	printf("(%s) deleting file\n", __location__);
 	status = smbcli_unlink(cli->tree, fname);
