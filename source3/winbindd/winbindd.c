@@ -1157,20 +1157,6 @@ int main(int argc, char **argv, char **envp)
 
 	pidfile_create("winbindd");
 
-	/* Ensure all cache and idmap caches are consistent
-	   before we startup. */
-
-	if (winbindd_validate_cache()) {
-		/* We have a bad cache, but luckily we
-		   just deleted it. Restart ourselves */
-		int i;
-		/* Ensure we have no open low fd's. */
-		for (i = 3; i < 100; i++) {
-			close(i);
-		}
-		return execve(argv[0], argv, envp);
-	}
-
 #if HAVE_SETPGID
 	/*
 	 * If we're interactive we want to set our own process group for
@@ -1188,7 +1174,15 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0, ("unable to initialize messaging system\n"));
 		exit(1);
 	}
-	
+
+	/*
+	 * Ensure all cache and idmap caches are consistent
+	 * before we startup.
+	 */
+	if (winbindd_validate_cache() < 0) {
+		DEBUG(0, ("corrupted tdb found, trying to restore backup\n"));
+	}
+
 	/* Initialize cache (ensure version is correct). */
 	if (!initialize_winbindd_cache()) {
 		exit(1);
