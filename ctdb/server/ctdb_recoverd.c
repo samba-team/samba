@@ -742,7 +742,8 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 
 
 /*
-  update our local flags from all remote connected nodes. 
+  Update our local flags from all remote connected nodes. 
+  This is only run when we are or we belive we are the recovery master
  */
 static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
@@ -782,6 +783,8 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 			/* We also should tell our daemon about this so it
 			   updates its flags or else we will log the same 
 			   message again in the next iteration of recovery.
+			   Since we are the recovery master we can just as
+			   well update the flags on all nodes.
 			*/
 			c.pnn = nodemap->nodes[j].pnn;
 			c.old_flags = nodemap->nodes[j].flags;
@@ -790,7 +793,7 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 			data.dptr = (uint8_t *)&c;
 			data.dsize = sizeof(c);
 
-			ctdb_send_message(ctdb, CTDB_CURRENT_NODE,
+			ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 					CTDB_SRVID_NODE_FLAGS_CHANGED, 
 					data);
 
