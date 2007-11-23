@@ -1700,6 +1700,29 @@ again:
 		goto again;
 	}
 
+	/* check that we (recovery daemon) and the local ctdb daemon
+	   agrees on whether we are banned or not
+	*/
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_BANNED) {
+		if (rec->banned_nodes[pnn] == NULL) {
+			DEBUG(0,("Local ctdb daemon thinks this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+
+			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+			ctdb_set_culprit(rec, pnn);
+
+			goto again;
+		}
+	} else {
+		if (rec->banned_nodes[pnn] != NULL) {
+			DEBUG(0,("Local ctdb daemon does not think this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+
+			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+			ctdb_set_culprit(rec, pnn);
+
+			goto again;
+		}
+	}
+
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
