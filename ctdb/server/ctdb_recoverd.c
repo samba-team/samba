@@ -61,9 +61,17 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
+	DEBUG(0,("Unbanning node %u\n", pnn));
+
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(0,("Bad pnn %u in ctdb_unban_node\n", pnn));
 		return;
+	}
+
+	if (pnn == ctdb->pnn) {
+		/* make sure we remember we are no longer banned in case 
+		   there is an election */
+		rec->node_flags &= ~NODE_FLAGS_BANNED;
 	}
 
 	if (rec->banned_nodes[pnn] == NULL) {
@@ -98,6 +106,8 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
+	DEBUG(0,("Banning node %u for %u seconds\n", pnn, ban_time));
+
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", pnn));
 		return;
@@ -112,6 +122,10 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 		DEBUG(0,("self ban - lowering our election priority\n"));
 		/* banning ourselves - lower our election priority */
 		rec->priority_time = timeval_current();
+
+		/* make sure we remember we are banned in case there is an 
+		   election */
+		rec->node_flags |= NODE_FLAGS_BANNED;
 	}
 
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, NODE_FLAGS_BANNED, 0);
