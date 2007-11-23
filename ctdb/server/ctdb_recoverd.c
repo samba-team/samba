@@ -130,6 +130,12 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, NODE_FLAGS_BANNED, 0);
 
+	if (rec->banned_nodes[pnn] != NULL) {
+		DEBUG(0,("Re-banning an already banned node. Remove previous ban and set a new ban.\n"));		
+		talloc_free(rec->banned_nodes[pnn]);
+		rec->banned_nodes[pnn] = NULL;
+	}
+
 	rec->banned_nodes[pnn] = talloc(rec, struct ban_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes[pnn]);
 
