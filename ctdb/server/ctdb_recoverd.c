@@ -755,8 +755,6 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 	 */
 	for (j=0; j<nodemap->num; j++) {
 		struct ctdb_node_map *remote_nodemap=NULL;
-		struct ctdb_node_flag_change c;
-		TDB_DATA data;
 		int ret;
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
@@ -772,15 +770,13 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
 				  nodemap->nodes[j].pnn));
 			talloc_free(mem_ctx);
-			return -1;
+			return MONITOR_FAILED;
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
-			DEBUG(0,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
-				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
-				 nodemap->nodes[j].flags));
-			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+			struct ctdb_node_flag_change c;
+			TDB_DATA data;
 
-			/* We also should tell our daemon about this so it
+			/* We should tell our daemon about this so it
 			   updates its flags or else we will log the same 
 			   message again in the next iteration of recovery.
 			   Since we are the recovery master we can just as
@@ -797,11 +793,30 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 					CTDB_SRVID_NODE_FLAGS_CHANGED, 
 					data);
 
+			/* Update our local copy of the flags in the recovery
+			   daemon.
+			*/
+			DEBUG(0,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
+				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
+				 nodemap->nodes[j].flags));
+			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+
+			/* If the BANNED flag has changed for the node
+			   this is a good reason to do a new election.
+			 */
+			if ((c.old_flags ^ c.new_flags) & NODE_FLAGS_BANNED) {
+				DEBUG(0,("Remote node %u had different BANNED flags 0x%x, local had 0x%x - trigger a re-election\n",
+				 nodemap->nodes[j].pnn, c.new_flags,
+				 c.old_flags));
+				talloc_free(mem_ctx);
+				return MONITOR_ELECTION_NEEDED;
+			}
+
 		}
 		talloc_free(remote_nodemap);
 	}
 	talloc_free(mem_ctx);
-	return 0;
+	return MONITOR_OK;
 }
 
 
@@ -1787,7 +1802,12 @@ again:
 
 	/* ensure our local copies of flags are right */
 	ret = update_local_flags(ctdb, nodemap);
-	if (ret != 0) {
+	if (ret == MONITOR_ELECTION_NEEDED) {
+		DEBUG(0,("update_local_flags() called for a re-election.\n"));
+		force_election(rec, mem_ctx, pnn, nodemap);
+		goto again;
+	}
+	if (ret != MONITOR_OK) {
 		DEBUG(0,("Unable to update local flags\n"));
 		goto again;
 	}
