@@ -996,10 +996,11 @@ static bool change_password(const char *remote_machine, const char *user_name,
 	}
 	
 	if (remote_machine != NULL) {
-		ret = remote_password_change(remote_machine, user_name, old_passwd, 
-									 new_passwd, err_str, sizeof(err_str));
-		if(*err_str)
+		ret = remote_password_change(remote_machine, user_name,
+					     old_passwd, new_passwd, &err_str);
+		if (err_str != NULL)
 			printf("%s\n<p>", err_str);
+		SAFE_FREE(err_str);
 		return NT_STATUS_IS_OK(ret);
 	}
 

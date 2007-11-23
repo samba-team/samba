@@ -243,9 +243,10 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		ret = remote_password_change(remote_mach, username, 
-					     old_passwd, new_pw, err_str, sizeof(err_str));
-		if(*err_str)
+					     old_passwd, new_pw, &err_str);
+		if (err_str != NULL)
 			fprintf(stderr, "%s", err_str);
+		SAFE_FREE(err_str);
 		return ret;
 	}
 	
