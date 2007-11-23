@@ -160,6 +160,7 @@ int main( int argc, char *argv[] )
 {
 	int opt, rc;
 	char *exename;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 
 	fstring opname;
@@ -223,5 +224,6 @@ int main( int argc, char *argv[] )
 		exit( 1 );
 		break;
 	}
+	TALLOC_FREE(frame);
 	return rc;
 }
