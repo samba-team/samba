@@ -107,7 +107,6 @@
 #include "system/locale.h"
 #include "system/network.h"
 #include "system/passwd.h"
-#include "system/printing.h"
 #include "system/readline.h"
 #include "system/select.h"
 #include "system/shmem.h"
