@@ -3338,8 +3338,7 @@ static void validate_panic(const char *const why)
 
 /***********************************************************************
  Try and validate every entry in the winbindd cache. If we fail here,
- delete the cache tdb and return non-zero - the caller (main winbindd
- function) will restart us as we don't know if we crashed or not.
+ delete the cache tdb and return non-zero.
 ***********************************************************************/
 
 int winbindd_validate_cache(void)
