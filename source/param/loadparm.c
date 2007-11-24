@@ -627,7 +627,7 @@ static service sDefault = {
 static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
-static TDB_CONTEXT *ServiceHash;
+static struct db_context *ServiceHash;
 static int *invalid_services = NULL;
 static int num_invalid_services = 0;
 static bool bInGlobalSection = True;
@@ -2514,9 +2514,11 @@ static void free_service_byindex(int idx)
 	/* we have to cleanup the hash record */
 
 	if (ServicePtrs[idx]->szService) {
-		char *canon_name = canonicalize_servicename( ServicePtrs[idx]->szService );
+		char *canon_name = canonicalize_servicename(
+			ServicePtrs[idx]->szService );
 		
-		tdb_delete_bystring(ServiceHash, canon_name );
+		dbwrap_delete_bystring(ServiceHash, canon_name );
+		TALLOC_FREE(canon_name);
 	}
 
 	free_service(ServicePtrs[idx]);
@@ -2616,17 +2618,18 @@ static int add_a_service(const service *pservice, const char *name)
 
 static char *canonicalize_servicename(const char *src)
 {
-	static fstring canon; /* is fstring large enough? */
+	char *result;
 
 	if ( !src ) {
 		DEBUG(0,("canonicalize_servicename: NULL source name!\n"));
 		return NULL;
 	}
 
-	fstrcpy( canon, src );
-	strlower_m( canon );
+	result = talloc_strdup(talloc_tos(), src);
+	SMB_ASSERT(result != NULL);
 
-	return canon;
+	strlower_m(result);
+	return result;
 }
 
 /***************************************************************************
@@ -2639,8 +2642,9 @@ static bool hash_a_service(const char *name, int idx)
 
 	if ( !ServiceHash ) {
 		DEBUG(10,("hash_a_service: creating tdb servicehash\n"));
-		ServiceHash = tdb_open("servicehash", 1031, TDB_INTERNAL, 
-                                        (O_RDWR|O_CREAT), 0600);
+		ServiceHash = db_open_tdb(NULL, "servicehash", 1031,
+					  TDB_INTERNAL, (O_RDWR|O_CREAT),
+					  0600);
 		if ( !ServiceHash ) {
 			DEBUG(0,("hash_a_service: open tdb servicehash failed!\n"));
 			return False;
@@ -2650,10 +2654,13 @@ static bool hash_a_service(const char *name, int idx)
 	DEBUG(10,("hash_a_service: hashing index %d for service name %s\n",
 		idx, name));
 
-	if ( !(canon_name = canonicalize_servicename( name )) )
-		return False;
+	canon_name = canonicalize_servicename( name );
 
-        tdb_store_int32(ServiceHash, canon_name, idx);
+	dbwrap_store_bystring(ServiceHash, canon_name,
+			      make_tdb_data((uint8 *)&idx, sizeof(idx)),
+			      TDB_REPLACE);
+
+	TALLOC_FREE(canon_name);
 
 	return True;
 }
@@ -3177,20 +3184,25 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
 	int iService = -1;
 	char *canon_name;
+	TDB_DATA data;
 
-	if (ServiceHash != NULL) {
-		if ( !(canon_name = canonicalize_servicename( pszServiceName )) )
-			return -1;
+	if (ServiceHash == NULL) {
+		return -1;
+	}
 
-		iService = tdb_fetch_int32(ServiceHash, canon_name );
+	canon_name = canonicalize_servicename(pszServiceName);
 
-		if (LP_SNUM_OK(iService)) {
-			if (pserviceDest != NULL) {
-				copy_service(pserviceDest, ServicePtrs[iService], NULL);
-			}
-		} else {
-			iService = -1;
-		}
+	data = dbwrap_fetch_bystring(ServiceHash, canon_name, canon_name);
+
+	if ((data.dptr != NULL) && (data.dsize == sizeof(iService))) {
+		iService = *(int *)data.dptr;
+	}
+
+	TALLOC_FREE(canon_name);
+
+	if ((iService != -1) && (LP_SNUM_OK(iService))
+	    && (pserviceDest != NULL)) {
+		copy_service(pserviceDest, ServicePtrs[iService], NULL);
 	}
 
 	return (iService);
@@ -5169,9 +5181,18 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return -1;
 	}
 
-	/* See if there is already a servicenum for this name. */
-	/* tdb_fetch_int32 returns -1 if not found. */
-	iService = (int)tdb_fetch_int32(ServiceHash, canonicalize_servicename(service_name) );
+	{
+		char *canon_name = canonicalize_servicename(service_name);
+		TDB_DATA data = dbwrap_fetch_bystring(
+			ServiceHash, canon_name, canon_name);
+
+		iService = -1;
+
+		if ((data.dptr != NULL) && (data.dsize == sizeof(iService))) {
+			iService = *(int *)data.dptr;
+		}
+		TALLOC_FREE(canon_name);
+	}
 
 	if (iService != -1 && ServicePtrs[iService]->usershare_last_mod == lsbuf.st_mtime) {
 		/* Nothing changed - Mark valid and return. */
