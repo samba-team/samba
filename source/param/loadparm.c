@@ -2641,10 +2641,8 @@ static bool hash_a_service(const char *name, int idx)
 	char *canon_name;
 
 	if ( !ServiceHash ) {
-		DEBUG(10,("hash_a_service: creating tdb servicehash\n"));
-		ServiceHash = db_open_tdb(NULL, "servicehash", 1031,
-					  TDB_INTERNAL, (O_RDWR|O_CREAT),
-					  0600);
+		DEBUG(10,("hash_a_service: creating servicehash\n"));
+		ServiceHash = db_open_rbt(NULL);
 		if ( !ServiceHash ) {
 			DEBUG(0,("hash_a_service: open tdb servicehash failed!\n"));
 			return False;
