@@ -98,7 +98,7 @@ static char* namecache_key(const char *name,
 				int name_type)
 {
 	char *keystr;
-	asprintf(&keystr, NBTKEY_FMT, strupper_static(name), name_type);
+	asprintf_strupper_m(&keystr, NBTKEY_FMT, name, name_type);
 
 	return keystr;
 }
@@ -318,8 +318,8 @@ static char *namecache_status_record_key(const char *name,
 	char *keystr;
 
 	print_sockaddr(addr, sizeof(addr), keyip);
-	asprintf(&keystr, "NBT/%s#%02X.%02X.%s",
-			strupper_static(name), name_type1, name_type2, addr);
+	asprintf_strupper_m(&keystr, "NBT/%s#%02X.%02X.%s", name,
+			    name_type1, name_type2, addr);
 	return keystr;
 }
 

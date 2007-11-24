@@ -39,7 +39,7 @@ static char *saf_key(const char *domain)
 {
 	char *keystr;
 
-	asprintf( &keystr, SAFKEY_FMT, strupper_static(domain) );
+	asprintf_strupper_m(&keystr, SAFKEY_FMT, domain);
 
 	return keystr;
 }

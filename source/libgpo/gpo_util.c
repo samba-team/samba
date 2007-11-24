@@ -693,8 +693,8 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	tmp = talloc_asprintf(mem_ctx, "%s/%s/%s", filename,
-			      strupper_static(path), suffix);
+	tmp = talloc_asprintf_strupper_m(mem_ctx, "%s/%s/%s", filename, path,
+					 suffix);
 	NT_STATUS_HAVE_NO_MEMORY(tmp);
 
 	if (sys_stat(tmp, &sbuf) == 0) {

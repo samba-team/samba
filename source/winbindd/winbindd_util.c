@@ -1466,8 +1466,8 @@ static void winbindd_set_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	if (asprintf(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
-		     strupper_static(domain->alt_name)) == -1) {
+	if (asprintf_strupper_m(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
+				domain->alt_name) == -1) {
 		return;
 	}
 
@@ -1503,8 +1503,8 @@ void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain)
 		return;
 	}
 
-	if (asprintf(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
-		     strupper_static(domain->alt_name)) == -1) {
+	if (asprintf_strupper_m(&var, "%s_%s", WINBINDD_LOCATOR_KDC_ADDRESS,
+				domain->alt_name) == -1) {
 		return;
 	}
 

@@ -4240,9 +4240,12 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%c", *(char *)ptr);
 			break;
 
-		case P_OCTAL:
-			fprintf(f, "%s", octal_string(*(int *)ptr));
+		case P_OCTAL: {
+			char *o = octal_string(*(int *)ptr);
+			fprintf(f, "%s", o);
+			TALLOC_FREE(o);
 			break;
+		}
 
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {

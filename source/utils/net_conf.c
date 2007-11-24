@@ -494,9 +494,11 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
         	        }
         	}
 		break;
-	case P_OCTAL:
-		valstr = talloc_asprintf(ctx, "%s", octal_string(*(int *)ptr));
+	case P_OCTAL: {
+		char *o = octal_string(*(int *)ptr);
+		valstr = talloc_move(ctx, &o);
 		break;
+	}
 	case P_LIST:
 		valstr = talloc_strdup(ctx, "");
 		if ((char ***)ptr && *(char ***)ptr) {
