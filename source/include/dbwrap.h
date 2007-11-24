@@ -50,5 +50,10 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   int hash_size, int tdb_flags,
 			   int open_flags, mode_t mode);
 
+NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
+NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
+			       TDB_DATA data, int flags);
+TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       const char *key);
 
 #endif /* __DBWRAP_H__ */
