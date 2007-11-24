@@ -41,7 +41,7 @@ struct {
 
 static const char *get_us_error_code(enum usershare_err us_err)
 {
-	static pstring out;
+	char *result;
 	int idx = 0;
 
 	while (us_errs[idx].us_errstr != NULL) {
@@ -51,8 +51,10 @@ static const char *get_us_error_code(enum usershare_err us_err)
 		idx++;
 	}
 
-	slprintf(out, sizeof(out), "Usershare error code (0x%x)", (unsigned int)us_err);
-	return out;
+	result = talloc_asprintf(talloc_tos(), "Usershare error code (0x%x)",
+				 (unsigned int)us_err);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /* The help subsystem for the USERSHARE subcommand */
