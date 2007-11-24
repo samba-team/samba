@@ -26,11 +26,13 @@
 
 char *credstr(const unsigned char *cred)
 {
-	static fstring buf;
-	slprintf(buf, sizeof(buf) - 1, "%02X%02X%02X%02X%02X%02X%02X%02X",
-		cred[0], cred[1], cred[2], cred[3], 
-		cred[4], cred[5], cred[6], cred[7]);
-	return buf;
+	char *result;
+	result = talloc_asprintf(talloc_tos(),
+				 "%02X%02X%02X%02X%02X%02X%02X%02X",
+				 cred[0], cred[1], cred[2], cred[3],
+				 cred[4], cred[5], cred[6], cred[7]);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /****************************************************************************

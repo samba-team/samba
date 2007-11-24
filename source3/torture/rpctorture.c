@@ -45,6 +45,40 @@ void rpcclient_init(void)
 	smb_cli->capabilities |= CAP_NT_SMBS;
 }
 
+/*******************************************************************
+ Convert, possibly using a stupid microsoft-ism which has destroyed
+ the transport independence of netbios (for CIFS vendors that usually
+ use the Win95-type methods, not for NT to NT communication, which uses
+ DCE/RPC and therefore full-length unicode strings...) a dns name into
+ a netbios name.
+
+ The netbios name (NOT necessarily null-terminated) is truncated to 15
+ characters.
+
+ ******************************************************************/
+
+static char *dns_to_netbios_name(const char *dns_name)
+{
+	static nstring netbios_name;
+	int i;
+	StrnCpy(netbios_name, dns_name, MAX_NETBIOSNAME_LEN-1);
+	netbios_name[15] = 0;
+
+	/* ok.  this is because of a stupid microsoft-ism.  if the called host
+	   name contains a '.', microsoft clients expect you to truncate the
+	   netbios name up to and including the '.'  this even applies, by
+	   mistake, to workgroup (domain) names, which is _really_ daft.
+	 */
+	for (i = 0; i < 15; i++) {
+		if (netbios_name[i] == '.') {
+			netbios_name[i] = 0;
+			break;
+		}
+	}
+
+	return netbios_name;
+}
+
 /****************************************************************************
 make smb client connection
 ****************************************************************************/
