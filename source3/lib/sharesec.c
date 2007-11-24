@@ -37,7 +37,7 @@ static const struct generic_mapping file_generic_mapping = {
 };
 
 
-bool share_info_db_init(void)
+static bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
