@@ -109,6 +109,32 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	return result;
 }
 
+static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+			TDB_DATA key, TDB_DATA *pdata)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+
+	TDB_DATA data;
+
+	data = tdb_fetch(ctx->wtdb->tdb, key);
+
+	if (data.dptr == NULL) {
+		pdata->dptr = NULL;
+		pdata->dsize = 0;
+		return 0;
+	}
+
+	pdata->dptr = (uint8 *)talloc_memdup(mem_ctx, data.dptr, data.dsize);
+	SAFE_FREE(data.dptr);
+
+	if (pdata->dptr == NULL) {
+		return -1;
+	}
+	pdata->dsize = data.dsize;
+	return 0;
+}
+
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
@@ -251,6 +277,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 
 	result->fetch_locked = db_tdb_fetch_locked;
+	result->fetch = db_tdb_fetch;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->get_seqnum = db_tdb_get_seqnum;
