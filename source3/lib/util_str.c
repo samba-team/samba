@@ -506,21 +506,6 @@ int strwicmp(const char *psz1, const char *psz2)
 	return (*psz1 - *psz2);
 }
 
-
-/**
- Convert a string to upper case, but don't modify it.
-**/
-
-char *strupper_static(const char *s)
-{
-	static char *str = NULL;
-
-	SAFE_FREE(str);
-	str = SMB_STRDUP(s);
-	strupper_m(str);
-	return str;
-}
-
 /**
  Convert a string to "normal" form.
 **/
@@ -1147,7 +1132,7 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 }
 
 /* this is used to prevent lots of mallocs of size 1 */
-static const char *null_string = "";
+static const char null_string[] = "";
 
 /**
  Set a string value, allocing the space for the string
@@ -1561,13 +1546,17 @@ static void split_at_last_component(char *path, char *front, char sep,
  Write an octal as a string.
 **/
 
-const char *octal_string(int i)
+char *octal_string(int i)
 {
-	static char ret[64];
-	if (i == -1)
-		return "-1";
-	slprintf(ret, sizeof(ret)-1, "0%o", i);
-	return ret;
+	char *result;
+	if (i == -1) {
+		result = talloc_strdup(talloc_tos(), "-1");
+	}
+	else {
+		result = talloc_asprintf(talloc_tos(), "0%o", i);
+	}
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 
@@ -2552,7 +2541,7 @@ void rfc1738_unescape(char *buf)
 	}
 }
 
-static const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
  * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
@@ -2858,6 +2847,44 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
  error:
 	*len = -1;
 	*string = NULL;
+}
+
+/*
+ * asprintf into a string and strupper_m it after that.
+ */
+
+int asprintf_strupper_m(char **strp, const char *fmt, ...)
+{
+	va_list ap;
+	char *result;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = vasprintf(&result, fmt, ap);
+	va_end(ap);
+
+	if (ret == -1)
+		return -1;
+
+	strupper_m(result);
+	*strp = result;
+	return ret;
+}
+
+char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
+{
+	va_list ap;
+	char *ret;
+
+	va_start(ap, fmt);
+	ret = talloc_vasprintf(t, fmt, ap);
+	va_end(ap);
+
+	if (ret == NULL) {
+		return NULL;
+	}
+	strupper_m(ret);
+	return ret;
 }
 
 /*

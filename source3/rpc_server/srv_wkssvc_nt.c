@@ -36,10 +36,10 @@ static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 	info100->version_major	 = lp_major_announce_version();
 	info100->version_minor	 = lp_minor_announce_version();
 
-	info100->server_name = talloc_strdup(
-		info100, strupper_static(global_myname()));
-	info100->domain_name = talloc_strdup(
-		info100, strupper_static(lp_workgroup()));
+	info100->server_name = talloc_asprintf_strupper_m(
+		info100, "%s", global_myname());
+	info100->domain_name = talloc_asprintf_strupper_m(
+		info100, "%s", lp_workgroup());
 
 	return;
 }

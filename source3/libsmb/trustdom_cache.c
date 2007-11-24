@@ -90,7 +90,7 @@ bool trustdom_cache_shutdown(void)
 static char* trustdom_cache_key(const char* name)
 {
 	char* keystr = NULL;
-	asprintf(&keystr, TDOMKEY_FMT, strupper_static(name));
+	asprintf_strupper_m(&keystr, TDOMKEY_FMT, name);
 	
 	return keystr;
 }

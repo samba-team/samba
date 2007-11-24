@@ -709,7 +709,7 @@ static char *sitename_key(const char *realm)
 {
 	char *keystr;
 
-	if (asprintf(&keystr, SITENAME_KEY, strupper_static(realm)) == -1) {
+	if (asprintf_strupper_m(&keystr, SITENAME_KEY, realm) == -1) {
 		return NULL;
 	}
 

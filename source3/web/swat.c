@@ -324,12 +324,19 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			_("Set Default"), make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
 
-	case P_OCTAL:
-		printf("<input type=text size=8 name=\"parm_%s\" value=%s>", make_parm_name(parm->label), octal_string(*(int *)ptr));
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
-		       _("Set Default"), make_parm_name(parm->label),
-		       octal_string((int)(parm->def.ivalue)));
+	case P_OCTAL: {
+		char *o;
+		o = octal_string(*(int *)ptr);
+		printf("<input type=text size=8 name=\"parm_%s\" value=%s>",
+		       make_parm_name(parm->label), o);
+		TALLOC_FREE(o);
+		o = octal_string((int)(parm->def.ivalue));
+		printf("<input type=button value=\"%s\" "
+		       "onClick=\"swatform.parm_%s.value=\'%s\'\">",
+		       _("Set Default"), make_parm_name(parm->label), o);
+		TALLOC_FREE(o);
 		break;
+	}
 
 	case P_ENUM:
 		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 

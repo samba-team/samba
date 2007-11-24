@@ -265,8 +265,7 @@ static char *DsGetDcName_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
 		return NULL;
 	}
 
-	return talloc_asprintf(mem_ctx, DSGETDCNAME_FMT,
-			       strupper_static(domain));
+	return talloc_asprintf_strupper_m(mem_ctx, DSGETDCNAME_FMT, domain);
 }
 
 /****************************************************************
