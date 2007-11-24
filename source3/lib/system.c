@@ -1990,9 +1990,10 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 #elif defined(HAVE_ATTROPEN)
 	int ret = -1;
 	int myflags = O_RDWR;
+	int attrfd;
 	if (flags & XATTR_CREATE) myflags |= O_EXCL;
 	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
-	int attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
 	if (attrfd >= 0) {
 		ret = solaris_write_xattr(attrfd, value, size);
 		close(attrfd);
@@ -2053,9 +2054,10 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 #elif defined(HAVE_ATTROPEN)
 	int ret = -1;
 	int myflags = O_RDWR | AT_SYMLINK_NOFOLLOW;
+	int attrfd;
 	if (flags & XATTR_CREATE) myflags |= O_EXCL;
 	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
-	int attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	attrfd = solaris_attropen(path, name, myflags, (mode_t) SOLARIS_ATTRMODE);
 	if (attrfd >= 0) {
 		ret = solaris_write_xattr(attrfd, value, size);
 		close(attrfd);
@@ -2117,9 +2119,10 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 #elif defined(HAVE_ATTROPEN)
 	int ret = -1;
 	int myflags = O_RDWR | O_XATTR;
+	int attrfd;
 	if (flags & XATTR_CREATE) myflags |= O_EXCL;
 	if (!(flags & XATTR_REPLACE)) myflags |= O_CREAT;
-	int attrfd = solaris_openat(filedes, name, myflags, (mode_t) SOLARIS_ATTRMODE);
+	attrfd = solaris_openat(filedes, name, myflags, (mode_t) SOLARIS_ATTRMODE);
 	if (attrfd >= 0) {
 		ret = solaris_write_xattr(attrfd, value, size);
 		close(attrfd);
