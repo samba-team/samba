@@ -99,10 +99,6 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 */
 const char *ads_errstr(ADS_STATUS status)
 {
-	static char *ret;
-
-	SAFE_FREE(ret);
-
 	switch (status.error_type) {
 	case ENUM_ADS_ERROR_SYSTEM:
 		return strerror(status.err.rc);
@@ -117,6 +113,7 @@ const char *ads_errstr(ADS_STATUS status)
 #ifdef HAVE_GSSAPI
 	case ENUM_ADS_ERROR_GSS:
 	{
+		char *ret;
 		uint32 msg_ctx;
 		uint32 minor;
 		gss_buffer_desc msg1, msg2;
@@ -129,7 +126,9 @@ const char *ads_errstr(ADS_STATUS status)
 				   GSS_C_NULL_OID, &msg_ctx, &msg1);
 		gss_display_status(&minor, status.minor_status, GSS_C_MECH_CODE,
 				   GSS_C_NULL_OID, &msg_ctx, &msg2);
-		asprintf(&ret, "%s : %s", (char *)msg1.value, (char *)msg2.value);
+		ret = talloc_asprintf(talloc_tos(), "%s : %s",
+				      (char *)msg1.value, (char *)msg2.value);
+		SMB_ASSERT(ret != NULL);
 		gss_release_buffer(&minor, &msg1);
 		gss_release_buffer(&minor, &msg2);
 		return ret;
