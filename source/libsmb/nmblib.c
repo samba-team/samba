@@ -347,20 +347,19 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
 
 char *nmb_namestr(const struct nmb_name *n)
 {
-	static int i=0;
-	static fstring ret[4];
 	fstring name;
-	char *p = ret[i];
+	char *result;
 
 	pull_ascii_fstring(name, n->name);
 	if (!n->scope[0])
-		slprintf(p,sizeof(fstring)-1, "%s<%02x>",name,n->name_type);
+		result = talloc_asprintf(talloc_tos(), "%s<%02x>", name,
+					 n->name_type);
 	else
-		slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",
-				name,n->name_type,n->scope);
+		result = talloc_asprintf(talloc_tos(), "%s<%02x>.%s", name,
+					 n->name_type, n->scope);
 
-	i = (i+1)%4;
-	return(p);
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /*******************************************************************
@@ -1237,40 +1236,6 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 	putip(sort_ip, (char *)&ip);
 
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
-}
-
-/*******************************************************************
- Convert, possibly using a stupid microsoft-ism which has destroyed
- the transport independence of netbios (for CIFS vendors that usually
- use the Win95-type methods, not for NT to NT communication, which uses
- DCE/RPC and therefore full-length unicode strings...) a dns name into
- a netbios name.
-
- The netbios name (NOT necessarily null-terminated) is truncated to 15
- characters.
-
- ******************************************************************/
-
-char *dns_to_netbios_name(const char *dns_name)
-{
-	static nstring netbios_name;
-	int i;
-	StrnCpy(netbios_name, dns_name, MAX_NETBIOSNAME_LEN-1);
-	netbios_name[15] = 0;
-
-	/* ok.  this is because of a stupid microsoft-ism.  if the called host
-	   name contains a '.', microsoft clients expect you to truncate the
-	   netbios name up to and including the '.'  this even applies, by
-	   mistake, to workgroup (domain) names, which is _really_ daft.
-	 */
-	for (i = 0; i < 15; i++) {
-		if (netbios_name[i] == '.') {
-			netbios_name[i] = 0;
-			break;
-		}
-	}
-
-	return netbios_name;
 }
 
 /****************************************************************************

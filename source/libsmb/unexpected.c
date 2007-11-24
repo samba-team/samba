@@ -112,18 +112,22 @@ void clear_unexpected(time_t t)
 	tdb_traverse(tdbd, traverse_fn, NULL);
 }
 
-
-static struct packet_struct *matched_packet;
-static int match_id;
-static enum packet_type match_type;
-static const char *match_name;
+struct receive_unexpected_state {
+	struct packet_struct *matched_packet;
+	int match_id;
+	enum packet_type match_type;
+	const char *match_name;
+};
 
 /****************************************************************************
  tdb traversal fn to find a matching 137 packet.
 **************************************************************************/
 
-static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
+			  void *private_data)
 {
+	struct receive_unexpected_state *state =
+		(struct receive_unexpected_state *)private_data;
 	struct unexpected_key key;
 	struct in_addr ip;
 	uint32_t enc_ip;
@@ -132,7 +136,7 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
-	if (key.packet_type != match_type) return 0;
+	if (key.packet_type != state->match_type) return 0;
 
 	if (dbuf.dsize < 6) {
 		return 0;
@@ -145,15 +149,15 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	p = parse_packet((char *)&dbuf.dptr[6],
 			dbuf.dsize-6,
-			match_type,
+			state->match_type,
 			ip,
 			port);
 
-	if ((match_type == NMB_PACKET &&
-	     p->packet.nmb.header.name_trn_id == match_id) ||
-	    (match_type == DGRAM_PACKET &&
-	     match_mailslot_name(p, match_name))) {
-		matched_packet = p;
+	if ((state->match_type == NMB_PACKET &&
+	     p->packet.nmb.header.name_trn_id == state->match_id) ||
+	    (state->match_type == DGRAM_PACKET &&
+	     match_mailslot_name(p, state->match_name))) {
+		state->matched_packet = p;
 		return -1;
 	}
 
@@ -170,18 +174,19 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 					 const char *mailslot_name)
 {
 	TDB_CONTEXT *tdb2;
+	struct receive_unexpected_state state;
 
 	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb2) return NULL;
 
-	matched_packet = NULL;
-	match_id = id;
-	match_type = packet_type;
-	match_name = mailslot_name;
+	state.matched_packet = NULL;
+	state.match_id = id;
+	state.match_type = packet_type;
+	state.match_name = mailslot_name;
 
-	tdb_traverse(tdb2, traverse_match, NULL);
+	tdb_traverse(tdb2, traverse_match, &state);
 
 	tdb_close(tdb2);
 
-	return matched_packet;
+	return state.matched_packet;
 }
