@@ -36,6 +36,22 @@ sub IgnoreInterface($$)
 	}
 }
 
+sub GenerateResultTypemap($)
+{
+	my $name = shift;
+	pidl "%typemap(in,numinputs=0) $name*result ($name tmp) {";
+	indent;
+	pidl "\$1 = &tmp;";
+	deindent;
+	pidl "}";
+	pidl "";
+	pidl "%typemap(argout) $name*result {";
+	indent;
+	pidl "\$result = SWIG_NewPointerObj(*\$1, \$1_descriptor, 0);";
+	deindent;
+	pidl "}";
+}
+
 sub ParseInterface($$)
 {
 	my ($basename,$if) = @_;
@@ -46,12 +62,16 @@ sub ParseInterface($$)
 	pidl "";
 	pidl "\%extend $if->{NAME} {";
 	indent();
-	pidl "NTSTATUS $if->{NAME} (const char *binding, struct cli_credentials *cred, TALLOC_CTX *mem_ctx, struct event_context *event, struct $if->{NAME} **result)";
+	pidl "$if->{NAME} () {";
+	indent;
+	pidl "return talloc(NULL, struct $if->{NAME});";
+	deindent;
+	pidl "}";
+	pidl "";
+	pidl "NTSTATUS connect (const char *binding, struct cli_credentials *cred, struct event_context *event)";
 	pidl "{";
 	indent;
-	pidl "*result = talloc(mem_ctx, struct $if->{NAME});";
-	pidl "";
-	pidl "return dcerpc_pipe_connect(mem_ctx, &(*result)->pipe, binding, &ndr_table_$if->{NAME}, cred, event);";
+	pidl "return dcerpc_pipe_connect(\$self, &\$self->pipe, binding, &ndr_table_$if->{NAME}, cred, event);";
 	deindent;
 	pidl "}";
 	pidl "";
@@ -85,7 +105,7 @@ sub ParseInterface($$)
 		}
 
 		pidl "";
-		pidl "status = dcerpc_$fn->{NAME}(self->pipe, mem_ctx, &r);";
+		pidl "status = dcerpc_$fn->{NAME}(\$self->pipe, mem_ctx, &r);";
 		pidl "if (NT_STATUS_IS_ERR(status)) {";
 		pidl "\treturn status;";
 		pidl "}";
