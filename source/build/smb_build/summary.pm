@@ -54,6 +54,7 @@ sub show($$)
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using iconv", ["ICONV"]);
 	showitem($output, "using pam", ["PAM"]);
+	showitem($output, "python bindings", ["LIBPYTHON"]);
 	showisexternal($output, "popt", "LIBPOPT");
 	showisexternal($output, "talloc", "LIBTALLOC");
 	showisexternal($output, "tdb", "LIBTDB");
