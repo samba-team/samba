@@ -209,7 +209,7 @@ valgrindtest: all
 installcheck: install test
 
 install:: all
-	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir)/pkgconfig $(DESTDIR)$(libdir) $(bindir)
+	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/pkgconfig 
 	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
 	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
 	cp $(BINS) $(DESTDIR)$(bindir)
