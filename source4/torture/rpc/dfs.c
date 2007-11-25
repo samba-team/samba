@@ -503,7 +503,7 @@ static bool test_StdRoot(struct dcerpc_pipe *p,
 	const char *dir = SMBTORTURE_DFS_DIRNAME;
 	const char *path = SMBTORTURE_DFS_PATHNAME;
 	struct smbcli_state *cli;
-	bool ret;
+	bool ret = true;
 
 	printf("Testing StdRoot\n");
 
