@@ -222,3 +222,10 @@ etags:
 
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
+
+# Python bindings
+build-python:
+	./setup.py build
+
+install-python:
+	./setup.py install --prefix=$(prefix)
