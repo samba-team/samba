@@ -99,6 +99,12 @@ SONAME = libldb.$(SHLIBEXT).0
 SOLIB = lib/libldb.$(SHLIBEXT).0.9.0
 STATICLIB = lib/libldb.a
 
+lib/$(SONAME): $(SOLIB)
+	ln -fs $< $@
+
+lib/libldb.$(SHLIBEXT): $(SOLIB)
+	ln -fs $< $@
+
 $(SOLIB): $(OBJS)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
 
@@ -170,22 +176,23 @@ manpages:
 doxygen:
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
 
-clean:
+clean::
 	rm -f *.o */*.o *.gcov */*.gc?? tdbtest.ldb*
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(STATICLIB) $(NSS_LIB) $(SOLIB)
+	rm -f $(POPT_OBJ)
 	rm -f man/*.1 man/*.3 man/*.html
 	rm -f $(EXAMPLES)
 	rm -rf apidocs/
 	rm -rf tests/schema/
 
-distclean: clean
+distclean:: clean
 	rm -f *~ */*~
 	rm -rf bin lib
 	rm -f config.log config.status config.cache include/config.h
 	rm -f ldb.pc
 	rm -f Makefile
 
-realdistclean: distclean
+realdistclean:: distclean
 	rm -f configure.in include/config.h.in
 
 check:: test check-soloading
@@ -201,7 +208,7 @@ valgrindtest: all
 
 installcheck: install test
 
-install: all
+install:: all
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir)/pkgconfig $(DESTDIR)$(libdir) $(bindir)
 	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
 	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
@@ -224,8 +231,15 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 # Python bindings
-build-python:
+build-python: lib/libldb.$(SHLIBEXT)
 	./setup.py build
 
 install-python:
 	./setup.py install --prefix=$(prefix)
+
+check-python: build-python
+	# FIXME: This isn't portable
+	LD_LIBRARY_PATH=lib PYTHONPATH=.:build/lib.linux-i686-2.4/ trial tests/python/api.py
+
+clean-python:
+	./setup.py clean

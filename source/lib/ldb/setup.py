@@ -10,5 +10,5 @@ setup(name="ldb",
       license="LGPLv3",
       keywords=["ldap","ldb","db","ldif"],
       ext_modules=[Extension('_ldb', ['ldb.i'], include_dirs=['include'],
-                             libraries=['ldb','ldap'])],
+                             library_dirs=["lib"], libraries=['ldb','ldap'])],
       )
