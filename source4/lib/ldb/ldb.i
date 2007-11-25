@@ -29,8 +29,6 @@
 
 %{
 
-/* Include headers */
-
 #include <stdint.h>
 #include <stdbool.h>
 #include "talloc.h"
@@ -80,10 +78,6 @@ typedef int ldb_error;
 			"Message can not be None");
 }
 
-/* 
- * Wrap a small bit of talloc
- */
-
 /*
  * Wrap struct ldb_val
  */
@@ -132,7 +126,6 @@ typedef int ldb_error;
 %typemap(freearg) ldb_msg *add_msg {
 //talloc_free($1);
 }
-
 
 /*
  * Wrap struct ldb_result
@@ -413,8 +406,8 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 %typemap(in,numinputs=1) (void (*debug)(void *context, enum ldb_debug_level level, const char *fmt, va_list ap),
                             void *context) {
     $1 = py_ldb_debug;
-    /* FIXME: Should be decreased somewhere as well. Perhaps register a destructor and 
-       tie it to the ldb context ? */
+    /* FIXME: Should be decreased somewhere as well. Perhaps register a 
+       destructor and tie it to the ldb context ? */
     Py_INCREF($input);
     $2 = $input;
 }
@@ -518,16 +511,13 @@ fail:
         ldb_error transaction_cancel();
 
 #ifdef SWIGPYTHON
-        bool __contains__(ldb_dn *dn)
+        %typemap(in,numinputs=0) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
+        %typemap(argout) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }
+                                                                                        %typemap(freearg) struct ldb_result **result_as_bool { talloc_free(*$1); }
+        ldb_error __contains__(ldb_dn *dn, struct ldb_result **result_as_bool)
         {
-            struct ldb_result *result;
-            
-            int ret = ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
-                             &result);
-
-            /* FIXME: Check ret and set exception if necessary */
-
-            return result->count > 0;
+            return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
+                             result_as_bool);
         }
 
         PyObject *parse_ldif(const char *s)
