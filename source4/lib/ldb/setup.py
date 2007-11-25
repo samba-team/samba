@@ -1,8 +1,14 @@
 #!/usr/bin/python
 from distutils.core import setup
 from distutils.extension import Extension
-setup(name='ldb',
-      version='1.0',
+
+setup(name="ldb",
+      version="1.0",
+      url="http://ldb.samba.org/",
+      author="LDB Developers",
+      author_email="ldb@samba.org",
+      license="LGPLv3",
+      keywords=["ldap","ldb","db","ldif"],
       ext_modules=[Extension('_ldb', ['ldb.i'], include_dirs=['include'],
                              libraries=['ldb','ldap'])],
       )
