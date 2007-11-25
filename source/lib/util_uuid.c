@@ -44,14 +44,6 @@ void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu)
 	memcpy(uu->node, in.info+10, 6);
 }
 
-struct GUID smb_uuid_unpack_static(const UUID_FLAT in)
-{
-	static struct GUID uu;
-
-	smb_uuid_unpack(in, &uu);
-	return uu;
-}
-
 void smb_uuid_generate_random(struct GUID *uu)
 {
 	UUID_FLAT tmp;
@@ -63,30 +55,20 @@ void smb_uuid_generate_random(struct GUID *uu)
 	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
 }
 
-char *smb_uuid_to_string(const struct GUID uu)
+const char *smb_uuid_string(TALLOC_CTX *mem_ctx, const struct GUID uu)
 {
-	char *out;
+	char *result;
 
-	asprintf(&out, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
-		 uu.clock_seq[0], uu.clock_seq[1],
-		 uu.node[0], uu.node[1], uu.node[2], 
-		 uu.node[3], uu.node[4], uu.node[5]);
+	result = talloc_asprintf(
+		mem_ctx,
+		"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		uu.time_low, uu.time_mid, uu.time_hi_and_version,
+		uu.clock_seq[0], uu.clock_seq[1],
+		uu.node[0], uu.node[1], uu.node[2], 
+		uu.node[3], uu.node[4], uu.node[5]);
 
-	return out;
-}
-
-const char *smb_uuid_string_static(const struct GUID uu)
-{
-	static char out[37];
-
-	slprintf(out, sizeof(out), 
-		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
-		 uu.clock_seq[0], uu.clock_seq[1],
-		 uu.node[0], uu.node[1], uu.node[2], 
-		 uu.node[3], uu.node[4], uu.node[5]);
-	return out;
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 bool smb_string_to_uuid(const char *in, struct GUID* uu)

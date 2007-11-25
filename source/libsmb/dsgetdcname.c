@@ -800,7 +800,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		dc_address_type = ADS_NETBIOS_ADDRESS;
 	}
 	NT_STATUS_HAVE_NO_MEMORY(dc_address);
-	dc_guid = smb_uuid_unpack_static(r.guid);
+	smb_uuid_unpack(r.guid, &dc_guid);
 
 	if (r.forest) {
 		dc_flags |= ADS_DNS_FOREST;

@@ -80,6 +80,7 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 {
 	char addr[INET6_ADDRSTRLEN];
 	struct cldap_netlogon_reply reply;
+	struct GUID tmp_guid;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	if ( !ads_cldap_netlogon(addr, ads->server.realm, &reply ) ) {
@@ -102,8 +103,10 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 		d_printf("0x%x\n", reply.type);
 		break;
 	}
-	d_printf("GUID: %s\n",
-		 smb_uuid_string_static(smb_uuid_unpack_static(reply.guid)));
+
+	smb_uuid_unpack(reply.guid, &tmp_guid);
+	d_printf("GUID: %s\n", smb_uuid_string(talloc_tos(), tmp_guid));
+
 	d_printf("Flags:\n"
 		 "\tIs a PDC:                                   %s\n"
 		 "\tIs a GC of the forest:                      %s\n"
