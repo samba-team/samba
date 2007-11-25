@@ -735,46 +735,20 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
  Internal fn to set security descriptors.
 ****************************************************************************/
 
-static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security_info_sent)
+static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
+		       uint32 security_info_sent)
 {
-	prs_struct pd;
 	SEC_DESC *psd = NULL;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
 	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
-	/*
-	 * Init the parse struct we will unmarshall from.
-	 */
+	status = unmarshall_sec_desc(talloc_tos(), data, sd_len, &psd);
 
-	if ((mem_ctx = talloc_init("set_sd")) == NULL) {
-		DEBUG(0,("set_sd: talloc_init failed.\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	prs_init(&pd, 0, mem_ctx, UNMARSHALL);
-
-	/*
-	 * Setup the prs_struct to point at the memory we just
-	 * allocated.
-	 */
-
-	prs_give_memory( &pd, data, sd_len, False);
-
-	/*
-	 * Finally, unmarshall from the data buffer.
-	 */
-
-	if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
-		DEBUG(0,("set_sd: Error in unmarshalling security descriptor.\n"));
-		/*
-		 * Return access denied for want of a better error message..
-		 */
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (psd->owner_sid==0) {
@@ -790,9 +764,17 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
-	status = SMB_VFS_FSET_NT_ACL( fsp, fsp->fh->fd, security_info_sent, psd);
+	if (fsp->fh->fd != -1) {
+		status = SMB_VFS_FSET_NT_ACL(fsp, fsp->fh->fd,
+					     security_info_sent, psd);
+	}
+	else {
+		status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
+					    security_info_sent, psd);
+	}
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(psd);
+
 	return status;
 }
 
@@ -989,12 +971,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			/* We have re-scheduled this call, no error. */
 			return;
 		}
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			reply_botherror(req, status, ERRDOS, ERRfilexists);
-		}
-		else {
-			reply_nterror(req, status);
-		}
+		reply_openerror(req, status);
 		return;
 	}
 
@@ -1618,13 +1595,13 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 {
 	char *params = *ppparams;
 	char *data = *ppdata;
-	prs_struct pd;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	uint32 security_info_wanted;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *frame;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
+	DATA_BLOB blob;
 
         if(parameter_count < 8) {
 		reply_doserror(req, ERRDOS, ERRbadfunc);
@@ -1648,25 +1625,27 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	if ((mem_ctx = talloc_init("call_nt_transact_query_security_desc")) == NULL) {
-		DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-		reply_doserror(req, ERRDOS, ERRnomem);
-		return;
-	}
+	frame = talloc_stackframe();
 
 	/*
 	 * Get the permissions to return.
 	 */
 
 	if (!lp_nt_acl_support(SNUM(conn))) {
-		status = get_null_nt_acl(mem_ctx, &psd);
+		status = get_null_nt_acl(talloc_tos(), &psd);
 	} else {
-		status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
-					     security_info_wanted, &psd);
+		if (fsp->fh->fd != -1) {
+			status = SMB_VFS_FGET_NT_ACL(
+				fsp, fsp->fh->fd, security_info_wanted, &psd);
+		}
+		else {
+			status = SMB_VFS_GET_NT_ACL(
+				fsp, fsp->fsp_name, security_info_wanted, &psd);
+		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(frame);
 		reply_nterror(req, status);
 		return;
 	}
@@ -1677,11 +1656,10 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	SIVAL(params,0,(uint32)sd_size);
 
-	if(max_data_count < sd_size) {
-
+	if (max_data_count < sd_size) {
 		send_nt_replies(req, NT_STATUS_BUFFER_TOO_SMALL,
 				params, 4, *ppdata, 0);
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -1691,46 +1669,26 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
-		talloc_destroy(mem_ctx);
+		TALLOC_FREE(frame);
 		reply_doserror(req, ERRDOS, ERRnomem);
 		return;
 	}
 
-	/*
-	 * Init the parse struct we will marshall into.
-	 */
+	status = marshall_sec_desc(talloc_tos(), psd,
+				   &blob.data, &blob.length);
 
-	prs_init(&pd, 0, mem_ctx, MARSHALL);
-
-	/*
-	 * Setup the prs_struct to point at the memory we just
-	 * allocated.
-	 */
-
-	prs_give_memory( &pd, data, (uint32)sd_size, False);
-
-	/*
-	 * Finally, linearize into the outgoing buffer.
-	 */
-
-	if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
-		DEBUG(0,("call_nt_transact_query_security_desc: Error in marshalling \
-security descriptor.\n"));
-		/*
-		 * Return access denied for want of a better error message..
-		 */
-		talloc_destroy(mem_ctx);
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		reply_nterror(req, status);
 		return;
 	}
 
-	/*
-	 * Now we can delete the security descriptor.
-	 */
-
-	talloc_destroy(mem_ctx);
+	SMB_ASSERT(sd_size == blob.length);
+	memcpy(data, blob.data, sd_size);
 
 	send_nt_replies(req, NT_STATUS_OK, params, 4, data, (int)sd_size);
+
+	TALLOC_FREE(frame);
 	return;
 }
 
@@ -1752,7 +1710,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 	char *data = *ppdata;
 	files_struct *fsp = NULL;
 	uint32 security_info_sent = 0;
-	NTSTATUS nt_status;
+	NTSTATUS status;
 
 	if(parameter_count < 8) {
 		reply_doserror(req, ERRDOS, ERRbadfunc);
@@ -1778,13 +1736,14 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, data_count, security_info_sent))) {
-		reply_nterror(req, nt_status);
+	status = set_sd(fsp, (uint8 *)data, data_count, security_info_sent);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		return;
 	}
 
   done:
-
 	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
 	return;
 }
