@@ -46,7 +46,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
 
-static int received_signal;
+static sig_atomic_t received_signal;
 
 static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
@@ -118,12 +118,14 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
  Form a static tdb key from a pid.
 ******************************************************************/
 
-static TDB_DATA message_key_pid(struct server_id pid)
+static TDB_DATA message_key_pid(TALLOC_CTX *mem_ctx, struct server_id pid)
 {
-	static char key[20];
+	char *key;
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key)-1, "PID/%s", procid_str_static(&pid));
+	key = talloc_asprintf(talloc_tos(), "PID/%s", procid_str_static(&pid));
+
+	SMB_ASSERT(key != NULL);
 	
 	kbuf.dptr = (uint8 *)key;
 	kbuf.dsize = strlen(key)+1;
@@ -289,10 +291,10 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 {
 	struct messaging_array *msg_array;
 	struct messaging_rec *rec;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	TDB_DATA key = message_key_pid(pid);
+	TDB_DATA key;
 	TDB_CONTEXT *tdb = (TDB_CONTEXT *)backend->private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* NULL pointer means implicit length zero. */
 	if (!data->data) {
@@ -306,16 +308,14 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 
 	SMB_ASSERT(procid_to_pid(&pid) > 0);
 
-	if (!(mem_ctx = talloc_init("message_send_pid"))) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	key = message_key_pid(frame, pid);
 
 	if (tdb_chainlock(tdb, key) == -1) {
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(frame);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
-	status = messaging_tdb_fetch(tdb, key, mem_ctx, &msg_array);
+	status = messaging_tdb_fetch(tdb, key, talloc_tos(), &msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -329,7 +329,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (!(rec = TALLOC_REALLOC_ARRAY(mem_ctx, msg_array->messages,
+	if (!(rec = TALLOC_REALLOC_ARRAY(talloc_tos(), msg_array->messages,
 					 struct messaging_rec,
 					 msg_array->num_messages+1))) {
 		status = NT_STATUS_NO_MEMORY;
@@ -356,12 +356,12 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		DEBUG(2, ("pid %s doesn't exist - deleting messages record\n",
 			  procid_str_static(&pid)));
-		tdb_delete(tdb, message_key_pid(pid));
+		tdb_delete(tdb, message_key_pid(talloc_tos(), pid));
 	}
 
  done:
 	tdb_chainunlock(tdb, key);
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -374,10 +374,11 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
 				      struct messaging_array **presult)
 {
 	struct messaging_array *result;
-	TDB_DATA key = message_key_pid(procid_self());
+	TDB_DATA key = message_key_pid(mem_ctx, procid_self());
 	NTSTATUS status;
 
 	if (tdb_chainlock(msg_tdb, key) == -1) {
+		TALLOC_FREE(key.dptr);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
@@ -392,6 +393,8 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
 	if (NT_STATUS_IS_OK(status)) {
 		*presult = result;
 	}
+
+	TALLOC_FREE(key.dptr);
 
 	return status;
 }
