@@ -23,8 +23,8 @@ sub pidl($)
 	$ret .= $tabs. $p . "\n";
 }
 
-sub indent() { $tabs.="\t"; }
-sub deindent() { $tabs = substr($tabs,0,-1); }
+sub indent() { $tabs.="  "; }
+sub deindent() { $tabs = substr($tabs,0,-2); }
 
 sub IgnoreInterface($$)
 {
@@ -41,29 +41,22 @@ sub ParseInterface($$)
 	my ($basename,$if) = @_;
 
 	pidl "\%inline {";
-	pidl "struct $if->{NAME} { struct dcerpc_pipe *pipe; };";
+	pidl "typedef struct $if->{NAME} { struct dcerpc_pipe *pipe; } $if->{NAME};";
 	pidl "}";
 	pidl "";
 	pidl "\%extend $if->{NAME} {";
 	indent();
-	pidl "$if->{NAME} (const char *binding, struct cli_credentials *cred = NULL, TALLOC_CTX *mem_ctx = NULL, struct event_context *event = NULL)";
+	pidl "NTSTATUS $if->{NAME} (const char *binding, struct cli_credentials *cred, TALLOC_CTX *mem_ctx, struct event_context *event, struct $if->{NAME} **result)";
 	pidl "{";
 	indent;
-	pidl "struct $if->{NAME} *ret = talloc(mem_ctx, struct $if->{NAME});";
-	pidl "NTSTATUS status;";
+	pidl "*result = talloc(mem_ctx, struct $if->{NAME});";
 	pidl "";
-	pidl "status = dcerpc_pipe_connect(mem_ctx, &ret->pipe, binding, &ndr_table_$if->{NAME}, cred, event);";
-	pidl "if (NT_STATUS_IS_ERR(status)) {";
-	pidl "\tntstatus_exception(status);";
-	pidl "\treturn NULL;";
-	pidl "}";
-	pidl "";
-	pidl "return ret;";
+	pidl "return dcerpc_pipe_connect(mem_ctx, &(*result)->pipe, binding, &ndr_table_$if->{NAME}, cred, event);";
 	deindent;
 	pidl "}";
 	pidl "";
 	pidl "~$if->{NAME}() {";
-	pidl "\ttalloc_free(self);";
+	pidl "\ttalloc_free(\$self);";
 	pidl "}";
 	pidl "";
 
@@ -76,8 +69,8 @@ sub ParseInterface($$)
 		my $name = $fn->{NAME};
 		$name =~ s/^$if->{NAME}_//g;
 		$name =~ s/^$basename\_//g;
-		$args .= "TALLOC_CTX *mem_ctx = NULL";
-		pidl mapTypeName($fn->{RETURN_TYPE}) . " $name($args)";
+		$args .= "TALLOC_CTX *mem_ctx, " . mapTypeName($fn->{RETURN_TYPE}) . " *result";
+		pidl "NTSTATUS $name($args)";
 		pidl "{";
 		indent;
 		pidl "struct $fn->{NAME} r;";
@@ -94,12 +87,7 @@ sub ParseInterface($$)
 		pidl "";
 		pidl "status = dcerpc_$fn->{NAME}(self->pipe, mem_ctx, &r);";
 		pidl "if (NT_STATUS_IS_ERR(status)) {";
-		pidl "\tntstatus_exception(status);";
-		if (defined($fn->{RETURN_TYPE})) {
-			pidl "\treturn r.out.result;";
-		} else {
-			pidl "\treturn;";
-		}
+		pidl "\treturn status;";
 		pidl "}";
 		pidl "";
 		pidl "/* Set out arguments */";
@@ -112,8 +100,9 @@ sub ParseInterface($$)
 		}
 
 		if (defined($fn->{RETURN_TYPE})) {
-			pidl "return r.out.result;";
+			pidl "*result = r.out.result;";
 		}
+		pidl "return NT_STATUS_OK;";
 		deindent;
 		pidl "}";
 		pidl "";
@@ -144,18 +133,11 @@ sub Parse($$$$)
 
 	pidl "\%{";
 	pidl "#include \"includes.h\"";
-	pidl "#include \"auth/credentials/credentials.h\"";
 	pidl "#include \"$header\"";
 	pidl "#include \"$gen_header\"";
 	pidl "%}";
-	pidl "\%import \"samba.i\"";
-	pidl "";
-	pidl "\%inline {";
-	pidl "void ntstatus_exception(NTSTATUS status)"; 
-	pidl "{";
-	pidl "\t/* FIXME */";
-	pidl "}";
-	pidl "}";
+	pidl "\%import \"../rpc/dcerpc.i\"";
+	pidl "\%import \"../../libcli/util/errors.i\"";
 	pidl "";
 	foreach (@$ndr) {
 		IgnoreInterface($basename, $_) if ($_->{TYPE} eq "INTERFACE");
