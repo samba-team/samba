@@ -95,3 +95,25 @@ class SimpleTdbTests(TestCase):
         self.tdb["bla"] = "hoi"
         i = iter(self.tdb)
         self.assertEquals(set(["bloe", "bla"]), set([i.next(), i.next()]))
+
+    def test_keys(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        self.assertEquals(["bla", "bloe"], self.tdb.keys())
+
+    def test_values(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        self.assertEquals(["25", "2"], self.tdb.values())
+
+    def test_clear(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        self.assertEquals(2, len(self.tdb))
+        self.tdb.clear()
+        self.assertEquals(0, len(self.tdb))
+
+    def test_len(self):
+        self.assertEquals(0, len(self.tdb))
+        self.tdb["entry"] = "value"
+        self.assertEquals(1, len(self.tdb))
