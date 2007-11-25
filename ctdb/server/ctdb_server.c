@@ -35,6 +35,23 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 }
 
 /*
+  Check whether an ip is a valid node ip
+  Returns the node id for this ip address or -1
+*/
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
+{
+	int nodeid;
+
+	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
+		if (!strcmp(ctdb->nodes[nodeid]->address.address, nodeip)) {
+			return nodeid;
+		}
+	}
+
+	return -1;
+}
+
+/*
   choose the recovery lock file
 */
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)

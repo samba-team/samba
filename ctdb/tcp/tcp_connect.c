@@ -214,13 +214,9 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	if (fd == -1) return;
 
 	incoming_node = inet_ntoa(addr.sin_addr);
-	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
-		if (!strcmp(incoming_node, ctdb->nodes[nodeid]->address.address)) {
-			DEBUG(0, ("Incoming connection from node:%d %s\n",nodeid,incoming_node));
-			break;
-		}
-	}
-	if (nodeid>=ctdb->num_nodes) {
+	nodeid = ctdb_ip_to_nodeid(ctdb, incoming_node);
+
+	if (nodeid == -1) {
 		DEBUG(0, ("Refused connection from unknown node %s\n", incoming_node));
 		close(fd);
 		return;
@@ -275,17 +271,27 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 
 	for (i=0;i<ctdb->num_nodes;i++) {
+		/* if node_ip is specified we will only try to bind to that
+		   ip.
+		*/
+		if (ctdb->node_ip != NULL) {
+			if (strcmp(ctdb->node_ip, ctdb->nodes[i]->address.address)) {
+				continue;
+			}
+		}
+
 		ZERO_STRUCT(sock);
 #ifdef HAVE_SOCK_SIN_LEN
 		sock.sin_len = sizeof(sock);
 #endif
 		sock.sin_port = htons(ctdb->nodes[i]->address.port);
 		sock.sin_family = PF_INET;
-		if (ctdb_tcp_get_address(ctdb, ctdb->nodes[i]->address.address, 
-					 &sock.sin_addr) != 0) {
+		if (ctdb_tcp_get_address(ctdb,
+				ctdb->nodes[i]->address.address, 
+				&sock.sin_addr) != 0) {
 			continue;
 		}
-		
+	
 		if (bind(ctcp->listen_fd, (struct sockaddr * )&sock, 
 			 sizeof(sock)) == 0) {
 			break;

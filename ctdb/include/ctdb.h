@@ -160,6 +160,12 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
 int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
 
 /*
+  Check that a specific ip address exists in the node list and returns
+  the id for the node or -1
+*/
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip);
+
+/*
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);

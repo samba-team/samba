@@ -367,6 +367,7 @@ struct ctdb_context {
 	const char *default_public_interface;
 	pid_t recoverd_pid;
 	bool done_startup;
+	const char *node_ip;
 };
 
 struct ctdb_db_context {
