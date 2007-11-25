@@ -317,18 +317,17 @@ sub SharedModule($$)
 	} else {
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
-	}
-
-	$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-	$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/\n";
-	$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-	$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-	$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-			$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-			$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/\n";
+		$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		if (defined($ctx->{ALIASES})) {
+			foreach (@{$ctx->{ALIASES}}) {
+				$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+			}
 		}
 	}
 
