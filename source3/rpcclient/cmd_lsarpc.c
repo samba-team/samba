@@ -126,7 +126,8 @@ static void display_query_info_12(DOM_QUERY_12 d)
 	d_printf("Domain DNS Name: %s\n", dns_dom_name);
 	d_printf("Domain Forest Name: %s\n", forest_name);
 	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
-	d_printf("Domain GUID: %s\n", smb_uuid_string_static(d.dom_guid));
+	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
+						      d.dom_guid));
 
 }
 

@@ -1828,11 +1828,14 @@ static void dump_binary(ADS_STRUCT *ads, const char *field, struct berval **valu
 static void dump_guid(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i;
-	UUID_FLAT guid;
 	for (i=0; values[i]; i++) {
+
+		UUID_FLAT guid;
+		struct GUID tmp;
+
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		printf("%s: %s\n", field, 
-		       smb_uuid_string_static(smb_uuid_unpack_static(guid)));
+		smb_uuid_unpack(guid, &tmp);
+		printf("%s: %s\n", field, smb_uuid_string(talloc_tos(), tmp));
 	}
 }
 
@@ -3429,7 +3432,7 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 	}
 
 	expr = talloc_asprintf(mem_ctx, "(rightsGuid=%s)", 
-			       smb_uuid_string_static(*rights_guid));
+			       smb_uuid_string(mem_ctx, *rights_guid));
 	if (!expr) {
 		goto done;
 	}
