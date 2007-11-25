@@ -118,7 +118,7 @@ typedef int ldb_error;
         if ($1->dn == NULL)
             SWIG_exception(SWIG_TypeError, "no dn set");
     } else {
-        if (SWIG_ConvertPtr($input, &$1, SWIGTYPE_p_ldb_message, 0) != 0)
+        if (SWIG_ConvertPtr($input, (void **)&$1, SWIGTYPE_p_ldb_message, 0) != 0)
             return NULL;
     }
 }
@@ -225,7 +225,7 @@ fail:
 %inline {
 int ldb_dn_from_pyobject(PyObject *object, ldb_dn **dn)
 {
-    return SWIG_ConvertPtr(object, dn, SWIGTYPE_p_ldb_dn, 0);
+    return SWIG_ConvertPtr(object, (void **)dn, SWIGTYPE_p_ldb_dn, 0);
 }
 
 ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
