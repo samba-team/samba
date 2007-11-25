@@ -314,10 +314,10 @@ sub SharedModule($$)
 	if ($ctx->{TYPE} eq "PYTHON") {
 		push (@{$self->{python_dsos}}, 
 			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+	} else {
+		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
+		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 	}
-
-	push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
-	push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 
 	$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
 	$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$sane_subsystem/\n";
