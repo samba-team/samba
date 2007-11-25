@@ -68,10 +68,10 @@ libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
 
 libtdb.$(SHLIBEXT): $(SOLIB)
-	ln -s $< $@
+	ln -fs $< $@
 
 $(SONAME): $(SOLIB)
-	ln -s $< $@
+	ln -fs $< $@
 
 $(SOLIB): $(TDB_OBJ)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(SONAME)
@@ -110,3 +110,16 @@ distclean: clean
 
 realdistclean: distclean
 	rm -f configure include/config.h.in
+
+build-python: libtdb.$(SHLIBEXT)
+	./setup.py build
+
+install-python:
+	./setup.py install --prefix=$(prefix)
+
+check-python: build-python
+	# FIXME: Should be more portable:
+	LD_LIBRARY_PATH=. PYTHONPATH=.:build/lib.linux-i686-2.4 trial python/tests/simple.py
+
+clean-python:
+	./setup.py clean
