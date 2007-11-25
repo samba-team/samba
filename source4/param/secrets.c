@@ -66,7 +66,8 @@ bool secrets_init(void)
 	if (tdb)
 		return true;
 
-	asprintf(&fname, "%s/secrets.tdb", lp_private_dir(global_loadparm));
+	fname = private_path(talloc_autofree_context(), global_loadparm,
+						 "secrets.tdb");
 
 	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
