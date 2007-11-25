@@ -83,6 +83,11 @@ sub check_module($$$)
 		return;
 	}
 
+	if ($INPUT->{$mod->{SUBSYSTEM}} eq "NO") {
+		$mod->{ENABLE} = "NO";
+		return;
+	}
+
 	return if ($mod->{ENABLE} ne "YES");
 
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
