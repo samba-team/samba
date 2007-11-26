@@ -530,10 +530,12 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 			ldb_asprintf_errstring(module->ldb, 
 					       "NULL Base DN invalid for a base search");
 			ret = LDB_ERR_INVALID_DN_SYNTAX;
+			break;
 		case LDB_SCOPE_ONELEVEL:
 			ldb_asprintf_errstring(module->ldb, 
 					       "NULL Base DN invalid for a one-level search");
 			ret = LDB_ERR_INVALID_DN_SYNTAX;	
+			break;
 		case LDB_SCOPE_SUBTREE:
 		default:
 			/* We accept subtree searches from a NULL base DN, ie over the whole DB */
