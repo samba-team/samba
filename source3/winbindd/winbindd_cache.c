@@ -2261,7 +2261,7 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 	netsamlogon_clear_cached_user(cache->tdb, info3);
 }
 
-void wcache_invalidate_cache(void)
+int wcache_invalidate_cache(void)
 {
 	struct winbindd_domain *domain;
 
@@ -2270,9 +2270,15 @@ void wcache_invalidate_cache(void)
 
 		DEBUG(10, ("wcache_invalidate_cache: invalidating cache "
 			   "entries for %s\n", domain->name));
-		if (cache)
-			tdb_traverse(cache->tdb, traverse_fn, NULL);
+		if (cache) {
+			if (cache->tdb) {
+				tdb_traverse(cache->tdb, traverse_fn, NULL);
+			} else {
+				return -1;
+			}
+		}
 	}
+	return 0;
 }
 
 bool init_wcache(void)
@@ -2352,6 +2358,16 @@ bool initialize_winbindd_cache(void)
 	tdb_close(wcache->tdb);
 	wcache->tdb = NULL;
 	return True;
+}
+
+void close_winbindd_cache()
+{
+	if (!wcache)
+		return;
+	if (wcache->tdb) {
+		tdb_close(wcache->tdb);
+		wcache->tdb = NULL;
+	}
 }
 
 void cache_store_response(pid_t pid, struct winbindd_response *response)

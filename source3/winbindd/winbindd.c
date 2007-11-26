@@ -121,7 +121,23 @@ static void flush_caches(void)
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
 
-	wcache_invalidate_cache();
+	if (wcache_invalidate_cache() < 0) {
+		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
+		/* Close the cache to be able to valdite the cache */
+		close_winbindd_cache();
+		/*
+		 * Ensure all cache and idmap caches are consistent
+		 * before we initialize the cache again.
+		 */
+		if (winbindd_validate_cache() < 0) {
+			DEBUG(0, ("corrupted tdb found, trying to restore backup\n"));
+		}
+
+		/* Initialize cache again. */
+		if (!initialize_winbindd_cache()) {
+			exit(1);
+		}
+	}
 }
 
 /* Handle the signal by unlinking socket and exiting */
