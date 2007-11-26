@@ -3279,7 +3279,7 @@ static char *store_file_unix_basic(connection_struct *conn,
  *
  * XXX: this really should be behind the VFS interface. To do this, we would
  * need to alter SMB_STRUCT_STAT so that it included a flags and a mask field.
- * Each VFS module could then implement it's own mapping as appropriate for the
+ * Each VFS module could then implement its own mapping as appropriate for the
  * platform. We would then pass the SMB flags into SMB_VFS_CHFLAGS.
  */
 static const struct {unsigned stat_fflag; unsigned smb_fflag;}

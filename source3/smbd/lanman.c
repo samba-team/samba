@@ -1380,7 +1380,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	/* If someone sets SV_TYPE_LOCAL_LIST_ONLY but hasn't set
-	   any other bit (they may just set this bit on it's own) they 
+	   any other bit (they may just set this bit on its own) they 
 	   want all the locally seen servers. However this bit can be 
 	   set on its own so set the requested servers to be 
 	   ALL - DOMAIN_ENUM. */

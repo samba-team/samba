@@ -26,7 +26,7 @@
  *
  *  Component: ldb dn explode and utility functions
  *
- *  Description: - explode a dn into it's own basic elements
+ *  Description: - explode a dn into its own basic elements
  *                 and put them in a structure
  *               - manipulate ldb_dn structures
  *
