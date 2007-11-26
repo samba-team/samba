@@ -82,6 +82,8 @@ NSS_LIB = lib/libnss_ldb.$(SHLIBEXT).2
 
 OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
+headers = $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(srcdir)/include/ldb_handlers.h
+
 BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
 
 EXAMPLES = examples/ldbreader examples/ldifreader
@@ -210,7 +212,7 @@ installcheck: install test
 
 install:: all
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/pkgconfig 
-	cp $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(DESTDIR)$(includedir)
+	cp $(headers) $(DESTDIR)$(includedir)
 	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
 	cp $(BINS) $(DESTDIR)$(bindir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
