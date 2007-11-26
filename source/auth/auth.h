@@ -116,13 +116,6 @@ struct auth_serversupplied_info
 	bool authenticated;
 };
 
-struct auth_session_info {
-	struct security_token *security_token;
-	struct auth_serversupplied_info *server_info;
-	DATA_BLOB session_key;
-	struct cli_credentials *credentials;
-};
-
 struct auth_method_context;
 struct auth_check_password_request;
 
@@ -191,6 +184,8 @@ struct auth_critical_sizes {
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted);
 
+#include "auth/session.h"
+#include "auth/system_session_proto.h"
 #include "auth/auth_proto.h"
 
 #endif /* _SMBAUTH_H_ */

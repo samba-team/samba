@@ -4,6 +4,14 @@ include kerberos/config.mk
 include ntlmssp/config.mk
 include credentials/config.mk
 
+[SUBSYSTEM::auth_session]
+OBJ_FILES = session.o
+PUBLIC_PROTO_HEADER = session_proto.h
+
+[SUBSYSTEM::auth_system_session]
+OBJ_FILES = system_session.o
+PUBLIC_PROTO_HEADER = system_session_proto.h
+
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
 OBJ_FILES = sam.o auth_sam_reply.o ntlm_check.o 
@@ -71,6 +79,7 @@ OBJ_FILES = \
 		auth_util.o \
 		auth_simple.o
 PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
+PRIVATE_DEPENDENCIES = auth_session auth_system_session
 # End SUBSYSTEM auth
 #######################
 
