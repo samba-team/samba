@@ -72,6 +72,9 @@ rpc_server/common/proto.h: dcerpc_server/common_proto.h
 rpc_server/dcerpc_server_proto.h: dcerpc_server/proto.h
 auth/auth.h: auth.h
 auth/auth_proto.h: auth/proto.h
+auth/system_session_proto.h: auth/system_session.h
+auth/session_proto.h: auth/session_proto.h
+auth/session.h: auth/session.h
 auth/gensec/spnego.h: gensec/spnego.h
 auth/gensec/gensec_proto.h: gensec/proto.h
 libcli/auth/credentials.h: domain_credentials.h
