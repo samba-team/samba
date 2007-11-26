@@ -5623,7 +5623,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		}
 
 		if (user_gid == group_gid) {
-			DEBUG (3, ("ldapsam_change_groupmem: can't remove user from it's own primary group!\n"));
+			DEBUG (3, ("ldapsam_change_groupmem: can't remove user from its own primary group!\n"));
 			return NT_STATUS_MEMBERS_PRIMARY_GROUP;
 		}
 	}
