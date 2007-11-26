@@ -2536,7 +2536,8 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
 	count = ldap_count_entries(priv2ld(ldap_state), result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_getgroup: Did not find group\n"));
+		DEBUG(4, ("ldapsam_getgroup: Did not find group, filter was "
+			  "%s\n", filter));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
