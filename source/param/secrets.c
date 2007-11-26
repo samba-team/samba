@@ -46,37 +46,42 @@ static struct tdb_wrap *tdb;
 static void get_rand_seed(int *new_seed) 
 {
 	*new_seed = getpid();
-	if (tdb) {
+	if (tdb != NULL) {
 		tdb_change_int32_atomic(tdb->tdb, "INFO/random_seed", new_seed, 1);
 	}
 }
 
-/* close the secrets database */
+/**
+ * close the secrets database
+ */
 void secrets_shutdown(void)
 {
        talloc_free(tdb);
 }
 
-/* open up the secrets database */
+/**
+ * open up the secrets database
+ */
 bool secrets_init(void)
 {
 	char *fname;
 	uint8_t dummy;
 
-	if (tdb)
+	if (tdb != NULL)
 		return true;
 
-	fname = private_path(talloc_autofree_context(), global_loadparm,
+	fname = private_path(NULL, global_loadparm,
 						 "secrets.tdb");
 
-	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, 
+						O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
-		SAFE_FREE(fname);
+		talloc_free(fname);
 		return false;
 	}
-	SAFE_FREE(fname);
+	talloc_free(fname);
 
 	/**
 	 * Set a reseed function for the crypto random generator 
@@ -92,8 +97,8 @@ bool secrets_init(void)
 	return true;
 }
 
-/*
-  connect to the schannel ldb
+/**
+  connect to the secrets ldb
 */
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 {
@@ -133,6 +138,10 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 	return ldb;
 }
 
+/**
+ * Retrieve the domain SID from the secrets database.
+ * @return pointer to a SID object if the SID could be obtained, NULL otherwise
+ */
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 				       const char *domain)
 {
