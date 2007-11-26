@@ -537,7 +537,7 @@ void debug_init(void)
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
 	}
-	format_bufr = SMB_MALLOC(FORMAT_BUFR_SIZE);
+	format_bufr = (char *)SMB_MALLOC(FORMAT_BUFR_SIZE);
 	if (!format_bufr) {
 		smb_panic("debug_init: unable to create buffer");
 	}
