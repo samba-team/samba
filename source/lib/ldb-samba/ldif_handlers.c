@@ -22,8 +22,7 @@
 */
 
 #include "includes.h"
-#include "ldb_includes.h"
-#include "ldb_handlers.h"
+#include "lib/ldb/include/ldb_includes.h"
 
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
