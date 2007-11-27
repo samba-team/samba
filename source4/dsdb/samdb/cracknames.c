@@ -110,7 +110,10 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(1, ("ldb_search: dn: %s not found: %s", service_dn_str, ldb_errstring(ldb_ctx)));
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
-	} else if (ret == LDB_ERR_NO_SUCH_OBJECT || res->count != 1) {
+	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(1, ("ldb_search: dn: %s not found", service_dn_str));
+		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+	} else if (res->count != 1) {
 		talloc_free(res);
 		DEBUG(1, ("ldb_search: dn: %s not found", service_dn_str));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
