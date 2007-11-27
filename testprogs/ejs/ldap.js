@@ -230,6 +230,28 @@ member: cn=ldaptestuser3,cn=users," + base_dn + "
 	assert(res.msgs[0].cn == "ldaptestUSER3");
 	assert(res.msgs[0].name == "ldaptestUSER3");
 
+	println("Testing ldb.search for (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+	var res = ldb.search("(dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestUSER3");
+	assert(res.msgs[0].name == "ldaptestUSER3");
+
+	println("Testing ldb.search for (distinguishedName=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+	var res = ldb.search("(distinguishedName=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestUSER3");
+	assert(res.msgs[0].name == "ldaptestUSER3");
+
 	// ensure we cannot add it again
 	ok = ldb.add("
 dn: cn=ldaptestuser3,cn=userS," + base_dn + "
