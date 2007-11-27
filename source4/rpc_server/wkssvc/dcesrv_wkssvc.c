@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    endpoint server for the wkssvc pipe
 
    Copyright (C) Stefan (metze) Metzmacher 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,8 +24,8 @@
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "rpc_server/common/common.h"
 
-/* 
-  wkssvc_NetWkstaGetInfo 
+/*
+  wkssvc_NetWkstaGetInfo
 */
 static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaGetInfo *r)
@@ -42,7 +42,7 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 	case 100:
 	{
 		struct wkssvc_NetWkstaInfo100 *info100;
-		
+
 		info100 = talloc(mem_ctx, struct wkssvc_NetWkstaInfo100);
 		W_ERROR_HAVE_NO_MEMORY(info100);
 
@@ -92,8 +92,8 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 }
 
 
-/* 
-  wkssvc_NetWkstaSetInfo 
+/*
+  wkssvc_NetWkstaSetInfo
 */
 static WERROR dcesrv_wkssvc_NetWkstaSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaSetInfo *r)
@@ -102,7 +102,7 @@ static WERROR dcesrv_wkssvc_NetWkstaSetInfo(struct dcesrv_call_state *dce_call, 
 }
 
 
-/* 
+/*
   wkssvc_NetWkstaEnumUsers
 */
 static WERROR dcesrv_wkssvc_NetWkstaEnumUsers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -132,8 +132,8 @@ static WERROR dcesrv_wkssvc_NetrWkstaUserSetInfo(struct dcesrv_call_state *dce_c
 }
 
 
-/* 
-  wkssvc_NetWkstaTransportEnum 
+/*
+  wkssvc_NetWkstaTransportEnum
 */
 static WERROR dcesrv_wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaTransportEnum *r)
@@ -262,8 +262,8 @@ static WERROR dcesrv_wkssvc_NetrLogonDomainNameDel(struct dcesrv_call_state *dce
 }
 
 
-/* 
-  WKSSVC_NETRJOINDOMAIN 
+/*
+  WKSSVC_NETRJOINDOMAIN
 */
 static WERROR dcesrv_WKSSVC_NETRJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRJOINDOMAIN *r)
@@ -272,8 +272,8 @@ static WERROR dcesrv_WKSSVC_NETRJOINDOMAIN(struct dcesrv_call_state *dce_call, T
 }
 
 
-/* 
-  WKSSVC_NETRUNJOINDOMAIN 
+/*
+  WKSSVC_NETRUNJOINDOMAIN
 */
 static WERROR dcesrv_WKSSVC_NETRUNJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRUNJOINDOMAIN *r)
@@ -302,8 +302,8 @@ static WERROR dcesrv_wkssvc_NetrValidateName(struct dcesrv_call_state *dce_call,
 }
 
 
-/* 
-  WKSSVC_NETRGETJOININFORMATION 
+/*
+  WKSSVC_NETRGETJOININFORMATION
 */
 static WERROR dcesrv_WKSSVC_NETRGETJOININFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOININFORMATION *r)
@@ -312,8 +312,8 @@ static WERROR dcesrv_WKSSVC_NETRGETJOININFORMATION(struct dcesrv_call_state *dce
 }
 
 
-/* 
-  WKSSVC_NETRGETJOINABLEOUS 
+/*
+  WKSSVC_NETRGETJOINABLEOUS
 */
 static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOINABLEOUS *r)
@@ -322,8 +322,8 @@ static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS(struct dcesrv_call_state *dce_cal
 }
 
 
-/* 
-  WKSSVC_NETRJOINDOMAIN2 
+/*
+  WKSSVC_NETRJOINDOMAIN2
 */
 static WERROR dcesrv_wkssvc_NetrJoinDomain2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetrJoinDomain2 *r)
@@ -332,8 +332,8 @@ static WERROR dcesrv_wkssvc_NetrJoinDomain2(struct dcesrv_call_state *dce_call, 
 }
 
 
-/* 
-  WKSSVC_NETRUNJOINDOMAIN2 
+/*
+  WKSSVC_NETRUNJOINDOMAIN2
 */
 static WERROR dcesrv_wkssvc_NetrUnjoinDomain2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetrUnjoinDomain2 *r)
@@ -362,8 +362,8 @@ static WERROR dcesrv_wkssvc_NetrValidateName2(struct dcesrv_call_state *dce_call
 }
 
 
-/* 
-  WKSSVC_NETRGETJOINABLEOUS2 
+/*
+  WKSSVC_NETRGETJOINABLEOUS2
 */
 static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct WKSSVC_NETRGETJOINABLEOUS2 *r)
