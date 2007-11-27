@@ -504,6 +504,59 @@ static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrEnumerateComputerNames_level(struct torture_context *tctx,
+						  struct dcerpc_pipe *p,
+						  uint16_t level)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrEnumerateComputerNames r;
+	struct wkssvc_ComputerNamesCtr *ctr;
+
+	ctr = talloc_zero(tctx, struct wkssvc_ComputerNamesCtr);
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.name_type = level;
+	r.in.Reserved = 0;
+	r.out.ctr = &ctr;
+
+	torture_comment(tctx, "testing NetrEnumerateComputerNames level %u\n",
+			r.in.name_type);
+
+	status = dcerpc_wkssvc_NetrEnumerateComputerNames(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrEnumerateComputerNames failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrEnumerateComputerNames failed");
+
+	if ((level == NetPrimaryComputerName) && ctr->count != 1) {
+		torture_comment(tctx,
+				"NetrEnumerateComputerNames did not return one "
+				"name but %u\n", ctr->count);
+		return false;
+	}
+
+	return true;
+}
+
+static bool test_NetrEnumerateComputerNames(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	uint16_t levels[] = {0,1,2};
+	int i;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		if (!test_NetrEnumerateComputerNames_level(tctx,
+							   p,
+							   levels[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool test_NetrValidateName(struct torture_context *tctx,
 				  struct dcerpc_pipe *p)
 {
@@ -605,6 +658,8 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrLogonDomainNameDel);
 	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameAdd",
 				   test_NetrLogonDomainNameAdd);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
+				   test_NetrEnumerateComputerNames);
 
 	return suite;
 }

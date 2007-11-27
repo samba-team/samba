@@ -402,11 +402,11 @@ static WERROR dcesrv_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct dcesrv_call_state 
 }
 
 
-/* 
-  WKSSVC_NETRENUMERATECOMPUTERNAMES 
+/*
+  wkssvc_NetrEnumerateComputerNames
 */
-static WERROR dcesrv_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
+static WERROR dcesrv_wkssvc_NetrEnumerateComputerNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrEnumerateComputerNames *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

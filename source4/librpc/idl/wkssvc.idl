@@ -2,7 +2,7 @@
   wkssvc interface definitions
 */
 
-import "srvsvc.idl";
+import "srvsvc.idl", "lsa.idl";
 
 [ uuid("6bffd098-a112-3610-9833-46c3f87e345a"),
   version(1.0),
@@ -535,5 +535,22 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x1e      */
-	WERROR WKSSVC_NETRENUMERATECOMPUTERNAMES ();
+	typedef enum {
+		NetPrimaryComputerName = 0,
+		NetAlternateComputerNames = 1,
+		NetAllComputerNames = 2,
+		NetComputerNameTypeMax = 3
+	} wkssvc_ComputerNameType;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_String *computer_name;
+        } wkssvc_ComputerNamesCtr;
+
+	WERROR wkssvc_NetrEnumerateComputerNames(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] wkssvc_ComputerNameType name_type,
+		[in] uint32 Reserved,
+		[out] [ref] wkssvc_ComputerNamesCtr **ctr
+		);
 }
