@@ -152,39 +152,42 @@ import "srvsvc.idl";
 	/*****************************/
 	/* Function        0x02      */
 	typedef struct {
-		[string,charset(UTF16)] uint16 *user;
-	} USER_INFO_0;
+		[string,charset(UTF16)] uint16 *user_name;
+	} wkssvc_NetrWkstaUserInfo0;
 
 	typedef struct {
 		uint32 entries_read;
-		[size_is(entries_read)] USER_INFO_0 *user0;
-	} USER_INFO_0_CONTAINER;
+		[size_is(entries_read)] wkssvc_NetrWkstaUserInfo0 *user0;
+	} wkssvc_NetWkstaEnumUsersCtr0;
 
 	typedef struct {
 		[string,charset(UTF16)] uint16 *user_name;
 		[string,charset(UTF16)] uint16 *logon_domain;
 		[string,charset(UTF16)] uint16 *other_domains;
 		[string,charset(UTF16)] uint16 *logon_server;
-	} USER_INFO_1;
+	} wkssvc_NetrWkstaUserInfo1;
 
 	typedef struct {
 		uint32 entries_read;
-		[size_is(entries_read)] USER_INFO_1 *user1;
-	} USER_INFO_1_CONTAINER;
+		[size_is(entries_read)] wkssvc_NetrWkstaUserInfo1 *user1;
+	} wkssvc_NetWkstaEnumUsersCtr1;
 
 	typedef [switch_type(uint32)] union {
-		[case(0)] USER_INFO_0_CONTAINER *user0;
-		[case(1)] USER_INFO_1_CONTAINER *user1;
-	} WKS_USER_ENUM_UNION;
+		[case(0)] wkssvc_NetWkstaEnumUsersCtr0 *user0;
+		[case(1)] wkssvc_NetWkstaEnumUsersCtr1 *user1;
+	} wkssvc_NetWkstaEnumUsersCtr;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] wkssvc_NetWkstaEnumUsersCtr ctr;
+	} wkssvc_NetWkstaEnumUsersInfo;
 
 	WERROR wkssvc_NetWkstaEnumUsers(
 		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] uint32 level,
-		[in] [out] [ref] WKS_USER_ENUM_UNION *users,
+		[in,out,ref] wkssvc_NetWkstaEnumUsersInfo *info,
 		[in] uint32 prefmaxlen,
-		[out] uint32 *entriesread,
-		[out] uint32 *totalentries,
-		[in] [out] [ref] uint32 *resumehandle
+		[out,ref] uint32 *entries_read,
+		[in,out] uint32 *resume_handle
 		);
 
 	/*****************************/
