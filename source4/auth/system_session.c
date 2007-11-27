@@ -24,12 +24,128 @@
 #include "includes.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
-#include "dsdb/samdb/samdb.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "auth/auth.h" /* for auth_serversupplied_info */
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
+
+/**
+ * Create the SID list for this user. 
+ *
+ * @note Specialised version for system sessions that doesn't use the SAM.
+ */
+static NTSTATUS create_token(TALLOC_CTX *mem_ctx, 
+			       struct dom_sid *user_sid,
+			       struct dom_sid *group_sid, 
+			       int n_groupSIDs,
+			       struct dom_sid **groupSIDs, 
+			       bool is_authenticated,
+			       struct security_token **token)
+{
+	struct security_token *ptoken;
+	int i;
+
+	ptoken = security_token_initialise(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(ptoken);
+
+	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 5);
+	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
+
+	ptoken->user_sid = talloc_reference(ptoken, user_sid);
+	ptoken->group_sid = talloc_reference(ptoken, group_sid);
+	ptoken->privilege_mask = 0;
+
+	ptoken->sids[0] = ptoken->user_sid;
+	ptoken->sids[1] = ptoken->group_sid;
+
+	/*
+	 * Finally add the "standard" SIDs.
+	 * The only difference between guest and "anonymous"
+	 * is the addition of Authenticated_Users.
+	 */
+	ptoken->sids[2] = dom_sid_parse_talloc(ptoken->sids, SID_WORLD);
+	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[2]);
+	ptoken->sids[3] = dom_sid_parse_talloc(ptoken->sids, SID_NT_NETWORK);
+	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[3]);
+	ptoken->num_sids = 4;
+
+	if (is_authenticated) {
+		ptoken->sids[4] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
+		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[4]);
+		ptoken->num_sids++;
+	}
+
+	for (i = 0; i < n_groupSIDs; i++) {
+		size_t check_sid_idx;
+		for (check_sid_idx = 1; 
+		     check_sid_idx < ptoken->num_sids; 
+		     check_sid_idx++) {
+			if (dom_sid_equal(ptoken->sids[check_sid_idx], groupSIDs[i])) {
+				break;
+			}
+		}
+
+		if (check_sid_idx == ptoken->num_sids) {
+			ptoken->sids[ptoken->num_sids++] = talloc_reference(ptoken->sids, groupSIDs[i]);
+		}
+	}
+
+	*token = ptoken;
+
+	/* Shortcuts to prevent recursion and avoid lookups */
+	if (ptoken->user_sid == NULL) {
+		ptoken->privilege_mask = 0;
+		return NT_STATUS_OK;
+	} 
+	
+	if (security_token_is_system(ptoken)) {
+		ptoken->privilege_mask = ~0;
+		return NT_STATUS_OK;
+	} 
+	
+	if (security_token_is_anonymous(ptoken)) {
+		ptoken->privilege_mask = 0;
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(0, ("Created token was not system or anonymous token!"));
+	*token = NULL;
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+static NTSTATUS generate_session_info(TALLOC_CTX *mem_ctx, 
+				    struct auth_serversupplied_info *server_info, 
+				    struct auth_session_info **_session_info) 
+{
+	struct auth_session_info *session_info;
+	NTSTATUS nt_status;
+
+	session_info = talloc(mem_ctx, struct auth_session_info);
+	NT_STATUS_HAVE_NO_MEMORY(session_info);
+
+	session_info->server_info = talloc_reference(session_info, server_info);
+
+	/* unless set otherwise, the session key is the user session
+	 * key from the auth subsystem */ 
+	session_info->session_key = server_info->user_session_key;
+
+	nt_status = create_token(session_info,
+					  server_info->account_sid,
+					  server_info->primary_group_sid,
+					  server_info->n_domain_groups,
+					  server_info->domain_groups,
+					  server_info->authenticated,
+					  &session_info->security_token);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	session_info->credentials = NULL;
+
+	*_session_info = session_info;
+	return NT_STATUS_OK;
+}
+
+
 
 /**
   Create a system session, with machine account credentials
@@ -63,7 +179,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, server_info, &session_info);
+	nt_status = generate_session_info(parent_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
