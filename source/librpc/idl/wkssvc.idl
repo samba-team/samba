@@ -46,6 +46,8 @@ import "srvsvc.idl", "lsa.idl";
 		uint32 logged_on_users;
 	} wkssvc_NetWkstaInfo102;
 
+	/* FIXME: 302, 402 */
+
 	typedef struct {
 		uint32 char_wait;
 		uint32 collection_time;
@@ -112,9 +114,107 @@ import "srvsvc.idl", "lsa.idl";
 		uint32 errorlog_sz;
 	} wkssvc_NetWkstaInfo1027;
 
+	/* downlevel */
+	typedef struct {
+		uint32 print_buf_time;
+	} wkssvc_NetWkstaInfo1028;
+
+	/* downlevel */
+	typedef struct {
+		uint32 wrk_heuristics;
+	} wkssvc_NetWkstaInfo1032;
+
 	typedef struct {
 		uint32 max_threads;
 	} wkssvc_NetWkstaInfo1033;
+
+	typedef struct {
+		uint32 lock_quota;
+	} wkssvc_NetWkstaInfo1041;
+
+	typedef struct {
+		uint32 lock_increment;
+	} wkssvc_NetWkstaInfo1042;
+
+	typedef struct {
+		uint32 lock_maximum;
+	} wkssvc_NetWkstaInfo1043;
+
+	typedef struct {
+		uint32 pipe_increment;
+	} wkssvc_NetWkstaInfo1044;
+
+	typedef struct {
+		uint32 pipe_maximum;
+	} wkssvc_NetWkstaInfo1045;
+
+	typedef struct {
+		uint32 dormant_file_limit;
+	} wkssvc_NetWkstaInfo1046;
+
+	typedef struct {
+		uint32 cache_file_timeout;
+	} wkssvc_NetWkstaInfo1047;
+
+	typedef struct {
+		uint32 use_opportunistic_locking;
+	} wkssvc_NetWkstaInfo1048;
+
+	typedef struct {
+		uint32 use_unlock_behind;
+	} wkssvc_NetWkstaInfo1049;
+
+	typedef struct {
+		uint32 use_close_behind;
+	} wkssvc_NetWkstaInfo1050;
+
+	typedef struct {
+		uint32 buf_named_pipes;
+	} wkssvc_NetWkstaInfo1051;
+
+	typedef struct {
+		uint32 use_lock_read_unlock;
+	} wkssvc_NetWkstaInfo1052;
+
+	typedef struct {
+		uint32 utilize_nt_caching;
+	} wkssvc_NetWkstaInfo1053;
+
+	typedef struct {
+		uint32 use_raw_read;
+	} wkssvc_NetWkstaInfo1054;
+
+	typedef struct {
+		uint32 use_raw_write;
+	} wkssvc_NetWkstaInfo1055;
+
+	typedef struct {
+		uint32 use_write_raw_data;
+	} wkssvc_NetWkstaInfo1056;
+
+	typedef struct {
+		uint32 use_encryption;
+	} wkssvc_NetWkstaInfo1057;
+
+	typedef struct {
+		uint32 buf_files_deny_write;
+	} wkssvc_NetWkstaInfo1058;
+
+	typedef struct {
+		uint32 buf_read_only_files;
+	} wkssvc_NetWkstaInfo1059;
+
+	typedef struct {
+		uint32 force_core_create_mode;
+	} wkssvc_NetWkstaInfo1060;
+
+	typedef struct {
+		uint32 use_512_byte_max_transfer;
+	} wkssvc_NetWkstaInfo1061;
+
+	typedef struct {
+		uint32 read_ahead_throughput;
+	} wkssvc_NetWkstaInfo1062;
 
 	typedef union {
 		[case(100)] wkssvc_NetWkstaInfo100 *info100;
@@ -128,7 +228,31 @@ import "srvsvc.idl", "lsa.idl";
 		[case(1018)] wkssvc_NetWkstaInfo1018 *info1018;
 		[case(1023)] wkssvc_NetWkstaInfo1023 *info1023;
 		[case(1027)] wkssvc_NetWkstaInfo1027 *info1027;
+		[case(1028)] wkssvc_NetWkstaInfo1028 *info1028;
+		[case(1032)] wkssvc_NetWkstaInfo1032 *info1032;
 		[case(1033)] wkssvc_NetWkstaInfo1033 *info1033;
+		[case(1041)] wkssvc_NetWkstaInfo1041 *info1041;
+		[case(1042)] wkssvc_NetWkstaInfo1042 *info1042;
+		[case(1043)] wkssvc_NetWkstaInfo1043 *info1043;
+		[case(1044)] wkssvc_NetWkstaInfo1044 *info1044;
+		[case(1045)] wkssvc_NetWkstaInfo1045 *info1045;
+		[case(1046)] wkssvc_NetWkstaInfo1046 *info1046;
+		[case(1047)] wkssvc_NetWkstaInfo1047 *info1047;
+		[case(1048)] wkssvc_NetWkstaInfo1048 *info1048;
+		[case(1049)] wkssvc_NetWkstaInfo1049 *info1049;
+		[case(1050)] wkssvc_NetWkstaInfo1050 *info1050;
+		[case(1051)] wkssvc_NetWkstaInfo1051 *info1051;
+		[case(1052)] wkssvc_NetWkstaInfo1052 *info1052;
+		[case(1053)] wkssvc_NetWkstaInfo1053 *info1053;
+		[case(1054)] wkssvc_NetWkstaInfo1054 *info1054;
+		[case(1055)] wkssvc_NetWkstaInfo1055 *info1055;
+		[case(1056)] wkssvc_NetWkstaInfo1056 *info1056;
+		[case(1057)] wkssvc_NetWkstaInfo1057 *info1057;
+		[case(1058)] wkssvc_NetWkstaInfo1058 *info1058;
+		[case(1059)] wkssvc_NetWkstaInfo1059 *info1059;
+		[case(1060)] wkssvc_NetWkstaInfo1060 *info1060;
+		[case(1061)] wkssvc_NetWkstaInfo1061 *info1061;
+		[case(1062)] wkssvc_NetWkstaInfo1062 *info1062;
 		[default] ;
 	} wkssvc_NetWkstaInfo;
 
