@@ -447,11 +447,23 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x10      */
-	WERROR WKSSVC_NETRJOINDOMAIN ();
+	WERROR wkssvc_NetrJoinDomain(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
+		[in] [string,charset(UTF16)] uint16 *account_ou,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in] wkssvc_joinflags join_flags
+		);
 
 	/*****************************/
 	/* Function        0x11      */
-	WERROR WKSSVC_NETRUNJOINDOMAIN ();
+	WERROR wkssvc_NetrUnjoinDomain(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] [string,charset(UTF16)] uint16 *password,
+		[in] wkssvc_joinflags unjoin_flags
+		);
 
 	/*****************************/
 	/* Function        0x12      */
