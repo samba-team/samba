@@ -22,6 +22,8 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "torture/rpc/rpc.h"
+#include "lib/cmdline/popt_common.h"
+#include "param/param.h"
 
 static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
@@ -129,6 +131,53 @@ static bool test_NetWkstaEnumUsers(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
+				      struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrWkstaUserGetInfo r;
+	union wkssvc_NetrWkstaUserInfo info;
+	const char *dom = lp_workgroup(global_loadparm);
+	struct cli_credentials *creds = cmdline_credentials;
+	const char *user = cli_credentials_get_username(creds);
+	int i;
+
+	const struct {
+		const char *unknown;
+		uint32_t level;
+		WERROR result;
+	} tests[] = {
+		{ NULL, 0, WERR_NO_SUCH_LOGON_SESSION },
+		{ NULL, 1, WERR_NO_SUCH_LOGON_SESSION },
+		{ NULL, 1101, WERR_OK },
+		{ dom, 0, WERR_INVALID_PARAM },
+		{ dom, 1, WERR_INVALID_PARAM },
+		{ dom, 1101, WERR_INVALID_PARAM },
+		{ user, 0, WERR_INVALID_PARAM },
+		{ user, 1, WERR_INVALID_PARAM },
+		{ user, 1101, WERR_INVALID_PARAM },
+	};
+
+	for (i=0; i<ARRAY_SIZE(tests); i++) {
+		r.in.unknown = tests[i].unknown;
+		r.in.level = tests[i].level;
+		r.out.info = &info;
+
+		torture_comment(tctx, "testing NetrWkstaUserGetInfo level %u\n",
+				r.in.level);
+
+		status = dcerpc_wkssvc_NetrWkstaUserGetInfo(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "NetrWkstaUserGetInfo failed");
+		torture_assert_werr_equal(tctx, r.out.result,
+					  tests[i].result,
+					  "NetrWkstaUserGetInfo failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -144,6 +193,8 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetWkstaTransportEnum);
 	torture_rpc_tcase_add_test(tcase, "NetWkstaEnumUsers",
 				   test_NetWkstaEnumUsers);
+	torture_rpc_tcase_add_test(tcase, "NetrWkstaUserGetInfo",
+				   test_NetrWkstaUserGetInfo);
 
 	return suite;
 }

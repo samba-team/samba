@@ -192,7 +192,22 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x03      */
-	WERROR WKSSVC_NETRWKSTAUSERGETINFO ();
+	typedef struct {
+		[string,charset(UTF16)] uint16 *other_domains;
+	} wkssvc_NetrWkstaUserInfo1101;
+
+	typedef [switch_type(uint32)] union {
+		[case(0)] wkssvc_NetrWkstaUserInfo0 *info0;
+		[case(1)] wkssvc_NetrWkstaUserInfo1 *info1;
+		[case(1101)] wkssvc_NetrWkstaUserInfo1101 *info1101;
+	} wkssvc_NetrWkstaUserInfo;
+
+	WERROR wkssvc_NetrWkstaUserGetInfo(
+		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in] uint32 level,
+		[out] [switch_is(level)] [ref] wkssvc_NetrWkstaUserInfo *info
+		);
+
 
 	/*****************************/
 	/* Function        0x04      */
