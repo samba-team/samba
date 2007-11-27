@@ -282,11 +282,11 @@ static WERROR dcesrv_WKSSVC_NETRUNJOINDOMAIN(struct dcesrv_call_state *dce_call,
 }
 
 
-/* 
-  WKSSVC_NETRRENAMEMACHINEINDOMAIN 
+/*
+  wkssvc_NetrRenameMachineInDomain
 */
-static WERROR dcesrv_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
+static WERROR dcesrv_wkssvc_NetrRenameMachineInDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrRenameMachineInDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -342,8 +342,8 @@ static WERROR dcesrv_wkssvc_NetrUnjoinDomain2(struct dcesrv_call_state *dce_call
 }
 
 
-/* 
-  WKSSVC_NETRRENAMEMACHINEINDOMAIN2 
+/*
+  wkssvc_NetrRenameMachineInDomain2
 */
 static WERROR dcesrv_wkssvc_NetrRenameMachineInDomain2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetrRenameMachineInDomain2 *r)

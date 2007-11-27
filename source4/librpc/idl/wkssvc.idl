@@ -455,7 +455,18 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x12      */
-	WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN ();
+	typedef [bitmap32bit] bitmap {
+		/* TRUE: create the account in the domain */
+		WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE	= 0x00000002
+	} wkssvc_renameflags;
+
+	WERROR wkssvc_NetrRenameMachineInDomain(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *NewMachineName,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] [string,charset(UTF16)] uint16 *password,
+		[in] wkssvc_renameflags RenameOptions
+		);
 
 	/*****************************/
 	/* Function        0x13      */
@@ -534,11 +545,6 @@ import "srvsvc.idl", "lsa.idl";
 		[in] wkssvc_PasswordBuffer *encrypted_password,
 		[in] wkssvc_joinflags unjoin_flags
 		);
-
-	typedef [bitmap32bit] bitmap {
-		/* TRUE: create the account in the domain */
-		WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE	= 0x00000002
-	} wkssvc_renameflags;
 
 	/*****************************/
 	/* Function        0x18      */
