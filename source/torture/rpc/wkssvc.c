@@ -378,6 +378,96 @@ static bool test_NetrUseDel(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrUseGetInfo_level(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *use_name,
+				      uint32_t level,
+				      WERROR werr)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUseGetInfo r;
+	union wkssvc_NetrUseGetInfoCtr ctr;
+
+	ZERO_STRUCT(ctr);
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.use_name = use_name;
+	r.in.level = level;
+	r.out.ctr = &ctr;
+	status = dcerpc_wkssvc_NetrUseGetInfo(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUseGetInfo failed");
+	torture_assert_werr_equal(tctx, r.out.result, werr,
+				  "NetrUseGetInfo failed");
+	return true;
+}
+
+static bool test_NetrUseGetInfo(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUseEnum r;
+	uint32_t handle = 0;
+	uint32_t entries_read = 0;
+	struct wkssvc_NetrUseEnumInfo info;
+	struct wkssvc_NetrUseEnumCtr0 *use0;
+	uint32_t levels[] = { 0, 1, 2 };
+	const char *use_name = NULL;
+	int i, k;
+
+	ZERO_STRUCT(info);
+
+	info.level = 0;
+	use0 = talloc_zero(tctx, struct wkssvc_NetrUseEnumCtr0);
+	info.ctr.ctr0 = use0;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.prefmaxlen = (uint32_t)-1;
+	r.in.info = r.out.info = &info;
+	r.in.resume_handle = r.out.resume_handle = &handle;
+	r.out.entries_read = &entries_read;
+
+	status = dcerpc_wkssvc_NetrUseEnum(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUseEnum failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrUseEnum failed");
+
+	for (k=0; k < r.out.info->ctr.ctr0->count; k++) {
+
+		use_name = r.out.info->ctr.ctr0->array[k].local;
+
+		for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+			if (!test_NetrUseGetInfo_level(tctx, p, use_name,
+						       levels[i],
+						       WERR_OK))
+			{
+				if (levels[i] != 0) {
+					return false;
+				}
+			}
+		}
+
+		use_name = r.out.info->ctr.ctr0->array[k].remote;
+
+		for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+			if (!test_NetrUseGetInfo_level(tctx, p, use_name,
+						       levels[i],
+						       WERR_NOT_CONNECTED))
+			{
+				if (levels[i] != 0) {
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -394,6 +484,8 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetWkstaTransportEnum);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportDel",
 				   test_NetrWkstaTransportDel);
+	torture_rpc_tcase_add_test(tcase, "NetrUseGetInfo",
+				   test_NetrUseGetInfo);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportAdd",
 				   test_NetrWkstaTransportAdd);
 

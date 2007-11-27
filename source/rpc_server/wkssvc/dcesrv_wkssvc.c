@@ -192,11 +192,11 @@ static WERROR dcesrv_wkssvc_NetrUseAdd(struct dcesrv_call_state *dce_call, TALLO
 }
 
 
-/* 
-  WKSSVC_NETRUSEGETINFO 
+/*
+  wkssvc_NetrUseGetInfo
 */
-static WERROR dcesrv_WKSSVC_NETRUSEGETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRUSEGETINFO *r)
+static WERROR dcesrv_wkssvc_NetrUseGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrUseGetInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
