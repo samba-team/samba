@@ -28,7 +28,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5 KERBEROS auth auth_sam
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_gssapi_init
 OBJ_FILES = gensec_gssapi.o 
-PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS_KRB5 KERBEROS auth
+PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS_KRB5 KERBEROS 
 # End MODULE gensec_gssapi
 ################################################
 
@@ -38,7 +38,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS_KRB5 KERBEROS auth
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_sasl_init
 OBJ_FILES = cyrus_sasl.o 
-PRIVATE_DEPENDENCIES = CREDENTIALS SASL auth
+PRIVATE_DEPENDENCIES = CREDENTIALS SASL 
 # End MODULE cyrus_sasl
 ################################################
 
@@ -61,7 +61,7 @@ PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
-PRIVATE_DEPENDENCIES = auth SCHANNELDB NDR_SCHANNEL CREDENTIALS
+PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS
 OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_schannel
 ################################################

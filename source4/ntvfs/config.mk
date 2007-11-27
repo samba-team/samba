@@ -90,7 +90,6 @@ OBJ_FILES = \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o
-PRIVATE_DEPENDENCIES = auth
 #
 # End SUBSYSTEM NTVFS
 ################################################
