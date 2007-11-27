@@ -464,9 +464,7 @@ function provision_fix_subobj(subobj, paths)
 	subobj.REALM       = strupper(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
 	subobj.DOMAIN      = strupper(subobj.DOMAIN);
-	assert(valid_netbios_name(subobj.DOMAIN));
 	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
-	assert(valid_netbios_name(subobj.NETBIOSNAME));
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
