@@ -586,7 +586,13 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x1d      */
-	WERROR WKSSVC_NETRSETPRIMARYCOMPUTERNAME ();
+	WERROR wkssvc_NetrSetPrimaryComputername(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *primary_name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] uint32 Reserved
+		);
 
 	/*****************************/
 	/* Function        0x1e      */

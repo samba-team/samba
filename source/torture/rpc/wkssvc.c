@@ -717,6 +717,102 @@ static bool test_NetrRemoveAlternateComputerName(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrSetPrimaryComputername_name(struct torture_context *tctx,
+						 struct dcerpc_pipe *p,
+						 const char *name)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrSetPrimaryComputername r;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.primary_name = name;
+	r.in.Account = NULL;
+	r.in.EncryptedPassword = NULL;
+	r.in.Reserved = 0;
+
+	status = dcerpc_wkssvc_NetrSetPrimaryComputername(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrSetPrimaryComputername failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrSetPrimaryComputername failed");
+	return true;
+}
+
+
+static bool test_NetrSetPrimaryComputername(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	/*
+	  add alternate,
+	  check if there
+	  store old primary
+	  set new primary (alternate)
+	  check if there
+	  later: check if del is possible
+	  set primary back to origin
+	  check if there
+	  del alternate
+	*/
+
+	const char **names_o = NULL, **names = NULL;
+	int num_names_o = 0, num_names = 0;
+
+	torture_comment(tctx, "testing NetrSetPrimaryComputername\n");
+
+	if (!test_NetrAddAlternateComputerName(tctx, p)) {
+		return false;
+	}
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetPrimaryComputerName,
+						   &names_o, &num_names_o))
+	{
+		return false;
+	}
+
+	if (num_names_o != 1) {
+		return false;
+	}
+
+	if (!test_NetrSetPrimaryComputername_name(tctx, p,
+						  SMBTORTURE_ALTERNATE_NAME))
+	{
+		return false;
+	}
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetPrimaryComputerName,
+						   &names, &num_names))
+	{
+		return false;
+	}
+
+	if (num_names != 1) {
+		return false;
+	}
+
+	if (!strequal(names[0], SMBTORTURE_ALTERNATE_NAME)) {
+		torture_comment(tctx,
+				"name mismatch (%s != %s) after NetrSetPrimaryComputername!\n",
+				names[0], SMBTORTURE_ALTERNATE_NAME);
+		/*return false */;
+	}
+
+	if (!test_NetrSetPrimaryComputername_name(tctx, p,
+						  names_o[0]))
+	{
+		return false;
+	}
+
+	if (!test_NetrRemoveAlternateComputerName(tctx, p)) {
+		return false;
+	}
+
+
+	return true;
+}
+
+
 static bool test_NetrWorkstationStatisticsGet(struct torture_context *tctx,
 					      struct dcerpc_pipe *p)
 {
@@ -774,6 +870,7 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
+	struct torture_test *test;
 
 	suite = torture_suite_create(mem_ctx, "WKSSVC");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "wkssvc",
@@ -815,6 +912,9 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrRemoveAlternateComputerName);
 	torture_rpc_tcase_add_test(tcase, "NetrAddAlternateComputerName",
 				   test_NetrAddAlternateComputerName);
+	test = torture_rpc_tcase_add_test(tcase, "NetrSetPrimaryComputername",
+					  test_NetrSetPrimaryComputername);
+	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
 
