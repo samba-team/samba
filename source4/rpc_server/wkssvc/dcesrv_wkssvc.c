@@ -372,8 +372,8 @@ static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS2(struct dcesrv_call_state *dce_ca
 }
 
 
-/* 
-  WKSSVC_NETRADDALTERNATECOMPUTERNAME 
+/*
+  wkssvc_NetrAddAlternateComputername
 */
 static WERROR dcesrv_wkssvc_NetrAddAlternateComputerName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetrAddAlternateComputerName *r)
@@ -382,8 +382,8 @@ static WERROR dcesrv_wkssvc_NetrAddAlternateComputerName(struct dcesrv_call_stat
 }
 
 
-/* 
-  WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME 
+/*
+  wkssvc_NetrRemoveAlternateComputername
 */
 static WERROR dcesrv_wkssvc_NetrRemoveAlternateComputerName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetrRemoveAlternateComputerName *r)
