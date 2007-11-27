@@ -45,12 +45,15 @@ static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
-		torture_comment(tctx, "testing NetWkstaGetInfo level %u\n", r.in.level);
+		torture_comment(tctx, "testing NetWkstaGetInfo level %u\n",
+				r.in.level);
 		status = dcerpc_wkssvc_NetWkstaGetInfo(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status,
-			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed", r.in.level));
+			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed",
+					r.in.level));
 		torture_assert_werr_ok(tctx, r.out.result,
-			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed", r.in.level));
+			talloc_asprintf(tctx, "NetWkstaGetInfo level %u failed",
+					r.in.level));
 	}
 
 	return true;
@@ -1068,8 +1071,6 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetWkstaTransportEnum);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportDel",
 				   test_NetrWkstaTransportDel);
-	torture_rpc_tcase_add_test(tcase, "NetrUseGetInfo",
-				   test_NetrUseGetInfo);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportAdd",
 				   test_NetrWkstaTransportAdd);
 
@@ -1080,6 +1081,8 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "NetrUseDel",
 				   test_NetrUseDel);
+	torture_rpc_tcase_add_test(tcase, "NetrUseGetInfo",
+				   test_NetrUseGetInfo);
 	torture_rpc_tcase_add_test(tcase, "NetrUseEnum",
 				   test_NetrUseEnum);
 	torture_rpc_tcase_add_test(tcase, "NetrUseAdd",
