@@ -220,7 +220,11 @@ sub mk_openldap($$$)
 	system("$self->{bindir}/ad2oLschema $configuration --option=convert:target=openldap -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/backend-schema.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
-	$ENV{PATH} = "$ENV{OPENLDAP_PATH}/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
+	my $olpath = "";
+	if (defined $ENV{OPENLDAP_PATH}) {
+	        $olpath = "$ENV{OPENLDAP_PATH}:"
+	}
+	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
 
 	unlink($modconf);
 	open(CONF, ">$modconf"); close(CONF);

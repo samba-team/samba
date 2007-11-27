@@ -97,17 +97,18 @@ OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE ldb_entryUUID
-[MODULE::ldb_entryUUID]
+# Start MODULE ldb_simple_ldap_map
+[MODULE::ldb_simple_ldap_map]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = ldb_entryUUID_module_init
-PRIVATE_DEPENDENCIES = LIBTALLOC 
+INIT_FUNCTION = ldb_simple_ldap_map_module_init
+PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map 
 ENABLE = YES
+ALIASES = entryuuid nsuniqueid
 OBJ_FILES = \
-		entryUUID.o
+		simple_ldap_map.o
 #
-# End MODULE ldb_entryUUID
+# End MODULE ldb_entryuuid
 ################################################
 
 # ################################################
