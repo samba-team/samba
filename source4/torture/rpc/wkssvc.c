@@ -716,6 +716,30 @@ static bool test_NetrRemoveAlternateComputerName(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrWorkstationStatisticsGet(struct torture_context *tctx,
+					      struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrWorkstationStatisticsGet r;
+	struct wkssvc_NetrWorkstationStatistics *info;
+
+	ZERO_STRUCT(r);
+
+	info = talloc_zero(tctx, struct wkssvc_NetrWorkstationStatistics);
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.out.info = &info;
+
+	torture_comment(tctx, "testing NetrWorkstationStatisticsGet\n");
+
+	status = dcerpc_wkssvc_NetrWorkstationStatisticsGet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrWorkstationStatisticsGet failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrWorkstationStatisticsGet failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -763,6 +787,9 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrAddAlternateComputerName);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
+
+	torture_rpc_tcase_add_test(tcase, "NetrWorkstationStatisticsGet",
+				   test_NetrWorkstationStatisticsGet);
 
 	return suite;
 }

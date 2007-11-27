@@ -232,11 +232,11 @@ static WERROR dcesrv_WKSSVC_NETRMESSAGEBUFFERSEND(struct dcesrv_call_state *dce_
 }
 
 
-/* 
-  WKSSVC_NETRWORKSTATIONSTATISTICSGET 
+/*
+  wkssvc_NetrWorkstationStatisticsGet
 */
-static WERROR dcesrv_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
+static WERROR dcesrv_wkssvc_NetrWorkstationStatisticsGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrWorkstationStatisticsGet *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
