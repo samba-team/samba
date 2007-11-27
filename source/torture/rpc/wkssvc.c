@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 
+#define SMBTORTURE_MACHINE_NAME "smbtrt_name"
 #define SMBTORTURE_ALTERNATE_NAME "smbtrt_altname"
 #define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
 #define SMBTORTURE_USE_NAME "S:"
@@ -812,6 +813,119 @@ static bool test_NetrSetPrimaryComputername(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrRenameMachineInDomain(struct torture_context *tctx,
+					   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrRenameMachineInDomain r;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.NewMachineName = SMBTORTURE_MACHINE_NAME;
+	r.in.Account = NULL;
+	r.in.password = NULL;
+	r.in.RenameOptions = 0;
+
+	torture_comment(tctx, "testing NetrRenameMachineInDomain\n");
+
+	status = dcerpc_wkssvc_NetrRenameMachineInDomain(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrRenameMachineInDomain failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				  "NetrRenameMachineInDomain failed");
+	return true;
+}
+
+static bool test_NetrRenameMachineInDomain2_name(struct torture_context *tctx,
+						 struct dcerpc_pipe *p,
+						 const char *new_name)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrRenameMachineInDomain2 r;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.NewMachineName = new_name;
+	r.in.Account = NULL;
+	r.in.EncryptedPassword = NULL;
+	r.in.RenameOptions = 0;
+
+	status = dcerpc_wkssvc_NetrRenameMachineInDomain2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrRenameMachineInDomain2 failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrRenameMachineInDomain2 failed");
+	return true;
+}
+
+static bool test_NetrRenameMachineInDomain2(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	const char **names_o = NULL, **names = NULL;
+	int num_names_o = 0, num_names = 0;
+
+	torture_comment(tctx, "testing NetrRenameMachineInDomain2\n");
+
+	return test_NetrRenameMachineInDomain2_name(tctx, p, "w2k3dc-rhber.ber.redhat.com");
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetPrimaryComputerName,
+						   &names_o, &num_names_o))
+	{
+		return false;
+	}
+
+	if (num_names_o != 1) {
+		return false;
+	}
+
+	if (!test_NetrRenameMachineInDomain2_name(tctx, p,
+						  SMBTORTURE_MACHINE_NAME))
+	{
+		return false;
+	}
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetPrimaryComputerName,
+						   &names, &num_names))
+	{
+		return false;
+	}
+
+	if (num_names != 1) {
+		return false;
+	}
+
+	if (strequal(names[0], names_o[0])) {
+		test_NetrRenameMachineInDomain2_name(tctx, p, names_o[0]);
+		return false;
+	}
+
+	if (!strequal(names[0], SMBTORTURE_MACHINE_NAME)) {
+		test_NetrRenameMachineInDomain2_name(tctx, p, names_o[0]);
+		return false;
+	}
+
+	if (!test_NetrRenameMachineInDomain2_name(tctx, p, names_o[0]))
+	{
+		return false;
+	}
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetPrimaryComputerName,
+						   &names, &num_names))
+	{
+		return false;
+	}
+
+	if (num_names != 1) {
+		return false;
+	}
+
+	if (!strequal(names[0], names_o[0])) {
+		return false;
+	}
+
+	return true;
+}
 
 static bool test_NetrWorkstationStatisticsGet(struct torture_context *tctx,
 					      struct dcerpc_pipe *p)
@@ -914,6 +1028,12 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrAddAlternateComputerName);
 	test = torture_rpc_tcase_add_test(tcase, "NetrSetPrimaryComputername",
 					  test_NetrSetPrimaryComputername);
+	test->dangerous = true;
+	test = torture_rpc_tcase_add_test(tcase, "NetrRenameMachineInDomain",
+					  test_NetrRenameMachineInDomain);
+	test->dangerous = true;
+	test = torture_rpc_tcase_add_test(tcase, "NetrRenameMachineInDomain2",
+					  test_NetrRenameMachineInDomain2);
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
