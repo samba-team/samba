@@ -318,7 +318,7 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	ret = samdb_add(sptr_db, mem_ctx, msg);
+	ret = ldb_add(sptr_db, msg);
 	if (ret != 0) {
 		return WERR_FOOBAR;
 	}
@@ -424,7 +424,7 @@ static WERROR sptr_DeletePrintServerForm(struct ntptr_GenericHandle *server, TAL
 		return WERR_FOOBAR;
 	}
 
-	ret = samdb_delete(sptr_db, mem_ctx, msgs[0]->dn);
+	ret = ldb_delete(sptr_db, msgs[0]->dn);
 	if (ret != 0) {
 		return WERR_FOOBAR;
 	}

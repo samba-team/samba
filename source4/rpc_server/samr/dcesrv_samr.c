@@ -1021,7 +1021,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
 			     
 	/* create the group */
-	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
+	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {
 	case  LDB_SUCCESS:
 		break;
@@ -1303,7 +1303,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	/* Start a transaction, so we can query and do a subsequent atomic modify */
 	
 	/* create the user */
-	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
+	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {
 	case  LDB_SUCCESS:
 		break;
@@ -1586,7 +1586,7 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "groupType", GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 
 	/* create the alias */
-	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
+	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {
 	case LDB_SUCCESS:
 		break;
@@ -2263,7 +2263,7 @@ static NTSTATUS dcesrv_samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call
 
 	a_state = h->data;
 
-	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
+	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2637,7 +2637,7 @@ static NTSTATUS dcesrv_samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, T
 
 	a_state = h->data;
 
-	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
+	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2910,7 +2910,7 @@ static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLO
 
 	a_state = h->data;
 
-	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
+	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}

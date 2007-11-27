@@ -100,7 +100,8 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h->wire_handle.handle_type == LSA_HANDLE_SECRET) {
 		struct lsa_secret_state *secret_state = h->data;
-		ret = samdb_delete(secret_state->sam_ldb, mem_ctx, secret_state->secret_dn);
+		ret = ldb_delete(secret_state->sam_ldb, 
+				 secret_state->secret_dn);
 		talloc_free(h);
 		if (ret != 0) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -109,8 +110,8 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_OK;
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
 		struct lsa_trusted_domain_state *trusted_domain_state = h->data;
-		ret = samdb_delete(trusted_domain_state->policy->sam_ldb, mem_ctx, 
-				   trusted_domain_state->trusted_domain_dn);
+		ret = ldb_delete(trusted_domain_state->policy->sam_ldb, 
+				 trusted_domain_state->trusted_domain_dn);
 		talloc_free(h);
 		if (ret != 0) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -1478,7 +1479,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		return NT_STATUS_OK;
 	}
 
-	ret = samdb_modify(state->sam_ldb, mem_ctx, msg);
+	ret = ldb_modify(state->sam_ldb, msg);
 	if (ret != 0) {
 		if (ldb_flag == LDB_FLAG_MOD_DELETE && ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1747,7 +1748,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
 
 	/* create the secret */
-	ret = samdb_add(secret_state->sam_ldb, mem_ctx, msg);
+	ret = ldb_add(secret_state->sam_ldb, msg);
 	if (ret != 0) {
 		DEBUG(0,("Failed to create secret record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn), 
