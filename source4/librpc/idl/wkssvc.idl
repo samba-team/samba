@@ -654,6 +654,8 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_PasswordBuffer;
 
 	typedef [bitmap32bit] bitmap {
+		WKSSVC_JOIN_FLAGS_JOIN_WITH_NEW_NAME	= 0x00000400,
+		WKSSVC_JOIN_FLAGS_JOIN_DC_ACCOUNT	= 0x00000200,
 		/* TRUE: defer setting the SPN and dNSHostName until a rename operation */
 		WKSSVC_JOIN_FLAGS_DEFER_SPN		= 0x00000100,
 
