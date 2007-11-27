@@ -112,11 +112,11 @@ static WERROR dcesrv_wkssvc_NetWkstaEnumUsers(struct dcesrv_call_state *dce_call
 }
 
 
-/* 
-  WKSSVC_NETRWKSTAUSERGETINFO 
+/*
+  wkssvc_NetrWkstaUserGetInfo
 */
-static WERROR dcesrv_WKSSVC_NETRWKSTAUSERGETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRWKSTAUSERGETINFO *r)
+static WERROR dcesrv_wkssvc_NetrWkstaUserGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrWkstaUserGetInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
