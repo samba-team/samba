@@ -242,21 +242,21 @@ static WERROR dcesrv_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct dcesrv_call_stat
 }
 
 
-/* 
-  WKSSVC_NETRLOGONDOMAINNAMEADD 
+/*
+  wkssvc_NetrLogonDomainNameAdd
 */
-static WERROR dcesrv_WKSSVC_NETRLOGONDOMAINNAMEADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
+static WERROR dcesrv_wkssvc_NetrLogonDomainNameAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrLogonDomainNameAdd *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
-/* 
-  WKSSVC_NETRLOGONDOMAINNAMEDEL 
+/*
+  wkssvc_NetrLogonDomainNameDel
 */
-static WERROR dcesrv_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
+static WERROR dcesrv_wkssvc_NetrLogonDomainNameDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrLogonDomainNameDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

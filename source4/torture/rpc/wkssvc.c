@@ -468,6 +468,42 @@ static bool test_NetrUseGetInfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrLogonDomainNameAdd(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrLogonDomainNameAdd r;
+
+	r.in.domain_name = lp_workgroup(global_loadparm);
+
+	torture_comment(tctx, "testing NetrLogonDomainNameAdd\n");
+
+	status = dcerpc_wkssvc_NetrLogonDomainNameAdd(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrLogonDomainNameAdd failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				  "NetrLogonDomainNameAdd failed");
+	return true;
+}
+
+static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrLogonDomainNameDel r;
+
+	r.in.domain_name = lp_workgroup(global_loadparm);
+
+	torture_comment(tctx, "testing NetrLogonDomainNameDel\n");
+
+	status = dcerpc_wkssvc_NetrLogonDomainNameDel(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrLogonDomainNameDel failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				  "NetrLogonDomainNameDel failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -500,6 +536,11 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrUseEnum);
 	torture_rpc_tcase_add_test(tcase, "NetrUseAdd",
 				   test_NetrUseAdd);
+
+	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameDel",
+				   test_NetrLogonDomainNameDel);
+	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameAdd",
+				   test_NetrLogonDomainNameAdd);
 
 	return suite;
 }

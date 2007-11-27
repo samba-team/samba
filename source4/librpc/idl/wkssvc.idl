@@ -380,11 +380,15 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x0e      */
-	WERROR WKSSVC_NETRLOGONDOMAINNAMEADD ();
+	WERROR wkssvc_NetrLogonDomainNameAdd(
+		[in,ref] [string,charset(UTF16)] uint16 *domain_name
+		);
 
 	/*****************************/
 	/* Function        0x0f      */
-	WERROR WKSSVC_NETRLOGONDOMAINNAMEDEL ();
+	WERROR wkssvc_NetrLogonDomainNameDel(
+		[in,ref] [string,charset(UTF16)] uint16 *domain_name
+		);
 
 	/*****************************/
 	/* Function        0x10      */
