@@ -109,7 +109,7 @@ lib/libldb.$(SHLIBEXT): $(SOLIB)
 	ln -fs $< $@
 
 $(SOLIB): $(OBJS)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
 
 all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
 
