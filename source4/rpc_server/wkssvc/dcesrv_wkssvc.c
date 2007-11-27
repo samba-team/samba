@@ -138,19 +138,19 @@ static WERROR dcesrv_WKSSVC_NETRWKSTAUSERSETINFO(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct wkssvc_NetWkstaTransportEnum *r)
 {
-	r->out.level = r->in.level;
-	r->out.totalentries = 0;
+	r->out.total_entries = 0;
 	r->out.resume_handle = NULL;
 
-	switch (r->in.level) {
+	switch (r->in.info->level) {
 	case 0:
-		r->out.ctr = talloc(mem_ctx, union wkssvc_NetWkstaTransportCtr);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr);
-		r->out.ctr->ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
-		W_ERROR_HAVE_NO_MEMORY(r->out.ctr->ctr0);
+		r->out.info = talloc(mem_ctx, struct wkssvc_NetWkstaTransportInfo);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info);
+		r->out.info->level = r->in.info->level;
+		r->out.info->ctr.ctr0 = talloc(mem_ctx, struct wkssvc_NetWkstaTransportCtr0);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info->ctr.ctr0);
 
-		r->out.ctr->ctr0->count = 0;
-		r->out.ctr->ctr0->array = NULL;
+		r->out.info->ctr.ctr0->count = 0;
+		r->out.info->ctr.ctr0->array = NULL;
 
 		return WERR_NOT_SUPPORTED;
 
@@ -162,21 +162,21 @@ static WERROR dcesrv_wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_
 }
 
 
-/* 
-  WKSSVC_NETRWKSTATRANSPORTADD 
+/*
+  wkssvc_NetrWkstaTransportAdd
 */
-static WERROR dcesrv_WKSSVC_NETRWKSTATRANSPORTADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRWKSTATRANSPORTADD *r)
+static WERROR dcesrv_wkssvc_NetrWkstaTransportAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrWkstaTransportAdd *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
-/* 
-  WKSSVC_NETRWKSTATRANSPORTDEL 
+/*
+  wkssvc_NetrWkstaTransportDel
 */
-static WERROR dcesrv_WKSSVC_NETRWKSTATRANSPORTDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
+static WERROR dcesrv_wkssvc_NetrWkstaTransportDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrWkstaTransportDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
