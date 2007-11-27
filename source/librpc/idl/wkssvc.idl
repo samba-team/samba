@@ -205,7 +205,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrWkstaUserGetInfo(
 		[in] [string,charset(UTF16)] uint16 *unknown,
 		[in] uint32 level,
-		[out] [switch_is(level)] [ref] wkssvc_NetrWkstaUserInfo *info
+		[out,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info
 		);
 
 	/*****************************/
@@ -213,7 +213,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrWkstaUserSetInfo(
 		[in] [string,charset(UTF16)] uint16 *unknown,
 		[in] uint32 level,
-		[out] [switch_is(level)] [ref] wkssvc_NetrWkstaUserInfo *info,
+		[out,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info,
 		[in,out] uint32 *parm_err
 		);
 
@@ -256,7 +256,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrWkstaTransportAdd(
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in] uint32 level, /* must be 0 */
-		[in] [ref] wkssvc_NetWkstaTransportInfo0 *info0,
+		[in,ref] wkssvc_NetWkstaTransportInfo0 *info0,
 		[in,out] uint32 *parm_err
                 );
 
@@ -313,7 +313,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrUseAdd(
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in] uint32 level,
-		[in] [switch_is(level)] [ref] wkssvc_NetrUseGetInfoCtr *ctr,
+		[in,ref] [switch_is(level)] wkssvc_NetrUseGetInfoCtr *ctr,
 		[in,out] uint32 *parm_err
 		);
 
@@ -323,7 +323,7 @@ import "srvsvc.idl", "lsa.idl";
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *use_name,
 		[in] uint32 level,
-		[out] [switch_is(level)] [ref] wkssvc_NetrUseGetInfoCtr *ctr
+		[out,ref] [switch_is(level)] wkssvc_NetrUseGetInfoCtr *ctr
 		);
 
 	/*****************************/
@@ -364,7 +364,7 @@ import "srvsvc.idl", "lsa.idl";
 
 	WERROR wkssvc_NetrUseEnum(
 		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in,out] [ref] wkssvc_NetrUseEnumInfo *info,
+		[in,out,ref] wkssvc_NetrUseEnumInfo *info,
 		[in] uint32 prefmaxlen,
 		[out,ref] uint32 *entries_read,
 		[in,out] uint32 *resume_handle
@@ -376,7 +376,7 @@ import "srvsvc.idl", "lsa.idl";
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *message_name,
 		[in] [string,charset(UTF16)] uint16 *message_sender_name,
-		[in] [size_is(message_size)] [ref] uint8 *message_buffer,
+		[in,ref] [size_is(message_size)] uint8 *message_buffer,
 		[in] uint32 message_size
 		);
 
@@ -430,7 +430,7 @@ import "srvsvc.idl", "lsa.idl";
 		[in] [string,charset(UTF16)] uint16 *unknown2,
 		[in] uint32 unknown3,
 		[in] uint32 unknown4,
-		[out] [ref] wkssvc_NetrWorkstationStatistics **info
+		[out,ref] wkssvc_NetrWorkstationStatistics **info
 		);
 
 	/*****************************/
@@ -493,7 +493,7 @@ import "srvsvc.idl", "lsa.idl";
 
 	WERROR wkssvc_NetrValidateName(
 		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [ref] [string,charset(UTF16)] uint16 *name,
+		[in,ref] [string,charset(UTF16)] uint16 *name,
 		[in] [string,charset(UTF16)] uint16 *Account,
 		[in] [string,charset(UTF16)] uint16 *Password,
 		[in] wkssvc_NetValidateNameType name_type
@@ -560,7 +560,7 @@ import "srvsvc.idl", "lsa.idl";
 	/* Function        0x16      */
 	WERROR wkssvc_NetrJoinDomain2 (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
-		[in]         [string,charset(UTF16),ref] uint16 *domain_name,
+		[in,ref]     [string,charset(UTF16)] uint16 *domain_name,
 		[in]         [string,charset(UTF16)] uint16 *account_name,
 		[in]         [string,charset(UTF16)] uint16 *admin_account,
 		[in]         wkssvc_PasswordBuffer *encrypted_password,
@@ -590,7 +590,7 @@ import "srvsvc.idl", "lsa.idl";
 	/* Function        0x19      */
 	WERROR wkssvc_NetrValidateName2(
 		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [ref] [string,charset(UTF16)] uint16 *name,
+		[in,ref] [string,charset(UTF16)] uint16 *name,
 		[in] [string,charset(UTF16)] uint16 *Account,
 		[in] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] wkssvc_NetValidateNameType name_type
@@ -655,6 +655,6 @@ import "srvsvc.idl", "lsa.idl";
 		[in] [string,charset(UTF16)] uint16 *server_name,
 		[in] wkssvc_ComputerNameType name_type,
 		[in] uint32 Reserved,
-		[out] [ref] wkssvc_ComputerNamesCtr **ctr
+		[out,ref] wkssvc_ComputerNamesCtr **ctr
 		);
 }
