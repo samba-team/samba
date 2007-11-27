@@ -1136,7 +1136,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	}
 
 	/* create the secret */
-	ret = samdb_add(ldb, tmp_mem, msg);
+	ret = ldb_add(ldb, msg);
 	if (ret != 0) {
 		r->out.error_string = talloc_asprintf(mem_ctx, "Failed to create secret record %s", 
 						      ldb_dn_get_linearized(msg->dn));

@@ -1022,30 +1022,6 @@ int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 }
 
 /*
-  add a record
-*/
-int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
-{
-	return ldb_add(sam_ldb, msg);
-}
-
-/*
-  delete a record
-*/
-int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
-{
-	return ldb_delete(sam_ldb, dn);
-}
-
-/*
-  modify a record
-*/
-int samdb_modify(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
-{
-	return ldb_modify(sam_ldb, msg);
-}
-
-/*
   replace elements in a record
 */
 int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
@@ -1058,7 +1034,7 @@ int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_m
 	}
 
 	/* modify the samdb record */
-	return samdb_modify(sam_ldb, mem_ctx, msg);
+	return ldb_modify(sam_ldb, msg);
 }
 
 /*
@@ -1992,7 +1968,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 			     "foreignSecurityPrincipal");
 	
 	/* create the alias */
-	ret = samdb_add(sam_ctx, mem_ctx, msg);
+	ret = ldb_add(sam_ctx, msg);
 	if (ret != 0) {
 		DEBUG(0,("Failed to create foreignSecurityPrincipal "
 			 "record %s: %s\n", 
