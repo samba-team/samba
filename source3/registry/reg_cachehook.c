@@ -47,18 +47,24 @@ bool reghook_cache_init( void )
 
 bool reghook_cache_add( REGISTRY_HOOK *hook )
 {
-	pstring key;
-	
-	if ( !hook )
-		return False;
-		
-	pstrcpy( key, "\\");
-	pstrcat( key, hook->keyname );	
-	
-	pstring_sub( key, "\\", "/" );
+	TALLOC_CTX *ctx = talloc_tos();
+	char *key = NULL;
+
+	if (!hook) {
+		return false;
+	}
+
+	key = talloc_asprintf(ctx, "//%s", hook->keyname);
+	if (!key) {
+		return false;
+	}
+	key = talloc_string_sub(ctx, key, "\\", "/");
+	if (!key) {
+		return false;
+	}
 
 	DEBUG(10,("reghook_cache_add: Adding key [%s]\n", key));
-		
+
 	return pathtree_add( cache_tree, key, hook );
 }
 

@@ -168,54 +168,51 @@ static int winbind_named_pipe_sock(const char *dir)
 {
 	struct sockaddr_un sunaddr;
 	struct stat st;
-	pstring path;
+	char *path = NULL;
 	int fd;
 	int wait_time;
 	int slept;
-	
+
 	/* Check permissions on unix socket directory */
-	
+
 	if (lstat(dir, &st) == -1) {
 		return -1;
 	}
-	
-	if (!S_ISDIR(st.st_mode) || 
+
+	if (!S_ISDIR(st.st_mode) ||
 	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
-	
+
 	/* Connect to socket */
-	
-	strncpy(path, dir, sizeof(path) - 1);
-	path[sizeof(path) - 1] = '\0';
-	
-	strncat(path, "/", sizeof(path) - 1 - strlen(path));
-	path[sizeof(path) - 1] = '\0';
-	
-	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1 - strlen(path));
-	path[sizeof(path) - 1] = '\0';
-	
+
+	if (asprintf(&path, "%s/%s", dir, WINBINDD_SOCKET_NAME) < 0) {
+		return -1;
+	}
+
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
 	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
-	
+
 	/* If socket file doesn't exist, don't bother trying to connect
 	   with retry.  This is an attempt to make the system usable when
 	   the winbindd daemon is not running. */
 
 	if (lstat(path, &st) == -1) {
+		SAFE_FREE(path);
 		return -1;
 	}
-	
+
+	SAFE_FREE(path);
 	/* Check permissions on unix socket file */
-	
-	if (!S_ISSOCK(st.st_mode) || 
+
+	if (!S_ISSOCK(st.st_mode) ||
 	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
-	
+
 	/* Connect to socket */
-	
+
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		return -1;
 	}

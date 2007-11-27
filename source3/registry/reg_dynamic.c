@@ -216,16 +216,23 @@ static struct reg_dyn_values dynamic_values[] = {
 int fetch_dynamic_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	int i;
-	pstring path;
-	
-	pstrcpy( path, key->name );
-	normalize_reg_path( path );
-	
+	char *path = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	path = talloc_strdup(ctx, key->name);
+	if (!path) {
+		return -1;
+	}
+	path = normalize_reg_path(ctx, path);
+	if (!path) {
+		return -1;
+	}
+
 	for ( i=0; dynamic_values[i].path; i++ ) {
 		if ( strcmp( path, dynamic_values[i].path ) == 0 )
 			return dynamic_values[i].fetch_values( val );
 	}
-	
+
 	return -1;
 }
 
@@ -235,17 +242,23 @@ int fetch_dynamic_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 bool check_dynamic_reg_values( REGISTRY_KEY *key )
 {
 	int i;
-	pstring path;
-	
-	pstrcpy( path, key->name );
-	normalize_reg_path( path );
-	
+	char *path = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	path = talloc_strdup(ctx, key->name);
+	if (!path) {
+		return false;
+	}
+	path = normalize_reg_path(ctx, path);
+	if (!path) {
+		return false;
+	}
+
 	for ( i=0; dynamic_values[i].path; i++ ) {
 		/* can't write to dynamic keys */
 		if ( strcmp( path, dynamic_values[i].path ) == 0 )
-			return True;
+			return true;
 	}
-	
-	return False;
-}
 
+	return false;
+}

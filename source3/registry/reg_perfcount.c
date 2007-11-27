@@ -35,19 +35,23 @@ PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind);
 /*********************************************************************
 *********************************************************************/
 
-static char* counters_directory( const char *dbname )
+static char *counters_directory(const char *dbname)
 {
-	pstring fname;
-	fstring path;
-	
-	if ( !dbname )
+	char *path = NULL;
+	char *ret = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	if (!dbname)
 		return NULL;
-	
-	fstr_sprintf( path, "%s/%s", PERFCOUNTDIR, dbname );
-	
-	pstrcpy( fname, state_path( path ) );
-	
-	return talloc_strdup(talloc_tos(), fname);
+
+	path = talloc_asprintf(ctx, "%s/%s", PERFCOUNTDIR, dbname);
+	if (!path) {
+		return NULL;
+	}
+
+	ret = talloc_strdup(ctx, state_path(path));
+	TALLOC_FREE(path);
+	return ret;
 }
 
 /*********************************************************************
@@ -667,7 +671,7 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 {
 	TDB_DATA key, data;
 	char buf[PERFCOUNT_MAX_LEN], temp[PERFCOUNT_MAX_LEN];
-	wpstring name;
+	smb_ucs2_t *name = NULL;
 	int pad;
 
 	/* First grab the instance data from the data file */
@@ -707,9 +711,13 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 	else
 	{
 		memset(buf, 0, PERFCOUNT_MAX_LEN);
-		memcpy(buf, data.dptr, data.dsize);
-		rpcstr_push((void *)name, buf, sizeof(name), STR_TERMINATE);
-		inst->NameLength = (strlen_w(name) * 2) + 2;
+		memcpy(buf, data.dptr, MIN(PERFCOUNT_MAX_LEN-1,data.dsize));
+		buf[PERFCOUNT_MAX_LEN-1] = '\0';
+		inst->NameLength = rpcstr_push_talloc(ps->mem_ctx, &name, buf);
+		if (inst->NameLength == (size_t)-1 || !name) {
+			SAFE_FREE(data.dptr);
+			return False;
+		}
 		inst->data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
 						  inst->data,
 						  uint8,
@@ -891,11 +899,15 @@ static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 static bool _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
 					   prs_struct *ps, TDB_CONTEXT *names)
 {
-	wpstring temp;
+	smb_ucs2_t *temp = NULL;
 	time_t tm;
- 
-	memset(temp, 0, sizeof(temp));
-	rpcstr_push((void *)temp, "PERF", sizeof(temp), STR_TERMINATE);
+
+	if (rpcstr_push_talloc(ps->mem_ctx, &temp, "PERF")==(size_t)-1) {
+		return false;
+	}
+	if (!temp) {
+		return false;
+	}
 	memcpy(block->Signature, temp, strlen_w(temp) *2);
 
 	if(ps->bigendian_data == RPC_BIG_ENDIAN)

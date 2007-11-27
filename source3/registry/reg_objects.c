@@ -421,11 +421,11 @@ uint32 regval_dword( REGISTRY_VALUE *val )
  return the data_p as a character string
  **********************************************************************/
 
-char* regval_sz( REGISTRY_VALUE *val )
+char *regval_sz(REGISTRY_VALUE *val)
 {
-	pstring data;
+	char *data = NULL;
 
-	rpcstr_pull(data, regval_data_p(val), sizeof(data), regval_size(val),0);
-
-	return talloc_strdup(talloc_tos(), data);
+	rpcstr_pull_talloc(talloc_tos(), &data,
+			regval_data_p(val), regval_size(val),0);
+	return data;
 }

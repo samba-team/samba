@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
@@ -7,12 +7,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -36,11 +36,11 @@
 #define KEY_PORTS		"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PORTS"
 
 /* callback table for various registry paths below the ones we service in this module */
-	
+
 struct reg_dyn_tree {
 	/* full key path in normalized form */
 	const char *path;
-	
+
 	/* callbscks for fetch/store operations */
 	int ( *fetch_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
 	bool (*store_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
@@ -55,18 +55,19 @@ struct reg_dyn_tree {
  *********************************************************************/
 
 /***********************************************************************
- simple function to prune a pathname down to the basename of a file 
+ simple function to prune a pathname down to the basename of a file
  **********************************************************************/
- 
-static char* dos_basename ( char *path )
+
+static const char *dos_basename(const char *path)
 {
-	char *p;
-	
-	if ( !(p = strrchr( path, '\\' )) )
+	const char *p;
+
+	if (!(p = strrchr( path, '\\'))) {
 		p = path;
-	else
+	} else {
 		p++;
-		
+	}
+
 	return p;
 }
 
@@ -76,15 +77,16 @@ static char* dos_basename ( char *path )
  *********************************************************************
  *********************************************************************/
 
-static int key_forms_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int key_forms_fetch_keys(const char *key, REGSUBKEY_CTR *subkeys)
 {
-	char *p = reg_remaining_path( key + strlen(KEY_FORMS) );
-	
+	char *p = reg_remaining_path(talloc_tos(), key + strlen(KEY_FORMS));
+
 	/* no keys below Forms */
-	
-	if ( p )
+
+	if (p) {
 		return -1;
-		
+	}
+
 	return 0;
 }
 
@@ -97,19 +99,19 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
 	int		i, num_values, form_index = 1;
 	nt_forms_struct *forms_list = NULL;
 	nt_forms_struct *form;
-		
+
 	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
-	
+
 	num_values = get_ntforms( &forms_list );
-		
+
 	DEBUG(10,("hive_forms_fetch_values: [%d] user defined forms returned\n",
 		num_values));
 
 	/* handle user defined forms */
-				
+
 	for ( i=0; i<num_values; i++ ) {
 		form = &forms_list[i];
-			
+
 		data[0] = form->width;
 		data[1] = form->length;
 		data[2] = form->left;
@@ -118,23 +120,23 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
 		data[5] = form->bottom;
 		data[6] = form_index++;
 		data[7] = form->flag;
-			
+
 		regval_ctr_addvalue( values, form->name, REG_BINARY, (char*)data, sizeof(data) );	
 	}
-		
+
 	SAFE_FREE( forms_list );
 	forms_list = NULL;
-		
+
 	/* handle built-on forms */
-		
+
 	num_values = get_builtin_ntforms( &forms_list );
-		
+
 	DEBUG(10,("print_subpath_values_forms: [%d] built-in forms returned\n",
 		num_values));
-			
+
 	for ( i=0; i<num_values; i++ ) {
 		form = &forms_list[i];
-			
+
 		data[0] = form->width;
 		data[1] = form->length;
 		data[2] = form->left;
@@ -143,13 +145,13 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
 		data[5] = form->bottom;
 		data[6] = form_index++;
 		data[7] = form->flag;
-					
-		regval_ctr_addvalue( values, form->name, REG_BINARY, (char*)data, sizeof(data) );
+
+		regval_ctr_addvalue(values, form->name, REG_BINARY, (char*)data, sizeof(data) );
 	}
-		
-	SAFE_FREE( forms_list );
-	
-	return regval_ctr_numvals( values );
+
+	SAFE_FREE(forms_list);
+
+	return regval_ctr_numvals(values);
 }
 
 /*********************************************************************
@@ -160,34 +162,43 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
  *********************************************************************/
 
 /*********************************************************************
- strip off prefix for printers key.  DOes return a pointer to static 
+ strip off prefix for printers key.  DOes return a pointer to static
  memory.
  *********************************************************************/
 
-static char* strip_printers_prefix( const char *key )
+static char *strip_printers_prefix(const char *key)
 {
-	char *subkeypath;
-	pstring path;
-	
-	pstrcpy( path, key );
-	normalize_reg_path( path );
+	char *subkeypath = NULL;
+	char *path = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	path = talloc_strdup(ctx, key);
+	if (!path) {
+		return NULL;
+	}
+	path = normalize_reg_path(ctx, path);
+	if (!path) {
+		return NULL;
+	}
 
 	/* normalizing the path does not change length, just key delimiters and case */
 
-	if ( strncmp( path, KEY_WINNT_PRINTERS, strlen(KEY_WINNT_PRINTERS) ) == 0 )
-		subkeypath = reg_remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
-	else
-		subkeypath = reg_remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
-		
+	if (strncmp(path, KEY_WINNT_PRINTERS, strlen(KEY_WINNT_PRINTERS)) == 0) {
+		subkeypath = reg_remaining_path(ctx, key + strlen(KEY_WINNT_PRINTERS));
+	} else {
+		subkeypath = reg_remaining_path(ctx, key + strlen(KEY_CONTROL_PRINTERS));
+	}
+
+	TALLOC_FREE(path);
 	return subkeypath;
 }
 
 /*********************************************************************
  *********************************************************************/
- 
+
 static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	int n_services = lp_numservices();	
+	int n_services = lp_numservices();
 	int snum;
 	fstring sname;
 	int i;
@@ -196,14 +207,14 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	char *printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring *subkey_names = NULL;
-	
+
 	DEBUG(10,("key_printers_fetch_keys: key=>[%s]\n", key ? key : "NULL" ));
-	
-	printers_key = strip_printers_prefix( key );	
-	
+
+	printers_key = strip_printers_prefix( key );
+
 	if ( !printers_key ) {
 		/* enumerate all printers */
-		
+
 		for (snum=0; snum<n_services; snum++) {
 			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 				continue;
@@ -212,18 +223,18 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 			if ( strequal( lp_servicename(snum), PRINTERS_NAME ) )
 				continue;
-				
+
 			fstrcpy( sname, lp_servicename(snum) );
-				
+
 			regsubkey_ctr_addkey( subkeys, sname );
 		}
-		
+
 		num_subkeys = regsubkey_ctr_numkeys( subkeys );
 		goto done;
 	}
 
 	/* get information for a specific printer */
-	
+
 	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
 		return -1;
 	}
@@ -742,58 +753,61 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	fstring *drivers = NULL;
 	int i, env_index, num_drivers;
 	char *keystr, *base, *subkeypath;
-	pstring key2;
+	char *key2 = NULL;
 	int num_subkeys = -1;
 	int version;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(10,("key_driver_fetch_keys key=>[%s]\n", key ? key : "NULL" ));
-	
-	keystr = reg_remaining_path( key + strlen(KEY_ENVIRONMENTS) );	
-	
+
+	keystr = reg_remaining_path(ctx, key + strlen(KEY_ENVIRONMENTS) );
+
 	/* list all possible architectures */
-	
+
 	if ( !keystr ) {
-		for ( num_subkeys=0; environments[num_subkeys]; num_subkeys++ ) 
+		for ( num_subkeys=0; environments[num_subkeys]; num_subkeys++ )
 			regsubkey_ctr_addkey( subkeys, 	environments[num_subkeys] );
 
 		return num_subkeys;
 	}
-	
+
 	/* we are dealing with a subkey of "Environments */
-	
-	pstrcpy( key2, keystr );
-	keystr = key2;
-	if (!reg_split_path( keystr, &base, &subkeypath )) {
+	key2 = talloc_strdup(ctx, keystr);
+	if (!key2) {
 		return -1;
 	}
-	
+	keystr = key2;
+	if (!reg_split_path(keystr, &base, &subkeypath )) {
+		return -1;
+	}
+
 	/* sanity check */
-	
+
 	for ( env_index=0; environments[env_index]; env_index++ ) {
 		if ( strequal( environments[env_index], base ) )
 			break;
 	}
 	if ( !environments[env_index] )
 		return -1;
-	
+
 	/* ...\Print\Environements\...\ */
-	
+
 	if ( !subkeypath ) {
 		regsubkey_ctr_addkey( subkeys, "Drivers" );
 		regsubkey_ctr_addkey( subkeys, "Print Processors" );
-				
+
 		return 2;
 	}
-	
+
 	/* more of the key path to process */
-	
+
 	keystr = subkeypath;
 	if (!reg_split_path( keystr, &base, &subkeypath )) {
 		return -1;
 	}
-		
+
 	/* ...\Print\Environements\...\Drivers\ */
-	
+
 	if ( !subkeypath ) {
 		if ( strequal(base, "Drivers") ) {
 			switch ( env_index ) {
@@ -803,21 +817,21 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 				default: /* Windows NT based systems */
 					regsubkey_ctr_addkey( subkeys, "Version-2" );
 					regsubkey_ctr_addkey( subkeys, "Version-3" );
-					break;			
+					break;
 			}
-		
+
 			return regsubkey_ctr_numkeys( subkeys );
 		} else if ( strequal(base, "Print Processors") ) {
 			if ( env_index == 1 || env_index == 5 || env_index == 6 )
-				regsubkey_ctr_addkey( subkeys, "winprint" );
-				
+
+
 			return regsubkey_ctr_numkeys( subkeys );
 		} else
 			return -1;	/* bad path */
 	}
-	
+
 	/* we finally get to enumerate the drivers */
-	
+
 	/* only one possible subkey below PrintProc key */
 
 	if ( strequal(base, "Print Processors") ) {
@@ -835,7 +849,7 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 		return strequal( base, "winprint" ) ? 0 : -1;
 	}
-	
+
 	/* only dealing with drivers from here on out */
 
 	keystr = subkeypath;
@@ -844,7 +858,7 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	}
 
 	version = atoi(&base[strlen(base)-1]);
-			
+
 	switch (env_index) {
 	case 0:
 		if ( version != 0 )
@@ -856,20 +870,20 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		break;
 	}
 
-	
+
 	if ( !subkeypath ) {
 		num_drivers = get_ntdrivers( &drivers, environments[env_index], version );
 		for ( i=0; i<num_drivers; i++ )
 			regsubkey_ctr_addkey( subkeys, drivers[i] );
-			
-		return regsubkey_ctr_numkeys( subkeys );	
-	}	
-	
+
+		return regsubkey_ctr_numkeys( subkeys );
+	}
+
 	/* if anything else left, just say if has no subkeys */
-	
-	DEBUG(1,("key_driver_fetch_keys unhandled key [%s] (subkey == %s\n", 
+
+	DEBUG(1,("key_driver_fetch_keys unhandled key [%s] (subkey == %s\n",
 		key, subkeypath ));
-	
+
 	return 0;
 }
 
@@ -882,61 +896,61 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 	char *buffer = NULL;
 	int buffer_size = 0;
 	int i, length;
-	char *filename;
+	const char *filename;
 	UNISTR2	data;
-	
+
 	filename = dos_basename( info3->driverpath );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Driver", REG_SZ, (char*)data.buffer, 
+	regval_ctr_addvalue( values, "Driver", REG_SZ, (char*)data.buffer,
 		data.uni_str_len*sizeof(uint16) );
-	
+
 	filename = dos_basename( info3->configfile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
 	regval_ctr_addvalue( values, "Configuration File", REG_SZ, (char*)data.buffer, 
 		data.uni_str_len*sizeof(uint16) );
-	
+
 	filename = dos_basename( info3->datafile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data File", REG_SZ, (char*)data.buffer, 
+	regval_ctr_addvalue( values, "Data File", REG_SZ, (char*)data.buffer,
 		data.uni_str_len*sizeof(uint16) );
-	
+
 	filename = dos_basename( info3->helpfile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Help File", REG_SZ, (char*)data.buffer, 
+	regval_ctr_addvalue( values, "Help File", REG_SZ, (char*)data.buffer,
 		data.uni_str_len*sizeof(uint16) );
-	
+
 	init_unistr2( &data, info3->defaultdatatype, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data Type", REG_SZ, (char*)data.buffer, 
+	regval_ctr_addvalue( values, "Data Type", REG_SZ, (char*)data.buffer,
 		data.uni_str_len*sizeof(uint16) );
-	
+
 	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->cversion, 
 		sizeof(info3->cversion) );
-	
+
 	if ( info3->dependentfiles ) {
-		/* place the list of dependent files in a single 
+		/* place the list of dependent files in a single
 		   character buffer, separating each file name by
 		   a NULL */
-		   
+
 		for ( i=0; strcmp(info3->dependentfiles[i], ""); i++ ) {
 			/* strip the path to only the file's base name */
-		
+
 			filename = dos_basename( info3->dependentfiles[i] );
-			
+
 			length = strlen(filename);
-		
+
 			buffer = (char *)SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
 			if ( !buffer ) {
 				break;
 			}
-			
+
 			init_unistr2( &data, filename, UNI_STR_TERMINATE);
 			memcpy( buffer+buffer_size, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		
+
 			buffer_size += (length + 1)*sizeof(uint16);
 		}
-		
+
 		/* terminated by double NULL.  Add the final one here */
-		
+
 		buffer = (char *)SMB_REALLOC( buffer, buffer_size + 2 );
 		if ( !buffer ) {
 			buffer_size = 0;
@@ -945,11 +959,11 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 			buffer[buffer_size++] = '\0';
 		}
 	}
-	
+
 	regval_ctr_addvalue( values, "Dependent Files",    REG_MULTI_SZ, buffer, buffer_size );
-		
+
 	SAFE_FREE( buffer );
-	
+
 	return;
 }
 
@@ -968,12 +982,12 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	if (!reg_split_path( key, &base, &subkeypath )) {
 		return -1;
 	}
-	
+
 	/* no values in 'Environments\Drivers\Windows NT x86' */
-	
-	if ( !subkeypath ) 
+
+	if ( !subkeypath )
 		return 0;
-		
+
 	/* We have the Architecture string and some subkey name:
 	   Currently we only support
 	   * Drivers
@@ -982,7 +996,7 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	   */
 
 	fstrcpy( arch_environment, base );
-	
+
 	keystr = subkeypath;
 	if (!reg_split_path( keystr, &base, &subkeypath )) {
 		return -1;
@@ -992,16 +1006,16 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 		return 0;
 
 	/* only Drivers key can be left */
-		
+
 	if ( !strequal(base, "Drivers") )
 		return -1;
-			
+
 	if ( !subkeypath )
 		return 0;
-	
+
 	/* We know that we have Architechure\Drivers with some subkey name
 	   The subkey name has to be Version-XX */
-	
+
 	keystr = subkeypath;
 	if (!reg_split_path( keystr, &base, &subkeypath )) {
 		return -1;
@@ -1009,34 +1023,34 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 
 	if ( !subkeypath )
 		return 0;
-		
+
 	version = atoi(&base[strlen(base)-1]);
 
 	/* BEGIN PRINTER DRIVER NAME BLOCK */
-	
+
 	keystr = subkeypath;
 	if (!reg_split_path( keystr, &base, &subkeypath )) {
 		return -1;
 	}
-	
+
 	/* don't go any deeper for now */
-	
+
 	fstrcpy( driver, base );
-	
+
 	w_result = get_a_printer_driver( &driver_ctr, 3, driver, arch_environment, version );
 
 	if ( !W_ERROR_IS_OK(w_result) )
 		return -1;
-		
-	fill_in_driver_values( driver_ctr.info_3, values ); 
-	
+
+	fill_in_driver_values( driver_ctr.info_3, values );
+
 	free_a_printer_driver( driver_ctr, 3 );
 
 	/* END PRINTER DRIVER NAME BLOCK */
 
-						
+
 	DEBUG(8,("key_driver_fetch_values: Exit\n"));
-	
+
 	return regval_ctr_numvals( values );
 }
 
@@ -1045,20 +1059,24 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 
 static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 {
-	char *keystr;
-	pstring subkey;
-	
+	char *keystr = NULL;
+	char *subkey = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
 	DEBUG(8,("key_driver_fetch_values: Enter key => [%s]\n", key ? key : "NULL"));
 
 	/* no values in the Environments key */
-	
-	if ( !(keystr = reg_remaining_path( key + strlen(KEY_ENVIRONMENTS) )) )
+
+	if (!(keystr = reg_remaining_path(ctx, key + strlen(KEY_ENVIRONMENTS))))
 		return 0;
-	
-	pstrcpy( subkey, keystr);
-	
+
+	subkey = talloc_strdup(ctx, keystr);
+	if (!subkey) {
+		return 0;
+	}
+
 	/* pass off to handle subkeys */
-	
+
 	return driver_arch_fetch_values( subkey, values );
 }
 
@@ -1069,11 +1087,11 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
  *********************************************************************/
 
 static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
-{	
+{
 	int key_len = strlen(key);
-	
+
 	/* no keys below 'Print' handled here */
-	
+
 	if ( (key_len != strlen(KEY_CONTROL_PRINT)) && (key_len != strlen(KEY_WINNT_PRINT)) )
 		return -1;
 
@@ -1081,14 +1099,14 @@ static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	regsubkey_ctr_addkey( subkeys, "Monitors" );
 	regsubkey_ctr_addkey( subkeys, "Forms" );
 	regsubkey_ctr_addkey( subkeys, "Printers" );
-	
+
 	return regsubkey_ctr_numkeys( subkeys );
 }
 
 /**********************************************************************
  *********************************************************************
  ** Structure to hold dispatch table of ops for various printer keys.
- ** Make sure to always store deeper keys along the same path first so 
+ ** Make sure to always store deeper keys along the same path first so
  ** we ge a more specific match.
  *********************************************************************
  *********************************************************************/
@@ -1096,16 +1114,16 @@ static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 static struct reg_dyn_tree print_registry[] = {
 /* just pass the monitor onto the registry tdb */
 { KEY_MONITORS,
-	&regdb_fetch_keys, 
+	&regdb_fetch_keys,
 	&regdb_store_keys,
 	&regdb_fetch_values,
 	&regdb_store_values },
-{ KEY_FORMS, 
-	&key_forms_fetch_keys, 
-	NULL, 
+{ KEY_FORMS,
+	&key_forms_fetch_keys,
+	NULL,
 	&key_forms_fetch_values,
 	NULL },
-{ KEY_CONTROL_PRINTERS, 
+{ KEY_CONTROL_PRINTERS,
 	&key_printers_fetch_keys,
 	&key_printers_store_keys,
 	&key_printers_fetch_values,
@@ -1126,11 +1144,11 @@ static struct reg_dyn_tree print_registry[] = {
 	&key_printers_fetch_values,
 	&key_printers_store_values },
 { KEY_PORTS,
-	&regdb_fetch_keys, 
+	&regdb_fetch_keys,
 	&regdb_store_keys,
 	&regdb_fetch_values,
 	&regdb_store_values },
-	
+
 { NULL, NULL, NULL, NULL, NULL }
 };
 
@@ -1146,22 +1164,29 @@ static struct reg_dyn_tree print_registry[] = {
  -1 on failure
  **********************************************************************/
 
-static int match_registry_path( const char *key )
+static int match_registry_path(const char *key)
 {
 	int i;
-	pstring path;
-	
+	char *path = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
+
 	if ( !key )
 		return -1;
 
-	pstrcpy( path, key );
-	normalize_reg_path( path );
-	
+	path = talloc_strdup(ctx, key);
+	if (!path) {
+		return -1;
+	}
+	path = normalize_reg_path(ctx, path);
+	if (!path) {
+		return -1;
+	}
+
 	for ( i=0; print_registry[i].path; i++ ) {
-		if ( strncmp( path, print_registry[i].path, strlen(print_registry[i].path) ) == 0 )
+		if (strncmp( path, print_registry[i].path, strlen(print_registry[i].path) ) == 0 )
 			return i;
 	}
-	
+
 	return -1;
 }
 
@@ -1171,13 +1196,13 @@ static int match_registry_path( const char *key )
 static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	int i = match_registry_path( key );
-	
+
 	if ( i == -1 )
 		return -1;
-		
+
 	if ( !print_registry[i].fetch_subkeys )
 		return -1;
-		
+
 	return print_registry[i].fetch_subkeys( key, subkeys );
 }
 
@@ -1187,13 +1212,13 @@ static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 static bool regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	int i = match_registry_path( key );
-	
+
 	if ( i == -1 )
 		return False;
-	
+
 	if ( !print_registry[i].store_subkeys )
 		return False;
-		
+
 	return print_registry[i].store_subkeys( key, subkeys );
 }
 
@@ -1203,16 +1228,16 @@ static bool regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
 {
 	int i = match_registry_path( key );
-	
+
 	if ( i == -1 )
 		return -1;
-	
-	/* return 0 values by default since we know the key had 
+
+	/* return 0 values by default since we know the key had
 	   to exist because the client opened a handle */
-	   
+
 	if ( !print_registry[i].fetch_values )
 		return 0;
-		
+
 	return print_registry[i].fetch_values( key, values );
 }
 
@@ -1222,20 +1247,20 @@ static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
 static bool regprint_store_reg_values( const char *key, REGVAL_CTR *values )
 {
 	int i = match_registry_path( key );
-	
+
 	if ( i == -1 )
 		return False;
-	
+
 	if ( !print_registry[i].store_values )
 		return False;
-		
+
 	return print_registry[i].store_values( key, values );
 }
 
-/* 
+/*
  * Table of function pointers for accessing printing data
  */
- 
+
 REGISTRY_OPS printing_ops = {
 	regprint_fetch_reg_keys,
 	regprint_fetch_reg_values,
@@ -1243,5 +1268,3 @@ REGISTRY_OPS printing_ops = {
 	regprint_store_reg_values,
 	NULL, NULL, NULL
 };
-
-
