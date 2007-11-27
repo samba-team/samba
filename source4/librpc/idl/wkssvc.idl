@@ -316,7 +316,12 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x09      */
-	WERROR WKSSVC_NETRUSEGETINFO ();
+	WERROR wkssvc_NetrUseGetInfo(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *use_name,
+		[in] uint32 level,
+		[out] [switch_is(level)] [ref] wkssvc_NetrUseGetInfoCtr *ctr
+		);
 
 	/*****************************/
 	/* Function        0x0a      */
