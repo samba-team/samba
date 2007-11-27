@@ -1000,6 +1000,57 @@ static bool test_NetrGetJoinInformation(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrGetJoinableOus(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrGetJoinableOus r;
+	uint32_t num_ous = 0;
+	const char **ous = NULL;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.Account = NULL;
+	r.in.unknown = NULL;
+	r.in.num_ous = r.out.num_ous = &num_ous;
+	r.out.ous = &ous;
+
+	torture_comment(tctx, "testing NetrGetJoinableOus\n");
+
+	status = dcerpc_wkssvc_NetrGetJoinableOus(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "NetrGetJoinableOus failed");
+	torture_assert_werr_equal(tctx, r.out.result,
+				  WERR_NOT_SUPPORTED,
+				  "NetrGetJoinableOus failed");
+
+	return true;
+}
+
+static bool test_NetrGetJoinableOus2(struct torture_context *tctx,
+				     struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrGetJoinableOus2 r;
+	uint32_t num_ous = 0;
+	const char **ous = NULL;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.Account = NULL;
+	r.in.EncryptedPassword = NULL;
+	r.in.num_ous = r.out.num_ous = &num_ous;
+	r.out.ous = &ous;
+
+	torture_comment(tctx, "testing NetrGetJoinableOus2\n");
+
+	status = dcerpc_wkssvc_NetrGetJoinableOus2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "NetrGetJoinableOus2 failed");
+	torture_assert_werr_equal(tctx, r.out.result,
+				  WERR_RPC_E_REMOTE_DISABLED,
+				  "NetrGetJoinableOus2 failed");
+
+	return true;
+}
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -1060,6 +1111,10 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "NetrGetJoinInformation",
 				   test_NetrGetJoinInformation);
+	torture_rpc_tcase_add_test(tcase, "NetrGetJoinableOus",
+				   test_NetrGetJoinableOus);
+	torture_rpc_tcase_add_test(tcase, "NetrGetJoinableOus2",
+				   test_NetrGetJoinableOus2);
 
 	torture_rpc_tcase_add_test(tcase, "NetrWorkstationStatisticsGet",
 				   test_NetrWorkstationStatisticsGet);
