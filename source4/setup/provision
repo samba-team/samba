@@ -141,7 +141,7 @@ if (ldapbackend) {
 		subobj.LDAPBACKEND = subobj.LDAPI_URI;
 	}
 	if (!ldapmodule) {
-		subobj.LDAPMODULE = "entryUUID";
+		subobj.LDAPMODULE = "entryuuid";
 	}
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
 	subobj.DOMAINDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";

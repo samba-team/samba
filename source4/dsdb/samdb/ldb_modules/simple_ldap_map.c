@@ -35,7 +35,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
 
-struct entryUUID_private {
+struct entryuuid_private {
 	struct ldb_dn **base_dns;
 };
 
@@ -254,7 +254,7 @@ static struct ldb_val timestamp_to_usn(struct ldb_module *module, TALLOC_CTX *ct
 }
 
 
-static const struct ldb_map_attribute entryUUID_attributes[] = 
+static const struct ldb_map_attribute entryuuid_attributes[] = 
 {
 	/* objectGUID */
 	{
@@ -291,6 +291,15 @@ static const struct ldb_map_attribute entryUUID_attributes[] =
 				.convert_remote = val_copy,
 			},
 		},
+	},
+	{
+		.local_name = "name",
+		.type = MAP_RENAME,
+		.u = {
+			.rename = {
+				 .remote_name = "samba4RDN"
+			 }
+		}
 	},
 	{
 		.local_name = "whenCreated",
@@ -420,7 +429,7 @@ static const struct ldb_map_attribute entryUUID_attributes[] =
 };
 
 /* This objectClass conflicts with builtin classes on OpenLDAP */
-const struct ldb_map_objectclass entryUUID_objectclasses[] =
+const struct ldb_map_objectclass entryuuid_objectclasses[] =
 {
 	{
 		.local_name = "subSchema",
@@ -433,7 +442,7 @@ const struct ldb_map_objectclass entryUUID_objectclasses[] =
 
 /* These things do not show up in wildcard searches in OpenLDAP, but
  * we need them to show up in the AD-like view */
-static const char * const entryUUID_wildcard_attributes[] = {
+static const char * const entryuuid_wildcard_attributes[] = {
 	"objectGUID", 
 	"whenCreated", 
 	"whenChanged",
@@ -582,31 +591,31 @@ static const char * const nsuniqueid_wildcard_attributes[] = {
 static int get_remote_rootdse(struct ldb_context *ldb, void *context, 
 		       struct ldb_reply *ares) 
 {
-	struct entryUUID_private *entryUUID_private;
-	entryUUID_private = talloc_get_type(context,
-					    struct entryUUID_private);
+	struct entryuuid_private *entryuuid_private;
+	entryuuid_private = talloc_get_type(context,
+					    struct entryuuid_private);
 	if (ares->type == LDB_REPLY_ENTRY) {
 		int i;
 		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "namingContexts");
-		entryUUID_private->base_dns = talloc_realloc(entryUUID_private, entryUUID_private->base_dns, struct ldb_dn *, 
+		entryuuid_private->base_dns = talloc_realloc(entryuuid_private, entryuuid_private->base_dns, struct ldb_dn *, 
 							     el->num_values + 1);
 		for (i=0; i < el->num_values; i++) {
-			if (!entryUUID_private->base_dns) {
+			if (!entryuuid_private->base_dns) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			entryUUID_private->base_dns[i] = ldb_dn_new(entryUUID_private->base_dns, ldb, (const char *)el->values[i].data);
-			if ( ! ldb_dn_validate(entryUUID_private->base_dns[i])) {
+			entryuuid_private->base_dns[i] = ldb_dn_new(entryuuid_private->base_dns, ldb, (const char *)el->values[i].data);
+			if ( ! ldb_dn_validate(entryuuid_private->base_dns[i])) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
-		entryUUID_private->base_dns[i] = NULL;
+		entryuuid_private->base_dns[i] = NULL;
 	}
 
 	return LDB_SUCCESS;
 }
 
 static int find_base_dns(struct ldb_module *module, 
-			  struct entryUUID_private *entryUUID_private) 
+			  struct entryuuid_private *entryuuid_private) 
 {
 	int ret;
 	struct ldb_request *req;
@@ -614,7 +623,7 @@ static int find_base_dns(struct ldb_module *module,
 		"namingContexts",
 		NULL
 	};
-	req = talloc(entryUUID_private, struct ldb_request);
+	req = talloc(entryuuid_private, struct ldb_request);
 	if (req == NULL) {
 		ldb_set_errstring(module->ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -633,7 +642,7 @@ static int find_base_dns(struct ldb_module *module,
 
 	req->op.search.attrs = naming_context_attr;
 	req->controls = NULL;
-	req->context = entryUUID_private;
+	req->context = entryuuid_private;
 	req->callback = get_remote_rootdse;
 	ldb_set_timeout(module->ldb, req, 0); /* use default timeout */
 
@@ -652,22 +661,22 @@ static int find_base_dns(struct ldb_module *module,
 }
 
 /* the context init function */
-static int entryUUID_init(struct ldb_module *module)
+static int entryuuid_init(struct ldb_module *module)
 {
         int ret;
 	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
+	struct entryuuid_private *entryuuid_private;
 
-	ret = ldb_map_init(module, entryUUID_attributes, entryUUID_objectclasses, entryUUID_wildcard_attributes, NULL);
+	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
-	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
-	map_private->caller_private = entryUUID_private;
+	entryuuid_private = talloc_zero(map_private, struct entryuuid_private);
+	map_private->caller_private = entryuuid_private;
 
-	ret = find_base_dns(module, entryUUID_private);
+	ret = find_base_dns(module, entryuuid_private);
 
 	return ldb_next_init(module);
 }
@@ -677,7 +686,7 @@ static int nsuniqueid_init(struct ldb_module *module)
 {
         int ret;
 	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
+	struct entryuuid_private *entryuuid_private;
 
 	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, NULL);
         if (ret != LDB_SUCCESS)
@@ -685,10 +694,10 @@ static int nsuniqueid_init(struct ldb_module *module)
 
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
-	entryUUID_private = talloc_zero(map_private, struct entryUUID_private);
-	map_private->caller_private = entryUUID_private;
+	entryuuid_private = talloc_zero(map_private, struct entryuuid_private);
+	map_private->caller_private = entryuuid_private;
 
-	ret = find_base_dns(module, entryUUID_private);
+	ret = find_base_dns(module, entryuuid_private);
 
 	return ldb_next_init(module);
 }
@@ -709,21 +718,21 @@ static int get_seq(struct ldb_context *ldb, void *context,
 	return LDB_SUCCESS;
 }
 
-static int entryUUID_sequence_number(struct ldb_module *module, struct ldb_request *req)
+static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
 	int i, ret;
 	struct map_private *map_private;
-	struct entryUUID_private *entryUUID_private;
+	struct entryuuid_private *entryuuid_private;
 	unsigned long long max_seq = 0;
 	struct ldb_request *search_req;
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
-	entryUUID_private = talloc_get_type(map_private->caller_private, struct entryUUID_private);
+	entryuuid_private = talloc_get_type(map_private->caller_private, struct entryuuid_private);
 
 	/* Search the baseDNs for a sequence number */
-	for (i=0; entryUUID_private && 
-		     entryUUID_private->base_dns && 
-		     entryUUID_private->base_dns[i];
+	for (i=0; entryuuid_private && 
+		     entryuuid_private->base_dns && 
+		     entryuuid_private->base_dns[i];
 		i++) {
 		static const char *contextCSN_attr[] = {
 			"contextCSN", NULL
@@ -735,7 +744,7 @@ static int entryUUID_sequence_number(struct ldb_module *module, struct ldb_reque
 		}
 		
 		search_req->operation = LDB_SEARCH;
-		search_req->op.search.base = entryUUID_private->base_dns[i];
+		search_req->op.search.base = entryuuid_private->base_dns[i];
 		search_req->op.search.scope = LDB_SCOPE_BASE;
 		
 		search_req->op.search.tree = ldb_parse_tree(search_req, "objectClass=*");
@@ -783,30 +792,30 @@ static int entryUUID_sequence_number(struct ldb_module *module, struct ldb_reque
 	return LDB_SUCCESS;
 }
 
-static struct ldb_module_ops entryUUID_ops = {
-	.name		   = "entryUUID",
-	.init_context	   = entryUUID_init,
-	.sequence_number   = entryUUID_sequence_number
+static struct ldb_module_ops entryuuid_ops = {
+	.name		   = "entryuuid",
+	.init_context	   = entryuuid_init,
+	.sequence_number   = entryuuid_sequence_number
 };
 
 static struct ldb_module_ops nsuniqueid_ops = {
 	.name		   = "nsuniqueid",
 	.init_context	   = nsuniqueid_init,
-	.sequence_number   = entryUUID_sequence_number
+	.sequence_number   = entryuuid_sequence_number
 };
 
 /* the init function */
-int ldb_entryUUID_module_init(void)
+int ldb_simple_ldap_map_module_init(void)
 {
 	int ret;
 	struct ldb_module_ops ops = ldb_map_get_ops();
-	entryUUID_ops.add	= ops.add;
-	entryUUID_ops.modify	= ops.modify;
-	entryUUID_ops.del	= ops.del;
-	entryUUID_ops.rename	= ops.rename;
-	entryUUID_ops.search	= ops.search;
-	entryUUID_ops.wait	= ops.wait;
-	ret = ldb_register_module(&entryUUID_ops);
+	entryuuid_ops.add	= ops.add;
+	entryuuid_ops.modify	= ops.modify;
+	entryuuid_ops.del	= ops.del;
+	entryuuid_ops.rename	= ops.rename;
+	entryuuid_ops.search	= ops.search;
+	entryuuid_ops.wait	= ops.wait;
+	ret = ldb_register_module(&entryuuid_ops);
 
 	if (ret) {
 		return ret;
