@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<xsl:import href="http://db2latex.sourceforge.net/xsl/docbook.xsl"/>
+<xsl:import href="db2latex-xsl/xsl/docbook.xsl"/>
 <xsl:import href="strip-references.xsl"/>
 
 <xsl:param name="latex.mapping.xml" select="document('latex.overrides.xml')"/>
@@ -58,7 +58,7 @@
   </xsl:if>
 </xsl:template>
 
-<xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
+<xsl:output method="text" encoding="UTF-8" indent="yes"/>
 <xsl:variable name="l10n.gentext.default.language" select="'en'"/>
 <xsl:variable name="latex.document.font">default</xsl:variable>
 <xsl:variable name="latex.example.caption.style"></xsl:variable>
@@ -68,6 +68,8 @@
 <xsl:variable name="latex.fancyhdr.lh"></xsl:variable>
 <xsl:variable name="latex.use.fancyhdr"></xsl:variable>
 <xsl:variable name="latex.use.parskip">1</xsl:variable>
+<xsl:variable name="latex.use.ucs">1</xsl:variable>
+<xsl:variable name="latex.inputenc">utf8</xsl:variable>
 <xsl:variable name="latex.book.varsets" select="''"/>
 <xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
 <xsl:variable name="latex.titlepage.file"></xsl:variable>
