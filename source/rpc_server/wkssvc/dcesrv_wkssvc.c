@@ -263,20 +263,20 @@ static WERROR dcesrv_wkssvc_NetrLogonDomainNameDel(struct dcesrv_call_state *dce
 
 
 /*
-  WKSSVC_NETRJOINDOMAIN
+  wkssvc_NetrJoinDomain
 */
-static WERROR dcesrv_WKSSVC_NETRJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRJOINDOMAIN *r)
+static WERROR dcesrv_wkssvc_NetrJoinDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrJoinDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /*
-  WKSSVC_NETRUNJOINDOMAIN
+  wkssvc_NetrUnjoinDomain
 */
-static WERROR dcesrv_WKSSVC_NETRUNJOINDOMAIN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRUNJOINDOMAIN *r)
+static WERROR dcesrv_wkssvc_NetrUnjoinDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrUnjoinDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
