@@ -208,11 +208,14 @@ import "srvsvc.idl";
 		[out] [switch_is(level)] [ref] wkssvc_NetrWkstaUserInfo *info
 		);
 
-
 	/*****************************/
 	/* Function        0x04      */
-	WERROR WKSSVC_NETRWKSTAUSERSETINFO ();
-
+	WERROR wkssvc_NetrWkstaUserSetInfo(
+		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in] uint32 level,
+		[out] [switch_is(level)] [ref] wkssvc_NetrWkstaUserInfo *info,
+		[in,out] uint32 *parm_err
+		);
 
 	/*****************************/
 	/* Function        0x05      */
