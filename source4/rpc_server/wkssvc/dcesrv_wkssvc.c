@@ -303,10 +303,10 @@ static WERROR dcesrv_wkssvc_NetrValidateName(struct dcesrv_call_state *dce_call,
 
 
 /*
-  WKSSVC_NETRGETJOININFORMATION
+  wkssvc_NetrGetJoinInformation
 */
-static WERROR dcesrv_WKSSVC_NETRGETJOININFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRGETJOININFORMATION *r)
+static WERROR dcesrv_wkssvc_NetrGetJoinInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrGetJoinInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

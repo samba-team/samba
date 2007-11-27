@@ -978,6 +978,28 @@ static bool test_NetrMessageBufferSend(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrGetJoinInformation(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrGetJoinInformation r;
+	enum wkssvc_NetJoinStatus join_status;
+	const char *name_buffer = "";
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.name_buffer = r.out.name_buffer = &name_buffer;
+	r.out.name_type = &join_status;
+
+	torture_comment(tctx, "testing NetrGetJoinInformation\n");
+
+	status = dcerpc_wkssvc_NetrGetJoinInformation(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrGetJoinInformation failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrGetJoinInformation failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -1035,6 +1057,9 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
+
+	torture_rpc_tcase_add_test(tcase, "NetrGetJoinInformation",
+				   test_NetrGetJoinInformation);
 
 	torture_rpc_tcase_add_test(tcase, "NetrWorkstationStatisticsGet",
 				   test_NetrWorkstationStatisticsGet);
