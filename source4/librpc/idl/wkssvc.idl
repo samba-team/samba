@@ -1,3 +1,5 @@
+#include "idl_types.h"
+
 /*
   wkssvc interface definitions
 */
@@ -649,7 +651,7 @@ import "srvsvc.idl", "lsa.idl";
 		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
 		);
 
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[524];
 	} wkssvc_PasswordBuffer;
 
@@ -667,7 +669,7 @@ import "srvsvc.idl", "lsa.idl";
 
 		/* TRUE: allow the join to complete even if the account already exists */
 		WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED	= 0x00000020,
-	
+
 		/* TRUE: this join is part of a w9x upgrade */
 		WKSSVC_JOIN_FLAGS_WIN9X_UPGRADE		= 0x00000010,
 
@@ -679,7 +681,7 @@ import "srvsvc.idl", "lsa.idl";
 
 		/* TRUE: join domain    FALSE: join workgroup */
 		WKSSVC_JOIN_FLAGS_JOIN_TYPE		= 0x00000001
-		
+
 	} wkssvc_joinflags;
 
 	/*****************************/
