@@ -26,6 +26,7 @@
 #include "param/param.h"
 
 #define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
+#define SMBTORTURE_USE_NAME "S:"
 
 static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
@@ -298,6 +299,85 @@ static bool test_NetrUseEnum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrUseAdd(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUseAdd r;
+	struct wkssvc_NetrUseInfo0 info0;
+	struct wkssvc_NetrUseInfo1 info1;
+	union wkssvc_NetrUseGetInfoCtr *ctr;
+	uint32_t parm_err = 0;
+
+	ctr = talloc(tctx, union wkssvc_NetrUseGetInfoCtr);
+
+	ZERO_STRUCT(info0);
+
+	info0.local = SMBTORTURE_USE_NAME;
+	info0.remote = "\\\\localhost\\c$";
+
+	ctr->info0 = &info0;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.level = 0;
+	r.in.ctr = ctr;
+	r.in.parm_err = r.out.parm_err = &parm_err;
+
+	torture_comment(tctx, "testing NetrUseAdd level %u\n",
+			r.in.level);
+
+	status = dcerpc_wkssvc_NetrUseAdd(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUseAdd failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+			       "NetrUseAdd failed");
+
+	ZERO_STRUCT(r);
+	ZERO_STRUCT(info1);
+
+	info1.local = SMBTORTURE_USE_NAME;
+	info1.remote = "\\\\localhost\\sysvol";
+	info1.password = NULL;
+
+	ctr->info1 = &info1;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.level = 1;
+	r.in.ctr = ctr;
+	r.in.parm_err = r.out.parm_err = &parm_err;
+
+	torture_comment(tctx, "testing NetrUseAdd level %u\n",
+			r.in.level);
+
+	status = dcerpc_wkssvc_NetrUseAdd(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUseAdd failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrUseAdd failed");
+
+	return true;
+}
+
+static bool test_NetrUseDel(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUseDel r;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.use_name = SMBTORTURE_USE_NAME;
+	r.in.force_cond = 0;
+
+	torture_comment(tctx, "testing NetrUseDel\n");
+
+	status = dcerpc_wkssvc_NetrUseDel(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUseDel failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrUseDel failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -322,8 +402,12 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaUserGetInfo",
 				   test_NetrWkstaUserGetInfo);
 
+	torture_rpc_tcase_add_test(tcase, "NetrUseDel",
+				   test_NetrUseDel);
 	torture_rpc_tcase_add_test(tcase, "NetrUseEnum",
 				   test_NetrUseEnum);
+	torture_rpc_tcase_add_test(tcase, "NetrUseAdd",
+				   test_NetrUseAdd);
 
 	return suite;
 }

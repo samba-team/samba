@@ -182,11 +182,11 @@ static WERROR dcesrv_wkssvc_NetrWkstaTransportDel(struct dcesrv_call_state *dce_
 }
 
 
-/* 
-  WKSSVC_NETRUSEADD 
+/*
+  wkssvc_NetrUseAdd
 */
-static WERROR dcesrv_WKSSVC_NETRUSEADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRUSEADD *r)
+static WERROR dcesrv_wkssvc_NetrUseAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrUseAdd *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -202,11 +202,11 @@ static WERROR dcesrv_WKSSVC_NETRUSEGETINFO(struct dcesrv_call_state *dce_call, T
 }
 
 
-/* 
-  WKSSVC_NETRUSEDEL 
+/*
+  wkssvc_NetrUseDel
 */
-static WERROR dcesrv_WKSSVC_NETRUSEDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRUSEDEL *r)
+static WERROR dcesrv_wkssvc_NetrUseDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrUseDel *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

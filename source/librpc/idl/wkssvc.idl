@@ -268,18 +268,11 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x08      */
-	WERROR WKSSVC_NETRUSEADD ();
+	typedef struct {
+		[string,charset(UTF16)] uint16 *unknown1;
+		[string,charset(UTF16)] uint16 *unknown2;
+	} wkssvc_NetrUseInfo3;
 
-	/*****************************/
-	/* Function        0x09      */
-	WERROR WKSSVC_NETRUSEGETINFO ();
-
-	/*****************************/
-	/* Function        0x0a      */
-	WERROR WKSSVC_NETRUSEDEL ();
-
-	/*****************************/
-	/* Function        0x0b      */
 	typedef struct {
 		[string,charset(UTF16)] uint16 *local;
 		[string,charset(UTF16)] uint16 *remote;
@@ -307,6 +300,34 @@ import "srvsvc.idl";
 		[string,charset(UTF16)] uint16 *remote;
 	} wkssvc_NetrUseInfo0;
 
+	typedef [switch_type(uint32)] union {
+		[case(0)] wkssvc_NetrUseInfo0 *info0;
+		[case(1)] wkssvc_NetrUseInfo1 *info1;
+		[case(2)] wkssvc_NetrUseInfo2 *info2;
+		[case(3)] wkssvc_NetrUseInfo3 *info3;
+	} wkssvc_NetrUseGetInfoCtr;
+
+	WERROR wkssvc_NetrUseAdd(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] uint32 level,
+		[in] [switch_is(level)] [ref] wkssvc_NetrUseGetInfoCtr *ctr,
+		[in,out] uint32 *parm_err
+		);
+
+	/*****************************/
+	/* Function        0x09      */
+	WERROR WKSSVC_NETRUSEGETINFO ();
+
+	/*****************************/
+	/* Function        0x0a      */
+	WERROR wkssvc_NetrUseDel(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *use_name,
+		[in] uint32 force_cond
+		);
+
+	/*****************************/
+	/* Function        0x0b      */
 	typedef struct {
 		uint32 count;
 		[size_is(count)] wkssvc_NetrUseInfo2 *array;
