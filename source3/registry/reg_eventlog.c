@@ -141,7 +141,7 @@ bool eventlog_init_keys(void)
 
 		/* now do the values under KEY_EVENTLOG/Application/Application */
 		TALLOC_FREE(evtlogpath);
-		evtlogpath = talloc_asprintf("%s\\%s\\%s",
+		evtlogpath = talloc_asprintf(ctx, "%s\\%s\\%s",
 			  KEY_EVENTLOG, *elogs, *elogs);
 		if (!evtlogpath) {
 			return false;
@@ -234,7 +234,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		return false;
 	}
 
-	evtlogpath = talloc_asprintf("%s\\%s", KEY_EVENTLOG, eventlog);
+	evtlogpath = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, eventlog);
 	if (!evtlogpath) {
 		TALLOC_FREE(values);
 		return false;
@@ -320,7 +320,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		return False;
 	}
 	TALLOC_FREE(evtlogpath);
-	evtlogpath = talloc_asprintf("%s\\%s", KEY_EVENTLOG, eventlog );
+	evtlogpath = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, eventlog );
 	if (!evtlogpath) {
 		TALLOC_FREE(subkeys);
 		return false;
@@ -347,7 +347,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		return False;
 	}
 	TALLOC_FREE(evtlogpath);
-	evtlogpath = talloc_asprintf("%s\\%s\\%s",
+	evtlogpath = talloc_asprintf(ctx, "%s\\%s\\%s",
 		  KEY_EVENTLOG, eventlog, sourcename);
 	if (!evtlogpath) {
 		TALLOC_FREE(subkeys);
