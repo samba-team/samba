@@ -25,6 +25,8 @@
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 
+#define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
+
 static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
 {
@@ -50,31 +52,93 @@ static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 	return true;
 }
 
-
 static bool test_NetWkstaTransportEnum(struct torture_context *tctx,
 				       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct wkssvc_NetWkstaTransportEnum r;
 	uint32_t resume_handle = 0;
+	struct wkssvc_NetWkstaTransportInfo info;
 	union wkssvc_NetWkstaTransportCtr ctr;
 	struct wkssvc_NetWkstaTransportCtr0 ctr0;
+	uint32_t total_entries = 0;
 
 	ZERO_STRUCT(ctr0);
 	ctr.ctr0 = &ctr0;
 
+	info.level = 0;
+	info.ctr = ctr;
+
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.level = 0;
-	r.in.ctr = &ctr;
+	r.in.info = &info;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
-	r.out.ctr = &ctr;
+	r.out.total_entries = &total_entries;
+	r.out.info = &info;
 	r.out.resume_handle = &resume_handle;
 
+	torture_comment(tctx, "testing NetWkstaTransportEnum level 0\n");
+
 	status = dcerpc_wkssvc_NetWkstaTransportEnum(p, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "NetWkstaTransportEnum failed");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetWkstaTransportEnum failed");
 	torture_assert_werr_ok(tctx, r.out.result, talloc_asprintf(tctx,
-		"NetWkstaTransportEnum level %u failed", r.in.level));
+			       "NetWkstaTransportEnum level %u failed",
+			       info.level));
+
+	return true;
+}
+
+static bool test_NetrWkstaTransportAdd(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrWkstaTransportAdd r;
+	struct wkssvc_NetWkstaTransportInfo0 info0;
+	uint32_t parm_err = 0;
+
+	ZERO_STRUCT(info0);
+
+	info0.quality_of_service = 0xffff;
+	info0.vc_count = 0;
+	info0.name = SMBTORTURE_TRANSPORT_NAME;
+	info0.address = "000000000000";
+	info0.wan_link = 0x400;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.level = 0;
+	r.in.info0 = &info0;
+	r.in.parm_err = r.out.parm_err = &parm_err;
+
+	torture_comment(tctx, "testing NetrWkstaTransportAdd level 0\n");
+
+	status = dcerpc_wkssvc_NetrWkstaTransportAdd(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrWkstaTransportAdd failed");
+	torture_assert_werr_equal(tctx, r.out.result,
+				  WERR_INVALID_PARAM,
+				  "NetrWkstaTransportAdd level 0 failed");
+
+	return true;
+}
+
+static bool test_NetrWkstaTransportDel(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrWkstaTransportDel r;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.transport_name = SMBTORTURE_TRANSPORT_NAME;
+	r.in.unknown3 = 0;
+
+	torture_comment(tctx, "testing NetrWkstaTransportDel\n");
+
+	status = dcerpc_wkssvc_NetrWkstaTransportDel(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrWkstaTransportDel failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrWkstaTransportDel");
 
 	return true;
 }
@@ -189,8 +253,14 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "NetWkstaGetInfo",
 				   test_NetWkstaGetInfo);
+
 	torture_rpc_tcase_add_test(tcase, "NetWkstaTransportEnum",
 				   test_NetWkstaTransportEnum);
+	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportDel",
+				   test_NetrWkstaTransportDel);
+	torture_rpc_tcase_add_test(tcase, "NetrWkstaTransportAdd",
+				   test_NetrWkstaTransportAdd);
+
 	torture_rpc_tcase_add_test(tcase, "NetWkstaEnumUsers",
 				   test_NetWkstaEnumUsers);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaUserGetInfo",
