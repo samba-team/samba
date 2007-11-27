@@ -1304,7 +1304,7 @@ int interpret_protocol(const char *str,int def)
 static char *strip_mount_options(const char *str)
 {
 	if (*str == '-') {
-		char *p = str;
+		const char *p = str;
 		while(*p && !isspace(*p))
 			p++;
 		while(*p && isspace(*p))
