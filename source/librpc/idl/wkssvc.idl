@@ -376,7 +376,56 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x0d      */
-	WERROR WKSSVC_NETRWORKSTATIONSTATISTICSGET ();
+	typedef struct {
+		hyper unknown1;
+		hyper unknown2;
+		hyper unknown3;
+		hyper unknown4;
+		hyper unknown5;
+		hyper unknown6;
+		hyper unknown7;
+		hyper unknown8;
+		hyper unknown9;
+		hyper unknown10;
+		hyper unknown11;
+		hyper unknown12;
+		hyper unknown13;
+		uint32 unknown14;
+		uint32 unknown15;
+		uint32 unknown16;
+		uint32 unknown17;
+		uint32 unknown18;
+		uint32 unknown19;
+		uint32 unknown20;
+		uint32 unknown21;
+		uint32 unknown22;
+		uint32 unknown23;
+		uint32 unknown24;
+		uint32 unknown25;
+		uint32 unknown26;
+		uint32 unknown27;
+		uint32 unknown28;
+		uint32 unknown29;
+		uint32 unknown30;
+		uint32 unknown31;
+		uint32 unknown32;
+		uint32 unknown33;
+		uint32 unknown34;
+		uint32 unknown35;
+		uint32 unknown36;
+		uint32 unknown37;
+		uint32 unknown38;
+		uint32 unknown39;
+		uint32 unknown40;
+	} wkssvc_NetrWorkstationStatistics;
+
+	WERROR wkssvc_NetrWorkstationStatisticsGet(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *unknown2,
+		[in] uint32 unknown3,
+		[in] uint32 unknown4,
+		[out] [ref] wkssvc_NetrWorkstationStatistics **info
+		);
 
 	/*****************************/
 	/* Function        0x0e      */
