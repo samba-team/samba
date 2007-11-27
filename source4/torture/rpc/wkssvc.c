@@ -504,6 +504,66 @@ static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrValidateName(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrValidateName r;
+	uint16_t levels[] = {0,1,2,3,4,5};
+	int i;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.name = lp_workgroup(global_loadparm);
+		r.in.Account = NULL;
+		r.in.Password = NULL;
+		r.in.name_type = levels[i];
+
+		torture_comment(tctx, "testing NetrValidateName level %u\n",
+				r.in.name_type);
+
+		status = dcerpc_wkssvc_NetrValidateName(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "NetrValidateName failed");
+		torture_assert_werr_equal(tctx, r.out.result,
+					  WERR_NOT_SUPPORTED,
+					  "NetrValidateName failed");
+	}
+
+	return true;
+}
+
+static bool test_NetrValidateName2(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrValidateName2 r;
+	uint16_t levels[] = {0,1,2,3,4,5};
+	int i;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.name = lp_workgroup(global_loadparm);
+		r.in.Account = NULL;
+		r.in.EncryptedPassword = NULL;
+		r.in.name_type = levels[i];
+
+		torture_comment(tctx, "testing NetrValidateName2 level %u\n",
+				r.in.name_type);
+
+		status = dcerpc_wkssvc_NetrValidateName2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "NetrValidateName2 failed");
+		torture_assert_werr_equal(tctx, r.out.result,
+					  WERR_RPC_E_REMOTE_DISABLED,
+					  "NetrValidateName2 failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -537,6 +597,10 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "NetrUseAdd",
 				   test_NetrUseAdd);
 
+	torture_rpc_tcase_add_test(tcase, "NetrValidateName",
+				   test_NetrValidateName);
+	torture_rpc_tcase_add_test(tcase, "NetrValidateName2",
+				   test_NetrValidateName2);
 	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameDel",
 				   test_NetrLogonDomainNameDel);
 	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameAdd",

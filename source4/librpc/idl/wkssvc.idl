@@ -404,7 +404,22 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x13      */
-	WERROR WKSSVC_NETRVALIDATENAME ();
+	typedef enum {
+		NetSetupUnknown = 0,
+		NetSetupMachine = 1,
+		NetSetupWorkgroup = 2,
+		NetSetupDomain = 3,
+		NetSetupNonExistentDomain = 4,
+		NetSetupDnsMachine = 5
+	} wkssvc_NetValidateNameType;
+
+	WERROR wkssvc_NetrValidateName(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [ref] [string,charset(UTF16)] uint16 *name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] [string,charset(UTF16)] uint16 *Password,
+		[in] wkssvc_NetValidateNameType name_type
+		);
 
 	/*****************************/
 	/* Function        0x14      */
@@ -482,7 +497,13 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x19      */
-	WERROR WKSSVC_NETRVALIDATENAME2 ();
+	WERROR wkssvc_NetrValidateName2(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [ref] [string,charset(UTF16)] uint16 *name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] wkssvc_NetValidateNameType name_type
+		);
 
 	/*****************************/
 	/* Function        0x1a      */
