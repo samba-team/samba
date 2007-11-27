@@ -18,6 +18,7 @@ SLAPD = @SLAPD@
 SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
 
 TALLOC_LIBS = @TALLOC_LIBS@
 TALLOC_CFLAGS = @TALLOC_CFLAGS@
@@ -99,14 +100,14 @@ nssdir:
 	@mkdir -p $(NSSDIR)
 
 SONAME = libldb.$(SHLIBEXT).0
-SOLIB = lib/libldb.$(SHLIBEXT).0.9.0
+SOLIB = lib/libldb.$(SHLIBEXT).$(PACKAGE_VERSION)
 STATICLIB = lib/libldb.a
 
 lib/$(SONAME): $(SOLIB)
-	ln -fs $< $@
+	ln -fs libldb.$(SHLIBEXT).$(PACKAGE_VERSION) $@
 
 lib/libldb.$(SHLIBEXT): $(SOLIB)
-	ln -fs $< $@
+	ln -fs libldb.$(SHLIBEXT).$(PACKAGE_VERSION) $@
 
 $(SOLIB): $(OBJS)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
