@@ -212,11 +212,11 @@ static WERROR dcesrv_WKSSVC_NETRUSEDEL(struct dcesrv_call_state *dce_call, TALLO
 }
 
 
-/* 
-  WKSSVC_NETRUSEENUM 
+/*
+  wkssvc_NetrUseEnum
 */
-static WERROR dcesrv_WKSSVC_NETRUSEENUM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRUSEENUM *r)
+static WERROR dcesrv_wkssvc_NetrUseEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrUseEnum *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

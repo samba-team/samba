@@ -280,7 +280,66 @@ import "srvsvc.idl";
 
 	/*****************************/
 	/* Function        0x0b      */
-	WERROR WKSSVC_NETRUSEENUM ();
+	typedef struct {
+		[string,charset(UTF16)] uint16 *local;
+		[string,charset(UTF16)] uint16 *remote;
+		[string,charset(UTF16)] uint16 *password;
+		uint32 status;
+		uint32 asg_type;
+		uint32 ref_count;
+		uint32 use_count;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *domain_name;
+	} wkssvc_NetrUseInfo2;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *local;
+		[string,charset(UTF16)] uint16 *remote;
+		[string,charset(UTF16)] uint16 *password;
+		uint32 status;
+		uint32 asg_type;
+		uint32 ref_count;
+		uint32 use_count;
+	} wkssvc_NetrUseInfo1;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *local;
+		[string,charset(UTF16)] uint16 *remote;
+	} wkssvc_NetrUseInfo0;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] wkssvc_NetrUseInfo2 *array;
+	} wkssvc_NetrUseEnumCtr2;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] wkssvc_NetrUseInfo1 *array;
+	} wkssvc_NetrUseEnumCtr1;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] wkssvc_NetrUseInfo0 *array;
+	} wkssvc_NetrUseEnumCtr0;
+
+	typedef [switch_type(uint32)] union {
+		[case(0)] wkssvc_NetrUseEnumCtr0 *ctr0;
+		[case(1)] wkssvc_NetrUseEnumCtr1 *ctr1;
+		[case(2)] wkssvc_NetrUseEnumCtr2 *ctr2;
+	} wkssvc_NetrUseEnumCtr;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] wkssvc_NetrUseEnumCtr ctr;
+	} wkssvc_NetrUseEnumInfo;
+
+	WERROR wkssvc_NetrUseEnum(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,out] [ref] wkssvc_NetrUseEnumInfo *info,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[in,out] uint32 *resume_handle
+		);
 
 	/*****************************/
 	/* Function        0x0c      */

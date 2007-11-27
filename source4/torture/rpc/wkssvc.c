@@ -242,6 +242,62 @@ static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrUseEnum(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUseEnum r;
+	uint32_t handle = 0;
+	uint32_t entries_read = 0;
+	struct wkssvc_NetrUseEnumInfo info;
+	struct wkssvc_NetrUseEnumCtr0 *use0;
+	struct wkssvc_NetrUseEnumCtr1 *use1;
+	struct wkssvc_NetrUseEnumCtr2 *use2;
+	uint32_t levels[] = { 0, 1, 2 };
+	int i;
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		ZERO_STRUCT(info);
+
+		info.level = levels[i];
+		switch (info.level) {
+		case 0:
+			use0 = talloc_zero(tctx, struct wkssvc_NetrUseEnumCtr0);
+			info.ctr.ctr0 = use0;
+			break;
+		case 1:
+			use1 = talloc_zero(tctx, struct wkssvc_NetrUseEnumCtr1);
+			info.ctr.ctr1 = use1;
+			break;
+		case 2:
+			use2 = talloc_zero(tctx, struct wkssvc_NetrUseEnumCtr2);
+			info.ctr.ctr2 = use2;
+			break;
+		default:
+			break;
+		}
+
+		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.prefmaxlen = (uint32_t)-1;
+		r.in.info = r.out.info = &info;
+		r.in.resume_handle = r.out.resume_handle = &handle;
+
+		r.out.entries_read = &entries_read;
+
+		torture_comment(tctx, "testing NetrUseEnum level %u\n",
+				levels[i]);
+
+		status = dcerpc_wkssvc_NetrUseEnum(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "NetrUseEnum failed");
+		torture_assert_werr_ok(tctx, r.out.result,
+				       "NetrUseEnum failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -265,6 +321,9 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetWkstaEnumUsers);
 	torture_rpc_tcase_add_test(tcase, "NetrWkstaUserGetInfo",
 				   test_NetrWkstaUserGetInfo);
+
+	torture_rpc_tcase_add_test(tcase, "NetrUseEnum",
+				   test_NetrUseEnum);
 
 	return suite;
 }
