@@ -232,26 +232,39 @@ import "srvsvc.idl";
 
 	typedef union {
 		[case(0)] wkssvc_NetWkstaTransportCtr0 *ctr0;
-		[default] ;
 	} wkssvc_NetWkstaTransportCtr;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] wkssvc_NetWkstaTransportCtr ctr;
+	} wkssvc_NetWkstaTransportInfo;
 
 	WERROR wkssvc_NetWkstaTransportEnum (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
-		[in,out]     uint32 level,
-		[in,out,switch_is(level),ref] wkssvc_NetWkstaTransportCtr *ctr,
+		[in,out,ref] wkssvc_NetWkstaTransportInfo *info,
 		[in]         uint32 max_buffer,
-		[out]        uint32 totalentries,
+		[out,ref]    uint32 *total_entries,
 		[in,out]     uint32 *resume_handle
 		);
 
-
 	/*****************************/
 	/* Function        0x06      */
-	WERROR WKSSVC_NETRWKSTATRANSPORTADD ();
+	/* only supported on NT */
+	WERROR wkssvc_NetrWkstaTransportAdd(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] uint32 level, /* must be 0 */
+		[in] [ref] wkssvc_NetWkstaTransportInfo0 *info0,
+		[in,out] uint32 *parm_err
+                );
 
 	/*****************************/
 	/* Function        0x07      */
-	WERROR WKSSVC_NETRWKSTATRANSPORTDEL ();
+	/* only supported on NT */
+	WERROR wkssvc_NetrWkstaTransportDel(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *transport_name,
+		[in] uint32 unknown3
+		);
 
 	/*****************************/
 	/* Function        0x08      */
