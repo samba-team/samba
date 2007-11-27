@@ -336,9 +336,9 @@ import "srvsvc.idl";
 	/*****************************/
 	/* Function        0x17      */
 	WERROR wkssvc_NetrUnjoinDomain2 (
-		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
-		[in] [unique] [string,charset(UTF16)] uint16 *account,
-		[in] [unique] wkssvc_PasswordBuffer *encrypted_password,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *account,
+		[in] wkssvc_PasswordBuffer *encrypted_password,
 		[in] wkssvc_joinflags unjoin_flags
 		);
 
@@ -350,10 +350,10 @@ import "srvsvc.idl";
 	/*****************************/
 	/* Function        0x18      */
 	WERROR wkssvc_NetrRenameMachineInDomain2(
-		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
-		[in] [unique] [string,charset(UTF16)] uint16 *NewMachineName,
-		[in] [unique] [string,charset(UTF16)] uint16 *Account,
-		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *NewMachineName,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] wkssvc_renameflags RenameOptions
 		);
 
@@ -368,20 +368,20 @@ import "srvsvc.idl";
 	/*****************************/
 	/* Function        0x1b      */
 	WERROR wkssvc_NetrAddAlternateComputerName(
-		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
-		[in] [unique] [string,charset(UTF16)] uint16 *NewAlternateMachineName,
-		[in] [unique] [string,charset(UTF16)] uint16 *Account,
-		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *NewAlternateMachineName,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] uint32 Reserved
 		);
 
 	/*****************************/
 	/* Function        0x1c      */
 	WERROR wkssvc_NetrRemoveAlternateComputerName(
-		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
-		[in] [unique] [string,charset(UTF16)] uint16 *AlternateMachineNameToRemove,
-		[in] [unique] [string,charset(UTF16)] uint16 *Account,
-		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *AlternateMachineNameToRemove,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] uint32 Reserved
 		);
 
