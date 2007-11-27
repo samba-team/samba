@@ -28,7 +28,7 @@
 #define SMBTORTURE_ALTERNATE_NAME "smbtrt_altname"
 #define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
 #define SMBTORTURE_USE_NAME "S:"
-#define SMBTORTURE_MESSAGE "smbtrt_message"
+#define SMBTORTURE_MESSAGE "You are currently tortured by Samba"
 
 static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
