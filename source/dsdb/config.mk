@@ -8,7 +8,8 @@ include samdb/ldb_modules/config.mk
 PUBLIC_PROTO_HEADER = samdb/samdb_proto.h
 PUBLIC_HEADERS = samdb/samdb.h
 PUBLIC_DEPENDENCIES = LIBCLI_LDAP HEIMDAL_KRB5 
-PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER
+PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
+					   auth_system_session
 OBJ_FILES = \
 		samdb/samdb.o \
 		samdb/samdb_privilege.o \

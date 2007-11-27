@@ -34,7 +34,7 @@ OBJ_FILES = \
 	smb_composite/fetchfile.o \
 	smb_composite/appendacl.o \
 	smb_composite/fsinfo.o 
-PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE CREDENTIALS
+PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE CREDENTIALS gensec
 
 [SUBSYSTEM::NDR_NBT_BUF]
 PRIVATE_PROTO_HEADER = nbt/nbtname.h

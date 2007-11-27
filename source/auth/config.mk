@@ -80,7 +80,6 @@ OBJ_FILES = \
 		auth_util.o \
 		auth_simple.o
 PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
-PRIVATE_DEPENDENCIES = auth_session auth_system_session
 # End SUBSYSTEM auth
 #######################
 

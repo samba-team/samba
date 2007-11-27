@@ -13,7 +13,7 @@ OBJ_FILES = \
 		ldap_extended.o
 PRIVATE_DEPENDENCIES = CREDENTIALS \
 		LIBCLI_LDAP SAMDB \
-		process_model auth \
+		process_model \
 		GENSEC_SOCKET
 # End SUBSYSTEM SMB
 #######################
