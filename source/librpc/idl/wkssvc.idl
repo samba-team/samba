@@ -339,7 +339,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrWkstaUserSetInfo(
 		[in] [string,charset(UTF16)] uint16 *unknown,
 		[in] uint32 level,
-		[out,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info,
+		[in,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info,
 		[in,out] uint32 *parm_err
 		);
 
