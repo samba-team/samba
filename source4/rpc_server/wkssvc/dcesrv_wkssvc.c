@@ -222,11 +222,11 @@ static WERROR dcesrv_wkssvc_NetrUseEnum(struct dcesrv_call_state *dce_call, TALL
 }
 
 
-/* 
-  WKSSVC_NETRMESSAGEBUFFERSEND 
+/*
+  wkssvc_NetrMessageBufferSend
 */
-static WERROR dcesrv_WKSSVC_NETRMESSAGEBUFFERSEND(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
+static WERROR dcesrv_wkssvc_NetrMessageBufferSend(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrMessageBufferSend *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

@@ -28,6 +28,7 @@
 #define SMBTORTURE_ALTERNATE_NAME "smbtrt_altname"
 #define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
 #define SMBTORTURE_USE_NAME "S:"
+#define SMBTORTURE_MESSAGE "smbtrt_message"
 
 static bool test_NetWkstaGetInfo(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
@@ -740,6 +741,35 @@ static bool test_NetrWorkstationStatisticsGet(struct torture_context *tctx,
 	return true;
 }
 
+/* only succeeds as long as the local messenger service is running - Guenther */
+
+static bool test_NetrMessageBufferSend(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrMessageBufferSend r;
+	const char *message = SMBTORTURE_MESSAGE;
+	size_t size;
+	uint8_t *msg;
+
+	size = push_ucs2_talloc(tctx, (void **)&msg, message);
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.message_name = dcerpc_server_name(p);
+	r.in.message_sender_name = dcerpc_server_name(p);
+	r.in.message_buffer = msg;
+	r.in.message_size = size;
+
+	torture_comment(tctx, "testing NetrMessageBufferSend\n");
+
+	status = dcerpc_wkssvc_NetrMessageBufferSend(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrMessageBufferSend failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrMessageBufferSend failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -790,6 +820,8 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "NetrWorkstationStatisticsGet",
 				   test_NetrWorkstationStatisticsGet);
+	torture_rpc_tcase_add_test(tcase, "NetrMessageBufferSend",
+				   test_NetrMessageBufferSend);
 
 	return suite;
 }

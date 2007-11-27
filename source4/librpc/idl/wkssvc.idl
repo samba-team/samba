@@ -372,7 +372,13 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x0c      */
-	WERROR WKSSVC_NETRMESSAGEBUFFERSEND ();
+	WERROR wkssvc_NetrMessageBufferSend(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *message_name,
+		[in] [string,charset(UTF16)] uint16 *message_sender_name,
+		[in] [size_is(message_size)] [ref] uint8 *message_buffer,
+		[in] uint32 message_size
+		);
 
 	/*****************************/
 	/* Function        0x0d      */
