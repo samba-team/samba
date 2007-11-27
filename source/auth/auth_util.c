@@ -1452,13 +1452,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!(nt_username = unistr2_tdup(mem_ctx, &(info3->uni_user_name)))) {
+	if (!(nt_username = unistr2_to_ascii_talloc(mem_ctx, &(info3->uni_user_name)))) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */
 		nt_username = sent_nt_username;
 	}
 
-	if (!(nt_domain = unistr2_tdup(mem_ctx, &(info3->uni_logon_dom)))) {
+	if (!(nt_domain = unistr2_to_ascii_talloc(mem_ctx, &(info3->uni_logon_dom)))) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */
 		nt_domain = domain;
@@ -1620,7 +1620,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	result->login_server = unistr2_tdup(result, 
+	result->login_server = unistr2_to_ascii_talloc(result, 
 					    &(info3->uni_logon_srv));
 
 	/* ensure we are never given NULL session keys */

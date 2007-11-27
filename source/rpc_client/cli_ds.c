@@ -121,13 +121,13 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 			}
 
 			if (r.domains.trusts[i].netbios_ptr) {
-				(*trusts)[i].netbios_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].netbios_domain );
+				(*trusts)[i].netbios_domain = unistr2_to_ascii_talloc( mem_ctx, &r.domains.trusts[i].netbios_domain );
 			} else {
 				(*trusts)[i].netbios_domain = NULL;
 			}
 
 			if (r.domains.trusts[i].dns_ptr) {
-				(*trusts)[i].dns_domain = unistr2_tdup( mem_ctx, &r.domains.trusts[i].dns_domain );
+				(*trusts)[i].dns_domain = unistr2_to_ascii_talloc( mem_ctx, &r.domains.trusts[i].dns_domain );
 			} else {
 				(*trusts)[i].dns_domain = NULL;
 			}

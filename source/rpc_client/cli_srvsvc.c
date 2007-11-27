@@ -126,11 +126,11 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 			/* Duplicate strings */
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_netname);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_netname);
 			if (s)
 				init_unistr2(&info1->info_1_str.uni_netname, s, UNI_STR_TERMINATE);
 		
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_remark);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_remark);
 			if (s)
 				init_unistr2(&info1->info_1_str.uni_remark, s, UNI_STR_TERMINATE);
 
@@ -156,19 +156,19 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 			/* Duplicate strings */
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_netname);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_netname);
 			if (s)
 				init_unistr2(&info2->info_2_str.uni_netname, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_remark);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_remark);
 			if (s)
 				init_unistr2(&info2->info_2_str.uni_remark, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_path);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_path);
 			if (s)
 				init_unistr2(&info2->info_2_str.uni_path, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_passwd);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_passwd);
 			if (s)
 				init_unistr2(&info2->info_2_str.uni_passwd, s, UNI_STR_TERMINATE);
 		}
@@ -193,19 +193,19 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 			/* Duplicate strings */
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_netname);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_netname);
 			if (s)
 				init_unistr2(&info502->info_502_str.uni_netname, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_remark);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_remark);
 			if (s)
 				init_unistr2(&info502->info_502_str.uni_remark, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_path);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_path);
 			if (s)
 				init_unistr2(&info502->info_502_str.uni_path, s, UNI_STR_TERMINATE);
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_passwd);
+			s = unistr2_to_ascii_talloc(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_passwd);
 			if (s)
 				init_unistr2(&info502->info_502_str.uni_passwd, s, UNI_STR_TERMINATE);
 		
@@ -271,12 +271,12 @@ WERROR rpccli_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info1_str->uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info1_str->uni_netname);
 		if (s)
 			init_unistr2(&info1_str->uni_netname,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info1_str->uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info1_str->uni_remark);
 		if (s)
 			init_unistr2(&info1_str->uni_remark,
 				     s, UNI_STR_TERMINATE);
@@ -294,22 +294,22 @@ WERROR rpccli_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info2_str->uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info2_str->uni_netname);
 		if (s)
 			init_unistr2(&info2_str->uni_netname,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info2_str->uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info2_str->uni_remark);
 		if (s)
 			init_unistr2(&info2_str->uni_remark,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info2_str->uni_path);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info2_str->uni_path);
 		if (s)
 			init_unistr2(&info2_str->uni_path,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info2_str->uni_passwd);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info2_str->uni_passwd);
 		if (s)
 			init_unistr2(&info2_str->uni_passwd,
 				     s, UNI_STR_TERMINATE);
@@ -328,22 +328,22 @@ WERROR rpccli_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info502_str->uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info502_str->uni_netname);
 		if (s)
 			init_unistr2(&info502_str->uni_netname,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info502_str->uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info502_str->uni_remark);
 		if (s)
 			init_unistr2(&info502_str->uni_remark,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info502_str->uni_path);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info502_str->uni_path);
 		if (s)
 			init_unistr2(&info502_str->uni_path,
 				     s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info502_str->uni_passwd);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info502_str->uni_passwd);
 		if (s)
 			init_unistr2(&info502_str->uni_passwd,
 				     s, UNI_STR_TERMINATE);
@@ -564,12 +564,12 @@ WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 			/* Duplicate strings */
 
-			if ( (s = unistr2_tdup(mem_ctx, r.ctr.file.info3[i].path)) != NULL ) {
+			if ( (s = unistr2_to_ascii_talloc(mem_ctx, r.ctr.file.info3[i].path)) != NULL ) {
 				info3->path = TALLOC_P( mem_ctx, UNISTR2 );
 				init_unistr2(info3->path, s, UNI_STR_TERMINATE);
 			}
 		
-			if ( (s = unistr2_tdup(mem_ctx, r.ctr.file.info3[i].user)) != NULL ) {
+			if ( (s = unistr2_to_ascii_talloc(mem_ctx, r.ctr.file.info3[i].user)) != NULL ) {
 				info3->user = TALLOC_P( mem_ctx, UNISTR2 );
 				init_unistr2(info3->user, s, UNI_STR_TERMINATE);
 			}

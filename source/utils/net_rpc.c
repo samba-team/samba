@@ -465,7 +465,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 					 2, &ctr);
 	if (NT_STATUS_IS_OK(result)) {
 		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
-		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
+		d_printf("Domain Name: %s\n", unistr2_to_ascii_talloc(ctx, &ctr.info.inf2.uni_domain));
 		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %llu\n", (unsigned long long)ctr.info.inf2.seq_num);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
@@ -2563,7 +2563,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 									       &ctr))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_tdup(mem_ctx,
+					description = unistr2_to_ascii_talloc(mem_ctx,
 								   ctr.alias.info3.description.string);
 				}
 			}
@@ -2618,7 +2618,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 									       &ctr))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_tdup(mem_ctx,
+					description = unistr2_to_ascii_talloc(mem_ctx,
 								   ctr.alias.info3.description.string);
 				}
 			}
@@ -3181,11 +3181,11 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info1.info_1_str.uni_netname);
 		if (s)
 			init_unistr2(&info1->info_1_str.uni_netname, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info1.info_1_str.uni_remark);
 		if (s)
 			init_unistr2(&info1->info_1_str.uni_remark, s, UNI_STR_TERMINATE);
 	}
@@ -3209,19 +3209,19 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info2.info_2_str.uni_netname);
 		if (s)
 			init_unistr2(&info2->info_2_str.uni_netname, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info2.info_2_str.uni_remark);
 		if (s)
 			init_unistr2(&info2->info_2_str.uni_remark, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_path);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info2.info_2_str.uni_path);
 		if (s)
 			init_unistr2(&info2->info_2_str.uni_path, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_passwd);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info2.info_2_str.uni_passwd);
 		if (s)
 			init_unistr2(&info2->info_2_str.uni_passwd, s, UNI_STR_TERMINATE);
 	}
@@ -3245,19 +3245,19 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 
 		/* Duplicate strings */
 
-		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_netname);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info502.info_502_str.uni_netname);
 		if (s)
 			init_unistr2(&info502->info_502_str.uni_netname, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_remark);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info502.info_502_str.uni_remark);
 		if (s)
 			init_unistr2(&info502->info_502_str.uni_remark, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_path);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info502.info_502_str.uni_path);
 		if (s)
 			init_unistr2(&info502->info_502_str.uni_path, s, UNI_STR_TERMINATE);
 
-		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_passwd);
+		s = unistr2_to_ascii_talloc(mem_ctx, &info.share.info502.info_502_str.uni_passwd);
 		if (s)
 			init_unistr2(&info502->info_502_str.uni_passwd, s, UNI_STR_TERMINATE);
 

@@ -440,8 +440,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		sid_compose(&info->user_sid, &domain->sid, user->user_rid);
 		sid_compose(&info->group_sid, &domain->sid, user->group_rid);
 				
-		info->acct_name = unistr2_tdup(mem_ctx, &user->uni_user_name);
-		info->full_name = unistr2_tdup(mem_ctx, &user->uni_full_name);
+		info->acct_name = unistr2_to_ascii_talloc(mem_ctx, &user->uni_user_name);
+		info->full_name = unistr2_to_ascii_talloc(mem_ctx, &user->uni_full_name);
 		
 		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
 			      &info->homedir, &info->shell, &info->full_name, 

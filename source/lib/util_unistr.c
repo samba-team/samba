@@ -408,7 +408,7 @@ int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
 
 /* Converts a string from internal samba format to unicode. Always terminates.
  * Actually just a wrapper round push_ucs2_talloc().
- */ 
+ */
 
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 {
@@ -428,6 +428,7 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
 }
 
+#if 0
 /*******************************************************************
  Convert a (little-endian) UNISTR3 structure to an ASCII string.
 ********************************************************************/
@@ -441,6 +442,30 @@ void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
 	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
 	          STR_NOALIGN);
 }
+#endif
+
+/*******************************************************************
+ Duplicate a UNISTR2 string into a null terminated char*
+ using a talloc context.
+********************************************************************/
+
+char *unistr2_to_ascii_talloc(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s = NULL;
+
+	if (!str || !str->buffer) {
+		return NULL;
+	}
+	if (pull_ucs2_base_talloc(ctx,
+				NULL,
+				&s,
+				str->buffer,
+				str->uni_str_len*2,
+				STR_NOALIGN) == (size_t)-1) {
+		return NULL;
+	}
+	return s;
+}
 
 /*******************************************************************
  Return a string for displaying a UNISTR2. Guarentees to return a
@@ -450,44 +475,18 @@ void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
 
 const char *unistr2_static(const UNISTR2 *str)
 {
-	size_t ret = (size_t)-1;
 	char *dest = NULL;
 
 	if ((str == NULL) || (str->uni_str_len == 0)) {
 		return "";
 	}
 
-	ret = pull_ucs2_base_talloc(talloc_tos(),
-				NULL,
-				&dest,
-				str->buffer,
-				str->uni_str_len*2,
-				STR_NOALIGN);
-	if (ret == (size_t)-1 || dest == NULL) {
+	dest = unistr2_to_ascii_talloc(talloc_tos(), str);
+	if (!dest) {
 		return "";
 	}
 
 	return dest;
-}
-
-/*******************************************************************
- Duplicate a UNISTR2 string into a null terminated char*
- using a talloc context.
-********************************************************************/
-
-char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
-{
-	char *s;
-	int maxlen = (str->uni_str_len+1)*4;
-	if (!str->buffer) {
-		return NULL;
-	}
-	s = (char *)TALLOC(ctx, maxlen); /* convervative */
-	if (!s) {
-		return NULL;
-	}
-	pull_ucs2(NULL, s, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
-	return s;
 }
 
 /*******************************************************************
