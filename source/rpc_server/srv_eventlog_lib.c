@@ -667,7 +667,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		entry->data_record.source_name_len = rpcstr_push_talloc(ctx,
 				&entry->data_record.source_name,
 				stop);
-		if (entry->data_record.source_name_len == (size_t)-1 ||
+		if (entry->data_record.source_name_len == (uint32_t)-1 ||
 				entry->data_record.source_name == NULL) {
 			return false;
 		}
@@ -679,7 +679,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		entry->data_record.computer_name_len = rpcstr_push_talloc(ctx,
 				&entry->data_record.computer_name,
 				stop);
-		if (entry->data_record.computer_name_len == (size_t)-1 ||
+		if (entry->data_record.computer_name_len == (uint32_t)-1 ||
 				entry->data_record.computer_name == NULL) {
 			return false;
 		}
@@ -691,7 +691,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		entry->record.user_sid_length = rpcstr_push_talloc(ctx,
 				&entry->data_record.sid,
 				stop);
-		if (entry->record.user_sid_length == (size_t)-1 ||
+		if (entry->record.user_sid_length == (uint32_t)-1 ||
 				entry->data_record.sid == NULL) {
 			return false;
 		}
