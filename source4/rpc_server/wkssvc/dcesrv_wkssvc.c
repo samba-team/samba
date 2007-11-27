@@ -392,11 +392,11 @@ static WERROR dcesrv_wkssvc_NetrRemoveAlternateComputerName(struct dcesrv_call_s
 }
 
 
-/* 
-  WKSSVC_NETRSETPRIMARYCOMPUTERNAME 
+/*
+  wkssvc_NetrSetPrimaryComputername
 */
-static WERROR dcesrv_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
+static WERROR dcesrv_wkssvc_NetrSetPrimaryComputername(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrSetPrimaryComputername *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
