@@ -292,11 +292,11 @@ static WERROR dcesrv_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct dcesrv_call_state *
 }
 
 
-/* 
-  WKSSVC_NETRVALIDATENAME 
+/*
+  wkssvc_NetrValidateName
 */
-static WERROR dcesrv_WKSSVC_NETRVALIDATENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRVALIDATENAME *r)
+static WERROR dcesrv_wkssvc_NetrValidateName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrValidateName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -352,11 +352,11 @@ static WERROR dcesrv_wkssvc_NetrRenameMachineInDomain2(struct dcesrv_call_state 
 }
 
 
-/* 
-  WKSSVC_NETRVALIDATENAME2 
+/*
+  wkssvc_NetrValidateName2
 */
-static WERROR dcesrv_WKSSVC_NETRVALIDATENAME2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRVALIDATENAME2 *r)
+static WERROR dcesrv_wkssvc_NetrValidateName2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrValidateName2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
