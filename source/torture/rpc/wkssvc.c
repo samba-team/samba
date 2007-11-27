@@ -864,8 +864,6 @@ static bool test_NetrRenameMachineInDomain2(struct torture_context *tctx,
 
 	torture_comment(tctx, "testing NetrRenameMachineInDomain2\n");
 
-	return test_NetrRenameMachineInDomain2_name(tctx, p, "w2k3dc-rhber.ber.redhat.com");
-
 	if (!test_NetrEnumerateComputerNames_level(tctx, p,
 						   NetPrimaryComputerName,
 						   &names_o, &num_names_o))
