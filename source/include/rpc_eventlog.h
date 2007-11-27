@@ -134,15 +134,15 @@ typedef struct {
 
 typedef struct {
 	uint32 source_name_len;
-	wpstring source_name;
+	smb_ucs2_t *source_name;
 	uint32 computer_name_len;
-	wpstring computer_name;
+	smb_ucs2_t *computer_name;
 	uint32 sid_padding;
-	wpstring sid;
+	smb_ucs2_t *sid;
 	uint32 strings_len;
-	wpstring strings;
+	smb_ucs2_t *strings;
 	uint32 user_data_len;
-	pstring user_data;
+	char *user_data;
 	uint32 data_padding;
 } Eventlog_data_record;
 

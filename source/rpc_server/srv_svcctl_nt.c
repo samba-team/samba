@@ -288,29 +288,34 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	SEC_DESC *sec_desc;
 	uint32 access_granted = 0;
 	NTSTATUS status;
-	pstring service;
+	char *service = NULL;
+	size_t ret = rpcstr_pull_talloc(p->mem_ctx,
+					&service,
+					q_u->servicename.buffer,
+					q_u->servicename.uni_str_len*2,
+					0);
 
-	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
-	
+	if (ret == (size_t)-1 || !service) {
+		return WERR_NOMEM;
+	}
   	DEBUG(5, ("_svcctl_open_service: Attempting to open Service [%s], \n", service));
 
-	
 	/* based on my tests you can open a service if you have a valid scm handle */
-	
+
 	if ( !find_service_info_by_hnd( p, &q_u->handle ) )
 		return WERR_BADFID;
-			
+
 	/* perform access checks.  Use the root token in order to ensure that we 
 	   retrieve the security descriptor */
-	
+
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, service, get_root_nt_token() )) )
 		return WERR_NOMEM;
-		
+
 	se_map_generic( &q_u->access, &svc_generic_map );
 	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
-	
+
 	return create_open_service_handle( p, &r_u->handle, SVC_HANDLE_IS_SERVICE, service, access_granted );
 }
 

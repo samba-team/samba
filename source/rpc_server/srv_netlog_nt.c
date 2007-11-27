@@ -948,16 +948,16 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	/* This is the point at which, if the login was successful, that
            the SAM Local Security Authority should record that the user is
            logged in to the domain.  */
-    
+
 	{
 		DOM_GID *gids = NULL;
 		const DOM_SID *user_sid = NULL;
 		const DOM_SID *group_sid = NULL;
 		DOM_SID domain_sid;
-		uint32 user_rid, group_rid; 
+		uint32 user_rid, group_rid;
 
 		int num_gids = 0;
-		pstring my_name;
+		const char *my_name;
 		fstring user_sid_string;
 		fstring group_sid_string;
 		unsigned char user_session_key[16];
@@ -985,19 +985,18 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid "
 				  "%s\n but group sid %s.\n"
 				  "The conflicting domain portions are not "
-				  "supported for NETLOGON calls\n", 	    
+				  "supported for NETLOGON calls\n",
 				  pdb_get_domain(sampw),
 				  pdb_get_username(sampw),
 				  sid_to_string(user_sid_string, user_sid),
 				  sid_to_string(group_sid_string, group_sid)));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
-		
+
 		if(server_info->login_server) {
-		        pstrcpy(my_name, server_info->login_server);
+		        my_name = server_info->login_server;
 		} else {
-		        pstrcpy(my_name, global_myname());
+		        my_name = global_myname();
 		}
 
 		status = nt_token_to_group_list(p->mem_ctx, &domain_sid,
@@ -1011,7 +1010,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 		if (server_info->user_session_key.length) {
 			memcpy(user_session_key,
-			       server_info->user_session_key.data, 
+			       server_info->user_session_key.data,
 			       MIN(sizeof(user_session_key),
 				   server_info->user_session_key.length));
 			if (process_creds) {
@@ -1029,7 +1028,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		}
 		if (server_info->lm_session_key.length) {
 			memcpy(lm_session_key,
-			       server_info->lm_session_key.data, 
+			       server_info->lm_session_key.data,
 			       MIN(sizeof(lm_session_key),
 				   server_info->lm_session_key.length));
 			if (process_creds) {
@@ -1045,10 +1044,10 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 			SamOEMhash(lm_session_key, pipe_session_key, 16);
 			memset(pipe_session_key, '\0', 16);
 		}
-		
-		init_net_user_info3(p->mem_ctx, usr_info, 
+
+		init_net_user_info3(p->mem_ctx, usr_info,
 				    user_rid,
-				    group_rid,   
+				    group_rid,
 				    pdb_get_username(sampw),
 				    pdb_get_fullname(sampw),
 				    pdb_get_homedir(sampw),
@@ -1071,7 +1070,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				    server_info->lm_session_key.length ? lm_session_key : NULL,
 				    my_name     , /* char *logon_srv */
 				    pdb_get_domain(sampw),
-				    &domain_sid);     /* DOM_SID *dom_sid */  
+				    &domain_sid);     /* DOM_SID *dom_sid */
 		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}

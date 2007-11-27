@@ -62,17 +62,16 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
  and size. Caller must free memory.
 ********************************************************************/
 
-char *elog_tdbname( const char *name )
+char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 {
-	fstring path;
-	char *tdb_fullpath;
-	char *eventlogdir = state_path( "eventlog" );
-	
-	pstr_sprintf( path, "%s/%s.tdb", eventlogdir, name );
-	strlower_m( path );
-	tdb_fullpath = SMB_STRDUP( path );
-	
-	return tdb_fullpath;
+	char *path = talloc_asprintf(ctx, "%s/%s.tdb",
+			state_path("eventlog"),
+			name);
+	if (!path) {
+		return NULL;
+	}
+	strlower_m(path);
+	return path;
 }
 
 
@@ -320,13 +319,13 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 	TDB_CONTEXT *tdb = NULL;
 	uint32 vers_id;
 	ELOG_TDB *ptr;
-	char *tdbfilename;
-	pstring tdbpath;
+	char *tdbpath = NULL;
 	ELOG_TDB *tdb_node = NULL;
 	char *eventlogdir;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	/* first see if we have an open context */
-	
+
 	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
 		if ( strequal( ptr->name, logname ) ) {
 			ptr->ref_count++;
@@ -345,27 +344,28 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 				return ptr;
 		}
 	}
-	
+
 	/* make sure that the eventlog dir exists */
-	
+
 	eventlogdir = state_path( "eventlog" );
 	if ( !directory_exist( eventlogdir, NULL ) )
-		mkdir( eventlogdir, 0755 );	
-	
-	/* get the path on disk */
-	
-	tdbfilename = elog_tdbname( logname );
-	pstrcpy( tdbpath, tdbfilename );
-	SAFE_FREE( tdbfilename );
+		mkdir( eventlogdir, 0755 );
 
-	DEBUG(7,("elog_open_tdb: Opening %s...(force_clear == %s)\n", 
+	/* get the path on disk */
+
+	tdbpath = elog_tdbname(ctx, logname);
+	if (!tdbpath) {
+		return NULL;
+	}
+
+	DEBUG(7,("elog_open_tdb: Opening %s...(force_clear == %s)\n",
 		tdbpath, force_clear?"True":"False" ));
-		
+
 	/* the tdb wasn't already open or this is a forced clear open */
 
 	if ( !force_clear ) {
 
-		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );	
+		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );
 		if ( tdb ) {
 			vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
 
@@ -593,9 +593,8 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
 
 bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 {
+	TALLOC_CTX *ctx = talloc_tos();
 	char *start = NULL, *stop = NULL;
-	pstring temp;
-	int temp_len = 0;
 
 	start = line;
 
@@ -661,62 +660,69 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 	} else if ( 0 == strncmp( start, "USL", stop - start ) ) {
 		entry->record.user_sid_length = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "SRC", stop - start ) ) {
-		memset( temp, 0, sizeof( temp ) );
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		temp_len = strlen( stop );
-		strncpy( temp, stop, temp_len );
-		rpcstr_push( ( void * ) ( entry->data_record.source_name ),
-			     temp, sizeof( entry->data_record.source_name ),
-			     STR_TERMINATE );
-		entry->data_record.source_name_len =
-			( strlen_w( entry->data_record.source_name ) * 2 ) +
-			2;
+		entry->data_record.source_name_len = rpcstr_push_talloc(ctx,
+				&entry->data_record.source_name,
+				stop);
+		if (entry->data_record.source_name_len == (size_t)-1 ||
+				entry->data_record.source_name == NULL) {
+			return false;
+		}
 	} else if ( 0 == strncmp( start, "SRN", stop - start ) ) {
-		memset( temp, 0, sizeof( temp ) );
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		temp_len = strlen( stop );
-		strncpy( temp, stop, temp_len );
-		rpcstr_push( ( void * ) ( entry->data_record.computer_name ),
-			     temp, sizeof( entry->data_record.computer_name ),
-			     STR_TERMINATE );
-		entry->data_record.computer_name_len =
-			( strlen_w( entry->data_record.computer_name ) * 2 ) +
-			2;
+		entry->data_record.computer_name_len = rpcstr_push_talloc(ctx,
+				&entry->data_record.computer_name,
+				stop);
+		if (entry->data_record.computer_name_len == (size_t)-1 ||
+				entry->data_record.computer_name == NULL) {
+			return false;
+		}
 	} else if ( 0 == strncmp( start, "SID", stop - start ) ) {
-		memset( temp, 0, sizeof( temp ) );
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		temp_len = strlen( stop );
-		strncpy( temp, stop, temp_len );
-		rpcstr_push( ( void * ) ( entry->data_record.sid ), temp,
-			     sizeof( entry->data_record.sid ),
-			     STR_TERMINATE );
-		entry->record.user_sid_length =
-			( strlen_w( entry->data_record.sid ) * 2 ) + 2;
+		entry->record.user_sid_length = rpcstr_push_talloc(ctx,
+				&entry->data_record.sid,
+				stop);
+		if (entry->record.user_sid_length == (size_t)-1 ||
+				entry->data_record.sid == NULL) {
+			return false;
+		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
+		smb_ucs2_t *temp = NULL;
+		size_t tmp_len;
+		uint32_t old_len;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */
-		while ( isspace( stop[0] ) ) {
+		while ( isspace(stop[0])) {
 			stop++;
 		}
-		temp_len = strlen( stop );
-		memset( temp, 0, sizeof( temp ) );
-		strncpy( temp, stop, temp_len );
-		rpcstr_push( ( void * ) ( entry->data_record.strings +
-					  ( entry->data_record.strings_len / 2 ) ),
-			     temp,
-			     sizeof( entry->data_record.strings ) -
-			     ( entry->data_record.strings_len / 2 ), STR_TERMINATE );
-		entry->data_record.strings_len += ( temp_len * 2 ) + 2;
+		tmp_len = rpcstr_push_talloc(ctx,
+						&temp,
+						stop);
+		if (tmp_len == (size_t)-1 || !temp) {
+			return false;
+		}
+		old_len = entry->data_record.strings_len;
+		entry->data_record.strings = (smb_ucs2_t *)TALLOC_REALLOC_ARRAY(ctx,
+						entry->data_record.strings,
+						char,
+						old_len + tmp_len);
+		if (!entry->data_record.strings) {
+			return false;
+		}
+		memcpy(entry->data_record.strings + old_len,
+				temp,
+				tmp_len);
+		entry->data_record.strings_len += tmp_len;
 		entry->record.num_strings++;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
 		/* skip past initial ":" */
@@ -725,25 +731,18 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.user_data_len = strlen( stop );
-		memset( entry->data_record.user_data, 0,
-			sizeof( entry->data_record.user_data ) );
-		if ( entry->data_record.user_data_len > 0 ) {
-			/* copy no more than the first 1024 bytes */
-			if ( entry->data_record.user_data_len >
-			     sizeof( entry->data_record.user_data ) )
-				entry->data_record.user_data_len =
-					sizeof( entry->data_record.
-						user_data );
-			memcpy( entry->data_record.user_data, stop,
-				entry->data_record.user_data_len );
+		entry->data_record.user_data_len = strlen(stop);
+		entry->data_record.user_data = talloc_strdup(ctx,
+						stop);
+		if (!entry->data_record.user_data) {
+			return false;
 		}
 	} else {
 		/* some other eventlog entry -- not implemented, so dropping on the floor */
 		DEBUG( 10, ( "Unknown entry [%s]. Ignoring.\n", line ) );
 		/* For now return true so that we can keep on parsing this mess. Eventually
 		   we will return False here. */
-		return True;
+		return true;
 	}
-	return True;
+	return true;
 }

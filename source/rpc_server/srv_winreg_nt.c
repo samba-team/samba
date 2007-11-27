@@ -494,21 +494,23 @@ WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSys
 
 WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateSystemShutdownEx *r)
 {
-	pstring shutdown_script;
+	char *shutdown_script = NULL;
 	char *msg = NULL;
-	pstring chkmsg;
+	char *chkmsg = NULL;
 	fstring str_timeout;
 	fstring str_reason;
 	fstring reboot;
 	fstring f;
 	int ret;
 	bool can_shutdown;
-	
 
- 	pstrcpy(shutdown_script, lp_shutdown_script());
-	
-	if ( !*shutdown_script )
+ 	shutdown_script = talloc_strdup(p->mem_ctx, lp_shutdown_script());
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
+	if (!*shutdown_script) {
 		return WERR_ACCESS_DENIED;
+	}
 
 	/* pull the message string and perform necessary sanity checks on it */
 
@@ -518,46 +520,66 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->name->name )) == NULL ) {
 			return WERR_NOMEM;
 		}
-		alpha_strcpy (chkmsg, msg, NULL, sizeof(chkmsg));
-	} 
-		
+		chkmsg = TALLOC_ARRAY(p->mem_ctx, char, strlen(msg)+1);
+		if (!chkmsg) {
+			return WERR_NOMEM;
+		}
+		alpha_strcpy(chkmsg, msg, NULL, strlen(msg)+1);
+	}
+
 	fstr_sprintf(str_timeout, "%d", r->in.timeout);
 	fstr_sprintf(reboot, r->in.reboot ? SHUTDOWN_R_STRING : "");
 	fstr_sprintf(f, r->in.force_apps ? SHUTDOWN_F_STRING : "");
 	fstr_sprintf(str_reason, "%d", r->in.reason );
 
-	all_string_sub( shutdown_script, "%z", chkmsg, sizeof(shutdown_script) );
-	all_string_sub( shutdown_script, "%t", str_timeout, sizeof(shutdown_script) );
-	all_string_sub( shutdown_script, "%r", reboot, sizeof(shutdown_script) );
-	all_string_sub( shutdown_script, "%f", f, sizeof(shutdown_script) );
-	all_string_sub( shutdown_script, "%x", str_reason, sizeof(shutdown_script) );
+	shutdown_script = talloc_all_string_sub(p->mem_ctx,
+				shutdown_script, "%z", chkmsg ? chkmsg : "");
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
+	shutdown_script = talloc_all_string_sub(p->mem_ctx,
+					shutdown_script, "%t", str_timeout);
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
+	shutdown_script = talloc_all_string_sub(p->mem_ctx,
+						shutdown_script, "%r", reboot);
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
+	shutdown_script = talloc_all_string_sub(p->mem_ctx,
+						shutdown_script, "%f", f);
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
+	shutdown_script = talloc_all_string_sub(p->mem_ctx,
+					shutdown_script, "%x", str_reason);
+	if (!shutdown_script) {
+		return WERR_NOMEM;
+	}
 
 	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
-		
+
 	/* IF someone has privs, run the shutdown script as root. OTHERWISE run it as not root
 	   Take the error return from the script and provide it as the Windows return code. */
-	   
+
 	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
-	
-	if ( can_shutdown ) 
+
+	if ( can_shutdown )
 		become_root();
 
 	ret = smbrun( shutdown_script, NULL );
-		
+
 	if ( can_shutdown )
 		unbecome_root();
 
 	/********** END SeRemoteShutdownPrivilege BLOCK **********/
-	
+
 	DEBUG(3,("_reg_shutdown_ex: Running the command `%s' gave %d\n",
 		shutdown_script, ret));
-		
 
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
-
-
-
 
 /*******************************************************************
  reg_abort_shutdwon
@@ -565,19 +587,19 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 
 WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShutdown *r)
 {
-	pstring abort_shutdown_script;
+	const char *abort_shutdown_script;
 	int ret;
 	bool can_shutdown;
 
-	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
+	abort_shutdown_script = lp_abort_shutdown_script();
 
-	if ( !*abort_shutdown_script )
+	if (!*abort_shutdown_script)
 		return WERR_ACCESS_DENIED;
-		
+
 	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
-		
+
 	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
-	
+
 	if ( can_shutdown )
 		become_root();
 
@@ -597,49 +619,45 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShu
 /*******************************************************************
  ********************************************************************/
 
-static int validate_reg_filename( pstring fname )
+static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 {
-	char *p;
+	char *p = NULL;
 	int num_services = lp_numservices();
-	int snum;
-	pstring share_path;
-	pstring unix_fname;
+	int snum = -1;
+	const char *share_path;
+	char *fname = *pp_fname;
 
 	/* convert to a unix path, stripping the C:\ along the way */
 
-	if ( !(p = valid_share_pathname(NULL, fname)))
+	if (!(p = valid_share_pathname(ctx, fname))) {
 		return -1;
+	}
 
 	/* has to exist within a valid file share */
 
-	for ( snum=0; snum<num_services; snum++ ) {
-
-		if ( !lp_snum_ok(snum) || lp_print_ok(snum) )
+	for (snum=0; snum<num_services; snum++) {
+		if (!lp_snum_ok(snum) || lp_print_ok(snum)) {
 			continue;
+		}
 
-		pstrcpy( share_path, lp_pathname(snum) );
+		share_path = lp_pathname(snum);
 
 		/* make sure we have a path (e.g. [homes] ) */
-
-		if ( strlen( share_path ) == 0 )
+		if (strlen(share_path) == 0) {
 			continue;
+		}
 
-		if ( strncmp( share_path, p, strlen( share_path )) == 0 )
+		if (strncmp(share_path, p, strlen(share_path)) == 0) {
 			break;
+		}
 	}
 
-	/* p and fname are overlapping memory so copy out and back in again */
-
-	pstrcpy( unix_fname, p );
-	pstrcpy( fname, unix_fname );
-
-	TALLOC_FREE(p);
-
+	*pp_fname = p;
 	return (snum < num_services) ? snum : -1;
 }
 
 /*******************************************************************
- Note: topkeypat is the *full* path that this *key will be 
+ Note: topkeypat is the *full* path that this *key will be
  loaded into (including the name of the key)
  ********************************************************************/
 
@@ -651,11 +669,11 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 	REGVAL_CTR *values;
 	REGSUBKEY_CTR *subkeys;
 	int i;
-	pstring path;
+	char *path = NULL;
 	WERROR result = WERR_OK;
-	
+
 	/* initialize the REGISTRY_KEY structure */
-	
+
 	if ( !(registry_key.hook = reghook_cache_find(topkeypath)) ) {
 		DEBUG(0,("reg_load_tree: Failed to assigned a REGISTRY_HOOK to [%s]\n",
 			topkeypath ));
@@ -667,48 +685,54 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 		DEBUG(0,("reg_load_tree: Talloc failed for reg_key.name!\n"));
 		return WERR_NOMEM;
 	}
-	
+
 	/* now start parsing the values and subkeys */
 
 	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
 		return WERR_NOMEM;
-	
+
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
 		return WERR_NOMEM;
 
 	/* copy values into the REGVAL_CTR */
-	
+
 	for ( i=0; i<key->num_values; i++ ) {
 		regval_ctr_addvalue( values, key->values[i].valuename, key->values[i].type,
 			(char*)key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */
-	
+
 	key->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
 		regsubkey_ctr_addkey( subkeys, subkey->keyname );
 	}
-	
+
 	/* write this key and values out */
-	
-	if ( !store_reg_values( &registry_key, values ) 
+
+	if ( !store_reg_values( &registry_key, values )
 		|| !store_reg_keys( &registry_key, subkeys ) )
 	{
 		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
 		result = WERR_REG_IO_FAILURE;
 	}
-	
+
 	TALLOC_FREE( subkeys );
-	
+
 	if ( !W_ERROR_IS_OK(result) )
 		return result;
-	
+
 	/* now continue to load each subkey registry tree */
 
 	key->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		pstr_sprintf( path, "%s%s%s", topkeypath, "\\", subkey->keyname );
+		path = talloc_asprintf(regfile->mem_ctx,
+				"%s\\%s",
+				topkeypath,
+				subkey->keyname);
+		if (!path) {
+			return WERR_NOMEM;
+		}
 		result = reg_load_tree( regfile, path, subkey );
 		if ( !W_ERROR_IS_OK(result) )
 			break;
@@ -741,13 +765,13 @@ static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 		regfio_close( regfile );
 		return WERR_REG_FILE_INVALID;
 	}
-	
+
 	result = reg_load_tree( regfile, krecord->name, rootkey );
-		
+
 	/* cleanup */
-	
+
 	regfio_close( regfile );
-	
+
 	return result;
 }
 
@@ -757,28 +781,31 @@ static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
-	pstring         fname;
+	char *fname = NULL;
 	int             snum;
-	
+
 	if ( !regkey )
-		return WERR_BADFID; 
+		return WERR_BADFID;
 
 	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
 
-	pstrcpy( fname, r->in.filename->name );
+	fname - talloc_strdup(p->mem_ctx, r->in.filename->name);
+	if (!fname) {
+		return WERR_NOMEM;
+	}
 
 	DEBUG(8,("_winreg_RestoreKey: verifying restore of key [%s] from "
 		 "\"%s\"\n", regkey->key->name, fname));
 
-	if ( (snum = validate_reg_filename( fname )) == -1 )
+	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1)
 		return WERR_OBJECT_PATH_INVALID;
-		
+
 	/* user must posses SeRestorePrivilege for this this proceed */
-	
+
 	if ( !user_has_privileges( p->pipe_user.nt_user_token, &se_restore ) )
 		return WERR_ACCESS_DENIED;
-		
+
 	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(snum) ));
 
@@ -795,30 +822,33 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	REGVAL_CTR *values;
 	REGSUBKEY_CTR *subkeys;
 	int i, num_subkeys;
-	pstring key_tmp;
+	char *key_tmp = NULL;
 	char *keyname, *parentpath;
-	pstring subkeypath;
+	char *subkeypath = NULL;
 	char *subkeyname;
 	REGISTRY_KEY registry_key;
 	WERROR result = WERR_OK;
-	
-	if ( !regfile )
+
+	if (!regfile)
 		return WERR_GENERAL_FAILURE;
-		
-	if ( !keypath )
+
+	if (!keypath)
 		return WERR_OBJECT_PATH_INVALID;
-		
+
 	/* split up the registry key path */
-	
-	pstrcpy( key_tmp, keypath );
-	if ( !reg_split_key( key_tmp, &parentpath, &keyname ) )
+
+	key_tmp = talloc_strdup(regfile->mem_ctx, keypath);
+	if (!key_tmp) {
+		return WERR_NOMEM;
+	}
+	if (!reg_split_key( key_tmp, &parentpath, &keyname ) )
 		return WERR_OBJECT_PATH_INVALID;
 
 	if ( !keyname )
 		keyname = parentpath;
 
 	/* we need a REGISTRY_KEY object here to enumerate subkeys and values */
-	
+
 	ZERO_STRUCT( registry_key );
 
 	if ( (registry_key.name = talloc_strdup(regfile->mem_ctx, keypath)) == NULL )
@@ -828,8 +858,8 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 		return WERR_BADFILE;
 
 	/* lookup the values and subkeys */
-	
-	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) ) 
+
+	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
 		return WERR_NOMEM;
 
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
@@ -839,7 +869,7 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	fetch_reg_values( &registry_key, values );
 
 	/* write out this key */
-		
+
 	if ( !(key = regfio_write_key( regfile, keyname, values, subkeys, sec_desc, parent )) ) {
 		result = WERR_CAN_NOT_COMPLETE;
 		goto done;
@@ -850,7 +880,12 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	num_subkeys = regsubkey_ctr_numkeys( subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
 		subkeyname = regsubkey_ctr_specific_key( subkeys, i );
-		pstr_sprintf( subkeypath, "%s\\%s", keypath, subkeyname );
+		subkeypath = talloc_asprintf(regfile->mem_ctx,
+					"%s\\%s", keypath, subkeyname);
+		if (!subkeypath) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 		result = reg_write_tree( regfile, subkeypath, key, sec_desc );
 		if ( !W_ERROR_IS_OK(result) )
 			goto done;
@@ -915,26 +950,26 @@ static WERROR backup_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 	SEC_DESC *sd = NULL;
 	
 	/* open the registry file....fail if the file already exists */
-	
+
 	if ( !(regfile = regfio_open( fname, (O_RDWR|O_CREAT|O_EXCL), (S_IREAD|S_IWRITE) )) ) {
-                DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n", 
+                DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n",
 			fname, strerror(errno) ));
 		return ( ntstatus_to_werror(map_nt_error_from_unix( errno )) );
         }
-	
+
 	if ( !W_ERROR_IS_OK(result = make_default_reg_sd( regfile->mem_ctx, &sd )) ) {
 		regfio_close( regfile );
 		return result;
 	}
-		
+
 	/* write the registry tree to the file  */
-	
+
 	result = reg_write_tree( regfile, krecord->name, NULL, sd );
-		
+
 	/* cleanup */
-	
+
 	regfio_close( regfile );
-	
+
 	return result;
 }
 
@@ -944,26 +979,29 @@ static WERROR backup_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
-	pstring         fname;
-	int             snum;
-	
+	char *fname = NULL;
+	int snum = -1;
+
 	if ( !regkey )
-		return WERR_BADFID; 
+		return WERR_BADFID;
 
 	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
 
-	pstrcpy( fname, r->in.filename->name );
+	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
+	if (!fname) {
+		return WERR_NOMEM;
+	}
 
 	DEBUG(8,("_winreg_SaveKey: verifying backup of key [%s] to \"%s\"\n",
 		 regkey->key->name, fname));
-	
-	if ( (snum = validate_reg_filename( fname )) == -1 )
+
+	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1 )
 		return WERR_OBJECT_PATH_INVALID;
-		
+
 	DEBUG(2,("_winreg_SaveKey: Saving [%s] to %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(snum) ));
-		
+
 	return backup_registry_key( regkey->key, fname );
 }
 
