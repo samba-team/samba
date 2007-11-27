@@ -60,7 +60,7 @@
 	guarantee on the order conflicting mappings would be resolved at this point.
 
 	This example also shows how to leave a small non conflicting range for local
-	id allocation that may be used in internal backends like BULTIN.
+	id allocation that may be used in internal backends like BUILTIN.
 	</para>
 
 	<programlisting>
