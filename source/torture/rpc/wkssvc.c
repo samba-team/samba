@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
 
+#define SMBTORTURE_ALTERNATE_NAME "smbtrt_altname"
 #define SMBTORTURE_TRANSPORT_NAME "\\Device\\smbtrt_transport_name"
 #define SMBTORTURE_USE_NAME "S:"
 
@@ -506,11 +507,14 @@ static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
 
 static bool test_NetrEnumerateComputerNames_level(struct torture_context *tctx,
 						  struct dcerpc_pipe *p,
-						  uint16_t level)
+						  uint16_t level,
+						  const char ***names,
+						  int *num_names)
 {
 	NTSTATUS status;
 	struct wkssvc_NetrEnumerateComputerNames r;
 	struct wkssvc_ComputerNamesCtr *ctr;
+	int i;
 
 	ctr = talloc_zero(tctx, struct wkssvc_ComputerNamesCtr);
 
@@ -535,6 +539,20 @@ static bool test_NetrEnumerateComputerNames_level(struct torture_context *tctx,
 		return false;
 	}
 
+	if (names && num_names) {
+		*num_names = 0;
+		*names = NULL;
+		for (i=0; i<ctr->count; i++) {
+			if (!add_string_to_array(tctx,
+						 ctr->computer_name[i].string,
+						 names,
+						 num_names))
+			{
+				return false;
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -548,7 +566,8 @@ static bool test_NetrEnumerateComputerNames(struct torture_context *tctx,
 
 		if (!test_NetrEnumerateComputerNames_level(tctx,
 							   p,
-							   levels[i]))
+							   levels[i],
+							   NULL, NULL))
 		{
 			return false;
 		}
@@ -617,6 +636,86 @@ static bool test_NetrValidateName2(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrAddAlternateComputerName(struct torture_context *tctx,
+					      struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrAddAlternateComputerName r;
+	const char **names = NULL;
+	int num_names = 0;
+	int i;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.NewAlternateMachineName = SMBTORTURE_ALTERNATE_NAME;
+	r.in.Account = NULL;
+	r.in.EncryptedPassword = NULL;
+	r.in.Reserved = 0;
+
+	torture_comment(tctx, "testing NetrAddAlternateComputerName\n");
+
+	status = dcerpc_wkssvc_NetrAddAlternateComputerName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrAddAlternateComputerName failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrAddAlternateComputerName failed");
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetAlternateComputerNames,
+						   &names, &num_names))
+	{
+		return false;
+	}
+
+	for (i=0; i<num_names; i++) {
+		if (strequal(names[i], SMBTORTURE_ALTERNATE_NAME)) {
+			return true;
+		}
+	}
+
+	torture_comment(tctx, "new alternate name not set\n");
+
+	return false;
+}
+
+static bool test_NetrRemoveAlternateComputerName(struct torture_context *tctx,
+						 struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrRemoveAlternateComputerName r;
+	const char **names = NULL;
+	int num_names = 0;
+	int i;
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.AlternateMachineNameToRemove = SMBTORTURE_ALTERNATE_NAME;
+	r.in.Account = NULL;
+	r.in.EncryptedPassword = NULL;
+	r.in.Reserved = 0;
+
+	torture_comment(tctx, "testing NetrRemoveAlternateComputerName\n");
+
+	status = dcerpc_wkssvc_NetrRemoveAlternateComputerName(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrRemoveAlternateComputerName failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrRemoveAlternateComputerName failed");
+
+	if (!test_NetrEnumerateComputerNames_level(tctx, p,
+						   NetAlternateComputerNames,
+						   &names, &num_names))
+	{
+		return false;
+	}
+
+	for (i=0; i<num_names; i++) {
+		if (strequal(names[i], SMBTORTURE_ALTERNATE_NAME)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -658,6 +757,10 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 				   test_NetrLogonDomainNameDel);
 	torture_rpc_tcase_add_test(tcase, "NetrLogonDomainNameAdd",
 				   test_NetrLogonDomainNameAdd);
+	torture_rpc_tcase_add_test(tcase, "NetrRemoveAlternateComputerName",
+				   test_NetrRemoveAlternateComputerName);
+	torture_rpc_tcase_add_test(tcase, "NetrAddAlternateComputerName",
+				   test_NetrAddAlternateComputerName);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
 
