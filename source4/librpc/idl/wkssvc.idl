@@ -516,7 +516,14 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x15      */
-	WERROR WKSSVC_NETRGETJOINABLEOUS ();
+	WERROR wkssvc_NetrGetJoinableOus(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in,out,ref] uint32 *num_ous,
+		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		);
 
 	typedef struct {
 		uint8 data[524];
@@ -591,7 +598,14 @@ import "srvsvc.idl", "lsa.idl";
 
 	/*****************************/
 	/* Function        0x1a      */
-	WERROR WKSSVC_NETRGETJOINABLEOUS2 ();
+	WERROR wkssvc_NetrGetJoinableOus2(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
+		[in] [string,charset(UTF16)] uint16 *Account,
+		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,out,ref] uint32 *num_ous,
+		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		);
 
 	/*****************************/
 	/* Function        0x1b      */

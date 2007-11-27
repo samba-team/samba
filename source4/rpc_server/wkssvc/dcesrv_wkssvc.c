@@ -313,10 +313,10 @@ static WERROR dcesrv_wkssvc_NetrGetJoinInformation(struct dcesrv_call_state *dce
 
 
 /*
-  WKSSVC_NETRGETJOINABLEOUS
+  wkssvc_NetrGetJoinableOus
 */
-static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRGETJOINABLEOUS *r)
+static WERROR dcesrv_wkssvc_NetrGetJoinableOus(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrGetJoinableOus *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -363,10 +363,10 @@ static WERROR dcesrv_wkssvc_NetrValidateName2(struct dcesrv_call_state *dce_call
 
 
 /*
-  WKSSVC_NETRGETJOINABLEOUS2
+  wkssvc_NetrGetJoinableOus2
 */
-static WERROR dcesrv_WKSSVC_NETRGETJOINABLEOUS2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct WKSSVC_NETRGETJOINABLEOUS2 *r)
+static WERROR dcesrv_wkssvc_NetrGetJoinableOus2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct wkssvc_NetrGetJoinableOus2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
