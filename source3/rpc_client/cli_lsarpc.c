@@ -573,7 +573,7 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 	case 3:
 		if (domain_name && (r.ctr.info.id3.buffer_dom_name != 0)) {
-			*domain_name = unistr2_tdup(mem_ctx,
+			*domain_name = unistr2_to_ascii_talloc(mem_ctx,
 						   &r.ctr.info.id3.
 						   uni_domain_name);
 			if (!*domain_name) {
@@ -594,7 +594,7 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	case 5:
 
 		if (domain_name && (r.ctr.info.id5.buffer_dom_name != 0)) {
-			*domain_name = unistr2_tdup(mem_ctx,
+			*domain_name = unistr2_to_ascii_talloc(mem_ctx,
 						   &r.ctr.info.id5.
 						   uni_domain_name);
 			if (!*domain_name) {
@@ -668,7 +668,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	ZERO_STRUCTP(domain_guid);
 
 	if (domain_name && r.ctr.info.id12.hdr_nb_dom_name.buffer) {
-		*domain_name = unistr2_tdup(mem_ctx,
+		*domain_name = unistr2_to_ascii_talloc(mem_ctx,
 					    &r.ctr.info.id12
 					    .uni_nb_dom_name);
 		if (!*domain_name) {
@@ -676,7 +676,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		}
 	}
 	if (dns_name && r.ctr.info.id12.hdr_dns_dom_name.buffer) {
-		*dns_name = unistr2_tdup(mem_ctx,
+		*dns_name = unistr2_to_ascii_talloc(mem_ctx,
 					 &r.ctr.info.id12
 					 .uni_dns_dom_name);
 		if (!*dns_name) {
@@ -684,7 +684,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		}
 	}
 	if (forest_name && r.ctr.info.id12.hdr_forest_name.buffer) {
-		*forest_name = unistr2_tdup(mem_ctx,
+		*forest_name = unistr2_to_ascii_talloc(mem_ctx,
 					    &r.ctr.info.id12
 					    .uni_forest_name);
 		if (!*forest_name) {

@@ -436,9 +436,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		sid_compose(&user_info->group_sid, &domain->sid,
 			    user->group_rid);
 				
-		user_info->acct_name = unistr2_tdup(mem_ctx,
+		user_info->acct_name = unistr2_to_ascii_talloc(mem_ctx,
 						    &user->uni_user_name);
-		user_info->full_name = unistr2_tdup(mem_ctx,
+		user_info->full_name = unistr2_to_ascii_talloc(mem_ctx,
 						    &user->uni_full_name);
 		
 		TALLOC_FREE(user);
@@ -484,9 +484,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	sid_compose(&user_info->user_sid, &domain->sid, user_rid);
 	sid_compose(&user_info->group_sid, &domain->sid,
 		    ctr->info.id21->group_rid);
-	user_info->acct_name = unistr2_tdup(mem_ctx, 
+	user_info->acct_name = unistr2_to_ascii_talloc(mem_ctx, 
 					    &ctr->info.id21->uni_user_name);
-	user_info->full_name = unistr2_tdup(mem_ctx, 
+	user_info->full_name = unistr2_to_ascii_talloc(mem_ctx, 
 					    &ctr->info.id21->uni_full_name);
 	user_info->homedir = NULL;
 	user_info->shell = NULL;

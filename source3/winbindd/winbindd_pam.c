@@ -129,14 +129,14 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 	fstring username_out;
 	const char *nt_username, *nt_domain;
 
-	if (!(nt_domain = unistr2_tdup(mem_ctx,
+	if (!(nt_domain = unistr2_to_ascii_talloc(mem_ctx,
 				       &info3->uni_logon_dom))) {
 		/* If the server didn't give us one, just use the one
 		 * we sent them */
 		nt_domain = name_domain;
 	}
 
-	if (!(nt_username = unistr2_tdup(mem_ctx,
+	if (!(nt_username = unistr2_to_ascii_talloc(mem_ctx,
 					 &info3->uni_user_name))) {
 		/* If the server didn't give us one, just use the one
 		 * we sent them */
