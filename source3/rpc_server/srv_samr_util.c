@@ -235,7 +235,8 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 	}
 
 	if (from->fields_present & ACCT_LOGON_HOURS) {
-		pstring oldstr, newstr;
+		char oldstr[44]; /* hours strings are 42 bytes. */
+		char newstr[44];
 		DEBUG(15,("INFO_21 LOGON_DIVS: %08X -> %08X\n",pdb_get_logon_divs(to),from->logon_divs));
 		if (from->logon_divs != pdb_get_logon_divs(to)) {
 			pdb_set_logon_divs(to, from->logon_divs, PDB_CHANGED);
