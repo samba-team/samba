@@ -760,6 +760,23 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 	}
 }
 
+/*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(0,("New recovery culprit %u\n", culprit));
+		/* either a new node is the culprit, or we've decide to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter++;
+}
 
 /*
   Update our local flags from all remote connected nodes. 
@@ -789,6 +806,7 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
 				  nodemap->nodes[j].pnn));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 			talloc_free(mem_ctx);
 			return MONITOR_FAILED;
 		}
@@ -858,23 +876,6 @@ static uint32_t new_generation(void)
 	return generation;
 }
 
-/*
-  remember the trouble maker
- */
-static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-
-	if (rec->last_culprit != culprit ||
-	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		DEBUG(0,("New recovery culprit %u\n", culprit));
-		/* either a new node is the culprit, or we've decide to forgive them */
-		rec->last_culprit = culprit;
-		rec->first_recover_time = timeval_current();
-		rec->culprit_counter = 0;
-	}
-	rec->culprit_counter++;
-}
 		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -1670,6 +1671,18 @@ again:
 	if (rec->election_timeout) {
 		/* an election is in progress */
 		goto again;
+	}
+
+
+	/* We must check if we need to ban a node here but we want to do this
+	   as early as possible so we dont wait until we have pulled the node
+	   map from the local node. thats why we have the hardcoded value 20
+	*/
+	if (rec->culprit_counter > 20) {
+		DEBUG(0,("Node %u has caused %u failures in %.0f seconds - banning it for %u seconds\n",
+			 rec->last_culprit, rec->culprit_counter, timeval_elapsed(&rec->first_recover_time),
+			 ctdb->tunable.recovery_ban_period));
+		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
 	}
 
 	/* get relevant tunables */
