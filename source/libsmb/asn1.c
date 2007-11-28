@@ -348,22 +348,30 @@ int asn1_tag_remaining(ASN1_DATA *data)
 /* read an object ID from a ASN1 buffer */
 bool asn1_read_OID(ASN1_DATA *data, char **OID)
 {
-	uint8 b;
-	pstring oid_str;
-	fstring el;
+	uint8 b = 0;
+	char *oid_str = NULL;
 
 	*OID = NULL;
 
 	if (!asn1_start_tag(data, ASN1_OID)) {
-		return False;
+		return false;
 	}
 	asn1_read_uint8(data, &b);
 
-	oid_str[0] = 0;
-	fstr_sprintf(el, "%u",  b/40);
-	pstrcat(oid_str, el);
-	fstr_sprintf(el, " %u",  b%40);
-	pstrcat(oid_str, el);
+	oid_str = talloc_asprintf(NULL,
+			"%u",
+			b/40);
+	if (!oid_str) {
+		data->has_error = true;
+		goto out;
+	}
+	oid_str = talloc_asprintf_append(oid_str,
+			" %u",
+			b%40);
+	if (!oid_str) {
+		data->has_error = true;
+		goto out;
+	}
 
 	while (asn1_tag_remaining(data) > 0) {
 		unsigned v = 0;
@@ -371,15 +379,24 @@ bool asn1_read_OID(ASN1_DATA *data, char **OID)
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
-		fstr_sprintf(el, " %u",  v);
-		pstrcat(oid_str, el);
+		oid_str = talloc_asprintf_append(oid_str,
+					" %u",
+					v);
+		if (!oid_str) {
+			data->has_error = true;
+			goto out;
+		}
 	}
+
+  out:
 
 	asn1_end_tag(data);
 
 	if (!data->has_error) {
 	  	*OID = SMB_STRDUP(oid_str);
 	}
+
+	TALLOC_FREE(oid_str);
 
 	return !data->has_error;
 }
