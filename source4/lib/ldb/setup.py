@@ -11,5 +11,5 @@ setup(name="ldb",
       keywords=["ldap","ldb","db","ldif"],
       py_modules=["ldb"],
       ext_modules=[Extension('_ldb', ['ldb_wrap.c'], include_dirs=['include'],
-                             library_dirs=["lib"], libraries=['ldb','ldap'])],
+                             library_dirs=["lib"], libraries=['ldb'])],
       )
