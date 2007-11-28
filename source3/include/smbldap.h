@@ -141,8 +141,6 @@ void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   const char *attribute, char *value,
 				   int max_len);
-bool smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
-				 const char *attribute, pstring value);
 char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
 int smbldap_modify(struct smbldap_state *ldap_state,
                    const char *dn,
