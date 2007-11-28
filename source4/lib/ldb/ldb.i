@@ -513,7 +513,7 @@ fail:
 #ifdef SWIGPYTHON
         %typemap(in,numinputs=0) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
         %typemap(argout) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }
-                                                                                        %typemap(freearg) struct ldb_result **result_as_bool { talloc_free(*$1); }
+        %typemap(freearg) struct ldb_result **result_as_bool { talloc_free(*$1); }
         ldb_error __contains__(ldb_dn *dn, struct ldb_result **result_as_bool)
         {
             return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
