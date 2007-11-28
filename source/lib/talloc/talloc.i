@@ -19,6 +19,8 @@
 /* Don't expose talloc contexts in Python code. Python does reference 
    counting for us, so just create a new top-level talloc context.
  */
+%module talloc;
+
 %typemap(in, numinputs=0) TALLOC_CTX * {
     $1 = NULL;
 }
