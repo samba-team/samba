@@ -1298,7 +1298,9 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 			{
 				DEBUG(5,("cups_pull_comment_location: Using cups comment: %s\n",
 					 attr->values[0].string.text));				
-			    	pstrcpy(printer->comment,attr->values[0].string.text);
+			    	strlcpy(printer->comment,
+						attr->values[0].string.text,
+						sizeof(printer->comment));
 			}
 
 			/* Grab the location if we don't have one */ 

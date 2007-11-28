@@ -284,10 +284,11 @@ static bool close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 /****************************************************************************
  Delete a printer given a handle.
 ****************************************************************************/
-WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
+
+WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename )
 {
 	char *cmd = lp_deleteprinter_cmd();
-	pstring command;
+	char *command = NULL;
 	int ret;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = False;
@@ -297,8 +298,12 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 	if ( !*cmd )
 		return WERR_OK;
 
-	pstr_sprintf(command, "%s \"%s\"", cmd, sharename);
-
+	command = talloc_asprintf(ctx,
+			"%s \"%s\"",
+			cmd, sharename);
+	if (!command) {
+		return WERR_NOMEM;
+	}
 	if ( token )
 		is_print_op = user_has_privileges( token, &se_printop );
 
@@ -321,6 +326,8 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 	/********** END SePrintOperatorPrivlege BLOCK **********/
 
 	DEBUGADD(10,("returned [%d]\n", ret));
+
+	TALLOC_FREE(command);
 
 	if (ret != 0)
 		return WERR_BADFID; /* What to return here? */
@@ -367,7 +374,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	return delete_printer_hook( p->pipe_user.nt_user_token, Printer->sharename );
+	return delete_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, Printer->sharename );
 }
 
 /****************************************************************************
@@ -2719,20 +2726,17 @@ void spoolss_notify_server_name(int snum,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->servername, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->servername);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2748,7 +2752,7 @@ void spoolss_notify_printer_name(int snum,
 					NT_PRINTER_INFO_LEVEL *printer,
 					TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
 	/* the notify name should not contain the \\server\ part */
@@ -2760,16 +2764,14 @@ void spoolss_notify_printer_name(int snum,
 		p++;
 	}
 
-	len = rpcstr_push(temp, p, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, p);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2785,19 +2787,17 @@ void spoolss_notify_share_name(int snum,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, lp_servicename(snum), sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, lp_servicename(snum));
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2814,23 +2814,19 @@ void spoolss_notify_port_name(int snum,
 				     NT_PRINTER_INFO_LEVEL *printer,
 				     TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
 	/* even if it's strange, that's consistant in all the code */
 
-	len = rpcstr_push(temp, printer->info_2->portname, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->portname);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2847,21 +2843,17 @@ void spoolss_notify_driver_name(int snum,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->drivername, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->drivername);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2877,24 +2869,20 @@ void spoolss_notify_comment(int snum,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
 	if (*printer->info_2->comment == '\0')
-		len = rpcstr_push(temp, lp_comment(snum), sizeof(temp)-2, STR_TERMINATE);
+		len = rpcstr_push_talloc(mem_ctx, &temp, lp_comment(snum));
 	else
-		len = rpcstr_push(temp, printer->info_2->comment, sizeof(temp)-2, STR_TERMINATE);
+		len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->comment);
 
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2911,21 +2899,17 @@ void spoolss_notify_location(int snum,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->location,sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->location);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2957,21 +2941,17 @@ void spoolss_notify_sepfile(int snum,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->sepfile, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->sepfile);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -2988,21 +2968,17 @@ void spoolss_notify_print_processor(int snum,
 					   NT_PRINTER_INFO_LEVEL *printer,
 					   TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp,  printer->info_2->printprocessor, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->printprocessor);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3019,21 +2995,17 @@ void spoolss_notify_parameters(int snum,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp,  printer->info_2->parameters, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->parameters);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3050,21 +3022,17 @@ void spoolss_notify_datatype(int snum,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, printer->info_2->datatype, sizeof(pstring)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->datatype);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3214,21 +3182,17 @@ static void spoolss_notify_username(int snum,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, queue->fs_user, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, queue->fs_user);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3258,21 +3222,17 @@ static void spoolss_notify_job_name(int snum,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
-	len = rpcstr_push(temp, queue->fs_file, sizeof(temp)-2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, queue->fs_file);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3293,7 +3253,7 @@ static void spoolss_notify_job_status_string(int snum,
 	 */
 
 	const char *p = "";
-	pstring temp;
+	smb_ucs2_t *temp = NULL;
 	uint32 len;
 
 #if 0 /* NO LONGER NEEDED - JRA. 02/22/2001 */
@@ -3315,18 +3275,14 @@ static void spoolss_notify_job_status_string(int snum,
 	}
 #endif /* NO LONGER NEEDED. */
 
-	len = rpcstr_push(temp, p, sizeof(temp) - 2, STR_TERMINATE);
+	len = rpcstr_push_talloc(mem_ctx, &temp, p);
+	if (len == (uint32)-1) {
+		len = 0;
+	}
 
 	data->notify_data.data.length = len;
 	if (len) {
-		data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-		if (!data->notify_data.data.string) {
-			data->notify_data.data.length = 0;
-			return;
-		}
-
-		memcpy(data->notify_data.data.string, temp, len);
+		data->notify_data.data.string = (uint16 *)temp;
 	} else {
 		data->notify_data.data.string = NULL;
 	}
@@ -3954,7 +3910,7 @@ done:
 
 static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *printer, int snum)
 {
-	pstring chaine;
+	char *chaine = NULL;
 	int count;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	counter_printer_0 *session_counter;
@@ -3962,9 +3918,18 @@ static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 	struct tm *t;
 	time_t setuptime;
 	print_status_struct status;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
 		return False;
+
+	init_unistr(&printer->printername, ntprinter->info_2->printername);
+
+	chaine = talloc_asprintf(ctx, "\\\\%s", get_server_name(print_hnd));
+	if (!chaine) {
+		free_a_printer(&ntprinter,2);
+		return false;
+	}
 
 	count = print_queue_length(snum, &status);
 
@@ -3973,6 +3938,8 @@ static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 		if (session_counter->snum == snum)
 			break;
 	}
+
+	init_unistr(&printer->servername, chaine);
 
 	/* it's the first time, add it to the list */
 	if (session_counter==NULL) {
@@ -3994,14 +3961,6 @@ static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 	 * and should be zeroed on samba startup
 	 */
 	global_counter=session_counter->counter;
-
-	pstrcpy(chaine,ntprinter->info_2->printername);
-
-	init_unistr(&printer->printername, chaine);
-
-	slprintf(chaine,sizeof(chaine)-1,"\\\\%s", get_server_name(print_hnd));
-	init_unistr(&printer->servername, chaine);
-
 	printer->cjobs = count;
 	printer->total_jobs = 0;
 	printer->total_bytes = 0;
@@ -4059,30 +4018,35 @@ static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
  ********************************************************************/
 static bool construct_printer_info_1(Printer_entry *print_hnd, uint32 flags, PRINTER_INFO_1 *printer, int snum)
 {
-	pstring chaine;
-	pstring chaine2;
+	char *chaine = NULL;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
-		return False;
+		return false;
 
 	printer->flags=flags;
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
-			ntprinter->info_2->drivername, lp_comment(snum));
+		chaine = talloc_asprintf(ctx,
+				"%s,%s,%s", ntprinter->info_2->printername,
+				ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		slprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
-			ntprinter->info_2->drivername, ntprinter->info_2->comment);
+		chaine = talloc_asprintf(ctx,
+				"%s,%s,%s", ntprinter->info_2->printername,
+				ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 
-	slprintf(chaine2,sizeof(chaine)-1,"%s", ntprinter->info_2->printername);
+	if (!chaine) {
+		free_a_printer(&ntprinter,2);
+		return false;
+	}
 
 	init_unistr(&printer->description, chaine);
-	init_unistr(&printer->name, chaine2);
+	init_unistr(&printer->name, ntprinter->info_2->printername);
 
 	free_a_printer(&ntprinter,2);
 
@@ -5160,7 +5124,8 @@ static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
 
 static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *temp = NULL;
 
 	info->version=driver.info_3->cversion;
 
@@ -5168,20 +5133,32 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 
-    if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+	if (strlen(driver.info_3->driverpath)) {
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
-    } else
-        init_unistr( &info->driverpath, "" );
+	} else {
+		init_unistr( &info->driverpath, "" );
+	}
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );
 	} else
 		init_unistr( &info->configfile, "" );
@@ -5226,17 +5203,16 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 	int i=0;
 	int j=0;
 	const char *v;
-	pstring line;
+	char *line = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
 
-	while (True)
-	{
-		if ( !char_array )
+	while (true) {
+		if ( !char_array ) {
 			v = "";
-		else
-		{
+		} else {
 			v = char_array[i];
 			if (!v)
 				v = ""; /* hack to handle null lists */
@@ -5244,12 +5220,21 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 
 		/* hack to allow this to be used in places other than when generating
 		   the list of dependent files */
-		
-		if ( servername )
-			slprintf( line, sizeof(line)-1, "\\\\%s%s", servername, v );
-		else
-			pstrcpy( line, v );
 
+		TALLOC_FREE(line);
+		if ( servername ) {
+			line = talloc_asprintf(ctx,
+					"\\\\%s%s",
+					servername,
+					v);
+		} else {
+			line = talloc_strdup(ctx, v);
+		}
+
+		if (!line) {
+			SAFE_FREE(*uni_array);
+			return 0;
+		}
 		DEBUGADD(6,("%d:%s:%lu\n", i, line, (unsigned long)strlen(line)));
 
 		/* add one extra unit16 for the second terminating NULL */
@@ -5287,7 +5272,8 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 
 static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp;
+	char *temp = NULL;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCTP(info);
 
@@ -5297,29 +5283,45 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );
 	} else
 		init_unistr( &info->configfile, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->helpfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
 
+	TALLOC_FREE(temp);
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
@@ -5393,8 +5395,9 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 
 static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp;
+	char *temp = NULL;
 	fstring nullstr;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCTP(info);
 	memset(&nullstr, '\0', sizeof(fstring));
@@ -5405,29 +5408,45 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );
 	} else
 		init_unistr( &info->configfile, "" );
 
+	TALLOC_FREE(temp);
 	if (strlen(driver.info_3->helpfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		temp = talloc_asprintf(ctx,
+				"\\\\%s%s",
+				servername,
+				driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
 
+	TALLOC_FREE(temp);
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
@@ -5786,10 +5805,10 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	POLICY_HND *handle = &q_u->handle;
 	DOC_INFO *docinfo = &q_u->doc_info_container.docinfo;
 	uint32 *jobid = &r_u->jobid;
-
+	TALLOC_CTX *ctx = p->mem_ctx;
 	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
 	int snum;
-	pstring jobname;
+	char *jobname = NULL;
 	fstring datatype;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
@@ -5819,7 +5838,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 		return WERR_BADFID;
 	}
 
-	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
+	jobname = unistr2_to_ascii_talloc(ctx, &info_1->docname);
 
 	Printer->jobid = print_job_start(&p->pipe_user, snum, jobname, Printer->nt_devmode);
 
@@ -6109,10 +6128,10 @@ static bool check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
-WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri )
+WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri )
 {
 	char *cmd = lp_addport_cmd();
-	pstring command;
+	char *command = NULL;
 	int ret;
 	int fd;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -6122,7 +6141,11 @@ WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri
 		return WERR_ACCESS_DENIED;
 	}
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", cmd, portname, uri );
+	command = talloc_asprintf(ctx,
+			"%s \"%s\" \"%s\"", cmd, portname, uri );
+	if (!command) {
+		return WERR_NOMEM;
+	}
 
 	if ( token )
 		is_print_op = user_has_privileges( token, &se_printop );
@@ -6143,6 +6166,8 @@ WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri
 
 	DEBUGADD(10,("returned [%d]\n", ret));
 
+	TALLOC_FREE(command);
+
 	if ( ret != 0 ) {
 		if (fd != -1)
 			close(fd);
@@ -6155,26 +6180,37 @@ WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri
 /****************************************************************************
 ****************************************************************************/
 
-bool add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
+bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
-	pstring command;
+	char *command = NULL;
 	int numlines;
 	int ret;
 	int fd;
-	fstring remote_machine = "%m";
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = False;
+	char *remote_machine = talloc_strdup(ctx, "%m");
 
-	standard_sub_basic(current_user_info.smb_name,
-			   current_user_info.domain,
-			   remote_machine,sizeof(remote_machine));
+	if (!remote_machine) {
+		return false;
+	}
+	remote_machine = talloc_sub_basic(ctx,
+				current_user_info.smb_name,
+				current_user_info.domain,
+				remote_machine);
+	if (!remote_machine) {
+		return false;
+	}
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	command = talloc_asprintf(ctx,
+			"%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, printer->info_2->comment, remote_machine);
+	if (!command) {
+		return false;
+	}
 
 	if ( token )
 		is_print_op = user_has_privileges( token, &se_printop );
@@ -6198,6 +6234,9 @@ bool add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	/********* END SePrintOperatorPrivilege **********/
 
 	DEBUGADD(10,("returned [%d]\n", ret));
+
+	TALLOC_FREE(command);
+	TALLOC_FREE(remote_machine);
 
 	if ( ret != 0 ) {
 		if (fd != -1)
@@ -6318,7 +6357,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	{
 		/* add_printer_hook() will call reload_services() */
 
-		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7395,11 +7434,11 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
  wrapper around the enumer ports command
 ****************************************************************************/
 
-WERROR enumports_hook( int *count, char ***lines )
+WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
 {
 	char *cmd = lp_enumports_cmd();
-	char **qlines;
-	pstring command;
+	char **qlines = NULL;
+	char *command = NULL;
 	int numlines;
 	int ret;
 	int fd;
@@ -7423,11 +7462,15 @@ WERROR enumports_hook( int *count, char ***lines )
 	else {
 		/* we have a valid enumport command */
 
-		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
+		command = talloc_asprintf(ctx, "%s \"%d\"", cmd, 1);
+		if (!command) {
+			return WERR_NOMEM;
+		}
 
 		DEBUG(10,("Running [%s]\n", command));
 		ret = smbrun(command, &fd);
 		DEBUG(10,("Returned [%d]\n", ret));
+		TALLOC_FREE(command);
 		if (ret != 0) {
 			if (fd != -1) {
 				close(fd);
@@ -7459,7 +7502,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	char **qlines = NULL;
 	int numlines = 0;
 
-	result = enumports_hook( &numlines, &qlines );
+	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if (!W_ERROR_IS_OK(result)) {
 		file_lines_free(qlines);
 		return result;
@@ -7525,7 +7568,7 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	char **qlines = NULL;
 	int numlines = 0;
 
-	result = enumports_hook( &numlines, &qlines );
+	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if ( !W_ERROR_IS_OK(result)) {
 		file_lines_free(qlines);
 		return result;
@@ -7652,7 +7695,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
-		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
 		}
@@ -7916,16 +7959,23 @@ static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 
 static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	pstring path;
-	pstring long_archi;
-	fstring servername;
-	char *pservername;
+	char *path = NULL;
+	char *long_archi = NULL;
+	char *servername = NULL;
+	char *pservername = NULL;
 	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 	WERROR result = WERR_OK;
+	TALLOC_CTX *ctx = talloc_tos();
 
-	unistr2_to_ascii(servername, name, sizeof(servername));
-	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi));
+	servername = unistr2_to_ascii_talloc(ctx, name);
+	if (!servername) {
+		return WERR_NOMEM;
+	}
+	long_archi = unistr2_to_ascii_talloc(ctx, uni_environment);
+	if (!long_archi) {
+		return WERR_NOMEM;
+	}
 
 	/* check for beginning double '\'s and that the server
 	   long enough */
@@ -7944,7 +7994,12 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if((info=SMB_MALLOC_P(DRIVER_DIRECTORY_1)) == NULL)
 		return WERR_NOMEM;
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", pservername, short_archi);
+	path = talloc_asprintf(ctx,
+			"\\\\%s\\print$\\%s", pservername, short_archi);
+	if (!path) {
+		result = WERR_NOMEM;
+		goto out;
+	}
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
@@ -8313,7 +8368,8 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
-	pstring		valuename;
+	char *valuename = NULL;
+	TALLOC_CTX *ctx = p->mem_ctx;
 
 	DEBUG(5,("spoolss_deleteprinterdata\n"));
 
@@ -8334,7 +8390,11 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	unistr2_to_ascii(valuename, value, sizeof(valuename));
+	valuename = unistr2_to_ascii_talloc(ctx, value);
+	if (!valuename) {
+		free_a_printer(&printer, 2);
+		return WERR_NOMEM;
+	}
 
 	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
 
@@ -8342,6 +8402,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		mod_a_printer( printer, 2 );
 
 	free_a_printer(&printer, 2);
+	TALLOC_FREE(valuename);
 
 	return status;
 }
@@ -9245,7 +9306,9 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
-	pstring		valuename, keyname;
+	char *valuename = NULL;
+	char *keyname = NULL;
+	TALLOC_CTX *ctx = p->mem_ctx;
 
 	DEBUG(5,("spoolss_deleteprinterdataex\n"));
 
@@ -9262,12 +9325,15 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 		return WERR_ACCESS_DENIED;
 	}
 
+	valuename = unistr2_to_ascii_talloc(ctx, value);
+	keyname = unistr2_to_ascii_talloc(ctx, key);
+	if (!valuename || !keyname) {
+		return WERR_NOMEM;
+	}
+
 	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
-
-	unistr2_to_ascii(valuename, value, sizeof(valuename));
-	unistr2_to_ascii(keyname, key, sizeof(keyname));
 
 	status = delete_printer_dataex( printer, keyname, valuename );
 
@@ -9562,7 +9628,7 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, char *name)
+static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, const char *name)
 {
 	init_unistr(&info->name, name);
 }
@@ -9573,12 +9639,15 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 						 uint32 offered,
 						 uint32 *needed)
 {
-	pstring path;
-	pstring long_archi;
+	char *long_archi = NULL;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 	WERROR result = WERR_OK;
+	TALLOC_CTX *ctx = talloc_tos();
 
-	unistr2_to_ascii(long_archi, environment, sizeof(long_archi));
+	long_archi = unistr2_to_ascii_talloc(ctx, environment);
+	if (!long_archi) {
+		return WERR_NOMEM;
+	}
 
 	if (!get_short_archi(long_archi))
 		return WERR_INVALID_ENVIRONMENT;
@@ -9586,9 +9655,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	if((info=SMB_MALLOC_P(PRINTPROCESSOR_DIRECTORY_1)) == NULL)
 		return WERR_NOMEM;
 
-	pstrcpy(path, "C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
-
-	fill_printprocessordirectory_1(info, path);
+	fill_printprocessordirectory_1(info, "C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
 
 	*needed += spoolss_size_printprocessordirectory_info_1(info);
 
@@ -9673,7 +9740,8 @@ static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in,
                               RPC_BUFFER *out, uint32 *needed )
 {
 	NT_PORT_DATA_1 port1;
-	pstring device_uri;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *device_uri = NULL;
 
 	ZERO_STRUCT( port1 );
 
@@ -9687,18 +9755,24 @@ static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in,
 
 	switch ( port1.protocol ) {
 	case PORT_PROTOCOL_DIRECT:
-		pstr_sprintf( device_uri, "socket://%s:%d/", port1.hostaddr, port1.port );
+		device_uri = talloc_asprintf(ctx,
+				"socket://%s:%d/", port1.hostaddr, port1.port );
 		break;
 
 	case PORT_PROTOCOL_LPR:
-		pstr_sprintf( device_uri, "lpr://%s/%s", port1.hostaddr, port1.queue );
+		device_uri = talloc_asprintf(ctx,
+			"lpr://%s/%s", port1.hostaddr, port1.queue );
 		break;
 
 	default:
 		return WERR_UNKNOWN_PORT;
 	}
 
-	return add_port_hook( token, port1.name, device_uri );
+	if (!device_uri) {
+		return WERR_NOMEM;
+	}
+
+	return add_port_hook(ctx, token, port1.name, device_uri );
 }
 
 /*******************************************************************

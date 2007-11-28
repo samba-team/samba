@@ -296,7 +296,7 @@ static bool add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 		if ( snum == -1 ) {
 			fstrcpy( info2.printername, printername );
 			fstrcpy( info2.sharename, printername );
-			if ( !add_printer_hook( NULL, &printer ) ) {
+			if ( !add_printer_hook(talloc_tos(), NULL, &printer ) ) {
 				DEBUG(0,("add_printers_by_registry: Failed to add printer [%s]\n",
 					printername));
 			}	

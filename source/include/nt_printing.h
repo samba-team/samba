@@ -312,7 +312,7 @@ typedef struct nt_printer_info_level_2
 	fstring sharename;
 	fstring portname;
 	fstring drivername;
-	pstring comment;
+	char comment[1024];
 	fstring location;
 	NT_DEVICEMODE *devmode;
 	fstring sepfile;
