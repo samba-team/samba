@@ -430,16 +430,9 @@ void init_unistr(UNISTR *str, const char *buf)
 		str->buffer = NULL;
 		return;
 	}
-		
-	len = strlen(buf) + 1;
 
-	if (len) {
-		str->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, len);
-		if (str->buffer == NULL)
-			smb_panic("init_unistr: malloc fail");
-
-		rpcstr_push(str->buffer, buf, len*sizeof(uint16), STR_TERMINATE);
-	} else {
+	len = rpcstr_push_talloc(talloc_tos(), &str->buffer, buf);
+	if (len == (size_t)-1) {
 		str->buffer = NULL;
 	}
 }
@@ -870,7 +863,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
  Inits a UNISTR2 structure from a UNISTR
 ********************************************************************/
 
-void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
+void init_unistr2_from_unistr(TALLOC_CTX *ctx, UNISTR2 *to, const UNISTR *from)
 {
 	uint32 i;
 
@@ -898,9 +891,9 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 
 	/* allocate the space and copy the string buffer */
 	if (i) {
-		to->buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, i);
+		to->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, i);
 		if (to->buffer == NULL)
-			smb_panic("init_unistr2_from_unistr: malloc fail");
+			smb_panic("init_unistr2_from_unistr: talloc fail");
 		memcpy(to->buffer, from->buffer, i*sizeof(uint16));
 	} else {
 		to->buffer = NULL;

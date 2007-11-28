@@ -1016,18 +1016,18 @@ bool make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
 *******************************************************************/
 
-bool make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+bool make_spoolss_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 				PRINTER_INFO_2 *info)
 {
 
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
 
 	/* allocate the necessary memory */
-	if (!(inf=TALLOC_P(mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2))) {
+	if (!(inf=TALLOC_P(ctx, SPOOL_PRINTER_INFO_LEVEL_2))) {
 		DEBUG(0,("make_spoolss_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
 		return False;
 	}
-	
+
 	inf->servername_ptr 	= (info->servername.buffer!=NULL)?1:0;
 	inf->printername_ptr 	= (info->printername.buffer!=NULL)?1:0;
 	inf->sharename_ptr 	= (info->sharename.buffer!=NULL)?1:0;
@@ -1048,18 +1048,18 @@ bool make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2
 	inf->untiltime		= info->untiltime;
 	inf->cjobs		= info->cjobs;
 	inf->averageppm	= info->averageppm;
-	init_unistr2_from_unistr(&inf->servername, 	&info->servername);
-	init_unistr2_from_unistr(&inf->printername, 	&info->printername);
-	init_unistr2_from_unistr(&inf->sharename, 	&info->sharename);
-	init_unistr2_from_unistr(&inf->portname, 	&info->portname);
-	init_unistr2_from_unistr(&inf->drivername, 	&info->drivername);
-	init_unistr2_from_unistr(&inf->comment, 	&info->comment);
-	init_unistr2_from_unistr(&inf->location, 	&info->location);
-	init_unistr2_from_unistr(&inf->sepfile, 	&info->sepfile);
-	init_unistr2_from_unistr(&inf->printprocessor,	&info->printprocessor);
-	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
-	init_unistr2_from_unistr(&inf->parameters, 	&info->parameters);
-	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
+	init_unistr2_from_unistr(inf, &inf->servername,	&info->servername);
+	init_unistr2_from_unistr(inf, &inf->printername, &info->printername);
+	init_unistr2_from_unistr(inf, &inf->sharename, &info->sharename);
+	init_unistr2_from_unistr(inf, &inf->portname, &info->portname);
+	init_unistr2_from_unistr(inf, &inf->drivername, &info->drivername);
+	init_unistr2_from_unistr(inf, &inf->comment, &info->comment);
+	init_unistr2_from_unistr(inf, &inf->location, &info->location);
+	init_unistr2_from_unistr(inf, &inf->sepfile, &info->sepfile);
+	init_unistr2_from_unistr(inf, &inf->printprocessor, &info->printprocessor);
+	init_unistr2_from_unistr(inf, &inf->datatype, &info->datatype);
+	init_unistr2_from_unistr(inf, &inf->parameters, &info->parameters);
+	init_unistr2_from_unistr(inf, &inf->datatype, &info->datatype);
 
 	*spool_info2 = inf;
 
@@ -1105,9 +1105,9 @@ bool make_spoolss_printer_info_7(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_7
 		return False;
 	}
 
-	inf->guid_ptr	 	= (info->guid.buffer!=NULL)?1:0;
-	inf->action		= info->action;
-	init_unistr2_from_unistr(&inf->guid,	 	&info->guid);
+	inf->guid_ptr = (info->guid.buffer!=NULL)?1:0;
+	inf->action = info->action;
+	init_unistr2_from_unistr(inf, &inf->guid, &info->guid);
 
 	*spool_info7 = inf;
 
@@ -5182,7 +5182,7 @@ bool make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx, 
+bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
 				DRIVER_INFO_3 *info3)
 {
@@ -5191,7 +5191,7 @@ bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 
 	if (!(inf=TALLOC_ZERO_P(mem_ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3)))
 		return False;
-	
+
 	inf->cversion	= info3->version;
 	inf->name_ptr	= (info3->name.buffer!=NULL)?1:0;
 	inf->environment_ptr	= (info3->architecture.buffer!=NULL)?1:0;
@@ -5202,14 +5202,14 @@ bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 	inf->monitorname_ptr	= (info3->monitorname.buffer!=NULL)?1:0;
 	inf->defaultdatatype_ptr	= (info3->defaultdatatype.buffer!=NULL)?1:0;
 
-	init_unistr2_from_unistr(&inf->name, &info3->name);
-	init_unistr2_from_unistr(&inf->environment, &info3->architecture);
-	init_unistr2_from_unistr(&inf->driverpath, &info3->driverpath);
-	init_unistr2_from_unistr(&inf->datafile, &info3->datafile);
-	init_unistr2_from_unistr(&inf->configfile, &info3->configfile);
-	init_unistr2_from_unistr(&inf->helpfile, &info3->helpfile);
-	init_unistr2_from_unistr(&inf->monitorname, &info3->monitorname);
-	init_unistr2_from_unistr(&inf->defaultdatatype, &info3->defaultdatatype);
+	init_unistr2_from_unistr(inf, &inf->name, &info3->name);
+	init_unistr2_from_unistr(inf, &inf->environment, &info3->architecture);
+	init_unistr2_from_unistr(inf, &inf->driverpath, &info3->driverpath);
+	init_unistr2_from_unistr(inf, &inf->datafile, &info3->datafile);
+	init_unistr2_from_unistr(inf, &inf->configfile, &info3->configfile);
+	init_unistr2_from_unistr(inf, &inf->helpfile, &info3->helpfile);
+	init_unistr2_from_unistr(inf, &inf->monitorname, &info3->monitorname);
+	init_unistr2_from_unistr(inf, &inf->defaultdatatype, &info3->defaultdatatype);
 
 	if (info3->dependentfiles) {
 		bool done = False;
