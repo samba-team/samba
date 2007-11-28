@@ -230,16 +230,17 @@ member: cn=ldaptestuser3,cn=users," + base_dn + "
 	assert(res.msgs[0].cn == "ldaptestUSER3");
 	assert(res.msgs[0].name == "ldaptestUSER3");
 
-	println("Testing ldb.search for (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
-	var res = ldb.search("(dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
-	if (res.error != 0 || res.msgs.length != 1) {
-		println("Could not find (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
-		assert(res.error == 0);
-		assert(res.msgs.length == 1);
-	}
-	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
-	assert(res.msgs[0].cn == "ldaptestUSER3");
-	assert(res.msgs[0].name == "ldaptestUSER3");
+// This is a Samba special, and does not exist in real AD
+//	println("Testing ldb.search for (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+//	var res = ldb.search("(dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+//	if (res.error != 0 || res.msgs.length != 1) {
+//		println("Could not find (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
+//		assert(res.error == 0);
+//		assert(res.msgs.length == 1);
+//	}
+//	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+//	assert(res.msgs[0].cn == "ldaptestUSER3");
+//	assert(res.msgs[0].name == "ldaptestUSER3");
 
 	println("Testing ldb.search for (distinguishedName=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
 	var res = ldb.search("(distinguishedName=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
@@ -347,6 +348,18 @@ cn: LDAPtestUSER4
 		}
 	}
 
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+add: member
+member: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
+");
+	if (ok.error != 0) {
+		println("Failure adding ldaptestuser4 to a group");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
 	println("Testing ldb.rename of cn=ldaptestcontainer," + base_dn + " to cn=ldaptestcontainer2," + base_dn);
 	ok = ldb.rename("CN=ldaptestcontainer," + base_dn, "CN=ldaptestcontainer2," + base_dn);
 	if (ok.error != 0) {
@@ -385,6 +398,15 @@ cn: LDAPtestUSER4
 	}
 
 	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
+	assert(strupper(res.msgs[0].memberOf[0]) == strupper(("CN=ldaptestgroup2,CN=Users," + base_dn)));
+
+	println("Testing ldb.search for (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group)) to check subtree renames and linked attributes");
+	var res = ldb.search("(&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group))", base_dn, ldb.SCOPE_SUBTREE);
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group)), perhaps linked attributes are not conistant with subtree renames?");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
 
 	println("Testing ldb.rename (into itself) of cn=ldaptestcontainer2," + base_dn + " to cn=ldaptestcontainer,cn=ldaptestcontainer2," + base_dn);
 	ok = ldb.rename("cn=ldaptestcontainer2," + base_dn, "cn=ldaptestcontainer,cn=ldaptestcontainer2," + base_dn);
@@ -734,11 +756,108 @@ objectClass: user
 	assert(res.msgs[0].member[0] == ("CN=ldaptestuser2,CN=Users," + base_dn));
 	assert(res.msgs[0].member.length == 1);
 
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+replace: member
+member: CN=ldaptestuser2,CN=Users," + base_dn + "
+member: CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn + "
+");
+	if (ok.error != 0) {
+		println("Failure testing replace of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	println("Testing Linked attribute behaviours");
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+delete: member
+");
+	if (ok.error != 0) {
+		println("Failure testing delete of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+add: member
+member: CN=ldaptestuser2,CN=Users," + base_dn + "
+member: CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn + "
+");
+	if (ok.error != 0) {
+		println("Failure testing add of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+replace: member
+");
+	if (ok.error != 0) {
+		println("Failure testing replace of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+add: member
+member: CN=ldaptestuser2,CN=Users," + base_dn + "
+member: CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn + "
+");
+	if (ok.error != 0) {
+		println("Failure testing add of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	ok = ldb.modify("
+dn: cn=ldaptestgroup2,cn=users," + base_dn + "
+changetype: modify
+delete: member
+member: CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn + "
+");
+	if (ok.error != 0) {
+		println("Failure testing replace of linked attributes");
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+	
+	var res = ldb.search("(&(cn=ldaptestgroup2)(objectClass=group))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestgroup2)(objectClass=group))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestgroup2,CN=Users," + base_dn));
+	assert(res.msgs[0].member[0] == ("CN=ldaptestuser2,CN=Users," + base_dn));
+	assert(res.msgs[0].member.length == 1);
+
 	ok = ldb.del(("CN=ldaptestuser2,CN=Users," + base_dn));
 	if (ok.error != 0) {
 		println(ok.errstr);
 		assert(ok.error == 0);
 	}
+
+        var attrs = new Array("cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member");
+	println("Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete");
+	var res = ldb.search("(&(cn=ldaptestgroup2)(objectClass=group))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestgroup2,CN=Users," + base_dn));
+	assert(res.msgs[0].member == undefined);
 
 	println("Testing ldb.search for (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
