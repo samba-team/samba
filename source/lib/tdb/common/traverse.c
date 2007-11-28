@@ -223,6 +223,9 @@ int tdb_traverse_read(struct tdb_context *tdb,
 /*
   a write style traverse - needs to get the transaction lock to
   prevent deadlocks
+
+  WARNING: The data buffer given to the callback fn does NOT meet the
+  alignment restrictions malloc gives you.
 */
 int tdb_traverse(struct tdb_context *tdb, 
 		 tdb_traverse_func fn, void *private_data)
