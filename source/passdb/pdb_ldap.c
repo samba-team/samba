@@ -3403,11 +3403,14 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)my_methods->private_data;
-	fstring filter;
+	char *filter = NULL;
 	int rc;
 	const char **attr_list;
 
-	pstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
+	filter = talloc_asprintf(NULL, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
+	if (!filter) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	attr_list = get_attr_list( NULL, groupmap_attr_list );
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,
@@ -3421,8 +3424,11 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
 			  lp_ldap_group_suffix(), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
+		TALLOC_FREE(filter);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	TALLOC_FREE(filter);
 
 	DEBUG(2, ("ldapsam_setsamgrent: %d entries in the base!\n",
 		  ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
