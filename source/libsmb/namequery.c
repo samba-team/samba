@@ -1421,7 +1421,7 @@ NTSTATUS internal_resolve_name(const char *name,
 				int *return_count,
 				const char *resolve_order)
 {
-	pstring name_resolve_list;
+	const char *name_resolve_list;
 	fstring tok;
 	const char *ptr;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -1475,9 +1475,9 @@ NTSTATUS internal_resolve_name(const char *name,
 	}
 
 	if (!resolve_order) {
-		pstrcpy(name_resolve_list, lp_name_resolve_order());
+		name_resolve_list = lp_name_resolve_order();
 	} else {
-		pstrcpy(name_resolve_list, resolve_order);
+		name_resolve_list = resolve_order;
 	}
 
 	if (!name_resolve_list[0]) {
@@ -1732,20 +1732,25 @@ static NTSTATUS get_dc_list(const char *domain,
 			enum dc_lookup_type lookup_type,
 			bool *ordered)
 {
-	fstring resolve_order;
-	char *saf_servername;
-	pstring pserver;
+	char *resolve_order = NULL;
+	char *saf_servername = NULL;
+	char *pserver = NULL;
 	const char *p;
-	char *port_str;
+	char *port_str = NULL;
 	int port;
 	fstring name;
 	int num_addresses = 0;
 	int  local_count, i, j;
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
-	bool done_auto_lookup = False;
+	bool done_auto_lookup = false;
 	int auto_count = 0;
 	NTSTATUS status;
+	TALLOC_CTX *ctx = talloc_init("get_dc_list");
+
+	if (!ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*ordered = False;
 
@@ -1755,23 +1760,31 @@ static NTSTATUS get_dc_list(const char *domain,
 	   are disabled and ads_only is True, then set the string to
 	   NULL. */
 
-	fstrcpy(resolve_order, lp_name_resolve_order());
+	resolve_order = talloc_strdup(ctx, lp_name_resolve_order());
+	if (!resolve_order) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 	strlower_m(resolve_order);
 	if (lookup_type == DC_ADS_ONLY)  {
 		if (strstr( resolve_order, "host")) {
-			fstrcpy( resolve_order, "ads");
+			resolve_order = talloc_strdup(ctx, "ads");
 
 			/* DNS SRV lookups used by the ads resolver
 			   are already sorted by priority and weight */
 			*ordered = true;
 		} else {
-                        fstrcpy(resolve_order, "NULL");
+                        resolve_order = talloc_strdup(ctx, "NULL");
 		}
 	} else if (lookup_type == DC_KDC_ONLY) {
 		/* DNS SRV lookups used by the ads/kdc resolver
 		   are already sorted by priority and weight */
 		*ordered = true;
-		fstrcpy(resolve_order, "kdc");
+		resolve_order = talloc_strdup(ctx, "kdc");
+	}
+	if (!resolve_order) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	/* fetch the server we have affinity for.  Add the
@@ -1780,22 +1793,27 @@ static NTSTATUS get_dc_list(const char *domain,
 	saf_servername = saf_fetch( domain);
 
 	if (strequal(domain, lp_workgroup()) || strequal(domain, lp_realm())) {
-		pstr_sprintf(pserver, "%s, %s",
+		pserver = talloc_asprintf(NULL, "%s, %s",
 			saf_servername ? saf_servername : "",
 			lp_passwordserver());
 	} else {
-		pstr_sprintf(pserver, "%s, *",
+		pserver = talloc_asprintf(NULL, "%s, *",
 			saf_servername ? saf_servername : "");
 	}
 
-	SAFE_FREE( saf_servername );
+	SAFE_FREE(saf_servername);
+	if (!pserver) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
 	/* if we are starting from scratch, just lookup DOMAIN<0x1c> */
 
 	if (!*pserver ) {
 		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		return internal_resolve_name(domain, 0x1C, sitename, ip_list,
+		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
 					     count, resolve_order);
+		goto out;
 	}
 
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
@@ -1831,18 +1849,19 @@ static NTSTATUS get_dc_list(const char *domain,
 	if ((num_addresses == 0)) {
 		if (done_auto_lookup) {
 			DEBUG(4,("get_dc_list: no servers found\n"));
-			SAFE_FREE(auto_ip_list);
-			return NT_STATUS_NO_LOGON_SERVERS;
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			goto out;
 		}
-		return internal_resolve_name(domain, 0x1C, sitename, ip_list,
+		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
 					     count, resolve_order);
+		goto out;
 	}
 
 	if ((return_iplist = SMB_MALLOC_ARRAY(struct ip_service,
 					num_addresses)) == NULL) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
-		SAFE_FREE(auto_ip_list);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	p = pserver;
@@ -1918,8 +1937,6 @@ static NTSTATUS get_dc_list(const char *domain,
 		}
 	}
 
-	SAFE_FREE(auto_ip_list);
-
 	/* need to remove duplicates in the list if we have any
 	   explicit password servers */
 
@@ -1947,7 +1964,13 @@ static NTSTATUS get_dc_list(const char *domain,
 	*ip_list = return_iplist;
 	*count = local_count;
 
-	return ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
+	status = ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
+
+  out:
+
+	SAFE_FREE(auto_ip_list);
+	TALLOC_FREE(ctx);
+	return status;
 }
 
 /*********************************************************************
