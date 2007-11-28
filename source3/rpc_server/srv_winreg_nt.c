@@ -790,7 +790,7 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
 
-	fname - talloc_strdup(p->mem_ctx, r->in.filename->name);
+	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
 	if (!fname) {
 		return WERR_NOMEM;
 	}
