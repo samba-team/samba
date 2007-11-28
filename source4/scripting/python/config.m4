@@ -116,7 +116,7 @@ AC_SUBST(PYTHON_EXTRA_LDFLAGS)
 
 SMB_EXT_LIB(LIBPYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CPPFLAGS])
 
-if test x$working_python = xyes && test x$SWIG != xno
+if test x$working_python = xyes
 then
 	SMB_ENABLE(LIBPYTHON,YES)
 else
