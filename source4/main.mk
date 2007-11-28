@@ -279,7 +279,7 @@ distclean: clean
 removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
 
-realdistclean: distclean removebackup
+realdistclean:: distclean removebackup
 	-rm -f include/config_tmp.h.in
 	-rm -f version.h
 	-rm -f configure
