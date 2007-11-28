@@ -21,6 +21,7 @@ SHLD_FLAGS = @SHLD_FLAGS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PICFLAG = @PICFLAG@
 SHLIBEXT = @SHLIBEXT@
+SWIG = @SWIG@
 
 .PHONY: test
 
@@ -111,7 +112,10 @@ distclean: clean
 realdistclean: distclean
 	rm -f configure include/config.h.in
 
-build-python: libtdb.$(SHLIBEXT)
+tdb_wrap.c tdb.py: tdb.i
+	$(SWIG) -python -keyword tdb.i
+
+build-python: libtdb.$(SHLIBEXT) tdb_wrap.c tdb.py
 	./setup.py build
 
 install-python:
