@@ -1729,7 +1729,8 @@ static void init_globals(bool first_time_only)
 
 static char *lp_string(const char *s)
 {
-	char *ret, *tmpstr;
+	char *ret;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	/* The follow debug is useful for tracking down memory problems
 	   especially if you have an inner loop that is calling a lp_*()
@@ -1740,19 +1741,20 @@ static char *lp_string(const char *s)
 	DEBUG(10, ("lp_string(%s)\n", s));
 #endif
 
-	tmpstr = alloc_sub_basic(get_current_username(),
-				 current_user_info.domain, s);
-	if (trim_char(tmpstr, '\"', '\"')) {
-		if (strchr(tmpstr,'\"') != NULL) {
-			SAFE_FREE(tmpstr);
-			tmpstr = alloc_sub_basic(get_current_username(),
-						 current_user_info.domain, s);
+	ret = talloc_sub_basic(ctx,
+			get_current_username(),
+			current_user_info.domain,
+			s);
+	if (trim_char(ret, '\"', '\"')) {
+		if (strchr(ret,'\"') != NULL) {
+			TALLOC_FREE(ret);
+			ret = talloc_sub_basic(ctx,
+					get_current_username(),
+					current_user_info.domain,
+					s);
 		}
 	}
-	ret = talloc_strdup(talloc_tos(), tmpstr);
-	SAFE_FREE(tmpstr);
-			
-	return (ret);
+	return ret;
 }
 
 /*
