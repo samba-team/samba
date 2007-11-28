@@ -721,13 +721,15 @@ out_free:
 	int 			opt;
 	static char		*cmdstr = NULL;
 	const char *server;
-	struct cli_state	*cli;
+	struct cli_state	*cli = NULL;
 	static char 		*opt_ipaddr=NULL;
 	struct cmd_set 		**cmd_set;
 	struct sockaddr_storage server_ss;
 	NTSTATUS 		nt_status;
 	static int		opt_port = 0;
 	fstring new_workgroup;
+	int result = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -760,7 +762,7 @@ out_free:
 
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
-		return 0;
+		goto done;
 	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -772,7 +774,8 @@ out_free:
 						AI_NUMERICHOST)) {
 				fprintf(stderr, "%s not a valid IP address\n",
 					opt_ipaddr);
-				return 1;
+				result = 1;
+				goto done;
 			}
 		}
 	}
@@ -784,15 +787,18 @@ out_free:
 
 	if (!server || poptGetArg(pc)) {
 		poptPrintHelp(pc, stderr, 0);
-		return 1;
+		result = 1;
+		goto done;
 	}
 
 	poptFreeContext(pc);
 
 	load_interfaces();
 
-	if (!init_names())
-		return 1;
+	if (!init_names()) {
+		result = 1;
+		goto done;
+	}
 
 	/* save the workgroup...
 
@@ -838,7 +844,8 @@ out_free:
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
-		return 1;
+		result = 1;
+		goto done;
 	}
 
 #if 0	/* COMMENT OUT FOR TESTING */
@@ -863,7 +870,8 @@ out_free:
         if (cmdstr && cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;
-		int result = 0;
+
+		result = 0;
 
                 while((cmd=next_command(&p)) != NULL) {
                         NTSTATUS cmd_result = process_cmd(cli, cmd);
@@ -871,8 +879,7 @@ out_free:
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
 
-		cli_shutdown(cli);
-                return result;
+		goto done;
         }
 
 	/* Loop around accepting commands */
@@ -889,6 +896,10 @@ out_free:
 			process_cmd(cli, line);
 	}
 
-	cli_shutdown(cli);
-	return 0;
+done:
+	if (cli != NULL) {
+		cli_shutdown(cli);
+	}
+	TALLOC_FREE(frame);
+	return result;
 }
