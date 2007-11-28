@@ -105,11 +105,6 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 	char *path;
 	const char *url;
 	struct ldb_context *ldb;
-	bool existed;
-	const char *init_ldif = 
-		"dn: @ATTRIBUTES\n" \
-		"computerName: CASE_INSENSITIVE\n" \
-		"flatname: CASE_INSENSITIVE\n";
 
 	url = lp_secrets_url(global_loadparm);
 	if (!url || !url[0]) {
@@ -121,8 +116,6 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	existed = file_exist(path);
-
 	/* Secrets.ldb *must* always be local.  If we call for a
 	 * system_session() we will recurse */
 	ldb = ldb_wrap_connect(mem_ctx, global_loadparm, path, NULL, NULL, 0, NULL);
@@ -131,10 +124,6 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	if (!existed) {
-		gendb_add_ldif(ldb, init_ldif);
-	}
-
 	return ldb;
 }
 
