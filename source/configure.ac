@@ -75,6 +75,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
 	]
 )
+SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
 m4_include(lib/events/config.m4)
