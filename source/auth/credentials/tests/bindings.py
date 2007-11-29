@@ -82,3 +82,11 @@ class CredentialsTests(unittest.TestCase):
     def test_guess(self):
         # Just check the method is there and doesn't raise an exception
         self.creds.guess()
+
+    def test_authentication_requested(self):
+        self.assertFalse(self.creds.authentication_requested())
+
+    def test_wrong_password(self):
+        self.assertTrue(self.creds.wrong_password())
+        self.assertTrue(self.creds.wrong_password())
+        self.assertFalse(self.creds.wrong_password())

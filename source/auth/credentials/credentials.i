@@ -89,5 +89,9 @@ typedef struct cli_credentials {
         bool is_anonymous(void);
 
         const struct samr_Password *get_nt_hash(TALLOC_CTX *mem_ctx);
+
+        bool authentication_requested();
+
+        bool wrong_password();
     }
 } cli_credentials;
