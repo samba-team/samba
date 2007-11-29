@@ -192,13 +192,6 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ad2oLschema
 ################################################
 
-#######################
-# Start LIBRARY swig_ldb
-[PYTHON::swig_ldb]
-PUBLIC_DEPENDENCIES = LIBLDB LIBPYTHON
-SWIG_FILE = ldb.i
-# End LIBRARY swig_ldb
-#######################
 
 include tools/config.mk
 include ldb_ildap/config.mk
