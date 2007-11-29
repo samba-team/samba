@@ -25,7 +25,7 @@ realdistclean::
 
 pythonmods: $(PYTHON_DSOS)
 
-PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py
+PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py
 
 pydoctor:: pythonmods
 	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
