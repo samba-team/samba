@@ -583,8 +583,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		char *rel_fname = NULL;
-		files_struct *dir_fsp = file_fsp(
-			SVAL(req->inbuf, smb_ntcreate_RootDirectoryFid));
+		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
 			reply_doserror(req, ERRDOS, ERRbadfid);
@@ -1376,7 +1375,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		char *tmpname = NULL;
-		files_struct *dir_fsp = file_fsp(SVAL(params,4));
+		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
 			reply_doserror(req, ERRDOS, ERRbadfid);
