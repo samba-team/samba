@@ -414,7 +414,7 @@ bool net_find_server(const char *domain,
 		fstring dc_name;
 		struct sockaddr_storage pdc_ss;
 
-		if (get_pdc_ip(d, &pdc_ss)) {
+		if (!get_pdc_ip(d, &pdc_ss)) {
 			DEBUG(1,("Unable to resolve PDC server address\n"));
 			return false;
 		}
