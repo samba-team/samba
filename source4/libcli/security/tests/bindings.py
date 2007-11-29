@@ -50,7 +50,17 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.descriptor = security.SecurityDescriptor()
 
 
-class RandomSidTests(unittest.TestCase):
+class DomSidTests(unittest.TestCase):
+    def test_parse_sid(self):
+        sid = security.Sid("S-1-5-21")
+        self.assertEquals("S-1-5-21", str(sid))
+
+    def test_sid_equal(self):
+        sid1 = security.Sid("S-1-5-21")
+        sid2 = security.Sid("S-1-5-21")
+        self.assertTrue(sid1.__eq__(sid1))
+        self.assertTrue(sid1.__eq__(sid2))
+
     def test_random(self):
         sid = security.random_sid()
         self.assertTrue(str(sid).startswith("S-1-5-21-"))
