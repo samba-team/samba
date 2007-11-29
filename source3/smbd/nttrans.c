@@ -1289,6 +1289,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	NTSTATUS status;
 	size_t param_len;
 	struct case_semantics_state *case_state = NULL;
+	SMB_BIG_UINT allocation_size;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1330,6 +1331,10 @@ static void call_nt_transact_create(connection_struct *conn,
 	sd_len = IVAL(params,36);
 	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
+	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
+#endif
 
 	/* Ensure the data_len is correct for the sd and ea values given. */
 	if ((ea_len + sd_len > data_count) ||
@@ -1700,10 +1705,6 @@ static void call_nt_transact_create(connection_struct *conn,
 
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(params,12);
-#ifdef LARGE_SMB_OFF_T
-		allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
-#endif
 		if (allocation_size && (allocation_size > file_len)) {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
