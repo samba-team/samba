@@ -220,3 +220,13 @@ source/auth/auth.py
 source/lib/registry/tests/proto.h
 source/auth/auth_wrap.c
 source/auth/credentials/credentials_wrap.c
+source/lib/registry/registry_wrap.c
+source/lib/talloc/talloc.py
+source/lib/talloc/talloc_wrap.c
+source/lib/ldb/ldb_wrap.c
+source/librpc/rpc/dcerpc_wrap.c
+source/libcli/swig/libcli_smb.py
+source/libcli/swig/libcli_smb_wrap.c
+source/libcli/swig/libcli_nbt_wrap.c
+source/lib/events/events.py
+source/lib/events/events_wrap.c

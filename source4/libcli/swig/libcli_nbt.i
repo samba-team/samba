@@ -29,7 +29,6 @@
 
 #include "includes.h"
 #include "lib/talloc/talloc.h"
-#include "lib/events/events.h"
 #include "libcli/nbt/libnbt.h"
 #include "param/param.h"
 
@@ -40,27 +39,11 @@
 %}
 
 %import "stdint.i"
+%import "../util/errors.i"
 %import "../../lib/talloc/talloc.i"
-
-%typemap(in) NTSTATUS {
-        if (PyLong_Check($input))
-                $1 = NT_STATUS(PyLong_AsUnsignedLong($input));
-        else if (PyInt_Check($input))
-                $1 = NT_STATUS(PyInt_AsLong($input));
-        else {
-                PyErr_SetString(PyExc_TypeError, "Expected a long or an int");
-                return NULL;
-        }
-}
-
-%typemap(out) NTSTATUS {
-        $result = PyLong_FromUnsignedLong(NT_STATUS_V($1));
-}
+%import "../../lib/events/events.i"
 
 /* Function prototypes */
-
-struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
-
 struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
 					     struct event_context *event_ctx);
 

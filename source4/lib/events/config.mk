@@ -36,3 +36,7 @@ PUBLIC_HEADERS = events.h events_internal.h
 PUBLIC_DEPENDENCIES = LIBTALLOC
 # End SUBSYSTEM LIBEVENTS
 ##############################
+
+[PYTHON::swig_python]
+SWIG_FILE = events.i
+PRIVATE_DEPENDENCIES = LIBEVENTS
