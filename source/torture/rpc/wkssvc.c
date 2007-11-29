@@ -25,6 +25,8 @@
 #include "torture/rpc/rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
+#include "lib/crypto/crypto.h"
+#include "libcli/auth/libcli_auth.h"
 
 #define SMBTORTURE_MACHINE_NAME "smbtrt_name"
 #define SMBTORTURE_ALTERNATE_NAME "smbtrt_altname"
@@ -1115,6 +1117,48 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 	return true;
 }
 
+/* encode a wkssvc_PasswordBuffer for remote joining/unjoining:
+ *
+ * similar to samr_CryptPasswordEx. Different: 8byte confounder (instead of
+ * 16byte), confounder at the beginning of the 516 byte buffer (instead of at
+ * the end), MD5Update() reordering of session_key and confounder - Guenther */
+
+static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
+					       struct dcerpc_pipe *p,
+					       const char *pwd,
+					       struct wkssvc_PasswordBuffer *pwd_buf)
+{
+	NTSTATUS status;
+	uint8_t buffer[516];
+	struct MD5Context ctx;
+
+	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
+	DATA_BLOB session_key;
+
+	int confounder_len = 8;
+	uint8_t confounder[8];
+
+	encode_pw_buffer(buffer, pwd, STR_UNICODE);
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	generate_random_buffer((uint8_t *)confounder, confounder_len);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Update(&ctx, confounder, confounder_len);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
+
+	memcpy(&pwd_buf->data[0], confounder, confounder_len);
+	memcpy(&pwd_buf->data[8], buffer, 516);
+
+	return true;
+}
 
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
