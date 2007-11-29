@@ -199,7 +199,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
-	DEBUG(0,("Monitoring has been stopped\n"));
+	DEBUG(0,("Monitoring has been disabled\n"));
 }
 
 /* 
