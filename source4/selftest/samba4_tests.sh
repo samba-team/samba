@@ -291,12 +291,12 @@ then
 	plantest "NSS-TEST using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
 fi
 
-# if trial is available, run the python tests:
-if which trial 2>/dev/null >/dev/null
+# if python is available, run the python tests:
+if which python 2>/dev/null >/dev/null
 then
-	plantest "ldb.python" none PYTHONPATH=bin/python trial lib/ldb/tests/python/api.py
-	plantest "credentials.python" none PYTHONPATH=bin/python trial auth/credentials/tests/bindings.py
-	plantest "registry.python" none PYTHONPATH=bin/python trial lib/registry/tests/bindings.py
-	plantest "tdb.python" none PYTHONPATH=bin/python trial lib/tdb/python/tests/simple.py
-	plantest "auth.python" none PYTHONPATH=bin/python trial auth/tests/bindings.py
+	plantest "ldb.python" none PYTHONPATH=bin/python:scripting/python:lib/ldb/tests/python/ scripting/bin/subunitrun api
+	plantest "credentials.python" none PYTHONPATH=bin/python:scripting/python:auth/credentials/tests scripting/bin/subunitrun bindings
+	plantest "registry.python" none PYTHONPATH=bin/python:scripting/python:lib/registry/tests/ scripting/bin/subunitrun bindings
+	plantest "tdb.python" none PYTHONPATH=bin/python:scripting/python:lib/tdb/python/tests scripting/bin/subunitrun simple
+	plantest "auth.python" none PYTHONPATH=bin/python:scripting/python:auth/tests/ scripting/bin/subunitrun bindings
 fi
