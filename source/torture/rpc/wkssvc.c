@@ -1055,6 +1055,67 @@ static bool test_NetrGetJoinableOus2(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_NetrUnjoinDomain(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUnjoinDomain r;
+	struct cli_credentials *creds = cmdline_credentials;
+	const char *user = cli_credentials_get_username(creds);
+	const char *admin_account = NULL;
+
+	admin_account = talloc_asprintf(tctx, "%s\\%s",
+					lp_workgroup(global_loadparm),
+					user);
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.Account = admin_account;
+	r.in.password = NULL;
+	r.in.unjoin_flags = 0;
+
+	torture_comment(tctx, "testing NetrUnjoinDomain\n");
+
+	status = dcerpc_wkssvc_NetrUnjoinDomain(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUnjoinDomain failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				  "NetrUnjoinDomain failed");
+	return true;
+}
+
+
+static bool test_NetrJoinDomain(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrJoinDomain r;
+	struct cli_credentials *creds = cmdline_credentials;
+	const char *user = cli_credentials_get_username(creds);
+	const char *admin_account = NULL;
+
+	admin_account = talloc_asprintf(tctx, "%s\\%s",
+					lp_workgroup(global_loadparm),
+					user);
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.domain_name = lp_realm(global_loadparm);
+	r.in.account_ou = NULL;
+	r.in.Account = admin_account;
+	r.in.password = NULL;
+	r.in.join_flags = 0;
+
+	torture_comment(tctx, "testing NetrJoinDomain\n");
+
+	status = dcerpc_wkssvc_NetrJoinDomain(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrJoinDomain failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				  "NetrJoinDomain failed");
+	return true;
+}
+
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -1113,6 +1174,12 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
 
+	torture_rpc_tcase_add_test(tcase, "NetrJoinDomain",
+				   test_NetrJoinDomain);
+	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "NetrUnjoinDomain",
+				   test_NetrUnjoinDomain);
+	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetrGetJoinInformation",
 				   test_NetrGetJoinInformation);
 	torture_rpc_tcase_add_test(tcase, "NetrGetJoinableOus",
