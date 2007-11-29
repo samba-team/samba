@@ -1151,8 +1151,9 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 /* encode a wkssvc_PasswordBuffer for remote joining/unjoining:
  *
  * similar to samr_CryptPasswordEx. Different: 8byte confounder (instead of
- * 16byte), confounder at the beginning of the 516 byte buffer (instead of at
- * the end), MD5Update() reordering of session_key and confounder - Guenther */
+ * 16byte), confounder in front of the 516 byte buffer (instead of after that
+ * buffer), calling MD5Update() first with session_key and then with confounder
+ * (vice versa in samr) - Guenther */
 
 static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
 					       struct dcerpc_pipe *p,
