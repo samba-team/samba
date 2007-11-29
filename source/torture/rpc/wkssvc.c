@@ -1006,6 +1006,38 @@ static bool test_NetrGetJoinInformation(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetJoinInformation(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    enum wkssvc_NetJoinStatus *join_status_p,
+				    const char **name)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrGetJoinInformation r;
+	enum wkssvc_NetJoinStatus join_status;
+	const char *name_buffer = "";
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.name_buffer = r.out.name_buffer = &name_buffer;
+	r.out.name_type = &join_status;
+
+	status = dcerpc_wkssvc_NetrGetJoinInformation(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrGetJoinInformation failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "NetrGetJoinInformation failed");
+
+	if (join_status_p) {
+		*join_status_p = join_status;
+	}
+
+	if (*name) {
+		*name = talloc_strdup(tctx, name_buffer);
+	}
+
+	return true;
+
+}
+
 static bool test_NetrGetJoinableOus(struct torture_context *tctx,
 				    struct dcerpc_pipe *p)
 {
@@ -1086,7 +1118,6 @@ static bool test_NetrUnjoinDomain(struct torture_context *tctx,
 	return true;
 }
 
-
 static bool test_NetrJoinDomain(struct torture_context *tctx,
 				struct dcerpc_pipe *p)
 {
@@ -1160,6 +1191,69 @@ static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrJoinDomain2(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrJoinDomain2 r;
+	const char *domain_admin_account = NULL;
+	const char *domain_admin_password = NULL;
+	struct wkssvc_PasswordBuffer pwd_buf;
+	enum wkssvc_NetJoinStatus join_status;
+	const char *join_name = NULL;
+	WERROR expected_err = WERR_OK;
+
+	/* FIXME: this test assumes to join workstations / servers and does not
+	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
+
+	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
+	{
+		return false;
+	}
+
+	switch (join_status) {
+		case NetSetupDomainName:
+			expected_err = WERR_SETUP_ALREADY_JOINED;
+			break;
+		case NetSetupUnknownStatus:
+		case NetSetupUnjoined:
+		case NetSetupWorkgroupName:
+			break;
+	}
+
+	domain_admin_account = lp_parm_string(global_loadparm, NULL,
+					      "torture",
+					      "domain_admin_account");
+
+	domain_admin_password = lp_parm_string(global_loadparm, NULL,
+					       "torture",
+					       "domain_admin_password");
+
+	if (!encode_wkssvc_join_password_buffer(tctx, p,
+						domain_admin_password,
+						&pwd_buf))
+	{
+		return false;
+	}
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.domain_name = lp_realm(global_loadparm);
+	r.in.account_ou = NULL;
+	r.in.admin_account = domain_admin_account;
+	r.in.encrypted_password = &pwd_buf;
+	r.in.join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+			  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
+
+	torture_comment(tctx, "testing NetrJoinDomain2 (assuming non-DC)\n");
+
+	status = dcerpc_wkssvc_NetrJoinDomain2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrJoinDomain2 failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_err,
+				  "NetrJoinDomain2 failed");
+	return true;
+}
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -1217,6 +1311,10 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateComputerNames",
 				   test_NetrEnumerateComputerNames);
+
+	test = torture_rpc_tcase_add_test(tcase, "NetrJoinDomain2",
+					  test_NetrJoinDomain2);
+	test->dangerous = true;
 
 	torture_rpc_tcase_add_test(tcase, "NetrJoinDomain",
 				   test_NetrJoinDomain);
