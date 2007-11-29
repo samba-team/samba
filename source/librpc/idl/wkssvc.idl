@@ -578,7 +578,7 @@ import "srvsvc.idl", "lsa.idl";
 		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
 		[in] [string,charset(UTF16)] uint16 *account_ou,
 		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in] [string,charset(UTF16)] uint16 *password,
 		[in] wkssvc_joinflags join_flags
 		);
 
