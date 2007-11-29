@@ -230,3 +230,5 @@ source/libcli/swig/libcli_smb_wrap.c
 source/libcli/swig/libcli_nbt_wrap.c
 source/lib/events/events.py
 source/lib/events/events_wrap.c
+source/libcli/security/security_wrap.c
+source/libcli/security/security.py

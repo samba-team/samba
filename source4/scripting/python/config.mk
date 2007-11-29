@@ -6,10 +6,6 @@ OBJ_FILES = parammodule.o
 PRIVATE_DEPENDENCIES = LIBNDR 
 OBJ_FILES = uuidmodule.o
 
-[PYTHON::python_sid]
-PRIVATE_DEPENDENCIES = LIBNDR 
-OBJ_FILES = sidmodule.o
-
 [PYTHON::python_misc]
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB
 SWIG_FILE = misc.i
