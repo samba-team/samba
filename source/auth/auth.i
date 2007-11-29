@@ -25,7 +25,8 @@
 #include <stdbool.h>
 
 #include "includes.h"
-#include "auth.h"
+#include "auth/session.h"
+#include "auth/system_session_proto.h"
 %}
 
 %include "carrays.i"

@@ -298,4 +298,5 @@ then
 	plantest "credentials.python" none PYTHONPATH=bin/python trial auth/credentials/tests/bindings.py
 	plantest "registry.python" none PYTHONPATH=bin/python trial lib/registry/tests/bindings.py
 	plantest "tdb.python" none PYTHONPATH=bin/python trial lib/tdb/python/tests/simple.py
+	plantest "auth.python" none PYTHONPATH=bin/python trial auth/tests/bindings.py
 fi

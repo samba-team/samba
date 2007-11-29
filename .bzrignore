@@ -218,3 +218,5 @@ source/scripting/python/misc.py
 source/scripting/python/misc_wrap.c
 source/auth/auth.py
 source/lib/registry/tests/proto.h
+source/auth/auth_wrap.c
+source/auth/credentials/credentials_wrap.c
