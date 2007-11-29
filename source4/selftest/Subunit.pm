@@ -20,7 +20,7 @@ sub parse_results($$$$$)
 			$msg_ops->control_msg($msg_state, $_);
 			$open_tests->{$1} = 1;
 			$msg_ops->start_test($msg_state, $1);
-		} elsif (/^(success|failure|skip|error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|skip|error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($msg_state, $_);
 			my $reason = undef;
 			if ($3) {
@@ -32,7 +32,7 @@ sub parse_results($$$$$)
 				}
 			}
 			my $result = $1;
-			if ($1 eq "success") {
+			if ($1 eq "success" or $1 eq "successful") {
 				delete $open_tests->{$2};
 				if ($expecting_failure->("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
