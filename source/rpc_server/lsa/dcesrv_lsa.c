@@ -1713,7 +1713,8 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
+		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx, 
+											  global_loadparm));
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
 				   ldb_dn_new(mem_ctx, secret_state->sam_ldb, "cn=LSA Secrets"),
@@ -1831,7 +1832,8 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		}
 	
 	} else {
-		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
+		secret_state->sam_ldb = talloc_reference(secret_state, 
+							 secrets_db_connect(mem_ctx, global_loadparm));
 
 		secret_state->global = false;
 		name = r->in.name.string;

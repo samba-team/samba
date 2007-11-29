@@ -229,7 +229,6 @@ bool cli_credentials_set_principal(struct cli_credentials *cred,
 
 /* Set a callback to get the principal.  This could be a popup dialog,
  * a terminal prompt or similar.  */
-
 bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
 				  const char *(*principal_cb) (struct cli_credentials *))
 {

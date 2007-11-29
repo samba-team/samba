@@ -99,18 +99,18 @@ bool secrets_init(void)
 /**
   connect to the secrets ldb
 */
-struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	char *path;
 	const char *url;
 	struct ldb_context *ldb;
 
-	url = lp_secrets_url(global_loadparm);
+	url = lp_secrets_url(lp_ctx);
 	if (!url || !url[0]) {
 		return NULL;
 	}
 
-	path = private_path(mem_ctx, global_loadparm, url);
+	path = private_path(mem_ctx, lp_ctx, url);
 	if (!path) {
 		return NULL;
 	}
@@ -122,6 +122,9 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		talloc_free(path);
 		return NULL;
 	}
+
+	ldb_set_modules_dir(ldb, 
+			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
 
 	if (ldb_connect(ldb, path, 0, NULL) != 0) {
 		talloc_free(path);
@@ -146,7 +149,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { "objectSid", NULL };
 	struct dom_sid *result = NULL;
 
-	ldb = secrets_db_connect(mem_ctx);
+	ldb = secrets_db_connect(mem_ctx, global_loadparm);
 	if (ldb == NULL) {
 		DEBUG(5, ("secrets_db_connect failed\n"));
 		return NULL;
