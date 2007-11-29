@@ -291,12 +291,22 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			p = &(control_strings[i][12]);
 			ret = sscanf(p, "%d:%d", &crit, &type);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
-				error_string = talloc_asprintf(mem_ctx, "invalid extended_dn control syntax\n");
-				error_string = talloc_asprintf_append(error_string, " syntax: crit(b):type(b)\n");
-				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-				ldb_set_errstring(ldb, error_string);
-				talloc_free(error_string);
-				return NULL;
+				ret = sscanf(p, "%d", &crit);
+				if ((ret != 1) || (crit < 0) || (crit > 1)) {
+					error_string = talloc_asprintf(mem_ctx, "invalid extended_dn control syntax\n");
+					error_string = talloc_asprintf_append(error_string, " syntax: crit(b)[:type(i)]\n");
+					error_string = talloc_asprintf_append(error_string, "   note: b = boolean\n");
+					error_string = talloc_asprintf_append(error_string, "         i = integer\n");
+					error_string = talloc_asprintf_append(error_string, "   valid values are: 0 - hexadecimal representation\n");
+					error_string = talloc_asprintf_append(error_string, "                     1 - normal string representation");
+					ldb_set_errstring(ldb, error_string);
+					talloc_free(error_string);
+					return NULL;
+				}
+				control = NULL;
+			} else {
+				control = talloc(ctrl, struct ldb_extended_dn_control);
+				control->type = type;
 			}
 
 			ctrl[i] = talloc(ctrl, struct ldb_control);
@@ -306,9 +316,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			}
 			ctrl[i]->oid = LDB_CONTROL_EXTENDED_DN_OID;
 			ctrl[i]->critical = crit;
-			control = talloc(ctrl[i], struct ldb_extended_dn_control);
-			control->type = type;
-			ctrl[i]->data = control;
+			ctrl[i]->data = talloc_steal(ctrl[i], control);
 
 			continue;
 		}

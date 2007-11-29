@@ -156,9 +156,16 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 
 static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 {
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data;
 	struct ldb_extended_dn_control *ledc;
 
+	/* The content of this control is optional */
+	if (in.length == 0) {
+		*out = NULL;
+		return true;
+	}
+
+	data = asn1_init(mem_ctx);
 	if (!data) return false;
 
 	if (!asn1_load(data, in)) {
@@ -717,7 +724,14 @@ static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_extended_dn_control *ledc = talloc_get_type(in, struct ldb_extended_dn_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data;
+
+	if (!in) {
+		*out = data_blob(NULL, 0);
+		return true;
+	}
+
+	data = asn1_init(mem_ctx);
 
 	if (!data) return false;
 

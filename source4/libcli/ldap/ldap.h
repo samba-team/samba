@@ -240,11 +240,13 @@ union ldap_Request {
 	struct ldap_ExtendedResponse 	ExtendedResponse;
 };
 
+
 struct ldap_message {
 	int                     messageid;
 	enum ldap_request_tag   type;
 	union ldap_Request      r;
 	struct ldb_control    **controls;
+	bool                   *controls_decoded;
 };
 
 struct event_context;

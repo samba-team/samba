@@ -104,35 +104,58 @@ static bool inject_extended_dn(struct ldb_message *msg,
 	const struct ldb_val *val;
 	struct GUID guid;
 	struct dom_sid *sid;
+	const DATA_BLOB *guid_blob;
+	const DATA_BLOB *sid_blob;
 	char *object_guid;
 	char *object_sid;
 	char *new_dn;
 
-	/* retrieve object_guid */
-	guid = samdb_result_guid(msg, "objectGUID");
-	object_guid = GUID_string(msg, &guid);
-	if (!object_guid)
+	guid_blob = ldb_msg_find_ldb_val(msg, "objectGUID");
+	sid_blob = ldb_msg_find_ldb_val(msg, "objectSID");
+
+	if (!guid_blob)
 		return false;
 
-	if (remove_guid)
-		ldb_msg_remove_attr(msg, "objectGUID");
-
-	/* retrieve object_sid */
-	object_sid = NULL;
-	sid = samdb_result_dom_sid(msg, msg, "objectSID");
-	if (sid) {
-		object_sid = dom_sid_string(msg, sid);
-		if (!object_sid)
-			return false;
-
-		if (remove_sid)
-			ldb_msg_remove_attr(msg, "objectSID");
-	}
-
-	/* TODO: handle type */
 	switch (type) {
 		case 0:
+			/* return things in hexadecimal format */
+			if (sid_blob) {
+				const char *lower_guid_hex = strlower_talloc(msg, data_blob_hex_string(msg, guid_blob));
+				const char *lower_sid_hex = strlower_talloc(msg, data_blob_hex_string(msg, sid_blob));
+				if (!lower_guid_hex || !lower_sid_hex) {
+					return false;
+				}
+				new_dn = talloc_asprintf(msg, "<GUID=%s>;<SID=%s>;%s",
+							 lower_guid_hex, 
+							 lower_sid_hex,
+							 ldb_dn_get_linearized(msg->dn));
+			} else {
+				const char *lower_guid_hex = strlower_talloc(msg, data_blob_hex_string(msg, guid_blob));
+				if (!lower_guid_hex) {
+					return false;
+				}
+				new_dn = talloc_asprintf(msg, "<GUID=%s>;%s",
+							 lower_guid_hex, 
+							 ldb_dn_get_linearized(msg->dn));
+			}
+
+			break;
 		case 1:
+			/* retrieve object_guid */
+			guid = samdb_result_guid(msg, "objectGUID");
+			object_guid = GUID_string(msg, &guid);
+			
+			/* retrieve object_sid */
+			object_sid = NULL;
+			sid = samdb_result_dom_sid(msg, msg, "objectSID");
+			if (sid) {
+				object_sid = dom_sid_string(msg, sid);
+				if (!object_sid)
+					return false;
+				
+			}
+			
+			/* Normal, sane format */
 			if (object_sid) {
 				new_dn = talloc_asprintf(msg, "<GUID=%s>;<SID=%s>;%s",
 							 object_guid, object_sid,
@@ -147,8 +170,17 @@ static bool inject_extended_dn(struct ldb_message *msg,
 			return false;
 	}
 
-	if (!new_dn)
+	if (!new_dn) {
 		return false;
+	}
+
+	if (remove_guid) {
+		ldb_msg_remove_attr(msg, "objectGUID");
+	}
+
+	if (sid_blob && remove_sid) {
+		ldb_msg_remove_attr(msg, "objectSID");
+	}
 
 	msg->dn = ldb_dn_new(msg, ldb, new_dn);
 	if (! ldb_dn_validate(msg->dn))
@@ -201,7 +233,7 @@ error:
 static int extended_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control *control;
-	struct ldb_extended_dn_control *extended_ctrl;
+	struct ldb_extended_dn_control *extended_ctrl = NULL;
 	struct ldb_control **saved_controls;
 	struct extended_context *ac;
 	struct ldb_request *down_req;
@@ -215,9 +247,11 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
-	if (!extended_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
+	if (control->data) {
+		extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
+		if (!extended_ctrl) {
+			return LDB_ERR_PROTOCOL_ERROR;
+		}
 	}
 
 	ac = talloc(req, struct extended_context);
@@ -231,7 +265,11 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	ac->attrs = req->op.search.attrs;
 	ac->remove_guid = false;
 	ac->remove_sid = false;
-	ac->extended_type = extended_ctrl->type;
+	if (extended_ctrl) {
+		ac->extended_type = extended_ctrl->type;
+	} else {
+		ac->extended_type = 0;
+	}
 
 	down_req = talloc_zero(req, struct ldb_request);
 	if (down_req == NULL) {
