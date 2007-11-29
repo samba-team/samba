@@ -1325,10 +1325,12 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 	}
 
 	msg->controls = NULL;
+	msg->controls_decoded = NULL;
 
 	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 		int i = 0;
 		struct ldb_control **ctrl = NULL;
+		bool *decoded = NULL;
 
 		asn1_start_tag(data, ASN1_CONTEXT(0));
 
@@ -1338,6 +1340,11 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 			ctrl = talloc_realloc(msg, ctrl, struct ldb_control *, i+2);
 			if (!ctrl) {
+				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
+			}
+
+			decoded = talloc_realloc(msg, decoded, bool, i+1);
+			if (!decoded) {
 				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 			}
 
@@ -1352,12 +1359,15 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			
 			if (!ldap_decode_control_value(ctrl, value, ctrl[i])) {
 				if (ctrl[i]->critical) {
-					return NT_STATUS_LDAP(LDAP_UNAVAILABLE_CRITICAL_EXTENSION);
+					ctrl[i]->data = NULL;
+					decoded[i] = false;
+					i++;
 				} else {
 					talloc_free(ctrl[i]);
 					ctrl[i] = NULL;
 				}
 			} else {
+				decoded[i] = true;
 				i++;
 			}
 		}
@@ -1367,6 +1377,7 @@ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		}
 
 		msg->controls = ctrl;
+		msg->controls_decoded = decoded;
 
 		asn1_end_tag(data);
 	}

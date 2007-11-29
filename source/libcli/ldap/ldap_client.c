@@ -116,6 +116,7 @@ static void ldap_error_handler(void *private_data, NTSTATUS status)
 static void ldap_match_message(struct ldap_connection *conn, struct ldap_message *msg)
 {
 	struct ldap_request *req;
+	int i;
 
 	for (req=conn->pending; req; req=req->next) {
 		if (req->messageid == msg->messageid) break;
@@ -130,6 +131,20 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 			 msg->messageid));
 		talloc_free(msg);
 		return;
+	}
+
+	/* Check for undecoded critical extensions */
+	for (i=0; msg->controls && msg->controls[i]; i++) {
+		if (!msg->controls_decoded[i] && 
+		    msg->controls[i]->critical) {
+			req->status = NT_STATUS_LDAP(LDAP_UNAVAILABLE_CRITICAL_EXTENSION);
+			req->state = LDAP_REQUEST_DONE;
+			DLIST_REMOVE(conn->pending, req);
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
+			return;
+		}
 	}
 
 	/* add to the list of replies received */

@@ -71,7 +71,17 @@ failed=`expr $failed + 1`
 fi
 
 echo "Test Extended DN Control"
+nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=extended_dn:1 '(objectclass=user)' | grep sAMAccountName | wc -l`
+if [ $nentries -lt 1 ]; then
+echo "Extended DN Control test returned 0 items"
+failed=`expr $failed + 1`
+fi
 nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=extended_dn:1:0 '(objectclass=user)' | grep sAMAccountName | wc -l`
+if [ $nentries -lt 1 ]; then
+echo "Extended DN Control test returned 0 items"
+failed=`expr $failed + 1`
+fi
+nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=extended_dn:1:1 '(objectclass=user)' | grep sAMAccountName | wc -l`
 if [ $nentries -lt 1 ]; then
 echo "Extended DN Control test returned 0 items"
 failed=`expr $failed + 1`
