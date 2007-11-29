@@ -33,13 +33,6 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int i;
 
-	if (ctdb->monitoring_mode == CTDB_MONITORING_DISABLED) {
-		event_add_timed(ctdb->ev, ctdb->monitor_context, 
-			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
-			ctdb_check_for_dead_nodes, ctdb);
-		return;
-	}
-
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
@@ -203,8 +196,10 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 {
 	talloc_free(ctdb->monitor_context);
-	ctdb->monitor_context = talloc_new(ctdb);
-	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor_context);
+	ctdb->monitor_context = NULL;
+
+	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
+	DEBUG(0,("Monitoring has been stopped\n"));
 }
 
 /*
@@ -214,7 +209,14 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 {
 	struct timed_event *te;
 
+	if (ctdb->monitoring_mode == CTDB_MONITORING_ACTIVE) {
+		return;
+	}
+
 	ctdb_stop_monitoring(ctdb);
+
+	ctdb->monitor_context = talloc_new(ctdb);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor_context);
 
 	te = event_add_timed(ctdb->ev, ctdb->monitor_context,
 			     timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
@@ -225,6 +227,9 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 			     timeval_current_ofs(ctdb->tunable.monitor_retry, 0), 
 			     ctdb_check_health, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
+
+	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+	DEBUG(0,("Monitoring has been started\n"));
 }
 
 

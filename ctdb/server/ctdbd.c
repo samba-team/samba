@@ -168,7 +168,7 @@ int main(int argc, const char *argv[])
 	ctdb->upcalls          = &ctdb_upcalls;
 	ctdb->idr              = idr_init(ctdb);
 	ctdb->recovery_lock_fd = -1;
-	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
 
 	ctdb_tunables_set_defaults(ctdb);
 

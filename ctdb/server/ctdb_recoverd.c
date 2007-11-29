@@ -782,9 +782,10 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
   Update our local flags from all remote connected nodes. 
   This is only run when we are or we belive we are the recovery master
  */
-static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap)
 {
 	int j;
+	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
 	/* get the nodemap for all active remote nodes and verify
@@ -1857,7 +1858,7 @@ again:
 
 
 	/* ensure our local copies of flags are right */
-	ret = update_local_flags(ctdb, nodemap);
+	ret = update_local_flags(rec, nodemap);
 	if (ret == MONITOR_ELECTION_NEEDED) {
 		DEBUG(0,("update_local_flags() called for a re-election.\n"));
 		force_election(rec, mem_ctx, pnn, nodemap);
