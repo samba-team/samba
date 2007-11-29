@@ -110,15 +110,9 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		next_interval = ctdb->tunable.monitor_interval;
 	}
 
-	if (ctdb->monitor_context == NULL) {
-		DEBUG(0,(__location__ " monitoring was disabled while running"
-			" healthcheck. Health checks postphoned until"
-			" monitoring is re-enabled.\n"));
-	} else {
-		event_add_timed(ctdb->ev, ctdb->monitor_context, 
+	event_add_timed(ctdb->ev, ctdb->monitor_context, 
 				timeval_current_ofs(next_interval, 0), 
 				ctdb_check_health, ctdb);
-	}
 
 	if (c.old_flags == node->flags) {
 		return;
@@ -149,27 +143,13 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	}
 
 	if (ctdb->done_startup) {
-		if (ctdb->monitor_context == NULL) {
-			DEBUG(0,(__location__ " monitoring was disabled while "
-				"running startup event. "
-				"startup event postphoned until "
-				"monitoring is re-enabled.\n"));
-		} else {
-			event_add_timed(ctdb->ev, ctdb->monitor_context, 
-					timeval_zero(),
-					ctdb_check_health, ctdb);
-		}
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
+				timeval_zero(),
+				ctdb_check_health, ctdb);
 	} else {
-		if (ctdb->monitor_context == NULL) {
-			DEBUG(0,(__location__ " monitoring was disabled while "
-				"running startup event. "
-				"Health cheack postphoned until "
-				"monitoring is re-enabled.\n"));
-		} else {
-			event_add_timed(ctdb->ev, ctdb->monitor_context, 
-					timeval_current_ofs(ctdb->tunable.monitor_interval, 0),
-					ctdb_check_health, ctdb);
-		}
+		event_add_timed(ctdb->ev, ctdb->monitor_context, 
+				timeval_current_ofs(ctdb->tunable.monitor_interval, 0),
+				ctdb_check_health, ctdb);
 	}
 
 }
