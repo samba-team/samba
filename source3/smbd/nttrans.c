@@ -540,17 +540,27 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	allocation_size |= (((SMB_BIG_UINT)IVAL(req->inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 
+	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
+			smb_buf(req->inbuf), 0, STR_TERMINATE, &status);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBntcreateX);
+		return;
+	}
+
 	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
-		  "root_dir_fid = 0x%x\n",
+		  "root_dir_fid = 0x%x, fname = %s\n",
 			(unsigned int)flags,
 			(unsigned int)access_mask,
 			(unsigned int)file_attributes,
 			(unsigned int)share_access,
 			(unsigned int)create_disposition,
 			(unsigned int)create_options,
-			(unsigned int)root_dir_fid ));
+			(unsigned int)root_dir_fid,
+			fname));
 
 	/*
 	 * If it's an IPC, use the pipe handler.
@@ -578,11 +588,11 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	 * Get the file name.
 	 */
 
-	if(root_dir_fid != 0) {
+	if (root_dir_fid != 0) {
 		/*
 		 * This filename is relative to a directory fid.
 		 */
-		char *rel_fname = NULL;
+		char *parent_fname = NULL;
 		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
@@ -592,16 +602,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		}
 
 		if(!dir_fsp->is_directory) {
-
-			srvstr_get_path(ctx, (char *)req->inbuf,
-					req->flags2, &fname,
-					smb_buf(req->inbuf), 0,
-					STR_TERMINATE, &status);
-			if (!NT_STATUS_IS_OK(status)) {
-				reply_nterror(req, status);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
 
 			/*
 			 * Check to see if this is a mac fork of some kind.
@@ -633,8 +633,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			 * normally by srvstr_get_path and unix_convert
 			 * explicitly rejects paths containing ./.
 			 */
-			fname = talloc_strdup(ctx,"");
-			if (!fname) {
+			parent_fname = talloc_strdup(ctx,"");
+			if (!parent_fname) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBntcreateX);
 				return;
@@ -646,55 +646,35 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			 * Copy in the base directory name.
 			 */
 
-			fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-			if (!fname) {
-				reply_nterror(
-					req, NT_STATUS_NO_MEMORY);
+			parent_fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
+			if (!parent_fname) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBntcreateX);
 				return;
 			}
-			memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
+			memcpy(parent_fname, dir_fsp->fsp_name,
+			       dir_name_len+1);
 
 			/*
 			 * Ensure it ends in a '/'.
 			 * We used TALLOC_SIZE +2 to add space for the '/'.
 			 */
 
-			if(dir_name_len &&
-					(fname[dir_name_len-1] != '\\') &&
-					(fname[dir_name_len-1] != '/')) {
-				fname[dir_name_len] = '/';
-				fname[dir_name_len+1] = '\0';
+			if(dir_name_len
+			   && (parent_fname[dir_name_len-1] != '\\')
+			   && (parent_fname[dir_name_len-1] != '/')) {
+				parent_fname[dir_name_len] = '/';
+				parent_fname[dir_name_len+1] = '\0';
 			}
 		}
 
-		srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &rel_fname,
-				smb_buf(req->inbuf), 0,
-				STR_TERMINATE, &status);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-		fname = talloc_asprintf(ctx, "%s%s",
-					fname,
-					rel_fname);
-		if (!fname) {
-			reply_nterror(
-				req, NT_STATUS_NO_MEMORY);
+		fname = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
+		if (fname == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
 	} else {
-		srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-				smb_buf(req->inbuf), 0,
-				STR_TERMINATE, &status);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-
 		/*
 		 * Check to see if this is a mac fork of some kind.
 		 */
@@ -1361,6 +1341,14 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 	}
 
+	srvstr_get_path(ctx, params, req->flags2, &fname,
+			params+53, parameter_count-53,
+			STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
+	}
+
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return;
@@ -1374,7 +1362,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		/*
 		 * This filename is relative to a directory fid.
 		 */
-		char *tmpname = NULL;
+		char *parent_fname = NULL;
 		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
@@ -1383,14 +1371,6 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(ctx, params, req->flags2, &fname,
-					params+53,
-					parameter_count-53, STR_TERMINATE,
-					&status);
-			if (!NT_STATUS_IS_OK(status)) {
-				reply_nterror(req, status);
-				return;
-			}
 
 			/*
 			 * Check to see if this is a mac fork of some kind.
@@ -1401,6 +1381,13 @@ static void call_nt_transact_create(connection_struct *conn,
 					      NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				return;
 			}
+
+			/*
+			  we need to handle the case when we get a
+			  relative open relative to a file and the
+			  pathname is blank - this is a reopen!
+			  (hint from demyn plantenberg)
+			*/
 
 			reply_doserror(req, ERRDOS, ERRbadfid);
 			return;
@@ -1413,8 +1400,8 @@ static void call_nt_transact_create(connection_struct *conn,
 			 * normally by srvstr_get_path and unix_convert
 			 * explicitly rejects paths containing ./.
 			 */
-			fname = talloc_strdup(ctx,"");
-			if (!fname) {
+			parent_fname = talloc_strdup(ctx,"");
+			if (!parent_fname) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
@@ -1425,51 +1412,34 @@ static void call_nt_transact_create(connection_struct *conn,
 			 * Copy in the base directory name.
 			 */
 
-			fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
+			parent_fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
 			if (!fname) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
-			memcpy(fname, dir_fsp->fsp_name, dir_name_len+1);
+			memcpy(parent_fname, dir_fsp->fsp_name,
+			       dir_name_len+1);
 
 			/*
 			 * Ensure it ends in a '/'.
 			 * We used TALLOC_SIZE +2 to add space for the '/'.
 			 */
 
-			if(dir_name_len &&
-					(fname[dir_name_len-1] != '\\') &&
-					(fname[dir_name_len-1] != '/')) {
-				fname[dir_name_len] = '/';
-				fname[dir_name_len+1] = '\0';
+			if(dir_name_len
+			   && (parent_fname[dir_name_len-1] != '\\')
+			   && (parent_fname[dir_name_len-1] != '/')) {
+				parent_fname[dir_name_len] = '/';
+				parent_fname[dir_name_len+1] = '\0';
 			}
 		}
 
-		srvstr_get_path(ctx, params, req->flags2, &tmpname,
-				params+53,
-				parameter_count-53, STR_TERMINATE,
-				&status);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-		fname = talloc_asprintf(ctx, "%s%s",
-					fname,
-					tmpname);
-		if (!fname) {
-			reply_nterror(
-				req, NT_STATUS_NO_MEMORY);
+		fname = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
+		if (fname == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBntcreateX);
 			return;
 		}
 	} else {
-		srvstr_get_path(ctx, params, req->flags2, &fname, params+53,
-				parameter_count-53,
-				STR_TERMINATE, &status);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-
 		/*
 		 * Check to see if this is a mac fork of some kind.
 		 */
