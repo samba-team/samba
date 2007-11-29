@@ -399,7 +399,7 @@ bool cli_qpathinfo(struct cli_state *cli, const char *fname,
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	bool ret;
-	time_t (*date_fn)(struct cli_state *, void *);
+	time_t (*date_fn)(struct cli_state *, const void *);
 	char *p;
 
 	p = param;

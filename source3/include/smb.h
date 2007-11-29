@@ -79,6 +79,7 @@ enum smb_read_errors {
 	SMB_READ_ERROR,
 	SMB_WRITE_ERROR, /* This error code can go into the client smb_rw_error. */
 	SMB_READ_BAD_SIG,
+	SMB_NO_MEMORY,
 	SMB_DO_NOT_DO_TDIS /* cli_close_connection() check for this when smbfs wants to keep tree connected */
 };
 

@@ -62,7 +62,7 @@ static bool cli_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, cli_ipc->mem_ctx, True, 
+		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, talloc_tos(), True, 
 							 GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
@@ -87,7 +87,7 @@ static void SidToString(fstring str, DOM_SID *sid, bool _numeric)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cli_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(global_pipe_hnd, cli_ipc->mem_ctx,  
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(global_pipe_hnd, talloc_tos(),
 						 &pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -114,7 +114,7 @@ static bool StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	if (!cli_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, cli_ipc->mem_ctx, 
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, talloc_tos(),
 						  &pol, 1, &str, NULL, 1, &sids, 
 						  &types))) {
 		result = False;
@@ -559,4 +559,3 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	return result;
 }
-

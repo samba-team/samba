@@ -1181,17 +1181,17 @@ void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unix
 	put_dos_date3(buf, offset, unixdate, cli->serverzone);
 }
 
-time_t cli_make_unix_date(struct cli_state *cli, void *date_ptr)
+time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr)
 {
 	return make_unix_date(date_ptr, cli->serverzone);
 }
 
-time_t cli_make_unix_date2(struct cli_state *cli, void *date_ptr)
+time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr)
 {
 	return make_unix_date2(date_ptr, cli->serverzone);
 }
 
-time_t cli_make_unix_date3(struct cli_state *cli, void *date_ptr)
+time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr)
 {
 	return make_unix_date3(date_ptr, cli->serverzone);
 }

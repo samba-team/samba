@@ -71,13 +71,17 @@ static bool get_workgroups(struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         struct sockaddr_storage server_ss;
-	pstring master_workgroup;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *master_workgroup = NULL;
 
         /* Try to connect to a #1d name of our current workgroup.  If that
            doesn't work broadcast for a master browser and then jump off
            that workgroup. */
 
-	pstrcpy(master_workgroup, lp_workgroup());
+	master_workgroup = talloc_strdup(ctx, lp_workgroup());
+	if (!master_workgroup) {
+		return false;
+	}
 
         if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ss)) {
                 DEBUG(4, ("Unable to find master browser for workgroup %s, falling back to broadcast\n", 
@@ -90,7 +94,9 @@ static bool get_workgroups(struct user_auth_info *user_info)
 				return False;
 		}
 
-		if (!(cli = get_ipc_connect_master_ip_bcast(master_workgroup, user_info))) {
+		if (!(cli = get_ipc_connect_master_ip_bcast(talloc_tos(),
+							user_info,
+							&master_workgroup))) {
 			DEBUG(4, ("Unable to find master browser by "
 				  "broadcast\n"));
 			return False;

@@ -135,7 +135,10 @@ struct cli_state {
 	uint32 posix_capabilities;
 	bool dfsroot;
 
-	TALLOC_CTX *mem_ctx;
+#if 0
+	TALLOC_CTX *longterm_mem_ctx;
+	TALLOC_CTX *call_mem_ctx;
+#endif
 
 	smb_sign_info sign_info;
 
@@ -170,8 +173,8 @@ typedef struct file_info {
 	struct timespec mtime_ts;
 	struct timespec atime_ts;
 	struct timespec ctime_ts;
-	pstring name;
-	pstring dir;
+	char name[1024];
+	char dir[1024]; /* Should use allocated PATH_MAX here.... */
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */
 } file_info;
 

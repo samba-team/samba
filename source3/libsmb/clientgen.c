@@ -492,9 +492,6 @@ struct cli_state *cli_initialise(void)
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
-	if ((cli->mem_ctx = talloc_init("cli based talloc")) == NULL)
-                goto error;
-
 	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
 
@@ -604,11 +601,6 @@ void cli_shutdown(struct cli_state *cli)
 	cli_free_signing_context(cli);
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
-
-	if (cli->mem_ctx) {
-		talloc_destroy(cli->mem_ctx);
-		cli->mem_ctx = NULL;
-	}
 
 	if (cli->fd != -1) {
 		close(cli->fd);
