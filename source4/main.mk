@@ -40,7 +40,7 @@ libraries: $(STATIC_LIBS) $(SHARED_LIBS)
 modules: $(SHARED_MODULES)
 headers: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages: $(MANPAGES)
-all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules
+all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
 everything: all libraries headers
 
 # 'make testsuite' creates all binaries which are
