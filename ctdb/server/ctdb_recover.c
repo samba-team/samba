@@ -482,7 +482,7 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	}
 
 
-	ctdb_stop_monitoring(state->ctdb);
+	ctdb_disable_monitoring(state->ctdb);
 
 	/* call the events script to tell all subsystems that we have recovered */
 	ret = ctdb_event_script_callback(state->ctdb, 
@@ -491,7 +491,7 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 					 ctdb_recovered_callback, 
 					 state, "recovered");
 
-	ctdb_start_monitoring(state->ctdb);
+	ctdb_enable_monitoring(state->ctdb);
 
 	if (ret != 0) {
 		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "failed to run eventscript from set_recmode");

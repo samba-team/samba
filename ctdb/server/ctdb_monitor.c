@@ -212,7 +212,28 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	}	
 }
 
-/* stop any monitoring */
+/* 
+  (Temporaily) Disabling monitoring will stop the monitor event scripts
+  from running   but node health checks will still occur
+*/
+void ctdb_disable_monitoring(struct ctdb_context *ctdb)
+{
+	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
+	DEBUG(0,("Monitoring has been stopped\n"));
+}
+
+/* 
+   Re-enable running monitor events after they have been disabled
+ */
+void ctdb_enable_monitoring(struct ctdb_context *ctdb)
+{
+	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+	DEBUG(0,("Monitoring has been enabled\n"));
+}
+
+/* stop any monitoring 
+   this should only be done when shutting down the daemon
+*/
 void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 {
 	talloc_free(ctdb->monitor_context);

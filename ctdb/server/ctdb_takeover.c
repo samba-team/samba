@@ -236,7 +236,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
 
-	ctdb_stop_monitoring(ctdb);
+	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
 					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
@@ -245,7 +245,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 					 vnn->iface, 
 					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
-	ctdb_start_monitoring(ctdb);
+	ctdb_enable_monitoring(ctdb);
 
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
@@ -362,7 +362,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 
 	state->vnn = vnn;
 
-	ctdb_stop_monitoring(ctdb);
+	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
 					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
@@ -371,7 +371,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 vnn->iface, 
 					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
-	ctdb_start_monitoring(ctdb);
+	ctdb_enable_monitoring(ctdb);
 
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",

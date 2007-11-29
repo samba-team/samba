@@ -1045,6 +1045,8 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
+void ctdb_disable_monitoring(struct ctdb_context *ctdb);
+void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
