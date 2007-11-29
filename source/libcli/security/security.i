@@ -84,7 +84,7 @@ typedef struct security_descriptor {
         NTSTATUS dacl_del(const struct security_ace *ace);
         NTSTATUS sacl_del(const struct security_ace *ace);
 #ifdef SWIGPYTHON
-        %rename(equal) __eq__;
+        %rename(__eq__) equal;
 #endif
         bool equal(const struct security_descriptor *other);
     }
@@ -94,12 +94,17 @@ typedef struct security_descriptor {
 
 typedef struct dom_sid {
     %extend {
-        bool equal(const struct dom_sid *other);
+        dom_sid(TALLOC_CTX *mem_ctx, const char *text) {
+            return dom_sid_parse_talloc(mem_ctx, text);
+        }
+        ~dom_sid() { talloc_free($self); }
 #ifdef SWIGPYTHON
         const char *__str__(TALLOC_CTX *mem_ctx) {
             return dom_sid_string(mem_ctx, $self);
         }
+        %rename(__eq__) equal;
 #endif
+        bool equal(const struct dom_sid *other);
     }
 } dom_sid;
 
