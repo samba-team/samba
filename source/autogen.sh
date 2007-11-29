@@ -65,7 +65,7 @@ rm -rf autom4te*.cache
 
 # Run swig if it is available
 SWIG=swig
-SWIG_FILES="./scripting/python/misc.i ./auth/auth.i ./auth/credentials/credentials.i ./lib/talloc/talloc.i ./lib/ldb/ldb.i ./lib/registry/registry.i ./lib/tdb/tdb.i ./libcli/swig/libcli_smb.i ./libcli/swig/libcli_nbt.i ./librpc/rpc/dcerpc.i lib/events/events.i"
+SWIG_FILES="./scripting/python/misc.i ./auth/auth.i ./auth/credentials/credentials.i ./lib/ldb/ldb.i ./lib/registry/registry.i ./lib/tdb/tdb.i ./libcli/swig/libcli_smb.i ./libcli/swig/libcli_nbt.i ./librpc/rpc/dcerpc.i lib/events/events.i libcli/security/security.i"
 if which $SWIG >/dev/null 2>&1; then
 	for I in $SWIG_FILES
 	do
