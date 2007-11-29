@@ -26,7 +26,6 @@
 #include "param/param.h"
 #include "system/filesys.h"
 #include "tdb_wrap.h"
-#include "ldb_wrap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/util/util_tdb.h"
@@ -118,11 +117,18 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 
 	/* Secrets.ldb *must* always be local.  If we call for a
 	 * system_session() we will recurse */
-	ldb = ldb_wrap_connect(mem_ctx, global_loadparm, path, NULL, NULL, 0, NULL);
-	talloc_free(path);
+	ldb = ldb_init(mem_ctx);
 	if (!ldb) {
+		talloc_free(path);
 		return NULL;
 	}
+
+	if (ldb_connect(ldb, path, 0, NULL) != 0) {
+		talloc_free(path);
+		return NULL;
+	}
+
+	talloc_free(path);
 	
 	return ldb;
 }
