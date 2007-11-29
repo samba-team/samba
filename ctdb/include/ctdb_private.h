@@ -452,7 +452,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_PNN                 = 35,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
 		    CTDB_CONTROL_GET_MONMODE             = 37,
-		    CTDB_CONTROL_SET_MONMODE             = 38,
+		    /* #38 removed */
 		    CTDB_CONTROL_MAX_RSN                 = 39,
 		    CTDB_CONTROL_SET_RSN_NONEMPTY        = 40,
 		    CTDB_CONTROL_DELETE_LOW_RSN          = 41,

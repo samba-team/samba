@@ -1932,29 +1932,6 @@ int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 }
 
 /*
-  set the monitoring mode of a remote node
- */
-int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t monmode)
-{
-	int ret;
-	TDB_DATA data;
-	int32_t res;
-
-	data.dsize = sizeof(uint32_t);
-	data.dptr = (uint8_t *)&monmode;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_SET_MONMODE, 0, data, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setmonmode failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
   get the monitoring mode of a remote node
  */
 int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *monmode)

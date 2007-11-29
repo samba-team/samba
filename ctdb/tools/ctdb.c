@@ -754,29 +754,6 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 }
 
 /*
-  set the monitoring mode of a remote node
- */
-static int control_setmonmode(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t monmode;
-	int ret;
-
-	if (argc < 1) {
-		usage();
-	}
-
-	monmode = strtoul(argv[0], NULL, 0);
-
-	ret = ctdb_ctrl_setmonmode(ctdb, TIMELIMIT(), options.pnn, monmode);
-	if (ret != 0) {
-		DEBUG(0, ("Unable to set monmode on node %u\n", options.pnn));
-		return ret;
-	}
-
-	return 0;
-}
-
-/*
   display remote list of keys/data for a db
  */
 static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1082,7 +1059,6 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
-	{ "setmonmode",      control_setmonmode,        true,  "set monitoring mode", "<0|1>" },
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<debuglevel>" },
 	{ "getdebug",        control_getdebug,          true,  "get debug level" },
 	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },

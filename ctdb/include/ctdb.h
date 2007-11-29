@@ -349,10 +349,6 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
   get the monitoring mode of a remote node
  */
 int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *monmode);
-/*
-  set the monitoringmode of a remote node
- */
-int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t monmode);
 
 /*
   get the recovery master of a remote node
