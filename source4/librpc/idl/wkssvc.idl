@@ -689,7 +689,7 @@ import "srvsvc.idl", "lsa.idl";
 	WERROR wkssvc_NetrJoinDomain2 (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,ref]     [string,charset(UTF16)] uint16 *domain_name,
-		[in]         [string,charset(UTF16)] uint16 *account_name,
+		[in]         [string,charset(UTF16)] uint16 *account_ou,
 		[in]         [string,charset(UTF16)] uint16 *admin_account,
 		[in]         wkssvc_PasswordBuffer *encrypted_password,
 		[in]         wkssvc_joinflags join_flags
