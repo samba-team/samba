@@ -153,7 +153,9 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, handle);
+	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe,
+				talloc_tos(),
+				handle);
 
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
@@ -2639,8 +2641,12 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	smb_connections++;
 
-	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, printer, localprinter,
-			type, handle);
+	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe,
+			talloc_tos(),
+			printer,
+			localprinter,
+			type,
+			handle);
 
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",

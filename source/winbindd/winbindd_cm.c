@@ -1744,6 +1744,13 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		return;
 	}
 
+	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
+			      domain->name);
+	if (!mem_ctx) {
+		DEBUG(1, ("set_dc_type_and_flags_connect: talloc_init() failed\n"));
+		return;
+	}
+
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC_DS,
@@ -1761,7 +1768,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		goto no_lsarpc_ds;
 	}
 
-	result = rpccli_ds_getprimarydominfo(cli, cli->cli->mem_ctx,
+	result = rpccli_ds_getprimarydominfo(cli, mem_ctx,
 					     DsRolePrimaryDomainInfoBasic,
 					     &ctr);
 	cli_rpc_pipe_close(cli);
@@ -1780,6 +1787,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 			goto no_lsarpc_ds;
 		}
 
+		TALLOC_FREE(mem_ctx);
 		return;
 	}
 	
@@ -1798,14 +1806,7 @@ no_lsarpc_ds:
 			  "PI_LSARPC on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
 		cli_rpc_pipe_close(cli);
-		return;
-	}
-
-	mem_ctx = talloc_init("set_dc_type_and_flags on domain %s\n",
-			      domain->name);
-	if (!mem_ctx) {
-		DEBUG(1, ("set_dc_type_and_flags_connect: talloc_init() failed\n"));
-		cli_rpc_pipe_close(cli);
+		TALLOC_FREE(mem_ctx);
 		return;
 	}
 
@@ -1866,8 +1867,8 @@ done:
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
 	cli_rpc_pipe_close(cli);
-	
-	talloc_destroy(mem_ctx);
+
+	TALLOC_FREE(mem_ctx);
 
 	domain->initialized = True;
 }

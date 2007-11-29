@@ -177,7 +177,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		}
 	}
 
-	if (NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd, cli->mem_ctx, user_name, 
+	if (NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd, pipe_hnd->mem_ctx, user_name, 
 							     new_passwd, old_passwd))) {
 		/* Great - it all worked! */
 		cli_shutdown(cli);
@@ -207,7 +207,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	if ( pipe_hnd &&
 		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd,
-						cli->mem_ctx,
+						pipe_hnd->mem_ctx,
 						user_name, 
 						new_passwd,
 						old_passwd)))) {

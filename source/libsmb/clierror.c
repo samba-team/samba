@@ -84,6 +84,8 @@ static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	        case SMB_READ_BAD_SIG:
 			return NT_STATUS_INVALID_PARAMETER;
+		case SMB_NO_MEMORY:
+			return NT_STATUS_NO_MEMORY;
 	        default:
 			break;
 	}
@@ -132,6 +134,10 @@ const char *cli_errstr(struct cli_state *cli)
 		        case SMB_READ_BAD_SIG:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
 					"Server packet had invalid SMB signature!");
+				break;
+		        case SMB_NO_MEMORY:
+				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
+					"Out of memory");
 				break;
 		        default:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,

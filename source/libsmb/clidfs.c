@@ -245,9 +245,12 @@ static struct cli_state *cli_cm_connect( const char *server,
 					bool show_hdr)
 {
 	struct client_connection *node;
-	
-	node = SMB_XMALLOC_P( struct client_connection );
-	
+
+	node = SMB_CALLOC_ARRAY( struct client_connection, 1);
+	if (!node) {
+		return NULL;
+	}
+
 	node->cli = do_connect( server, share, show_hdr );
 
 	if ( !node->cli ) {

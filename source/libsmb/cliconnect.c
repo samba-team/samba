@@ -1803,12 +1803,17 @@ struct cli_state *get_ipc_connect(char *server,
  * entire network browse list)
  */
 
-struct cli_state *get_ipc_connect_master_ip(struct ip_service *mb_ip, pstring workgroup, struct user_auth_info *user_info)
+struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
+				struct ip_service *mb_ip,
+				struct user_auth_info *user_info,
+				char **pp_workgroup_out)
 {
 	char addr[INET6_ADDRSTRLEN];
         fstring name;
 	struct cli_state *cli;
 	struct sockaddr_storage server_ss;
+
+	*pp_workgroup_out = NULL;
 
 	print_sockaddr(addr, sizeof(addr), &mb_ip->ss);
         DEBUG(99, ("Looking up name of master browser %s\n",
@@ -1838,7 +1843,7 @@ struct cli_state *get_ipc_connect_master_ip(struct ip_service *mb_ip, pstring wo
                 return NULL;
         }
 
-	pstrcpy(workgroup, name);
+	*pp_workgroup_out = talloc_strdup(ctx, name);
 
 	DEBUG(4, ("found master browser %s, %s\n", name, addr));
 
@@ -1853,11 +1858,15 @@ struct cli_state *get_ipc_connect_master_ip(struct ip_service *mb_ip, pstring wo
  * connect to it.
  */
 
-struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
+struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
+					struct user_auth_info *user_info,
+					char **pp_workgroup_out)
 {
 	struct ip_service *ip_list;
 	struct cli_state *cli;
 	int i, count;
+
+	*pp_workgroup_out = NULL;
 
         DEBUG(99, ("Do broadcast lookup for workgroups on local network\n"));
 
@@ -1874,7 +1883,8 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
 		DEBUG(99, ("Found master browser %s\n", addr));
 
-		cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, user_info);
+		cli = get_ipc_connect_master_ip(ctx, &ip_list[i],
+				user_info, pp_workgroup_out);
 		if (cli)
 			return(cli);
 	}

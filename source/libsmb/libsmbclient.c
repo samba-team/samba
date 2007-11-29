@@ -1008,7 +1008,7 @@ smbc_attr_server(SMBCCTX *context,
         
                         nt_status = rpccli_lsa_open_policy(
                                 pipe_hnd,
-                                ipc_srv->cli->mem_ctx,
+                                talloc_tos(),
                                 True, 
                                 GENERIC_EXECUTE_ACCESS,
                                 pol);
@@ -1964,7 +1964,7 @@ smbc_lseek_ctx(SMBCCTX *context,
 	fstring server, share, user, password;
 	pstring path, targetpath;
 	struct cli_state *targetcli;
-	TALLOC_CTX *frame = talloc_tos();
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2767,18 +2767,23 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                 for (i = 0; i < count && i < max_lmb_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
+			char *wg_ptr = NULL;
+
 			print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
                         DEBUG(99, ("Found master browser %d of %d: %s\n",
                                    i+1, MAX(count, max_lmb_count),
                                    addr));
 
-                        cli = get_ipc_connect_master_ip(&ip_list[i],
-                                                        workgroup, &u_info);
+                        cli = get_ipc_connect_master_ip(talloc_tos(),
+							&ip_list[i],
+                                                        &u_info,
+							&wg_ptr);
 			/* cli == NULL is the master browser refused to talk or
 			   could not be found */
 			if ( !cli )
 				continue;
 
+			pstrcpy(workgroup, wg_ptr);
                         fstrcpy(server, cli->desthost);
                         cli_shutdown(cli);
 
@@ -3089,7 +3094,7 @@ static int
 smbc_closedir_ctx(SMBCCTX *context,
                   SMBCFILE *dir)
 {
-	TALLOC_CTX *frame = talloc_tos();
+	TALLOC_CTX *frame = talloc_stackframe();
 
         if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -4025,6 +4030,8 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 	char **names = NULL;
 	enum lsa_SidType *types = NULL;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
+	TALLOC_CTX *ctx;
+
 	sid_to_string(str, sid);
 
 	if (numeric) {
@@ -4037,13 +4044,17 @@ convert_sid_to_string(struct cli_state *ipc_cli,
  
 	/* Ask LSA to convert the sid to a name */
 
-	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(pipe_hnd, ipc_cli->mem_ctx,  
+	ctx = talloc_stackframe();
+
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(pipe_hnd, ctx,
 						 pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
+		TALLOC_FREE(ctx);
 		return;
 	}
 
+	TALLOC_FREE(ctx);
 	/* Converted OK */
 
 	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
@@ -4062,6 +4073,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
 	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
 	bool result = True;
+	TALLOC_CTX *ctx;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 
 	if (!pipe_hnd) {
@@ -4077,7 +4089,8 @@ convert_string_to_sid(struct cli_state *ipc_cli,
                 goto done;
         }
 
-	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
+	ctx = talloc_stackframe();
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ctx,
 						  pol, 1, &str, NULL, 1, &sids, 
 						  &types))) {
 		result = False;
@@ -4087,6 +4100,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
 	sid_copy(sid, &sids[0]);
  done:
 
+	TALLOC_FREE(ctx);
 	return result;
 }
 

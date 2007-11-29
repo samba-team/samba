@@ -22,10 +22,11 @@
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
+
 bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 {
 	char *oldbuf = cli->outbuf;
-	pstring buf;
+	char buf[smb_size+16];
 	bool ret;
 
 	cli->outbuf = buf;
@@ -47,7 +48,7 @@ bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 	SSVAL(buf,smb_vwv6,0); /* unlockcount */
 	SSVAL(buf,smb_vwv7,0); /* lockcount */
 
-        ret = cli_send_smb(cli);	
+        ret = cli_send_smb(cli);
 
 	cli->outbuf = oldbuf;
 

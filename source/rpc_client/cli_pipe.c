@@ -1975,7 +1975,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	/* Initialize the returning data struct. */
 	prs_mem_free(rbuf);
-	prs_init(rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
+	prs_init(rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2048,7 +2048,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&rpc_out, 0, cli->cli->mem_ctx, MARSHALL);
+	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
 
 	rpc_call_id = get_rpc_call_id();
 
@@ -2064,7 +2064,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
 	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);
@@ -2745,7 +2745,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		}
 	}
 
-	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(cli->mem_ctx, struct kerberos_auth_struct);
+	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(result->mem_ctx, struct kerberos_auth_struct);
 	if (!result->auth.a_u.kerberos_auth) {
 		cli_rpc_pipe_close(result);
 		*perr = NT_STATUS_NO_MEMORY;
@@ -2769,30 +2769,3 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	return NULL;
 #endif
 }
-
-#if 0 /* Moved to libsmb/clientgen.c */
-/****************************************************************************
- External interface.
- Close an open named pipe over SMB. Free any authentication data.
- ****************************************************************************/
-
- void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
-{
-	if (!cli_close(cli->cli, cli->fnum)) {
-		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "
-			 "to machine %s.  Error was %s\n",
-			 cli->pipe_name),
-			 cli->cli->desthost,
-			 cli_errstr(cli->cli)));
-	}
-
-	if (cli->auth.cli_auth_data_free_func) {
-		(*cli->auth.cli_auth_data_free_func)(&cli->auth);
-	}
-	DEBUG(10,("cli_rpc_pipe_close: closed pipe %s to machine %s\n",
-		cli->pipe_name, cli->cli->desthost ));
-
-	DLIST_REMOVE(cli->cli->pipe_list, cli);
-	talloc_destroy(cli->mem_ctx);	
-}
-#endif
