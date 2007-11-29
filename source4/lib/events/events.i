@@ -29,3 +29,7 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 %typemap(default) struct event_context * {
     $1 = event_context_init(NULL);
 }
+
+struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
+
+const char **event_backend_list(TALLOC_CTX *mem_ctx);
