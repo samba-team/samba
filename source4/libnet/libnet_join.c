@@ -909,7 +909,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	 * Local secrets are stored in secrets.ldb 
 	 * open it to make sure we can write the info into it after the join
 	 */
-	ldb = secrets_db_connect(tmp_mem);
+	ldb = secrets_db_connect(tmp_mem, global_loadparm);
 	if (!ldb) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
