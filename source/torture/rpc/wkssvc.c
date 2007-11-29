@@ -1198,10 +1198,11 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	struct wkssvc_NetrJoinDomain2 r;
 	const char *domain_admin_account = NULL;
 	const char *domain_admin_password = NULL;
+	const char *domain_name = NULL;
 	struct wkssvc_PasswordBuffer pwd_buf;
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
-	WERROR expected_err = WERR_OK;
+	WERROR expected_err;
 
 	/* FIXME: this test assumes to join workstations / servers and does not
 	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
@@ -1218,6 +1219,8 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 		case NetSetupUnknownStatus:
 		case NetSetupUnjoined:
 		case NetSetupWorkgroupName:
+		default:
+			expected_err = WERR_OK;
 			break;
 	}
 
@@ -1229,6 +1232,17 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 					       "torture",
 					       "domain_admin_password");
 
+	domain_name = lp_parm_string(global_loadparm, NULL,
+				     "torture",
+				     "domain_name");
+
+	if ((domain_admin_account == NULL) ||
+	    (domain_admin_password == NULL) ||
+	    (domain_name == NULL)) {
+		torture_comment(tctx, "not enough input parameter\n");
+	    	return false;
+	}
+
 	if (!encode_wkssvc_join_password_buffer(tctx, p,
 						domain_admin_password,
 						&pwd_buf))
@@ -1237,7 +1251,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	}
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.domain_name = lp_realm(global_loadparm);
+	r.in.domain_name = domain_name;
 	r.in.account_ou = NULL;
 	r.in.admin_account = domain_admin_account;
 	r.in.encrypted_password = &pwd_buf;
