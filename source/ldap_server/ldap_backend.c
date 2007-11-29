@@ -720,6 +720,18 @@ static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 
 NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 {
+	int i;
+	struct ldap_message *msg = call->request;
+	/* Check for undecoded critical extensions */
+	for (i=0; msg->controls && msg->controls[i]; i++) {
+		if (!msg->controls_decoded[i] && 
+		    msg->controls[i]->critical) {
+			DEBUG(3, ("ldapsrv_do_call: Critical extension %s is not known to this server\n",
+				  msg->controls[i]->oid));
+			return ldapsrv_unwilling(call, LDAP_UNAVAILABLE_CRITICAL_EXTENSION);
+		}
+	}
+
 	switch(call->request->type) {
 	case LDAP_TAG_BindRequest:
 		return ldapsrv_BindRequest(call);
