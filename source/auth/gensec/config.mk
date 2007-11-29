@@ -72,6 +72,7 @@ OUTPUT_TYPE = INTEGRATED
 PRIVATE_PROTO_HEADER = schannel_state.h
 OBJ_FILES = \
 		schannel_state.o
+PRIVATE_DEPENDENCIES = LDB_WRAP
 #
 # End SUBSYSTEM SCHANNELDB
 ################################################
