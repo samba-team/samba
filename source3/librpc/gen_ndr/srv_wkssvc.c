@@ -195,20 +195,14 @@ static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaEnumUsers, r);
 	
 	ZERO_STRUCT(r->out);
-	r->out.users = r->in.users;
-	r->out.entriesread = talloc_zero(r, uint32_t);
-	if (r->out.entriesread == NULL) {
+	r->out.info = r->in.info;
+	r->out.entries_read = talloc_zero(r, uint32_t);
+	if (r->out.entries_read == NULL) {
 		talloc_free(r);
 		return False;
 	}
 	
-	r->out.totalentries = talloc_zero(r, uint32_t);
-	if (r->out.totalentries == NULL) {
-		talloc_free(r);
-		return False;
-	}
-	
-	r->out.resumehandle = r->in.resumehandle;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _wkssvc_NetWkstaEnumUsers(p, r);
 	
 	if (p->rng_fault_state) {
@@ -243,18 +237,18 @@ static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
+static bool api_wkssvc_NetrWkstaUserGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRWKSTAUSERGETINFO *r;
+	struct wkssvc_NetrWkstaUserGetInfo *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTAUSERGETINFO];
 	
-	r = talloc(NULL, struct WKSSVC_NETRWKSTAUSERGETINFO);
+	r = talloc(NULL, struct wkssvc_NetrWkstaUserGetInfo);
 	if (r == NULL) {
 		return False;
 	}
@@ -278,9 +272,16 @@ static bool api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserGetInfo, r);
 	
-	r->out.result = _WKSSVC_NETRWKSTAUSERGETINFO(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.info = talloc_zero(r, union wkssvc_NetrWkstaUserInfo);
+	if (r->out.info == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrWkstaUserGetInfo(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -289,7 +290,7 @@ static bool api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserGetInfo, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -314,18 +315,18 @@ static bool api_WKSSVC_NETRWKSTAUSERGETINFO(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
+static bool api_wkssvc_NetrWkstaUserSetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRWKSTAUSERSETINFO *r;
+	struct wkssvc_NetrWkstaUserSetInfo *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTAUSERSETINFO];
 	
-	r = talloc(NULL, struct WKSSVC_NETRWKSTAUSERSETINFO);
+	r = talloc(NULL, struct wkssvc_NetrWkstaUserSetInfo);
 	if (r == NULL) {
 		return False;
 	}
@@ -349,9 +350,11 @@ static bool api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserSetInfo, r);
 	
-	r->out.result = _WKSSVC_NETRWKSTAUSERSETINFO(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.parm_err = r->in.parm_err;
+	r->out.result = _wkssvc_NetrWkstaUserSetInfo(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -360,7 +363,7 @@ static bool api_WKSSVC_NETRWKSTAUSERSETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaUserSetInfo, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -423,10 +426,9 @@ static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaTransportEnum, r);
 	
 	ZERO_STRUCT(r->out);
-	r->out.level = r->in.level;
-	r->out.ctr = r->in.ctr;
-	r->out.totalentries = talloc_zero(r, uint32_t);
-	if (r->out.totalentries == NULL) {
+	r->out.info = r->in.info;
+	r->out.total_entries = talloc_zero(r, uint32_t);
+	if (r->out.total_entries == NULL) {
 		talloc_free(r);
 		return False;
 	}
@@ -466,18 +468,18 @@ static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
+static bool api_wkssvc_NetrWkstaTransportAdd(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRWKSTATRANSPORTADD *r;
+	struct wkssvc_NetrWkstaTransportAdd *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTATRANSPORTADD];
 	
-	r = talloc(NULL, struct WKSSVC_NETRWKSTATRANSPORTADD);
+	r = talloc(NULL, struct wkssvc_NetrWkstaTransportAdd);
 	if (r == NULL) {
 		return False;
 	}
@@ -501,9 +503,11 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportAdd, r);
 	
-	r->out.result = _WKSSVC_NETRWKSTATRANSPORTADD(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.parm_err = r->in.parm_err;
+	r->out.result = _wkssvc_NetrWkstaTransportAdd(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -512,7 +516,7 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportAdd, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -537,18 +541,18 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTADD(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
+static bool api_wkssvc_NetrWkstaTransportDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRWKSTATRANSPORTDEL *r;
+	struct wkssvc_NetrWkstaTransportDel *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWKSTATRANSPORTDEL];
 	
-	r = talloc(NULL, struct WKSSVC_NETRWKSTATRANSPORTDEL);
+	r = talloc(NULL, struct wkssvc_NetrWkstaTransportDel);
 	if (r == NULL) {
 		return False;
 	}
@@ -572,9 +576,9 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportDel, r);
 	
-	r->out.result = _WKSSVC_NETRWKSTATRANSPORTDEL(p, r);
+	r->out.result = _wkssvc_NetrWkstaTransportDel(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -583,7 +587,7 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWkstaTransportDel, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -608,18 +612,18 @@ static bool api_WKSSVC_NETRWKSTATRANSPORTDEL(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRUSEADD(pipes_struct *p)
+static bool api_wkssvc_NetrUseAdd(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRUSEADD *r;
+	struct wkssvc_NetrUseAdd *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEADD];
 	
-	r = talloc(NULL, struct WKSSVC_NETRUSEADD);
+	r = talloc(NULL, struct wkssvc_NetrUseAdd);
 	if (r == NULL) {
 		return False;
 	}
@@ -643,9 +647,11 @@ static bool api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEADD, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseAdd, r);
 	
-	r->out.result = _WKSSVC_NETRUSEADD(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.parm_err = r->in.parm_err;
+	r->out.result = _wkssvc_NetrUseAdd(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -654,7 +660,7 @@ static bool api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEADD, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseAdd, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -679,18 +685,18 @@ static bool api_WKSSVC_NETRUSEADD(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
+static bool api_wkssvc_NetrUseGetInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRUSEGETINFO *r;
+	struct wkssvc_NetrUseGetInfo *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEGETINFO];
 	
-	r = talloc(NULL, struct WKSSVC_NETRUSEGETINFO);
+	r = talloc(NULL, struct wkssvc_NetrUseGetInfo);
 	if (r == NULL) {
 		return False;
 	}
@@ -714,9 +720,16 @@ static bool api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEGETINFO, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseGetInfo, r);
 	
-	r->out.result = _WKSSVC_NETRUSEGETINFO(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.ctr = talloc_zero(r, union wkssvc_NetrUseGetInfoCtr);
+	if (r->out.ctr == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrUseGetInfo(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -725,7 +738,7 @@ static bool api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEGETINFO, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseGetInfo, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -750,18 +763,18 @@ static bool api_WKSSVC_NETRUSEGETINFO(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRUSEDEL(pipes_struct *p)
+static bool api_wkssvc_NetrUseDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRUSEDEL *r;
+	struct wkssvc_NetrUseDel *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEDEL];
 	
-	r = talloc(NULL, struct WKSSVC_NETRUSEDEL);
+	r = talloc(NULL, struct wkssvc_NetrUseDel);
 	if (r == NULL) {
 		return False;
 	}
@@ -785,9 +798,9 @@ static bool api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEDEL, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseDel, r);
 	
-	r->out.result = _WKSSVC_NETRUSEDEL(p, r);
+	r->out.result = _wkssvc_NetrUseDel(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -796,7 +809,7 @@ static bool api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEDEL, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseDel, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -821,18 +834,18 @@ static bool api_WKSSVC_NETRUSEDEL(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRUSEENUM(pipes_struct *p)
+static bool api_wkssvc_NetrUseEnum(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRUSEENUM *r;
+	struct wkssvc_NetrUseEnum *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUSEENUM];
 	
-	r = talloc(NULL, struct WKSSVC_NETRUSEENUM);
+	r = talloc(NULL, struct wkssvc_NetrUseEnum);
 	if (r == NULL) {
 		return False;
 	}
@@ -856,9 +869,18 @@ static bool api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEENUM, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseEnum, r);
 	
-	r->out.result = _WKSSVC_NETRUSEENUM(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.info = r->in.info;
+	r->out.entries_read = talloc_zero(r, uint32_t);
+	if (r->out.entries_read == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.resume_handle = r->in.resume_handle;
+	r->out.result = _wkssvc_NetrUseEnum(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -867,7 +889,7 @@ static bool api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEENUM, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUseEnum, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -892,18 +914,18 @@ static bool api_WKSSVC_NETRUSEENUM(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
+static bool api_wkssvc_NetrMessageBufferSend(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRMESSAGEBUFFERSEND *r;
+	struct wkssvc_NetrMessageBufferSend *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRMESSAGEBUFFERSEND];
 	
-	r = talloc(NULL, struct WKSSVC_NETRMESSAGEBUFFERSEND);
+	r = talloc(NULL, struct wkssvc_NetrMessageBufferSend);
 	if (r == NULL) {
 		return False;
 	}
@@ -927,9 +949,9 @@ static bool api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrMessageBufferSend, r);
 	
-	r->out.result = _WKSSVC_NETRMESSAGEBUFFERSEND(p, r);
+	r->out.result = _wkssvc_NetrMessageBufferSend(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -938,7 +960,7 @@ static bool api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrMessageBufferSend, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -963,18 +985,18 @@ static bool api_WKSSVC_NETRMESSAGEBUFFERSEND(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
+static bool api_wkssvc_NetrWorkstationStatisticsGet(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r;
+	struct wkssvc_NetrWorkstationStatisticsGet *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET];
 	
-	r = talloc(NULL, struct WKSSVC_NETRWORKSTATIONSTATISTICSGET);
+	r = talloc(NULL, struct wkssvc_NetrWorkstationStatisticsGet);
 	if (r == NULL) {
 		return False;
 	}
@@ -998,9 +1020,16 @@ static bool api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrWorkstationStatisticsGet, r);
 	
-	r->out.result = _WKSSVC_NETRWORKSTATIONSTATISTICSGET(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.info = talloc_zero(r, struct wkssvc_NetrWorkstationStatistics *);
+	if (r->out.info == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrWorkstationStatisticsGet(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1009,7 +1038,7 @@ static bool api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrWorkstationStatisticsGet, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1034,18 +1063,18 @@ static bool api_WKSSVC_NETRWORKSTATIONSTATISTICSGET(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
+static bool api_wkssvc_NetrLogonDomainNameAdd(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRLOGONDOMAINNAMEADD *r;
+	struct wkssvc_NetrLogonDomainNameAdd *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEADD];
 	
-	r = talloc(NULL, struct WKSSVC_NETRLOGONDOMAINNAMEADD);
+	r = talloc(NULL, struct wkssvc_NetrLogonDomainNameAdd);
 	if (r == NULL) {
 		return False;
 	}
@@ -1069,9 +1098,9 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameAdd, r);
 	
-	r->out.result = _WKSSVC_NETRLOGONDOMAINNAMEADD(p, r);
+	r->out.result = _wkssvc_NetrLogonDomainNameAdd(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1080,7 +1109,7 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameAdd, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1105,18 +1134,18 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEADD(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
+static bool api_wkssvc_NetrLogonDomainNameDel(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r;
+	struct wkssvc_NetrLogonDomainNameDel *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL];
 	
-	r = talloc(NULL, struct WKSSVC_NETRLOGONDOMAINNAMEDEL);
+	r = talloc(NULL, struct wkssvc_NetrLogonDomainNameDel);
 	if (r == NULL) {
 		return False;
 	}
@@ -1140,9 +1169,9 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameDel, r);
 	
-	r->out.result = _WKSSVC_NETRLOGONDOMAINNAMEDEL(p, r);
+	r->out.result = _wkssvc_NetrLogonDomainNameDel(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1151,7 +1180,7 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrLogonDomainNameDel, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1176,18 +1205,18 @@ static bool api_WKSSVC_NETRLOGONDOMAINNAMEDEL(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
+static bool api_wkssvc_NetrJoinDomain(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRJOINDOMAIN *r;
+	struct wkssvc_NetrJoinDomain *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRJOINDOMAIN];
 	
-	r = talloc(NULL, struct WKSSVC_NETRJOINDOMAIN);
+	r = talloc(NULL, struct wkssvc_NetrJoinDomain);
 	if (r == NULL) {
 		return False;
 	}
@@ -1211,9 +1240,9 @@ static bool api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain, r);
 	
-	r->out.result = _WKSSVC_NETRJOINDOMAIN(p, r);
+	r->out.result = _wkssvc_NetrJoinDomain(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1222,7 +1251,7 @@ static bool api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRJOINDOMAIN, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrJoinDomain, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1247,18 +1276,18 @@ static bool api_WKSSVC_NETRJOINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
+static bool api_wkssvc_NetrUnjoinDomain(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRUNJOINDOMAIN *r;
+	struct wkssvc_NetrUnjoinDomain *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRUNJOINDOMAIN];
 	
-	r = talloc(NULL, struct WKSSVC_NETRUNJOINDOMAIN);
+	r = talloc(NULL, struct wkssvc_NetrUnjoinDomain);
 	if (r == NULL) {
 		return False;
 	}
@@ -1282,9 +1311,9 @@ static bool api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain, r);
 	
-	r->out.result = _WKSSVC_NETRUNJOINDOMAIN(p, r);
+	r->out.result = _wkssvc_NetrUnjoinDomain(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1293,7 +1322,7 @@ static bool api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUNJOINDOMAIN, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrUnjoinDomain, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1318,18 +1347,18 @@ static bool api_WKSSVC_NETRUNJOINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
+static bool api_wkssvc_NetrRenameMachineInDomain(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r;
+	struct wkssvc_NetrRenameMachineInDomain *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN];
 	
-	r = talloc(NULL, struct WKSSVC_NETRRENAMEMACHINEINDOMAIN);
+	r = talloc(NULL, struct wkssvc_NetrRenameMachineInDomain);
 	if (r == NULL) {
 		return False;
 	}
@@ -1353,9 +1382,9 @@ static bool api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain, r);
 	
-	r->out.result = _WKSSVC_NETRRENAMEMACHINEINDOMAIN(p, r);
+	r->out.result = _wkssvc_NetrRenameMachineInDomain(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1364,7 +1393,7 @@ static bool api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrRenameMachineInDomain, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1389,18 +1418,18 @@ static bool api_WKSSVC_NETRRENAMEMACHINEINDOMAIN(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
+static bool api_wkssvc_NetrValidateName(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRVALIDATENAME *r;
+	struct wkssvc_NetrValidateName *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRVALIDATENAME];
 	
-	r = talloc(NULL, struct WKSSVC_NETRVALIDATENAME);
+	r = talloc(NULL, struct wkssvc_NetrValidateName);
 	if (r == NULL) {
 		return False;
 	}
@@ -1424,9 +1453,9 @@ static bool api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName, r);
 	
-	r->out.result = _WKSSVC_NETRVALIDATENAME(p, r);
+	r->out.result = _wkssvc_NetrValidateName(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1435,7 +1464,7 @@ static bool api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1460,18 +1489,18 @@ static bool api_WKSSVC_NETRVALIDATENAME(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
+static bool api_wkssvc_NetrGetJoinInformation(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRGETJOININFORMATION *r;
+	struct wkssvc_NetrGetJoinInformation *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOININFORMATION];
 	
-	r = talloc(NULL, struct WKSSVC_NETRGETJOININFORMATION);
+	r = talloc(NULL, struct wkssvc_NetrGetJoinInformation);
 	if (r == NULL) {
 		return False;
 	}
@@ -1495,9 +1524,17 @@ static bool api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOININFORMATION, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinInformation, r);
 	
-	r->out.result = _WKSSVC_NETRGETJOININFORMATION(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.name_buffer = r->in.name_buffer;
+	r->out.name_type = talloc_zero(r, enum wkssvc_NetJoinStatus);
+	if (r->out.name_type == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrGetJoinInformation(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1506,7 +1543,7 @@ static bool api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOININFORMATION, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinInformation, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1531,18 +1568,18 @@ static bool api_WKSSVC_NETRGETJOININFORMATION(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
+static bool api_wkssvc_NetrGetJoinableOus(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRGETJOINABLEOUS *r;
+	struct wkssvc_NetrGetJoinableOus *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOINABLEOUS];
 	
-	r = talloc(NULL, struct WKSSVC_NETRGETJOINABLEOUS);
+	r = talloc(NULL, struct wkssvc_NetrGetJoinableOus);
 	if (r == NULL) {
 		return False;
 	}
@@ -1566,9 +1603,17 @@ static bool api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus, r);
 	
-	r->out.result = _WKSSVC_NETRGETJOINABLEOUS(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.num_ous = r->in.num_ous;
+	r->out.ous = talloc_zero_array(r, const char **, *r->out.num_ous);
+	if (r->out.ous == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrGetJoinableOus(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1577,7 +1622,7 @@ static bool api_WKSSVC_NETRGETJOINABLEOUS(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1815,18 +1860,18 @@ static bool api_wkssvc_NetrRenameMachineInDomain2(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
+static bool api_wkssvc_NetrValidateName2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRVALIDATENAME2 *r;
+	struct wkssvc_NetrValidateName2 *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRVALIDATENAME2];
 	
-	r = talloc(NULL, struct WKSSVC_NETRVALIDATENAME2);
+	r = talloc(NULL, struct wkssvc_NetrValidateName2);
 	if (r == NULL) {
 		return False;
 	}
@@ -1850,9 +1895,9 @@ static bool api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME2, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName2, r);
 	
-	r->out.result = _WKSSVC_NETRVALIDATENAME2(p, r);
+	r->out.result = _wkssvc_NetrValidateName2(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1861,7 +1906,7 @@ static bool api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME2, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrValidateName2, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -1886,18 +1931,18 @@ static bool api_WKSSVC_NETRVALIDATENAME2(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
+static bool api_wkssvc_NetrGetJoinableOus2(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRGETJOINABLEOUS2 *r;
+	struct wkssvc_NetrGetJoinableOus2 *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRGETJOINABLEOUS2];
 	
-	r = talloc(NULL, struct WKSSVC_NETRGETJOINABLEOUS2);
+	r = talloc(NULL, struct wkssvc_NetrGetJoinableOus2);
 	if (r == NULL) {
 		return False;
 	}
@@ -1921,9 +1966,17 @@ static bool api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus2, r);
 	
-	r->out.result = _WKSSVC_NETRGETJOINABLEOUS2(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.num_ous = r->in.num_ous;
+	r->out.ous = talloc_zero_array(r, const char **, *r->out.num_ous);
+	if (r->out.ous == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrGetJoinableOus2(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1932,7 +1985,7 @@ static bool api_WKSSVC_NETRGETJOINABLEOUS2(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrGetJoinableOus2, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -2099,18 +2152,18 @@ static bool api_wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
+static bool api_wkssvc_NetrSetPrimaryComputername(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r;
+	struct wkssvc_NetrSetPrimaryComputername *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME];
 	
-	r = talloc(NULL, struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME);
+	r = talloc(NULL, struct wkssvc_NetrSetPrimaryComputername);
 	if (r == NULL) {
 		return False;
 	}
@@ -2134,9 +2187,9 @@ static bool api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrSetPrimaryComputername, r);
 	
-	r->out.result = _WKSSVC_NETRSETPRIMARYCOMPUTERNAME(p, r);
+	r->out.result = _wkssvc_NetrSetPrimaryComputername(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2145,7 +2198,7 @@ static bool api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrSetPrimaryComputername, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -2170,18 +2223,18 @@ static bool api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(pipes_struct *p)
 	return True;
 }
 
-static bool api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
+static bool api_wkssvc_NetrEnumerateComputerNames(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r;
+	struct wkssvc_NetrEnumerateComputerNames *r;
 	
 	call = &ndr_table_wkssvc.calls[NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES];
 	
-	r = talloc(NULL, struct WKSSVC_NETRENUMERATECOMPUTERNAMES);
+	r = talloc(NULL, struct wkssvc_NetrEnumerateComputerNames);
 	if (r == NULL) {
 		return False;
 	}
@@ -2205,9 +2258,16 @@ static bool api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_IN_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, r);
+		NDR_PRINT_IN_DEBUG(wkssvc_NetrEnumerateComputerNames, r);
 	
-	r->out.result = _WKSSVC_NETRENUMERATECOMPUTERNAMES(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.ctr = talloc_zero(r, struct wkssvc_ComputerNamesCtr *);
+	if (r->out.ctr == NULL) {
+		talloc_free(r);
+		return False;
+	}
+	
+	r->out.result = _wkssvc_NetrEnumerateComputerNames(p, r);
 	
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2216,7 +2276,7 @@ static bool api_WKSSVC_NETRENUMERATECOMPUTERNAMES(pipes_struct *p)
 	}
 	
 	if (DEBUGLEVEL >= 10)
-		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, r);
+		NDR_PRINT_OUT_DEBUG(wkssvc_NetrEnumerateComputerNames, r);
 	
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
@@ -2248,34 +2308,34 @@ static struct api_struct api_wkssvc_cmds[] =
 	{"WKSSVC_NETWKSTAGETINFO", NDR_WKSSVC_NETWKSTAGETINFO, api_wkssvc_NetWkstaGetInfo},
 	{"WKSSVC_NETWKSTASETINFO", NDR_WKSSVC_NETWKSTASETINFO, api_wkssvc_NetWkstaSetInfo},
 	{"WKSSVC_NETWKSTAENUMUSERS", NDR_WKSSVC_NETWKSTAENUMUSERS, api_wkssvc_NetWkstaEnumUsers},
-	{"WKSSVC_NETRWKSTAUSERGETINFO", NDR_WKSSVC_NETRWKSTAUSERGETINFO, api_WKSSVC_NETRWKSTAUSERGETINFO},
-	{"WKSSVC_NETRWKSTAUSERSETINFO", NDR_WKSSVC_NETRWKSTAUSERSETINFO, api_WKSSVC_NETRWKSTAUSERSETINFO},
+	{"WKSSVC_NETRWKSTAUSERGETINFO", NDR_WKSSVC_NETRWKSTAUSERGETINFO, api_wkssvc_NetrWkstaUserGetInfo},
+	{"WKSSVC_NETRWKSTAUSERSETINFO", NDR_WKSSVC_NETRWKSTAUSERSETINFO, api_wkssvc_NetrWkstaUserSetInfo},
 	{"WKSSVC_NETWKSTATRANSPORTENUM", NDR_WKSSVC_NETWKSTATRANSPORTENUM, api_wkssvc_NetWkstaTransportEnum},
-	{"WKSSVC_NETRWKSTATRANSPORTADD", NDR_WKSSVC_NETRWKSTATRANSPORTADD, api_WKSSVC_NETRWKSTATRANSPORTADD},
-	{"WKSSVC_NETRWKSTATRANSPORTDEL", NDR_WKSSVC_NETRWKSTATRANSPORTDEL, api_WKSSVC_NETRWKSTATRANSPORTDEL},
-	{"WKSSVC_NETRUSEADD", NDR_WKSSVC_NETRUSEADD, api_WKSSVC_NETRUSEADD},
-	{"WKSSVC_NETRUSEGETINFO", NDR_WKSSVC_NETRUSEGETINFO, api_WKSSVC_NETRUSEGETINFO},
-	{"WKSSVC_NETRUSEDEL", NDR_WKSSVC_NETRUSEDEL, api_WKSSVC_NETRUSEDEL},
-	{"WKSSVC_NETRUSEENUM", NDR_WKSSVC_NETRUSEENUM, api_WKSSVC_NETRUSEENUM},
-	{"WKSSVC_NETRMESSAGEBUFFERSEND", NDR_WKSSVC_NETRMESSAGEBUFFERSEND, api_WKSSVC_NETRMESSAGEBUFFERSEND},
-	{"WKSSVC_NETRWORKSTATIONSTATISTICSGET", NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET, api_WKSSVC_NETRWORKSTATIONSTATISTICSGET},
-	{"WKSSVC_NETRLOGONDOMAINNAMEADD", NDR_WKSSVC_NETRLOGONDOMAINNAMEADD, api_WKSSVC_NETRLOGONDOMAINNAMEADD},
-	{"WKSSVC_NETRLOGONDOMAINNAMEDEL", NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL, api_WKSSVC_NETRLOGONDOMAINNAMEDEL},
-	{"WKSSVC_NETRJOINDOMAIN", NDR_WKSSVC_NETRJOINDOMAIN, api_WKSSVC_NETRJOINDOMAIN},
-	{"WKSSVC_NETRUNJOINDOMAIN", NDR_WKSSVC_NETRUNJOINDOMAIN, api_WKSSVC_NETRUNJOINDOMAIN},
-	{"WKSSVC_NETRRENAMEMACHINEINDOMAIN", NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN, api_WKSSVC_NETRRENAMEMACHINEINDOMAIN},
-	{"WKSSVC_NETRVALIDATENAME", NDR_WKSSVC_NETRVALIDATENAME, api_WKSSVC_NETRVALIDATENAME},
-	{"WKSSVC_NETRGETJOININFORMATION", NDR_WKSSVC_NETRGETJOININFORMATION, api_WKSSVC_NETRGETJOININFORMATION},
-	{"WKSSVC_NETRGETJOINABLEOUS", NDR_WKSSVC_NETRGETJOINABLEOUS, api_WKSSVC_NETRGETJOINABLEOUS},
+	{"WKSSVC_NETRWKSTATRANSPORTADD", NDR_WKSSVC_NETRWKSTATRANSPORTADD, api_wkssvc_NetrWkstaTransportAdd},
+	{"WKSSVC_NETRWKSTATRANSPORTDEL", NDR_WKSSVC_NETRWKSTATRANSPORTDEL, api_wkssvc_NetrWkstaTransportDel},
+	{"WKSSVC_NETRUSEADD", NDR_WKSSVC_NETRUSEADD, api_wkssvc_NetrUseAdd},
+	{"WKSSVC_NETRUSEGETINFO", NDR_WKSSVC_NETRUSEGETINFO, api_wkssvc_NetrUseGetInfo},
+	{"WKSSVC_NETRUSEDEL", NDR_WKSSVC_NETRUSEDEL, api_wkssvc_NetrUseDel},
+	{"WKSSVC_NETRUSEENUM", NDR_WKSSVC_NETRUSEENUM, api_wkssvc_NetrUseEnum},
+	{"WKSSVC_NETRMESSAGEBUFFERSEND", NDR_WKSSVC_NETRMESSAGEBUFFERSEND, api_wkssvc_NetrMessageBufferSend},
+	{"WKSSVC_NETRWORKSTATIONSTATISTICSGET", NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET, api_wkssvc_NetrWorkstationStatisticsGet},
+	{"WKSSVC_NETRLOGONDOMAINNAMEADD", NDR_WKSSVC_NETRLOGONDOMAINNAMEADD, api_wkssvc_NetrLogonDomainNameAdd},
+	{"WKSSVC_NETRLOGONDOMAINNAMEDEL", NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL, api_wkssvc_NetrLogonDomainNameDel},
+	{"WKSSVC_NETRJOINDOMAIN", NDR_WKSSVC_NETRJOINDOMAIN, api_wkssvc_NetrJoinDomain},
+	{"WKSSVC_NETRUNJOINDOMAIN", NDR_WKSSVC_NETRUNJOINDOMAIN, api_wkssvc_NetrUnjoinDomain},
+	{"WKSSVC_NETRRENAMEMACHINEINDOMAIN", NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN, api_wkssvc_NetrRenameMachineInDomain},
+	{"WKSSVC_NETRVALIDATENAME", NDR_WKSSVC_NETRVALIDATENAME, api_wkssvc_NetrValidateName},
+	{"WKSSVC_NETRGETJOININFORMATION", NDR_WKSSVC_NETRGETJOININFORMATION, api_wkssvc_NetrGetJoinInformation},
+	{"WKSSVC_NETRGETJOINABLEOUS", NDR_WKSSVC_NETRGETJOINABLEOUS, api_wkssvc_NetrGetJoinableOus},
 	{"WKSSVC_NETRJOINDOMAIN2", NDR_WKSSVC_NETRJOINDOMAIN2, api_wkssvc_NetrJoinDomain2},
 	{"WKSSVC_NETRUNJOINDOMAIN2", NDR_WKSSVC_NETRUNJOINDOMAIN2, api_wkssvc_NetrUnjoinDomain2},
 	{"WKSSVC_NETRRENAMEMACHINEINDOMAIN2", NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2, api_wkssvc_NetrRenameMachineInDomain2},
-	{"WKSSVC_NETRVALIDATENAME2", NDR_WKSSVC_NETRVALIDATENAME2, api_WKSSVC_NETRVALIDATENAME2},
-	{"WKSSVC_NETRGETJOINABLEOUS2", NDR_WKSSVC_NETRGETJOINABLEOUS2, api_WKSSVC_NETRGETJOINABLEOUS2},
+	{"WKSSVC_NETRVALIDATENAME2", NDR_WKSSVC_NETRVALIDATENAME2, api_wkssvc_NetrValidateName2},
+	{"WKSSVC_NETRGETJOINABLEOUS2", NDR_WKSSVC_NETRGETJOINABLEOUS2, api_wkssvc_NetrGetJoinableOus2},
 	{"WKSSVC_NETRADDALTERNATECOMPUTERNAME", NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME, api_wkssvc_NetrAddAlternateComputerName},
 	{"WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME", NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, api_wkssvc_NetrRemoveAlternateComputerName},
-	{"WKSSVC_NETRSETPRIMARYCOMPUTERNAME", NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, api_WKSSVC_NETRSETPRIMARYCOMPUTERNAME},
-	{"WKSSVC_NETRENUMERATECOMPUTERNAMES", NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES, api_WKSSVC_NETRENUMERATECOMPUTERNAMES},
+	{"WKSSVC_NETRSETPRIMARYCOMPUTERNAME", NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, api_wkssvc_NetrSetPrimaryComputername},
+	{"WKSSVC_NETRENUMERATECOMPUTERNAMES", NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES, api_wkssvc_NetrEnumerateComputerNames},
 };
 
 void wkssvc_get_pipe_fns(struct api_struct **fns, int *n_fns)
