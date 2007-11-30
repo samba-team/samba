@@ -35,6 +35,8 @@ WERROR NetJoinDomain(const char *server_name,
 	WERROR werr;
 	unsigned int old_timeout;
 
+	ZERO_STRUCT(encrypted_password);
+
 	mem_ctx = talloc_init("NetJoinDomain");
 	if (!mem_ctx) {
 		werr = WERR_NOMEM;
@@ -68,10 +70,12 @@ WERROR NetJoinDomain(const char *server_name,
 		goto done;
 	};
 
-	encode_wkssvc_join_password_buffer(mem_ctx,
-					   password,
-					   &cli->user_session_key,
-					   &encrypted_password);
+	if (password) {
+		encode_wkssvc_join_password_buffer(mem_ctx,
+						   password,
+						   &cli->user_session_key,
+						   &encrypted_password);
+	}
 
 	old_timeout = cli_set_timeout(cli, 60000);
 
@@ -82,13 +86,16 @@ WERROR NetJoinDomain(const char *server_name,
 					       join_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
+		goto done;
 	}
 
 	werr = WERR_OK;
 
  done:
-	cli_set_timeout(cli, old_timeout);
-	cli_shutdown(cli);
+	if (cli) {
+		cli_set_timeout(cli, old_timeout);
+		cli_shutdown(cli);
+	}
 	TALLOC_FREE(mem_ctx);
 
 	return werr;
