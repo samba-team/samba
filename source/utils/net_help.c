@@ -266,6 +266,7 @@ int net_help(int argc, const char **argv)
 		{"GROUP", net_help_group},
 		{"GROUPMAP", net_help_groupmap},
 		{"JOIN", net_help_join},
+		{"DOM", net_help_dom},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
 		{"ADMIN", net_rap_admin_usage},

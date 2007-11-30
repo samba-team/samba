@@ -940,6 +940,7 @@ static struct functable net_func[] = {
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
+	{"DOM", net_dom},
 	{"CACHE", net_cache},
 	{"GETLOCALSID", net_getlocalsid},
 	{"SETLOCALSID", net_setlocalsid},
