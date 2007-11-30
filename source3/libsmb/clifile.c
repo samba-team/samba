@@ -30,8 +30,8 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
-	char param[sizeof(pstring)+6];
-	pstring data;
+	char param[1024+6];
+	char data[1024];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 	size_t oldlen = 2*(strlen(oldname)+1);
@@ -173,7 +173,7 @@ bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size,
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 
@@ -181,7 +181,7 @@ bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_POSIX_ACL);
 	p += 6;
-	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, name, sizeof(param)-6, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2,
@@ -222,7 +222,7 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 
@@ -232,7 +232,7 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_UNIX_BASIC);
 	p += 6;
-	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, name, sizeof(param)-6, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2,
@@ -316,7 +316,7 @@ static bool cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char data[100];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
@@ -615,7 +615,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
 	unsigned int data_len = 1;
 	unsigned int param_len = 6;
 	uint16 setup = TRANSACT2_SETFILEINFO;
-	pstring param;
+	char param[6];
 	unsigned char data;
 	char *rparam=NULL, *rdata=NULL;
 
@@ -1359,7 +1359,7 @@ bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 	if (!cli_receive_smb(cli)) {
 		return False;
 	}
-	
+
 	if (cli_is_error(cli)) {
 		return False;
 	}
@@ -1370,16 +1370,22 @@ bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 /****************************************************************************
  Check for existance of a dir.
 ****************************************************************************/
+
 bool cli_chkpath(struct cli_state *cli, const char *path)
 {
-	pstring path2;
+	char *path2 = NULL;
 	char *p;
-	
-	pstrcpy(path2,path);
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	path2 = talloc_strdup(frame, path);
+	if (!path2) {
+		TALLOC_FREE(frame);
+		return false;
+	}
 	trim_char(path2,'\0','\\');
 	if (!*path2)
 		*path2 = '\\';
-	
+
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBcheckpath);
@@ -1393,8 +1399,11 @@ bool cli_chkpath(struct cli_state *cli, const char *path)
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
+		TALLOC_FREE(frame);
 		return False;
 	}
+
+	TALLOC_FREE(frame);
 
 	if (cli_is_error(cli)) return False;
 
@@ -1466,20 +1475,22 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 	p = smb_buf(cli->inbuf);
 	p += 4;
 	len = smb_buflen(cli->inbuf) - 4;
-	if (len <= 0) return -1;
+	if (len <= 0 || len > PATH_MAX) return -1;
 
 	if (tmp_path) {
-		pstring path2;
-		clistr_pull(cli, path2, p, 
-			    sizeof(path2), len, STR_ASCII);
-		*tmp_path = SMB_STRDUP(path2);
+		char *path2 = SMB_MALLOC(len+1);
+		if (!path2) {
+			return -1;
+		}
+		clistr_pull(cli, path2, p,
+			    len+1, len, STR_ASCII);
+		*tmp_path = path2;
 	}
 
 	return SVAL(cli->inbuf,smb_vwv0);
 }
 
-
-/* 
+/*
    send a raw ioctl - used by the torture code
 */
 NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob)
@@ -1577,7 +1588,7 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 {
 	uint16 setup = TRANSACT2_SETPATHINFO;
 	unsigned int param_len = 0;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	size_t srclen = 2*(strlen(path)+1);
 	char *p;
 
@@ -1743,14 +1754,14 @@ bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
 {
 	uint16 setup = TRANSACT2_QPATHINFO;
 	unsigned int param_len = 0;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char *p;
 
 	p = param;
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_INFO_QUERY_ALL_EAS);
 	p += 6;
-	p += clistr_push(cli, p, path, sizeof(pstring)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, path, sizeof(param)-6, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	return cli_get_ea_list(cli, setup, param, param_len, ctx, pnum_eas, pea_list);
@@ -1837,7 +1848,7 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char data[18];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
@@ -1916,7 +1927,7 @@ static bool cli_posix_unlink_internal(struct cli_state *cli, const char *fname, 
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
-	char param[sizeof(pstring)+6];
+	char param[1024+6];
 	char data[2];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
