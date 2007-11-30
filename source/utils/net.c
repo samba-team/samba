@@ -677,6 +677,16 @@ static int net_getdomainsid(int argc, const char **argv)
 			  "backend knowlege (such as the sid stored in LDAP)\n"));
 	}
 
+	/* first check to see if we can even access secrets, so we don't
+	   panic when we can't. */
+
+	if (!secrets_init()) {
+		d_fprintf(stderr, "Unable to open secrets.tdb.  "
+				  "Can't fetch domainSID for name: %s\n",
+				  get_global_sam_name());
+		return 1;
+	}
+
 	/* Generate one, if it doesn't exist */
 	get_global_sam_sid();
 
