@@ -33,6 +33,7 @@ WERROR NetJoinDomain(const char *server_name,
 	struct wkssvc_PasswordBuffer encrypted_password;
 	NTSTATUS status;
 	WERROR werr;
+	unsigned int old_timeout;
 
 	mem_ctx = talloc_init("NetJoinDomain");
 	if (!mem_ctx) {
@@ -58,6 +59,8 @@ WERROR NetJoinDomain(const char *server_name,
 		goto done;
 	}
 
+	old_timeout = cli_set_timeout(cli, 60000);
+
 	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
 					    &status);
 	if (!pipe_cli) {
@@ -69,6 +72,8 @@ WERROR NetJoinDomain(const char *server_name,
 					   password,
 					   &cli->user_session_key,
 					   &encrypted_password);
+
+	old_timeout = cli_set_timeout(cli, 60000);
 
 	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, mem_ctx,
 					       server_name, domain_name,
@@ -82,6 +87,7 @@ WERROR NetJoinDomain(const char *server_name,
 	werr = WERR_OK;
 
  done:
+	cli_set_timeout(cli, old_timeout);
 	cli_shutdown(cli);
 	TALLOC_FREE(mem_ctx);
 
