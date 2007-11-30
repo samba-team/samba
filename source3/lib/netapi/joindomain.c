@@ -100,3 +100,77 @@ WERROR NetJoinDomain(const char *server_name,
 
 	return werr;
 }
+
+WERROR NetUnjoinDomain(const char *server_name,
+		       const char *account,
+		       const char *password,
+		       uint32_t unjoin_flags)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct wkssvc_PasswordBuffer encrypted_password;
+	NTSTATUS status;
+	WERROR werr;
+	unsigned int old_timeout;
+
+	ZERO_STRUCT(encrypted_password);
+
+	mem_ctx = talloc_init("NetUnjoinDomain");
+	if (!mem_ctx) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+		werr = WERR_NOT_SUPPORTED;
+		goto done;
+	}
+
+	status = net_make_ipc_connection_ex(NULL,
+					    server_name,
+					    NULL, 0, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	old_timeout = cli_set_timeout(cli, 60000);
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
+					    &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	};
+
+	if (password) {
+		encode_wkssvc_join_password_buffer(mem_ctx,
+						   password,
+						   &cli->user_session_key,
+						   &encrypted_password);
+	}
+
+	old_timeout = cli_set_timeout(cli, 60000);
+
+	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, mem_ctx,
+						 server_name,
+						 account,
+						 &encrypted_password,
+						 unjoin_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (cli) {
+		cli_set_timeout(cli, old_timeout);
+		cli_shutdown(cli);
+	}
+	TALLOC_FREE(mem_ctx);
+
+	return werr;
+}
