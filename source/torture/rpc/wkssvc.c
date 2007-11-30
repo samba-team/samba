@@ -1275,6 +1275,18 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 				   "NetrJoinDomain2 failed");
 	torture_assert_werr_equal(tctx, r.out.result, expected_err,
 				  "NetrJoinDomain2 failed");
+
+	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
+	{
+		return false;
+	}
+
+	if (join_status != NetSetupDomainName) {
+		torture_comment(tctx,
+				"Join verify failed: got %d\n", join_status);
+		return false;
+	}
+
 	return true;
 }
 
