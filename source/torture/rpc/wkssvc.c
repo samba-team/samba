@@ -1192,6 +1192,15 @@ static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * prerequisites for remotely joining an unjoined XP SP2 workstation:
+ * - firewall needs to be disabled (or open for ncacn_np access)
+ * - HKLM\System\CurrentControlSet\Control\Lsa\forceguest needs to 0
+ * see also:
+ * http://support.microsoft.com/kb/294355/EN-US/ and
+ * http://support.microsoft.com/kb/290403/EN-US/
+ */
+
 static bool test_NetrJoinDomain2(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
 {
