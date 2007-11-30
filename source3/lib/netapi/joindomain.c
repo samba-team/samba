@@ -18,7 +18,10 @@
  */
 
 #include "includes.h"
-#include "utils/net.h"
+
+extern const char *opt_user_name;
+extern const char *opt_workgroup;
+extern const char *opt_password;
 
 WERROR NetJoinDomain(const char *server_name,
 		     const char *domain_name,
@@ -53,9 +56,12 @@ WERROR NetJoinDomain(const char *server_name,
 		goto done;
 	}
 
-	status = net_make_ipc_connection_ex(domain_name,
-					    server_name,
-					    NULL, 0, &cli);
+	status = cli_full_connection(&cli, NULL, server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     opt_user_name, opt_workgroup,
+				     opt_password, 0, Undefined, NULL);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -127,9 +133,12 @@ WERROR NetUnjoinDomain(const char *server_name,
 		goto done;
 	}
 
-	status = net_make_ipc_connection_ex(NULL,
-					    server_name,
-					    NULL, 0, &cli);
+	status = cli_full_connection(&cli, NULL, server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     opt_user_name, opt_workgroup,
+				     opt_password, 0, Undefined, NULL);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
