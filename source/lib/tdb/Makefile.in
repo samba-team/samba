@@ -102,7 +102,7 @@ installcheck: test install
 clean:
 	rm -f $(ALL_PROGS) *.o *.a common/*.o tools/*.o tdb.pc
 	rm -f test.db test.tdb torture.tdb test.gdbm
-	rm -f $(SONAME) $(SOLIB) libtdb.a
+	rm -f $(SONAME) $(SOLIB) libtdb.a libtdb.$(SHLIBEXT)
 
 distclean: clean
 	rm -f *~ */*~
