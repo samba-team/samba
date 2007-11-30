@@ -133,6 +133,7 @@ void dump_core_setup(const char *progname)
 	chmod(corepath,0700);
 
 	SAFE_FREE(corepath);
+	SAFE_FREE(logbase);
 
 #ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE
