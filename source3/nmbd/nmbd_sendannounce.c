@@ -34,7 +34,7 @@ extern bool found_lm_clients;
 
 void send_browser_reset(int reset_type, const char *to_name, int to_type, struct in_addr to_ip)
 {
-	char outbuf[PSTRING_LEN];
+	char outbuf[1024];
 	char *p;
 
 	DEBUG(3,("send_browser_reset: sending reset request type %d to %s<%02x> IP %s.\n",
@@ -59,7 +59,7 @@ void send_browser_reset(int reset_type, const char *to_name, int to_type, struct
 
 void broadcast_announce_request(struct subnet_record *subrec, struct work_record *work)
 {
-	char outbuf[PSTRING_LEN];
+	char outbuf[1024];
 	char *p;
 
 	work->needannounce = True;
@@ -90,7 +90,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
                               time_t announce_interval,
                               const char *server_name, int server_type, const char *server_comment)
 {
-	char outbuf[PSTRING_LEN];
+	char outbuf[1024];
 	unstring upper_server_name;
 	char *p;
 
@@ -131,7 +131,7 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
                               time_t announce_interval,
                               char *server_name, int server_type, char *server_comment)
 {
-	char outbuf[PSTRING_LEN];
+	char outbuf[1024];
 	char *p=outbuf;
 
 	memset(outbuf,'\0',sizeof(outbuf));

@@ -226,7 +226,7 @@ static int do_dskattr(void)
 	struct cli_state *targetcli;
 	pstring targetpath;
 
-	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, cur_dir, &targetcli, targetpath ) ) {
 		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
 		return 1;
 	}
@@ -286,7 +286,7 @@ static int do_cd(char *newdir)
 	pstring_clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
 	
-	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, dname, &targetcli, targetpath ) ) {
 		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
 		pstrcpy(cur_dir,saved_dir);
 		goto out;
@@ -655,7 +655,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 			
 			/* check for dfs */
 			
-			if ( !cli_resolve_path( "", cli, head, &targetcli, targetpath ) ) {
+			if ( !cli_resolve_path_pstring( "", cli, head, &targetcli, targetpath ) ) {
 				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
 				remove_do_list_queue_head();
 				continue;
@@ -685,7 +685,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 	} else {
 		/* check for dfs */
 			
-		if ( cli_resolve_path( "", cli, mask, &targetcli, targetpath ) ) {
+		if ( cli_resolve_path_pstring( "", cli, mask, &targetcli, targetpath ) ) {
 			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) 
 				d_printf("%s listing %s\n", cli_errstr(targetcli), targetpath);
 		}
@@ -823,7 +823,7 @@ static int do_get(char *rname, char *lname, bool reget)
 		strlower_m(lname);
 	}
 
-	if ( !cli_resolve_path( "", cli, rname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, rname, &targetcli, targetname ) ) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1118,7 +1118,7 @@ static bool do_mkdir(char *name)
 	struct cli_state *targetcli;
 	pstring targetname;
 	
-	if ( !cli_resolve_path( "", cli, name, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, name, &targetcli, targetname ) ) {
 		d_printf("mkdir %s: %s\n", name, cli_errstr(cli));
 		return False;
 	}
@@ -1188,7 +1188,7 @@ static int cmd_mkdir(void)
 		pstring targetname;
 		*ddir2 = 0;
 		
-		if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+		if ( !cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname ) ) {
 			return 1;
 		}
 
@@ -1250,7 +1250,7 @@ static int do_put(char *rname, char *lname, bool reput)
 	struct cli_state *targetcli;
 	pstring targetname;
 	
-	if ( !cli_resolve_path( "", cli, rname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, rname, &targetcli, targetname ) ) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1770,7 +1770,7 @@ static int cmd_wdel(void)
 	pstrcpy(mask,cur_dir);
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname ) ) {
 		d_printf("cmd_wdel %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1800,7 +1800,7 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname ) ) {
 		d_printf("open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1845,7 +1845,7 @@ static int cmd_posix_open(void)
 	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
-	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+	if (!cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname )) {
 		d_printf("posix_open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1887,7 +1887,7 @@ static int cmd_posix_mkdir(void)
 	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
-	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+	if (!cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname )) {
 		d_printf("posix_mkdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1917,7 +1917,7 @@ static int cmd_posix_unlink(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname )) {
+	if (!cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname )) {
 		d_printf("posix_unlink %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -1946,7 +1946,7 @@ static int cmd_posix_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_resolve_path( "", cli, mask, &targetcli, targetname)) {
+	if (!cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname)) {
 		d_printf("posix_rmdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2141,7 +2141,7 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, mask, &targetcli, targetname ) ) {
 		d_printf("rmdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2177,7 +2177,7 @@ static int cmd_link(void)
 	pstrcat(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if ( !cli_resolve_path( "", cli, oldname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, oldname, &targetcli, targetname ) ) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
@@ -2222,7 +2222,7 @@ static int cmd_symlink(void)
 	pstrcpy(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if ( !cli_resolve_path( "", cli, oldname, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, oldname, &targetcli, targetname ) ) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
@@ -2259,7 +2259,7 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("chmod %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2407,7 +2407,7 @@ static int cmd_getfacl(void)
 
 	pstrcat(src,name);
 	
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2572,7 +2572,7 @@ static int cmd_stat(void)
 	pstrcat(src,name);
 
 	
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2663,7 +2663,7 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("chown %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2706,12 +2706,12 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetsrc ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetsrc ) ) {
 		d_printf("rename %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
 
-	if ( !cli_resolve_path( "", cli, dest, &targetcli, targetdest ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, dest, &targetcli, targetdest ) ) {
 		d_printf("rename %s: %s\n", dest, cli_errstr(cli));
 		return 1;
 	}
@@ -2769,7 +2769,7 @@ static int cmd_hardlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if ( !cli_resolve_path( "", cli, src, &targetcli, targetname ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, src, &targetcli, targetname ) ) {
 		d_printf("hardlink %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -3218,7 +3218,7 @@ static int cmd_show_connect( void )
 	struct cli_state *targetcli;
 	pstring targetpath;
 	
-	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path_pstring( "", cli, cur_dir, &targetcli, targetpath ) ) {
 		d_printf("showconnect %s: %s\n", cur_dir, cli_errstr(cli));
 		return 1;
 	}
@@ -3417,7 +3417,7 @@ static int process_command_string(char *cmd)
 	/* establish the connection if not already */
 	
 	if (!cli) {
-		cli = cli_cm_open(desthost, service, True);
+		cli = cli_cm_open(talloc_tos(), desthost, service, True);
 		if (!cli)
 			return 0;
 	}
@@ -3737,29 +3737,37 @@ static int process_stdin(void)
 	int rc = 0;
 
 	while (1) {
+		TALLOC_CTX *frame = talloc_stackframe();
 		pstring tok;
 		pstring the_prompt;
 		char *cline;
 		pstring line;
 		int i;
-		
+
 		/* display a prompt */
 		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);
 		cline = smb_readline(the_prompt, readline_callback, completion_fn);
-			
-		if (!cline) break;
-		
+
+		if (!cline) {
+			TALLOC_FREE(frame);
+			break;
+		}
+
 		pstrcpy(line, cline);
 
 		/* special case - first char is ! */
 		if (*line == '!') {
 			system(line + 1);
+			TALLOC_FREE(frame);
 			continue;
 		}
-      
+
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) {
+			TALLOC_FREE(frame);
+			continue;
+		}
 
 		if ((i = process_tok(tok)) >= 0) {
 			rc = commands[i].fn();
@@ -3768,6 +3776,7 @@ static int process_stdin(void)
 		} else {
 			d_printf("%s: command not found\n",tok);
 		}
+		TALLOC_FREE(frame);
 	}
 	return rc;
 }
@@ -3780,7 +3789,7 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = cli_cm_open(desthost, service, True);
+	cli = cli_cm_open(talloc_tos(), desthost, service, True);
 	if (!cli) {
 		return 1;
 	}
@@ -3809,7 +3818,7 @@ static int process(char *base_directory)
 
 static int do_host_query(char *query_host)
 {
-	cli = cli_cm_open(query_host, "IPC$", True);
+	cli = cli_cm_open(talloc_tos(), query_host, "IPC$", True);
 	if (!cli)
 		return 1;
 
@@ -3822,7 +3831,7 @@ static int do_host_query(char *query_host)
 
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
-		cli = cli_cm_open(query_host, "IPC$", True);
+		cli = cli_cm_open(talloc_tos(), query_host, "IPC$", True);
 	}
 
 	if (cli == NULL) {
@@ -3847,7 +3856,7 @@ static int do_tar_op(char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = cli_cm_open(desthost, service, True);
+		cli = cli_cm_open(talloc_tos(), desthost, service, True);
 		if (!cli)
 			return 1;
 	}
@@ -3961,7 +3970,7 @@ static int do_message_op(void)
 		POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
-	
+
 	load_case_tables();
 
 #ifdef KANJI
@@ -4200,7 +4209,7 @@ static int do_message_op(void)
 	if (message) {
 		return do_message_op();
 	}
-	
+
 	if (process(base_directory)) {
 		return 1;
 	}

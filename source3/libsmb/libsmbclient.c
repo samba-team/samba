@@ -1055,7 +1055,7 @@ smbc_open_ctx(SMBCCTX *context,
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
-        pstring targetpath;
+	char *targetpath = NULL;
 	struct cli_state *targetcli;
 	SMBCSRV *srv   = NULL;
 	SMBCFILE *file = NULL;
@@ -1102,18 +1102,14 @@ smbc_open_ctx(SMBCCTX *context,
 		if (errno == EPERM) errno = EACCES;
 		TALLOC_FREE(frame);
 		return NULL;  /* smbc_server sets errno */
-    
+
 	}
 
 	/* Hmmm, the test for a directory is suspect here ... FIXME */
 
 	if (strlen(path) > 0 && path[strlen(path) - 1] == '\\') {
-    
 		fd = -1;
-
-	}
-	else {
-	  
+	} else {
 		file = SMB_MALLOC_P(SMBCFILE);
 
 		if (!file) {
@@ -1127,7 +1123,7 @@ smbc_open_ctx(SMBCCTX *context,
 		ZERO_STRUCTP(file);
 
 		/*d_printf(">>>open: resolving %s\n", path);*/
-		if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
+		if (!cli_resolve_path(frame, "", srv->cli, path, &targetcli, &targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
 			SAFE_FREE(file);
@@ -1135,7 +1131,7 @@ smbc_open_ctx(SMBCCTX *context,
 			return NULL;
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
-		
+
 		if ((fd = cli_open(targetcli, targetpath, flags,
                                    context->internal->_share_mode)) < 0) {
 
@@ -1248,7 +1244,8 @@ smbc_read_ctx(SMBCCTX *context,
 {
 	int ret;
 	fstring server, share, user, password;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath = NULL;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1307,17 +1304,17 @@ smbc_read_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-	
+
 	/*d_printf(">>>read: resolving %s\n", path);*/
-	if (!cli_resolve_path("", file->srv->cli, path,
-                              &targetcli, targetpath))
+	if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                              &targetcli, &targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
-	
+
 	ret = cli_read(targetcli, file->cli_fd, (char *)buf, offset, count);
 
 	if (ret < 0) {
@@ -1350,15 +1347,15 @@ smbc_write_ctx(SMBCCTX *context,
 	int ret;
         off_t offset;
 	fstring server, share, user, password;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath = NULL;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* First check all pointers before dereferencing them */
-	
+
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1366,17 +1363,14 @@ smbc_write_ctx(SMBCCTX *context,
 	}
 
 	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
-
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
-    
 	}
 
 	/* Check that the buffer exists ... */
 
 	if (buf == NULL) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1398,22 +1392,19 @@ smbc_write_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-	
+
 	/*d_printf(">>>write: resolving %s\n", path);*/
-	if (!cli_resolve_path("", file->srv->cli, path,
-                              &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                              &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
 	}
 	/*d_printf(">>>write: resolved path as %s\n", targetpath);*/
 
-
 	ret = cli_write(targetcli, file->cli_fd, 0, (char *)buf, offset, count);
 
 	if (ret <= 0) {
-
 		errno = smbc_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1425,7 +1416,7 @@ smbc_write_ctx(SMBCCTX *context,
 	TALLOC_FREE(frame);
 	return ret;  /* Success, 0 bytes of data ... */
 }
- 
+
 /*
  * Routine to close() a file ...
  */
@@ -1434,9 +1425,10 @@ static int
 smbc_close_ctx(SMBCCTX *context,
                SMBCFILE *file)
 {
-        SMBCSRV *srv; 
+        SMBCSRV *srv;
 	fstring server, share, user, password;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath = NULL;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1450,7 +1442,6 @@ smbc_close_ctx(SMBCCTX *context,
 	}
 
 	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
-   
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1459,7 +1450,6 @@ smbc_close_ctx(SMBCCTX *context,
 
 	/* IS a dir ... */
 	if (!file->file) {
-		
 		TALLOC_FREE(frame);
 		return (context->closedir)(context, file);
 
@@ -1478,11 +1468,10 @@ smbc_close_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-	
+
 	/*d_printf(">>>close: resolving %s\n", path);*/
-	if (!cli_resolve_path("", file->srv->cli, path,
-                              &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                              &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1531,18 +1520,16 @@ smbc_getatr(SMBCCTX * context,
             SMB_INO_T *ino)
 {
 	pstring fixedpath;
-	pstring targetpath;
+	char *targetpath = NULL;
 	struct cli_state *targetcli;
 	time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
- 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
  		return -1;
- 
  	}
 
 	/* path fixup for . and .. */
@@ -1555,14 +1542,14 @@ smbc_getatr(SMBCCTX * context,
 		trim_string(fixedpath, NULL, "\\.");
 	}
 	DEBUG(4,("smbc_getatr: sending qpathinfo\n"));
-  
-	if (!cli_resolve_path( "", srv->cli, fixedpath, &targetcli, targetpath))
-	{
+
+	if (!cli_resolve_path(frame, "", srv->cli, fixedpath,
+				&targetcli, &targetpath)) {
 		d_printf("Couldn't resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return False;
 	}
-	
+
 	if (!srv->no_pathinfo2 &&
             cli_qpathinfo2(targetcli, targetpath,
                            create_time_ts,
@@ -1710,7 +1697,8 @@ smbc_unlink_ctx(SMBCCTX *context,
                 const char *fname)
 {
 	fstring server, share, user, password, workgroup;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath;
 	struct cli_state *targetcli;
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1758,8 +1746,8 @@ smbc_unlink_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1835,16 +1823,16 @@ smbc_rename_ctx(SMBCCTX *ocontext,
         fstring workgroup;
 	pstring path1;
         pstring path2;
-        pstring targetpath1;
-        pstring targetpath2;
+        char *targetpath1;
+        char *targetpath2;
 	struct cli_state *targetcli1;
         struct cli_state *targetcli2;
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!ocontext || !ncontext || 
+	if (!ocontext || !ncontext ||
 	    !ocontext->internal || !ncontext->internal ||
-	    !ocontext->internal->_initialized || 
+	    !ocontext->internal->_initialized ||
 	    !ncontext->internal->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
@@ -1852,15 +1840,14 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 		return -1;
 
 	}
-	
-	if (!oname || !nname) {
 
+	if (!oname || !nname) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 
 	}
-	
+
 	DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
 	smbc_parse_path(ocontext, oname,
@@ -1887,9 +1874,7 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 
 	if (strcmp(server1, server2) || strcmp(share1, share2) ||
 	    strcmp(user1, user2)) {
-
 		/* Can't rename across file systems, or users?? */
-
 		errno = EXDEV;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1906,27 +1891,26 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	}
 
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
-	if (!cli_resolve_path( "", srv->cli, path1, &targetcli1, targetpath1))
-	{
+	if (!cli_resolve_path(frame, "", srv->cli, path1,
+				&targetcli1, &targetpath1)) {
 		d_printf("Could not resolve %s\n", path1);
 		TALLOC_FREE(frame);
 		return -1;
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
-	if (!cli_resolve_path( "", srv->cli, path2, &targetcli2, targetpath2))
-	{
+	if (!cli_resolve_path(frame, "", srv->cli, path2,
+				&targetcli2, &targetpath2)) {
 		d_printf("Could not resolve %s\n", path2);
 		TALLOC_FREE(frame);
 		return -1;
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath2);*/
-	
+
 	if (strcmp(targetcli1->desthost, targetcli2->desthost) ||
             strcmp(targetcli1->share, targetcli2->share))
 	{
 		/* can't rename across file systems */
-		
 		errno = EXDEV;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1962,17 +1946,16 @@ smbc_lseek_ctx(SMBCCTX *context,
 {
 	SMB_OFF_T size;
 	fstring server, share, user, password;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-		
 	}
 
 	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
@@ -2010,28 +1993,26 @@ smbc_lseek_ctx(SMBCCTX *context,
                                     user, sizeof(user),
                                     password, sizeof(password),
                                     NULL, 0)) {
-                        
 					errno = EINVAL;
 					TALLOC_FREE(frame);
 					return -1;
 			}
-		
+
 		/*d_printf(">>>lseek: resolving %s\n", path);*/
-		if (!cli_resolve_path("", file->srv->cli, path,
-                                      &targetcli, targetpath))
-		{
+		if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                                      &targetcli, &targetpath)) {
 			d_printf("Could not resolve %s\n", path);
 			TALLOC_FREE(frame);
 			return -1;
 		}
 		/*d_printf(">>>lseek: resolved path as %s\n", targetpath);*/
-		
+
 		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL,
-                                   &size, NULL, NULL, NULL, NULL, NULL)) 
+                                   &size, NULL, NULL, NULL, NULL, NULL))
 		{
 		    SMB_OFF_T b_size = size;
 			if (!cli_getattrE(targetcli, file->cli_fd,
-                                          NULL, &b_size, NULL, NULL, NULL)) 
+                                          NULL, &b_size, NULL, NULL, NULL))
 		    {
 			errno = EINVAL;
 			TALLOC_FREE(frame);
@@ -2238,14 +2219,13 @@ smbc_fstat_ctx(SMBCCTX *context,
         fstring user;
         fstring password;
 	pstring path;
-        pstring targetpath;
+        char *targetpath;
 	struct cli_state *targetcli;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -2253,7 +2233,6 @@ smbc_fstat_ctx(SMBCCTX *context,
 	}
 
 	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
-
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -2261,7 +2240,6 @@ smbc_fstat_ctx(SMBCCTX *context,
 	}
 
 	if (!file->file) {
-
 		TALLOC_FREE(frame);
 		return (context->fstatdir)(context, file, st);
 
@@ -2280,11 +2258,10 @@ smbc_fstat_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-	
+
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path("", file->srv->cli, path,
-                              &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                              &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -2979,7 +2956,7 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * The server and share are specified ... work from
                          * there ...
                          */
-			pstring targetpath;
+			char *targetpath;
 			struct cli_state *targetcli;
 
 			/* We connect to the server and list the directory */
@@ -3006,9 +2983,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                         p = path + strlen(path);
 			pstrcat(path, "\\*");
 
-			if (!cli_resolve_path("", srv->cli, path,
-                                              &targetcli, targetpath))
-			{
+			if (!cli_resolve_path(frame, "", srv->cli, path,
+                                              &targetcli, &targetpath)) {
 				d_printf("Could not resolve %s\n", path);
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -3017,7 +2993,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 				TALLOC_FREE(frame);
 				return NULL;
 			}
-			
+
 			if (cli_list(targetcli, targetpath,
                                      aDIR | aSYSTEM | aHIDDEN,
                                      dir_list_fn, (void *)dir) < 0) {
@@ -3358,13 +3334,13 @@ smbc_mkdir_ctx(SMBCCTX *context,
         fstring user;
         fstring password;
         fstring workgroup;
-	pstring path, targetpath;
+	pstring path;
+	char *targetpath;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->internal || 
+	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -3372,13 +3348,12 @@ smbc_mkdir_ctx(SMBCCTX *context,
 	}
 
 	if (!fname) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 
 	}
-  
+
 	DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
@@ -3407,8 +3382,8 @@ smbc_mkdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -3462,13 +3437,12 @@ smbc_rmdir_ctx(SMBCCTX *context,
         fstring password;
         fstring workgroup;
 	pstring path;
-        pstring targetpath;
+        char *targetpath;
 	struct cli_state *targetcli;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->internal || 
+	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -3476,13 +3450,12 @@ smbc_rmdir_ctx(SMBCCTX *context,
 	}
 
 	if (!fname) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 
 	}
-  
+
 	DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
@@ -3512,8 +3485,8 @@ smbc_rmdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
-	{
+	if (!cli_resolve_path(frame, "", srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
