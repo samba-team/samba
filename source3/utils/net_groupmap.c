@@ -24,37 +24,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-
-/*********************************************************
- utility function to parse an integer parameter from 
- "parameter = value"
-**********************************************************/
-static uint32 get_int_param( const char* param )
-{
-	char *p;
-	
-	p = strchr( param, '=' );
-	if ( !p )
-		return 0;
-		
-	return atoi(p+1);
-}
-
-/*********************************************************
- utility function to parse an integer parameter from 
- "parameter = value"
-**********************************************************/
-static char* get_string_param( const char* param )
-{
-	char *p;
-	
-	p = strchr( param, '=' );
-	if ( !p )
-		return NULL;
-		
-	return (p+1);
-}
-
 /*********************************************************
  Figure out if the input was an NT group or a SID string.
  Return the SID.
