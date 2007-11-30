@@ -1290,6 +1290,93 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct wkssvc_NetrUnjoinDomain2 r;
+	const char *domain_admin_account = NULL;
+	const char *domain_admin_password = NULL;
+	struct wkssvc_PasswordBuffer pwd_buf;
+	enum wkssvc_NetJoinStatus join_status;
+	const char *join_name = NULL;
+	WERROR expected_err;
+
+	/* FIXME: this test assumes to join workstations / servers and does not
+	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
+
+	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
+	{
+		return false;
+	}
+
+	switch (join_status) {
+		case NetSetupUnjoined:
+			expected_err = WERR_SETUP_NOT_JOINED;
+			break;
+		case NetSetupDomainName:
+		case NetSetupUnknownStatus:
+		case NetSetupWorkgroupName:
+		default:
+			expected_err = WERR_OK;
+			break;
+	}
+
+	domain_admin_account = lp_parm_string(global_loadparm, NULL,
+					      "torture",
+					      "domain_admin_account");
+
+	domain_admin_password = lp_parm_string(global_loadparm, NULL,
+					       "torture",
+					       "domain_admin_password");
+
+	if ((domain_admin_account == NULL) ||
+	    (domain_admin_password == NULL)) {
+		torture_comment(tctx, "not enough input parameter\n");
+	    	return false;
+	}
+
+	if (!encode_wkssvc_join_password_buffer(tctx, p,
+						domain_admin_password,
+						&pwd_buf))
+	{
+		return false;
+	}
+
+	r.in.server_name = dcerpc_server_name(p);
+	r.in.account = domain_admin_account;
+	r.in.encrypted_password = &pwd_buf;
+	r.in.unjoin_flags = 0;
+
+	torture_comment(tctx, "testing NetrUnjoinDomain2 (assuming non-DC)\n");
+
+	status = dcerpc_wkssvc_NetrUnjoinDomain2(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "NetrUnjoinDomain2 failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_err,
+				  "NetrUnjoinDomain2 failed");
+
+	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
+	{
+		return false;
+	}
+
+	switch (join_status) {
+		case NetSetupUnjoined:
+		case NetSetupWorkgroupName:
+			break;
+		case NetSetupUnknown:
+		case NetSetupDomainName:
+		default:
+			torture_comment(tctx,
+				"Unjoin verify failed: got %d\n", join_status);
+			return false;
+	}
+
+	return true;
+}
+
+
 struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -1350,6 +1437,9 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 
 	test = torture_rpc_tcase_add_test(tcase, "NetrJoinDomain2",
 					  test_NetrJoinDomain2);
+	test->dangerous = true;
+	test = torture_rpc_tcase_add_test(tcase, "NetrUnjoinDomain2",
+					  test_NetrUnjoinDomain2);
 	test->dangerous = true;
 
 	torture_rpc_tcase_add_test(tcase, "NetrJoinDomain",
