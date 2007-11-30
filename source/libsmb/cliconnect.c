@@ -879,8 +879,8 @@ ntlmssp:
  password is in plaintext, the same should be done.
 ****************************************************************************/
 
-NTSTATUS cli_session_setup(struct cli_state *cli, 
-			   const char *user, 
+NTSTATUS cli_session_setup(struct cli_state *cli,
+			   const char *user,
 			   const char *pass, int passlen,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup)
@@ -888,8 +888,17 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	char *p;
 	fstring user2;
 
+	if (user) {
+		fstrcpy(user2, user);
+	} else {
+		user2[0] ='\0';
+	}
+
+	if (!workgroup) {
+		workgroup = "";
+	}
+
 	/* allow for workgroups as part of the username */
-	fstrcpy(user2, user);
 	if ((p=strchr_m(user2,'\\')) || (p=strchr_m(user2,'/')) ||
 	    (p=strchr_m(user2,*lp_winbind_separator()))) {
 		*p = 0;

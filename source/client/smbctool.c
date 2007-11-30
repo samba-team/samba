@@ -304,9 +304,9 @@ static int do_dskattr(void)
 {
 	int total, bsize, avail;
 	struct cli_state *targetcli;
-	pstring targetpath;
+	char *targetpath = NULL;
 
-	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path(talloc_tos(), "", cli, cur_dir, &targetcli, &targetpath ) ) {
 		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
 		return 1;
 	}
@@ -731,7 +731,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 {
 	static int in_do_list = 0;
 	struct cli_state *targetcli;
-	pstring targetpath;
+	char *targetpath;
 
 	if (in_do_list && rec) {
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
@@ -747,7 +747,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 	if (rec) {
 		init_do_list_queue();
 		add_to_do_list_queue(mask);
-		
+
 		while (! do_list_queue_empty()) {
 			/*
 			 * Need to copy head so that it doesn't become
@@ -758,15 +758,15 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			
+
 			/* check for dfs */
-			
-			if ( !cli_resolve_path( "", cli, head, &targetcli, targetpath ) ) {
+
+			if ( !cli_resolve_path(talloc_tos(), "", cli, head, &targetcli, &targetpath ) ) {
 				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
 				remove_do_list_queue_head();
 				continue;
 			}
-			
+
 			cli_list(targetcli, targetpath, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
@@ -787,8 +787,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),bool rec,
 		}
 	} else {
 		/* check for dfs */
-			
-		if ( cli_resolve_path( "", cli, mask, &targetcli, targetpath ) ) {
+		if (cli_resolve_path(talloc_tos(), "", cli, mask, &targetcli, &targetpath ) ) {
 			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) 
 				d_printf("%s listing %s\n", cli_errstr(targetcli), targetpath);
 		}
@@ -1857,21 +1856,21 @@ static int cmd_open(void)
 	pstring mask;
 	pstring buf;
 	struct cli_state *targetcli;
-	pstring targetname;
-	
+	char *targetname;
+
 	pstrcpy(mask,cur_dir);
-	
+
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		d_printf("open <filename>\n");
 		return 1;
 	}
 	pstrcat(mask,buf);
 
-	if ( !cli_resolve_path( "", cli, mask, &targetcli, targetname ) ) {
+	if (!cli_resolve_path(talloc_tos(), "", cli, mask, &targetcli, &targetname ) ) {
 		d_printf("open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
-	
+
 	cli_nt_create(targetcli, targetname, FILE_READ_DATA);
 
 	return 0;
@@ -3320,31 +3319,39 @@ static int process_stdin(void)
 	int rc = 0;
 
 	while (1) {
+		TALLOC_CTX *ctx = talloc_stackframe();
 		pstring tok;
 		pstring the_prompt;
 		char *cline;
 		pstring line;
 		int i;
-		
+
 		/* display a prompt */
 		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);		 
 		/* Removed callback since we don't need to swallow keepalives with libsmbclient */
 		/*cline = smb_readline(the_prompt, readline_callback, completion_fn);*/
 		cline = smb_readline(the_prompt, NULL, completion_fn);
-		
-		if (!cline) break;
-		
+
+		if (!cline) {
+			TALLOC_FREE(frame);
+			break;
+		}
+
 		pstrcpy(line, cline);
 
 		/* special case - first char is ! */
 		if (*line == '!') {
 			system(line + 1);
+			TALLOC_FREE(frame);
 			continue;
 		}
-		
+
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) {
+			TALLOC_FREE(frame);
+			continue;
+		}
 
 		if ((i = process_tok(tok)) >= 0) {
 			rc = commands[i].fn();
@@ -3353,6 +3360,7 @@ static int process_stdin(void)
 		} else {
 			d_printf("%s: command not found\n",tok);
 		}
+		TALLOC_FREE(frame);
 	}
 	return rc;
 }
@@ -3375,7 +3383,7 @@ static int process(char *base_directory)
 		d_printf("Error initializing libsmbclient: %s\n", strerror(errno));
 		return 1;
 	}
-	
+
 	if (*base_directory) {
 		rc = do_cd(base_directory);
 		if (rc) {
@@ -3386,16 +3394,17 @@ static int process(char *base_directory)
 	else	/* start the auth fn*/
 	{
 		rc = do_cd("/");
-		if (rc)
+		if (rc) {
 			return rc;
+		}
 	}
-	
+
 	if (cmdstr) {
 		rc = process_command_string(cmdstr);
 	} else {
 		process_stdin();
 	}
-  
+
 	cli_cm_shutdown();
 	return rc;
 }

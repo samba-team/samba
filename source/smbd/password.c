@@ -402,14 +402,14 @@ void add_session_user(const char *user)
 	     len_session_userlist) ) {
 		char *newlist;
 
-		if (len_session_userlist > 128 * PSTRING_LEN) {
+		if (len_session_userlist > 128 * 1024) {
 			DEBUG(3,("add_session_user: session userlist already "
 				 "too large.\n"));
 			return;
 		}
 		newlist = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(
 			session_userlist,
-			len_session_userlist + PSTRING_LEN );
+			len_session_userlist + 1024 );
 		if( newlist == NULL ) {
 			DEBUG(1,("Unable to resize session_userlist\n"));
 			return;
@@ -418,7 +418,7 @@ void add_session_user(const char *user)
 			*newlist = '\0';
 		}
 		session_userlist = newlist;
-		len_session_userlist += PSTRING_LEN;
+		len_session_userlist += 1024;
 	}
 
 	safe_strcat(session_userlist," ",len_session_userlist-1);

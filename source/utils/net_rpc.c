@@ -3591,11 +3591,12 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 bool sync_files(struct copy_clistate *cp_clistate, pstring mask)
 {
 	struct cli_state *targetcli;
-	pstring targetpath;
+	char *targetpath = NULL;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if ( !cli_resolve_path( "", cp_clistate->cli_share_src, mask, &targetcli, targetpath ) ) {
+	if ( !cli_resolve_path(talloc_tos(), "", cp_clistate->cli_share_src,
+				mask, &targetcli, &targetpath ) ) {
 		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
 		return False;
