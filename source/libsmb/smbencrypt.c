@@ -701,10 +701,10 @@ char *decrypt_trustdom_secret(const char *pass, DATA_BLOB *data_in)
  * buffer), calling MD5Update() first with session_key and then with confounder
  * (vice versa in samr) - Guenther */
 
-static void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					       const char *pwd,
-					       DATA_BLOB *session_key,
-					       struct wkssvc_PasswordBuffer *pwd_buf)
+void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					const char *pwd,
+					DATA_BLOB *session_key,
+					struct wkssvc_PasswordBuffer *pwd_buf)
 {
 	uint8_t buffer[516];
 	struct MD5Context ctx;
