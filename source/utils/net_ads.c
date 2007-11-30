@@ -1430,20 +1430,6 @@ static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
 
 
 /*******************************************************************
- utility function to parse an integer parameter from
- "parameter = value"
-**********************************************************/
-static char* get_string_param( const char* param )
-{
-	char *p;
-
-	if ( (p = strchr( param, '=' )) == NULL )
-		return NULL;
-
-	return (p+1);
-}
-
-/*******************************************************************
  ********************************************************************/
 
 static int net_ads_join_usage(int argc, const char **argv)
