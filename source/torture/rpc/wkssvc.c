@@ -1155,32 +1155,25 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
  * buffer), calling MD5Update() first with session_key and then with confounder
  * (vice versa in samr) - Guenther */
 
-static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
-					       struct dcerpc_pipe *p,
+static void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					       const char *pwd,
+					       DATA_BLOB *session_key,
 					       struct wkssvc_PasswordBuffer *pwd_buf)
 {
-	NTSTATUS status;
 	uint8_t buffer[516];
 	struct MD5Context ctx;
 
-	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 
 	int confounder_len = 8;
 	uint8_t confounder[8];
 
 	encode_pw_buffer(buffer, pwd, STR_UNICODE);
 
-	status = dcerpc_fetch_session_key(p, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
 	generate_random_buffer((uint8_t *)confounder, confounder_len);
 
 	MD5Init(&ctx);
-	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Update(&ctx, session_key->data, session_key->length);
 	MD5Update(&ctx, confounder, confounder_len);
 	MD5Final(confounded_session_key.data, &ctx);
 
@@ -1189,7 +1182,7 @@ static bool encode_wkssvc_join_password_buffer(struct torture_context *tctx,
 	memcpy(&pwd_buf->data[0], confounder, confounder_len);
 	memcpy(&pwd_buf->data[8], buffer, 516);
 
-	return true;
+	data_blob_free(&confounded_session_key);
 }
 
 /*
@@ -1213,6 +1206,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
+	DATA_BLOB session_key;
 
 	/* FIXME: this test assumes to join workstations / servers and does not
 	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
@@ -1253,12 +1247,13 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	    	return false;
 	}
 
-	if (!encode_wkssvc_join_password_buffer(tctx, p,
-						domain_admin_password,
-						&pwd_buf))
-	{
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
+	encode_wkssvc_join_password_buffer(tctx, domain_admin_password,
+					   &session_key, &pwd_buf);
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.domain_name = domain_name;
@@ -1301,6 +1296,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
+	DATA_BLOB session_key;
 
 	/* FIXME: this test assumes to join workstations / servers and does not
 	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
@@ -1336,12 +1332,13 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	    	return false;
 	}
 
-	if (!encode_wkssvc_join_password_buffer(tctx, p,
-						domain_admin_password,
-						&pwd_buf))
-	{
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
+	encode_wkssvc_join_password_buffer(tctx, domain_admin_password,
+					   &session_key, &pwd_buf);
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.account = domain_admin_account;
