@@ -60,16 +60,19 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		name = talloc_strdup(tmp_ctx, full_name);
 	}
 
-	DEBUG(10,("lookup_name: %s => %s (domain), %s (name)\n", 
-		full_name, domain, name));
-
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(tmp_ctx);
 		return False;
 	}
 
-	if (strequal(domain, get_global_sam_name())) {
+	DEBUG(10,("lookup_name: %s => %s (domain), %s (name)\n",
+		full_name, domain, name));
+	DEBUG(10, ("lookup_name: flags = 0x0%x\n", flags));
+
+	if ((flags & LOOKUP_NAME_DOMAIN) &&
+	    strequal(domain, get_global_sam_name()))
+	{
 
 		/* It's our own domain, lookup the name in passdb */
 		if (lookup_global_sam_name(name, flags, &rid, &type)) {
@@ -81,8 +84,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (strequal(domain, builtin_domain_name())) {
-
+	if ((flags & LOOKUP_NAME_BUILTIN) &&
+	    strequal(domain, builtin_domain_name()))
+	{
 		/* Explicit request for a name in BUILTIN */
 		if (lookup_builtin_name(name, &rid)) {
 			sid_copy(&sid, &global_sid_Builtin);
@@ -98,6 +102,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	 * domain yet at this point yet. This comes later. */
 
 	if ((domain[0] != '\0') &&
+	    (flags & ~(LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED)) &&
 	    (winbind_lookup_name(domain, name, &sid, &type))) {
 			goto ok;
 	}
@@ -132,14 +137,18 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* 1. well-known names */
 
-	if (lookup_wellknown_name(tmp_ctx, name, &sid, &domain)) {
+	if ((flags & LOOKUP_NAME_WKN) &&
+	    lookup_wellknown_name(tmp_ctx, name, &sid, &domain))
+	{
 		type = SID_NAME_WKN_GRP;
 		goto ok;
 	}
 
 	/* 2. Builtin domain as such */
 
-	if (strequal(name, builtin_domain_name())) {
+	if ((flags & (LOOKUP_NAME_BUILTIN|LOOKUP_NAME_REMOTE)) &&
+	    strequal(name, builtin_domain_name()))
+	{
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
 		sid_copy(&sid, &global_sid_Builtin);
@@ -149,7 +158,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* 3. Account domain */
 
-	if (strequal(name, get_global_sam_name())) {
+	if ((flags & LOOKUP_NAME_DOMAIN) &&
+	    strequal(name, get_global_sam_name()))
+	{
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch my SID\n"));
 			TALLOC_FREE(tmp_ctx);
@@ -163,7 +174,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* 4. Primary domain */
 
-	if (!IS_DC && strequal(name, lp_workgroup())) {
+	if ((flags & LOOKUP_NAME_DOMAIN) && !IS_DC &&
+	    strequal(name, lp_workgroup()))
+	{
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch the domain SID\n"));
 			TALLOC_FREE(tmp_ctx);
@@ -178,8 +191,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 5. Trusted domains as such, to me it looks as if members don't do
               this, tested an XP workstation in a NT domain -- vl */
 
-	if (IS_DC && (secrets_fetch_trusted_domain_password(name, NULL,
-							    &sid, NULL))) {
+	if ((flags & LOOKUP_NAME_REMOTE) && IS_DC &&
+	    (secrets_fetch_trusted_domain_password(name, NULL, &sid, NULL)))
+	{
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
 		type = SID_NAME_DOMAIN;
@@ -188,7 +202,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* 6. Builtin aliases */	
 
-	if (lookup_builtin_name(name, &rid)) {
+	if ((flags & LOOKUP_NAME_BUILTIN) &&
+	    lookup_builtin_name(name, &rid))
+	{
 		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
 		sid_copy(&sid, &global_sid_Builtin);
 		sid_append_rid(&sid, rid);
@@ -201,7 +217,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* Both cases are done by looking at our passdb */
 
-	if (lookup_global_sam_name(name, flags, &rid, &type)) {
+	if ((flags & LOOKUP_NAME_DOMAIN) &&
+	    lookup_global_sam_name(name, flags, &rid, &type))
+	{
 		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
 		sid_copy(&sid, get_global_sam_sid());
 		sid_append_rid(&sid, rid);
