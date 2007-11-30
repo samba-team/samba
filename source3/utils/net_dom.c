@@ -25,6 +25,8 @@ static int net_dom_usage(int argc, const char **argv)
 {
 	d_printf("usage: net dom join "
 		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n");
+	d_printf("usage: net dom unjoin "
+		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n");
 
 	return -1;
 }
@@ -33,8 +35,57 @@ int net_help_dom(int argc, const char **argv)
 {
 	d_printf("net dom join"\
 		"\n  Join a remote machine\n");
+	d_printf("net dom unjoin"\
+		"\n  Unjoin a remote machine\n");
 
 	return -1;
+}
+
+static int net_dom_unjoin(int argc, const char **argv)
+{
+	const char *server_name = NULL;
+	const char *account = NULL;
+	const char *password = NULL;
+	uint32_t unjoin_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE |
+				WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	bool reboot = false;
+	WERROR werr;
+	int i;
+
+	if (argc < 1) {
+		return net_dom_usage(argc, argv);
+	}
+
+	server_name = opt_host;
+
+	for (i=0; i<argc; i++) {
+		if (strnequal(argv[i], "account", strlen("account"))) {
+			account = get_string_param(argv[i]);
+			if (!account) {
+				return -1;
+			}
+		}
+		if (strnequal(argv[i], "password", strlen("password"))) {
+			password = get_string_param(argv[i]);
+			if (!password) {
+				return -1;
+			}
+		}
+		if (strequal(argv[i], "reboot")) {
+			reboot = true;
+		}
+	}
+
+	werr = NetUnjoinDomain(server_name, account, password, unjoin_flags);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("Failed to unjoin domain: %s\n",
+			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
+			return -1;
+	}
+
+	/* reboot then */
+
+	return 0;
 }
 
 static int net_dom_join(int argc, const char **argv)
@@ -109,6 +160,7 @@ int net_dom(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"JOIN", net_dom_join},
+		{"UNJOIN", net_dom_unjoin},
 		{NULL, NULL}
 	};
 
