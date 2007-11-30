@@ -3,11 +3,12 @@
 #include <stdint.h>
 
 #include "librpc/gen_ndr/srvsvc.h"
+#include "librpc/gen_ndr/lsa.h"
 #ifndef _HEADER_wkssvc
 #define _HEADER_wkssvc
 
 struct wkssvc_NetWkstaInfo100 {
-	uint16_t platform_id;
+	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */
 	const char *domain_name;/* [unique,charset(UTF16)] */
 	uint32_t version_major;
@@ -15,7 +16,7 @@ struct wkssvc_NetWkstaInfo100 {
 };
 
 struct wkssvc_NetWkstaInfo101 {
-	uint16_t platform_id;
+	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */
 	const char *domain_name;/* [unique,charset(UTF16)] */
 	uint32_t version_major;
@@ -24,7 +25,7 @@ struct wkssvc_NetWkstaInfo101 {
 };
 
 struct wkssvc_NetWkstaInfo102 {
-	uint16_t platform_id;
+	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */
 	const char *domain_name;/* [unique,charset(UTF16)] */
 	uint32_t version_major;
@@ -99,8 +100,104 @@ struct wkssvc_NetWkstaInfo1027 {
 	uint32_t errorlog_sz;
 };
 
+struct wkssvc_NetWkstaInfo1028 {
+	uint32_t print_buf_time;
+};
+
+struct wkssvc_NetWkstaInfo1032 {
+	uint32_t wrk_heuristics;
+};
+
 struct wkssvc_NetWkstaInfo1033 {
 	uint32_t max_threads;
+};
+
+struct wkssvc_NetWkstaInfo1041 {
+	uint32_t lock_quota;
+};
+
+struct wkssvc_NetWkstaInfo1042 {
+	uint32_t lock_increment;
+};
+
+struct wkssvc_NetWkstaInfo1043 {
+	uint32_t lock_maximum;
+};
+
+struct wkssvc_NetWkstaInfo1044 {
+	uint32_t pipe_increment;
+};
+
+struct wkssvc_NetWkstaInfo1045 {
+	uint32_t pipe_maximum;
+};
+
+struct wkssvc_NetWkstaInfo1046 {
+	uint32_t dormant_file_limit;
+};
+
+struct wkssvc_NetWkstaInfo1047 {
+	uint32_t cache_file_timeout;
+};
+
+struct wkssvc_NetWkstaInfo1048 {
+	uint32_t use_opportunistic_locking;
+};
+
+struct wkssvc_NetWkstaInfo1049 {
+	uint32_t use_unlock_behind;
+};
+
+struct wkssvc_NetWkstaInfo1050 {
+	uint32_t use_close_behind;
+};
+
+struct wkssvc_NetWkstaInfo1051 {
+	uint32_t buf_named_pipes;
+};
+
+struct wkssvc_NetWkstaInfo1052 {
+	uint32_t use_lock_read_unlock;
+};
+
+struct wkssvc_NetWkstaInfo1053 {
+	uint32_t utilize_nt_caching;
+};
+
+struct wkssvc_NetWkstaInfo1054 {
+	uint32_t use_raw_read;
+};
+
+struct wkssvc_NetWkstaInfo1055 {
+	uint32_t use_raw_write;
+};
+
+struct wkssvc_NetWkstaInfo1056 {
+	uint32_t use_write_raw_data;
+};
+
+struct wkssvc_NetWkstaInfo1057 {
+	uint32_t use_encryption;
+};
+
+struct wkssvc_NetWkstaInfo1058 {
+	uint32_t buf_files_deny_write;
+};
+
+struct wkssvc_NetWkstaInfo1059 {
+	uint32_t buf_read_only_files;
+};
+
+struct wkssvc_NetWkstaInfo1060 {
+	uint32_t force_core_create_mode;
+};
+
+struct wkssvc_NetWkstaInfo1061 {
+	uint32_t use_512_byte_max_transfer;
+};
+
+struct wkssvc_NetWkstaInfo1062 {
+	uint32_t read_ahead_throughput;
 };
 
 union wkssvc_NetWkstaInfo {
@@ -115,33 +212,72 @@ union wkssvc_NetWkstaInfo {
 	struct wkssvc_NetWkstaInfo1018 *info1018;/* [unique,case(1018)] */
 	struct wkssvc_NetWkstaInfo1023 *info1023;/* [unique,case(1023)] */
 	struct wkssvc_NetWkstaInfo1027 *info1027;/* [unique,case(1027)] */
+	struct wkssvc_NetWkstaInfo1028 *info1028;/* [unique,case(1028)] */
+	struct wkssvc_NetWkstaInfo1032 *info1032;/* [unique,case(1032)] */
 	struct wkssvc_NetWkstaInfo1033 *info1033;/* [unique,case(1033)] */
+	struct wkssvc_NetWkstaInfo1041 *info1041;/* [unique,case(1041)] */
+	struct wkssvc_NetWkstaInfo1042 *info1042;/* [unique,case(1042)] */
+	struct wkssvc_NetWkstaInfo1043 *info1043;/* [unique,case(1043)] */
+	struct wkssvc_NetWkstaInfo1044 *info1044;/* [unique,case(1044)] */
+	struct wkssvc_NetWkstaInfo1045 *info1045;/* [unique,case(1045)] */
+	struct wkssvc_NetWkstaInfo1046 *info1046;/* [unique,case(1046)] */
+	struct wkssvc_NetWkstaInfo1047 *info1047;/* [unique,case(1047)] */
+	struct wkssvc_NetWkstaInfo1048 *info1048;/* [unique,case(1048)] */
+	struct wkssvc_NetWkstaInfo1049 *info1049;/* [unique,case(1049)] */
+	struct wkssvc_NetWkstaInfo1050 *info1050;/* [unique,case(1050)] */
+	struct wkssvc_NetWkstaInfo1051 *info1051;/* [unique,case(1051)] */
+	struct wkssvc_NetWkstaInfo1052 *info1052;/* [unique,case(1052)] */
+	struct wkssvc_NetWkstaInfo1053 *info1053;/* [unique,case(1053)] */
+	struct wkssvc_NetWkstaInfo1054 *info1054;/* [unique,case(1054)] */
+	struct wkssvc_NetWkstaInfo1055 *info1055;/* [unique,case(1055)] */
+	struct wkssvc_NetWkstaInfo1056 *info1056;/* [unique,case(1056)] */
+	struct wkssvc_NetWkstaInfo1057 *info1057;/* [unique,case(1057)] */
+	struct wkssvc_NetWkstaInfo1058 *info1058;/* [unique,case(1058)] */
+	struct wkssvc_NetWkstaInfo1059 *info1059;/* [unique,case(1059)] */
+	struct wkssvc_NetWkstaInfo1060 *info1060;/* [unique,case(1060)] */
+	struct wkssvc_NetWkstaInfo1061 *info1061;/* [unique,case(1061)] */
+	struct wkssvc_NetWkstaInfo1062 *info1062;/* [unique,case(1062)] */
 };
 
-struct USER_INFO_0 {
-	const char *user;/* [unique,charset(UTF16)] */
+struct wkssvc_NetrWkstaUserInfo0 {
+	const char *user_name;/* [unique,charset(UTF16)] */
 };
 
-struct USER_INFO_0_CONTAINER {
+struct wkssvc_NetWkstaEnumUsersCtr0 {
 	uint32_t entries_read;
-	struct USER_INFO_0 *user0;/* [unique,size_is(entries_read)] */
+	struct wkssvc_NetrWkstaUserInfo0 *user0;/* [unique,size_is(entries_read)] */
 };
 
-struct USER_INFO_1 {
+struct wkssvc_NetrWkstaUserInfo1 {
 	const char *user_name;/* [unique,charset(UTF16)] */
 	const char *logon_domain;/* [unique,charset(UTF16)] */
 	const char *other_domains;/* [unique,charset(UTF16)] */
 	const char *logon_server;/* [unique,charset(UTF16)] */
 };
 
-struct USER_INFO_1_CONTAINER {
+struct wkssvc_NetWkstaEnumUsersCtr1 {
 	uint32_t entries_read;
-	struct USER_INFO_1 *user1;/* [unique,size_is(entries_read)] */
+	struct wkssvc_NetrWkstaUserInfo1 *user1;/* [unique,size_is(entries_read)] */
 };
 
-union WKS_USER_ENUM_UNION {
-	struct USER_INFO_0_CONTAINER *user0;/* [unique,case(0)] */
-	struct USER_INFO_1_CONTAINER *user1;/* [unique,case] */
+union wkssvc_NetWkstaEnumUsersCtr {
+	struct wkssvc_NetWkstaEnumUsersCtr0 *user0;/* [unique,case(0)] */
+	struct wkssvc_NetWkstaEnumUsersCtr1 *user1;/* [unique,case] */
+}/* [switch_type(uint32)] */;
+
+struct wkssvc_NetWkstaEnumUsersInfo {
+	uint32_t level;
+	union wkssvc_NetWkstaEnumUsersCtr ctr;/* [switch_is(level)] */
+};
+
+struct wkssvc_NetrWkstaUserInfo1101 {
+	const char *other_domains;/* [unique,charset(UTF16)] */
+};
+
+union wkssvc_NetrWkstaUserInfo {
+	struct wkssvc_NetrWkstaUserInfo0 *info0;/* [unique,case(0)] */
+	struct wkssvc_NetrWkstaUserInfo1 *info1;/* [unique,case] */
+	struct wkssvc_NetrWkstaUserInfo1101 *info1101;/* [unique,case(1101)] */
 }/* [switch_type(uint32)] */;
 
 struct wkssvc_NetWkstaTransportInfo0 {
@@ -161,11 +297,167 @@ union wkssvc_NetWkstaTransportCtr {
 	struct wkssvc_NetWkstaTransportCtr0 *ctr0;/* [unique,case(0)] */
 };
 
-struct wkssvc_PasswordBuffer {
-	uint8_t data[524];
+struct wkssvc_NetWkstaTransportInfo {
+	uint32_t level;
+	union wkssvc_NetWkstaTransportCtr ctr;/* [switch_is(level)] */
 };
 
+struct wkssvc_NetrUseInfo3 {
+	const char *unknown1;/* [unique,charset(UTF16)] */
+	const char *unknown2;/* [unique,charset(UTF16)] */
+};
+
+struct wkssvc_NetrUseInfo2 {
+	const char *local;/* [unique,charset(UTF16)] */
+	const char *remote;/* [unique,charset(UTF16)] */
+	const char *password;/* [unique,charset(UTF16)] */
+	uint32_t status;
+	uint32_t asg_type;
+	uint32_t ref_count;
+	uint32_t use_count;
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *domain_name;/* [unique,charset(UTF16)] */
+};
+
+struct wkssvc_NetrUseInfo1 {
+	const char *local;/* [unique,charset(UTF16)] */
+	const char *remote;/* [unique,charset(UTF16)] */
+	const char *password;/* [unique,charset(UTF16)] */
+	uint32_t status;
+	uint32_t asg_type;
+	uint32_t ref_count;
+	uint32_t use_count;
+};
+
+struct wkssvc_NetrUseInfo0 {
+	const char *local;/* [unique,charset(UTF16)] */
+	const char *remote;/* [unique,charset(UTF16)] */
+};
+
+union wkssvc_NetrUseGetInfoCtr {
+	struct wkssvc_NetrUseInfo0 *info0;/* [unique,case(0)] */
+	struct wkssvc_NetrUseInfo1 *info1;/* [unique,case] */
+	struct wkssvc_NetrUseInfo2 *info2;/* [unique,case(2)] */
+	struct wkssvc_NetrUseInfo3 *info3;/* [unique,case(3)] */
+}/* [switch_type(uint32)] */;
+
+struct wkssvc_NetrUseEnumCtr2 {
+	uint32_t count;
+	struct wkssvc_NetrUseInfo2 *array;/* [unique,size_is(count)] */
+};
+
+struct wkssvc_NetrUseEnumCtr1 {
+	uint32_t count;
+	struct wkssvc_NetrUseInfo1 *array;/* [unique,size_is(count)] */
+};
+
+struct wkssvc_NetrUseEnumCtr0 {
+	uint32_t count;
+	struct wkssvc_NetrUseInfo0 *array;/* [unique,size_is(count)] */
+};
+
+union wkssvc_NetrUseEnumCtr {
+	struct wkssvc_NetrUseEnumCtr0 *ctr0;/* [unique,case(0)] */
+	struct wkssvc_NetrUseEnumCtr1 *ctr1;/* [unique,case] */
+	struct wkssvc_NetrUseEnumCtr2 *ctr2;/* [unique,case(2)] */
+}/* [switch_type(uint32)] */;
+
+struct wkssvc_NetrUseEnumInfo {
+	uint32_t level;
+	union wkssvc_NetrUseEnumCtr ctr;/* [switch_is(level)] */
+};
+
+struct wkssvc_NetrWorkstationStatistics {
+	uint64_t unknown1;
+	uint64_t unknown2;
+	uint64_t unknown3;
+	uint64_t unknown4;
+	uint64_t unknown5;
+	uint64_t unknown6;
+	uint64_t unknown7;
+	uint64_t unknown8;
+	uint64_t unknown9;
+	uint64_t unknown10;
+	uint64_t unknown11;
+	uint64_t unknown12;
+	uint64_t unknown13;
+	uint32_t unknown14;
+	uint32_t unknown15;
+	uint32_t unknown16;
+	uint32_t unknown17;
+	uint32_t unknown18;
+	uint32_t unknown19;
+	uint32_t unknown20;
+	uint32_t unknown21;
+	uint32_t unknown22;
+	uint32_t unknown23;
+	uint32_t unknown24;
+	uint32_t unknown25;
+	uint32_t unknown26;
+	uint32_t unknown27;
+	uint32_t unknown28;
+	uint32_t unknown29;
+	uint32_t unknown30;
+	uint32_t unknown31;
+	uint32_t unknown32;
+	uint32_t unknown33;
+	uint32_t unknown34;
+	uint32_t unknown35;
+	uint32_t unknown36;
+	uint32_t unknown37;
+	uint32_t unknown38;
+	uint32_t unknown39;
+	uint32_t unknown40;
+};
+
+/* bitmap wkssvc_renameflags */
+#define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
+
+;
+
+#ifndef USE_UINT_ENUMS
+enum wkssvc_NetValidateNameType {
+	NetSetupUnknown=0,
+	NetSetupMachine=1,
+	NetSetupWorkgroup=2,
+	NetSetupDomain=3,
+	NetSetupNonExistentDomain=4,
+	NetSetupDnsMachine=5
+}
+#else
+enum wkssvc_NetValidateNameType { __donnot_use_enum_wkssvc_NetValidateNameType=0x7FFFFFFF}
+#define NetSetupUnknown ( 0 )
+#define NetSetupMachine ( 1 )
+#define NetSetupWorkgroup ( 2 )
+#define NetSetupDomain ( 3 )
+#define NetSetupNonExistentDomain ( 4 )
+#define NetSetupDnsMachine ( 5 )
+#endif
+;
+
+#ifndef USE_UINT_ENUMS
+enum wkssvc_NetJoinStatus {
+	NetSetupUnknownStatus=0,
+	NetSetupUnjoined=1,
+	NetSetupWorkgroupName=2,
+	NetSetupDomainName=3
+}
+#else
+enum wkssvc_NetJoinStatus { __donnot_use_enum_wkssvc_NetJoinStatus=0x7FFFFFFF}
+#define NetSetupUnknownStatus ( 0 )
+#define NetSetupUnjoined ( 1 )
+#define NetSetupWorkgroupName ( 2 )
+#define NetSetupDomainName ( 3 )
+#endif
+;
+
+struct wkssvc_PasswordBuffer {
+	uint8_t data[524];
+}/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
 /* bitmap wkssvc_joinflags */
+#define WKSSVC_JOIN_FLAGS_JOIN_WITH_NEW_NAME ( 0x00000400 )
+#define WKSSVC_JOIN_FLAGS_JOIN_DC_ACCOUNT ( 0x00000200 )
 #define WKSSVC_JOIN_FLAGS_DEFER_SPN ( 0x00000100 )
 #define WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED ( 0x00000080 )
 #define WKSSVC_JOIN_FLAGS_JOIN_UNSECURE ( 0x00000040 )
@@ -177,10 +469,26 @@ struct wkssvc_PasswordBuffer {
 
 ;
 
-/* bitmap wkssvc_renameflags */
-#define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
-
+#ifndef USE_UINT_ENUMS
+enum wkssvc_ComputerNameType {
+	NetPrimaryComputerName=0,
+	NetAlternateComputerNames=1,
+	NetAllComputerNames=2,
+	NetComputerNameTypeMax=3
+}
+#else
+enum wkssvc_ComputerNameType { __donnot_use_enum_wkssvc_ComputerNameType=0x7FFFFFFF}
+#define NetPrimaryComputerName ( 0 )
+#define NetAlternateComputerNames ( 1 )
+#define NetAllComputerNames ( 2 )
+#define NetComputerNameTypeMax ( 3 )
+#endif
 ;
+
+struct wkssvc_ComputerNamesCtr {
+	uint32_t count;
+	struct lsa_String *computer_name;/* [unique,size_is(count)] */
+};
 
 
 struct wkssvc_NetWkstaGetInfo {
@@ -216,33 +524,45 @@ struct wkssvc_NetWkstaSetInfo {
 struct wkssvc_NetWkstaEnumUsers {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
-		uint32_t level;
 		uint32_t prefmaxlen;
-		union WKS_USER_ENUM_UNION *users;/* [ref] */
-		uint32_t *resumehandle;/* [ref] */
+		struct wkssvc_NetWkstaEnumUsersInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
-		uint32_t *entriesread;/* [unique] */
-		uint32_t *totalentries;/* [unique] */
-		union WKS_USER_ENUM_UNION *users;/* [ref] */
-		uint32_t *resumehandle;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		struct wkssvc_NetWkstaEnumUsersInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
 
 };
 
 
-struct WKSSVC_NETRWKSTAUSERGETINFO {
+struct wkssvc_NetrWkstaUserGetInfo {
 	struct {
+		const char *unknown;/* [unique,charset(UTF16)] */
+		uint32_t level;
+	} in;
+
+	struct {
+		union wkssvc_NetrWkstaUserInfo *info;/* [ref,switch_is(level)] */
 		WERROR result;
 	} out;
 
 };
 
 
-struct WKSSVC_NETRWKSTAUSERSETINFO {
+struct wkssvc_NetrWkstaUserSetInfo {
 	struct {
+		const char *unknown;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		union wkssvc_NetrWkstaUserInfo *info;/* [ref,switch_is(level)] */
+		uint32_t *parm_err;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -253,23 +573,43 @@ struct wkssvc_NetWkstaTransportEnum {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union wkssvc_NetWkstaTransportCtr *ctr;/* [ref,switch_is(*level)] */
-		uint32_t *resume_handle;/* [ref] */
+		struct wkssvc_NetWkstaTransportInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
-		uint32_t *totalentries;/* [unique] */
-		uint32_t *level;/* [ref] */
-		union wkssvc_NetWkstaTransportCtr *ctr;/* [ref,switch_is(*level)] */
-		uint32_t *resume_handle;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
+		struct wkssvc_NetWkstaTransportInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
 
 };
 
 
-struct WKSSVC_NETRWKSTATRANSPORTADD {
+struct wkssvc_NetrWkstaTransportAdd {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		struct wkssvc_NetWkstaTransportInfo0 *info0;/* [ref] */
+		uint32_t *parm_err;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [unique] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct wkssvc_NetrWkstaTransportDel {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *transport_name;/* [unique,charset(UTF16)] */
+		uint32_t unknown3;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -277,7 +617,44 @@ struct WKSSVC_NETRWKSTATRANSPORTADD {
 };
 
 
-struct WKSSVC_NETRWKSTATRANSPORTDEL {
+struct wkssvc_NetrUseAdd {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		union wkssvc_NetrUseGetInfoCtr *ctr;/* [ref,switch_is(level)] */
+		uint32_t *parm_err;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [unique] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct wkssvc_NetrUseGetInfo {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *use_name;/* [ref,charset(UTF16)] */
+		uint32_t level;
+	} in;
+
+	struct {
+		union wkssvc_NetrUseGetInfoCtr *ctr;/* [ref,switch_is(level)] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct wkssvc_NetrUseDel {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *use_name;/* [ref,charset(UTF16)] */
+		uint32_t force_cond;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -285,7 +662,33 @@ struct WKSSVC_NETRWKSTATRANSPORTDEL {
 };
 
 
-struct WKSSVC_NETRUSEADD {
+struct wkssvc_NetrUseEnum {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		uint32_t prefmaxlen;
+		struct wkssvc_NetrUseEnumInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *entries_read;/* [ref] */
+		struct wkssvc_NetrUseEnumInfo *info;/* [ref] */
+		uint32_t *resume_handle;/* [unique] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct wkssvc_NetrMessageBufferSend {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *message_name;/* [ref,charset(UTF16)] */
+		const char *message_sender_name;/* [unique,charset(UTF16)] */
+		uint8_t *message_buffer;/* [ref,size_is(message_size)] */
+		uint32_t message_size;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -293,7 +696,27 @@ struct WKSSVC_NETRUSEADD {
 };
 
 
-struct WKSSVC_NETRUSEGETINFO {
+struct wkssvc_NetrWorkstationStatisticsGet {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *unknown2;/* [unique,charset(UTF16)] */
+		uint32_t unknown3;
+		uint32_t unknown4;
+	} in;
+
+	struct {
+		struct wkssvc_NetrWorkstationStatistics **info;/* [ref] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct wkssvc_NetrLogonDomainNameAdd {
+	struct {
+		const char *domain_name;/* [ref,charset(UTF16)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -301,7 +724,11 @@ struct WKSSVC_NETRUSEGETINFO {
 };
 
 
-struct WKSSVC_NETRUSEDEL {
+struct wkssvc_NetrLogonDomainNameDel {
+	struct {
+		const char *domain_name;/* [ref,charset(UTF16)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -309,7 +736,16 @@ struct WKSSVC_NETRUSEDEL {
 };
 
 
-struct WKSSVC_NETRUSEENUM {
+struct wkssvc_NetrJoinDomain {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *domain_name;/* [ref,charset(UTF16)] */
+		const char *account_ou;/* [unique,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		const char *password;/* [unique,charset(UTF16)] */
+		uint32_t join_flags;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -317,7 +753,14 @@ struct WKSSVC_NETRUSEENUM {
 };
 
 
-struct WKSSVC_NETRMESSAGEBUFFERSEND {
+struct wkssvc_NetrUnjoinDomain {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		const char *password;/* [unique,charset(UTF16)] */
+		uint32_t unjoin_flags;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -325,7 +768,15 @@ struct WKSSVC_NETRMESSAGEBUFFERSEND {
 };
 
 
-struct WKSSVC_NETRWORKSTATIONSTATISTICSGET {
+struct wkssvc_NetrRenameMachineInDomain {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *NewMachineName;/* [unique,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		const char *password;/* [unique,charset(UTF16)] */
+		uint32_t RenameOptions;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -333,7 +784,15 @@ struct WKSSVC_NETRWORKSTATIONSTATISTICSGET {
 };
 
 
-struct WKSSVC_NETRLOGONDOMAINNAMEADD {
+struct wkssvc_NetrValidateName {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *name;/* [ref,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		const char *Password;/* [unique,charset(UTF16)] */
+		enum wkssvc_NetValidateNameType name_type;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -341,56 +800,33 @@ struct WKSSVC_NETRLOGONDOMAINNAMEADD {
 };
 
 
-struct WKSSVC_NETRLOGONDOMAINNAMEDEL {
+struct wkssvc_NetrGetJoinInformation {
 	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char **name_buffer;/* [ref,charset(UTF16)] */
+	} in;
+
+	struct {
+		enum wkssvc_NetJoinStatus *name_type;/* [ref] */
+		const char **name_buffer;/* [ref,charset(UTF16)] */
 		WERROR result;
 	} out;
 
 };
 
 
-struct WKSSVC_NETRJOINDOMAIN {
+struct wkssvc_NetrGetJoinableOus {
 	struct {
-		WERROR result;
-	} out;
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *domain_name;/* [ref,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		const char *unknown;/* [unique,charset(UTF16)] */
+		uint32_t *num_ous;/* [ref] */
+	} in;
 
-};
-
-
-struct WKSSVC_NETRUNJOINDOMAIN {
 	struct {
-		WERROR result;
-	} out;
-
-};
-
-
-struct WKSSVC_NETRRENAMEMACHINEINDOMAIN {
-	struct {
-		WERROR result;
-	} out;
-
-};
-
-
-struct WKSSVC_NETRVALIDATENAME {
-	struct {
-		WERROR result;
-	} out;
-
-};
-
-
-struct WKSSVC_NETRGETJOININFORMATION {
-	struct {
-		WERROR result;
-	} out;
-
-};
-
-
-struct WKSSVC_NETRGETJOINABLEOUS {
-	struct {
+		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -401,7 +837,7 @@ struct wkssvc_NetrJoinDomain2 {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *domain_name;/* [ref,charset(UTF16)] */
-		const char *account_name;/* [unique,charset(UTF16)] */
+		const char *account_ou;/* [unique,charset(UTF16)] */
 		const char *admin_account;/* [unique,charset(UTF16)] */
 		struct wkssvc_PasswordBuffer *encrypted_password;/* [unique] */
 		uint32_t join_flags;
@@ -445,7 +881,15 @@ struct wkssvc_NetrRenameMachineInDomain2 {
 };
 
 
-struct WKSSVC_NETRVALIDATENAME2 {
+struct wkssvc_NetrValidateName2 {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *name;/* [ref,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		struct wkssvc_PasswordBuffer *EncryptedPassword;/* [unique] */
+		enum wkssvc_NetValidateNameType name_type;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -453,8 +897,18 @@ struct WKSSVC_NETRVALIDATENAME2 {
 };
 
 
-struct WKSSVC_NETRGETJOINABLEOUS2 {
+struct wkssvc_NetrGetJoinableOus2 {
 	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *domain_name;/* [ref,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		struct wkssvc_PasswordBuffer *EncryptedPassword;/* [unique] */
+		uint32_t *num_ous;/* [ref] */
+	} in;
+
+	struct {
+		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -493,7 +947,15 @@ struct wkssvc_NetrRemoveAlternateComputerName {
 };
 
 
-struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME {
+struct wkssvc_NetrSetPrimaryComputername {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *primary_name;/* [unique,charset(UTF16)] */
+		const char *Account;/* [unique,charset(UTF16)] */
+		struct wkssvc_PasswordBuffer *EncryptedPassword;/* [unique] */
+		uint32_t Reserved;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -501,8 +963,15 @@ struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME {
 };
 
 
-struct WKSSVC_NETRENUMERATECOMPUTERNAMES {
+struct wkssvc_NetrEnumerateComputerNames {
 	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		enum wkssvc_ComputerNameType name_type;
+		uint32_t Reserved;
+	} in;
+
+	struct {
+		struct wkssvc_ComputerNamesCtr **ctr;/* [ref] */
 		WERROR result;
 	} out;
 
