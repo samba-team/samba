@@ -151,11 +151,11 @@ smbc_urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 	size_t newlen = 1;
 	char *p, *dest;
 
-	*pp_dest = NULL;
 	if (old_length == 0) {
 		return 0;
 	}
 
+	*pp_dest = NULL;
 	for (i = 0; i < old_length; ) {
 		unsigned char character = src[i++];
 
@@ -572,7 +572,7 @@ smbc_remove_unused_server(SMBCCTX * context,
 		if (file->srv == srv) {
 			/* Still used */
 			DEBUG(3, ("smbc_remove_usused_server: "
-                                  "%p still used by %p.\n", 
+                                  "%p still used by %p.\n",
 				  srv, file));
 			return 1;
 		}
@@ -588,24 +588,23 @@ smbc_remove_unused_server(SMBCCTX * context,
 	(context->callbacks.remove_cached_srv_fn)(context, srv);
 
         SAFE_FREE(srv);
-	
 	return 0;
 }
 
 static SMBCSRV *
 find_server(SMBCCTX *context,
-            const char *server,
-            const char *share,
-            fstring workgroup,
-            fstring username,
-            fstring password)
+		const char *server,
+		const char *share,
+		char *workgroup,
+		char *username,
+		char *password)
 {
         SMBCSRV *srv;
         int auth_called = 0;
 
  check_server_cache:
 
-	srv = (context->callbacks.get_cached_srv_fn)(context, server, share, 
+	srv = (context->callbacks.get_cached_srv_fn)(context, server, share,
                                                      workgroup, username);
 
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
@@ -613,16 +612,16 @@ find_server(SMBCCTX *context,
                         (context->internal->_auth_fn_with_context)(
                                 context,
                                 server, share,
-                                workgroup, sizeof(fstring),
-                                username, sizeof(fstring),
-                                password, sizeof(fstring));
+                                workgroup, strlen(workgroup)+1,
+                                username, strlen(username)+1,
+                                password, strlen(password)+1);
                 } else {
                         (context->callbacks.auth_fn)(
                                 server, share,
-                                workgroup, sizeof(fstring),
-                                username, sizeof(fstring),
-                                password, sizeof(fstring));
-                }
+                                workgroup, strlen(workgroup)+1,
+                                username, strlen(username)+1,
+                                password, strlen(password)+1);
+		}
 
 		/*
                  * However, smbc_auth_fn may have picked up info relating to
@@ -631,13 +630,13 @@ find_server(SMBCCTX *context,
                  */
 		auth_called = 1;
 		goto check_server_cache;
-		
+
 	}
-	
+
 	if (srv) {
 		if ((context->callbacks.check_server_fn)(context, srv)) {
 			/*
-                         * This server is no good anymore 
+                         * This server is no good anymore
                          * Try to remove it and check for more possible
                          * servers in the cache
                          */
@@ -679,12 +678,12 @@ find_server(SMBCCTX *context,
 
 static SMBCSRV *
 smbc_server(SMBCCTX *context,
-            bool connect_if_not_found,
-            const char *server,
-            const char *share,
-            fstring workgroup,
-            fstring username,
-            fstring password)
+		bool connect_if_not_found,
+		const char *server,
+		const char *share,
+		char *workgroup,
+		char *username,
+		char *password)
 {
 	SMBCSRV *srv=NULL;
 	struct cli_state *c;
@@ -729,15 +728,15 @@ smbc_server(SMBCCTX *context,
                                 (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
-                                        workgroup, sizeof(fstring),
-                                        username, sizeof(fstring),
-                                        password, sizeof(fstring));
+                                        workgroup, strlen(workgroup)+1,
+                                        username, strlen(username)+1,
+                                        password, strlen(password)+1);
                         } else {
                                 (context->callbacks.auth_fn)(
                                         server, share,
-                                        workgroup, sizeof(fstring),
-                                        username, sizeof(fstring),
-                                        password, sizeof(fstring));
+                                        workgroup, strlen(workgroup)+1,
+                                        username, strlen(username)+1,
+                                        password, strlen(password)+1);
                         }
 
                         if (! cli_send_tconX(srv->cli, share, "?????",
@@ -961,9 +960,9 @@ static SMBCSRV *
 smbc_attr_server(SMBCCTX *context,
                  const char *server,
                  const char *share,
-                 fstring workgroup,
-                 fstring username,
-                 fstring password,
+                 char *workgroup,
+                 char *username,
+                 char *password,
                  POLICY_HND *pol)
 {
         int flags;
@@ -989,15 +988,15 @@ smbc_attr_server(SMBCCTX *context,
                                 (context->internal->_auth_fn_with_context)(
                                         context,
                                         server, share,
-                                        workgroup, sizeof(fstring),
-                                        username, sizeof(fstring),
-                                        password, sizeof(fstring));
+                                        workgroup, strlen(workgroup)+1,
+                                        username, strlen(username)+1,
+                                        password, strlen(password)+1);
                         } else {
                                 (context->callbacks.auth_fn)(
                                         server, share,
-                                        workgroup, sizeof(fstring),
-                                        username, sizeof(fstring),
-                                        password, sizeof(fstring));
+                                        workgroup, strlen(workgroup)+1,
+                                        username, strlen(username)+1,
+                                        password, strlen(password)+1);
                         }
                 }
 
@@ -2744,7 +2743,14 @@ smbc_opendir_ctx(SMBCCTX *context,
                 return NULL;
         }
 
-	if (user[0] == (char)0) fstrcpy(user, context->user);
+	if (!user || user[0] == (char)0) {
+		user = talloc_strdup(frame, context->user);
+		if (!user) {
+			errno = ENOMEM;
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+	}
 
 	dir = SMB_MALLOC_P(SMBCFILE);
 
@@ -2847,8 +2853,13 @@ smbc_opendir_ctx(SMBCCTX *context,
 			if ( !cli )
 				continue;
 
-			pstrcpy(workgroup, wg_ptr);
-                        fstrcpy(server, cli->desthost);
+			workgroup = talloc_strdup(frame, wg_ptr);
+			server = talloc_strdup(frame, cli->desthost);
+			if (!workgroup || !server) {
+				errno = ENOMEM;
+				TALLOC_FREE(frame);
+				return NULL;
+			}
                         cli_shutdown(cli);
 
                         DEBUG(4, ("using workgroup %s %s\n",
@@ -3053,14 +3064,12 @@ smbc_opendir_ctx(SMBCCTX *context,
                                           workgroup, user, password);
 
 			if (!srv) {
-
 				if (dir) {
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
 				TALLOC_FREE(frame);
 				return NULL;
-
 			}
 
 			dir->srv = srv;
@@ -3068,7 +3077,15 @@ smbc_opendir_ctx(SMBCCTX *context,
 			/* Now, list the files ... */
 
                         p = path + strlen(path);
-			pstrcat(path, "\\*");
+			path = talloc_asprintf_append(path, "\\*");
+			if (!path) {
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
+				TALLOC_FREE(frame);
+				return NULL;
+			}
 
 			if (!cli_resolve_path(frame, "", srv->cli, path,
                                               &targetcli, &targetpath)) {
@@ -6825,6 +6842,7 @@ smbc_init_context(SMBCCTX *context)
                  * called
                  */
 		bool conf_loaded = False;
+		TALLOC_CTX *frame = talloc_stackframe();
 
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->debug;
@@ -6900,6 +6918,7 @@ smbc_init_context(SMBCCTX *context)
                 /* Done with one-time initialisation */
                 smbc_initialized = 1;
 
+		TALLOC_FREE(frame);
         }
 
         if (!context->user) {
