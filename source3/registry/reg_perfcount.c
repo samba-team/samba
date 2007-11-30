@@ -714,7 +714,7 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 		memcpy(buf, data.dptr, MIN(PERFCOUNT_MAX_LEN-1,data.dsize));
 		buf[PERFCOUNT_MAX_LEN-1] = '\0';
 		inst->NameLength = rpcstr_push_talloc(ps->mem_ctx, &name, buf);
-		if (inst->NameLength == (size_t)-1 || !name) {
+		if (inst->NameLength == (uint32_t)-1 || !name) {
 			SAFE_FREE(data.dptr);
 			return False;
 		}
