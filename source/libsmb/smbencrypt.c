@@ -694,3 +694,39 @@ char *decrypt_trustdom_secret(const char *pass, DATA_BLOB *data_in)
 
 }
 
+/* encode a wkssvc_PasswordBuffer:
+ *
+ * similar to samr_CryptPasswordEx. Different: 8byte confounder (instead of
+ * 16byte), confounder in front of the 516 byte buffer (instead of after that
+ * buffer), calling MD5Update() first with session_key and then with confounder
+ * (vice versa in samr) - Guenther */
+
+static void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					       const char *pwd,
+					       DATA_BLOB *session_key,
+					       struct wkssvc_PasswordBuffer *pwd_buf)
+{
+	uint8_t buffer[516];
+	struct MD5Context ctx;
+
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+	int confounder_len = 8;
+	uint8_t confounder[8];
+
+	encode_pw_buffer(buffer, pwd, STR_UNICODE);
+
+	generate_random_buffer((uint8_t *)confounder, confounder_len);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, session_key->data, session_key->length);
+	MD5Update(&ctx, confounder, confounder_len);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	SamOEMhashBlob(buffer, 516, &confounded_session_key);
+
+	memcpy(&pwd_buf->data[0], confounder, confounder_len);
+	memcpy(&pwd_buf->data[8], buffer, 516);
+
+	data_blob_free(&confounded_session_key);
+}
