@@ -85,6 +85,73 @@ static bool next_token_internal(const char **ptr,
 	return(true);
 }
 
+static bool next_token_internal_talloc(TALLOC_CTX *ctx,
+				const char **ptr,
+                                char **pp_buff,
+                                const char *sep,
+                                bool ltrim)
+{
+	char *s;
+	char *pbuf;
+	bool quoted;
+	size_t len=1;
+
+	*pp_buff = NULL;
+	if (!ptr) {
+		return(false);
+	}
+
+	s = (char *)*ptr;
+
+	/* default to simple separators */
+	if (!sep) {
+		sep = " \t\n\r";
+	}
+
+	/* find the first non sep char, if left-trimming is requested */
+	if (ltrim) {
+		while (*s && strchr_m(sep,*s))
+			s++;
+	}
+
+	/* nothing left? */
+	if (!*s) {
+		return(false);
+	}
+
+	/* Work out the length needed. */
+	for (quoted = false; *s &&
+			(quoted || !strchr_m(sep,*s)); s++) {
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+		}
+	}
+
+	/* We started with len = 1 so we have space for the nul. */
+	*pp_buff = TALLOC_ARRAY(ctx, char, len);
+	if (!*pp_buff) {
+		return false;
+	}
+
+	/* copy over the token */
+	pbuf = *pp_buff;
+	for (quoted = false; *s &&
+			(quoted || !strchr_m(sep,*s)); s++) {
+		if ( *s == '\"' ) {
+			quoted = !quoted;
+		} else {
+			*pbuf++ = *s;
+		}
+	}
+
+	*ptr = (*s) ? s+1 : s;
+	*pbuf = 0;
+
+	return true;
+}
+
 /*
  * Get the next token from a string, return false if none found.  Handles
  * double-quotes.  This version trims leading separator characters before
@@ -92,7 +159,15 @@ static bool next_token_internal(const char **ptr,
  */
 bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize)
 {
-    return next_token_internal(ptr, buff, sep, bufsize, true);
+	return next_token_internal(ptr, buff, sep, bufsize, true);
+}
+
+bool next_token_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep)
+{
+	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, true);
 }
 
 /*
@@ -105,7 +180,15 @@ bool next_token_no_ltrim(const char **ptr,
                          const char *sep,
                          size_t bufsize)
 {
-    return next_token_internal(ptr, buff, sep, bufsize, false);
+	return next_token_internal(ptr, buff, sep, bufsize, false);
+}
+
+bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep)
+{
+	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, false);
 }
 
 /**
@@ -119,10 +202,26 @@ static const char *last_ptr=NULL;
 bool next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	bool ret;
-	if (!ptr)
+	if (!ptr) {
 		ptr = &last_ptr;
+	}
 
 	ret = next_token(ptr, buff, sep, bufsize);
+	last_ptr = *ptr;
+	return ret;
+}
+
+bool next_token_nr_talloc(TALLOC_CTX *ctx,
+				const char **ptr,
+				char **pp_buff,
+				const char *sep)
+{
+	bool ret;
+	if (!ptr) {
+		ptr = &last_ptr;
+	}
+
+	ret = next_token_talloc(ctx, ptr, pp_buff, sep);
 	last_ptr = *ptr;
 	return ret;
 }
