@@ -92,6 +92,7 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
                                 bool ltrim)
 {
 	char *s;
+	char *saved_s;
 	char *pbuf;
 	bool quoted;
 	size_t len=1;
@@ -116,8 +117,11 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 
 	/* nothing left? */
 	if (!*s) {
-		return(false);
+		return false;
 	}
+
+	/* When restarting we need to go from here. */
+	saved_s = s;
 
 	/* Work out the length needed. */
 	for (quoted = false; *s &&
@@ -137,6 +141,7 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 
 	/* copy over the token */
 	pbuf = *pp_buff;
+	s = saved_s;
 	for (quoted = false; *s &&
 			(quoted || !strchr_m(sep,*s)); s++) {
 		if ( *s == '\"' ) {
