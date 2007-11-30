@@ -45,6 +45,11 @@ WERROR NetJoinDomain(const char *server_name,
 		goto done;
 	}
 
+	if (!domain_name) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
 	status = net_make_ipc_connection_ex(domain_name,
 					    server_name,
 					    NULL, 0, &cli);
