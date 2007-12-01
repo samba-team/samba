@@ -1535,7 +1535,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)) {
-		if ((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY) ||
+		if (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
+				&& !lp_delete_readonly(SNUM(conn))) ||
 				!can_delete_file_in_directory(conn, fname)) {
 			TALLOC_FREE(case_state);
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
