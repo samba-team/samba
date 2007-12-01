@@ -2265,9 +2265,7 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 		return WERR_NOMEM;
 	}
 	strupper_m(printername);
-	printername = talloc_asprintf_append(mem_ctx,
-					"%s",
-					argv[1]);
+	printername = talloc_asprintf_append(printername, "%s",	argv[1]);
 	if (!printername) {
 		return WERR_NOMEM;
 	}
@@ -2340,9 +2338,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 		return WERR_NOMEM;
 	}
 	strupper_m(printername);
-	printername = talloc_asprintf_append(mem_ctx,
-					"%s",
-					argv[1]);
+	printername = talloc_asprintf_append(printername, "%s", argv[1]);
 	if (!printername) {
 		return WERR_NOMEM;
 	}
@@ -2417,9 +2413,7 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 		return WERR_NOMEM;
 	}
 	strupper_m(printername);
-	printername = talloc_asprintf_append(mem_ctx,
-					"%s",
-					argv[1]);
+	printername = talloc_asprintf_append(printername, "%s",	argv[1]);
 	if (!printername) {
 		return WERR_NOMEM;
 	}
