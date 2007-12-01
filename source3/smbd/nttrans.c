@@ -682,23 +682,29 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname);
+		if (is_ntfs_stream_name(fname)) {
+			enum FAKE_FILE_TYPE fake_file_type;
+
+			fake_file_type = is_fake_file(fname);
+
 			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
 				/*
-				 * Here we go! support for changing the disk quotas --metze
+				 * Here we go! support for changing the disk
+				 * quotas --metze
 				 *
-				 * We need to fake up to open this MAGIC QUOTA file 
-				 * and return a valid FID.
+				 * We need to fake up to open this MAGIC QUOTA
+				 * file and return a valid FID.
 				 *
-				 * w2k close this file directly after openening
-				 * xp also tries a QUERY_FILE_INFO on the file and then close it
+				 * w2k close this file directly after
+				 * openening xp also tries a QUERY_FILE_INFO
+				 * on the file and then close it
 				 */
-				reply_ntcreate_and_X_quota(conn, req,
-							  fake_file_type, fname);
-			} else {
-				reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				reply_ntcreate_and_X_quota(
+					conn, req, fake_file_type, fname);
+				END_PROFILE(SMBntcreateX);
+				return;
 			}
+			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
@@ -1474,7 +1480,27 @@ static void call_nt_transact_create(connection_struct *conn,
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( is_ntfs_stream_name(fname)) {
+		if (is_ntfs_stream_name(fname)) {
+			enum FAKE_FILE_TYPE fake_file_type;
+
+			fake_file_type = is_fake_file(fname);
+
+			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
+				/*
+				 * Here we go! support for changing the disk
+				 * quotas --metze
+				 *
+				 * We need to fake up to open this MAGIC QUOTA
+				 * file and return a valid FID.
+				 *
+				 * w2k close this file directly after
+				 * openening xp also tries a QUERY_FILE_INFO
+				 * on the file and then close it
+				 */
+				reply_ntcreate_and_X_quota(
+					conn, req, fake_file_type, fname);
+				return;
+			}
 			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			return;
 		}
