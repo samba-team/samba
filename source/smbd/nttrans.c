@@ -710,10 +710,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			? BATCH_OPLOCK : 0;
 	}
 
-	/*
-	 * Now contruct the smb_open_mode value from the filename,
-	 * desired access and the share access.
-	 */
 	status = resolve_dfspath(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
@@ -918,8 +914,10 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+		if (allocation_size
+		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
 				close_file(fsp,ERROR_CLOSE);
 				/* Can't set allocation size on a directory. */
@@ -1387,7 +1385,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	 * Get the file name.
 	 */
 
-	if(root_dir_fid != 0) {
+	if (root_dir_fid != 0) {
 		/*
 		 * This filename is relative to a directory fid.
 		 */
@@ -1407,8 +1405,8 @@ static void call_nt_transact_create(connection_struct *conn,
 			 */
 
 			if( is_ntfs_stream_name(fname)) {
-				reply_nterror(req,
-					      NT_STATUS_OBJECT_PATH_NOT_FOUND);
+				reply_nterror(
+					req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 				return;
 			}
 
@@ -1443,7 +1441,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			 */
 
 			parent_fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-			if (!fname) {
+			if (!parent_fname) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
@@ -1488,16 +1486,11 @@ static void call_nt_transact_create(connection_struct *conn,
 			? BATCH_OPLOCK : 0;
 	}
 
-	/*
-	 * Ordinary file or directory.
-	 */
-
 	status = resolve_dfspath(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(case_state);
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
@@ -1709,8 +1702,10 @@ static void call_nt_transact_create(connection_struct *conn,
 
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size && (allocation_size > file_len)) {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+		if (allocation_size
+		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
 				close_file(fsp,ERROR_CLOSE);
 				/* Can't set allocation size on a directory. */
