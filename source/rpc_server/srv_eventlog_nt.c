@@ -355,18 +355,16 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	   into it's 2nd argment for 'B' */
 
 	if (wpcomputer) {
-		ee->data_record.computer_name = TALLOC_MEMDUP(ee,
-							wpcomputer,
-							ee->data_record.computer_name_len);
+		ee->data_record.computer_name = (smb_ucs2_t *)TALLOC_MEMDUP(
+			ee, wpcomputer, ee->data_record.computer_name_len);
 		if (!ee->data_record.computer_name) {
 			TALLOC_FREE(ee);
 			goto out;
 		}
 	}
 	if (wpsource) {
-		ee->data_record.source_name = TALLOC_MEMDUP(ee,
-							wpsource,
-							ee->data_record.source_name_len);
+		ee->data_record.source_name = (smb_ucs2_t *)TALLOC_MEMDUP(
+			ee, wpsource, ee->data_record.source_name_len);
 		if (!ee->data_record.source_name) {
 			TALLOC_FREE(ee);
 			goto out;
@@ -374,18 +372,16 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	}
 
 	if (wpsid) {
-		ee->data_record.sid = TALLOC_MEMDUP(ee,
-						wpsid,
-						ee->record.user_sid_length);
+		ee->data_record.sid = (smb_ucs2_t *)TALLOC_MEMDUP(
+			ee, wpsid, ee->record.user_sid_length);
 		if (!ee->data_record.sid) {
 			TALLOC_FREE(ee);
 			goto out;
 		}
 	}
 	if (wpstrs) {
-		ee->data_record.strings = TALLOC_MEMDUP(ee,
-							wpstrs,
-							ee->data_record.strings_len);
+		ee->data_record.strings = (smb_ucs2_t *)TALLOC_MEMDUP(
+			ee, wpstrs, ee->data_record.strings_len);
 		if (!ee->data_record.strings) {
 			TALLOC_FREE(ee);
 			goto out;
@@ -393,9 +389,8 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	}
 
 	if (puserdata) {
-		ee->data_record.user_data = TALLOC_MEMDUP(ee,
-							puserdata,
-							ee->data_record.user_data_len);
+		ee->data_record.user_data = (char *)TALLOC_MEMDUP(
+			ee, puserdata, ee->data_record.user_data_len);
 		if (!ee->data_record.user_data) {
 			TALLOC_FREE(ee);
 			goto out;
