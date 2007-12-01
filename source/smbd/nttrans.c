@@ -872,8 +872,9 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				TALLOC_FREE(case_state);
-				reply_force_nterror(req,
-						NT_STATUS_FILE_IS_A_DIRECTORY);
+				reply_force_nterror(
+					req,
+					NT_STATUS_FILE_IS_A_DIRECTORY);
 				END_PROFILE(SMBntcreateX);
 				return;
 			}
@@ -1591,7 +1592,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 			/*
-			 * Fail the open if it was explicitly a non-directory file.
+			 * Fail the open if it was explicitly a non-directory
+			 * file.
 			 */
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
@@ -1662,8 +1664,6 @@ static void call_nt_transact_create(connection_struct *conn,
 			return;
 		}
 	}
-
-	TALLOC_FREE(case_state);
 
 	file_len = sbuf.st_size;
 	fattr = dos_mode(conn,fname,&sbuf);
