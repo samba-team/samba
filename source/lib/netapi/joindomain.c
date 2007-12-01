@@ -36,7 +36,7 @@ WERROR NetJoinDomain(const char *server_name,
 	struct wkssvc_PasswordBuffer encrypted_password;
 	NTSTATUS status;
 	WERROR werr;
-	unsigned int old_timeout;
+	unsigned int old_timeout = 0;
 
 	ZERO_STRUCT(encrypted_password);
 
@@ -118,7 +118,7 @@ WERROR NetUnjoinDomain(const char *server_name,
 	struct wkssvc_PasswordBuffer encrypted_password;
 	NTSTATUS status;
 	WERROR werr;
-	unsigned int old_timeout;
+	unsigned int old_timeout = 0;
 
 	ZERO_STRUCT(encrypted_password);
 
