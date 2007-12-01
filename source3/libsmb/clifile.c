@@ -1478,7 +1478,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 	if (len <= 0 || len > PATH_MAX) return -1;
 
 	if (tmp_path) {
-		char *path2 = SMB_MALLOC(len+1);
+		char *path2 = SMB_MALLOC_ARRAY(char, len+1);
 		if (!path2) {
 			return -1;
 		}
