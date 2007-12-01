@@ -1,20 +1,19 @@
-/* 
-   Samba Unix/Linux SMB client library 
+/*
+   Samba Unix/Linux SMB client library
    More client RAP (SMB Remote Procedure Calls) functions
    Copyright (C) 2001 Steve French (sfrench@us.ibm.com)
    Copyright (C) 2001 Jim McDonough (jmcd@us.ibm.com)
-                    
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,8 +29,8 @@
 /*   supports all RAP command codes since some       */
 /*   are quite obsolete and a few are specific       */
 /*   to a particular network operating system        */
-/*                                                   */ 
-/*   Although it has largely been replaced           */ 
+/*                                                   */
+/*   Although it has largely been replaced           */
 /*   for complex remote admistration and management  */
 /*   (of servers) by the relatively newer            */
 /*   DCE/RPC based remote API (which better handles  */
@@ -73,9 +72,9 @@
 /* WPrintJobEnum (API num 76, level 2)               */
 /* WPrintJobDel  (API num 81)                        */
 /*                                                   */
-/*****************************************************/ 
+/*****************************************************/
 
-#include "includes.h" 
+#include "includes.h"
 
 #define WORDSIZE 2
 #define DWORDSIZE 4
@@ -128,9 +127,9 @@
 static char *make_header(char *param, uint16 apinum, const char *reqfmt, const char *datafmt)
 {
   PUTWORD(param,apinum);
-  if (reqfmt) 
+  if (reqfmt)
     PUTSTRING(param,reqfmt,0);
-  else 
+  else
     *param++ = (char) 0;
 
   if (datafmt)
@@ -140,7 +139,6 @@ static char *make_header(char *param, uint16 apinum, const char *reqfmt, const c
 
   return param;
 }
-    
 
 /****************************************************************************
  call a NetGroupDelete - delete user group from remote server
@@ -159,20 +157,20 @@ int cli_NetGroupDelete(struct cli_state *cli, const char *group_name )
 	    +WORDSIZE];                  /* reserved word */
 
   /* now send a SMBtrans command with api GroupDel */
-  p = make_header(param, RAP_WGroupDel, RAP_NetGroupDel_REQ, NULL);  
+  p = make_header(param, RAP_WGroupDel, RAP_NetGroupDel_REQ, NULL);
   PUTSTRING(p, group_name, RAP_GROUPNAME_LEN);
   PUTWORD(p,0);  /* reserved word MBZ on input */
-        	 
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-			
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       }
       else if ((res == 5) || (res == 65)) {
           DEBUG(1, ("Access Denied\n"));
@@ -182,15 +180,15 @@ int cli_NetGroupDelete(struct cli_state *cli, const char *group_name )
       }
       else {
 	DEBUG(4,("NetGroupDelete res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetGroupDelete failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return res;
 }
 
@@ -212,7 +210,7 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
 
   /* offset into data of free format strings.  Will be updated */
   /* by PUTSTRINGP macro and end up with total data length.    */
-  int soffset = RAP_GROUPNAME_LEN + 1 + DWORDSIZE; 
+  int soffset = RAP_GROUPNAME_LEN + 1 + DWORDSIZE;
   char *data;
   size_t data_size;
 
@@ -226,27 +224,27 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
   }
 
   /* now send a SMBtrans command with api WGroupAdd */
-  
+
   p = make_header(param, RAP_WGroupAdd,
-		  RAP_NetGroupAdd_REQ, RAP_GROUP_INFO_L1); 
+		  RAP_NetGroupAdd_REQ, RAP_GROUP_INFO_L1);
   PUTWORD(p, 1); /* info level */
   PUTWORD(p, 0); /* reserved word 0 */
-  
+
   p = data;
   PUTSTRINGF(p, grinfo->group_name, RAP_GROUPNAME_LEN);
   PUTBYTE(p, 0); /* pad byte 0 */
   PUTSTRINGP(p, grinfo->comment, data, soffset);
-  
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, sizeof(param), 1024, /* Param, length, maxlen */
 	      data, soffset, sizeof(data), /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       } else if ((res == 5) || (res == 65)) {
         DEBUG(1, ("Access Denied\n"));
       }
@@ -260,7 +258,7 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
       res = -1;
       DEBUG(4,("NetGroupAdd failed\n"));
     }
-  
+
   SAFE_FREE(data);
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
@@ -280,11 +278,11 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
 	    +WORDSIZE];                   /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
-  
+
+
   memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WGroupEnum,
 		  RAP_NetGroupEnum_REQ, RAP_GROUP_INFO_L1);
@@ -298,7 +296,7 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
 	      &rdata, &rdrcnt)) {
     res = GETRES(rparam);
     cli->rap_error = res;
-    if(cli->rap_error == 234) 
+    if(cli->rap_error == 234)
         DEBUG(1,("Not all group names were returned (such as those longer than 21 characters)\n"));
     else if (cli->rap_error != 0) {
       DEBUG(1,("NetGroupEnum gave error %d\n", cli->rap_error));
@@ -322,14 +320,14 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
 	    GETSTRINGP(p, comment, rdata, converter);
 
 	    fn(groupname, comment, cli);
-      }	
+      }
     } else {
       DEBUG(4,("NetGroupEnum res=%d\n", res));
     }
   } else {
     DEBUG(4,("NetGroupEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -347,11 +345,11 @@ int cli_RNetGroupEnum0(struct cli_state *cli,
 	    +WORDSIZE];                   /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
-  
+
+
   memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WGroupEnum,
 		  RAP_NetGroupEnum_REQ, RAP_GROUP_INFO_L0);
@@ -367,7 +365,7 @@ int cli_RNetGroupEnum0(struct cli_state *cli,
 	      &rdata, &rdrcnt)) {
     res = GETRES(rparam);
     cli->rap_error = res;
-    if(cli->rap_error == 234) 
+    if(cli->rap_error == 234)
         DEBUG(1,("Not all group names were returned (such as those longer than 21 characters)\n"));
     else if (cli->rap_error != 0) {
       DEBUG(1,("NetGroupEnum gave error %d\n", cli->rap_error));
@@ -385,14 +383,14 @@ int cli_RNetGroupEnum0(struct cli_state *cli,
 	    char groupname[RAP_GROUPNAME_LEN];
 	    GETSTRINGF(p, groupname, RAP_GROUPNAME_LEN);
 	    fn(groupname, cli);
-      }	
+      }
     } else {
       DEBUG(4,("NetGroupEnum res=%d\n", res));
     }
   } else {
     DEBUG(4,("NetGroupEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -417,14 +415,14 @@ int cli_NetGroupDelUser(struct cli_state * cli, const char *group_name, const ch
   PUTSTRING(p,group_name,RAP_GROUPNAME_LEN);
   PUTSTRING(p,user_name,RAP_USERNAME_LEN);
 
-  if (cli_api(cli, 
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       switch(res) {
         case 0:
 	  break;
@@ -451,11 +449,11 @@ int cli_NetGroupDelUser(struct cli_state * cli, const char *group_name, const ch
       res = -1;
       DEBUG(4,("NetGroupDelUser failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-	
-  return res; 
+
+  return res;
 }
 
 int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const char *user_name)
@@ -476,14 +474,14 @@ int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const ch
   PUTSTRING(p,group_name,RAP_GROUPNAME_LEN);
   PUTSTRING(p,user_name,RAP_USERNAME_LEN);
 
-  if (cli_api(cli, 
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       switch(res) {
         case 0:
 	  break;
@@ -507,10 +505,10 @@ int cli_NetGroupAddUser(struct cli_state * cli, const char *group_name, const ch
       res = -1;
       DEBUG(4,("NetGroupAddUser failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-	
+
   return res;
 }
 
@@ -641,20 +639,20 @@ int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
 	    +WORDSIZE];                  /* reserved word */
 
   /* now send a SMBtrans command with api UserDel */
-  p = make_header(param, RAP_WUserDel, RAP_NetGroupDel_REQ, NULL);  
+  p = make_header(param, RAP_WUserDel, RAP_NetGroupDel_REQ, NULL);
   PUTSTRING(p, user_name, RAP_USERNAME_LEN);
   PUTWORD(p,0);  /* reserved word MBZ on input */
-        	 
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       }
       else if ((res == 5) || (res == 65)) {
          DEBUG(1, ("Access Denied\n"));
@@ -664,15 +662,15 @@ int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
       }
       else {
           DEBUG(4,("NetUserDelete res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetUserDelete failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-	
+
   return res;
 }
 
@@ -681,12 +679,9 @@ int cli_NetUserDelete(struct cli_state *cli, const char * user_name )
 ****************************************************************************/
 int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
 {
-   
-
-
   char *rparam = NULL;
   char *rdata = NULL;
-  char *p;                                          
+  char *p;
   unsigned int rdrcnt,rprcnt;
   int res;
   char param[WORDSIZE                    /* api number    */
@@ -695,7 +690,7 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
 	    +WORDSIZE                    /* info level    */
 	    +WORDSIZE                    /* buffer length */
 	    +WORDSIZE];                  /* reserved      */
- 
+
   char data[1024];
   /* offset into data of free format strings.  Will be updated */
   /* by PUTSTRINGP macro and end up with total data length.    */
@@ -732,17 +727,17 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
   PUTWORD(p, userinfo->userflags);
   PUTSTRINGP(p, userinfo->logon_script, data, soffset);
 
-  if (cli_api(cli, 
+  if (cli_api(cli,
 	      param, sizeof(param), 1024, /* Param, length, maxlen */
 	      data, soffset, sizeof(data), /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       if (res == 0) {
-	/* nothing to do */		
-      }       
+	/* nothing to do */
+      }
       else if ((res == 5) || (res == 65)) {
         DEBUG(1, ("Access Denied\n"));
       }
@@ -756,7 +751,7 @@ int cli_NetUserAdd(struct cli_state *cli, RAP_USER_INFO_1 * userinfo )
       res = -1;
       DEBUG(4,("NetUserAdd failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -775,10 +770,9 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
 	    +WORDSIZE];               /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
 
   memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WUserEnum,
@@ -828,7 +822,7 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
   } else {
     DEBUG(4,("NetUserEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -846,10 +840,9 @@ int cli_RNetUserEnum0(struct cli_state *cli,
 	    +WORDSIZE];               /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
 
   memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WUserEnum,
@@ -887,7 +880,7 @@ int cli_RNetUserEnum0(struct cli_state *cli,
   } else {
     DEBUG(4,("NetUserEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -911,31 +904,31 @@ int cli_NetFileClose(struct cli_state *cli, uint32 file_id )
 
   /* now send a SMBtrans command with api RNetShareEnum */
   p = make_header(param, RAP_WFileClose2, RAP_WFileClose2_REQ, NULL);
-  PUTDWORD(p, file_id);  
-        	 
-  if (cli_api(cli, 
+  PUTDWORD(p, file_id);
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-      
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       } else if (res == 2314){
          DEBUG(1, ("NetFileClose2 - attempt to close non-existant file open instance\n"));
       } else {
 	DEBUG(4,("NetFileClose2 res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetFileClose2 failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return res;
 }
 
@@ -959,11 +952,11 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
 
   /* now send a SMBtrans command with api RNetShareEnum */
   p = make_header(param, RAP_WFileGetInfo2,
-		  RAP_WFileGetInfo2_REQ, RAP_FILE_INFO_L3); 
+		  RAP_WFileGetInfo2_REQ, RAP_FILE_INFO_L3);
   PUTDWORD(p, file_id);
   PUTWORD(p, 3);  /* info level */
-  PUTWORD(p, 0x1000);   /* buffer size */ 
-  if (cli_api(cli, 
+  PUTWORD(p, 0x1000);   /* buffer size */
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 0x1000,  /* data, length, maxlen */
 	      &rparam, &rprcnt,               /* return params, length */
@@ -973,7 +966,7 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
       if (res == 0 || res == ERRmoredata) {
 	int converter,id, perms, locks;
 	pstring fpath, fuser;
-	  
+
 	p = rparam + WORDSIZE; /* skip result */
 	GETWORD(p, converter);
 
@@ -983,38 +976,38 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
 	GETWORD(p, locks);
 	GETSTRINGP(p, fpath, rdata, converter);
 	GETSTRINGP(p, fuser, rdata, converter);
-	
+
 	fn(fpath, fuser, perms, locks, id);
       } else {
 	DEBUG(4,("NetFileGetInfo2 res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetFileGetInfo2 failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return res;
 }
 
 /****************************************************************************
 * Call a NetFileEnum2 - list open files on an SMB server
-* 
-* PURPOSE:  Remotes a NetFileEnum API call to the current server or target 
+*
+* PURPOSE:  Remotes a NetFileEnum API call to the current server or target
 *           server listing the files open via the network (and their
 *           corresponding open instance ids)
-*          
+*
 * Dependencies: none
 *
-* Parameters: 
+* Parameters:
 *             cli    - pointer to cli_state structure
 *             user   - if present, return only files opened by this remote user
-*             base_path - if present, return only files opened below this 
+*             base_path - if present, return only files opened below this
 *                         base path
 *             fn     - display function to invoke for each entry in the result
-*                        
+*
 *
 * Returns:
 *             True      - success
@@ -1043,35 +1036,35 @@ int cli_NetFileEnum(struct cli_state *cli, const char * user,
 
   /* now send a SMBtrans command with api RNetShareEnum */
   p = make_header(param, RAP_WFileEnum2,
-		  RAP_WFileEnum2_REQ, RAP_FILE_INFO_L3); 
+		  RAP_WFileEnum2_REQ, RAP_FILE_INFO_L3);
 
   PUTSTRING(p, base_path, 256);
   PUTSTRING(p, user, RAP_USERNAME_LEN);
   PUTWORD(p, 3); /* info level */
-  PUTWORD(p, 0xFF00);  /* buffer size */ 
+  PUTWORD(p, 0xFF00);  /* buffer size */
   PUTDWORD(p, 0);  /* zero out the resume key */
   PUTDWORD(p, 0);  /* or is this one the resume key? */
-        	 
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 0xFF00,  /* data, length, maxlen */
 	      &rparam, &rprcnt,               /* return params, length */
 	      &rdata, &rdrcnt))               /* return data, length */
     {
       int res = GETRES(rparam);
-      
+
       if (res == 0 || res == ERRmoredata) {
 	int converter, i;
 
 	p = rparam + WORDSIZE; /* skip result */
 	GETWORD(p, converter);
 	GETWORD(p, count);
-	
+
 	p = rdata;
 	for (i=0; i<count; i++) {
 	  int id, perms, locks;
 	  pstring fpath, fuser;
-	  
+
 	  GETDWORD(p, id);
 	  GETWORD(p, perms);
 	  GETWORD(p, locks);
@@ -1082,14 +1075,14 @@ int cli_NetFileEnum(struct cli_state *cli, const char * user,
 	}  /* BB fix ERRmoredata case to send resume request */
       } else {
 	DEBUG(4,("NetFileEnum2 res=%d\n", res));
-      }      
+      }
     } else {
       DEBUG(4,("NetFileEnum2 failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return count;
 }
 
@@ -1123,7 +1116,7 @@ int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
   memset(param,'\0',sizeof(param));
   /* now send a SMBtrans command with api RNetShareAdd */
   p = make_header(param, RAP_WshareAdd,
-		  RAP_WShareAdd_REQ, RAP_SHARE_INFO_L2); 
+		  RAP_WShareAdd_REQ, RAP_SHARE_INFO_L2);
   PUTWORD(p, 2); /* info level */
   PUTWORD(p, 0); /* reserved word 0 */
 
@@ -1139,29 +1132,29 @@ int cli_NetShareAdd(struct cli_state *cli, RAP_SHARE_INFO_2 * sinfo )
   PUTSTRINGP(p, sinfo->path, data, soffset);
   PUTSTRINGF(p, sinfo->password, RAP_SPASSWD_LEN);
   SCVAL(p,-1,0x0A); /* required 0x0A at end of password */
-  
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, sizeof(param), 1024, /* Param, length, maxlen */
 	      data, soffset, sizeof(data), /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = rparam? SVAL(rparam,0) : -1;
-			
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       }
       else {
 	DEBUG(4,("NetShareAdd res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetShareAdd failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return res;
 }
 /****************************************************************************
@@ -1179,35 +1172,34 @@ int cli_NetShareDelete(struct cli_state *cli, const char * share_name )
 	    +1                         /* no ret string */
 	    +RAP_SHARENAME_LEN         /* share to del  */
 	    +WORDSIZE];                /* reserved word */
-	    
 
   /* now send a SMBtrans command with api RNetShareDelete */
   p = make_header(param, RAP_WshareDel, RAP_WShareDel_REQ, NULL);
   PUTSTRING(p,share_name,RAP_SHARENAME_LEN);
   PUTWORD(p,0);  /* reserved word MBZ on input */
-        	 
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
     {
       res = GETRES(rparam);
-			
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       }
       else {
 	DEBUG(4,("NetShareDelete res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetShareDelete failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-	
+
   return res;
 }
 /*************************************************************************
@@ -1220,7 +1212,7 @@ int cli_NetShareDelete(struct cli_state *cli, const char * share_name )
 *
 * Dependencies: none
 *
-* Parameters: 
+* Parameters:
 *             cli       - pointer to cli_state structure
 *             workgroup - pointer to string containing name of domain
 *             pdc_name  - pointer to string that will contain PDC name
@@ -1245,7 +1237,7 @@ bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
 	    +DWORDSIZE                      /* server type   */
 	    +RAP_MACHNAME_LEN];             /* workgroup     */
   int count = -1;
-  
+
   *pdc_name = '\0';
 
   /* send a SMBtrans command with api NetServerEnum */
@@ -1255,15 +1247,15 @@ bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
   PUTWORD(p, CLI_BUFFER_SIZE);
   PUTDWORD(p, SV_TYPE_DOMAIN_CTRL);
   PUTSTRING(p, workgroup, RAP_MACHNAME_LEN);
-	
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 8,        /* params, length, max */
 	      NULL, 0, CLI_BUFFER_SIZE,               /* data, length, max */
 	      &rparam, &rprcnt,                   /* return params, return size */
 	      &rdata, &rdrcnt                     /* return data, return size */
 	      )) {
     cli->rap_error = GETRES(rparam);
-			
+
         /*
          * We only really care to copy a name if the
          * API succeeded and we got back a name.
@@ -1272,7 +1264,7 @@ bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
       p = rparam + WORDSIZE + WORDSIZE; /* skip result and converter */
       GETWORD(p, count);
       p = rdata;
-      
+
       if (count > 0)
 	GETSTRING(p, pdc_name);
     }
@@ -1281,10 +1273,10 @@ bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
 		 "Error was : %s.\n", cli->desthost, cli_errstr(cli) ));
     }
   }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return(count > 0);
 }
 
@@ -1301,7 +1293,7 @@ bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char *pdc_name)
 *
 * Dependencies: none
 *
-* Parameters: 
+* Parameters:
 *             cli       - pointer to cli_state structure
 *
 * Returns:
@@ -1323,34 +1315,34 @@ bool cli_get_server_domain(struct cli_state *cli)
 	    +WORDSIZE                      /* info level    */
 	    +WORDSIZE];                    /* buffer size   */
   int res = -1;
-  
+
   /* send a SMBtrans command with api NetWkstaGetInfo */
   p = make_header(param, RAP_WWkstaGetInfo,
 		  RAP_WWkstaGetInfo_REQ, RAP_WKSTA_INFO_L10);
   PUTWORD(p, 10); /* info level */
   PUTWORD(p, CLI_BUFFER_SIZE);
-	
+
   if (cli_api(cli, param, PTR_DIFF(p,param), 8, /* params, length, max */
 	      NULL, 0, CLI_BUFFER_SIZE,         /* data, length, max */
 	      &rparam, &rprcnt,         /* return params, return size */
 	      &rdata, &rdrcnt)) {       /* return data, return size */
     res = GETRES(rparam);
-    p = rdata;		
-    
+    p = rdata;
+
     if (res == 0) {
       int converter;
 
       p = rparam + WORDSIZE;
       GETWORD(p, converter);
-      
+
       p = rdata + DWORDSIZE + DWORDSIZE; /* skip computer & user names */
       GETSTRINGP(p, cli->server_domain, rdata, converter);
     }
   }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return(res == 0);
 }
 
@@ -1365,7 +1357,7 @@ bool cli_get_server_domain(struct cli_state *cli)
 *
 * Dependencies: none
 *
-* Parameters: 
+* Parameters:
 *             cli       - pointer to cli_state structure
 *             pstype    - pointer to uint32 to contain returned server type
 *
@@ -1388,31 +1380,31 @@ bool cli_get_server_type(struct cli_state *cli, uint32 *pstype)
 	    +WORDSIZE                       /* info level    */
             +WORDSIZE];                     /* buffer size   */
   int res = -1;
-  
+
   /* send a SMBtrans command with api NetServerGetInfo */
   p = make_header(param, RAP_WserverGetInfo,
 		  RAP_WserverGetInfo_REQ, RAP_SERVER_INFO_L1);
   PUTWORD(p, 1); /* info level */
   PUTWORD(p, CLI_BUFFER_SIZE);
-	
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 8, /* params, length, max */
 	      NULL, 0, CLI_BUFFER_SIZE, /* data, length, max */
 	      &rparam, &rprcnt,         /* return params, return size */
 	      &rdata, &rdrcnt           /* return data, return size */
 	      )) {
-    
+
     res = GETRES(rparam);
-    
+
     if (res == 0 || res == ERRmoredata) {
-      p = rdata;					
+      p = rdata;
       *pstype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
     }
   }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-  
+
   return(res == 0 || res == ERRmoredata);
 }
 
@@ -1430,14 +1422,14 @@ bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   +WORDSIZE];                     /* buffer size   */
 	bool res = False;
 	fstring tmp;
-  
+
 	/* send a SMBtrans command with api NetServerGetInfo */
 	p = make_header(param, RAP_WserverGetInfo,
 			RAP_WserverGetInfo_REQ, RAP_SERVER_INFO_L1);
 	PUTWORD(p, 1); /* info level */
 	PUTWORD(p, CLI_BUFFER_SIZE);
-	
-	if (!cli_api(cli, 
+
+	if (!cli_api(cli,
 		     param, PTR_DIFF(p,param), 8, /* params, length, max */
 		     NULL, 0, CLI_BUFFER_SIZE, /* data, length, max */
 		     &rparam, &rprcnt,         /* return params, return size */
@@ -1445,7 +1437,7 @@ bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		    )) {
 		goto failed;
 	}
-    
+
 	if (GETRES(rparam) != 0) {
 		goto failed;
 	}
@@ -1484,12 +1476,12 @@ bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 *           then we conclude the server type checks out. This routine
 *           is useful to retrieve list of server's of a certain
 *           type when all you have is a null session connection and
-*           can't remote API calls such as NetWkstaGetInfo or 
+*           can't remote API calls such as NetWkstaGetInfo or
 *           NetServerGetInfo.
 *
 * Dependencies: none
 *
-* Parameters: 
+* Parameters:
 *             cli       - pointer to cli_state structure
 *             workgroup - pointer to string containing domain
 *             stype     - server type
@@ -1514,7 +1506,7 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 	    +RAP_MACHNAME_LEN];             /* workgroup     */
   bool found_server = False;
   int res = -1;
-  
+
   /* send a SMBtrans command with api NetServerEnum */
   p = make_header(param, RAP_NetServerEnum2,
 		  RAP_NetServerEnum2_REQ, RAP_SERVER_INFO_L0);
@@ -1522,14 +1514,14 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
   PUTWORD(p, CLI_BUFFER_SIZE);
   PUTDWORD(p, stype);
   PUTSTRING(p, workgroup, RAP_MACHNAME_LEN);
-	
-  if (cli_api(cli, 
+
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 8, /* params, length, max */
 	      NULL, 0, CLI_BUFFER_SIZE,  /* data, length, max */
 	      &rparam, &rprcnt,          /* return params, return size */
 	      &rdata, &rdrcnt            /* return data, return size */
 	      )) {
-	
+
     res = GETRES(rparam);
     cli->rap_error = res;
 
@@ -1555,10 +1547,10 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 	       "Error was : %s.\n", cli->desthost, cli_errstr(cli) ));
     }
   }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
-	
+
   return found_server;
  }
 
@@ -1580,7 +1572,7 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
 	    +WORDSIZE                           /* buffer size   */
 	    +WORDSIZE];                         /* buffer size?  */
   fstring upperbuf;
-  
+
   memset(param, 0, sizeof(param));
 
   /* send a SMBtrans command with api NetWkstaUserLogoff */
@@ -1597,7 +1589,7 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
   PUTSTRINGF(p, upperbuf, RAP_MACHNAME_LEN);
   PUTWORD(p, CLI_BUFFER_SIZE);
   PUTWORD(p, CLI_BUFFER_SIZE);
-  
+
   if (cli_api(cli,
 	      param, PTR_DIFF(p,param),1024,  /* param, length, max */
 	      NULL, 0, CLI_BUFFER_SIZE,       /* data, length, max */
@@ -1605,17 +1597,17 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
 	      &rdata, &rdrcnt                 /* return data, return size */
 	      )) {
     cli->rap_error = GETRES(rparam);
-    
+
     if (cli->rap_error != 0) {
       DEBUG(4,("NetwkstaUserLogoff gave error %d\n", cli->rap_error));
     }
   }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
   return (cli->rap_error == 0);
 }
- 
+
 int cli_NetPrintQEnum(struct cli_state *cli,
 		void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
 		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*))
@@ -1628,13 +1620,13 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 	    +sizeof(RAP_SMB_PRINT_JOB_L1)];   /* more ret data */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
+
 
   memset(param, '\0',sizeof(param));
-  p = make_header(param, RAP_WPrintQEnum, 
+  p = make_header(param, RAP_WPrintQEnum,
 		  RAP_NetPrintQEnum_REQ, RAP_PRINTQ_INFO_L2);
   PUTWORD(p,2); /* Info level 2 */
   PUTWORD(p,0xFFE0); /* Return buffer size */
@@ -1687,7 +1679,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 	    uint16 jid, pos, fsstatus;
 	    pstring ownername, notifyname, datatype, jparms, jstatus, jcomment;
 	    unsigned int submitted, jsize;
-	    
+
 	    GETWORD(p, jid);
 	    GETSTRINGF(p, ownername, RAP_USERNAME_LEN);
 	    p++; /* pad byte */
@@ -1700,7 +1692,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 	    GETDWORD(p, submitted);
 	    GETDWORD(p, jsize);
 	    GETSTRINGP(p, jcomment, rdata, converter);
-	  
+
 	    jfn(jid, ownername, notifyname, datatype, jparms, pos, fsstatus,
 		jstatus, submitted, jsize, jcomment);
 	  }
@@ -1712,11 +1704,11 @@ int cli_NetPrintQEnum(struct cli_state *cli,
   } else {
     DEBUG(4,("NetPrintQEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
-  return res;  
+  return res;
 }
 
 int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
@@ -1725,17 +1717,17 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 {
   char param[WORDSIZE                         /* api number    */
 	    +sizeof(RAP_NetPrintQGetInfo_REQ) /* req string    */
-	    +sizeof(RAP_PRINTQ_INFO_L2)       /* return string */ 
+	    +sizeof(RAP_PRINTQ_INFO_L2)       /* return string */
 	    +RAP_SHARENAME_LEN                /* printer name  */
 	    +WORDSIZE                         /* info level    */
 	    +WORDSIZE                         /* buffer size   */
 	    +sizeof(RAP_SMB_PRINT_JOB_L1)];   /* more ret data */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
+
 
   memset(param, '\0',sizeof(param));
   p = make_header(param, RAP_WPrintQGetInfo,
@@ -1762,7 +1754,7 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
       int rsize, converter;
       pstring qname, sep_file, print_proc, dest, parms, comment;
       uint16 jobcount, priority, start_time, until_time, status;
-      
+
       p = rparam + WORDSIZE;
       GETWORD(p, converter);
       GETWORD(p, rsize);
@@ -1801,7 +1793,7 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 	  GETDWORD(p, submitted);
 	  GETDWORD(p, jsize);
 	  GETSTRINGP(p, jcomment, rdata, converter);
-	  
+
 	  jfn(jid, ownername, notifyname, datatype, jparms, pos, fsstatus,
 	      jstatus, submitted, jsize, jcomment);
 	}
@@ -1812,11 +1804,11 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
   } else {
     DEBUG(4,("NetPrintQGetInfo no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
-  return res;  
+  return res;
 }
 
 /****************************************************************************
@@ -1831,15 +1823,15 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
 	    +WORDSIZE];                   /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
-  
+
+
   memset(param, '\0', sizeof(param));
   p = make_header(param, RAP_WServiceEnum,
 		  RAP_NetServiceEnum_REQ, RAP_SERVICE_INFO_L2);
-  PUTWORD(p,2); /* Info level 2 */  
+  PUTWORD(p,2); /* Info level 2 */
   PUTWORD(p,0xFFE0); /* Return buffer size */
 
   if (cli_api(cli,
@@ -1849,7 +1841,7 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
 	      &rdata, &rdrcnt)) {
     res = GETRES(rparam);
     cli->rap_error = res;
-    if(cli->rap_error == 234) 
+    if(cli->rap_error == 234)
         DEBUG(1,("Not all service names were returned (such as those longer than 15 characters)\n"));
     else if (cli->rap_error != 0) {
       DEBUG(1,("NetServiceEnum gave error %d\n", cli->rap_error));
@@ -1872,14 +1864,14 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
 	    GETSTRINGF(p, comment, RAP_SRVCCMNT_LEN);
 
 	    fn(servicename, comment, cli);  /* BB add status too */
-      }	
+      }
     } else {
       DEBUG(4,("NetServiceEnum res=%d\n", res));
     }
   } else {
     DEBUG(4,("NetServiceEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -1899,12 +1891,12 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
 	    +WORDSIZE];                     /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
+
   memset(param, '\0', sizeof(param));
-  p = make_header(param, RAP_WsessionEnum, 
+  p = make_header(param, RAP_WsessionEnum,
 		  RAP_NetSessionEnum_REQ, RAP_SESSION_INFO_L2);
   PUTWORD(p,2);    /* Info level 2 */
   PUTWORD(p,0xFF); /* Return buffer size */
@@ -1924,7 +1916,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
       int i, converter, count;
-      
+
       p = rparam + WORDSIZE;
       GETWORD(p, converter);
       GETWORD(p, count);
@@ -1947,14 +1939,14 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
 	fn(wsname, username, num_conns, num_opens, num_users, sess_time,
 	   idle_time, user_flags, clitype_name);
       }
-	
+
     } else {
       DEBUG(4,("NetSessionEnum res=%d\n", res));
     }
   } else {
     DEBUG(4,("NetSesssionEnum no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
@@ -1969,19 +1961,19 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
 {
   char param[WORDSIZE                          /* api number    */
 	    +sizeof(RAP_NetSessionGetInfo_REQ) /* req string    */
-	    +sizeof(RAP_SESSION_INFO_L2)       /* return string */ 
+	    +sizeof(RAP_SESSION_INFO_L2)       /* return string */
 	    +RAP_MACHNAME_LEN                  /* wksta name    */
 	    +WORDSIZE                          /* info level    */
 	    +WORDSIZE];                        /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
-  
+
 
   memset(param, '\0', sizeof(param));
-  p = make_header(param, RAP_WsessionGetInfo, 
+  p = make_header(param, RAP_WsessionGetInfo,
 		  RAP_NetSessionGetInfo_REQ, RAP_SESSION_INFO_L2);
   PUTSTRING(p, workstation, RAP_MACHNAME_LEN-1);
   PUTWORD(p,2); /* Info level 2 */
@@ -2000,7 +1992,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
 
   if (rdata) {
     res = GETRES(rparam);
-    
+
     if (res == 0 || res == ERRmoredata) {
       int converter;
       pstring wsname, username, clitype_name;
@@ -2021,7 +2013,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
       GETDWORD(p, idle_time);
       GETDWORD(p, user_flags);
       GETSTRINGP(p, clitype_name, rdata, converter);
-      
+
       fn(wsname, username, num_conns, num_opens, num_users, sess_time,
 	 idle_time, user_flags, clitype_name);
     } else {
@@ -2030,11 +2022,11 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
   } else {
     DEBUG(4,("NetSessionGetInfo no data returned\n"));
   }
-    
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
-  return res;  
+  return res;
 }
 
 /****************************************************************************
@@ -2057,7 +2049,7 @@ int cli_NetSessionDel(struct cli_state *cli, const char *workstation)
   p = make_header(param, RAP_WsessionDel, RAP_NetSessionDel_REQ, NULL);
   PUTSTRING(p, workstation, RAP_MACHNAME_LEN-1);
   PUTWORD(p,0); /* reserved word of 0 */
-  if (cli_api(cli, 
+  if (cli_api(cli,
 	      param, PTR_DIFF(p,param), 1024, /* Param, length, maxlen */
 	      NULL, 0, 200,       /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
@@ -2065,36 +2057,36 @@ int cli_NetSessionDel(struct cli_state *cli, const char *workstation)
     {
       res = GETRES(rparam);
       cli->rap_error = res;
-      
+
       if (res == 0) {
-	/* nothing to do */		
+	/* nothing to do */
       }
       else {
 	DEBUG(4,("NetFileClose2 res=%d\n", res));
-      }      
+      }
     } else {
       res = -1;
       DEBUG(4,("NetFileClose2 failed\n"));
     }
-  
+
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
   return res;
 }
-  
+
 
 int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier, void (*fn)(uint16 conid, uint16 contype, uint16 numopens, uint16 numusers, uint32 contime, const char *username, const char *netname))
 {
   char param[WORDSIZE                          /* api number    */
 	    +sizeof(RAP_NetConnectionEnum_REQ) /* req string    */
-	    +sizeof(RAP_CONNECTION_INFO_L1)    /* return string */ 
+	    +sizeof(RAP_CONNECTION_INFO_L1)    /* return string */
 	    +RAP_MACHNAME_LEN                  /* wksta name    */
 	    +WORDSIZE                          /* info level    */
 	    +WORDSIZE];                        /* buffer size   */
   char *p;
   char *rparam = NULL;
-  char *rdata = NULL; 
+  char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
   int res = -1;
 
@@ -2140,7 +2132,7 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier, void (*f
 	fn(conn_id, conn_type, num_opens, num_users, conn_time,
 	   username, netname);
       }
-	
+
     } else {
       DEBUG(4,("NetConnectionEnum res=%d\n", res));
     }
