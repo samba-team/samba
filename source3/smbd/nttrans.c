@@ -1269,7 +1269,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct timespec a_timespec;
 	struct timespec m_timespec;
 	struct ea_list *ea_list = NULL;
-	char *pdata = NULL;
 	NTSTATUS status;
 	size_t param_len;
 	struct case_semantics_state *case_state = NULL;
@@ -1341,6 +1340,14 @@ static void call_nt_transact_create(connection_struct *conn,
 		if (ea_len < 10) {
 			DEBUG(10,("call_nt_transact_create - ea_len = %u - too small (should be more than 10)\n",
 				(unsigned int)ea_len ));
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		/* We have already checked that ea_len <= data_count here. */
+		ea_list = read_nttrans_ea_list(talloc_tos(), data + sd_len,
+					       ea_len);
+		if (ea_list == NULL) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
@@ -1538,19 +1545,6 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 #endif
-
-	if (ea_len) {
-		pdata = data + sd_len;
-
-		/* We have already checked that ea_len <= data_count here. */
-		ea_list = read_nttrans_ea_list(talloc_tos(), pdata,
-					       ea_len);
-		if (!ea_list ) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-	}
 
 	/*
 	 * If it's a request for a directory open, deal with it separately.
