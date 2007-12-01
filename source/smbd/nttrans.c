@@ -1467,15 +1467,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	 * Ordinary file or directory.
 	 */
 
-	/*
-	 * Check if POSIX semantics are wanted.
-	 */
-
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(NULL, conn);
-		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
-	}
-
 	status = resolve_dfspath(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
@@ -1489,6 +1480,15 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 		reply_nterror(req, status);
 		return;
+	}
+
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(NULL, conn);
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
 	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
