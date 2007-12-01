@@ -593,6 +593,7 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		char *parent_fname = NULL;
+		char *tmp;
 		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
@@ -668,12 +669,14 @@ void reply_ntcreate_and_X(connection_struct *conn,
 			}
 		}
 
-		fname = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
-		if (fname == NULL) {
+		tmp = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
+		if (tmp == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
+		TALLOC_FREE(fname);
+		fname = tmp;
 	} else {
 		/*
 		 * Check to see if this is a mac fork of some kind.
@@ -1363,6 +1366,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		 * This filename is relative to a directory fid.
 		 */
 		char *parent_fname = NULL;
+		char *tmp;
 		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
 		if(!dir_fsp) {
@@ -1433,12 +1437,14 @@ static void call_nt_transact_create(connection_struct *conn,
 			}
 		}
 
-		fname = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
-		if (fname == NULL) {
+		tmp = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
+		if (tmp == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
+		TALLOC_FREE(fname);
+		fname = tmp;
 	} else {
 		/*
 		 * Check to see if this is a mac fork of some kind.
