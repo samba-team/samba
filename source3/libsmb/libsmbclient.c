@@ -2777,7 +2777,6 @@ smbc_opendir_ctx(SMBCCTX *context,
                 struct ip_service *ip_list;
                 struct ip_service server_addr;
                 struct user_auth_info u_info;
-                struct cli_state *cli;
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
@@ -2838,6 +2837,7 @@ smbc_opendir_ctx(SMBCCTX *context,
                 for (i = 0; i < count && i < max_lmb_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			char *wg_ptr = NULL;
+                	struct cli_state *cli = NULL;
 
 			print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
                         DEBUG(99, ("Found master browser %d of %d: %s\n",
@@ -2850,17 +2850,20 @@ smbc_opendir_ctx(SMBCCTX *context,
 							&wg_ptr);
 			/* cli == NULL is the master browser refused to talk or
 			   could not be found */
-			if ( !cli )
+			if (!cli) {
 				continue;
+			}
 
 			workgroup = talloc_strdup(frame, wg_ptr);
 			server = talloc_strdup(frame, cli->desthost);
+
+                        cli_shutdown(cli);
+
 			if (!workgroup || !server) {
 				errno = ENOMEM;
 				TALLOC_FREE(frame);
 				return NULL;
 			}
-                        cli_shutdown(cli);
 
                         DEBUG(4, ("using workgroup %s %s\n",
                                   workgroup, server));
