@@ -1264,6 +1264,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint32 create_disposition;
 	uint32 create_options;
 	uint32 sd_len;
+	struct security_descriptor *sd;
 	uint32 ea_len;
 	uint16 root_dir_fid;
 	struct timespec c_timespec;
@@ -1329,6 +1330,18 @@ static void call_nt_transact_create(connection_struct *conn,
 			   (unsigned int)sd_len, (unsigned int)data_count));
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
+	}
+
+	if (sd_len) {
+		status = unmarshall_sec_desc(ctx, (uint8_t *)data, sd_len,
+					     &sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("call_nt_transact_create: "
+				   "unmarshall_sec_desc failed: %s\n",
+				   nt_errstr(status)));
+			reply_nterror(req, status);
+			return;
+		}
 	}
 
 	if (ea_len) {
@@ -1641,14 +1654,29 @@ static void call_nt_transact_create(connection_struct *conn,
 	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
 	 */
 
-	if (lp_nt_acl_support(SNUM(conn)) && sd_len && info == FILE_WAS_CREATED) {
-		uint32 saved_access_mask = fsp->access_mask;
-
-		/* We have already checked that sd_len <= data_count here. */
+	if (lp_nt_acl_support(SNUM(conn)) && (info == FILE_WAS_CREATED)
+	    && (sd != NULL)) {
+		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
+		uint32_t saved_access_mask = fsp->access_mask;
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
-		status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION);
+		if (sd->owner_sid==0) {
+			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
+		}
+		if (sd->group_sid==0) {
+			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
+		}
+		if (sd->sacl==0) {
+			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
+		}
+		if (sd->dacl==0) {
+			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
+		}
+
+		status = SMB_VFS_FSET_NT_ACL(
+			fsp, fsp->fh->fd, sec_info_sent, sd);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			close_file(fsp,ERROR_CLOSE);
 			TALLOC_FREE(case_state);
