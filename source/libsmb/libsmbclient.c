@@ -4172,7 +4172,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
 	enum lsa_SidType *types = NULL;
 	DOM_SID *sids = NULL;
 	bool result = True;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *ctx = NULL;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 
 	if (!pipe_hnd) {
