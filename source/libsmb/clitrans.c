@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client transaction calls
    Copyright (C) Andrew Tridgell 1994-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,8 +24,8 @@
  Send a SMB trans or trans2 request.
 ****************************************************************************/
 
-bool cli_send_trans(struct cli_state *cli, int trans, 
-		    const char *pipe_name, 
+bool cli_send_trans(struct cli_state *cli, int trans,
+		    const char *pipe_name,
 		    int fid, int flags,
 		    uint16 *setup, unsigned int lsetup, unsigned int msetup,
 		    const char *param, unsigned int lparam, unsigned int mparam,
@@ -107,17 +107,17 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 
 		tot_data = this_ldata;
 		tot_param = this_lparam;
-		
+
 		while (tot_data < ldata || tot_param < lparam)  {
 			this_lparam = MIN(lparam-tot_param,cli->max_xmit - 500); /* hack */
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
 
 			set_message(cli->outbuf,trans==SMBtrans?8:9,0,True);
 			SCVAL(cli->outbuf,smb_com,(trans==SMBtrans ? SMBtranss : SMBtranss2));
-			
+
 			outparam = smb_buf(cli->outbuf);
 			outdata = outparam+this_lparam;
-			
+
 			/* secondary request */
 			SSVAL(cli->outbuf,smb_tpscnt,lparam);	/* tpscnt */
 			SSVAL(cli->outbuf,smb_tdscnt,ldata);	/* tdscnt */
@@ -134,7 +134,7 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 			if (this_ldata)			/* data[] */
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
-			
+
 			/*
 			 * Save the mid we're using. We need this for finding
 			 * signing replies.
@@ -149,7 +149,7 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 
 			/* Ensure we use the same mid for the secondaries. */
 			cli->mid = mid;
-			
+
 			tot_data += this_ldata;
 			tot_param += this_lparam;
 		}
@@ -179,11 +179,11 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 	}
 
 	show_msg(cli->inbuf);
-	
+
 	/* sanity check */
 	if (CVAL(cli->inbuf,smb_com) != trans) {
 		DEBUG(0,("Expected %s response, got command 0x%02x\n",
-			 trans==SMBtrans?"SMBtrans":"SMBtrans2", 
+			 trans==SMBtrans?"SMBtrans":"SMBtrans2",
 			 CVAL(cli->inbuf,smb_com)));
 		return False;
 	}
@@ -202,7 +202,7 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
          * length).
 	 */
 	status = cli_nt_error(cli);
-	
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		if (NT_STATUS_IS_ERR(status) ||
                     NT_STATUS_EQUAL(status,STATUS_NO_MORE_FILES) ||
@@ -217,7 +217,9 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 
 	/* allocate it */
 	if (total_data!=0) {
-		*data = (char *)SMB_REALLOC(*data,total_data);
+		/* We know adding 2 is safe as total_data is an
+		 * SVAL <= 0xFFFF. */
+		*data = (char *)SMB_REALLOC(*data,total_data+2);
 		if (!(*data)) {
 			DEBUG(0,("cli_receive_trans: failed to enlarge data buffer\n"));
 			goto out;
@@ -225,7 +227,9 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 	}
 
 	if (total_param!=0) {
-		*param = (char *)SMB_REALLOC(*param,total_param);
+		/* We know adding 2 is safe as total_param is an
+		 * SVAL <= 0xFFFF. */
+		*param = (char *)SMB_REALLOC(*param,total_param+2);
 		if (!(*param)) {
 			DEBUG(0,("cli_receive_trans: failed to enlarge param buffer\n"));
 			goto out;
@@ -299,13 +303,13 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 			ret = True;
 			break;
 		}
-		
+
 		if (!cli_receive_smb(cli)) {
 			goto out;
 		}
 
 		show_msg(cli->inbuf);
-		
+
 		/* sanity check */
 		if (CVAL(cli->inbuf,smb_com) != trans) {
 			DEBUG(0,("Expected %s response, got command 0x%02x\n",
@@ -324,7 +328,7 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 			total_data = SVAL(cli->inbuf,smb_tdrcnt);
 		if (SVAL(cli->inbuf,smb_tprcnt) < total_param)
 			total_param = SVAL(cli->inbuf,smb_tprcnt);
-		
+
 		if (total_data <= *data_len && total_param <= *param_len) {
 			ret = True;
 			break;
@@ -332,6 +336,19 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 	}
 
   out:
+
+	if (ret) {
+		/* Ensure the last 2 bytes of param and data are 2 null
+		 * bytes. These are malloc'ed, but not included in any
+		 * length counts. This allows cli_XX string reading functions
+		 * to safely null terminate. */
+		if (total_data) {
+			SSVAL(*data,total_data,0);
+		}
+		if (total_param) {
+			SSVAL(*param,total_param,0);
+		}
+	}
 
 	client_set_trans_sign_state_off(cli, SVAL(cli->inbuf,smb_mid));
 	return ret;
@@ -341,8 +358,8 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
  Send a SMB nttrans request.
 ****************************************************************************/
 
-bool cli_send_nt_trans(struct cli_state *cli, 
-		       int function, 
+bool cli_send_nt_trans(struct cli_state *cli,
+		       int function,
 		       int flags,
 		       uint16 *setup, unsigned int lsetup, unsigned int msetup,
 		       char *param, unsigned int lparam, unsigned int mparam,
@@ -388,7 +405,7 @@ bool cli_send_nt_trans(struct cli_state *cli,
 	SIVAL(cli->outbuf,smb_nt_Function, function);
 	for (i=0;i<lsetup;i++)		/* setup[] */
 		SSVAL(cli->outbuf,smb_nt_SetupStart+i*2,setup[i]);
-	
+
 	if (this_lparam)			/* param[] */
 		memcpy(outparam,param,this_lparam);
 	if (this_ldata)			/* data[] */
@@ -399,7 +416,7 @@ bool cli_send_nt_trans(struct cli_state *cli,
 	show_msg(cli->outbuf);
 	if (!cli_send_smb(cli)) {
 		return False;
-	}	
+	}
 
 	/* Note we're in a trans state. Save the sequence
 	 * numbers for replies. */
@@ -414,7 +431,7 @@ bool cli_send_nt_trans(struct cli_state *cli,
 
 		tot_data = this_ldata;
 		tot_param = this_lparam;
-		
+
 		while (tot_data < ldata || tot_param < lparam)  {
 			this_lparam = MIN(lparam-tot_param,cli->max_xmit - 500); /* hack */
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
@@ -425,7 +442,7 @@ bool cli_send_nt_trans(struct cli_state *cli,
 			/* XXX - these should probably be aligned */
 			outparam = smb_buf(cli->outbuf);
 			outdata = outparam+this_lparam;
-			
+
 			/* secondary request */
 			SIVAL(cli->outbuf,smb_nts_TotalParameterCount,lparam);
 			SIVAL(cli->outbuf,smb_nts_TotalDataCount,ldata);
@@ -440,7 +457,7 @@ bool cli_send_nt_trans(struct cli_state *cli,
 			if (this_ldata)			/* data[] */
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
-			
+
 			/*
 			 * Save the mid we're using. We need this for finding
 			 * signing replies.
@@ -453,10 +470,10 @@ bool cli_send_nt_trans(struct cli_state *cli,
 				client_set_trans_sign_state_off(cli, mid);
 				return False;
 			}
-			
+
 			/* Ensure we use the same mid for the secondaries. */
 			cli->mid = mid;
-			
+
 			tot_data += this_ldata;
 			tot_param += this_lparam;
 		}
@@ -487,7 +504,7 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 	}
 
 	show_msg(cli->inbuf);
-	
+
 	/* sanity check */
 	if (CVAL(cli->inbuf,smb_com) != SMBnttrans) {
 		DEBUG(0,("Expected SMBnttrans response, got command 0x%02x\n",
@@ -518,12 +535,25 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 	}
 
 	/* parse out the lengths */
-	total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
-	total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+	total_data = IVAL(cli->inbuf,smb_ntr_TotalDataCount);
+	total_param = IVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+	/* Only allow 16 megs. */
+	if (total_param > 16*1024*1024) {
+		DEBUG(0,("cli_receive_nt_trans: param buffer too large %d\n",
+					total_param));
+		goto out;
+	}
+	if (total_data > 16*1024*1024) {
+		DEBUG(0,("cli_receive_nt_trans: data buffer too large %d\n",
+					total_data));
+		goto out;
+	}
 
 	/* allocate it */
 	if (total_data) {
-		*data = (char *)SMB_REALLOC(*data,total_data);
+		/* We know adding 2 is safe as total_data is less
+		 * than 16mb (above). */
+		*data = (char *)SMB_REALLOC(*data,total_data+2);
 		if (!(*data)) {
 			DEBUG(0,("cli_receive_nt_trans: failed to enlarge data buffer to %d\n",total_data));
 			goto out;
@@ -531,7 +561,9 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 	}
 
 	if (total_param) {
-		*param = (char *)SMB_REALLOC(*param,total_param);
+		/* We know adding 2 is safe as total_param is less
+		 * than 16mb (above). */
+		*param = (char *)SMB_REALLOC(*param,total_param+2);
 		if (!(*param)) {
 			DEBUG(0,("cli_receive_nt_trans: failed to enlarge param buffer to %d\n", total_param));
 			goto out;
@@ -607,13 +639,13 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 			ret = True;
 			break;
 		}
-		
+
 		if (!cli_receive_smb(cli)) {
 			goto out;
 		}
 
 		show_msg(cli->inbuf);
-		
+
 		/* sanity check */
 		if (CVAL(cli->inbuf,smb_com) != SMBnttrans) {
 			DEBUG(0,("Expected SMBnttrans response, got command 0x%02x\n",
@@ -637,11 +669,11 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 		}
 
 		/* parse out the total lengths again - they can shrink! */
-		if (SVAL(cli->inbuf,smb_ntr_TotalDataCount) < total_data)
-			total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
-		if (SVAL(cli->inbuf,smb_ntr_TotalParameterCount) < total_param)
-			total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
-		
+		if (IVAL(cli->inbuf,smb_ntr_TotalDataCount) < total_data)
+			total_data = IVAL(cli->inbuf,smb_ntr_TotalDataCount);
+		if (IVAL(cli->inbuf,smb_ntr_TotalParameterCount) < total_param)
+			total_param = IVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+
 		if (total_data <= *data_len && total_param <= *param_len) {
 			ret = True;
 			break;
@@ -649,6 +681,19 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 	}
 
   out:
+
+	if (ret) {
+		/* Ensure the last 2 bytes of param and data are 2 null
+		 * bytes. These are malloc'ed, but not included in any
+		 * length counts. This allows cli_XX string reading functions
+		 * to safely null terminate. */
+		if (total_data) {
+			SSVAL(*data,total_data,0);
+		}
+		if (total_param) {
+			SSVAL(*param,total_param,0);
+		}
+	}
 
 	client_set_trans_sign_state_off(cli, SVAL(cli->inbuf,smb_mid));
 	return ret;
