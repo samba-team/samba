@@ -716,10 +716,10 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
+			END_PROFILE(SMBntcreateX);
+			return;
 		}
-		else {
-			reply_nterror(req, status);
-		}
+		reply_nterror(req, status);
 		END_PROFILE(SMBntcreateX);
 		return;
 	}
