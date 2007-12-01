@@ -704,6 +704,12 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
+	}
+
 	/*
 	 * Now contruct the smb_open_mode value from the filename,
 	 * desired access and the share access.
@@ -722,11 +728,6 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		reply_nterror(req, status);
 		END_PROFILE(SMBntcreateX);
 		return;
-	}
-
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 	}
 
 	/*
@@ -1458,7 +1459,8 @@ static void call_nt_transact_create(connection_struct *conn,
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
 	}
 
 	/*
