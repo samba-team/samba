@@ -452,47 +452,429 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	chain_reply(req);
 }
 
-/****************************************************************************
- Reply to an NT create and X call for a quota file.
-****************************************************************************/
+static NTSTATUS create_file(connection_struct *conn,
+			    struct smb_request *req,
+			    uint16_t root_dir_fid,
+			    char *fname,
+			    uint32_t flags,
+			    uint32_t access_mask,
+			    uint32_t file_attributes,
+			    uint32_t share_access,
+			    uint32_t create_disposition,
+			    uint32_t create_options,
+			    int oplock_request,
+			    SMB_BIG_UINT allocation_size,
+			    struct security_descriptor *sd,
+			    struct ea_list *ea_list,
 
-static void reply_ntcreate_and_X_quota(connection_struct *conn,
-				       struct smb_request *req,
-				       enum FAKE_FILE_TYPE fake_file_type,
-				       const char *fname)
+			    files_struct **result,
+			    int *pinfo,
+			    uint8_t *poplock_granted,
+			    SMB_STRUCT_STAT *psbuf,
+			    SMB_OFF_T *pfile_len)
 {
-	char *p;
-	uint32 desired_access = IVAL(req->inbuf,smb_ntcreate_DesiredAccess);
-	files_struct *fsp;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct case_semantics_state *case_state = NULL;
+	uint32_t fattr;
+	SMB_OFF_T file_len = 0;
+	SMB_STRUCT_STAT sbuf;
+	int info = FILE_WAS_OPENED;
+	files_struct *fsp = NULL;
+	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	NTSTATUS status;
 
-	status = open_fake_file(conn, fake_file_type, fname, desired_access,
-				&fsp);
+	SET_STAT_INVALID(sbuf);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		status = NT_STATUS_NOT_SUPPORTED;
+		goto fail;
 	}
 
-	reply_outbuf(req, 34, 0);
+	/*
+	 * Get the file name.
+	 */
 
-	p = (char *)req->outbuf + smb_vwv2;
+	if (root_dir_fid != 0) {
+		/*
+		 * This filename is relative to a directory fid.
+		 */
+		char *parent_fname = NULL;
+		files_struct *dir_fsp = file_fsp(root_dir_fid);
 
-	/* SCVAL(p,0,NO_OPLOCK_RETURN); */
-	p++;
-	SSVAL(p,0,fsp->fnum);
+		if (dir_fsp == NULL) {
+			status = NT_STATUS_INVALID_HANDLE;
+			goto fail;
+		}
 
-	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
+		if (!dir_fsp->is_directory) {
 
-	chain_reply(req);
+			/*
+			 * Check to see if this is a mac fork of some kind.
+			 */
+
+			if (is_ntfs_stream_name(fname)) {
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				goto fail;
+			}
+
+			/*
+			  we need to handle the case when we get a
+			  relative open relative to a file and the
+			  pathname is blank - this is a reopen!
+			  (hint from demyn plantenberg)
+			*/
+
+			status = NT_STATUS_INVALID_HANDLE;
+			goto fail;
+		}
+
+		if (ISDOT(dir_fsp->fsp_name)) {
+			/*
+			 * We're at the toplevel dir, the final file name
+			 * must not contain ./, as this is filtered out
+			 * normally by srvstr_get_path and unix_convert
+			 * explicitly rejects paths containing ./.
+			 */
+			parent_fname = talloc_strdup(talloc_tos(), "");
+			if (parent_fname == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+		} else {
+			size_t dir_name_len = strlen(dir_fsp->fsp_name);
+
+			/*
+			 * Copy in the base directory name.
+			 */
+
+			parent_fname = TALLOC_ARRAY(talloc_tos(), char,
+						    dir_name_len+2);
+			if (parent_fname == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			memcpy(parent_fname, dir_fsp->fsp_name,
+			       dir_name_len+1);
+
+			/*
+			 * Ensure it ends in a '/'.
+			 * We used TALLOC_SIZE +2 to add space for the '/'.
+			 */
+
+			if(dir_name_len
+			   && (parent_fname[dir_name_len-1] != '\\')
+			   && (parent_fname[dir_name_len-1] != '/')) {
+				parent_fname[dir_name_len] = '/';
+				parent_fname[dir_name_len+1] = '\0';
+			}
+		}
+
+		fname = talloc_asprintf(talloc_tos(), "%s%s", parent_fname,
+					fname);
+		if (fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	} else {
+		/*
+		 * Check to see if this is a mac fork of some kind.
+		 */
+
+		if (is_ntfs_stream_name(fname)) {
+			enum FAKE_FILE_TYPE fake_file_type;
+
+			fake_file_type = is_fake_file(fname);
+
+			if (fake_file_type == FAKE_FILE_TYPE_NONE) {
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+
+			/*
+			 * Here we go! support for changing the disk quotas
+			 * --metze
+			 *
+			 * We need to fake up to open this MAGIC QUOTA file
+			 * and return a valid FID.
+			 *
+			 * w2k close this file directly after openening xp
+			 * also tries a QUERY_FILE_INFO on the file and then
+			 * close it
+			 */
+			status = open_fake_file(conn, fake_file_type, fname,
+						access_mask, &fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
+			goto done;
+		}
+	}
+
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
+	}
+
+	status = resolve_dfspath(
+		talloc_tos(), conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
+		fname, &fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * For PATH_NOT_COVERED we had
+		 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+		 *                 ERRSRV, ERRbadpath);
+		 * Need to fix in callers
+		 */
+		goto fail;
+	}
+
+	/*
+	 * Ordinary file or directory.
+	 */
+
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		case_state = set_posix_case_semantics(talloc_tos(), conn);
+		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+	}
+
+	status = unix_convert(talloc_tos(), conn, fname, False, &fname, NULL,
+			      &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/* All file access must go through check_name() */
+
+	status = check_name(conn, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/* This is the correct thing to do (check every time) but can_delete
+	 * is expensive (it may have to read the parent directory
+	 * permissions). So for now we're not doing it unless we have a strong
+	 * hint the client is really going to delete this file. If the client
+	 * is forcing FILE_CREATE let the filesystem take care of the
+	 * permissions. */
+
+	/* Setting FILE_SHARE_DELETE is the hint. */
+
+	if (lp_acl_check_permissions(SNUM(conn))
+	    && (create_disposition != FILE_CREATE)
+	    && (share_access & FILE_SHARE_DELETE)
+	    && (access_mask & DELETE_ACCESS)
+	    && (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
+		 && !lp_delete_readonly(SNUM(conn)))
+		|| !can_delete_file_in_directory(conn, fname))) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto fail;
+	}
+
+#if 0
+	/* We need to support SeSecurityPrivilege for this. */
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
+			!user_has_privileges(current_user.nt_user_token,
+				&se_security)) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+#endif
+
+	/*
+	 * If it's a request for a directory open, deal with it separately.
+	 */
+
+	if (create_options & FILE_DIRECTORY_FILE) {
+
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+
+		/*
+		 * We will get a create directory here if the Win32
+		 * app specified a security descriptor in the
+		 * CreateDirectory() call.
+		 */
+
+		oplock_request = 0;
+		status = open_directory(
+			conn, req, fname, &sbuf, access_mask, share_access,
+			create_disposition, create_options, file_attributes,
+			&info, &fsp);
+	} else {
+
+		/*
+		 * Ordinary file case.
+		 */
+
+		status = open_file_ntcreate(
+			conn, req, fname, &sbuf, access_mask, share_access,
+			create_disposition, create_options, file_attributes,
+			oplock_request, &info, &fsp);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+
+			/*
+			 * Fail the open if it was explicitly a non-directory
+			 * file.
+			 */
+
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				status = NT_STATUS_FILE_IS_A_DIRECTORY;
+				goto fail;
+			}
+
+			oplock_request = 0;
+			status = open_directory(
+				conn, req, fname, &sbuf, access_mask,
+				share_access, create_disposition,
+				create_options,	file_attributes,
+				&info, &fsp);
+		}
+	}
+
+	TALLOC_FREE(case_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/*
+	 * According to the MS documentation, the only time the security
+	 * descriptor is applied to the opened file is iff we *created* the
+	 * file; an existing file stays the same.
+	 *
+	 * Also, it seems (from observation) that you can open the file with
+	 * any access mask but you can still write the sd. We need to override
+	 * the granted access before we call set_sd
+	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
+	 */
+
+	if ((sd != NULL) && (info == FILE_WAS_CREATED)
+	    && lp_nt_acl_support(SNUM(conn))) {
+
+		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
+		uint32_t saved_access_mask = fsp->access_mask;
+
+		if (sd->owner_sid==0) {
+			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
+		}
+		if (sd->group_sid==0) {
+			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
+		}
+		if (sd->sacl==0) {
+			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
+		}
+		if (sd->dacl==0) {
+			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
+		}
+
+		fsp->access_mask = FILE_GENERIC_ALL;
+
+		status = SMB_VFS_FSET_NT_ACL(
+			fsp, fsp->fh->fd, sec_info_sent, sd);
+
+		fsp->access_mask = saved_access_mask;
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	if ((ea_list != NULL) && (info == FILE_WAS_CREATED)) {
+		status = set_ea(conn, fsp, fname, ea_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	file_len = sbuf.st_size;
+	fattr = dos_mode(conn,fname,&sbuf);
+	if(fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
+	}
+	if (!fsp->is_directory && (fattr & aDIR)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto fail;
+	}
+
+	/* Save the requested allocation size. */
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
+		if (allocation_size
+		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				/* Can't set allocation size on a directory. */
+				status = NT_STATUS_ACCESS_DENIED;
+				goto fail;
+			}
+			if (vfs_allocate_file_space(
+				    fsp, fsp->initial_allocation_size) == -1) {
+				status = NT_STATUS_DISK_FULL;
+				goto fail;
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
+		}
+	}
+
+	/*
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+
+	if (oplock_request &&
+	    (lp_fake_oplocks(SNUM(conn))
+	     || EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))) {
+
+		/*
+		 * Exclusive oplock granted
+		 */
+
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			oplock_granted = BATCH_OPLOCK_RETURN;
+		} else {
+			oplock_granted = EXCLUSIVE_OPLOCK_RETURN;
+		}
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
+		oplock_granted = LEVEL_II_OPLOCK_RETURN;
+	} else {
+		oplock_granted = NO_OPLOCK_RETURN;
+	}
+
+ done:
+	*result = fsp;
+	*pinfo = info;
+	*poplock_granted = oplock_granted;
+	*psbuf = sbuf;
+	*pfile_len = file_len;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+
+ fail:
+	if (fsp != NULL) {
+		close_file(fsp, ERROR_CLOSE);
+		fsp = NULL;
+	}
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
 
-void reply_ntcreate_and_X(connection_struct *conn,
-			  struct smb_request *req)
+void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 {
 	char *fname = NULL;
 	uint32 flags;
@@ -515,9 +897,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
-	bool extended_oplock_granted = False;
 	NTSTATUS status;
-	struct case_semantics_state *case_state = NULL;
+	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -535,9 +916,12 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	create_options = IVAL(req->inbuf,smb_ntcreate_CreateOptions);
 	root_dir_fid = (uint16)IVAL(req->inbuf,smb_ntcreate_RootDirectoryFid);
 
-	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,smb_ntcreate_AllocationSize);
+	allocation_size = (SMB_BIG_UINT)IVAL(req->inbuf,
+					     smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(req->inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+	allocation_size |= (((SMB_BIG_UINT)IVAL(
+				     req->inbuf,
+				     smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 
 	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
@@ -578,383 +962,24 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		}
 	}
 
-	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		END_PROFILE(SMBntcreateX);
-		return;
-	}
-
-	/*
-	 * Get the file name.
-	 */
-
-	if (root_dir_fid != 0) {
-		/*
-		 * This filename is relative to a directory fid.
-		 */
-		char *parent_fname = NULL;
-		char *tmp;
-		files_struct *dir_fsp = file_fsp(root_dir_fid);
-
-		if(!dir_fsp) {
-			reply_doserror(req, ERRDOS, ERRbadfid);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-
-		if(!dir_fsp->is_directory) {
-
-			/*
-			 * Check to see if this is a mac fork of some kind.
-			 */
-
-			if( is_ntfs_stream_name(fname)) {
-				reply_nterror(
-					req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-
-			/*
-			  we need to handle the case when we get a
-			  relative open relative to a file and the
-			  pathname is blank - this is a reopen!
-			  (hint from demyn plantenberg)
-			*/
-
-			reply_doserror(req, ERRDOS, ERRbadfid);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-
-		if (ISDOT(dir_fsp->fsp_name)) {
-			/*
-			 * We're at the toplevel dir, the final file name
-			 * must not contain ./, as this is filtered out
-			 * normally by srvstr_get_path and unix_convert
-			 * explicitly rejects paths containing ./.
-			 */
-			parent_fname = talloc_strdup(ctx,"");
-			if (!parent_fname) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-		} else {
-			size_t dir_name_len = strlen(dir_fsp->fsp_name);
-
-			/*
-			 * Copy in the base directory name.
-			 */
-
-			parent_fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-			if (!parent_fname) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-			memcpy(parent_fname, dir_fsp->fsp_name,
-			       dir_name_len+1);
-
-			/*
-			 * Ensure it ends in a '/'.
-			 * We used TALLOC_SIZE +2 to add space for the '/'.
-			 */
-
-			if(dir_name_len
-			   && (parent_fname[dir_name_len-1] != '\\')
-			   && (parent_fname[dir_name_len-1] != '/')) {
-				parent_fname[dir_name_len] = '/';
-				parent_fname[dir_name_len+1] = '\0';
-			}
-		}
-
-		tmp = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
-		if (tmp == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-		TALLOC_FREE(fname);
-		fname = tmp;
-	} else {
-		/*
-		 * Check to see if this is a mac fork of some kind.
-		 */
-
-		if (is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type;
-
-			fake_file_type = is_fake_file(fname);
-
-			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
-				/*
-				 * Here we go! support for changing the disk
-				 * quotas --metze
-				 *
-				 * We need to fake up to open this MAGIC QUOTA
-				 * file and return a valid FID.
-				 *
-				 * w2k close this file directly after
-				 * openening xp also tries a QUERY_FILE_INFO
-				 * on the file and then close it
-				 */
-				reply_ntcreate_and_X_quota(
-					conn, req, fake_file_type, fname);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-	}
-
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
-			? BATCH_OPLOCK : 0;
-	}
-
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBntcreateX);
-		return;
-	}
-
-	/*
-	 * Ordinary file or directory.
-	 */
-
-	/*
-	 * Check if POSIX semantics are wanted.
-	 */
-
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(NULL, conn);
-		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(case_state);
-		reply_nterror(req, status);
-		END_PROFILE(SMBntcreateX);
-		return;
-	}
-	/* All file access must go through check_name() */
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(case_state);
-		reply_nterror(req, status);
-		END_PROFILE(SMBntcreateX);
-		return;
-	}
-
-	/* This is the correct thing to do (check every time) but can_delete
-	 * is expensive (it may have to read the parent directory
-	 * permissions). So for now we're not doing it unless we have a strong
-	 * hint the client is really going to delete this file. If the client
-	 * is forcing FILE_CREATE let the filesystem take care of the
-	 * permissions. */
-
-	/* Setting FILE_SHARE_DELETE is the hint. */
-
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
-	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)) {
-		if (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
-				&& !lp_delete_readonly(SNUM(conn))) ||
-				!can_delete_file_in_directory(conn, fname)) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-	}
-
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
-			!user_has_privileges(current_user.nt_user_token,
-				&se_security)) {
-		TALLOC_FREE(case_state);
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_PRIVILEGE_NOT_HELD);
-	}
-#endif
-
-	/*
-	 * If it's a request for a directory open, deal with it separately.
-	 */
-
-	if(create_options & FILE_DIRECTORY_FILE) {
-
-		/* Can't open a temp directory. IFS kit test. */
-		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-
-		oplock_request = 0;
-		status = open_directory(conn, req, fname, &sbuf,
-					access_mask,
-					share_access,
-					create_disposition,
-					create_options,
-					file_attributes,
-					&info, &fsp);
-
-	} else {
-
-		/*
-		 * Ordinary file case.
-		 */
-
-		/* NB. We have a potential bug here. If we
-		 * cause an oplock break to ourselves, then we
-		 * could end up processing filename related
-		 * SMB requests whilst we await the oplock
-		 * break response. As we may have changed the
-		 * filename case semantics to be POSIX-like,
-		 * this could mean a filename request could
-		 * fail when it should succeed. This is a rare
-		 * condition, but eventually we must arrange
-		 * to restore the correct case semantics
-		 * before issuing an oplock break request to
-		 * our client. JRA.  */
-
-		status = open_file_ntcreate(conn, req, fname, &sbuf,
-					access_mask,
-					share_access,
-					create_disposition,
-					create_options,
-					file_attributes,
-					oplock_request,
-					&info, &fsp);
-
-		/* We cheat here. There are two cases we
-		 * care about. One is a directory rename,
-		 * where the NT client will attempt to
-		 * open the source directory for
-		 * DELETE access. Note that when the
-		 * NT client does this it does *not*
-		 * set the directory bit in the
-		 * request packet. This is translated
-		 * into a read/write open
-		 * request. POSIX states that any open
-		 * for write request on a directory
-		 * will generate an EISDIR error, so
-		 * we can catch this here and open a
-		 * pseudo handle that is flagged as a
-		 * directory. The second is an open
-		 * for a permissions read only, which
-		 * we handle in the open_file_stat case. JRA.
-		 */
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
-
-			/*
-			 * Fail the open if it was explicitly a non-directory
-			 * file.
-			 */
-
-			if (create_options & FILE_NON_DIRECTORY_FILE) {
-				TALLOC_FREE(case_state);
-				reply_force_nterror(
-					req,
-					NT_STATUS_FILE_IS_A_DIRECTORY);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-
-			oplock_request = 0;
-			status = open_directory(conn, req, fname,
-						&sbuf,
-						access_mask,
-						share_access,
-						create_disposition,
-						create_options,
-						file_attributes,
-						&info, &fsp);
-		}
-	}
-
-	TALLOC_FREE(case_state);
+	status = create_file(conn, req, root_dir_fid, fname, flags,
+			     access_mask, file_attributes, share_access,
+			     create_disposition, create_options,
+			     oplock_request, allocation_size, NULL, NULL,
+			     &fsp, &info, &oplock_granted, &sbuf, &file_len);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
-			/* We have re-scheduled this call. */
+			/* We have re-scheduled this call, no error. */
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
-		reply_openerror(req, status);
+		reply_nterror(req, status);
 		END_PROFILE(SMBntcreateX);
 		return;
 	}
 
-	file_len = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
-	if(fattr == 0) {
-		fattr = FILE_ATTRIBUTE_NORMAL;
-	}
-	if (!fsp->is_directory && (fattr & aDIR)) {
-		close_file(fsp,ERROR_CLOSE);
-		reply_doserror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBntcreateX);
-		return;
-	}
-
-	/* Save the requested allocation size. */
-	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size
-		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, allocation_size);
-			if (fsp->is_directory) {
-				close_file(fsp,ERROR_CLOSE);
-				/* Can't set allocation size on a directory. */
-				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-				close_file(fsp,ERROR_CLOSE);
-				reply_nterror(req, NT_STATUS_DISK_FULL);
-				END_PROFILE(SMBntcreateX);
-				return;
-			}
-		} else {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
-		}
-	}
-
-	/*
-	 * If the caller set the extended oplock request bit
-	 * and we granted one (by whatever means) - set the
-	 * correct bit for extended oplock reply.
-	 */
-
-	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		extended_oplock_granted = True;
-	}
-
-	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		extended_oplock_granted = True;
-	}
+	DEBUG(10, ("create_file returned fsp %p\n", fsp));
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		/* This is very strange. We
@@ -970,27 +995,13 @@ void reply_ntcreate_and_X(connection_struct *conn,
 
 	p = (char *)req->outbuf + smb_vwv2;
 
-	/*
-	 * Currently as we don't support level II oplocks we just report
-	 * exclusive & batch here.
-	 */
-
-	if (extended_oplock_granted) {
-		if (flags & REQUEST_BATCH_OPLOCK) {
-			SCVAL(p,0, BATCH_OPLOCK_RETURN);
-		} else {
-			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
-		}
-	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-	} else {
-		SCVAL(p,0,NO_OPLOCK_RETURN);
-	}
+	SCVAL(p, 0, oplock_granted);
 
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	if ((create_disposition == FILE_SUPERSEDE) && (info == FILE_WAS_OVERWRITTEN)) {
+	if ((create_disposition == FILE_SUPERSEDE)
+	    && (info == FILE_WAS_OVERWRITTEN)) {
 		SIVAL(p,0,FILE_WAS_SUPERSEDED);
 	} else {
 		SIVAL(p,0,info);
@@ -998,7 +1009,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	p += 4;
 
 	/* Create time. */
-	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(
+		&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 	a_timespec = get_atimespec(&sbuf);
 	m_timespec = get_mtimespec(&sbuf);
 
@@ -1031,7 +1043,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32 perms = 0;
 		p += 25;
-		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
+		if (fsp->is_directory
+		    || can_write_to_file(conn, fname, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
@@ -1039,7 +1052,8 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		SIVAL(p,0,perms);
 	}
 
-	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
+	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n",
+		 fsp->fnum, fsp->fsp_name));
 
 	chain_reply(req);
 	END_PROFILE(SMBntcreateX);
@@ -1260,7 +1274,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	int info = 0;
 	files_struct *fsp = NULL;
 	char *p = NULL;
-	bool extended_oplock_granted = False;
 	uint32 flags;
 	uint32 access_mask;
 	uint32 file_attributes;
@@ -1277,8 +1290,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 	size_t param_len;
-	struct case_semantics_state *case_state = NULL;
 	SMB_BIG_UINT allocation_size;
+	uint8_t oplock_granted;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1382,384 +1395,19 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		return;
-	}
-
-	/*
-	 * Get the file name.
-	 */
-
-	if (root_dir_fid != 0) {
-		/*
-		 * This filename is relative to a directory fid.
-		 */
-		char *parent_fname = NULL;
-		char *tmp;
-		files_struct *dir_fsp = file_fsp(root_dir_fid);
-
-		if(!dir_fsp) {
-			reply_doserror(req, ERRDOS, ERRbadfid);
-			return;
-		}
-
-		if(!dir_fsp->is_directory) {
-
-			/*
-			 * Check to see if this is a mac fork of some kind.
-			 */
-
-			if( is_ntfs_stream_name(fname)) {
-				reply_nterror(
-					req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-				return;
-			}
-
-			/*
-			  we need to handle the case when we get a
-			  relative open relative to a file and the
-			  pathname is blank - this is a reopen!
-			  (hint from demyn plantenberg)
-			*/
-
-			reply_doserror(req, ERRDOS, ERRbadfid);
-			return;
-		}
-
-		if (ISDOT(dir_fsp->fsp_name)) {
-			/*
-			 * We're at the toplevel dir, the final file name
-			 * must not contain ./, as this is filtered out
-			 * normally by srvstr_get_path and unix_convert
-			 * explicitly rejects paths containing ./.
-			 */
-			parent_fname = talloc_strdup(ctx,"");
-			if (!parent_fname) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-		} else {
-			size_t dir_name_len = strlen(dir_fsp->fsp_name);
-
-			/*
-			 * Copy in the base directory name.
-			 */
-
-			parent_fname = TALLOC_ARRAY(ctx, char, dir_name_len+2);
-			if (!parent_fname) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-			memcpy(parent_fname, dir_fsp->fsp_name,
-			       dir_name_len+1);
-
-			/*
-			 * Ensure it ends in a '/'.
-			 * We used TALLOC_SIZE +2 to add space for the '/'.
-			 */
-
-			if(dir_name_len
-			   && (parent_fname[dir_name_len-1] != '\\')
-			   && (parent_fname[dir_name_len-1] != '/')) {
-				parent_fname[dir_name_len] = '/';
-				parent_fname[dir_name_len+1] = '\0';
-			}
-		}
-
-		tmp = talloc_asprintf(ctx, "%s%s", parent_fname, fname);
-		if (tmp == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBntcreateX);
-			return;
-		}
-		TALLOC_FREE(fname);
-		fname = tmp;
-	} else {
-		/*
-		 * Check to see if this is a mac fork of some kind.
-		 */
-
-		if (is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type;
-
-			fake_file_type = is_fake_file(fname);
-
-			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
-				/*
-				 * Here we go! support for changing the disk
-				 * quotas --metze
-				 *
-				 * We need to fake up to open this MAGIC QUOTA
-				 * file and return a valid FID.
-				 *
-				 * w2k close this file directly after
-				 * openening xp also tries a QUERY_FILE_INFO
-				 * on the file and then close it
-				 */
-				reply_ntcreate_and_X_quota(
-					conn, req, fake_file_type, fname);
-				return;
-			}
-			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-			return;
-		}
-	}
-
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
-			? BATCH_OPLOCK : 0;
-	}
-
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			return;
-		}
-		reply_nterror(req, status);
-		return;
-	}
-
-	/*
-	 * Check if POSIX semantics are wanted.
-	 */
-
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(NULL, conn);
-		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(case_state);
-		reply_nterror(req, status);
-		return;
-	}
-	/* All file access must go through check_name() */
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(case_state);
-		reply_nterror(req, status);
-		return;
-	}
-
-	/* This is the correct thing to do (check every time) but can_delete
-	 * is expensive (it may have to read the parent directory
-	 * permissions). So for now we're not doing it unless we have a strong
-	 * hint the client is really going to delete this file. If the client
-	 * is forcing FILE_CREATE let the filesystem take care of the
-	 * permissions. */
-
-	/* Setting FILE_SHARE_DELETE is the hint. */
-
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
-	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)) {
-		if (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
-				&& !lp_delete_readonly(SNUM(conn))) ||
-				!can_delete_file_in_directory(conn, fname)) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-	}
-
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
-			!user_has_privileges(current_user.nt_user_token,
-				&se_security)) {
-		TALLOC_FREE(case_state);
-		reply_nterror(req, NT_STATUS_PRIVILEGE_NOT_HELD);
-		return;
-	}
-#endif
-
-	/*
-	 * If it's a request for a directory open, deal with it separately.
-	 */
-
-	if(create_options & FILE_DIRECTORY_FILE) {
-
-		/* Can't open a temp directory. IFS kit test. */
-		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			TALLOC_FREE(case_state);
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		/*
-		 * We will get a create directory here if the Win32
-		 * app specified a security descriptor in the 
-		 * CreateDirectory() call.
-		 */
-
-		oplock_request = 0;
-		status = open_directory(conn, req, fname, &sbuf,
-					access_mask,
-					share_access,
-					create_disposition,
-					create_options,
-					file_attributes,
-					&info, &fsp);
-	} else {
-
-		/*
-		 * Ordinary file case.
-		 */
-
-		status = open_file_ntcreate(conn,req,fname,&sbuf,
-					access_mask,
-					share_access,
-					create_disposition,
-					create_options,
-					file_attributes,
-					oplock_request,
-					&info, &fsp);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
-
-			/*
-			 * Fail the open if it was explicitly a non-directory
-			 * file.
-			 */
-
-			if (create_options & FILE_NON_DIRECTORY_FILE) {
-				TALLOC_FREE(case_state);
-				reply_force_nterror(
-					req,
-					NT_STATUS_FILE_IS_A_DIRECTORY);
-				return;
-			}
-
-			oplock_request = 0;
-			status = open_directory(conn, req, fname,
-						&sbuf,
-						access_mask,
-						share_access,
-						create_disposition,
-						create_options,
-						file_attributes,
-						&info, &fsp);
-		}
-	}
-
-	TALLOC_FREE(case_state);
+	status = create_file(conn, req, root_dir_fid, fname, flags,
+			     access_mask, file_attributes, share_access,
+			     create_disposition, create_options,
+			     oplock_request, allocation_size, sd, ea_list,
+			     &fsp, &info, &oplock_granted, &sbuf, &file_len);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
-			/* We have re-scheduled this call. */
+			/* We have re-scheduled this call, no error. */
 			return;
 		}
-		reply_openerror(req, status);
+		reply_nterror(req, status);
 		return;
-	}
-
-	/*
-	 * According to the MS documentation, the only time the security
-	 * descriptor is applied to the opened file is iff we *created* the
-	 * file; an existing file stays the same.
-	 *
-	 * Also, it seems (from observation) that you can open the file with
-	 * any access mask but you can still write the sd. We need to override
-	 * the granted access before we call set_sd
-	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
-	 */
-
-	if (lp_nt_acl_support(SNUM(conn)) && (info == FILE_WAS_CREATED)
-	    && (sd != NULL)) {
-		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
-		uint32_t saved_access_mask = fsp->access_mask;
-
-		fsp->access_mask = FILE_GENERIC_ALL;
-
-		if (sd->owner_sid==0) {
-			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
-		}
-		if (sd->group_sid==0) {
-			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
-		}
-		if (sd->sacl==0) {
-			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
-		}
-		if (sd->dacl==0) {
-			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
-		}
-
-		status = SMB_VFS_FSET_NT_ACL(
-			fsp, fsp->fh->fd, sec_info_sent, sd);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			close_file(fsp,ERROR_CLOSE);
-			TALLOC_FREE(case_state);
-			reply_nterror(req, status);
-			return;
-		}
-		fsp->access_mask = saved_access_mask;
- 	}
-
-	if (ea_len && (info == FILE_WAS_CREATED)) {
-		status = set_ea(conn, fsp, fname, ea_list);
-		if (!NT_STATUS_IS_OK(status)) {
-			close_file(fsp,ERROR_CLOSE);
-			TALLOC_FREE(case_state);
-			reply_nterror(req, status);
-			return;
-		}
-	}
-
-	file_len = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
-	if(fattr == 0) {
-		fattr = FILE_ATTRIBUTE_NORMAL;
-	}
-	if (!fsp->is_directory && (fattr & aDIR)) {
-		close_file(fsp,ERROR_CLOSE);
-		reply_doserror(req, ERRDOS, ERRnoaccess);
-		return;
-	}
-
-	/* Save the requested allocation size. */
-	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size
-		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, allocation_size);
-			if (fsp->is_directory) {
-				close_file(fsp,ERROR_CLOSE);
-				/* Can't set allocation size on a directory. */
-				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-				return;
-			}
-			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-				close_file(fsp,ERROR_CLOSE);
-				reply_nterror(req, NT_STATUS_DISK_FULL);
-				return;
-			}
-		} else {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
-		}
-	}
-
-	/*
-	 * If the caller set the extended oplock request bit
-	 * and we granted one (by whatever means) - set the
-	 * correct bit for extended oplock reply.
-	 */
-
-	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-		extended_oplock_granted = True;
-	}
-
-	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		extended_oplock_granted = True;
 	}
 
 	/* Realloc the size of parameters and data we will return */
@@ -1776,22 +1424,13 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	p = params;
-	if (extended_oplock_granted) {
-		if (flags & REQUEST_BATCH_OPLOCK) {
-			SCVAL(p,0, BATCH_OPLOCK_RETURN);
-		} else {
-			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
-		}
-	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-	} else {
-		SCVAL(p,0,NO_OPLOCK_RETURN);
-	}
+	SCVAL(p, 0, oplock_granted);
 
 	p += 2;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	if ((create_disposition == FILE_SUPERSEDE) && (info == FILE_WAS_OVERWRITTEN)) {
+	if ((create_disposition == FILE_SUPERSEDE)
+	    && (info == FILE_WAS_OVERWRITTEN)) {
 		SIVAL(p,0,FILE_WAS_SUPERSEDED);
 	} else {
 		SIVAL(p,0,info);
@@ -1799,7 +1438,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	p += 8;
 
 	/* Create time. */
-	c_timespec = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+	c_timespec = get_create_timespec(
+		&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 	a_timespec = get_atimespec(&sbuf);
 	m_timespec = get_mtimespec(&sbuf);
 
@@ -1832,7 +1472,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32 perms = 0;
 		p += 25;
-		if (fsp->is_directory || can_write_to_file(conn, fname, &sbuf)) {
+		if (fsp->is_directory
+		    || can_write_to_file(conn, fname, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
