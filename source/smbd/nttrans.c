@@ -759,11 +759,12 @@ void reply_ntcreate_and_X(connection_struct *conn,
 		return;
 	}
 
-	/* This is the correct thing to do (check every time) but can_delete is
-	   expensive (it may have to read the parent directory permissions). So
-	   for now we're not doing it unless we have a strong hint the client
-	   is really going to delete this file. If the client is forcing FILE_CREATE
-	   let the filesystem take care of the permissions. */
+	/* This is the correct thing to do (check every time) but can_delete
+	 * is expensive (it may have to read the parent directory
+	 * permissions). So for now we're not doing it unless we have a strong
+	 * hint the client is really going to delete this file. If the client
+	 * is forcing FILE_CREATE let the filesystem take care of the
+	 * permissions. */
 
 	/* Setting FILE_SHARE_DELETE is the hint. */
 
@@ -1505,11 +1506,12 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	/* This is the correct thing to do (check every time) but can_delete is
-	   expensive (it may have to read the parent directory permissions). So
-	   for now we're not doing it unless we have a strong hint the client
-	   is really going to delete this file. If the client is forcing FILE_CREATE
-	   let the filesystem take care of the permissions. */
+	/* This is the correct thing to do (check every time) but can_delete
+	 * is expensive (it may have to read the parent directory
+	 * permissions). So for now we're not doing it unless we have a strong
+	 * hint the client is really going to delete this file. If the client
+	 * is forcing FILE_CREATE let the filesystem take care of the
+	 * permissions. */
 
 	/* Setting FILE_SHARE_DELETE is the hint. */
 
