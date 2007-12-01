@@ -1321,26 +1321,29 @@ static void call_nt_transact_create(connection_struct *conn,
 #endif
 
 	/* Ensure the data_len is correct for the sd and ea values given. */
-	if ((ea_len + sd_len > data_count) ||
-			(ea_len > data_count) || (sd_len > data_count) ||
-			(ea_len + sd_len < ea_len) || (ea_len + sd_len < sd_len)) {
-		DEBUG(10,("call_nt_transact_create - ea_len = %u, sd_len = %u, data_count = %u\n",
-			(unsigned int)ea_len, (unsigned int)sd_len, (unsigned int)data_count ));
+	if ((ea_len + sd_len > data_count)
+	    || (ea_len > data_count) || (sd_len > data_count)
+	    || (ea_len + sd_len < ea_len) || (ea_len + sd_len < sd_len)) {
+		DEBUG(10, ("call_nt_transact_create - ea_len = %u, sd_len = "
+			   "%u, data_count = %u\n", (unsigned int)ea_len,
+			   (unsigned int)sd_len, (unsigned int)data_count));
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	if (ea_len) {
 		if (!lp_ea_support(SNUM(conn))) {
-			DEBUG(10,("call_nt_transact_create - ea_len = %u but EA's not supported.\n",
-				(unsigned int)ea_len ));
+			DEBUG(10, ("call_nt_transact_create - ea_len = %u but "
+				   "EA's not supported.\n",
+				   (unsigned int)ea_len));
 			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 			return;
 		}
 
 		if (ea_len < 10) {
-			DEBUG(10,("call_nt_transact_create - ea_len = %u - too small (should be more than 10)\n",
-				(unsigned int)ea_len ));
+			DEBUG(10,("call_nt_transact_create - ea_len = %u - "
+				  "too small (should be more than 10)\n",
+				  (unsigned int)ea_len ));
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
