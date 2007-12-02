@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "torture/torture.h"
 #include "lib/ldb/include/ldb.h"
+#include "param/param.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -215,6 +216,7 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
+	search.in.dest_port = lp_cldap_port(global_loadparm);
 	search.in.timeout = 10;
 	search.in.retries = 3;
 

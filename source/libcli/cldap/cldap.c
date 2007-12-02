@@ -317,7 +317,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 
 	req->dest = socket_address_from_strings(req, cldap->sock->backend_name,
 						io->in.dest_address, 
-						lp_cldap_port(global_loadparm));
+						io->in.dest_port);
 	if (!req->dest) goto failed;
 
 	req->message_id = idr_get_new_random(cldap->idr, req, UINT16_MAX);
@@ -572,6 +572,7 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 	if (filter == NULL) goto failed;
 
 	search.in.dest_address = io->in.dest_address;
+	search.in.dest_port    = lp_cldap_port(global_loadparm);
 	search.in.filter       = filter;
 	search.in.attributes   = attr;
 	search.in.timeout      = 2;
