@@ -415,6 +415,8 @@ static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void 
 {
 	struct ctdb_set_recmode_state *state = talloc_get_type(p, struct ctdb_set_recmode_state);
 
+	ctdb_enable_monitoring(state->ctdb);
+
 	if (status == 0) {
 		ctdb->recovery_mode = state->recmode;
 	} else {
@@ -491,9 +493,9 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 					 ctdb_recovered_callback, 
 					 state, "recovered");
 
-	ctdb_enable_monitoring(state->ctdb);
-
 	if (ret != 0) {
+		ctdb_enable_monitoring(state->ctdb);
+
 		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "failed to run eventscript from set_recmode");
 		talloc_free(state);
 		return;

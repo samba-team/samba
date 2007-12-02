@@ -770,7 +770,7 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
 	if (rec->last_culprit != culprit ||
 	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
 		DEBUG(0,("New recovery culprit %u\n", culprit));
-		/* either a new node is the culprit, or we've decide to forgive them */
+		/* either a new node is the culprit, or we've decided to forgive them */
 		rec->last_culprit = culprit;
 		rec->first_recover_time = timeval_current();
 		rec->culprit_counter = 0;

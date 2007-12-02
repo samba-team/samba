@@ -199,7 +199,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
-	DEBUG(1,("Monitoring has been disabled\n"));
+	DEBUG(2,("Monitoring has been disabled\n"));
 }
 
 /* 
@@ -208,7 +208,7 @@ void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 void ctdb_enable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-	DEBUG(1,("Monitoring has been enabled\n"));
+	DEBUG(2,("Monitoring has been enabled\n"));
 }
 
 /* stop any monitoring 
@@ -269,7 +269,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	node->flags &= ~m->clear;
 
 	if (node->flags == old_flags) {
-		DEBUG(0, ("Control modflags on node %u - Unchanged - flags 0x%x\n", ctdb->pnn, node->flags));
+		DEBUG(2, ("Control modflags on node %u - Unchanged - flags 0x%x\n", ctdb->pnn, node->flags));
 		return 0;
 	}
 

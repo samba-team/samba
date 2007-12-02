@@ -131,6 +131,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	struct ctdb_tcp_array *tcparray;
 
+	ctdb_enable_monitoring(ctdb);
+
 	if (status != 0) {
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, state->vnn->iface));
@@ -245,9 +247,9 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 					 vnn->iface, 
 					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
-	ctdb_enable_monitoring(ctdb);
 
 	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
 		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(state);
@@ -298,6 +300,8 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		talloc_get_type(private_data, struct takeover_callback_state);
 	char *ip = inet_ntoa(state->sin->sin_addr);
 	TDB_DATA data;
+
+	ctdb_enable_monitoring(ctdb);
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
@@ -371,9 +375,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 vnn->iface, 
 					 inet_ntoa(pip->sin.sin_addr),
 					 vnn->public_netmask_bits);
-	ctdb_enable_monitoring(ctdb);
-
 	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
+
 		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(state);
