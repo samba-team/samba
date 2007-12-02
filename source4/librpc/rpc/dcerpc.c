@@ -28,10 +28,11 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 NTSTATUS dcerpc_init(void)
 {
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	return NT_STATUS_OK;
 }

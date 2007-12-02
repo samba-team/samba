@@ -31,11 +31,12 @@
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "ldb_wrap.h"
+#include "param/param.h"
 #endif
 
 
 
-/*
+/**
   process command line options
 */
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
@@ -208,7 +209,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 
 #if (_SAMBA_BUILD_ >= 4)
 	/* Must be after we have processed command line options */
-	gensec_init(); 
+	gensec_init(global_loadparm); 
 	
 	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
 		goto failed;

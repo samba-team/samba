@@ -1081,7 +1081,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	if (opt_domain == NULL) {
 		opt_domain = lp_workgroup(global_loadparm);

@@ -3180,7 +3180,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 		}
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	if(poptPeekArg(pc)) {
 		char *s = strdup(poptGetArg(pc)); 

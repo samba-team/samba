@@ -637,7 +637,7 @@ static void usage(void)
 		servers[1] = servers[0];
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	argc -= optind;
 	argv += optind;

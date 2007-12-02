@@ -60,7 +60,7 @@ int main(int argc, const char **argv)
 
 	ldb_global_init();
 
-	gensec_init();
+	gensec_init(global_loadparm);
 	mprSetCtx(mem_ctx);
 
 

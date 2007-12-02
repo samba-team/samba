@@ -165,6 +165,8 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security;
 };
 
+struct loadparm_context;
+
 #include "auth/gensec/gensec_proto.h"
 
 #endif /* __GENSEC_H__ */
