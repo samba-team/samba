@@ -480,10 +480,11 @@ static NTSTATUS create_file(connection_struct *conn,
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	NTSTATUS status;
 
-	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
+	DEBUG(10,("create_file: flags = 0x%x, access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
-		  "root_dir_fid = 0x%x, fname = %s\n",
+		  "root_dir_fid = 0x%x, ea_list = 0x%x, sd = 0x%x, "
+		  "fname = %s\n",
 		  (unsigned int)flags,
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -491,6 +492,8 @@ static NTSTATUS create_file(connection_struct *conn,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
 		  (unsigned int)root_dir_fid,
+		  (unsigned int)ea_list,
+		  (unsigned int)sd,
 		  fname));
 
 	SET_STAT_INVALID(sbuf);
@@ -1369,6 +1372,9 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	if (sd_len) {
+		DEBUG(10, ("call_nt_transact_create - sd_len = %d\n",
+			   sd_len));
+
 		status = unmarshall_sec_desc(ctx, (uint8_t *)data, sd_len,
 					     &sd);
 		if (!NT_STATUS_IS_OK(status)) {
