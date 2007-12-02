@@ -26,6 +26,7 @@ extern const char *user_attrs[];
 union netr_Validation;
 struct netr_SamBaseInfo;
 struct netr_SamInfo3;
+struct loadparm_context;
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change

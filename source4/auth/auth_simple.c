@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 
 /*
  It's allowed to pass NULL as session_info,
@@ -49,6 +50,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 
 	nt_status = auth_context_create(tmp_ctx, 
 					ev, msg,
+					global_loadparm,
 					&auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);

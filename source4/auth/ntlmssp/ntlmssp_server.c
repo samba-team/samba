@@ -792,6 +792,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	nt_status = auth_context_create(gensec_ntlmssp_state, 
 					gensec_security->event_ctx,
 					gensec_security->msg_ctx,
+					global_loadparm,
 					&gensec_ntlmssp_state->auth_context);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 

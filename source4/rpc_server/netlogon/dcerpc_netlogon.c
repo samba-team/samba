@@ -432,6 +432,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, 
 						dce_call->event_ctx, dce_call->msg_ctx,
+						global_loadparm,
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -458,6 +459,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, 
 						dce_call->event_ctx, dce_call->msg_ctx,
+						global_loadparm,
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
