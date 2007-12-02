@@ -310,7 +310,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		}
 	}
 
-	/* get NETLOGON credentails */
+	/* get NETLOGON credentials */
 
 	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {

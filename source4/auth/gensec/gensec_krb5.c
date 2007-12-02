@@ -256,7 +256,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
-		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentails failed: %s\n", error_message(ret)));
+		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentials failed: %s\n", error_message(ret)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	in_data.length = 0;

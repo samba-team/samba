@@ -375,7 +375,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 
 	status = gensec_set_credentials(session->gensec, io->in.credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC client credentials: %s\n", 
 			  nt_errstr(status)));
 		return status;
 	}

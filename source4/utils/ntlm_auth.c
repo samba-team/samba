@@ -316,8 +316,8 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 }
 
 /** 
- * Callback for password credentails.  This is not async, and when
- * GENSEC and the credentails code is made async, it will look rather
+ * Callback for password credentials.  This is not async, and when
+ * GENSEC and the credentials code is made async, it will look rather
  * different.
  */
 
