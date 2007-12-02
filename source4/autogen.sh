@@ -70,7 +70,7 @@ if which $SWIG >/dev/null 2>&1; then
 	for I in $SWIG_FILES
 	do
 		echo "$0: running $SWIG for $I"
-		swig -python -keyword $I
+		swig -python -keyword -Iscripting/python/replace $I
 	done
 fi
 
