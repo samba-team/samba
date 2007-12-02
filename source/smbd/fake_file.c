@@ -111,8 +111,9 @@ NTSTATUS open_fake_file(connection_struct *conn,
 
 	/* access check */
 	if (current_user.ut.uid != 0) {
-		DEBUG(1,("open_fake_file_shared: access_denied to service[%s] file[%s] user[%s]\n",
-			lp_servicename(SNUM(conn)),fname,conn->user));
+		DEBUG(3, ("open_fake_file_shared: access_denied to "
+			  "service[%s] file[%s] user[%s]\n",
+			  lp_servicename(SNUM(conn)),fname,conn->user));
 		return NT_STATUS_ACCESS_DENIED;
 
 	}
