@@ -246,6 +246,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		status = auth_context_create(req, 
 					     req->smb_conn->connection->event.ctx,
 					     req->smb_conn->connection->msg_ctx,
+					     global_loadparm,
 					     &auth_context);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	} else {

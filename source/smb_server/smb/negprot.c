@@ -47,6 +47,7 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 	nt_status = auth_context_create(smb_conn, 
 					smb_conn->connection->event.ctx,
 					smb_conn->connection->msg_ctx,
+					global_loadparm,
 					&smb_conn->negotiate.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
