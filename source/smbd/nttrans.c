@@ -992,7 +992,12 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 			END_PROFILE(SMBntcreateX);
 			return;
 		}
-		reply_nterror(req, status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			reply_botherror(req, status, ERRDOS, ERRfilexists);
+		}
+		else {
+			reply_nterror(req, status);
+		}
 		END_PROFILE(SMBntcreateX);
 		return;
 	}
@@ -1422,7 +1427,12 @@ static void call_nt_transact_create(connection_struct *conn,
 			/* We have re-scheduled this call, no error. */
 			return;
 		}
-		reply_nterror(req, status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			reply_botherror(req, status, ERRDOS, ERRfilexists);
+		}
+		else {
+			reply_nterror(req, status);
+		}
 		return;
 	}
 
