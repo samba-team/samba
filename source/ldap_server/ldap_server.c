@@ -389,8 +389,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	/* Ensure we don't get packets until the database is ready below */
 	packet_recv_disable(conn->packet);
 
-	server_credentials 
-		= cli_credentials_init(conn);
+	server_credentials = cli_credentials_init(conn);
 	if (!server_credentials) {
 		stream_terminate_connection(c, "Failed to init server credentials\n");
 		return;
@@ -515,7 +514,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	const struct model_ops *model_ops;
 
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration");
 		return;

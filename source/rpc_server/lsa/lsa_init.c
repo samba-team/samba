@@ -57,7 +57,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	partitions_basedn = samdb_partitions_dn(state->sam_ldb, mem_ctx);
 
-	state->sidmap = sidmap_open(state);
+	state->sidmap = sidmap_open(state, global_loadparm);
 	if (state->sidmap == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

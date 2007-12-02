@@ -244,7 +244,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(const char *computer_name,
 	struct ldb_context *ldb;
 	int ret;
 
-	ldb = schannel_db_connect(mem_ctx);
+	ldb = schannel_db_connect(mem_ctx, global_loadparm);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

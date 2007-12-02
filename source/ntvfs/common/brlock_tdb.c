@@ -34,6 +34,7 @@
 #include "cluster/cluster.h"
 #include "ntvfs/common/brlock.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
@@ -94,7 +95,7 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 		return NULL;
 	}
 
-	brl->db = db_tmp_open(brl, "brlock.tdb", TDB_DEFAULT);
+	brl->db = db_tmp_open(brl, global_loadparm, "brlock.tdb", TDB_DEFAULT);
 	if (brl->db == NULL) {
 		talloc_free(brl);
 		return NULL;
