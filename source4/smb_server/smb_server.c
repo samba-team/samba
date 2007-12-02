@@ -203,7 +203,7 @@ static void smbsrv_preopen_ldb(struct task_server *task)
 	/* yes, this looks strange. It is a hack to preload the
 	   schema. I'd like to share most of the ldb context with the
 	   child too. That will come later */
-	talloc_free(samdb_connect(task, NULL));
+	talloc_free(samdb_connect(task, global_loadparm, NULL));
 }
 
 /*

@@ -92,7 +92,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -301,7 +301,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -339,7 +339,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -885,7 +885,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 					      NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -989,7 +989,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
@@ -1147,7 +1147,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}

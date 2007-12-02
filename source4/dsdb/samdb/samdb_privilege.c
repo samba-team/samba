@@ -25,6 +25,7 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "util/util_ldb.h"
+#include "param/param.h"
 
 /*
   add privilege bits for one sid to a security_token
@@ -96,7 +97,7 @@ _PUBLIC_ NTSTATUS samdb_privilege_setup(struct security_token *token)
 	}
 
 	mem_ctx = talloc_new(token);
-	samctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	samctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (samctx == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

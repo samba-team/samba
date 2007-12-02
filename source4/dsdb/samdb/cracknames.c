@@ -33,6 +33,7 @@
 #include "auth/auth.h"
 #include "util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
@@ -1210,7 +1211,7 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	ldb = samdb_connect(mem_ctx, system_session(mem_ctx));
+	ldb = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

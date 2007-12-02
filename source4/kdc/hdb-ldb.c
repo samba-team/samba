@@ -1133,7 +1133,7 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 					   CRED_DONT_USE_KERBEROS);
 
 	/* Setup the link to LDB */
-	(*db)->hdb_db = samdb_connect(*db, session_info);
+	(*db)->hdb_db = samdb_connect(*db, global_loadparm, session_info);
 	if ((*db)->hdb_db == NULL) {
 		DEBUG(1, ("hdb_ldb_create: Cannot open samdb for KDC backend!"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

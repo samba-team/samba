@@ -28,6 +28,7 @@ struct task_server {
 	struct event_context *event_ctx;
 	const struct model_ops *model_ops;
 	struct messaging_context *msg_ctx;
+	struct loadparm_context *lp_ctx;
 	struct server_id server_id;
 	void *private;
 };
