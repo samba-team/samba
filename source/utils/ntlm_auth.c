@@ -58,18 +58,22 @@ enum stdio_helper_mode {
 
 
 typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
+				      struct loadparm_context *lp_ctx,
 				      char *buf, int length, void **private,
 				      unsigned int mux_id, void **private2);
 
 static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
+					struct loadparm_context *lp_ctx,
 					char *buf, int length, void **private,
 					unsigned int mux_id, void **private2);
 
 static void manage_gensec_request (enum stdio_helper_mode stdio_helper_mode, 
+				   struct loadparm_context *lp_ctx,
 				   char *buf, int length, void **private,
 				   unsigned int mux_id, void **private2);
 
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
+					  struct loadparm_context *lp_ctx,
 					  char *buf, int length, void **private,
 					  unsigned int mux_id, void **private2);
 
@@ -241,6 +245,7 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 }
 
 static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
+				       struct loadparm_context *lp_ctx,
 				       char *buf, int length, void **private,
 				       unsigned int mux_id, void **private2) 
 {
@@ -272,6 +277,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
    to the calling application.  The callback comes from within gensec */
 
 static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode, 
+					 struct loadparm_context *lp_ctx,
 					 char *buf, int length, void **private,
 					 unsigned int mux_id, void **password)  
 {
@@ -362,6 +368,7 @@ static void gensec_want_feature_list(struct gensec_security *state, char* featur
 }
 
 static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode, 
+				  struct loadparm_context *lp_ctx,
 				  char *buf, int length, void **private,
 				  unsigned int mux_id, void **private2) 
 {
@@ -692,6 +699,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 }
 
 static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
+					 struct loadparm_context *lp_ctx,
 					 char *buf, int length, void **private,
 					 unsigned int mux_id, void **private2) 
 {
@@ -712,7 +720,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
 			if (!full_username) {
-				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(global_loadparm), username) == -1) {
+				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(lp_ctx), username) == -1) {
 					mux_printf(mux_id, "Error: Out of memory in asprintf!\n.\n");
 					return;
 				}
@@ -747,7 +755,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			}
 
 			if (!domain) {
-				domain = smb_xstrdup(lp_workgroup(global_loadparm));
+				domain = smb_xstrdup(lp_workgroup(lp_ctx));
 			}
 
 			if (ntlm_server_1_lm_session_key) 
@@ -757,10 +765,10 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				flags |= NTLM_AUTH_FLAG_USER_SESSION_KEY;
 
 			if (!NT_STATUS_IS_OK(
-				    local_pw_check_specified(global_loadparm,
+				    local_pw_check_specified(lp_ctx,
 							     username, 
 							      domain, 
-							      lp_netbios_name(global_loadparm),
+							      lp_netbios_name(lp_ctx),
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
@@ -991,7 +999,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		private = &normal_private;
 	}
 
-	fn(helper_mode, c, length, private, mux_id, private2);
+	fn(helper_mode, global_loadparm, c, length, private, mux_id, private2);
 	talloc_free(buf);
 }
 
