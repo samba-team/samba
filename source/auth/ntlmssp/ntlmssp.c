@@ -28,6 +28,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes
@@ -427,7 +428,7 @@ NTSTATUS gensec_ntlmssp_init(void)
 {
 	NTSTATUS ret;
 
-	auth_init();
+	auth_init(global_loadparm);
 
 	ret = gensec_register(&gensec_ntlmssp_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {

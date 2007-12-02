@@ -779,7 +779,7 @@ NTSTATUS gensec_krb5_init(void)
 {
 	NTSTATUS ret;
 
-	auth_init();
+	auth_init(global_loadparm);
 
 	ret = gensec_register(&gensec_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {

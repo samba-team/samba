@@ -45,13 +45,14 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				     const char *user,
 				     const char *src_address,
 				     uint32_t version,
+				     struct loadparm_context *lp_ctx,
 				     union nbt_cldap_netlogon *netlogon)
 {
 	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
 	const char *dom_attrs[] = {"objectGUID", NULL};
 	struct ldb_result *ref_res = NULL, *dom_res = NULL;
 	int ret;
-	const char **services = lp_server_services(global_loadparm);
+	const char **services = lp_server_services(lp_ctx);
 	uint32_t server_type;
 	const char *pdc_name;
 	struct GUID domain_uuid;
@@ -173,17 +174,17 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		server_type |= NBT_SERVER_KDC;
 	}
 
-	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(global_loadparm));
+	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name(lp_ctx));
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
-	realm            = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(global_loadparm));
-	dns_domain       = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(global_loadparm));
+	realm            = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(lp_ctx));
+	dns_domain       = samdb_result_string(ref_res->msgs[0], "dnsRoot", lp_realm(lp_ctx));
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
-							   lp_netbios_name(global_loadparm)), 
+							   lp_netbios_name(lp_ctx)), 
 					   dns_domain);
 
 	flatname         = samdb_result_string(ref_res->msgs[0], "nETBIOSName", 
-					       lp_workgroup(global_loadparm));
+					       lp_workgroup(lp_ctx));
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
 	pdc_ip           = iface_best_ip(src_address);
@@ -227,7 +228,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon5.dns_domain   = dns_domain;
 		netlogon->logon5.pdc_dns_name = pdc_dns_name;
 		netlogon->logon5.domain       = flatname;
-		netlogon->logon5.pdc_name     = lp_netbios_name(global_loadparm);
+		netlogon->logon5.pdc_name     = lp_netbios_name(lp_ctx);
 		netlogon->logon5.user_name    = user;
 		netlogon->logon5.server_site  = server_site;
 		netlogon->logon5.client_site  = client_site;
@@ -242,7 +243,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon13.dns_domain   = dns_domain;
 		netlogon->logon13.pdc_dns_name = pdc_dns_name;
 		netlogon->logon13.domain       = flatname;
-		netlogon->logon13.pdc_name     = lp_netbios_name(global_loadparm);
+		netlogon->logon13.pdc_name     = lp_netbios_name(lp_ctx);
 		netlogon->logon13.user_name    = user;
 		netlogon->logon13.server_site  = server_site;
 		netlogon->logon13.client_site  = client_site;
@@ -338,7 +339,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 
 	status = cldapd_netlogon_fill(cldapd, tmp_ctx, domain, domain_guid, 
 				      user, src->addr, 
-				      version, &netlogon);
+				      version, global_loadparm, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
