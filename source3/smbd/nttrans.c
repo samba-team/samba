@@ -470,13 +470,10 @@ static NTSTATUS create_file(connection_struct *conn,
 			    files_struct **result,
 			    int *pinfo,
 			    uint8_t *poplock_granted,
-			    SMB_STRUCT_STAT *psbuf,
-			    SMB_OFF_T *pfile_len)
+			    SMB_STRUCT_STAT *psbuf)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct case_semantics_state *case_state = NULL;
-	uint32_t fattr;
-	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
@@ -809,12 +806,7 @@ static NTSTATUS create_file(connection_struct *conn,
 		}
 	}
 
-	file_len = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
-	if(fattr == 0) {
-		fattr = FILE_ATTRIBUTE_NORMAL;
-	}
-	if (!fsp->is_directory && (fattr & aDIR)) {
+	if (!fsp->is_directory && S_ISDIR(sbuf.st_mode)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
@@ -822,7 +814,7 @@ static NTSTATUS create_file(connection_struct *conn,
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if (allocation_size
-		    && (allocation_size > (SMB_BIG_UINT)file_len)) {
+		    && (allocation_size > sbuf.st_size)) {
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
@@ -836,7 +828,8 @@ static NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 		} else {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, (SMB_BIG_UINT)sbuf.st_size);
 		}
 	}
 
@@ -866,14 +859,13 @@ static NTSTATUS create_file(connection_struct *conn,
 	}
 
  done:
-	DEBUG(10, ("create_file: info=%d, oplock_granted=%d, file_len=%lu\n",
-		   info, (int)oplock_granted, (unsigned long)file_len));
+	DEBUG(10, ("create_file: info=%d, oplock_granted=%d\n",
+		   info, (int)oplock_granted));
 
 	*result = fsp;
 	*pinfo = info;
 	*poplock_granted = oplock_granted;
 	*psbuf = sbuf;
-	*pfile_len = file_len;
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
@@ -984,7 +976,7 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 			     access_mask, file_attributes, share_access,
 			     create_disposition, create_options,
 			     oplock_request, allocation_size, NULL, NULL,
-			     &fsp, &info, &oplock_granted, &sbuf, &file_len);
+			     &fsp, &info, &oplock_granted, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1000,6 +992,12 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 		}
 		END_PROFILE(SMBntcreateX);
 		return;
+	}
+
+	file_len = sbuf.st_size;
+	fattr = dos_mode(conn,fname,&sbuf);
+	if (fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
@@ -1420,7 +1418,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			     access_mask, file_attributes, share_access,
 			     create_disposition, create_options,
 			     oplock_request, allocation_size, sd, ea_list,
-			     &fsp, &info, &oplock_granted, &sbuf, &file_len);
+			     &fsp, &info, &oplock_granted, &sbuf);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1434,6 +1432,12 @@ static void call_nt_transact_create(connection_struct *conn,
 			reply_nterror(req, status);
 		}
 		return;
+	}
+
+	file_len = sbuf.st_size;
+	fattr = dos_mode(conn,fname,&sbuf);
+	if (fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
 
 	/* Realloc the size of parameters and data we will return */
