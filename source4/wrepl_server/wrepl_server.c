@@ -495,9 +495,9 @@ static void wreplsrv_task_init(struct task_server *task)
 /*
   initialise the WREPL server
  */
-static NTSTATUS wreplsrv_init(struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS wreplsrv_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
 {
-	if (!lp_wins_support(global_loadparm)) {
+	if (!lp_wins_support(lp_ctx)) {
 		return NT_STATUS_OK;
 	}
 

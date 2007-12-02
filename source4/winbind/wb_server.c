@@ -201,6 +201,7 @@ nomem:
   initialise the winbind server
  */
 static NTSTATUS winbind_init(struct event_context *event_ctx,
+			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops)
 {
 	return task_server_startup(event_ctx, model_ops, winbind_task_init);
