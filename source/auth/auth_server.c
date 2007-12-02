@@ -92,7 +92,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	
 	DEBUG(3,("got session\n"));
 
-	if (!smbcli_negprot(cli)) {
+	if (!smbcli_negprot(cli, lp_cli_maxprotocol(global_loadparm))) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
 		release_server_mutex();
 		talloc_free(cli);
