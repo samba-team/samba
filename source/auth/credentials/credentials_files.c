@@ -169,6 +169,7 @@ bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,
 				     const char *filter)
@@ -212,7 +213,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	if (!ldb) {
 		/* Local secrets are stored in secrets.ldb */
-		ldb = secrets_db_connect(mem_ctx, global_loadparm);
+		ldb = secrets_db_connect(mem_ctx, lp_ctx);
 		if (!ldb) {
 			/* set anonymous as the fallback, if the machine account won't work */
 			cli_credentials_set_anonymous(cred);
@@ -308,7 +309,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	} else {
 		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
-			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, global_loadparm, keytab));
+			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, lp_ctx, keytab));
 			if (keytab) {
 				cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
 			}
@@ -334,7 +335,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRIMARY_DOMAIN_DN,
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
 }
 
@@ -354,7 +355,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRINCIPALS_DN,
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRINCIPALS_DN,
 					   filter);
 }
 
@@ -376,7 +377,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, NULL, SECRETS_PRINCIPALS_DN,
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRINCIPALS_DN,
 					   filter);
 }
 

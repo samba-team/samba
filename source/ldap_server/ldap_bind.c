@@ -47,9 +47,10 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	status = crack_auto_name_to_nt4_name(call, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
-		status = authenticate_username_pw(global_loadparm, call,
+		status = authenticate_username_pw(call,
 						  call->conn->connection->event.ctx,
 						  call->conn->connection->msg_ctx,
+						  global_loadparm,
 						  nt4_domain, nt4_account, 
 						  req->creds.password,
 						  &session_info);

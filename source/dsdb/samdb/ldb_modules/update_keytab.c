@@ -89,8 +89,8 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	cli_credentials_set_conf(item->creds, global_loadparm);
-	status = cli_credentials_set_secrets(item->creds, module->ldb, NULL, filter);
+	cli_credentials_set_conf(item->creds, ldb_get_opaque(module->ldb, "loadparm"));
+	status = cli_credentials_set_secrets(item->creds, ldb_get_opaque(module->ldb, "loadparm"), module->ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
 		if (delete) {
