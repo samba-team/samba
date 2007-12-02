@@ -650,6 +650,7 @@ static void kdc_task_init(struct task_server *task)
   called on startup of the KDC service 
 */
 static NTSTATUS kdc_init(struct event_context *event_ctx, 
+			 struct loadparm_context *lp_ctx,
 			 const struct model_ops *model_ops)
 {	
 	return task_server_startup(event_ctx, model_ops, kdc_task_init);

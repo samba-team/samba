@@ -438,6 +438,7 @@ failed:
   listening on all configured sockets
 */
 static NTSTATUS dcesrv_init(struct event_context *event_context, 
+			    struct loadparm_context *lp_ctx,
 			    const struct model_ops *model_ops)
 {	
 	return task_server_startup(event_context, model_ops, dcesrv_task_init);

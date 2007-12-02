@@ -182,7 +182,7 @@ static void dreplsrv_task_init(struct task_server *task)
 /*
   initialise the dsdb replicator service
  */
-static NTSTATUS dreplsrv_init(struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS dreplsrv_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
 {
 	return task_server_startup(event_ctx, model_ops, dreplsrv_task_init);
 }

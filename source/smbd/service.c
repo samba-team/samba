@@ -30,14 +30,14 @@
 static struct registered_server {
 	struct registered_server *next, *prev;
 	const char *service_name;
-	NTSTATUS (*service_init)(struct event_context *, const struct model_ops *);
+	NTSTATUS (*service_init)(struct event_context *, struct loadparm_context *lp_ctx, const struct model_ops *);
 } *registered_servers;
 
 /*
   register a server service. 
 */
 NTSTATUS register_server_service(const char *name,
-				 NTSTATUS (*service_init)(struct event_context *, const struct model_ops *))
+				 NTSTATUS (*service_init)(struct event_context *, struct loadparm_context *lp_ctx, const struct model_ops *))
 {
 	struct registered_server *srv;
 	srv = talloc(talloc_autofree_context(), struct registered_server);
@@ -54,12 +54,13 @@ NTSTATUS register_server_service(const char *name,
 */
 static NTSTATUS server_service_init(const char *name,
 				    struct event_context *event_ctx,
+				    struct loadparm_context *lp_ctx,
 				    const struct model_ops *model_ops)
 {
 	struct registered_server *srv;
 	for (srv=registered_servers; srv; srv=srv->next) {
 		if (strcasecmp(name, srv->service_name) == 0) {
-			return srv->service_init(event_ctx, model_ops);
+			return srv->service_init(event_ctx, lp_ctx, model_ops);
 		}
 	}
 	return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -70,6 +71,7 @@ static NTSTATUS server_service_init(const char *name,
   startup all of our server services
 */
 NTSTATUS server_service_startup(struct event_context *event_ctx, 
+				struct loadparm_context *lp_ctx,
 				const char *model, const char **server_services)
 {
 	int i;
@@ -89,7 +91,7 @@ NTSTATUS server_service_startup(struct event_context *event_ctx,
 	for (i=0;server_services[i];i++) {
 		NTSTATUS status;
 
-		status = server_service_init(server_services[i], event_ctx, model_ops);
+		status = server_service_init(server_services[i], event_ctx, lp_ctx, model_ops);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to start service '%s' - %s\n", 
 				 server_services[i], nt_errstr(status)));
