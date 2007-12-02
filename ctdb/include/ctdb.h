@@ -160,6 +160,12 @@ int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
 int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist);
 
 /*
+  Check that a specific ip address exists in the node list and returns
+  the id for the node or -1
+*/
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip);
+
+/*
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
@@ -343,10 +349,6 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
   get the monitoring mode of a remote node
  */
 int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *monmode);
-/*
-  set the monitoringmode of a remote node
- */
-int ctdb_ctrl_setmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t monmode);
 
 /*
   get the recovery master of a remote node

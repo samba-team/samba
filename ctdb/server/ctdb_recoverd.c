@@ -61,12 +61,21 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
+	DEBUG(0,("Unbanning node %u\n", pnn));
+
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(0,("Bad pnn %u in ctdb_unban_node\n", pnn));
 		return;
 	}
 
+	if (pnn == ctdb->pnn) {
+		/* make sure we remember we are no longer banned in case 
+		   there is an election */
+		rec->node_flags &= ~NODE_FLAGS_BANNED;
+	}
+
 	if (rec->banned_nodes[pnn] == NULL) {
+		DEBUG(0,("No ban recorded for this node. ctdb_unban_node() request ignored\n"));
 		return;
 	}
 
@@ -97,6 +106,8 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 
+	DEBUG(0,("Banning node %u for %u seconds\n", pnn, ban_time));
+
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(0,("Bad pnn %u in ctdb_ban_node\n", pnn));
 		return;
@@ -111,9 +122,19 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 		DEBUG(0,("self ban - lowering our election priority\n"));
 		/* banning ourselves - lower our election priority */
 		rec->priority_time = timeval_current();
+
+		/* make sure we remember we are banned in case there is an 
+		   election */
+		rec->node_flags |= NODE_FLAGS_BANNED;
 	}
 
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, NODE_FLAGS_BANNED, 0);
+
+	if (rec->banned_nodes[pnn] != NULL) {
+		DEBUG(0,("Re-banning an already banned node. Remove previous ban and set a new ban.\n"));		
+		talloc_free(rec->banned_nodes[pnn]);
+		rec->banned_nodes[pnn] = NULL;
+	}
 
 	rec->banned_nodes[pnn] = talloc(rec, struct ban_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes[pnn]);
@@ -739,13 +760,32 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 	}
 }
 
+/*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(0,("New recovery culprit %u\n", culprit));
+		/* either a new node is the culprit, or we've decided to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter++;
+}
 
 /*
-  update our local flags from all remote connected nodes. 
+  Update our local flags from all remote connected nodes. 
+  This is only run when we are or we belive we are the recovery master
  */
-static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap)
 {
 	int j;
+	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
 	/* get the nodemap for all active remote nodes and verify
@@ -767,19 +807,55 @@ static int update_local_flags(struct ctdb_context *ctdb, struct ctdb_node_map *n
 		if (ret != 0) {
 			DEBUG(0, (__location__ " Unable to get nodemap from remote node %u\n", 
 				  nodemap->nodes[j].pnn));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 			talloc_free(mem_ctx);
-			return -1;
+			return MONITOR_FAILED;
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
+			struct ctdb_node_flag_change c;
+			TDB_DATA data;
+
+			/* We should tell our daemon about this so it
+			   updates its flags or else we will log the same 
+			   message again in the next iteration of recovery.
+			   Since we are the recovery master we can just as
+			   well update the flags on all nodes.
+			*/
+			c.pnn = nodemap->nodes[j].pnn;
+			c.old_flags = nodemap->nodes[j].flags;
+			c.new_flags = remote_nodemap->nodes[j].flags;
+
+			data.dptr = (uint8_t *)&c;
+			data.dsize = sizeof(c);
+
+			ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+					CTDB_SRVID_NODE_FLAGS_CHANGED, 
+					data);
+
+			/* Update our local copy of the flags in the recovery
+			   daemon.
+			*/
 			DEBUG(0,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
-				 nodemap->nodes[j].pnn, nodemap->nodes[j].flags,
-				 remote_nodemap->nodes[j].flags));
+				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
+				 nodemap->nodes[j].flags));
 			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+
+			/* If the BANNED flag has changed for the node
+			   this is a good reason to do a new election.
+			 */
+			if ((c.old_flags ^ c.new_flags) & NODE_FLAGS_BANNED) {
+				DEBUG(0,("Remote node %u had different BANNED flags 0x%x, local had 0x%x - trigger a re-election\n",
+				 nodemap->nodes[j].pnn, c.new_flags,
+				 c.old_flags));
+				talloc_free(mem_ctx);
+				return MONITOR_ELECTION_NEEDED;
+			}
+
 		}
 		talloc_free(remote_nodemap);
 	}
 	talloc_free(mem_ctx);
-	return 0;
+	return MONITOR_OK;
 }
 
 
@@ -801,23 +877,6 @@ static uint32_t new_generation(void)
 	return generation;
 }
 
-/*
-  remember the trouble maker
- */
-static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-
-	if (rec->last_culprit != culprit ||
-	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		DEBUG(0,("New recovery culprit %u\n", culprit));
-		/* either a new node is the culprit, or we've decide to forgive them */
-		rec->last_culprit = culprit;
-		rec->first_recover_time = timeval_current();
-		rec->culprit_counter = 0;
-	}
-	rec->culprit_counter++;
-}
 		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -1615,6 +1674,18 @@ again:
 		goto again;
 	}
 
+
+	/* We must check if we need to ban a node here but we want to do this
+	   as early as possible so we dont wait until we have pulled the node
+	   map from the local node. thats why we have the hardcoded value 20
+	*/
+	if (rec->culprit_counter > 20) {
+		DEBUG(0,("Node %u has caused %u failures in %.0f seconds - banning it for %u seconds\n",
+			 rec->last_culprit, rec->culprit_counter, timeval_elapsed(&rec->first_recover_time),
+			 ctdb->tunable.recovery_ban_period));
+		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
+	}
+
 	/* get relevant tunables */
 	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
 	if (ret != 0) {
@@ -1641,6 +1712,29 @@ again:
 	if (ret != 0) {
 		DEBUG(0, (__location__ " Unable to get nodemap from node %u\n", pnn));
 		goto again;
+	}
+
+	/* check that we (recovery daemon) and the local ctdb daemon
+	   agrees on whether we are banned or not
+	*/
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_BANNED) {
+		if (rec->banned_nodes[pnn] == NULL) {
+			DEBUG(0,("Local ctdb daemon thinks this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+
+			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+			ctdb_set_culprit(rec, pnn);
+
+			goto again;
+		}
+	} else {
+		if (rec->banned_nodes[pnn] != NULL) {
+			DEBUG(0,("Local ctdb daemon does not think this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+
+			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+			ctdb_set_culprit(rec, pnn);
+
+			goto again;
+		}
 	}
 
 	/* remember our own node flags */
@@ -1764,8 +1858,13 @@ again:
 
 
 	/* ensure our local copies of flags are right */
-	ret = update_local_flags(ctdb, nodemap);
-	if (ret != 0) {
+	ret = update_local_flags(rec, nodemap);
+	if (ret == MONITOR_ELECTION_NEEDED) {
+		DEBUG(0,("update_local_flags() called for a re-election.\n"));
+		force_election(rec, mem_ctx, pnn, nodemap);
+		goto again;
+	}
+	if (ret != MONITOR_OK) {
 		DEBUG(0,("Unable to update local flags\n"));
 		goto again;
 	}

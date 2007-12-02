@@ -367,6 +367,7 @@ struct ctdb_context {
 	const char *default_public_interface;
 	pid_t recoverd_pid;
 	bool done_startup;
+	const char *node_ip;
 };
 
 struct ctdb_db_context {
@@ -451,7 +452,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_PNN                 = 35,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
 		    CTDB_CONTROL_GET_MONMODE             = 37,
-		    CTDB_CONTROL_SET_MONMODE             = 38,
+		    /* #38 removed */
 		    CTDB_CONTROL_MAX_RSN                 = 39,
 		    CTDB_CONTROL_SET_RSN_NONEMPTY        = 40,
 		    CTDB_CONTROL_DELETE_LOW_RSN          = 41,
@@ -1044,6 +1045,8 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
+void ctdb_disable_monitoring(struct ctdb_context *ctdb);
+void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);

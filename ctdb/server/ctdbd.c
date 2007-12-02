@@ -50,6 +50,7 @@ static struct {
 	const char *db_dir_persistent;
 	const char *public_interface;
 	const char *single_public_ip;
+	const char *node_ip;
 	int         no_setsched;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
@@ -110,6 +111,7 @@ int main(int argc, const char *argv[])
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
+		{ "node-ip", 0, POPT_ARG_STRING, &options.node_ip, 0, "node ip", "ip-address"},
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
@@ -166,7 +168,7 @@ int main(int argc, const char *argv[])
 	ctdb->upcalls          = &ctdb_upcalls;
 	ctdb->idr              = idr_init(ctdb);
 	ctdb->recovery_lock_fd = -1;
-	ctdb->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+	ctdb->monitoring_mode  = CTDB_MONITORING_DISABLED;
 
 	ctdb_tunables_set_defaults(ctdb);
 
@@ -196,6 +198,20 @@ int main(int argc, const char *argv[])
 	if (ret == -1) {
 		DEBUG(0,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
+	}
+
+	/* if a node-ip was specified, verify that it exists in the
+	   nodes file
+	*/
+	if (options.node_ip != NULL) {
+		DEBUG(0,("IP for this node is %s\n", options.node_ip));
+		ret = ctdb_ip_to_nodeid(ctdb, options.node_ip);
+		if (ret == -1) {
+			DEBUG(0,("The specified node-ip:%s is not a valid node address. Exiting.\n", options.node_ip));
+			exit(1);
+		}
+		ctdb->node_ip = options.node_ip;
+		DEBUG(0,("This is node %d\n", ret));
 	}
 
 	if (options.db_dir) {
