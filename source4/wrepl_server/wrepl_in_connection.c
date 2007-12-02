@@ -258,7 +258,7 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 /*
   startup the wrepl port 42 server sockets
 */
-NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
+NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadparm_context *lp_ctx)
 {
 	NTSTATUS status;
 	struct task_server *task = service->task;
@@ -275,7 +275,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
+	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -294,7 +294,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 			}
 		}
 	} else {
-		address = lp_socket_address(global_loadparm);
+		address = lp_socket_address(lp_ctx);
 		status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, service);
 		if (!NT_STATUS_IS_OK(status)) {

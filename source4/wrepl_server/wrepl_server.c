@@ -477,7 +477,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	 * setup listen sockets, so we can anwser requests from our partners,
 	 * which pull from us
 	 */
-	status = wreplsrv_setup_sockets(service);
+	status = wreplsrv_setup_sockets(service, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_sockets() failed");
 		return;
