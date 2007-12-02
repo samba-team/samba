@@ -483,6 +483,19 @@ static NTSTATUS create_file(connection_struct *conn,
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	NTSTATUS status;
 
+	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
+		  "file_attributes = 0x%x, share_access = 0x%x, "
+		  "create_disposition = 0x%x create_options = 0x%x "
+		  "root_dir_fid = 0x%x, fname = %s\n",
+		  (unsigned int)flags,
+		  (unsigned int)access_mask,
+		  (unsigned int)file_attributes,
+		  (unsigned int)share_access,
+		  (unsigned int)create_disposition,
+		  (unsigned int)create_options,
+		  (unsigned int)root_dir_fid,
+		  fname));
+
 	SET_STAT_INVALID(sbuf);
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
@@ -853,6 +866,9 @@ static NTSTATUS create_file(connection_struct *conn,
 	}
 
  done:
+	DEBUG(10, ("create_file: info=%d, oplock_granted=%d, file_len=%lu\n",
+		   info, (int)oplock_granted, (unsigned long)file_len));
+
 	*result = fsp;
 	*pinfo = info;
 	*poplock_granted = oplock_granted;
@@ -862,6 +878,8 @@ static NTSTATUS create_file(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
+	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+
 	if (fsp != NULL) {
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
@@ -978,8 +996,6 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 		END_PROFILE(SMBntcreateX);
 		return;
 	}
-
-	DEBUG(10, ("create_file returned fsp %p\n", fsp));
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		/* This is very strange. We
