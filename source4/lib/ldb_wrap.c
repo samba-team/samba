@@ -134,6 +134,11 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
+
+	if (ldb_set_opaque(ldb, "loadparm", lp_ctx)) {
+		talloc_free(ldb);
+		return NULL;
+	}
 	
 	if (strcmp(lp_sam_url(lp_ctx), url) == 0) {
 		dsdb_set_global_schema(ldb);

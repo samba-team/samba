@@ -308,7 +308,7 @@ static NTSTATUS smb_pam_end(pam_handle_t *pamh)
 /*
  * PAM Authentication Handler
  */
-static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
+static NTSTATUS smb_pam_auth(pam_handle_t *pamh, bool allow_null_passwords, const char *user)
 {
 	int pam_error;
 
@@ -319,7 +319,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
 	
 	DEBUG(4,("smb_pam_auth: PAM: Authenticate User: %s\n", user));
 
-	pam_error = pam_authenticate(pamh, PAM_SILENT | lp_null_passwords(global_loadparm) ? 0 : PAM_DISALLOW_NULL_AUTHTOK);
+	pam_error = pam_authenticate(pamh, PAM_SILENT | allow_null_passwords ? 0 : PAM_DISALLOW_NULL_AUTHTOK);
 	switch( pam_error ){
 		case PAM_AUTH_ERR:
 			DEBUG(2, ("smb_pam_auth: PAM: Authentication Error for user %s\n", user));
@@ -461,7 +461,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 		return nt_status;
 	}
 
-	nt_status = smb_pam_auth(pamh, user_info->mapped.account_name);
+	nt_status = smb_pam_auth(pamh, lp_null_passwords(lp_ctx), user_info->mapped.account_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		smb_pam_end(pamh);
 		return nt_status;

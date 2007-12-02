@@ -58,7 +58,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 	}
 	
 	/* don't allow "" as a domain, fixes a Win9X bug 
-	   where it doens't supply a domain for logon script
+	   where it doesn't supply a domain for logon script
 	   'net use' commands.                                 */
 
 	/* Split user@realm names into user and realm components.  This is TODO to fix with proper userprincipalname support */

@@ -1854,6 +1854,7 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
  Create the SID list for this user.
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
+			       struct loadparm_context *lp_ctx,
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 
 			       int n_groupSIDs,
@@ -1911,7 +1912,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/* setup the privilege mask for this token */
-	status = samdb_privilege_setup(ptoken);
+	status = samdb_privilege_setup(lp_ctx, ptoken);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(ptoken);
 		return status;

@@ -161,6 +161,7 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	session_info->session_key = server_info->user_session_key;
 
 	nt_status = security_token_create(session_info,
+					  global_loadparm,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  server_info->n_domain_groups,

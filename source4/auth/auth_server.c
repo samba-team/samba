@@ -24,7 +24,7 @@
  Support for server level security.
 ****************************************************************************/
 
-static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
+static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, int maxprotocol)
 {
 	struct smbcli_state *cli = NULL;
 	fstring desthost;
@@ -92,7 +92,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	
 	DEBUG(3,("got session\n"));
 
-	if (!smbcli_negprot(cli, lp_cli_maxprotocol(global_loadparm))) {
+	if (!smbcli_negprot(cli, maxprotocol)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
 		release_server_mutex();
 		talloc_free(cli);
@@ -148,7 +148,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 					   void **my_private_data, 
 					   TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli = server_cryptkey(mem_ctx);
+	struct smbcli_state *cli = server_cryptkey(mem_ctx, lp_cli_maxprotocol(auth_context->lp_ctx));
 	
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
@@ -215,7 +215,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	
 	if (cli) {
 	} else {
-		cli = server_cryptkey(mem_ctx);
+		cli = server_cryptkey(mem_ctx, lp_cli_maxprotocol(auth_context->lp_ctx));
 		locally_made_cli = true;
 	}
 
