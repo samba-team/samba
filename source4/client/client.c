@@ -3066,13 +3066,13 @@ static int do_host_query(const char *query_host, const char *workgroup)
 /****************************************************************************
 handle a message operation
 ****************************************************************************/
-static int do_message_op(const char *desthost, const char *destip, int name_type)
+static int do_message_op(const char *netbios_name, const char *desthost, const char *destip, int name_type)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
 	struct smbcli_state *cli;
 
-	make_nbt_name_client(&calling, lp_netbios_name(global_loadparm));
+	make_nbt_name_client(&calling, netbios_name);
 
 	nbt_choose_called_name(NULL, &called, desthost, name_type);
 
@@ -3223,7 +3223,7 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
 	}
 
 	if (message) {
-		return do_message_op(desthost, dest_ip, name_type);
+		return do_message_op(lp_netbios_name(global_loadparm), desthost, dest_ip, name_type);
 	}
 	
 

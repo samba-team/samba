@@ -217,7 +217,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CT
 		}
 		username = p + 1;
 	} else if (strchr_m(name, '@')) {
-		status = crack_name_to_nt4_name(mem_ctx, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
+		status = crack_name_to_nt4_name(mem_ctx, global_loadparm, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

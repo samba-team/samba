@@ -30,6 +30,7 @@
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
  */
 static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
+					  const char *netbios_name,
 					  const struct auth_usersupplied_info *user_info,
 					  struct passwd *pwd,
 					  struct auth_serversupplied_info **_server_info)
@@ -39,7 +40,7 @@ static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 
 	/* This is a real, real hack */
 	if (pwd->pw_uid == 0) {
-		status = auth_system_server_info(mem_ctx, &server_info);
+		status = auth_system_server_info(mem_ctx, netbios_name, &server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -810,7 +811,8 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(mem_ctx, user_info, pwd, server_info);
+	nt_status = authunix_make_server_info(mem_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx),
+					      user_info, pwd, server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;

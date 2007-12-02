@@ -171,7 +171,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	
-	nt_status = auth_system_server_info(mem_ctx,
+	nt_status = auth_system_server_info(mem_ctx, lp_netbios_name(global_loadparm),
 					    &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -225,8 +225,8 @@ _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 			_session_info);
 }
 
-NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, 
-								 struct auth_serversupplied_info **_server_info) 
+NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name, 
+				 struct auth_serversupplied_info **_server_info) 
 {
 	struct auth_serversupplied_info *server_info;
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
@@ -274,7 +274,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx,
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
+	server_info->logon_server = talloc_strdup(server_info, netbios_name);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = 0;

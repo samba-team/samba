@@ -111,7 +111,7 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *do_connection(char *the_service)
+static struct smbcli_state *do_connection(char *the_service, int maxprotocol)
 {
 	struct smbcli_state *c;
 	struct nmb_name called, calling;
@@ -181,7 +181,7 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: session request ok\n", sys_getpid()));
 
-	if (!smbcli_negprot(c, lp_cli_maxprotocol(global_loadparm))) {
+	if (!smbcli_negprot(c, maxprotocol)) {
 		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
 		talloc_free(c);
 		return NULL;
@@ -434,7 +434,7 @@ static void init_mount(void)
 	}
 
 
-	c = do_connection(service);
+	c = do_connection(service, lp_cli_maxprotocol(global_loadparm));
 	if (!c) {
 		fprintf(stderr,"SMB connection failed\n");
 		exit(1);
