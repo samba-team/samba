@@ -23,6 +23,7 @@
 #include "lib/registry/tools/common.h"
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
+#include "param/param.h"
 
 /**
  * Print a registry key recursively
@@ -132,7 +133,7 @@ int main(int argc, char **argv)
 	} else if (file != NULL) {
 		start_key = reg_common_open_file(file, cmdline_credentials);
 	} else {
-		h = reg_common_open_local(cmdline_credentials);
+		h = reg_common_open_local(cmdline_credentials, global_loadparm);
 	}
 
 	if (h == NULL && start_key == NULL)

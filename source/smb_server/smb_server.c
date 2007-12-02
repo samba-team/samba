@@ -42,7 +42,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data,0) != 0) {
-		status = smbsrv_init_smb_connection(smb_conn);
+		status = smbsrv_init_smb_connection(smb_conn, global_loadparm);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
@@ -58,7 +58,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 
 	switch (protocol_version) {
 	case SMB_MAGIC:
-		status = smbsrv_init_smb_connection(smb_conn);
+		status = smbsrv_init_smb_connection(smb_conn, global_loadparm);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);

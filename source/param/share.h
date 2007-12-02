@@ -61,6 +61,8 @@ struct share_ops {
 	NTSTATUS (*remove)(struct share_context *, const char *);
 };
 
+struct loadparm_context;
+
 #include "param/share_proto.h"
 
 /* list of shares options */

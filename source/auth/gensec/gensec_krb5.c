@@ -116,7 +116,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
-	if (cli_credentials_get_krb5_context(creds, &gensec_krb5_state->smb_krb5_context)) {
+	if (cli_credentials_get_krb5_context(creds, global_loadparm, &gensec_krb5_state->smb_krb5_context)) {
 		talloc_free(gensec_krb5_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}

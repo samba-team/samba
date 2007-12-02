@@ -65,12 +65,12 @@ struct registry_key *reg_common_open_file(const char *path,
 	return reg_import_hive_key(h, hive_root, -1, NULL);
 }
 
-struct registry_context *reg_common_open_local(struct cli_credentials *creds)
+struct registry_context *reg_common_open_local(struct cli_credentials *creds, struct loadparm_context *lp_ctx)
 {
 	WERROR error;
 	struct registry_context *h;
 
-	error = reg_open_samba(NULL, &h, NULL, creds);
+	error = reg_open_samba(NULL, &h, lp_ctx, NULL, creds);
 
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open local registry:%s \n",

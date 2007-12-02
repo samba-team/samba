@@ -135,6 +135,7 @@ typedef struct hive_key {
 
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
                       struct registry_context **ctx,
+                      struct loadparm_context *lp_ctx,
                       struct auth_session_info *session_info,
                       struct cli_credentials *credentials);
 

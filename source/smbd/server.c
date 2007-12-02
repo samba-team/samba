@@ -88,12 +88,12 @@ static void recursive_delete(const char *path)
   range locking system. So instead of putting the burden on tdb to
   cleanup tmp files, this function deletes them. 
 */
-static void cleanup_tmp_files(void)
+static void cleanup_tmp_files(struct loadparm_context *lp_ctx)
 {
 	char *path;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	path = smbd_tmp_path(mem_ctx, global_loadparm, NULL);
+	path = smbd_tmp_path(mem_ctx, lp_ctx, NULL);
 
 	recursive_delete(path);
 	talloc_free(mem_ctx);
@@ -267,13 +267,13 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		become_daemon(true);
 	}
 
-	cleanup_tmp_files();
+	cleanup_tmp_files(global_loadparm);
 
 	if (!directory_exist(lp_lockdir(global_loadparm))) {
 		mkdir(lp_lockdir(global_loadparm), 0755);
 	}
 
-	pidfile_create(binary_name);
+	pidfile_create(lp_piddir(global_loadparm), binary_name);
 
 	/* Do *not* remove this, until you have removed
 	 * passdb/secrets.c, and proved that Samba still builds... */
@@ -284,17 +284,17 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	ldb_global_init(); /* FIXME: */
 
-	share_init();
+	share_init(global_loadparm);
 
 	gensec_init(global_loadparm); /* FIXME: */
 
-	ntptr_init();	/* FIXME: maybe run this in the initialization function 
+	ntptr_init(global_loadparm);	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */
 
 	ntvfs_init(); 	/* FIXME: maybe run this in the initialization functions 
 						of the SMB[,2] server instead? */
 
-	process_model_init(); 
+	process_model_init(global_loadparm); 
 
 	shared_init = load_samba_modules(NULL, global_loadparm, "service");
 

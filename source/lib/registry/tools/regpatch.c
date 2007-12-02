@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/registry/tools/common.h"
 #include "lib/registry/patchfile.h"
+#include "param/param.h"
 
 int main(int argc, char **argv)
 {
@@ -50,7 +51,7 @@ int main(int argc, char **argv)
 	if (remote) {
 		h = reg_common_open_remote (remote, cmdline_credentials);
 	} else {
-		h = reg_common_open_local (cmdline_credentials);
+		h = reg_common_open_local (cmdline_credentials, global_loadparm);
 	}
 
 	if (h == NULL)

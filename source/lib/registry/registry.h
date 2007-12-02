@@ -164,6 +164,7 @@ struct registry_context {
 
 struct auth_session_info;
 struct event_context;
+struct loadparm_context;
 
 /**
  * Open the locally defined registry.
@@ -175,6 +176,7 @@ WERROR reg_open_local(TALLOC_CTX *mem_ctx,
 
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 		      struct registry_context **ctx,
+		      struct loadparm_context *lp_ctx,
 		      struct auth_session_info *session_info,
 		      struct cli_credentials *credentials);
 

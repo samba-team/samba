@@ -355,7 +355,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 
 	for (i=0;i<100;i++) {
 		struct smbcli_request *req;
-		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
+		req = smb_raw_negotiate_send(cli->transport, lp_unicode(global_loadparm), PROTOCOL_NT1);
 		event_loop_once(cli->transport->socket->event.ctx);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
 			if (i > 0) {
