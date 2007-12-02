@@ -36,8 +36,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call,
 	WERROR err;
 
 	err = reg_open_samba(dce_call->context,
-			     global_loadparm,
-			     &ctx, dce_call->conn->auth_state.session_info,
+			     &ctx, global_loadparm, dce_call->conn->auth_state.session_info,
 			     NULL);
 
 	if (!W_ERROR_IS_OK(err)) {
