@@ -98,6 +98,7 @@ struct cldap_socket {
 struct cldap_search {
 	struct {
 		const char *dest_address;
+		uint16_t dest_port;
 		const char *filter;
 		const char **attributes;
 		int timeout;

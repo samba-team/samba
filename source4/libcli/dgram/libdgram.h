@@ -154,6 +154,7 @@ NTSTATUS dgram_mailslot_browse_send(struct nbt_dgram_socket *dgmsock,
 NTSTATUS dgram_mailslot_browse_reply(struct nbt_dgram_socket *dgmsock,
 				     struct nbt_dgram_packet *request,
 				     const char *mailslot_name,
+				     const char *my_netbios_name,
 				     struct nbt_browse_packet *reply);
 
 NTSTATUS dgram_mailslot_browse_parse(struct dgram_mailslot_handler *dgmslot,
