@@ -1228,17 +1228,11 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 			break;
 	}
 
-	domain_admin_account = lp_parm_string(global_loadparm, NULL,
-					      "torture",
-					      "domain_admin_account");
+	domain_admin_account = torture_setting_string(tctx, "domain_admin_account", NULL);
 
-	domain_admin_password = lp_parm_string(global_loadparm, NULL,
-					       "torture",
-					       "domain_admin_password");
+	domain_admin_password = torture_setting_string(tctx, "domain_admin_password", NULL);
 
-	domain_name = lp_parm_string(global_loadparm, NULL,
-				     "torture",
-				     "domain_name");
+	domain_name = torture_setting_string(tctx, "domain_name", NULL);
 
 	if ((domain_admin_account == NULL) ||
 	    (domain_admin_password == NULL) ||
@@ -1318,13 +1312,9 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 			break;
 	}
 
-	domain_admin_account = lp_parm_string(global_loadparm, NULL,
-					      "torture",
-					      "domain_admin_account");
+	domain_admin_account = torture_setting_string(tctx, "domain_admin_account", NULL);
 
-	domain_admin_password = lp_parm_string(global_loadparm, NULL,
-					       "torture",
-					       "domain_admin_password");
+	domain_admin_password = torture_setting_string(tctx, "domain_admin_password", NULL);
 
 	if ((domain_admin_account == NULL) ||
 	    (domain_admin_password == NULL)) {

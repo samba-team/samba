@@ -33,14 +33,14 @@
  * return the pid in a pidfile. return 0 if the process (or pidfile)
  * does not exist 
  */
-pid_t pidfile_pid(const char *name)
+pid_t pidfile_pid(const char *piddir, const char *name)
 {
 	int fd;
 	char pidstr[20];
 	pid_t ret;
 	char *pidFile;
 
-	asprintf(&pidFile, "%s/%s.pid", lp_piddir(global_loadparm), name);
+	asprintf(&pidFile, "%s/%s.pid", piddir, name);
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 
@@ -80,16 +80,16 @@ pid_t pidfile_pid(const char *name)
 /**
  * create a pid file in the pid directory. open it and leave it locked 
  */
-void pidfile_create(const char *name)
+void pidfile_create(const char *piddir, const char *name)
 {
 	int     fd;
 	char    buf[20];
 	char *pidFile;
 	pid_t pid;
 
-	asprintf(&pidFile, "%s/%s.pid", lp_piddir(global_loadparm), name);
+	asprintf(&pidFile, "%s/%s.pid", piddir, name);
 
-	pid = pidfile_pid(name);
+	pid = pidfile_pid(piddir, name);
 	if (pid != 0) {
 		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
 			 name, pidFile, (int)pid));

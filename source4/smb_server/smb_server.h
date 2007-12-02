@@ -382,6 +382,8 @@ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
 			       const struct model_ops *model_ops,
 			       const char *address);
 
+struct loadparm_context;
+
 #include "smb_server/smb_server_proto.h"
 #include "smb_server/smb/smb_proto.h"
 

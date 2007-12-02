@@ -24,10 +24,12 @@
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/registry/tools/common.h"
+#include "param/param.h"
 
 enum reg_backend { REG_UNKNOWN, REG_LOCAL, REG_REMOTE, REG_NULL };
 
 static struct registry_context *open_backend(poptContext pc,
+					     struct loadparm_context *lp_ctx,
 					     enum reg_backend backend,
 					     const char *remote_host)
 {
@@ -39,7 +41,7 @@ static struct registry_context *open_backend(poptContext pc,
 		poptPrintUsage(pc, stderr, 0);
 		return NULL;
 	case REG_LOCAL:
-		error = reg_open_samba(NULL, &ctx, NULL, cmdline_credentials);
+		error = reg_open_samba(NULL, &ctx, lp_ctx, NULL, cmdline_credentials);
 		break;
 	case REG_REMOTE:
 		error = reg_open_remote(&ctx, NULL, cmdline_credentials,
@@ -114,11 +116,11 @@ int main(int argc, const char **argv)
 
 	}
 
-	h1 = open_backend(pc, backend1, remote1);
+	h1 = open_backend(pc, global_loadparm, backend1, remote1);
 	if (h1 == NULL)
 		return 1;
 
-	h2 = open_backend(pc, backend2, remote2);
+	h2 = open_backend(pc, global_loadparm, backend2, remote2);
 	if (h2 == NULL)
 		return 1;
 

@@ -46,6 +46,7 @@ static const struct {
   Send a negprot command.
 */
 struct smbcli_request *smb_raw_negotiate_send(struct smbcli_transport *transport, 
+					      bool unicode,
 					      int maxprotocol)
 {
 	struct smbcli_request *req;
@@ -58,7 +59,7 @@ struct smbcli_request *smb_raw_negotiate_send(struct smbcli_transport *transport
 	}
 
 	flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	if (lp_unicode(global_loadparm)) {
+	if (unicode) {
 		flags2 |= FLAGS2_UNICODE_STRINGS;
 	}
 	flags2 |= FLAGS2_EXTENDED_ATTRIBUTES;
@@ -190,8 +191,8 @@ failed:
 /*
  Send a negprot command (sync interface)
 */
-NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, int maxprotocol)
+NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode, int maxprotocol)
 {
-	struct smbcli_request *req = smb_raw_negotiate_send(transport, maxprotocol);
+	struct smbcli_request *req = smb_raw_negotiate_send(transport, unicode, maxprotocol);
 	return smb_raw_negotiate_recv(req);
 }

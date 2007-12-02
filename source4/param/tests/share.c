@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "param/share.h"
+#include "param/param.h"
 #include "torture/torture.h"
 
 static bool test_list_empty(struct torture_context *tctx, 
@@ -196,7 +197,7 @@ struct torture_suite *torture_local_share(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SHARE");
 	struct torture_tcase *tcase;
 
-	share_init();
+	share_init(global_loadparm);
 
 	tcase = torture_suite_add_tcase(suite, "ldb");
 	torture_tcase_set_fixture(tcase, setup_ldb, teardown);

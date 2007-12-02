@@ -111,7 +111,7 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *do_connection(char *the_service, int maxprotocol)
+static struct smbcli_state *do_connection(const char *the_service, bool unicode, int maxprotocol)
 {
 	struct smbcli_state *c;
 	struct nmb_name called, calling;
@@ -181,7 +181,7 @@ static struct smbcli_state *do_connection(char *the_service, int maxprotocol)
 
 	DEBUG(4,("%d: session request ok\n", sys_getpid()));
 
-	if (!smbcli_negprot(c, maxprotocol)) {
+	if (!smbcli_negprot(c, unicode, maxprotocol)) {
 		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
 		talloc_free(c);
 		return NULL;
@@ -323,7 +323,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *the_service, char *mount_point, struct smbcli_state *c)
+static void send_fs_socket(const char *the_service, char *mount_point, struct smbcli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -406,7 +406,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct smbcli_s
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
-			c = do_connection(the_service);
+			c = do_connection(the_service, lp_unicode(global_loadparm), lp_cli_maxprotocol(global_loadparm));
 		}
 	}
 
@@ -434,7 +434,7 @@ static void init_mount(void)
 	}
 
 
-	c = do_connection(service, lp_cli_maxprotocol(global_loadparm));
+	c = do_connection(service, lp_unicode(global_loadparm), lp_cli_maxprotocol(global_loadparm));
 	if (!c) {
 		fprintf(stderr,"SMB connection failed\n");
 		exit(1);

@@ -26,6 +26,7 @@
  */
 
 static WERROR mount_samba_hive(struct registry_context *ctx,
+			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *auth_info,
 			       struct cli_credentials *creds,
 			       const char *name,
@@ -36,7 +37,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 	const char *location;
 
 	location = talloc_asprintf(ctx, "%s/%s.ldb",
-				   lp_private_dir(global_loadparm),
+				   lp_private_dir(lp_ctx),
 				   name);
 
 	error = reg_open_hive(ctx, location, auth_info, creds, &hive);
@@ -54,6 +55,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 
 _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 			       struct registry_context **ctx,
+			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *session_info,
 			       struct cli_credentials *credentials)
 {
@@ -64,18 +66,18 @@ _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	mount_samba_hive(*ctx, session_info, credentials,
+	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
 			 "hklm", HKEY_LOCAL_MACHINE);
 
-	mount_samba_hive(*ctx, session_info, credentials,
+	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
 			 "hkcr", HKEY_CLASSES_ROOT);
 
 	/* FIXME: Should be mounted from NTUSER.DAT in the home directory of the
 	 * current user */
-	mount_samba_hive(*ctx, session_info, credentials,
+	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
 			 "hkcu", HKEY_CURRENT_USER);
 
-	mount_samba_hive(*ctx, session_info, credentials,
+	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
 			 "hku", HKEY_USERS);
 
 	/* FIXME: Different hive backend for HKEY_CLASSES_ROOT: merged view of HKEY_LOCAL_MACHINE\Software\Classes

@@ -80,10 +80,10 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS process_model_init(void)
+NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
 	init_module_fn static_init[] = STATIC_process_model_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "process_model");
+	init_module_fn *shared_init = load_samba_modules(NULL, lp_ctx, "process_model");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

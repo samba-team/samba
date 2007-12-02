@@ -26,6 +26,7 @@
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/registry/tools/common.h"
+#include "param/param.h"
 
 struct regshell_context {
 	struct registry_context *registry;
@@ -505,7 +506,7 @@ int main(int argc, char **argv)
 		ctx->registry = ctx->current->context;
 		ctx->path = talloc_strdup(ctx, "");
 	} else {
-		ctx->registry = reg_common_open_local(cmdline_credentials);
+		ctx->registry = reg_common_open_local(cmdline_credentials, global_loadparm);
 	}
 
 	if (ctx->registry == NULL)

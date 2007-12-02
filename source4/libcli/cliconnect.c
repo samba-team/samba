@@ -55,9 +55,9 @@ bool smbcli_transport_establish(struct smbcli_state *cli,
 }
 
 /* wrapper around smb_raw_negotiate() */
-NTSTATUS smbcli_negprot(struct smbcli_state *cli, int maxprotocol)
+NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 {
-	return smb_raw_negotiate(cli->transport, maxprotocol);
+	return smb_raw_negotiate(cli->transport, unicode, maxprotocol);
 }
 
 /* wrapper around smb_raw_sesssetup() */

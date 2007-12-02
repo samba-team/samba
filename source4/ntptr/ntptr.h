@@ -229,4 +229,7 @@ struct ntptr_critical_sizes {
 	int sizeof_ntptr_context;
 	int sizeof_ntptr_ops;
 };
+
+struct loadparm_context;
+
 #include "ntptr/ntptr_proto.h"

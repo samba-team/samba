@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "param/param.h"
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
@@ -35,6 +36,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call,
 	WERROR err;
 
 	err = reg_open_samba(dce_call->context,
+			     global_loadparm,
 			     &ctx, dce_call->conn->auth_state.session_info,
 			     NULL);
 
