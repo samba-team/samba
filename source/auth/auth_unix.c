@@ -427,7 +427,8 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 	return pam_to_nt_status(pam_error);
 }
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info, struct passwd **pws)
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx, 
+				    const struct auth_usersupplied_info *user_info, struct passwd **pws)
 {
 	struct smb_pam_user_info *info;
 	struct pam_conv *pamconv;
@@ -590,7 +591,8 @@ static NTSTATUS password_check(const char *username, const char *password,
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info, struct passwd **ret_passwd)
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
+				    const struct auth_usersupplied_info *user_info, struct passwd **ret_passwd)
 {
 	char *username;
 	char *password;
@@ -599,7 +601,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	char *crypted;
 	struct passwd *pws;
 	NTSTATUS nt_status;
-	int level = lp_passwordlevel(global_loadparm);
+	int level = lp_passwordlevel(lp_ctx);
 
 	*ret_passwd = NULL;
 
@@ -702,7 +704,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 #endif
 
 	if (crypted[0] == '\0') {
-		if (!lp_null_passwords(global_loadparm)) {
+		if (!lp_null_passwords(lp_ctx)) {
 			DEBUG(2, ("Disallowing %s with null password\n", username));
 			return NT_STATUS_LOGON_FAILURE;
 		}
@@ -802,7 +804,7 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = check_unix_password(check_ctx, user_info, &pwd);
+	nt_status = check_unix_password(check_ctx, global_loadparm, user_info, &pwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;

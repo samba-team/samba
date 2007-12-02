@@ -358,7 +358,7 @@ static void usage(void)
 		}
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	argc -= optind;
 	argv += optind;

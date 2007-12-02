@@ -286,7 +286,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	share_init();
 
-	gensec_init(); /* FIXME: */
+	gensec_init(global_loadparm); /* FIXME: */
 
 	ntptr_init();	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */

@@ -2265,7 +2265,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		}
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 
 	if (username_count == 0) {
 		usage();

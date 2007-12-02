@@ -574,7 +574,7 @@ int main(int argc, const char ** argv)
 		}
 	}
 
-	gensec_init();
+	gensec_init(global_loadparm);
 	dump_args();
 
 	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("ibs") == 0) {

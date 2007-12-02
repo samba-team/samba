@@ -1259,7 +1259,7 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 /*
   initialise the GENSEC subsystem
 */
-NTSTATUS gensec_init(void)
+NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
 
@@ -1269,7 +1269,7 @@ NTSTATUS gensec_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, global_loadparm, "gensec");
+	shared_init = load_samba_modules(NULL, lp_ctx, "gensec");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
