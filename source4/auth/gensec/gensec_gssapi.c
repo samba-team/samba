@@ -239,6 +239,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	ret = smb_krb5_init_context(gensec_gssapi_state, 
 				    gensec_security->event_ctx,
+				    global_loadparm,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",

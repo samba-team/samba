@@ -244,7 +244,7 @@ void auth_check_password_send(struct auth_context *auth_ctx,
 	req->callback.private_data	= private_data;
 
 	if (!user_info->mapped_state) {
-		nt_status = map_user_info(req, user_info, &user_info_tmp);
+		nt_status = map_user_info(req, lp_workgroup(auth_ctx->lp_ctx), user_info, &user_info_tmp);
 		if (!NT_STATUS_IS_OK(nt_status)) goto failed;
 		user_info = user_info_tmp;
 		req->user_info	= user_info_tmp;

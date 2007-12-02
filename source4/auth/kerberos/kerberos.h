@@ -151,6 +151,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				     krb5_principal client_principal,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac);
+struct loadparm_context;
 
 #include "auth/kerberos/proto.h"
 

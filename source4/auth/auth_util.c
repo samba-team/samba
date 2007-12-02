@@ -43,6 +43,7 @@ NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TAL
 ****************************************************************************/
 
 NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
+		       const char *default_domain,
 		       const struct auth_usersupplied_info *user_info,
 		       struct auth_usersupplied_info **user_info_mapped)
 {
@@ -73,7 +74,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 		d++;
 		domain = d;
 	} else {
-		domain = lp_workgroup(global_loadparm);
+		domain = default_domain;
 	}
 
 	*user_info_mapped = talloc(mem_ctx, struct auth_usersupplied_info);
