@@ -90,6 +90,8 @@ struct torture_context
 	const char *outputdir;
 	int level;
 	struct event_context *ev;
+
+	struct loadparm_context *lp_ctx;
 };
 
 /* 

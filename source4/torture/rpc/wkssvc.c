@@ -212,7 +212,7 @@ static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
 	NTSTATUS status;
 	struct wkssvc_NetrWkstaUserGetInfo r;
 	union wkssvc_NetrWkstaUserInfo info;
-	const char *dom = lp_workgroup(global_loadparm);
+	const char *dom = lp_workgroup(tctx->lp_ctx);
 	struct cli_credentials *creds = cmdline_credentials;
 	const char *user = cli_credentials_get_username(creds);
 	int i;
@@ -483,7 +483,7 @@ static bool test_NetrLogonDomainNameAdd(struct torture_context *tctx,
 	NTSTATUS status;
 	struct wkssvc_NetrLogonDomainNameAdd r;
 
-	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 
 	torture_comment(tctx, "testing NetrLogonDomainNameAdd\n");
 
@@ -501,7 +501,7 @@ static bool test_NetrLogonDomainNameDel(struct torture_context *tctx,
 	NTSTATUS status;
 	struct wkssvc_NetrLogonDomainNameDel r;
 
-	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 
 	torture_comment(tctx, "testing NetrLogonDomainNameDel\n");
 
@@ -595,7 +595,7 @@ static bool test_NetrValidateName(struct torture_context *tctx,
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
 		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.name = lp_workgroup(global_loadparm);
+		r.in.name = lp_workgroup(tctx->lp_ctx);
 		r.in.Account = NULL;
 		r.in.Password = NULL;
 		r.in.name_type = levels[i];
@@ -625,7 +625,7 @@ static bool test_NetrValidateName2(struct torture_context *tctx,
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
 		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.name = lp_workgroup(global_loadparm);
+		r.in.name = lp_workgroup(tctx->lp_ctx);
 		r.in.Account = NULL;
 		r.in.EncryptedPassword = NULL;
 		r.in.name_type = levels[i];
@@ -1047,7 +1047,7 @@ static bool test_NetrGetJoinableOus(struct torture_context *tctx,
 	const char **ous = NULL;
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 	r.in.Account = NULL;
 	r.in.unknown = NULL;
 	r.in.num_ous = r.out.num_ous = &num_ous;
@@ -1073,7 +1073,7 @@ static bool test_NetrGetJoinableOus2(struct torture_context *tctx,
 	const char **ous = NULL;
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.domain_name = lp_workgroup(global_loadparm);
+	r.in.domain_name = lp_workgroup(tctx->lp_ctx);
 	r.in.Account = NULL;
 	r.in.EncryptedPassword = NULL;
 	r.in.num_ous = r.out.num_ous = &num_ous;
@@ -1100,7 +1100,7 @@ static bool test_NetrUnjoinDomain(struct torture_context *tctx,
 	const char *admin_account = NULL;
 
 	admin_account = talloc_asprintf(tctx, "%s\\%s",
-					lp_workgroup(global_loadparm),
+					lp_workgroup(tctx->lp_ctx),
 					user);
 
 	r.in.server_name = dcerpc_server_name(p);
@@ -1128,11 +1128,11 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 	const char *admin_account = NULL;
 
 	admin_account = talloc_asprintf(tctx, "%s\\%s",
-					lp_workgroup(global_loadparm),
+					lp_workgroup(tctx->lp_ctx),
 					user);
 
 	r.in.server_name = dcerpc_server_name(p);
-	r.in.domain_name = lp_realm(global_loadparm);
+	r.in.domain_name = lp_realm(tctx->lp_ctx);
 	r.in.account_ou = NULL;
 	r.in.Account = admin_account;
 	r.in.password = NULL;

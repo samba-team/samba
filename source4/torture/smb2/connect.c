@@ -196,7 +196,7 @@ bool torture_smb2_connect(struct torture_context *torture)
 	struct smb2_handle h1, h2;
 	NTSTATUS status;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 

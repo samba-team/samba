@@ -544,7 +544,7 @@ done:
 /* 
    testing of mask bits for change notify
 */
-static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -585,7 +585,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 #define NOTIFY_MASK_TEST(setup, op, cleanup, Action, expected, nchanges) \
 	do { for (mask=i=0;i<32;i++) { \
 		struct smbcli_request *req; \
-		status = smb_raw_open(cli->tree, mem_ctx, &io); \
+		status = smb_raw_open(cli->tree, tctx, &io); \
 		CHECK_STATUS(status, NT_STATUS_OK); \
 		fnum = io.ntcreatex.out.file.fnum; \
 		setup \
@@ -594,7 +594,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		req = smb_raw_changenotify_send(cli->tree, &notify); \
 		op \
 		msleep(200); smb_raw_ntcancel(req); \
-		status = smb_raw_changenotify_recv(req, mem_ctx, &notify); \
+		status = smb_raw_changenotify_recv(req, tctx, &notify); \
 		cleanup \
 		smbcli_close(cli->tree, fnum); \
 		if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) continue; \
@@ -705,20 +705,20 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing set file attribute\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, FILE_ATTRIBUTE_HIDDEN, 0, 0, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false)) {
 		printf("Samba3 does not yet support create times "
 		       "everywhere\n");
 	}
 	else {
 		printf("testing set file create time\n");
 		NOTIFY_MASK_TEST(
-			fnum2 = create_complex_file(cli, mem_ctx,
+			fnum2 = create_complex_file(cli, tctx,
 						    BASEDIR "\\tname1");,
 			smbcli_fsetatr(cli->tree, fnum2, 0, t, 0, 0, 0);,
 			(smbcli_close(cli->tree, fnum2),
@@ -729,7 +729,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing set file access time\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, t, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
@@ -737,7 +737,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing set file write time\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, t, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
@@ -745,7 +745,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing set file change time\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, t);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
@@ -754,7 +754,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing write\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_write(cli->tree, fnum2, 1, &c, 10000, 1);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
@@ -762,7 +762,7 @@ static bool test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing truncate\n");
 	NOTIFY_MASK_TEST(
-		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_ftruncate(cli->tree, fnum2, 10000);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,

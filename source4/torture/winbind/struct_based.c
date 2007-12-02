@@ -125,7 +125,7 @@ static bool torture_winbind_struct_info(struct torture_context *torture)
 
 	separator = torture_setting_string(torture,
 					   "winbindd separator",
-					   lp_winbind_separator(global_loadparm));
+					   lp_winbind_separator(torture->lp_ctx));
 	torture_assert_int_equal(torture,
 				 rep.data.info.winbind_separator,
 				 *separator,
@@ -154,7 +154,7 @@ static bool torture_winbind_struct_priv_pipe_dir(struct torture_context *torture
 
 	torture_assert(torture, got_dir, "NULL WINBINDD_PRIV_PIPE_DIR\n");
 
-	default_dir = lock_path(torture, global_loadparm, 
+	default_dir = lock_path(torture, torture->lp_ctx, 
 				WINBINDD_PRIV_SOCKET_SUBDIR);
 	expected_dir = torture_setting_string(torture,
 					      "winbindd private pipe dir",
@@ -180,7 +180,7 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios name",
-					  lp_netbios_name(global_loadparm));
+					  lp_netbios_name(torture->lp_ctx));
 
 	torture_assert_str_equal(torture,
 				 rep.data.netbios_name, expected,
@@ -212,7 +212,7 @@ static bool torture_winbind_struct_domain_name(struct torture_context *torture)
 
 	expected = torture_setting_string(torture,
 					  "winbindd netbios domain",
-					  lp_workgroup(global_loadparm));
+					  lp_workgroup(torture->lp_ctx));
 
 	get_winbind_domain(torture, &domain);
 

@@ -1164,7 +1164,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 		goto done;
 	}
 
-	cli_credentials_set_conf(wks_creds, global_loadparm);
+	cli_credentials_set_conf(wks_creds, torture->lp_ctx);
 	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
@@ -1656,7 +1656,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		goto done;
 	}
 
-	cli_credentials_set_conf(user_creds, global_loadparm);
+	cli_credentials_set_conf(user_creds, torture->lp_ctx);
 	cli_credentials_set_username(user_creds, "torture_username",
 				     CRED_SPECIFIED);
 	cli_credentials_set_password(user_creds,
@@ -2557,7 +2557,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 	ZERO_STRUCT(userlevel1);
 	userlevel1.client = talloc_asprintf(
-		mem_ctx, "\\\\%s", lp_netbios_name(global_loadparm));
+		mem_ctx, "\\\\%s", lp_netbios_name(torture->lp_ctx));
 	userlevel1.user = cli_credentials_get_username(cmdline_credentials);
 	userlevel1.build = 2600;
 	userlevel1.major = 3;

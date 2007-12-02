@@ -191,21 +191,21 @@ bool torture_ping_pong(struct torture_context *torture)
 	uint8_t *val;
 	int count, loops;
 
-	fn = lp_parm_string(global_loadparm, NULL, "torture", "filename");
+	fn = torture_setting_string(torture, "filename", NULL);
 	if (fn == NULL) {
 		DEBUG(0,("You must specify the filename using --option=torture:filename=...\n"));
 		return false;
 	}
 
-	num_locks = lp_parm_int(global_loadparm, NULL, "torture", "num_locks", -1);
+	num_locks = torture_setting_int(torture, "num_locks", -1);
 	if (num_locks == -1) {
 		DEBUG(0,("You must specify num_locks using --option=torture:num_locks=...\n"));
 		return false;
 	}
 
-	do_reads     = lp_parm_bool(global_loadparm, NULL, "torture", "read", false);
-	do_writes    = lp_parm_bool(global_loadparm, NULL, "torture", "write", false);
-	lock_timeout =  lp_parm_int(global_loadparm, NULL, "torture", "lock_timeout", 100000);
+	do_reads     = torture_setting_bool(torture, "read", false);
+	do_writes    = torture_setting_bool(torture, "write", false);
+	lock_timeout =  torture_setting_int(torture, "lock_timeout", 100000);
 
 	if (!torture_open_connection(&cli, 0)) {
 		DEBUG(0,("Could not open connection\n"));

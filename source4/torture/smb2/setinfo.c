@@ -40,7 +40,6 @@ bool torture_smb2_setinfo(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
 	bool ret = true;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_handle handle;
 	char *fname;
 	char *fname_new;
@@ -56,10 +55,10 @@ bool torture_smb2_setinfo(struct torture_context *torture)
 	
 	ZERO_STRUCT(handle);
 	
-	fname = talloc_asprintf(mem_ctx, BASEDIR "fnum_test_%d.txt", n);
-	fname_new = talloc_asprintf(mem_ctx, BASEDIR "fnum_test_new_%d.txt", n);
+	fname = talloc_asprintf(torture, BASEDIR "fnum_test_%d.txt", n);
+	fname_new = talloc_asprintf(torture, BASEDIR "fnum_test_new_%d.txt", n);
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
@@ -96,7 +95,7 @@ bool torture_smb2_setinfo(struct torture_context *torture)
 	do { if (NT_STATUS_IS_OK(status)) { \
 		finfo2.generic.level = RAW_FILEINFO_ ## call; \
 		finfo2.generic.in.file.handle = handle; \
-		status2 = smb2_getinfo_file(tree, mem_ctx, &finfo2); \
+		status2 = smb2_getinfo_file(tree, torture, &finfo2); \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("(%s) %s - %s\n", __location__, #call, nt_errstr(status2)); \
 		ret = false; \
@@ -122,8 +121,8 @@ bool torture_smb2_setinfo(struct torture_context *torture)
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
 			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
-		printf("\t%s", timestring(mem_ctx, value)); \
-		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
+		printf("\t%s", timestring(torture, value)); \
+		printf("\t%s\n", nt_time_string(torture, finfo2.stype.out.field)); \
 		torture_smb2_all_info(tree, handle); \
 		ret = false; \
 		goto done; \
@@ -240,7 +239,7 @@ bool torture_smb2_setinfo(struct torture_context *torture)
  	CHECK1(SEC_DESC);
 	sd = finfo2.query_secdesc.out.sd;
 
-	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	test_sid = dom_sid_parse_talloc(torture, "S-1-5-32-1234-5432");
 	ZERO_STRUCT(ace);
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
@@ -291,7 +290,6 @@ done:
 	}
 	smb2_util_unlink(tree, fname);
 
-	talloc_free(mem_ctx);
 	return ret;
 }
 

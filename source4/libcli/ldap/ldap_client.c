@@ -34,6 +34,7 @@
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
 #include "system/time.h"
+#include "param/param.h"
 
 
 /*
@@ -391,7 +392,17 @@ static void ldap_connect_got_sock(struct composite_context *ctx, struct ldap_con
 
 	talloc_steal(conn, conn->sock);
 	if (conn->ldaps) {
-		struct socket_context *tls_socket = tls_init_client(conn->sock, conn->event.fde);
+		struct socket_context *tls_socket;
+		char *cafile = private_path(conn->sock, global_loadparm, lp_tls_cafile(global_loadparm));
+
+		if (!cafile || !*cafile) {
+			talloc_free(conn->sock);
+			return;
+		}
+
+		tls_socket = tls_init_client(conn->sock, conn->event.fde, cafile);
+		talloc_free(cafile);
+
 		if (tls_socket == NULL) {
 			talloc_free(conn->sock);
 			return;

@@ -224,11 +224,11 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_register_ep_server(&ep_server),
 				  "unable to register spoolss server");
 
-	lp_set_cmdline(global_loadparm, "dcerpc endpoint servers", "spoolss");
+	lp_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
 
 	address = iface_n_ip(0);
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);
-	status = smbsrv_add_socket(p->conn->event_ctx, &single_ops, address);
+	status = smbsrv_add_socket(p->conn->event_ctx, tctx->lp_ctx, &single_ops, address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
 	status = dcesrv_init_context(tctx, endpoints, &dce_ctx);

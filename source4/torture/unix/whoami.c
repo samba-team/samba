@@ -66,16 +66,16 @@ struct smb_whoami
 	struct dom_sid ** sid_list;
 };
 
-static struct smbcli_state *connect_to_server(void *mem_ctx,
+static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 		struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	struct smbcli_state *cli;
 
-	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
-	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
 
-	status = smbcli_full_connection(mem_ctx, &cli,
+	status = smbcli_full_connection(tctx, &cli,
 					host, share, NULL,
 					creds, NULL);
 
@@ -270,29 +270,25 @@ bool torture_unix_whoami(struct torture_context *torture)
 	struct smbcli_state *cli;
 	struct cli_credentials *anon_credentials;
 	struct smb_whoami whoami;
-	void *mem_ctx;
 
-	mem_ctx = talloc_init("smb_query_posix_whoami");
-	torture_assert(torture, mem_ctx != NULL, "malloc failed");
-
-	if (!(cli = connect_to_server(mem_ctx, cmdline_credentials))) {
-		goto fail;
+	if (!(cli = connect_to_server(torture, cmdline_credentials))) {
+		return false;
 	}
 
 	/* Test basic authenticated mapping. */
 	printf("calling SMB_QFS_POSIX_WHOAMI on an authenticated connection\n");
-	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
+	if (!smb_raw_query_posix_whoami(torture, torture,
 				cli, &whoami, 0xFFFF)) {
 		smbcli_tdis(cli);
-		goto fail;
+		return false;
 	}
 
 	/* Test that the server drops the UID and GID list. */
 	printf("calling SMB_QFS_POSIX_WHOAMI with a small buffer\n");
-	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
+	if (!smb_raw_query_posix_whoami(torture, torture,
 				cli, &whoami, 0x40)) {
 		smbcli_tdis(cli);
-		goto fail;
+		return false;
 	}
 
 	torture_assert_int_equal(torture, whoami.num_gids, 0,
@@ -305,16 +301,16 @@ bool torture_unix_whoami(struct torture_context *torture)
 	smbcli_tdis(cli);
 
 	printf("calling SMB_QFS_POSIX_WHOAMI on an anonymous connection\n");
-	anon_credentials = cli_credentials_init_anon(mem_ctx);
+	anon_credentials = cli_credentials_init_anon(torture);
 
-	if (!(cli = connect_to_server(mem_ctx, anon_credentials))) {
-		goto fail;
+	if (!(cli = connect_to_server(torture, anon_credentials))) {
+		return false;
 	}
 
-	if (!smb_raw_query_posix_whoami(mem_ctx, torture,
+	if (!smb_raw_query_posix_whoami(torture, torture,
 				cli, &whoami, 0xFFFF)) {
 		smbcli_tdis(cli);
-		goto fail;
+		return false;
 	}
 
 	smbcli_tdis(cli);
@@ -331,13 +327,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 		printf("server does not support SMB_WHOAMI_GUEST flag\n");
 	}
 
-	talloc_free(mem_ctx);
 	return true;
-
-fail:
-	talloc_free(mem_ctx);
-	return false;
-
 }
 
 /* vim: set sts=8 sw=8 : */

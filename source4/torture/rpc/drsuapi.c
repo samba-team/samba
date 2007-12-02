@@ -232,7 +232,7 @@ static bool test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
 			struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -307,7 +307,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping DsReplicaGetInfo test against Samba4\n");
 		return true;
 	}
@@ -340,11 +340,11 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsReplicaGetInfo(p, mem_ctx, &r);
+		status = dcerpc_drsuapi_DsReplicaGetInfo(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+				errstr = dcerpc_errstr(tctx, p->last_fault_code);
 			}
 			if (p->last_fault_code != DCERPC_FAULT_INVALID_TAG) {
 				printf("dcerpc_drsuapi_DsReplicaGetInfo failed - %s\n", errstr);
@@ -362,7 +362,7 @@ static bool test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsReplicaSync(struct dcerpc_pipe *p, struct torture_context *tctx,
 			struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -380,12 +380,12 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (!lp_parm_bool(global_loadparm, NULL, "torture", "dangerous", false)) {
+	if (!torture_setting_bool(tctx, "dangerous", false)) {
 		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
 		return true;
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping DsReplicaSync test against Samba4\n");
 		return true;
 	}
@@ -413,11 +413,11 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsReplicaSync(p, mem_ctx, &r);
+		status = dcerpc_drsuapi_DsReplicaSync(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+				errstr = dcerpc_errstr(tctx, p->last_fault_code);
 			}
 			printf("dcerpc_drsuapi_DsReplicaSync failed - %s\n", errstr);
 			ret = false;
@@ -430,7 +430,7 @@ static bool test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, struct torture_context *tctx,
 			struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -448,7 +448,7 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping DsReplicaUpdateRefs test against Samba4\n");
 		return true;
 	}
@@ -470,18 +470,18 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
 			r.in.req.req1.naming_context	= &nc;
-			r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(mem_ctx, "__some_dest_dsa_guid_string._msdn.%s",
+			r.in.req.req1.dest_dsa_dns_name	= talloc_asprintf(tctx, "__some_dest_dsa_guid_string._msdn.%s",
 										priv->domain_dns_name);
 			r.in.req.req1.dest_dsa_guid	= null_guid;
 			r.in.req.req1.options		= 0;
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, mem_ctx, &r);
+		status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+				errstr = dcerpc_errstr(tctx, p->last_fault_code);
 			}
 			printf("dcerpc_drsuapi_DsReplicaUpdateRefs failed - %s\n", errstr);
 			ret = false;
@@ -494,7 +494,7 @@ static bool test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *tctx, 
 			struct DsPrivate *priv)
 {
 	NTSTATUS status;
@@ -515,7 +515,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping DsGetNCChanges test against Samba4\n");
 		return true;
 	}
@@ -589,11 +589,11 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		status = dcerpc_drsuapi_DsGetNCChanges(p, mem_ctx, &r);
+		status = dcerpc_drsuapi_DsGetNCChanges(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+				errstr = dcerpc_errstr(tctx, p->last_fault_code);
 			}
 			printf("dcerpc_drsuapi_DsGetNCChanges failed - %s\n", errstr);
 			ret = false;

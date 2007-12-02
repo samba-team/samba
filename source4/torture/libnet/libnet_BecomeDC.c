@@ -817,7 +817,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	s->schema = NULL;
 
 	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
+	s->ldb = ldb_wrap_connect(s, torture->lp_ctx, s->path.samdb_ldb,
 				  system_session(s),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
@@ -834,7 +834,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 		goto cleanup;
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "become dc", "do not unjoin", false)) {
+	if (lp_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;
 	}

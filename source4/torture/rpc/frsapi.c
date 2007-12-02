@@ -194,7 +194,7 @@ static bool test_ForceReplication(struct torture_context *tctx,
 	r.in.guid1 = NULL;
 	r.in.guid2 = NULL;
 	r.in.replica_set = talloc_asprintf(tctx, "%s",
-					   lp_realm(global_loadparm));
+					   lp_realm(tctx->lp_ctx));
 	r.in.partner_name = dcerpc_server_name(p);
 
 	torture_assert_ntstatus_ok(tctx,

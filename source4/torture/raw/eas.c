@@ -229,7 +229,7 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
  * --option torture:maxeasize=1024 --option torture:maxeadebug=1 ...
  *
  */
-static bool test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -247,10 +247,10 @@ static bool test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING SETFILEINFO MAX. EA_SET\n");
 
-	maxeasize  = lp_parm_int(global_loadparm, NULL, "torture", "maxeasize", 65536);
-	maxeanames = lp_parm_int(global_loadparm, NULL, "torture", "maxeanames", 101);
-	maxeastart = lp_parm_int(global_loadparm, NULL, "torture", "maxeastart", 1);
-	maxeadebug = lp_parm_int(global_loadparm, NULL, "torture", "maxeadebug", 0);
+	maxeasize  = torture_setting_int(tctx, "maxeasize", 65536);
+	maxeanames = torture_setting_int(tctx, "maxeanames", 101);
+	maxeastart = torture_setting_int(tctx, "maxeastart", 1);
+	maxeadebug = torture_setting_int(tctx, "maxeadebug", 0);
 
 	/* Do some sanity check on possibly passed parms */
 	if (maxeasize <= 0) {
@@ -296,11 +296,11 @@ static bool test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 	
-	eablob = data_blob_talloc(mem_ctx, NULL, maxeasize);
+	eablob = data_blob_talloc(tctx, NULL, maxeasize);
 	if (eablob.data == NULL) {
 		goto done;
 	}
@@ -336,7 +336,7 @@ static bool test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (eaname != NULL) {
 			talloc_free(eaname);
 		}
-		eaname = talloc_asprintf(mem_ctx, "MAX%d", i);
+		eaname = talloc_asprintf(tctx, "MAX%d", i);
 		if(eaname == NULL) {
 			goto done;
 		}
@@ -468,19 +468,16 @@ bool torture_max_eas(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	bool ret = true;
-	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli, 0)) {
 		return false;
 	}
 
-	mem_ctx = talloc_init("torture_raw_eas");
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
-	ret &= test_max_eas(cli, mem_ctx);
+	ret &= test_max_eas(cli, torture);
 
 	smb_raw_exit(cli->session);
 	if (!maxeadebug) {
@@ -489,6 +486,5 @@ bool torture_max_eas(struct torture_context *torture)
 	}
 
 	torture_close_connection(cli);
-	talloc_free(mem_ctx);
 	return ret;
 }

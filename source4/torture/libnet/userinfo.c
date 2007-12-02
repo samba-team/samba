@@ -147,7 +147,7 @@ bool torture_userinfo(struct torture_context *torture)
 		return false;
 	}
 
-	name.string = lp_workgroup(global_loadparm);
+	name.string = lp_workgroup(torture->lp_ctx);
 
 	/*
 	 * Testing synchronous version
