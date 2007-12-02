@@ -64,9 +64,10 @@ static void task_server_callback(struct event_context *event_ctx,
 	task->event_ctx = event_ctx;
 	task->model_ops = state->model_ops;
 	task->server_id = server_id;
+	task->lp_ctx = global_loadparm;
 
 	task->msg_ctx = messaging_init(task, 
-				       lp_messaging_path(task, global_loadparm),
+				       lp_messaging_path(task, task->lp_ctx),
 				       task->server_id, task->event_ctx);
 	if (!task->msg_ctx) {
 		task_server_terminate(task, "messaging_init() failed");

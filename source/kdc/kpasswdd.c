@@ -180,7 +180,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	struct samr_DomInfo1 *dominfo;
 	struct ldb_context *samdb;
 
-	samdb = samdb_connect(mem_ctx, system_session(mem_ctx));
+	samdb = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
 	if (!samdb) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx, 
 						KRB5_KPASSWD_HARDERROR,
@@ -310,7 +310,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		
 		krb5_free_principal(context, principal);
 		
-		samdb = samdb_connect(mem_ctx, session_info);
+		samdb = samdb_connect(mem_ctx, global_loadparm, session_info);
 		if (!samdb) {
 			return kpasswdd_make_error_reply(kdc, mem_ctx, 
 							 KRB5_KPASSWD_HARDERROR,

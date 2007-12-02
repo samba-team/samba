@@ -72,10 +72,107 @@ static int do_global_checks(struct loadparm_context *lp_ctx)
 	return ret;
 }   
 
+
+static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, const char *caddr, bool silent_mode,
+			   bool show_defaults, const char *section_name, const char *parameter_name)
+{
+	int ret = 0;
+	int s;
+
+	for (s=0;s<lp_numservices(lp_ctx);s++) {
+		struct loadparm_service *service = lp_servicebynum(lp_ctx, s);
+		if (service != NULL)
+			if (strlen(lp_servicename(lp_servicebynum(lp_ctx, s))) > 12) {
+				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
+				fprintf(stderr, "These may not be accessible to some older clients.\n" );
+				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)\n" );
+				break;
+			}
+	}
+
+	for (s=0;s<lp_numservices(lp_ctx);s++) {
+		struct loadparm_service *service = lp_servicebynum(lp_ctx, s);
+		if (service != NULL) {
+			const char **deny_list = lp_hostsdeny(service);
+			const char **allow_list = lp_hostsallow(service);
+			int i;
+			if(deny_list) {
+				for (i=0; deny_list[i]; i++) {
+					char *hasstar = strchr_m(deny_list[i], '*');
+					char *hasquery = strchr_m(deny_list[i], '?');
+					if(hasstar || hasquery) {
+						fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
+							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(service) );
+					}
+				}
+			}
+
+			if(allow_list) {
+				for (i=0; allow_list[i]; i++) {
+					char *hasstar = strchr_m(allow_list[i], '*');
+					char *hasquery = strchr_m(allow_list[i], '?');
+					if(hasstar || hasquery) {
+						fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
+							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(service) );
+					}
+				}
+			}
+		}
+	}
+
+
+	if (!cname) {
+		if (!silent_mode) {
+			fprintf(stderr,"Press enter to see a dump of your service definitions\n");
+			fflush(stdout);
+			getc(stdin);
+		}
+		if (section_name || parameter_name) {
+			struct loadparm_service *service = NULL;
+			if (!section_name) {
+				section_name = GLOBAL_NAME;
+				service = NULL;
+			} else if ((!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
+				 (service=lp_service(lp_ctx, section_name)) == NULL) {
+					fprintf(stderr,"Unknown section %s\n",
+						section_name);
+					return(1);
+			}
+			if (!parameter_name) {
+				lp_dump_one(stdout, show_defaults, service);
+			} else {
+				ret = !lp_dump_a_parameter(lp_ctx, s, parameter_name, stdout, (service == NULL));
+			}
+		} else {
+			lp_dump(lp_ctx, stdout, show_defaults, lp_numservices(lp_ctx));
+		}
+		return(ret);
+	}
+
+	if(cname && caddr){
+		/* this is totally ugly, a real `quick' hack */
+		for (s=0;s<lp_numservices(lp_ctx);s++) {
+			struct loadparm_service *service = lp_servicebynum(lp_ctx, s);
+			if (service != NULL) {
+				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
+				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {
+					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
+						   cname,caddr,lp_servicename(service));
+				} else {
+					fprintf(stderr,"Deny connection from %s (%s) to %s\n",
+						   cname,caddr,lp_servicename(service));
+				}
+			}
+		}
+	}
+
+	return ret;
+}
+
+
  int main(int argc, const char *argv[])
 {
-	int s;
-	static int silent_mode = 0;
+	static bool silent_mode = false;
 	int ret = 0;
 	poptContext pc;
 /*
@@ -86,12 +183,12 @@ static int do_global_checks(struct loadparm_context *lp_ctx)
 	static char *parameter_name = NULL;
 	static const char *cname;
 	static const char *caddr;
-	static int show_defaults;
+	static bool show_defaults = false;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"suppress-prompt", 0, POPT_ARG_NONE, &silent_mode, 1, "Suppress prompt for enter"},
-		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
+		{"suppress-prompt", 0, POPT_ARG_NONE, &silent_mode, true, "Suppress prompt for enter"},
+		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, true, "Show default options too"},
 /*
   We need support for smb.conf macros before this will work again 
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
@@ -150,92 +247,8 @@ static int do_global_checks(struct loadparm_context *lp_ctx)
 
 	ret = do_global_checks(global_loadparm);
 
-	for (s=0;s<lp_numservices(global_loadparm);s++) {
-		struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
-		if (service != NULL)
-			if (strlen(lp_servicename(lp_servicebynum(global_loadparm, s))) > 12) {
-				fprintf(stderr, "WARNING: You have some share names that are longer than 12 characters.\n" );
-				fprintf(stderr, "These may not be accessible to some older clients.\n" );
-				fprintf(stderr, "(Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)\n" );
-				break;
-			}
-	}
+	ret |= do_share_checks(global_loadparm, cname, caddr, silent_mode, show_defaults, section_name, parameter_name);
 
-	for (s=0;s<lp_numservices(global_loadparm);s++) {
-		struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
-		if (service != NULL) {
-			const char **deny_list = lp_hostsdeny(service);
-			const char **allow_list = lp_hostsallow(service);
-			int i;
-			if(deny_list) {
-				for (i=0; deny_list[i]; i++) {
-					char *hasstar = strchr_m(deny_list[i], '*');
-					char *hasquery = strchr_m(deny_list[i], '?');
-					if(hasstar || hasquery) {
-						fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(service) );
-					}
-				}
-			}
-
-			if(allow_list) {
-				for (i=0; allow_list[i]; i++) {
-					char *hasstar = strchr_m(allow_list[i], '*');
-					char *hasquery = strchr_m(allow_list[i], '?');
-					if(hasstar || hasquery) {
-						fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(service) );
-					}
-				}
-			}
-		}
-	}
-
-
-	if (!cname) {
-		if (!silent_mode) {
-			fprintf(stderr,"Press enter to see a dump of your service definitions\n");
-			fflush(stdout);
-			getc(stdin);
-		}
-		if (section_name || parameter_name) {
-			struct loadparm_service *service = NULL;
-			if (!section_name) {
-				section_name = GLOBAL_NAME;
-				service = NULL;
-			} else if ((!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
-				 (service=lp_service(global_loadparm, section_name)) == NULL) {
-					fprintf(stderr,"Unknown section %s\n",
-						section_name);
-					return(1);
-			}
-			if (!parameter_name) {
-				lp_dump_one(stdout, show_defaults, service);
-			} else {
-				ret = !lp_dump_a_parameter(global_loadparm, s, parameter_name, stdout, (service == NULL));
-			}
-		} else {
-			lp_dump(global_loadparm, stdout, show_defaults, lp_numservices(global_loadparm));
-		}
-		return(ret);
-	}
-
-	if(cname && caddr){
-		/* this is totally ugly, a real `quick' hack */
-		for (s=0;s<lp_numservices(global_loadparm);s++) {
-			struct loadparm_service *service = lp_servicebynum(global_loadparm, s);
-			if (service != NULL) {
-				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
-				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {
-					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(service));
-				} else {
-					fprintf(stderr,"Deny connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(service));
-				}
-			}
-		}
-	}
 	return(ret);
 }
 

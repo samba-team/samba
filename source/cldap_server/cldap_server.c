@@ -159,7 +159,7 @@ static void cldapd_task_init(struct task_server *task)
 		return;
 	}
 
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "cldap_server: no CLDAP server required in standalone configuration");
 		return;
@@ -180,7 +180,7 @@ static void cldapd_task_init(struct task_server *task)
 	}
 
 	cldapd->task = task;
-	cldapd->samctx = samdb_connect(cldapd, anonymous_session(cldapd));
+	cldapd->samctx = samdb_connect(cldapd, task->lp_ctx, anonymous_session(cldapd));
 	if (cldapd->samctx == NULL) {
 		task_server_terminate(task, "cldapd failed to open samdb");
 		return;

@@ -50,7 +50,7 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service)
 	const struct GUID *ntds_guid;
 	struct drsuapi_DsBindInfo28 *bind_info28;
 
-	service->samdb = samdb_connect(service, service->system_session_info);
+	service->samdb = samdb_connect(service, global_loadparm, service->system_session_info);
 	if (!service->samdb) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}

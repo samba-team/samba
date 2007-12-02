@@ -22,8 +22,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "system/time.h"
-#include "util/util_ldb.h"
 #include "lib/ldb/include/ldb.h"
+#include "util/util_ldb.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
@@ -283,7 +283,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, system_session(mem_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, global_loadparm, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;

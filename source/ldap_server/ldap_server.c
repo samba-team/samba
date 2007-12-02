@@ -441,6 +441,7 @@ static const struct stream_server_ops ldap_stream_ops = {
   add a socket address to the list of events, one event per port
 */
 static NTSTATUS add_socket(struct event_context *event_context,
+			   struct loadparm_context *lp_ctx, 
 			   const struct model_ops *model_ops,
 			   const char *address, struct ldapsrv_service *ldap_service)
 {
@@ -471,7 +472,7 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	}
 
 	/* Load LDAP database */
-	ldb = samdb_connect(ldap_service, system_session(ldap_service));
+	ldb = samdb_connect(ldap_service, lp_ctx, system_session(ldap_service));
 	if (!ldb) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -538,7 +539,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	ldap_service->tls_params = tls_initialise(ldap_service);
 	if (ldap_service->tls_params == NULL) goto failed;
 
-	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
+	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -548,16 +549,16 @@ static void ldapsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(i);
-			status = add_socket(task->event_ctx, model_ops, address, ldap_service);
+			status = add_socket(task->event_ctx, task->lp_ctx, model_ops, address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(task->event_ctx, model_ops, 
-				    lp_socket_address(global_loadparm), ldap_service);
+		status = add_socket(task->event_ctx, task->lp_ctx, model_ops, 
+				    lp_socket_address(task->lp_ctx), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
-	ldapi_path = private_path(ldap_service, global_loadparm, "ldapi");
+	ldapi_path = private_path(ldap_service, task->lp_ctx, "ldapi");
 	if (!ldapi_path) {
 		goto failed;
 	}

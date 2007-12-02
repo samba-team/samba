@@ -2127,7 +2127,7 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
         }
 }
 
-bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, char *parm_name, FILE * f, 
+bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, const char *parm_name, FILE * f, 
 			 bool isGlobal)
 {
 	struct loadparm_service * pService = lp_ctx->ServicePtrs[snum];

@@ -27,6 +27,7 @@
 #include "libcli/ldap/ldap.h"
 #include "util/util_ldb.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 /*
   these are used for the fallback local uid/gid to sid mapping
@@ -54,7 +55,7 @@ _PUBLIC_ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
 	if (sidmap == NULL) {
 		return NULL;
 	}
-	sidmap->samctx = samdb_connect(sidmap, system_session(sidmap));
+	sidmap->samctx = samdb_connect(sidmap, global_loadparm, system_session(sidmap));
 	if (sidmap->samctx == NULL) {
 		talloc_free(sidmap);
 		return NULL;

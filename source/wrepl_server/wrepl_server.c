@@ -458,7 +458,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	/*
 	 * setup up all partners, and open the winsdb
 	 */
-	status = wreplsrv_open_winsdb(service, global_loadparm);
+	status = wreplsrv_open_winsdb(service, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_open_winsdb() failed");
 		return;
