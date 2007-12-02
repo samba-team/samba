@@ -163,6 +163,7 @@ _PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx)
 }
 
 static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx, 
+					  struct loadparm_context *lp_ctx,
 					  bool anonymous_credentials, 
 					  struct auth_session_info **_session_info) 
 {
@@ -171,7 +172,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	
-	nt_status = auth_system_server_info(mem_ctx, lp_netbios_name(global_loadparm),
+	nt_status = auth_system_server_info(mem_ctx, lp_netbios_name(lp_ctx),
 					    &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -189,7 +190,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials, global_loadparm);
+	cli_credentials_set_conf(session_info->credentials, lp_ctx);
 
 	if (anonymous_credentials) {
 		cli_credentials_set_anonymous(session_info->credentials);
@@ -208,7 +209,7 @@ _PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = _auth_system_session_info(mem_ctx, false, &session_info);
+	nt_status = _auth_system_session_info(mem_ctx, global_loadparm, false, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -221,6 +222,7 @@ _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 					   struct auth_session_info **_session_info) 
 {
 	return _auth_system_session_info(parent_ctx, 
+			global_loadparm,
 			lp_parm_bool(global_loadparm, NULL, "system", "anonymous", false), 
 			_session_info);
 }

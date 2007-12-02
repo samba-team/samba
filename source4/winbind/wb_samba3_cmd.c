@@ -23,13 +23,13 @@
 #include "includes.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_async_helpers.h"
+#include "param/param.h"
 #include "winbind/wb_helper.h"
 #include "libcli/composite/composite.h"
 #include "version.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/pam_errors.h"
-#include "param/param.h"
 
 /* 
    Send off the reply to an async Samba3 query, handling filling in the PAM, NTSTATUS and string errors.
@@ -545,7 +545,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 		s3call->wbconn->listen_socket->service;
 	char *user, *domain;
 
-	if (!wb_samba3_split_username(s3call,
+	if (!wb_samba3_split_username(s3call, global_loadparm,
 				 s3call->request.data.auth.user,
 				 &domain, &user)) {
 		return NT_STATUS_NO_SUCH_USER;

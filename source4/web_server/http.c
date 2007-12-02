@@ -388,7 +388,7 @@ static void http_simple_request(struct websrv_context *web)
 	const char *path;
 	struct stat st;
 
-	path = http_local_path(web, url, lp_swat_directory(global_loadparm));
+	path = http_local_path(web, url, lp_swat_directory(web->task->lp_ctx));
 	if (path == NULL) goto invalid;
 
 	/* looks ok */
@@ -470,7 +470,7 @@ static void http_setup_arrays(struct esp_state *esp)
 		       talloc_asprintf(esp, "%u", socket_address->port));
 	}
 
-	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory(global_loadparm));
+	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory(esp->web->task->lp_ctx));
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SAMBA");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
@@ -515,7 +515,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 	int res;
 	char *emsg = NULL, *buf;
 
-	if (http_readFile(web, &buf, &size, url, lp_swat_directory(global_loadparm)) != 0) {
+	if (http_readFile(web, &buf, &size, url, lp_swat_directory(esp->web->task->lp_ctx)) != 0) {
 		http_error_unix(web, url);
 		return;
 	}
@@ -547,7 +547,7 @@ static bool http_preauth(struct esp_state *esp)
 {
 	const char *path = http_local_path(esp->web,
                                            HTTP_PREAUTH_URI,
-                                           lp_swat_directory(global_loadparm));
+                                           lp_swat_directory(esp->web->task->lp_ctx));
 	int i;
 	if (path == NULL) {
 		http_error(esp->web, 500, "Internal server error");
@@ -734,7 +734,7 @@ static void http_setup_session(struct esp_state *esp)
 		s->data = NULL;
 		s->te = NULL;
 		s->edata = edata;
-		s->lifetime = lp_parm_int(global_loadparm, NULL, "web", "sessiontimeout", 900);
+		s->lifetime = lp_parm_int(esp->web->task->lp_ctx, NULL, "web", "sessiontimeout", 900);
 		DLIST_ADD(edata->sessions, s);
 		talloc_set_destructor(s, session_destructor);
 		if (!generated_key) {

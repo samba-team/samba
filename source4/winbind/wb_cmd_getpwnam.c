@@ -23,10 +23,10 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_async_helpers.h"
+#include "param/param.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 #include "libnet/libnet_proto.h"
-#include "param/param.h"
 #include "libcli/security/proto.h"
 
 struct cmd_getpwnam_state {
@@ -86,7 +86,7 @@ static void cmd_getpwnam_recv_domain(struct composite_context *ctx)
 	user_info = talloc(state, struct libnet_UserInfo);
 	if (composite_nomem(user_info, state->ctx)) return;
 
-	ok= wb_samba3_split_username(state, state->name, &user_dom, &user_name);
+	ok= wb_samba3_split_username(state, global_loadparm, state->name, &user_dom, &user_name);
 	if(!ok){
 		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
 		return;
