@@ -453,7 +453,7 @@ const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
 /**
  * Return all the security subsystems currently enabled on a GENSEC context.
  * 
- * This is taken from a list attached to the cli_credentails, and
+ * This is taken from a list attached to the cli_credentials, and
  * skips the OID in 'skip'.  (Typically the SPNEGO OID)
  * 
  */

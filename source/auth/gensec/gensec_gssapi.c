@@ -366,7 +366,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s\n", principal));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
-		DEBUG(1, ("Aquiring initiator credentails failed\n"));
+		DEBUG(1, ("Aquiring initiator credentials failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

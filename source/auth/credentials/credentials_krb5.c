@@ -379,7 +379,7 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 }
 
 /**
-   Set a gssapi cred_id_t into the credentails system. (Client case)
+   Set a gssapi cred_id_t into the credentials system. (Client case)
 
    This grabs the credentials both 'intact' and getting the krb5
    ccache out of it.  This routine can be generalised in future for

@@ -248,7 +248,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	c->status = gensec_set_credentials(sec->generic_state, credentials);
 	if (!NT_STATUS_IS_OK(c->status)) {
-		DEBUG(1, ("Failed to set GENSEC client credentails: %s\n",
+		DEBUG(1, ("Failed to set GENSEC client credentials: %s\n",
 			  nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return c;

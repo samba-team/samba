@@ -598,7 +598,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_out.negTokenInit.reqFlags = 0;
 		
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
-			/* server credentails */
+			/* server credentials */
 			struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 			if (creds) {
 				principal = cli_credentials_get_principal(creds, out_mem_ctx);
