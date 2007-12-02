@@ -24,6 +24,7 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "winbind/wb_helper.h"
+#include "param/param.h"
 
 struct name2domain_state {
 	struct composite_context *ctx;
@@ -54,7 +55,7 @@ struct composite_context *wb_name2domain_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	ok = wb_samba3_split_username(state, name, &user_dom, &user_name);
+	ok = wb_samba3_split_username(state, global_loadparm, name, &user_dom, &user_name);
 	if(!ok) {
 		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
 		return result;

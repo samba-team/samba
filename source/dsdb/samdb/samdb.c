@@ -727,7 +727,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		templates_ldb = ldb_wrap_connect(ldb, global_loadparm, 
+		templates_ldb = ldb_wrap_connect(ldb, (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm"), 
 						templates_ldb_path, NULL,
 						NULL, 0, NULL);
 		talloc_free(templates_ldb_path);

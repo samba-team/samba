@@ -84,7 +84,8 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 /*
   start listening on the given address
 */
-static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *address)
+static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_context *lp_ctx,
+				  const char *address)
 {
 	struct cldap_socket *cldapsock;
 	struct socket_address *socket_address;
@@ -95,7 +96,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *addr
 	NT_STATUS_HAVE_NO_MEMORY(cldapsock);
 
 	socket_address = socket_address_from_strings(cldapsock, cldapsock->sock->backend_name, 
-						     address, lp_cldap_port(global_loadparm));
+						     address, lp_cldap_port(lp_ctx));
 	if (!socket_address) {
 		talloc_free(cldapsock);
 		return NT_STATUS_NO_MEMORY;
@@ -104,7 +105,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *addr
 	status = socket_listen(cldapsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 address, lp_cldap_port(global_loadparm), nt_errstr(status)));
+			 address, lp_cldap_port(lp_ctx), nt_errstr(status)));
 		talloc_free(cldapsock);
 		return status;
 	}
@@ -120,7 +121,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *addr
 /*
   setup our listening sockets on the configured network interfaces
 */
-static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd)
+static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct loadparm_context *lp_ctx)
 {
 	int num_interfaces = iface_count();
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
@@ -128,15 +129,15 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd)
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
-	if (!lp_bind_interfaces_only(global_loadparm)) {
-		status = cldapd_add_socket(cldapd, "0.0.0.0");
+	if (!lp_bind_interfaces_only(lp_ctx)) {
+		status = cldapd_add_socket(cldapd, lp_ctx, "0.0.0.0");
 		NT_STATUS_NOT_OK_RETURN(status);
 	} else {
 		int i;
 
 		for (i=0; i<num_interfaces; i++) {
 			const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
-			status = cldapd_add_socket(cldapd, address);
+			status = cldapd_add_socket(cldapd, lp_ctx, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
@@ -187,7 +188,7 @@ static void cldapd_task_init(struct task_server *task)
 	}
 
 	/* start listening on the configured network interfaces */
-	status = cldapd_startup_interfaces(cldapd);
+	status = cldapd_startup_interfaces(cldapd, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "cldapd failed to setup interfaces");
 		return;

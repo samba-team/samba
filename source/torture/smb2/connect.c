@@ -65,7 +65,7 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 /*
   test writing
 */
-static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle handle)
+static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tree *tree, struct smb2_handle handle)
 {
 	struct smb2_write w;
 	struct smb2_read r;
@@ -74,9 +74,9 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	DATA_BLOB data;
 	int i;
 	
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "dangerous", false)) {
+	if (torture_setting_bool(tctx, "dangerous", false)) {
 		data = data_blob_talloc(tree, NULL, 160000);
-	} else if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	} else if (torture_setting_bool(tctx, "samba4", false)) {
 		data = data_blob_talloc(tree, NULL, UINT16_MAX);
 	} else {
 		data = data_blob_talloc(tree, NULL, 120000);
@@ -202,7 +202,7 @@ bool torture_smb2_connect(struct torture_context *torture)
 
 	h1 = torture_smb2_create(tree, "test9.dat");
 	h2 = torture_smb2_create(tree, "test9.dat");
-	status = torture_smb2_write(tree, h1);
+	status = torture_smb2_write(torture, tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
 		return false;

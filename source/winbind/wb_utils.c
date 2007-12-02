@@ -27,13 +27,14 @@
  * as one string.
  * TODO: We probably will need to handle other formats later. */
 
-bool wb_samba3_split_username(TALLOC_CTX *mem_ctx, const char *domuser,
+bool wb_samba3_split_username(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+			      const char *domuser,
 				 char **domain, char **user)
 {
-	char *p = strchr(domuser, *lp_winbind_separator(global_loadparm));
+	char *p = strchr(domuser, *lp_winbind_separator(lp_ctx));
 
 	if (p == NULL) {
-		*domain = talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
+		*domain = talloc_strdup(mem_ctx, lp_workgroup(lp_ctx));
 	} else {
 		*domain = talloc_strndup(mem_ctx, domuser,
 					 PTR_DIFF(p, domuser));
