@@ -173,7 +173,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 
 	/* remember this session key state */
-	nt_status = schannel_store_session_key(mem_ctx, creds);
+	nt_status = schannel_store_session_key(mem_ctx, global_loadparm, creds);
 
 	return nt_status;
 }
@@ -555,7 +555,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 {
 	NTSTATUS nt_status;
 	struct creds_CredentialState *creds;
-	nt_status = schannel_fetch_session_key(mem_ctx, r->in.computer_name, lp_workgroup(global_loadparm), &creds);
+	nt_status = schannel_fetch_session_key(mem_ctx, global_loadparm, r->in.computer_name, lp_workgroup(global_loadparm), &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

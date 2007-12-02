@@ -137,13 +137,14 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
+				    struct loadparm_context *lp_ctx,
 				    struct creds_CredentialState *creds)
 {
 	struct ldb_context *ldb;
 	NTSTATUS nt_status;
 	int ret;
 		
-	ldb = schannel_db_connect(mem_ctx, global_loadparm);
+	ldb = schannel_db_connect(mem_ctx, lp_ctx);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -267,6 +268,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
+				    struct loadparm_context *lp_ctx,
 					const char *computer_name, 
 					const char *domain, 
 					struct creds_CredentialState **creds)
@@ -274,7 +276,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
 
-	ldb = schannel_db_connect(mem_ctx, global_loadparm);
+	ldb = schannel_db_connect(mem_ctx, lp_ctx);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

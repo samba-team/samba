@@ -29,6 +29,7 @@
 #include "auth/gensec/schannel_state.h"
 #include "auth/gensec/schannel_proto.h"
 #include "librpc/rpc/dcerpc.h"
+#include "param/param.h"
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
@@ -119,7 +120,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 		
 		/* pull the session key for this client */
-		status = schannel_fetch_session_key(out_mem_ctx, workstation, 
+		status = schannel_fetch_session_key(out_mem_ctx, global_loadparm, workstation, 
 						    domain, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",

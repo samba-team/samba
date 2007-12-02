@@ -142,7 +142,8 @@ static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_st
 	return 0;
 }
 
-static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security,
+				    struct loadparm_context *lp_ctx)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	krb5_error_code ret;
@@ -155,7 +156,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	
 	gensec_gssapi_state->gss_exchange_count = 0;
 	gensec_gssapi_state->max_wrap_buf_size
-		= lp_parm_int(global_loadparm, NULL, "gensec_gssapi", "max wrap buf size", 65536);
+		= lp_parm_int(lp_ctx, NULL, "gensec_gssapi", "max wrap buf size", 65536);
 		
 	gensec_gssapi_state->sasl = false;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
@@ -170,16 +171,16 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
 	gensec_gssapi_state->want_flags = 0;
-	if (lp_parm_bool(global_loadparm, NULL, "gensec_gssapi", "mutual", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "gensec_gssapi", "mutual", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
 	}
-	if (lp_parm_bool(global_loadparm, NULL, "gensec_gssapi", "delegation", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "gensec_gssapi", "delegation", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
 	}
-	if (lp_parm_bool(global_loadparm, NULL, "gensec_gssapi", "replay", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "gensec_gssapi", "replay", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_REPLAY_FLAG;
 	}
-	if (lp_parm_bool(global_loadparm, NULL, "gensec_gssapi", "sequence", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "gensec_gssapi", "sequence", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
 
@@ -213,10 +214,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (lp_realm(global_loadparm) && *lp_realm(global_loadparm)) {
-		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(global_loadparm));
+	if (lp_realm(lp_ctx) && *lp_realm(lp_ctx)) {
+		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(lp_ctx));
 		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(global_loadparm)));
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(lp_ctx)));
 			talloc_free(gensec_gssapi_state);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -230,7 +231,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	/* don't do DNS lookups of any kind, it might/will fail for a netbios name */
-	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(global_loadparm, NULL, "krb5", "set_dns_canonicalize", false));
+	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(lp_ctx, NULL, "krb5", "set_dns_canonicalize", false));
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: gsskrb5_set_dns_canonicalize failed\n"));
 		talloc_free(gensec_gssapi_state);
@@ -239,7 +240,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	ret = smb_krb5_init_context(gensec_gssapi_state, 
 				    gensec_security->event_ctx,
-				    global_loadparm,
+				    lp_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
@@ -258,7 +259,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 	struct cli_credentials *machine_account;
 	struct gssapi_creds_container *gcc;
 
-	nt_status = gensec_gssapi_start(gensec_security);
+	nt_status = gensec_gssapi_start(gensec_security, global_loadparm);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -323,7 +324,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = gensec_gssapi_start(gensec_security);
+	nt_status = gensec_gssapi_start(gensec_security, global_loadparm);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
