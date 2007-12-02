@@ -366,6 +366,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 krb5_error_code smb_krb5_init_context(void *parent_ctx, 
 				      struct event_context *ev,
+				      struct loadparm_context *lp_ctx,
 				       struct smb_krb5_context **smb_krb5_context) 
 {
 	krb5_error_code ret;
@@ -393,7 +394,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destroy_1);
 
-	config_file = config_path(tmp_ctx, global_loadparm, "krb5.conf");
+	config_file = config_path(tmp_ctx, lp_ctx, "krb5.conf");
 	if (!config_file) {
 		talloc_free(tmp_ctx);
 		return ENOMEM;
@@ -418,10 +419,10 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ret;
 	}
 						
-	if (lp_realm(global_loadparm) && *lp_realm(global_loadparm)) {
-		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm(global_loadparm));
+	if (lp_realm(lp_ctx) && *lp_realm(lp_ctx)) {
+		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm(lp_ctx));
 		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(global_loadparm)));
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(lp_ctx)));
 			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}
@@ -473,7 +474,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	/* Set options in kerberos */
 
 	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context,
-					   lp_parm_bool(global_loadparm, NULL, "krb5", "set_dns_canonicalize", false));
+					   lp_parm_bool(lp_ctx, NULL, "krb5", "set_dns_canonicalize", false));
 
 	return 0;
 }

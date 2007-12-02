@@ -26,8 +26,10 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "param/param.h"
 
 int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
+				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
 {
 	int ret;
@@ -37,7 +39,7 @@ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 	}
 
 	ret = smb_krb5_init_context(cred, cli_credentials_get_event_context(cred), 
-				    &cred->smb_krb5_context);
+				    lp_ctx, &cred->smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
@@ -139,7 +141,7 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
 		return ret;
@@ -213,7 +215,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccach
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
 		return ret;
@@ -461,7 +463,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
@@ -507,7 +509,7 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
@@ -545,7 +547,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -585,7 +587,7 @@ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}

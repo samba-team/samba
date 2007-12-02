@@ -358,6 +358,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	struct smb_krb5_context *smb_krb5_context;
 	ret = smb_krb5_init_context(mem_ctx, 
 				    (struct event_context *)ldb_get_opaque(sam_ctx, "EventContext"), 
+				    (struct loadparm_context *)ldb_get_opaque(sam_ctx, "loadparm"), 
 				    &smb_krb5_context);
 				
 	if (ret) {
