@@ -81,7 +81,7 @@ bool torture_smb2_dir(struct torture_context *torture)
 	struct smb2_tree *tree;
 	bool ret = true;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 

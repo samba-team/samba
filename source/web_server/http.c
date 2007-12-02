@@ -1023,7 +1023,7 @@ NTSTATUS http_setup_esp(struct task_server *task)
 
 	task->private = edata;
 
-	edata->tls_params = tls_initialise(edata);
+	edata->tls_params = tls_initialise(edata, task->lp_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(edata->tls_params);
 
 	return NT_STATUS_OK;

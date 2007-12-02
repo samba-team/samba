@@ -59,7 +59,7 @@
 /*
   test session ops
 */
-static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -88,11 +88,11 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, mem_ctx, false);
+	session = smbcli_session_init(cli->transport, tctx, false);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -102,12 +102,12 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session->vuid = setup.out.vuid;
 
 	printf("create a third security context on the same transport, with vuid set\n");
-	session2 = smbcli_session_init(cli->transport, mem_ctx, false);
+	session2 = smbcli_session_init(cli->transport, tctx, false);
 
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -129,12 +129,12 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		printf("create a fourth security context on the same transport, without extended security\n");
-		session3 = smbcli_session_init(cli->transport, mem_ctx, false);
+		session3 = smbcli_session_init(cli->transport, tctx, false);
 
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup(global_loadparm);
+		setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	
 		setup.in.credentials = cmdline_credentials;
 	
@@ -143,15 +143,15 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
 		printf("create a fouth anonymous security context on the same transport, without extended security\n");
-		session4 = smbcli_session_init(cli->transport, mem_ctx, false);
+		session4 = smbcli_session_init(cli->transport, tctx, false);
 
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup(global_loadparm);
+		setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 		
-		anon_creds = cli_credentials_init(mem_ctx);
-		cli_credentials_set_conf(anon_creds, global_loadparm);
+		anon_creds = cli_credentials_init(tctx);
+		cli_credentials_set_conf(anon_creds, tctx->lp_ctx);
 		cli_credentials_set_anonymous(anon_creds);
 
 		setup.in.credentials = anon_creds;
@@ -163,7 +163,7 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 		
 	printf("use the same tree as the existing connection\n");
-	tree = smbcli_tree_init(session, mem_ctx, false);
+	tree = smbcli_tree_init(session, tctx, false);
 	tree->tid = cli->tree->tid;
 
 	printf("create a file using the new vuid\n");
@@ -179,7 +179,7 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
-	status = smb_raw_open(tree, mem_ctx, &io);
+	status = smb_raw_open(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -225,11 +225,11 @@ static bool test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0; i <ARRAY_SIZE(sessions); i++) {
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-		setups[i].in.workgroup = lp_workgroup(global_loadparm);
+		setups[i].in.workgroup = lp_workgroup(tctx->lp_ctx);
 		
 		setups[i].in.credentials = cmdline_credentials;
 
-		sessions[i] = smbcli_session_init(cli->transport, mem_ctx, false);
+		sessions[i] = smbcli_session_init(cli->transport, tctx, false);
 		composite_contexts[i] = smb_composite_sesssetup_send(sessions[i], &setups[i]);
 
 	}
@@ -257,7 +257,7 @@ done:
 /*
   test tree ops
 */
-static bool test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -277,18 +277,18 @@ static bool test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return false;
 	}
 
-	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
-	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	share = torture_setting_string(tctx, "share", NULL);
+	host  = torture_setting_string(tctx, "host", NULL);
 	
 	printf("create a second tree context on the same session\n");
-	tree = smbcli_tree_init(cli->session, mem_ctx, false);
+	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
 
@@ -297,7 +297,7 @@ static bool test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("try a tconx with a bad device type\n");
 	tcon.tconx.in.device = "FOO";	
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_BAD_DEVICE_TYPE);
 
 
@@ -314,7 +314,7 @@ static bool test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
-	status = smb_raw_open(tree, mem_ctx, &io);
+	status = smb_raw_open(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -362,7 +362,7 @@ done:
   this demonstrates that a tcon isn't autoclosed by a ulogoff
   the tcon can be reused using any other valid session later
 */
-static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -385,14 +385,14 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return false;
 	}
 
-	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
-	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	share = torture_setting_string(tctx, "share", NULL);
+	host  = torture_setting_string(tctx, "host", NULL);
 
 	printf("create the first new sessions\n");
-	session1 = smbcli_session_init(cli->transport, mem_ctx, false);
+	session1 = smbcli_session_init(cli->transport, tctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -400,13 +400,13 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("vuid1=%d\n", session1->vuid);
 
 	printf("create a tree context on the with vuid1\n");
-	tree = smbcli_tree_init(session1, mem_ctx, false);
+	tree = smbcli_tree_init(session1, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	tree->tid = tcon.tconx.out.tid;
 	printf("tid=%d\n", tree->tid);
@@ -424,7 +424,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
-	status = smb_raw_open(tree, mem_ctx, &io);
+	status = smb_raw_open(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
 
@@ -445,10 +445,10 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("create the second new sessions\n");
-	session2 = smbcli_session_init(cli->transport, mem_ctx, false);
+	session2 = smbcli_session_init(cli->transport, tctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -471,7 +471,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname2;
-	status = smb_raw_open(tree, mem_ctx, &io);
+	status = smb_raw_open(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 
@@ -620,7 +620,7 @@ done:
 /*
   test pid ops with 2 sessions
 */
-static bool test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -641,11 +641,11 @@ static bool test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("create a second security context on the same transport\n");
-	session = smbcli_session_init(cli->transport, mem_ctx, false);
+	session = smbcli_session_init(cli->transport, tctx, false);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -672,7 +672,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -724,7 +724,7 @@ done:
 /*
   test pid ops with 2 tcons
 */
-static bool test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -746,18 +746,18 @@ static bool test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		return false;
 	}
 
-	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
-	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	share = torture_setting_string(tctx, "share", NULL);
+	host  = torture_setting_string(tctx, "host", NULL);
 	
 	printf("create a second tree context on the same session\n");
-	tree = smbcli_tree_init(cli->session, mem_ctx, false);
+	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);	
 
 	tree->tid = tcon.tconx.out.tid;
@@ -780,7 +780,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
 
@@ -811,7 +811,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname2;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 
@@ -890,9 +890,9 @@ bool torture_raw_context(struct torture_context *torture,
 			 struct smbcli_state *cli)
 {
 	bool ret = true;
-	if (lp_use_spnego(global_loadparm)) {
+	if (lp_use_spnego(torture->lp_ctx)) {
 		ret &= torture_raw_context_int(torture, cli);
-		lp_set_cmdline(global_loadparm, "use spnego", "False");
+		lp_set_cmdline(torture->lp_ctx, "use spnego", "False");
 	}
 
 	ret &= torture_raw_context_int(torture, cli);

@@ -37,14 +37,13 @@
 */
 bool torture_smb2_getinfo_scan(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_getinfo io;
 	struct smb2_handle fhandle, dhandle;
 	int c, i;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
@@ -74,7 +73,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 			io.in.level = (i<<8) | c;
 
 			io.in.file.handle = fhandle;
-			status = smb2_getinfo(tree, mem_ctx, &io);
+			status = smb2_getinfo(tree, torture, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
@@ -84,7 +83,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 			}
 
 			io.in.file.handle = dhandle;
-			status = smb2_getinfo(tree, mem_ctx, &io);
+			status = smb2_getinfo(tree, torture, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
@@ -95,8 +94,6 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 		}
 	}
 
-	talloc_free(mem_ctx);
-
 	return true;
 }
 
@@ -105,14 +102,13 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 */
 bool torture_smb2_setinfo_scan(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_setinfo io;
 	struct smb2_handle handle;
 	int c, i;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
@@ -126,7 +122,7 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 	torture_smb2_testfile(tree, FNAME, &handle);
 
 	ZERO_STRUCT(io);
-	io.in.blob = data_blob_talloc_zero(mem_ctx, 1024);
+	io.in.blob = data_blob_talloc_zero(torture, 1024);
 
 	for (c=1;c<5;c++) {
 		for (i=0;i<0x100;i++) {
@@ -141,8 +137,6 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 		}
 	}
 
-	talloc_free(mem_ctx);
-
 	return true;
 }
 
@@ -152,14 +146,13 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 */
 bool torture_smb2_find_scan(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_find io;
 	struct smb2_handle handle;
 	int i;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
@@ -179,7 +172,7 @@ bool torture_smb2_find_scan(struct torture_context *torture)
 		io.in.level = i;
 
 		io.in.file.handle = handle;
-		status = smb2_find(tree, mem_ctx, &io);
+		status = smb2_find(tree, torture, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
@@ -188,8 +181,6 @@ bool torture_smb2_find_scan(struct torture_context *torture)
 			dump_data(1, io.out.blob.data, io.out.blob.length);
 		}
 	}
-
-	talloc_free(mem_ctx);
 
 	return true;
 }

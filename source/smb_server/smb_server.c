@@ -175,10 +175,11 @@ static const struct stream_server_ops smb_stream_ops = {
   setup a listening socket on all the SMB ports for a particular address
 */
 _PUBLIC_ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
+				    struct loadparm_context *lp_ctx,
 			       const struct model_ops *model_ops,
 			       const char *address)
 {
-	const char **ports = lp_smb_ports(global_loadparm);
+	const char **ports = lp_smb_ports(lp_ctx);
 	int i;
 	NTSTATUS status;
 
@@ -215,7 +216,7 @@ static void smbsrv_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[smbsrv]");
 
-	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
+	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces = iface_count();
 		int i;
 
@@ -225,13 +226,13 @@ static void smbsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(i);
-			status = smbsrv_add_socket(task->event_ctx, task->model_ops, address);
+			status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops, address);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		status = smbsrv_add_socket(task->event_ctx, task->model_ops, 
-					   lp_socket_address(global_loadparm));
+		status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops, 
+					   lp_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

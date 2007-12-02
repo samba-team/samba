@@ -160,7 +160,7 @@ bool torture_ldap_uptodatevector(struct torture_context *torture)
 	url = talloc_asprintf(torture, "ldap://%s/", host);
 	if (!url) goto failed;
 
-	ldb = ldb_wrap_connect(torture, global_loadparm, url,
+	ldb = ldb_wrap_connect(torture, torture->lp_ctx, url,
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);

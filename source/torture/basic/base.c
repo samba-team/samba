@@ -41,7 +41,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 	struct smbcli_state *cli;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 
-	make_nbt_name_client(&calling, lp_netbios_name(global_loadparm));
+	make_nbt_name_client(&calling, lp_netbios_name(tctx->lp_ctx));
 
 	nbt_choose_called_name(NULL, &called, host, NBT_NAME_SERVER);
 
@@ -355,7 +355,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 
 	for (i=0;i<100;i++) {
 		struct smbcli_request *req;
-		req = smb_raw_negotiate_send(cli->transport, lp_unicode(global_loadparm), PROTOCOL_NT1);
+		req = smb_raw_negotiate_send(cli->transport, lp_unicode(tctx->lp_ctx), PROTOCOL_NT1);
 		event_loop_once(cli->transport->socket->event.ctx);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
 			if (i > 0) {
@@ -1443,9 +1443,9 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		return false;
 	}
 
-	nt_status_support = lp_nt_status_support(global_loadparm);
+	nt_status_support = lp_nt_status_support(tctx->lp_ctx);
 
-	if (!lp_set_cmdline(global_loadparm, "nt status support", "yes")) {
+	if (!lp_set_cmdline(tctx->lp_ctx, "nt status support", "yes")) {
 		torture_comment(tctx, "Could not set 'nt status support = yes'\n");
 		goto fail;
 	}
@@ -1454,7 +1454,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
-	if (!lp_set_cmdline(global_loadparm, "nt status support", "no")) {
+	if (!lp_set_cmdline(tctx->lp_ctx, "nt status support", "no")) {
 		torture_comment(tctx, "Could not set 'nt status support = yes'\n");
 		goto fail;
 	}
@@ -1463,7 +1463,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
-	if (!lp_set_cmdline(global_loadparm, "nt status support",
+	if (!lp_set_cmdline(tctx->lp_ctx, "nt status support",
 			    nt_status_support ? "yes":"no")) {
 		torture_comment(tctx, "Could not reset 'nt status support = yes'");
 		goto fail;

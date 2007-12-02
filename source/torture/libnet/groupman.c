@@ -71,7 +71,7 @@ bool torture_groupadd(struct torture_context *torture)
 		return false;
 	}
 
-	domain_name.string = lp_workgroup(global_loadparm);
+	domain_name.string = lp_workgroup(torture->lp_ctx);
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;

@@ -78,7 +78,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	const char *address;
 	struct nbt_name name;
 	
-	name.name = lp_workgroup(global_loadparm);
+	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
 	name.scope = NULL;
 
@@ -91,7 +91,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
-						     myaddress, lp_dgram_port(global_loadparm));
+						     myaddress, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
@@ -157,7 +157,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	const char *address;
 	struct nbt_name name;
 	
-	name.name = lp_workgroup(global_loadparm);
+	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
 	name.scope = NULL;
 
@@ -169,7 +169,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
-						     myaddress, lp_dgram_port(global_loadparm));
+						     myaddress, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
@@ -266,7 +266,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	const char *address;
 	struct nbt_name name;
 	
-	name.name = lp_workgroup(global_loadparm);
+	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
 	name.scope = NULL;
 
@@ -278,7 +278,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
-						     myaddress, lp_dgram_port(global_loadparm));
+						     myaddress, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, socket_address != NULL, "Error getting address");
 
 	/* try receiving replies on port 138 first, which will only
@@ -299,7 +299,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 				       ACB_WSTRUST, &machine_credentials);
 	torture_assert(tctx, join_ctx != NULL,
 		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",
-		       		       lp_workgroup(global_loadparm), TEST_NAME));
+		       		       lp_workgroup(tctx->lp_ctx), TEST_NAME));
 
 	dom_sid = torture_join_sid(join_ctx);
 

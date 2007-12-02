@@ -31,7 +31,7 @@
 /*
   test writing
 */
-static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx, 
+static NTSTATUS torture_smb2_write(struct torture_context *tctx,
 				   struct smb2_tree *tree, 
 				   struct smb2_handle handle)
 {
@@ -43,7 +43,7 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 	int min = 1;
 
 	while (max > min) {
-		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
 
 		len = 1+(min+max)/2;
@@ -69,7 +69,7 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 				/* vista bug */
 				printf("coping with server disconnect\n");
 				talloc_free(tree);
-				if (!torture_smb2_connection(mem_ctx, &tree)) {
+				if (!torture_smb2_connection(torture, &tree)) {
 					printf("failed to reconnect\n");
 					return NT_STATUS_NET_WRITE_FAULT;
 				}
@@ -113,23 +113,20 @@ static NTSTATUS torture_smb2_write(TALLOC_CTX *mem_ctx,
 */
 bool torture_smb2_maxwrite(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	struct smb2_handle h1;
 	NTSTATUS status;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
 	h1 = torture_smb2_create(tree, FNAME);
-	status = torture_smb2_write(mem_ctx, tree, h1);
+	status = torture_smb2_write(torture, tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
 		return false;
 	}
-
-	talloc_free(mem_ctx);
 
 	return true;
 }

@@ -29,7 +29,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 
-static bool try_failed_login(struct smbcli_state *cli)
+static bool try_failed_login(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	struct smb_composite_sesssetup setup;
@@ -38,10 +38,10 @@ static bool try_failed_login(struct smbcli_state *cli)
 	session = smbcli_session_init(cli->transport, cli, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cli_credentials_init(session);
-	cli_credentials_set_conf(setup.in.credentials, global_loadparm);
+	cli_credentials_set_conf(setup.in.credentials, tctx->lp_ctx);
 	cli_credentials_set_domain(setup.in.credentials, "INVALID-DOMAIN", CRED_SPECIFIED);
 	cli_credentials_set_username(setup.in.credentials, "INVALID-USERNAME", CRED_SPECIFIED);
 	cli_credentials_set_password(setup.in.credentials, "INVALID-PASSWORD", CRED_SPECIFIED);
@@ -62,7 +62,7 @@ bool torture_sec_leak(struct torture_context *tctx, struct smbcli_state *cli)
 	int timelimit = torture_setting_int(tctx, "timelimit", 20);
 
 	while (time(NULL) < t1+timelimit) {
-		if (!try_failed_login(cli)) {
+		if (!try_failed_login(tctx, cli)) {
 			return false;
 		}
 		talloc_report(NULL, stdout);

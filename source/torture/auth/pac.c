@@ -57,7 +57,7 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, 
 							NULL,
-							global_loadparm,
+							tctx->lp_ctx,
 							&smb_krb5_context), 
 		       "smb_krb5_init_context");
 
@@ -286,7 +286,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx = tctx;
 
 	torture_assert(tctx, 0 == smb_krb5_init_context(mem_ctx, NULL,
-							global_loadparm,
+							tctx->lp_ctx,
 							&smb_krb5_context),
 		       "smb_krb5_init_context");
 

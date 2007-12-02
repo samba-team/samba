@@ -592,15 +592,15 @@ static bool test_async(struct torture_context *tctx,
 	session = smbcli_session_init(cli->transport, tctx, false);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session->vuid = setup.out.vuid;
 
 	printf("create new tree context\n");
-	share = lp_parm_string(global_loadparm, NULL, "torture", "share");
-	host  = lp_parm_string(global_loadparm, NULL, "torture", "host");
+	share = torture_setting_string(tctx, "share", NULL);
+	host  = torture_setting_string(tctx, "host", NULL);
 	tree = smbcli_tree_init(session, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;

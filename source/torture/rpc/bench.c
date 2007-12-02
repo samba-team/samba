@@ -68,11 +68,11 @@ static bool test_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 /*
   benchmark srvsvc netshareenumall queries
 */
-static bool bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static bool bench_NetShareEnumAll(struct torture_context *tctx, struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct timeval tv = timeval_current();
 	bool ret = true;
-	int timelimit = lp_parm_int(global_loadparm, NULL, "torture", "timelimit", 10);
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	int count=0;
 
 	printf("Running for %d seconds\n", timelimit);
@@ -82,7 +82,7 @@ static bool bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		talloc_free(tmp_ctx);
 		count++;
 		if (count % 50 == 0) {
-			if (lp_parm_bool(global_loadparm, NULL, "torture", "progress", true)) {
+			if (torture_setting_bool(tctx, "progress", true)) {
 				printf("%.1f queries per second  \r", 
 				       count / timeval_elapsed(&tv));
 			}
@@ -112,7 +112,7 @@ bool torture_bench_rpc(struct torture_context *torture)
 		return false;
 	}
 
-	if (!bench_NetShareEnumAll(p, mem_ctx)) {
+	if (!bench_NetShareEnumAll(torture, p, mem_ctx)) {
 		ret = false;
 	}
 

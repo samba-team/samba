@@ -352,16 +352,16 @@ static NTSTATUS tls_socket_send(struct socket_context *sock,
 /*
   initialise global tls state
 */
-struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
+struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct tls_params *params;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *keyfile = private_path(tmp_ctx, global_loadparm, lp_tls_keyfile(global_loadparm));
-	const char *certfile = private_path(tmp_ctx, global_loadparm, lp_tls_certfile(global_loadparm));
-	const char *cafile = private_path(tmp_ctx, global_loadparm, lp_tls_cafile(global_loadparm));
-	const char *crlfile = private_path(tmp_ctx, global_loadparm, lp_tls_crlfile(global_loadparm));
-	const char *dhpfile = private_path(tmp_ctx, global_loadparm, lp_tls_dhpfile(global_loadparm));
+	const char *keyfile = private_path(tmp_ctx, lp_ctx, lp_tls_keyfile(lp_ctx));
+	const char *certfile = private_path(tmp_ctx, lp_ctx, lp_tls_certfile(lp_ctx));
+	const char *cafile = private_path(tmp_ctx, lp_ctx, lp_tls_cafile(lp_ctx));
+	const char *crlfile = private_path(tmp_ctx, lp_ctx, lp_tls_crlfile(lp_ctx));
+	const char *dhpfile = private_path(tmp_ctx, lp_ctx, lp_tls_dhpfile(lp_ctx));
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
 
 	params = talloc(mem_ctx, struct tls_params);
@@ -370,7 +370,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (!lp_tls_enabled(global_loadparm) || keyfile == NULL || *keyfile == 0) {
+	if (!lp_tls_enabled(lp_ctx) || keyfile == NULL || *keyfile == 0) {
 		params->tls_enabled = false;
 		talloc_free(tmp_ctx);
 		return params;
@@ -536,7 +536,8 @@ failed:
   setup for a new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *socket,
-				       struct fd_event *fde)
+				       struct fd_event *fde,
+				       const char *ca_path)
 {
 	struct tls_context *tls;
 	int ret = 0;
@@ -565,16 +566,10 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	}
 	new_sock->private_data    = tls;
 
-	cafile = private_path(tls, global_loadparm, lp_tls_cafile(global_loadparm));
-	if (!cafile || !*cafile) {
-		goto failed;
-	}
-
 	gnutls_global_init();
 
 	gnutls_certificate_allocate_credentials(&tls->xcred);
 	gnutls_certificate_set_x509_trust_file(tls->xcred, cafile, GNUTLS_X509_FMT_PEM);
-	talloc_free(cafile);
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
 	TLSCHECK(gnutls_set_default_priority(tls->session));
 	gnutls_certificate_type_set_priority(tls->session, cert_type_priority);
@@ -659,7 +654,7 @@ bool tls_support(struct tls_params *params)
 /* for systems without tls we just fail the operations, and the caller
  * will retain the original socket */
 
-struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
+struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return talloc_new(mem_ctx);
 }
@@ -680,7 +675,8 @@ struct socket_context *tls_init_server(struct tls_params *params,
   setup for a new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *socket,
-				       struct fd_event *fde)
+				       struct fd_event *fde,
+				       const char *ca_path)
 {
 	return NULL;
 }

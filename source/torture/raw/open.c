@@ -72,7 +72,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	}} while (0)
 
 #define CREATE_FILE do { \
-	fnum = create_complex_file(cli, mem_ctx, fname); \
+	fnum = create_complex_file(cli, tctx, fname); \
 	if (fnum == -1) { \
 		printf("(%s) Failed to create %s - %s\n", __location__, fname, smbcli_errstr(cli->tree)); \
 		ret = false; \
@@ -91,16 +91,16 @@ static const char *rdwr_string(enum rdwr_mode m)
 	time_t t1, t2; \
 	finfo.all_info.level = RAW_FILEINFO_ALL_INFO; \
 	finfo.all_info.in.file.path = fname; \
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t1 = t & ~1; \
 	t2 = nt_time_to_unix(finfo.all_info.out.field) & ~1; \
 	if (abs(t1-t2) > 2) { \
 		printf("(%s) wrong time for field %s  %s - %s\n", \
 		       __location__, #field, \
-		       timestring(mem_ctx, t1), \
-		       timestring(mem_ctx, t2)); \
-		dump_all_info(mem_ctx, &finfo); \
+		       timestring(tctx, t1), \
+		       timestring(tctx, t2)); \
+		dump_all_info(tctx, &finfo); \
 		ret = false; \
 	}} while (0)
 
@@ -108,27 +108,27 @@ static const char *rdwr_string(enum rdwr_mode m)
 	NTTIME t2; \
 	finfo.all_info.level = RAW_FILEINFO_ALL_INFO; \
 	finfo.all_info.in.file.path = fname; \
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t2 = finfo.all_info.out.field; \
 	if (t != t2) { \
 		printf("(%s) wrong time for field %s  %s - %s\n", \
 		       __location__, #field, \
-		       nt_time_string(mem_ctx, t), \
-		       nt_time_string(mem_ctx, t2)); \
-		dump_all_info(mem_ctx, &finfo); \
+		       nt_time_string(tctx, t), \
+		       nt_time_string(tctx, t2)); \
+		dump_all_info(tctx, &finfo); \
 		ret = false; \
 	}} while (0)
 
 #define CHECK_ALL_INFO(v, field) do { \
 	finfo.all_info.level = RAW_FILEINFO_ALL_INFO; \
 	finfo.all_info.in.file.path = fname; \
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	if ((v) != (finfo.all_info.out.field)) { \
 		printf("(%s) wrong value for field %s  0x%x - 0x%x\n", \
 		       __location__, #field, (int)v, (int)(finfo.all_info.out.field)); \
-		dump_all_info(mem_ctx, &finfo); \
+		dump_all_info(tctx, &finfo); \
 		ret = false; \
 	}} while (0)
 
@@ -154,7 +154,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 /*
   test RAW_OPEN_OPEN
 */
-static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_open(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -169,7 +169,7 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openold.in.fname = fname;
 	io.openold.in.open_mode = OPEN_FLAGS_FCB;
 	io.openold.in.search_attrs = 0;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	fnum = io.openold.out.file.fnum;
 
@@ -177,12 +177,12 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CREATE_FILE;
 	smbcli_close(cli->tree, fnum);
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum2, RDWR_RDWR);
@@ -195,21 +195,21 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openold.in.search_attrs = 0;
 
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_RDONLY);
 	smbcli_close(cli->tree, fnum);
 
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_WRITE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_WRONLY);
 	smbcli_close(cli->tree, fnum);
 
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
@@ -217,7 +217,7 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* check the share modes roughly - not a complete matrix */
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_WRITE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
@@ -228,11 +228,11 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_RDWR | OPEN_FLAGS_DENY_NONE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ | OPEN_FLAGS_DENY_NONE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum2, RDWR_RDONLY);
@@ -245,7 +245,7 @@ static bool test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openold.in.fname = fname;
 	io.openold.in.search_attrs = 0;
 	io.openold.in.open_mode = OPEN_FLAGS_OPEN_READ;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 
@@ -265,7 +265,7 @@ done:
 /*
   test RAW_OPEN_OPENX
 */
-static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_openx(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -311,7 +311,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check all combinations of open_func */
 	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
 		if (open_funcs[i].with_file) {
-			fnum = create_complex_file(cli, mem_ctx, fname);
+			fnum = create_complex_file(cli, tctx, fname);
 			if (fnum == -1) {
 				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
 				ret = false;
@@ -320,7 +320,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			smbcli_close(cli->tree, fnum);
 		}
 		io.openx.in.open_func = open_funcs[i].open_func;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		status = smb_raw_open(cli->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_func=0x%x)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
@@ -339,7 +339,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* check the basic return fields */
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openx.out.file.fnum;
 
@@ -356,7 +356,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlink(cli->tree, fname);
 
 	/* check the fields when the file already existed */
-	fnum2 = create_complex_file(cli, mem_ctx, fname);
+	fnum2 = create_complex_file(cli, tctx, fname);
 	if (fnum2 == -1) {
 		ret = false;
 		goto done;
@@ -364,7 +364,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum2);
 
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openx.out.file.fnum;
 
@@ -380,12 +380,12 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN, attrib);
 
 	io.openx.in.search_attrs = FILE_ATTRIBUTE_HIDDEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
 
 	io.openx.in.search_attrs = 0;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
 
@@ -396,9 +396,9 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.open_func = OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE;
 	io.openx.in.search_attrs = 0;
 	io.openx.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false)) {
 		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
 			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED|
 					  FILE_ATTRIBUTE_SPARSE));
@@ -414,14 +414,14 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
 	io.openx.in.file_attrs = 0;
 	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_ALL;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openx.out.file.fnum;
 
 	io.openx.in.timeout = 20000;
 	tv = timeval_current();
 	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_NONE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	if (timeval_elapsed(&tv) > 3.0) {
 		printf("(%s) Incorrect timing in openx with timeout - waited %.2f seconds\n",
@@ -441,27 +441,27 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.write_time = 0;
 	io.openx.in.size = 0;
 	io.openx.in.timeout = 0;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
 
 	/* check the extended return flag */
 	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO | OPENX_FLAGS_EXTENDED_RETURN;
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(io.openx.out.access_mask, SEC_STD_ALL);
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
 
 	io.openx.in.fname = "\\A.+,;=[].B";
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	/* Check the mapping for open exec. */
 
 	/* First create an .exe file. */
 	smbcli_unlink(cli->tree, fname_exe);
-	fnum = create_complex_file(cli, mem_ctx, fname_exe);
+	fnum = create_complex_file(cli, tctx, fname_exe);
 	smbcli_close(cli->tree, fnum);
 
 	io.openx.level = RAW_OPEN_OPENX;
@@ -473,7 +473,7 @@ static bool test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.write_time = 0;
 	io.openx.in.size = 0;
 	io.openx.in.timeout = 0;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* Can we read and write ? */
@@ -495,7 +495,7 @@ done:
 
   many thanks to kukks for a sniff showing how this works with os2->w2k
 */
-static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_t2open(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -525,7 +525,7 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{ OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE, false, NT_STATUS_OK },
 	};
 
-	fnum = create_complex_file(cli, mem_ctx, fname1);
+	fnum = create_complex_file(cli, tctx, fname1);
 	if (fnum == -1) {
 		d_printf("Failed to create file %s - %s\n", fname1, smbcli_errstr(cli->tree));
 		ret = false;
@@ -546,16 +546,16 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.timeout = 0;
 
 	io.t2open.in.num_eas = 3;
-	io.t2open.in.eas = talloc_array(mem_ctx, struct ea_struct, io.t2open.in.num_eas);
+	io.t2open.in.eas = talloc_array(tctx, struct ea_struct, io.t2open.in.num_eas);
 	io.t2open.in.eas[0].flags = 0;
 	io.t2open.in.eas[0].name.s = ".CLASSINFO";
-	io.t2open.in.eas[0].value = data_blob_talloc(mem_ctx, "first value", 11);
+	io.t2open.in.eas[0].value = data_blob_talloc(tctx, "first value", 11);
 	io.t2open.in.eas[1].flags = 0;
 	io.t2open.in.eas[1].name.s = "EA TWO";
-	io.t2open.in.eas[1].value = data_blob_talloc(mem_ctx, "foo", 3);
+	io.t2open.in.eas[1].value = data_blob_talloc(tctx, "foo", 3);
 	io.t2open.in.eas[2].flags = 0;
 	io.t2open.in.eas[2].name.s = "X THIRD";
-	io.t2open.in.eas[2].value = data_blob_talloc(mem_ctx, "xy", 2);
+	io.t2open.in.eas[2].value = data_blob_talloc(tctx, "xy", 2);
 
 	/* check all combinations of open_func */
 	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
@@ -566,10 +566,10 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			io.t2open.in.fname = fname2;
 		}
 		io.t2open.in.open_func = open_funcs[i].open_func;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		status = smb_raw_open(cli->tree, tctx, &io);
 		if ((io.t2open.in.num_eas != 0)
 		    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)
-		    && lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)) {
+		    && torture_setting_bool(tctx, "samba3", false)) {
 			printf("(%s) EAs not supported, not treating as fatal "
 			       "in Samba3 test\n", __location__);
 			io.t2open.in.num_eas = 0;
@@ -594,7 +594,7 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_OPEN | OPENX_OPEN_FUNC_CREATE;
 	io.t2open.in.write_time = 0;
 	io.t2open.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.t2open.out.file.fnum;
 
@@ -624,11 +624,11 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	SET_ATTRIB(FILE_ATTRIBUTE_HIDDEN);
 	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN, attrib);
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.t2open.out.file.fnum);
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.t2open.out.file.fnum);
 
@@ -638,7 +638,7 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* and check attrib on create */
 	io.t2open.in.open_func = OPENX_OPEN_FUNC_FAIL | OPENX_OPEN_FUNC_CREATE;
 	io.t2open.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* check timeout on create - win2003 ignores the timeout! */
@@ -646,7 +646,7 @@ static bool test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.t2open.in.file_attrs = 0;
 	io.t2open.in.timeout = 20000;
 	io.t2open.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_ALL;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 done:
@@ -660,7 +660,7 @@ done:
 /*
   test RAW_OPEN_NTCREATEX
 */
-static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ntcreatex(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -719,7 +719,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			smbcli_close(cli->tree, fnum);
 		}
 		io.ntcreatex.in.open_disposition = open_funcs[i].open_disp;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		status = smb_raw_open(cli->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
@@ -735,7 +735,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* basic field testing */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -754,7 +754,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check fields when the file already existed */
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
 		ret = false;
 		goto done;
@@ -762,7 +762,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum);
 
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -799,7 +799,7 @@ static bool test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -833,7 +833,7 @@ done:
 /*
   test RAW_OPEN_NTTRANS_CREATE
 */
-static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	union smb_fileinfo finfo;
@@ -894,7 +894,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			smbcli_close(cli->tree, fnum);
 		}
 		io.ntcreatex.in.open_disposition = open_funcs[i].open_disp;
-		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		status = smb_raw_open(cli->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
 			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
 			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
@@ -910,7 +910,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* basic field testing */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -929,7 +929,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check fields when the file already existed */
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 	if (fnum == -1) {
 		ret = false;
 		goto done;
@@ -937,7 +937,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum);
 
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -974,7 +974,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -1012,7 +1012,7 @@ done:
   open_disposition==NTCREATEX_DISP_OVERWRITE_IF. Windows 2003 allows the
   second open.
 */
-static bool test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ntcreatex_brlocked(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io, io1;
 	union smb_lock io2;
@@ -1038,7 +1038,7 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 		NTCREATEX_SECURITY_ALL;
 	io.ntcreatex.in.fname = fname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	io2.lockx.level = RAW_LOCK_LOCKX;
@@ -1069,7 +1069,7 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 		NTCREATEX_SECURITY_ALL;
 	io1.ntcreatex.in.fname = fname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io1);
+	status = smb_raw_open(cli->tree, tctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
  done:
@@ -1082,7 +1082,7 @@ static bool test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 /*
   test RAW_OPEN_MKNEW
 */
-static bool test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mknew(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_mknew.txt";
@@ -1098,11 +1098,11 @@ static bool test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.mknew.in.attrib = 0;
 	io.mknew.in.write_time = 0;
 	io.mknew.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.mknew.out.file.fnum;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 
 	smbcli_close(cli->tree, fnum);
@@ -1110,7 +1110,7 @@ static bool test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* make sure write_time works */
 	io.mknew.in.write_time = basetime;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.mknew.out.file.fnum;
 	CHECK_TIME(basetime, write_time);
@@ -1120,7 +1120,7 @@ static bool test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* make sure file_attrs works */
 	io.mknew.in.attrib = FILE_ATTRIBUTE_HIDDEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.mknew.out.file.fnum;
 	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
@@ -1137,7 +1137,7 @@ done:
 /*
   test RAW_OPEN_CREATE
 */
-static bool test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_create(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_create.txt";
@@ -1153,11 +1153,11 @@ static bool test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.create.in.attrib = 0;
 	io.create.in.write_time = 0;
 	io.create.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.create.out.file.fnum;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	smbcli_close(cli->tree, io.create.out.file.fnum);
@@ -1166,7 +1166,7 @@ static bool test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* make sure write_time works */
 	io.create.in.write_time = basetime;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.create.out.file.fnum;
 	CHECK_TIME(basetime, write_time);
@@ -1176,7 +1176,7 @@ static bool test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* make sure file_attrs works */
 	io.create.in.attrib = FILE_ATTRIBUTE_HIDDEN;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.create.out.file.fnum;
 	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
@@ -1193,7 +1193,7 @@ done:
 /*
   test RAW_OPEN_CTEMP
 */
-static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *tctx)
 {
 	union smb_open io;
 	NTSTATUS status;
@@ -1209,7 +1209,7 @@ static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ctemp.in.attrib = FILE_ATTRIBUTE_HIDDEN;
 	io.ctemp.in.write_time = basetime;
 	io.ctemp.in.directory = BASEDIR;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ctemp.out.file.fnum;
 
@@ -1217,7 +1217,7 @@ static bool test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	finfo.generic.level = RAW_FILEINFO_NAME_INFO;
 	finfo.generic.in.file.fnum = fnum;
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	fname = finfo.name_info.out.fname.s;
@@ -1236,7 +1236,7 @@ done:
 /*
   test chained RAW_OPEN_OPENX_READX
 */
-static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *tctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_chained.txt";
@@ -1249,7 +1249,7 @@ static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Checking RAW_OPEN_OPENX chained with READX\n");
 	smbcli_unlink(cli->tree, fname);
 
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 
@@ -1272,7 +1272,7 @@ static bool test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openxreadx.in.remaining = 0;
 	io.openxreadx.out.data = (uint8_t *)buf2;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openxreadx.out.file.fnum;
 
@@ -1293,7 +1293,7 @@ done:
   NetApp filers are known to fail on this.
   
 */
-static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *tctx)
 {
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_no_leading_slash.txt";
@@ -1306,7 +1306,7 @@ static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlink(cli->tree, fname);
 
         /* Create the file */
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = create_complex_file(cli, tctx, fname);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 	smbcli_close(cli->tree, fnum);	
 
@@ -1322,7 +1322,7 @@ static bool test_no_leading_slash(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.size = 1024*1024;
 	io.openx.in.timeout = 0;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openx.out.file.fnum;
 
@@ -1335,7 +1335,7 @@ done:
 
 /* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
 
-static bool test_raw_open_multi(void)
+static bool test_raw_open_multi(struct torture_context *tctx)
 {
 	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_test_oplock_multi");
@@ -1346,8 +1346,8 @@ static bool test_raw_open_multi(void)
 	struct smbcli_state **clients;
 	struct smbcli_request **requests;
 	union smb_open *ios;
-	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
-	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
 	int i, num_files = 3;
 	struct event_context *ev;
 	int num_ok = 0;
@@ -1470,7 +1470,7 @@ bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 
 	ret &= test_ntcreatex_brlocked(cli, torture);
 	ret &= test_open(cli, torture);
-	ret &= test_raw_open_multi();
+	ret &= test_raw_open_multi(torture);
 	ret &= test_openx(cli, torture);
 	ret &= test_ntcreatex(cli, torture);
 	ret &= test_nttrans_create(cli, torture);

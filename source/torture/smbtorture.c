@@ -123,7 +123,33 @@ static bool run_test(struct torture_context *torture, const char *name)
 	return ret;
 }
 
-static void parse_dns(const char *dns)
+static bool parse_target(struct loadparm_context *lp_ctx, const char *target)
+{
+	char *host = NULL, *share = NULL;
+	struct dcerpc_binding *binding_struct;
+	NTSTATUS status;
+
+	/* see if its a RPC transport specifier */
+	if (!smbcli_parse_unc(target, NULL, &host, &share)) {
+		status = dcerpc_parse_binding(talloc_autofree_context(), target, &binding_struct);
+		if (NT_STATUS_IS_ERR(status)) {
+			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", target);
+			return false;
+		}
+		lp_set_cmdline(lp_ctx, "torture:host", binding_struct->host);
+		if (lp_parm_string(lp_ctx, NULL, "torture", "share") == NULL)
+			lp_set_cmdline(lp_ctx, "torture:share", "IPC$");
+		lp_set_cmdline(lp_ctx, "torture:binding", target);
+	} else {
+		lp_set_cmdline(lp_ctx, "torture:host", host);
+		lp_set_cmdline(lp_ctx, "torture:share", share);
+		lp_set_cmdline(lp_ctx, "torture:binding", host);
+	}
+
+	return true;
+}
+
+static void parse_dns(struct loadparm_context *lp_ctx, const char *dns)
 {
 	char *userdn, *basedn, *secret;
 	char *p, *d;
@@ -131,33 +157,33 @@ static void parse_dns(const char *dns)
 	/* retrievieng the userdn */
 	p = strchr_m(dns, '#');
 	if (!p) {
-		lp_set_cmdline(global_loadparm, "torture:ldap_userdn", "");
-		lp_set_cmdline(global_loadparm, "torture:ldap_basedn", "");
-		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_userdn", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	userdn = strndup(dns, p - dns);
-	lp_set_cmdline(global_loadparm, "torture:ldap_userdn", userdn);
+	lp_set_cmdline(lp_ctx, "torture:ldap_userdn", userdn);
 
 	/* retrieve the basedn */
 	d = p + 1;
 	p = strchr_m(d, '#');
 	if (!p) {
-		lp_set_cmdline(global_loadparm, "torture:ldap_basedn", "");
-		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	basedn = strndup(d, p - d);
-	lp_set_cmdline(global_loadparm, "torture:ldap_basedn", basedn);
+	lp_set_cmdline(lp_ctx, "torture:ldap_basedn", basedn);
 
 	/* retrieve the secret */
 	p = p + 1;
 	if (!p) {
-		lp_set_cmdline(global_loadparm, "torture:ldap_secret", "");
+		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	secret = strdup(p);
-	lp_set_cmdline(global_loadparm, "torture:ldap_secret", secret);
+	lp_set_cmdline(lp_ctx, "torture:ldap_secret", secret);
 
 	printf ("%s - %s - %s\n", userdn, basedn, secret);
 
@@ -491,14 +517,12 @@ int main(int argc,char *argv[])
 	char **argv_new;
 	poptContext pc;
 	static const char *target = "other";
-	struct dcerpc_binding *binding_struct;
 	NTSTATUS status;
 	int shell = false;
 	static const char *ui_ops_name = "simple";
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
 	static int list_tests = 0;
-	char *host = NULL, *share = NULL;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
 	
@@ -560,7 +584,7 @@ int main(int argc,char *argv[])
 			lp_set_cmdline(global_loadparm, "torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
-			parse_dns(poptGetOptArg(pc));
+			parse_dns(global_loadparm, poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
 			lp_set_cmdline(global_loadparm, "torture:dangerous", "Yes");
@@ -634,22 +658,9 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	/* see if its a RPC transport specifier */
-	if (!smbcli_parse_unc(argv_new[1], NULL, &host, &share)) {
-		status = dcerpc_parse_binding(talloc_autofree_context(), argv_new[1], &binding_struct);
-		if (NT_STATUS_IS_ERR(status)) {
-			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
-			usage(pc);
-			return false;
-		}
-		lp_set_cmdline(global_loadparm, "torture:host", binding_struct->host);
-		if (lp_parm_string(global_loadparm, NULL, "torture", "share") == NULL)
-			lp_set_cmdline(global_loadparm, "torture:share", "IPC$");
-		lp_set_cmdline(global_loadparm, "torture:binding", argv_new[1]);
-	} else {
-		lp_set_cmdline(global_loadparm, "torture:host", host);
-		lp_set_cmdline(global_loadparm, "torture:share", share);
-		lp_set_cmdline(global_loadparm, "torture:binding", host);
+	if (!parse_target(global_loadparm, argv_new[1])) {
+		usage(pc);
+		exit(1);
 	}
 
 	if (!strcmp(ui_ops_name, "simple")) {
@@ -678,6 +689,8 @@ int main(int argc,char *argv[])
 		}
 		torture->outputdir = pwd;
 	}
+
+	torture->lp_ctx = global_loadparm;
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");

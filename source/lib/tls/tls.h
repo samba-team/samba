@@ -24,10 +24,12 @@
 
 #include "lib/socket/socket.h"
 
+struct loadparm_context;
+
 /*
   call tls_initialise() once per task to startup the tls subsystem
 */
-struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx);
+struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 
 /*
   call tls_init_server() on each new server connection
@@ -47,7 +49,8 @@ struct socket_context *tls_init_server(struct tls_params *parms,
   call tls_init_client() on each new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *sock, 
-				    struct fd_event *fde);
+				    struct fd_event *fde,
+				    const char *cafile);
 
 /*
   return True if a connection used tls

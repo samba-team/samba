@@ -420,7 +420,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 	static uint32_t object_id;
 	const char *save_values_dir;
 
-	if (!lp_parm_bool(global_loadparm, NULL,"dssync","print_pwd_blobs", false)) {
+	if (!lp_parm_bool(global_loadparm, NULL, "dssync", "print_pwd_blobs", false)) {
 		return;	
 	}
 

@@ -302,15 +302,15 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 /*
   open a smb2 connection
 */
-bool torture_smb2_connection(TALLOC_CTX *mem_ctx, struct smb2_tree **tree)
+bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tree)
 {
 	NTSTATUS status;
-	const char *host = lp_parm_string(global_loadparm, NULL, "torture", "host");
-	const char *share = lp_parm_string(global_loadparm, NULL, "torture", "share");
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
 	struct cli_credentials *credentials = cmdline_credentials;
 
-	status = smb2_connect(mem_ctx, host, share, credentials, tree, 
-			      event_context_find(mem_ctx));
+	status = smb2_connect(tctx, host, share, credentials, tree, 
+			      event_context_find(tctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
 		       host, share, nt_errstr(status));

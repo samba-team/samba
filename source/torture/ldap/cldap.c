@@ -204,9 +204,9 @@ static void cldap_dump_results(struct cldap_search *search)
 /*
   test generic cldap operations
 */
-static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
+static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 {
-	struct cldap_socket *cldap = cldap_socket_init(mem_ctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
 	NTSTATUS status;
 	struct cldap_search search;
 	bool ret = true;
@@ -216,18 +216,18 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
-	search.in.dest_port = lp_cldap_port(global_loadparm);
+	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
 	search.in.timeout = 10;
 	search.in.retries = 3;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("fetching whole rootDSE\n");
 	search.in.filter = "(objectclass=*)";
 	search.in.attributes = NULL;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
@@ -236,7 +236,7 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 	search.in.filter = "(objectclass=*)";
 	search.in.attributes = attrs1;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
@@ -245,7 +245,7 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 	search.in.filter = "(objectclass=*)";
 	search.in.attributes = attrs2;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
@@ -254,7 +254,7 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 	search.in.filter = "(objectclass2=*)";
 	search.in.attributes = attrs3;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (DEBUGLVL(3)) cldap_dump_results(&search);
@@ -263,7 +263,7 @@ static bool test_cldap_generic(TALLOC_CTX *mem_ctx, const char *dest)
 	search.in.filter = "(&(objectclass=*)(highestCommittedUSN=2))";
 	search.in.attributes = attrs1;
 
-	status = cldap_search(cldap, mem_ctx, &search);
+	status = cldap_search(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (DEBUGLVL(3)) cldap_dump_results(&search);	
@@ -274,16 +274,11 @@ done:
 
 bool torture_cldap(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
 	bool ret = true;
 	const char *host = torture_setting_string(torture, "host", NULL);
 
-	mem_ctx = talloc_init("torture_cldap");
-
-	ret &= test_cldap_netlogon(mem_ctx, host);
-	ret &= test_cldap_generic(mem_ctx, host);
-
-	talloc_free(mem_ctx);
+	ret &= test_cldap_netlogon(torture, host);
+	ret &= test_cldap_generic(torture, host);
 
 	return ret;
 }

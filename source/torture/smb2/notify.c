@@ -190,17 +190,14 @@ done:
 */
 bool torture_smb2_notify(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	bool ret = true;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
-	ret &= test_valid_request(mem_ctx, tree);
-
-	talloc_free(mem_ctx);
+	ret &= test_valid_request(torture, tree);
 
 	return ret;
 }

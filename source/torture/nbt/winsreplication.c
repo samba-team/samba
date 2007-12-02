@@ -629,7 +629,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	if (!ctx->nbtsock_srv) return NULL;
 
 	/* Make a port 137 version of ctx->myaddr */
-	nbt_srv_addr = socket_address_from_strings(tctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lp_nbt_port(global_loadparm));
+	nbt_srv_addr = socket_address_from_strings(tctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lp_nbt_port(tctx->lp_ctx));
 	if (!nbt_srv_addr) return NULL;
 
 	/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
@@ -655,7 +655,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 		nbt_srv_addr = socket_address_from_strings(tctx, 
 							   ctx->nbtsock_srv->sock->backend_name, 
 							   ctx->myaddr2->addr, 
-							   lp_nbt_port(global_loadparm));
+							   lp_nbt_port(tctx->lp_ctx));
 		if (!nbt_srv_addr) return NULL;
 
 		/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
@@ -9156,7 +9156,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 	if (!ctx->nbtsock_srv) {
 		torture_comment(tctx, "SKIP: Test Replica records vs. owned active records: not bound to port[%d]\n",
-			lp_nbt_port(global_loadparm));
+			lp_nbt_port(tctx->lp_ctx));
 		return true;
 	}
 

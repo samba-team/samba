@@ -1512,7 +1512,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		return false;
 	}
 
-	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup(global_loadparm));
+	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup(torture->lp_ctx));
 
 	user_ctx = torture_create_testuser(torture,
 					   TEST_USER_NAME,
@@ -1735,7 +1735,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.username      = talloc_asprintf(mem_ctx, 
 								 "%s@%s", 
 								 TEST_USER_NAME,
-								 lp_realm(global_loadparm)),
+								 lp_realm(torture->lp_ctx)),
 				.password      = user_password,
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,

@@ -37,7 +37,7 @@
 /*
   test mkdir ops
 */
-static bool test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_mkdir md;
 	struct smb_rmdir rd;
@@ -75,7 +75,7 @@ static bool test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing mkdir collision with file\n");
 
 	/* name collision with a file */
-	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, path));
+	smbcli_close(cli->tree, create_complex_file(cli, tctx, path));
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 
@@ -107,7 +107,7 @@ static bool test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("testing t2mkdir bad path\n");
-	md.t2mkdir.in.path = talloc_asprintf(mem_ctx, "%s\\bad_path\\bad_path",
+	md.t2mkdir.in.path = talloc_asprintf(tctx, "%s\\bad_path\\bad_path",
 					     BASEDIR);
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
@@ -118,19 +118,19 @@ static bool test_mkdir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
 	md.t2mkdir.in.path = path;
 	md.t2mkdir.in.num_eas = 3;
-	md.t2mkdir.in.eas = talloc_array(mem_ctx, struct ea_struct, md.t2mkdir.in.num_eas);
+	md.t2mkdir.in.eas = talloc_array(tctx, struct ea_struct, md.t2mkdir.in.num_eas);
 	md.t2mkdir.in.eas[0].flags = 0;
 	md.t2mkdir.in.eas[0].name.s = "EAONE";
-	md.t2mkdir.in.eas[0].value = data_blob_talloc(mem_ctx, "blah", 4);
+	md.t2mkdir.in.eas[0].value = data_blob_talloc(tctx, "blah", 4);
 	md.t2mkdir.in.eas[1].flags = 0;
 	md.t2mkdir.in.eas[1].name.s = "EA TWO";
-	md.t2mkdir.in.eas[1].value = data_blob_talloc(mem_ctx, "foo bar", 7);
+	md.t2mkdir.in.eas[1].value = data_blob_talloc(tctx, "foo bar", 7);
 	md.t2mkdir.in.eas[2].flags = 0;
 	md.t2mkdir.in.eas[2].name.s = "EATHREE";
-	md.t2mkdir.in.eas[2].value = data_blob_talloc(mem_ctx, "xx1", 3);
+	md.t2mkdir.in.eas[2].value = data_blob_talloc(tctx, "xx1", 3);
 	status = smb_raw_mkdir(cli->tree, &md);
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba3", false)
+	if (torture_setting_bool(tctx, "samba3", false)
 	    && NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)) {
 		d_printf("EAS not supported -- not treating as fatal\n");
 	}

@@ -535,7 +535,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
 
-	ldap_service->tls_params = tls_initialise(ldap_service);
+	ldap_service->tls_params = tls_initialise(ldap_service, task->lp_ctx);
 	if (ldap_service->tls_params == NULL) goto failed;
 
 	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {

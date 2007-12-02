@@ -177,7 +177,7 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	bool ret = true;
 	NTSTATUS status;
 
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
+	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
 
