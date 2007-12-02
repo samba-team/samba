@@ -33,6 +33,7 @@
 _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   struct event_context *ev,
 					   struct messaging_context *msg,
+					   struct loadparm_context *lp_ctx,
 					   const char *nt4_domain,
 					   const char *nt4_username,
 					   const char *password,
@@ -50,7 +51,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 
 	nt_status = auth_context_create(tmp_ctx, 
 					ev, msg,
-					global_loadparm,
+					lp_ctx,
 					&auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);

@@ -31,7 +31,7 @@
 #include "util/util_ldb.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
-
+#include "param/param.h"
 
 /*
   setup config options for a posix share
@@ -216,7 +216,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 					   event_context_find(pvfs),
 					   pvfs->ntvfs->ctx->config);
 
-	pvfs->sidmap = sidmap_open(pvfs);
+	pvfs->sidmap = sidmap_open(pvfs, global_loadparm);
 	if (pvfs->sidmap == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

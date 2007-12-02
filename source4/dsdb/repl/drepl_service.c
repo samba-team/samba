@@ -45,12 +45,12 @@ static WERROR dreplsrv_init_creds(struct dreplsrv_service *service)
 	return WERR_OK;
 }
 
-static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service)
+static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct loadparm_context *lp_ctx)
 {
 	const struct GUID *ntds_guid;
 	struct drsuapi_DsBindInfo28 *bind_info28;
 
-	service->samdb = samdb_connect(service, global_loadparm, service->system_session_info);
+	service->samdb = samdb_connect(service, lp_ctx, service->system_session_info);
 	if (!service->samdb) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
@@ -118,7 +118,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	struct dreplsrv_service *service;
 	uint32_t periodic_startup_interval;
 
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration");
 		return;
@@ -149,7 +149,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	status = dreplsrv_connect_samdb(service);
+	status = dreplsrv_connect_samdb(service, task->lp_ctx);
 	if (!W_ERROR_IS_OK(status)) {
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to connect to local samdb: %s\n",
@@ -165,8 +165,8 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	periodic_startup_interval	= lp_parm_int(global_loadparm, NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
-	service->periodic.interval	= lp_parm_int(global_loadparm, NULL, "dreplsrv", "periodic_interval", 300); /* in seconds */
+	periodic_startup_interval	= lp_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
+	service->periodic.interval	= lp_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_interval", 300); /* in seconds */
 
 	status = dreplsrv_periodic_schedule(service, periodic_startup_interval);
 	if (!W_ERROR_IS_OK(status)) {

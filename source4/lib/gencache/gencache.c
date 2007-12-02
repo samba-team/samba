@@ -47,7 +47,7 @@ static struct tdb_wrap *cache;
  *         false on failure
  **/
 
-bool gencache_init(void)
+bool gencache_init(struct loadparm_context *lp_ctx)
 {
 	char* cache_fname = NULL;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
@@ -55,7 +55,7 @@ bool gencache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return true;
 
-	cache_fname = lock_path(mem_ctx, global_loadparm, "gencache.tdb");
+	cache_fname = lock_path(mem_ctx, lp_ctx, "gencache.tdb");
 	if (cache_fname != NULL) {
 		DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 	} else {

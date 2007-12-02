@@ -151,7 +151,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 	NTSTATUS status;
 
 	if (acct_flags & ACB_PWNOTREQ) {
-		if (lp_null_passwords(global_loadparm)) {
+		if (lp_null_passwords(auth_context->lp_ctx)) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", 
 				 user_info->mapped.account_name));
 			return NT_STATUS_OK;
@@ -181,6 +181,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		*lm_sess_key = data_blob(NULL, 0);
 		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
+					     auth_context->lp_ctx,
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
@@ -189,7 +190,9 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		break;
 		
 	case AUTH_PASSWORD_RESPONSE:
-		status = ntlm_password_check(mem_ctx, user_info->logon_parameters, 
+		status = ntlm_password_check(mem_ctx, 
+					     auth_context->lp_ctx,
+					     user_info->logon_parameters, 
 					     &auth_context->challenge.data, 
 					     &user_info->password.response.lanman, 
 					     &user_info->password.response.nt,
@@ -283,7 +286,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, ctx->auth_ctx->lp_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -348,13 +351,13 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	is_local_name = lp_is_myname(global_loadparm, 
+	is_local_name = lp_is_myname(ctx->auth_ctx->lp_ctx, 
 				  user_info->mapped.domain_name);
-	is_my_domain  = lp_is_mydomain(global_loadparm, 
+	is_my_domain  = lp_is_mydomain(ctx->auth_ctx->lp_ctx, 
 				       user_info->mapped.domain_name); 
 
 	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(ctx->auth_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
 			return NT_STATUS_OK;
 
@@ -390,14 +393,14 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 	const char *domain;
 
 	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(ctx->auth_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
 		case ROLE_DOMAIN_MEMBER:
-			domain = lp_netbios_name(global_loadparm);
+			domain = lp_netbios_name(ctx->auth_ctx->lp_ctx);
 			break;
 
 		case ROLE_DOMAIN_CONTROLLER:
-			domain = lp_workgroup(global_loadparm);
+			domain = lp_workgroup(ctx->auth_ctx->lp_ctx);
 			break;
 
 		default:

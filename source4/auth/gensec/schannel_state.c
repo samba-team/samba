@@ -32,7 +32,7 @@
 /**
   connect to the schannel ldb
 */
-struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
+struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	char *path;
 	struct ldb_context *ldb;
@@ -42,14 +42,14 @@ struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 		"computerName: CASE_INSENSITIVE\n" \
 		"flatname: CASE_INSENSITIVE\n";
 
-	path = smbd_tmp_path(mem_ctx, global_loadparm, "schannel.ldb");
+	path = smbd_tmp_path(mem_ctx, lp_ctx, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}
 
 	existed = file_exist(path);
 	
-	ldb = ldb_wrap_connect(mem_ctx, global_loadparm, path, 
+	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, path, 
 			       system_session(mem_ctx), 
 			       NULL, LDB_FLG_NOSYNC, NULL);
 	talloc_free(path);
@@ -143,7 +143,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	int ret;
 		
-	ldb = schannel_db_connect(mem_ctx);
+	ldb = schannel_db_connect(mem_ctx, global_loadparm);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -274,7 +274,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
 
-	ldb = schannel_db_connect(mem_ctx);
+	ldb = schannel_db_connect(mem_ctx, global_loadparm);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

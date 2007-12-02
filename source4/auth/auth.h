@@ -168,6 +168,9 @@ struct auth_context {
 
 	/* the messaging context which can be used by backends */
 	struct messaging_context *msg_ctx;
+
+	/* loadparm context */
+	struct loadparm_context *lp_ctx;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

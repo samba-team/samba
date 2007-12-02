@@ -25,15 +25,15 @@
 #include "lib/dbwrap/dbwrap.h"
 #include "param/param.h"
 
-/*
+/**
   open a temporary database
  */
-struct db_context *db_tmp_open(TALLOC_CTX *mem_ctx, const char *name, int tdb_flags)
+struct db_context *db_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *name, int tdb_flags)
 {
-	if (lp_parm_bool(global_loadparm, NULL, "ctdb", "enable", false) &&
-	    lp_parm_bool(global_loadparm, NULL, "ctdb", name, true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ctdb", "enable", false) &&
+	    lp_parm_bool(lp_ctx, NULL, "ctdb", name, true)) {
 		    return db_tmp_open_ctdb(mem_ctx, name, tdb_flags);
 	}
 
-	return db_tmp_open_tdb(mem_ctx, name, tdb_flags);
+	return db_tmp_open_tdb(mem_ctx, lp_ctx, name, tdb_flags);
 }

@@ -176,7 +176,8 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 
 /* authenticate a user with an encrypted username/password */
 
-static NTSTATUS local_pw_check_specified(const char *username, 
+static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
+					 const char *username, 
 					 const char *domain, 
 					 const char *workstation,
 					 const DATA_BLOB *challenge, 
@@ -206,6 +207,7 @@ static NTSTATUS local_pw_check_specified(const char *username,
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
+						lp_ctx,
 						MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						challenge,
@@ -755,7 +757,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				flags |= NTLM_AUTH_FLAG_USER_SESSION_KEY;
 
 			if (!NT_STATUS_IS_OK(
-				    local_pw_check_specified(username, 
+				    local_pw_check_specified(global_loadparm,
+							     username, 
 							      domain, 
 							      lp_netbios_name(global_loadparm),
 							      &challenge, 

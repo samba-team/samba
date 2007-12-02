@@ -206,7 +206,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * password file.
 	 */
 
-	if (lp_is_myname(global_loadparm, user_info->domain.str)) {
+	if (lp_is_myname(auth_context->lp_ctx, user_info->domain.str)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}

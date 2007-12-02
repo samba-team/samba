@@ -48,14 +48,14 @@ struct sidmap_context {
 /*
   open a sidmap context - use talloc_free to close
 */
-_PUBLIC_ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct sidmap_context *sidmap;
 	sidmap = talloc(mem_ctx, struct sidmap_context);
 	if (sidmap == NULL) {
 		return NULL;
 	}
-	sidmap->samctx = samdb_connect(sidmap, global_loadparm, system_session(sidmap));
+	sidmap->samctx = samdb_connect(sidmap, lp_ctx, system_session(sidmap));
 	if (sidmap->samctx == NULL) {
 		talloc_free(sidmap);
 		return NULL;

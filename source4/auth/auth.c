@@ -353,6 +353,7 @@ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
 NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
 				     struct event_context *ev,
 				     struct messaging_context *msg,
+				     struct loadparm_context *lp_ctx,
 				     struct auth_context **auth_ctx)
 {
 	int i;
@@ -381,6 +382,7 @@ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
 	ctx->methods			= NULL;
 	ctx->event_ctx			= ev;
 	ctx->msg_ctx			= msg;
+	ctx->lp_ctx			= lp_ctx;
 
 	for (i=0; methods[i] ; i++) {
 		struct auth_method_context *method;
@@ -429,7 +431,7 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 		auth_methods = lp_parm_string_list(lp_ctx, NULL, "auth methods", "domain controller", NULL);
 		break;
 	}
-	return auth_context_create_methods(mem_ctx, auth_methods, ev, msg, auth_ctx);
+	return auth_context_create_methods(mem_ctx, auth_methods, ev, msg, lp_ctx, auth_ctx);
 }
 
 

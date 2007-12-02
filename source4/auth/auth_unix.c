@@ -804,7 +804,7 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = check_unix_password(check_ctx, global_loadparm, user_info, &pwd);
+	nt_status = check_unix_password(check_ctx, ctx->auth_ctx->lp_ctx, user_info, &pwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;

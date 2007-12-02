@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 struct unixuid_private {
 	struct sidmap_context *sidmap;
@@ -215,7 +216,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	private->sidmap = sidmap_open(private);
+	private->sidmap = sidmap_open(private, global_loadparm);
 	if (private->sidmap == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

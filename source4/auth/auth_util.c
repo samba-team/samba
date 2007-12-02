@@ -138,8 +138,8 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 			}
 			
 			chall_blob = data_blob_talloc(mem_ctx, challenge, 8);
-			if (lp_client_ntlmv2_auth(global_loadparm)) {
-				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
+			if (lp_client_ntlmv2_auth(auth_context->lp_ctx)) {
+				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(auth_context->lp_ctx), lp_workgroup(auth_context->lp_ctx));
 				DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key, ntlmv2_session_key;
 				
 				if (!SMBNTLMv2encrypt_hash(user_info_temp,
@@ -163,7 +163,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 				SMBOWFencrypt(user_info_in->password.hash.nt->hash, challenge, blob.data);
 
 				user_info_temp->password.response.nt = blob;
-				if (lp_client_lanman_auth(global_loadparm) && user_info_in->password.hash.lanman) {
+				if (lp_client_lanman_auth(auth_context->lp_ctx) && user_info_in->password.hash.lanman) {
 					DATA_BLOB lm_blob = data_blob_talloc(mem_ctx, NULL, 24);
 					SMBOWFencrypt(user_info_in->password.hash.lanman->hash, challenge, blob.data);
 					user_info_temp->password.response.lanman = lm_blob;

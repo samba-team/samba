@@ -60,7 +60,7 @@ static int ejs_doauth(MprVarHandle eid,
 	}
 
 	if (auth_types) {
-		nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, &auth_context);
+		nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, global_loadparm, &auth_context);
 	} else {
 		nt_status = auth_context_create(tmp_ctx, ev, msg, global_loadparm, &auth_context);
 	}

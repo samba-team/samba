@@ -217,6 +217,10 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
 		goto failed;
 	}
+	if (ldb_set_opaque(ldb, "loadparm", global_loadparm)) {
+		goto failed;
+	}
+
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 #endif
 
