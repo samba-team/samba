@@ -1303,7 +1303,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint32 create_disposition;
 	uint32 create_options;
 	uint32 sd_len;
-	struct security_descriptor *sd;
+	struct security_descriptor *sd = NULL;
 	uint32 ea_len;
 	uint16 root_dir_fid;
 	struct timespec c_timespec;
