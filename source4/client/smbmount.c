@@ -181,7 +181,7 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: session request ok\n", sys_getpid()));
 
-	if (!smbcli_negprot(c)) {
+	if (!smbcli_negprot(c, lp_cli_maxprotocol(global_loadparm))) {
 		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
 		talloc_free(c);
 		return NULL;
