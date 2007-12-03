@@ -102,6 +102,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_cc_get_type;
 		krb5_cc_get_version;
 		krb5_cc_initialize;
+		krb5_cc_move;
 		krb5_cc_new_unique;
 		krb5_cc_next_cred;
 		krb5_cc_next_cred_match;
