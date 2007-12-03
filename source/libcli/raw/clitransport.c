@@ -73,7 +73,9 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
 */
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       TALLOC_CTX *parent_ctx, 
-					       bool primary)
+					       bool primary, 
+					       int max_xmit,
+					       int max_mux)
 {
 	struct smbcli_transport *transport;
 
@@ -88,8 +90,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options.use_spnego = lp_use_spnego(global_loadparm) && 
 		                        lp_nt_status_support(global_loadparm);
-	transport->options.max_xmit = lp_max_xmit(global_loadparm);
-	transport->options.max_mux = lp_maxmux(global_loadparm);
+	transport->options.max_xmit = max_xmit;
+	transport->options.max_mux = max_mux;
 	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;
 
 	transport->negotiate.max_xmit = transport->options.max_xmit;

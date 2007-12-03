@@ -345,6 +345,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
 	conn->sockets.raw = c->socket;
+	conn->lp_ctx      = global_loadparm;
 
 	c->private        = conn;
 
@@ -395,7 +396,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		return;
 	}
 	
-	cli_credentials_set_conf(server_credentials, global_loadparm);
+	cli_credentials_set_conf(server_credentials, conn->lp_ctx);
 	status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
@@ -404,7 +405,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->server_credentials = server_credentials;
 
 	/* Connections start out anonymous */
-	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, global_loadparm, &conn->session_info))) {
+	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, conn->lp_ctx, &conn->session_info))) {
 		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
 		return;
 	}

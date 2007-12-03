@@ -23,6 +23,7 @@
 #include "lib/stream/packet.h"
 
 struct ldapsrv_connection {
+	struct loadparm_context *lp_ctx;
 	struct stream_connection *connection;
 	struct gensec_security *gensec;
 	struct auth_session_info *session_info;

@@ -45,12 +45,12 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
-	status = crack_auto_name_to_nt4_name(call, global_loadparm, req->dn, &nt4_domain, &nt4_account);
+	status = crack_auto_name_to_nt4_name(call, call->conn->lp_ctx, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
 		status = authenticate_username_pw(call,
 						  call->conn->connection->event.ctx,
 						  call->conn->connection->msg_ctx,
-						  global_loadparm,
+						  call->conn->lp_ctx,
 						  nt4_domain, nt4_account, 
 						  req->creds.password,
 						  &session_info);
@@ -143,7 +143,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		status = gensec_server_start(conn,
 					     conn->connection->event.ctx,
-					     global_loadparm,
+					     conn->lp_ctx,
 					     conn->connection->msg_ctx,
 					     &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {

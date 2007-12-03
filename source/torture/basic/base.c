@@ -51,7 +51,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 		goto failed;
 	}
 
-	if (!smbcli_socket_connect(cli, host)) {
+	if (!smbcli_socket_connect(cli, host, lp_name_resolve_order(tctx->lp_ctx), lp_max_xmit(tctx->lp_ctx), lp_maxmux(tctx->lp_ctx))) {
 		torture_comment(tctx, "Failed to connect with %s\n", host);
 		goto failed;
 	}
