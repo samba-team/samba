@@ -401,6 +401,39 @@ mcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
     return 0;
 }
 
+static krb5_error_code
+mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
+{
+    krb5_mcache *mfrom = MCACHE(from), *mto = MCACHE(to);
+    struct link *creds;
+    krb5_principal principal;
+    krb5_mcache **n;
+
+    HEIMDAL_MUTEX_lock(&mcc_mutex);
+
+    /* drop the from cache from the linked list to avoid lookups */
+    for(n = &mcc_head; n && *n; n = &(*n)->next) {
+	if(mfrom == *n) {
+	    *n = mfrom->next;
+	    break;
+	}
+    }
+
+    /* swap creds */
+    creds = mto->creds;
+    mto->creds = mfrom->creds;
+    mfrom->creds = creds;
+    /* swap principal */
+    principal = mto->primary_principal;
+    mto->primary_principal = mfrom->primary_principal;
+    mfrom->primary_principal = principal;
+
+    HEIMDAL_MUTEX_unlock(&mcc_mutex);
+    mcc_destroy(context, from);
+
+    return 0;
+}
+
 /**
  * Variable containing the MEMORY based credential cache implemention.
  *
@@ -426,5 +459,6 @@ const krb5_cc_ops krb5_mcc_ops = {
     NULL,
     mcc_get_cache_first,
     mcc_get_cache_next,
-    mcc_end_cache_get
+    mcc_end_cache_get,
+    mcc_move
 };
