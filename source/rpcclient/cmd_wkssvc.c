@@ -64,20 +64,25 @@ static WERROR cmd_wkssvc_getjoininformation(struct rpc_pipe_client *cli,
 	const char *name_buffer;
 	enum wkssvc_NetJoinStatus name_type;
 	NTSTATUS status;
+	WERROR werr;
 
 	server_name = cli->cli->desthost;
 	name_buffer = "";
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(cli, mem_ctx,
-						      server_name, &name_buffer,
-						      &name_type);
+						      server_name,
+						      &name_buffer,
+						      &name_type,
+						      &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
 
-	printf("%s (%d)\n", name_buffer, name_type);
+	if (W_ERROR_IS_OK(werr)) {
+		printf("%s (%d)\n", name_buffer, name_type);
+	}
 
-	return WERR_OK;
+	return werr;
 }
 
 static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
