@@ -179,7 +179,7 @@ static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 			fstrcat(buf->fs_file, tok[i]);
 		}
 		/* Ensure null termination. */
-		fstrterminate(buf->fs_file);
+		buf->fs_file[sizeof(buf->fs_file)-1] = '\0';
 	}
 
 #ifdef PRIOTOK
@@ -314,7 +314,7 @@ static bool parse_lpq_lprng(char *line,print_queue_struct *buf,bool first)
 			fstrcat(buf->fs_file, tokarr[i]);
 		}
 		/* Ensure null termination. */
-		fstrterminate(buf->fs_file);
+		buf->fs_file[sizeof(buf->fs_file)-1] = '\0';
 	}
 
 	return True;
