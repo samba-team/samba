@@ -716,8 +716,10 @@ static int net_getdomainsid(int argc, const char **argv)
 	fstring sid_str;
 
 	if(!initialize_password_db(False, NULL)) {
-		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
-			  "backend knowledge (such as the sid stored in LDAP)\n"));
+		DEBUG(0, ("WARNING: Could not open passdb - domain sid may "
+			  "not reflect passdb\n"
+			  "backend knowledge (such as the sid stored in "
+			  "LDAP)\n"));
 	}
 
 	/* first check to see if we can even access secrets, so we don't
