@@ -1,3 +1,19 @@
+2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/version-script.map: export krb5_cc_move
+
+	* lib/krb5/fcache.c: Implement the move operation.
+
+	* lib/krb5/krb5.h: Add move to the krb5_cc_ops, causes major
+	version bump.
+
+	* lib/krb5/acache.c: Implement the move operation. Avoid using
+	cc_set_principal() since it broken on Mac OS X 10.5.0.
+	
+2007-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_ccapi.h: Drop variable names to avoid -Wshadow.
+	
 2007-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/krb5tgs.c: Should pass different key usage constants
