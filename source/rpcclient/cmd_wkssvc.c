@@ -1,85 +1,52 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   
+   RPC pipe client
+
+   Copyright (C) Günther Deschner 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-THIS IS NO LONGER USED - NEEDS REMOVAL.
-
 #include "includes.h"
+#include "rpcclient.h"
 
-#define DEBUG_TESTING
-
-extern struct cli_state *smb_cli;
-
-extern FILE* out_hnd;
-
-
-/****************************************************************************
-workstation get info query
-****************************************************************************/
-void cmd_wks_query_info(struct client_info *info)
+static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv)
 {
-	fstring dest_wks;
-	fstring tmp;
-	WKS_INFO_100 ctr;
-	uint32 info_level = 100;
+	NTSTATUS status;
+	uint32_t level = 100;
+	union wkssvc_NetWkstaInfo info;
+	const char *server_name;
 
-	bool res = True;
+	server_name = cli->cli->desthost;
 
-	memset((char *)&ctr, '\0', sizeof(ctr));
-
-	fstrcpy(dest_wks, "\\\\");
-	fstrcat(dest_wks, info->dest_host);
-	strupper_m(dest_wks);
-
-	if (next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
+	status = rpccli_wkssvc_NetWkstaGetInfo(cli, mem_ctx,
+					       server_name,
+					       level,
+					       &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
 	}
 
-	DEBUG(4,("cmd_wks_query_info: server:%s info level: %d\n",
-				dest_wks, info_level));
-
-	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PI_WKSSVC) : False;
-
-	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_wks_query_info(smb_cli, 
-				dest_wks, info_level, &ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli);
-
-	if (res)
-	{
-		DEBUG(5,("cmd_wks_query_info: query succeeded\n"));
-
-#if 0
-		display_wks_info_100(out_hnd, ACTION_HEADER   , &ctr);
-		display_wks_info_100(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_wks_info_100(out_hnd, ACTION_FOOTER   , &ctr);
-#endif
-
-	}
-	else
-	{
-		DEBUG(5,("cmd_wks_query_info: query failed\n"));
-	}
+	return WERR_OK;
 }
+
+struct cmd_set wkssvc_commands[] = {
+
+	{ "WKSSVC" },
+	{ "wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, PI_WKSSVC, NULL, "Query WKSSVC Workstation Information", "" },
+	{ NULL }
+};
