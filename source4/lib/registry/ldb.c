@@ -85,7 +85,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8,
+		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
 						   (void *)data.data,
 						   data.length,
 						   (void **)&val.data);
