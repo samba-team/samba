@@ -335,7 +335,8 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRIMARY_DOMAIN_DN,
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+					   SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
 }
 
@@ -355,7 +356,8 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRINCIPALS_DN,
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+					   SECRETS_PRINCIPALS_DN,
 					   filter);
 }
 
@@ -377,8 +379,8 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, SECRETS_PRINCIPALS_DN,
-					   filter);
+	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+					   SECRETS_PRINCIPALS_DN, filter);
 }
 
 /**

@@ -284,6 +284,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	
 	ZERO_STRUCT(search);
 	search.in.dest_address = ctx->drsuapi_binding->host;
+	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
 	search.in.acct_control = -1;
 	search.in.version = 6;
 	status = cldap_netlogon(cldap, ctx, &search);

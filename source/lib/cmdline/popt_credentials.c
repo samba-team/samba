@@ -60,7 +60,7 @@ static void popt_common_credentials_callback(poptContext con,
 	}
 	
 	if (reason == POPT_CALLBACK_REASON_POST) {
-		cli_credentials_guess(cmdline_credentials, NULL);
+		cli_credentials_guess(cmdline_credentials, global_loadparm);
 
 		if (!dont_ask) {
 			cli_credentials_set_cmdline_callbacks(cmdline_credentials);

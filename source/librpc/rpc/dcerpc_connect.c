@@ -230,7 +230,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_C
 		s->io.creds = cli_credentials_init(mem_ctx);
 		if (composite_nomem(s->io.creds, c)) return c;
 
-		cli_credentials_guess(s->io.creds, NULL);
+		cli_credentials_guess(s->io.creds, global_loadparm);
 	}
 
 	/* send smb2 connect request */

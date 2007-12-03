@@ -258,6 +258,7 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	struct cldap_request *req;
 
 	s->cldap.io.in.dest_address	= s->source_dsa.address;
+	s->cldap.io.in.dest_port	= lp_cldap_port(global_loadparm);
 	s->cldap.io.in.realm		= s->domain.dns_name;
 	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
 	s->cldap.io.in.user		= NULL;

@@ -37,7 +37,8 @@ static WERROR dreplsrv_init_creds(struct dreplsrv_service *service)
 {
 	NTSTATUS status;
 
-	status = auth_system_session_info(service, global_loadparm, &service->system_session_info);
+	status = auth_system_session_info(service, service->task->lp_ctx, 
+					  &service->system_session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}

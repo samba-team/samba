@@ -51,6 +51,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	/* Resolve the site name. */
 	ZERO_STRUCT(search);
 	search.in.dest_address = r->in.dest_address;
+	search.in.dest_port = lp_cldap_port(global_loadparm);
 	search.in.acct_control = -1;
 	search.in.version = 6;
 
