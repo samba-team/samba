@@ -97,7 +97,7 @@ _PUBLIC_ NTSTATUS samdb_privilege_setup(struct loadparm_context *lp_ctx, struct 
 	}
 
 	mem_ctx = talloc_new(token);
-	samctx = samdb_connect(mem_ctx, lp_ctx, system_session(mem_ctx));
+	samctx = samdb_connect(mem_ctx, lp_ctx, system_session(mem_ctx, lp_ctx));
 	if (samctx == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

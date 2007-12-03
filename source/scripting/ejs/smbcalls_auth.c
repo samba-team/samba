@@ -221,7 +221,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_system_session(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct MprVar *obj = mprInitObject(eid, "session_info", argc, argv);
-	struct auth_session_info *session_info = system_session(mprMemCtx());
+	struct auth_session_info *session_info = system_session(mprMemCtx(), global_loadparm);
 
 	if (session_info == NULL) {
 		return -1;

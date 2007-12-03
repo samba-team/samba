@@ -35,12 +35,12 @@
 %import "../lib/talloc/talloc.i"
 
 %typemap(default) struct auth_session_info * {
-    $1 = system_session_anon(NULL);
+    $1 = system_session_anon(NULL, global_loadparm);
 }
 
 %typemap(freearg) struct auth_session_info * {
     talloc_free($1);
 }
 
-struct auth_session_info *system_session(TALLOC_CTX *mem_ctx);
-struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx);
+struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);

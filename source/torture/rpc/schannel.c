@@ -244,7 +244,7 @@ static bool test_schannel(struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
-	join_ctx = torture_join_domain(talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
+	join_ctx = torture_join_domain(tctx, talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
 				       acct_flags, &credentials);
 	torture_assert(tctx, join_ctx != NULL, "Failed to join domain");
 
@@ -430,7 +430,7 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	struct cli_credentials *credentials1, *credentials2;
 	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN;
 
-	join_ctx = torture_join_domain(talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME), 
+	join_ctx = torture_join_domain(torture, talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME), 
 				       ACB_WSTRUST, &credentials1);
 	torture_assert(torture, join_ctx != NULL, 
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");

@@ -211,7 +211,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	/* Must be after we have processed command line options */
 	gensec_init(global_loadparm); 
 	
-	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
+	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb, global_loadparm))) {
 		goto failed;
 	}
 	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {

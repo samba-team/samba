@@ -39,7 +39,7 @@ static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, stru
 	
 	sdb = ldb_wrap_connect(*ctx, global_loadparm, 
 			       private_path(*ctx, global_loadparm, "share.ldb"),
-			       system_session(*ctx),
+			       system_session(*ctx, global_loadparm),
 			       NULL, 0, NULL);
 
 	if (!sdb) {

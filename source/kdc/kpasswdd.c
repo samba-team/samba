@@ -180,7 +180,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	struct samr_DomInfo1 *dominfo;
 	struct ldb_context *samdb;
 
-	samdb = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	samdb = samdb_connect(mem_ctx, kdc->task->lp_ctx, system_session(mem_ctx, kdc->task->lp_ctx));
 	if (!samdb) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx, 
 						KRB5_KPASSWD_HARDERROR,
@@ -310,7 +310,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		
 		krb5_free_principal(context, principal);
 		
-		samdb = samdb_connect(mem_ctx, global_loadparm, session_info);
+		samdb = samdb_connect(mem_ctx, kdc->task->lp_ctx, session_info);
 		if (!samdb) {
 			return kpasswdd_make_error_reply(kdc, mem_ctx, 
 							 KRB5_KPASSWD_HARDERROR,
@@ -473,7 +473,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	/* We want the credentials subsystem to use the krb5 context
 	 * we already have, rather than a new context */	
 	cli_credentials_set_krb5_context(server_credentials, kdc->smb_krb5_context);
-	cli_credentials_set_conf(server_credentials, global_loadparm);
+	cli_credentials_set_conf(server_credentials, kdc->task->lp_ctx);
 	nt_status = cli_credentials_set_stored_principal(server_credentials, "kadmin/changepw");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx, 

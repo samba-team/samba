@@ -65,7 +65,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	/* To change a password we need to open as system */
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -204,7 +204,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	}
 
 	/* To change a password we need to open as system */
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -342,7 +342,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	/* To change a password we need to open as system */
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

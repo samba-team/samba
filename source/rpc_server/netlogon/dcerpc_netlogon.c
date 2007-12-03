@@ -92,7 +92,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -301,7 +301,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -339,7 +339,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx));
+	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
