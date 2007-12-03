@@ -5091,7 +5091,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = rpccli_initshutdown_Abort(pipe_hnd, mem_ctx, NULL);
+	result = rpccli_initshutdown_Abort(pipe_hnd, mem_ctx, NULL, NULL);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5128,7 +5128,7 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, NULL);
+	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, NULL, NULL);
 	
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown successfully aborted\n");
@@ -5207,7 +5207,7 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 
 	/* create an entry */
 	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot);
+			&msg_string, timeout, opt_force, opt_reboot, NULL);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -5247,6 +5247,7 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	struct initshutdown_String msg_string;
 	struct initshutdown_String_sub s;
 	NTSTATUS result;
+	WERROR werr;
 
 	if (opt_comment) {
 		msg = opt_comment;
@@ -5260,16 +5261,16 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 
 	/* create an entry */
 	result = rpccli_winreg_InitiateSystemShutdown(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot);
+			&msg_string, timeout, opt_force, opt_reboot, &werr);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
 	} else {
 		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
-		if ( W_ERROR_EQUAL(ntstatus_to_werror(result),WERR_MACHINE_LOCKED) )
+		if ( W_ERROR_EQUAL(werr, WERR_MACHINE_LOCKED) )
 			d_fprintf(stderr, "\nMachine locked, use -f switch to force\n");
 		else
-			d_fprintf(stderr, "\nresult was: %s\n", nt_errstr(result));
+			d_fprintf(stderr, "\nresult was: %s\n", dos_errstr(werr));
 	}
 
 	return result;
