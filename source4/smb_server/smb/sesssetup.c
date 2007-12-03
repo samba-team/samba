@@ -380,6 +380,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 
 		status = gensec_server_start(req,
 					     req->smb_conn->connection->event.ctx,
+					     global_loadparm,
 					     req->smb_conn->connection->msg_ctx,
 					     &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {

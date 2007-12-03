@@ -116,7 +116,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
-	if (cli_credentials_get_krb5_context(creds, global_loadparm, &gensec_krb5_state->smb_krb5_context)) {
+	if (cli_credentials_get_krb5_context(creds, gensec_security->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
 		talloc_free(gensec_krb5_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -210,7 +210,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gen
 	return nt_status;
 }
 
-static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
+static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
@@ -261,7 +261,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 	in_data.length = 0;
 	
-	if (principal && lp_client_use_spnego_principal(global_loadparm)) {
+	if (principal && lp_client_use_spnego_principal(gensec_security->lp_ctx)) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
 				      &target_principal);
@@ -322,9 +322,9 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 }
 
-static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
+static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gensec_security)
 {
-	NTSTATUS nt_status = gensec_krb5_client_start(gensec_security, lp_ctx);
+	NTSTATUS nt_status = gensec_krb5_client_start(gensec_security);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;
@@ -582,7 +582,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						      KRB5_AUTHDATA_WIN2K_PAC, 
 						      &pac_data);
 	
-	if (ret && lp_parm_bool(global_loadparm, NULL, "gensec", "require_pac", false)) {
+	if (ret && lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec", "require_pac", false)) {
 		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s \n",
 			  principal_string,
 			  smb_get_krb5_error_message(context, 
@@ -595,7 +595,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		nt_status = sam_get_server_info_principal(mem_ctx, global_loadparm, principal_string,
+		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->lp_ctx, principal_string,
 							  &server_info);
 		krb5_free_principal(context, client_principal);
 		free(principal_string);

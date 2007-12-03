@@ -143,6 +143,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		status = gensec_server_start(conn,
 					     conn->connection->event.ctx,
+					     global_loadparm,
 					     conn->connection->msg_ctx,
 					     &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {

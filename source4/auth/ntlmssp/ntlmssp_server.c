@@ -744,14 +744,14 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
 	gensec_ntlmssp_state->workstation = NULL;
-	gensec_ntlmssp_state->server_name = lp_netbios_name(global_loadparm);
+	gensec_ntlmssp_state->server_name = lp_netbios_name(gensec_security->lp_ctx);
 
-	gensec_ntlmssp_state->domain = lp_workgroup(global_loadparm);
+	gensec_ntlmssp_state->domain = lp_workgroup(gensec_security->lp_ctx);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(global_loadparm) 
-					  && lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "allow_lm_key", false));
+	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->lp_ctx) 
+					  && lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "allow_lm_key", false));
 
 	gensec_ntlmssp_state->server_multiple_authentications = false;
 	
@@ -762,23 +762,23 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->nt_resp = data_blob(NULL, 0);
 	gensec_ntlmssp_state->encrypted_session_key = data_blob(NULL, 0);
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "128bit", true)) {
+	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "128bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "56bit", true)) {
+	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "56bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "keyexchange", true)) {
+	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "keyexchange", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "alwayssign", true)) {
+	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "alwayssign", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_server", "ntlm2", true)) {
+	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "ntlm2", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	}
 
@@ -792,7 +792,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	nt_status = auth_context_create(gensec_ntlmssp_state, 
 					gensec_security->event_ctx,
 					gensec_security->msg_ctx,
-					global_loadparm,
+					gensec_security->lp_ctx,
 					&gensec_ntlmssp_state->auth_context);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -800,7 +800,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	gensec_ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	gensec_ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	gensec_ntlmssp_state->server_role = lp_server_role(global_loadparm);
+	gensec_ntlmssp_state->server_role = lp_server_role(gensec_security->lp_ctx);
 
 	return NT_STATUS_OK;
 }

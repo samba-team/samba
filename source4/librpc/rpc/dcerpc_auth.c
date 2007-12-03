@@ -25,6 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc.h"
+#include "param/param.h"
 
 /*
   return the rpc syntax and transfer syntax given the pipe uuid and version
@@ -238,7 +239,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	sec = &p->conn->security_state;
 
 	c->status = gensec_client_start(p, &sec->generic_state,
-					p->conn->event_ctx);
+					p->conn->event_ctx,
+					global_loadparm);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n",
 			  nt_errstr(c->status)));

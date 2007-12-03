@@ -120,7 +120,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 		
 		/* pull the session key for this client */
-		status = schannel_fetch_session_key(out_mem_ctx, global_loadparm, workstation, 
+		status = schannel_fetch_session_key(out_mem_ctx, gensec_security->lp_ctx, workstation, 
 						    domain, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
@@ -183,7 +183,7 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 					 struct auth_session_info **_session_info) 
 {
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-	return auth_anonymous_session_info(state, global_loadparm, _session_info);
+	return auth_anonymous_session_info(state, gensec_security->lp_ctx, _session_info);
 }
 
 static NTSTATUS schannel_start(struct gensec_security *gensec_security)
@@ -218,8 +218,7 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS schannel_client_start(struct gensec_security *gensec_security, 
-				      struct loadparm_context *lp_ctx) 
+static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS status;
 	struct schannel_state *state;

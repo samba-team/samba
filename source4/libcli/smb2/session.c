@@ -25,8 +25,9 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
-/*
+/**
   initialise a smb2_session structure
  */
 struct smb2_session *smb2_session_init(struct smb2_transport *transport,
@@ -47,7 +48,8 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 
 	/* prepare a gensec context for later use */
 	status = gensec_client_start(session, &session->gensec, 
-				     session->transport->socket->event.ctx);
+				     session->transport->socket->event.ctx, 
+				     global_loadparm);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
 		return NULL;
@@ -58,7 +60,7 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 	return session;
 }
 
-/*
+/**
   send a session setup request
 */
 struct smb2_request *smb2_session_setup_send(struct smb2_session *session, 
@@ -91,7 +93,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 }
 
 
-/*
+/**
   recv a session setup reply
 */
 NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, 

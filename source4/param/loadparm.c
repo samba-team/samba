@@ -2468,7 +2468,7 @@ bool lp_load(const char *filename)
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
-	init_iconv();
+	close_iconv();
 
 	return bRetval;
 }

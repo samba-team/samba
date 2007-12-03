@@ -29,6 +29,7 @@
 #include "auth/gensec/socket.h"
 #include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"
+#include "param/param.h"
 
 struct ldap_simple_creds {
 	const char *dn;
@@ -217,7 +218,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		NULL 
 	};
 
-	status = gensec_client_start(conn, &conn->gensec, NULL);
+	status = gensec_client_start(conn, &conn->gensec, NULL, global_loadparm);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		goto failed;

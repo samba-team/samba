@@ -28,6 +28,7 @@
 #include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
+#include "param/param.h"
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
@@ -121,6 +122,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 
 		status = gensec_server_start(req,
 					     req->smb_conn->connection->event.ctx,
+					     global_loadparm,
 					     req->smb_conn->connection->msg_ctx,
 					     &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {

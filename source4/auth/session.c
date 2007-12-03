@@ -29,11 +29,12 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 
-struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx) 
+struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
+					    struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = auth_anonymous_session_info(mem_ctx, global_loadparm, &session_info);
+	nt_status = auth_anonymous_session_info(mem_ctx, lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}

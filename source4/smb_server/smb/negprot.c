@@ -352,6 +352,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 
 		nt_status = gensec_server_start(req->smb_conn,
 						req->smb_conn->connection->event.ctx,
+						global_loadparm,
 						req->smb_conn->connection->msg_ctx,
 						&gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {

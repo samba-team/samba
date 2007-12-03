@@ -47,7 +47,7 @@ struct spnego_state {
 };
 
 
-static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
+static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
 

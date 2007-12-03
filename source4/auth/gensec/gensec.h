@@ -75,15 +75,12 @@ struct gensec_update_request {
 	} callback;
 };
 
-struct loadparm_context;
-
 struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
 	uint8_t auth_type;  /* 0 if not offered on DCE-RPC */
 	const char **oid;  /* NULL if not offered by SPNEGO */
-	NTSTATUS (*client_start)(struct gensec_security *gensec_security, 
-				 struct loadparm_context *lp_ctx);
+	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
 	/**
 	   Determine if a packet has the right 'magic' for this mechanism
@@ -150,6 +147,7 @@ struct gensec_security_ops_wrapper {
 
 struct gensec_security {
 	const struct gensec_security_ops *ops;
+	struct loadparm_context *lp_ctx;
 	void *private_data;
 	struct cli_credentials *credentials;
 	struct gensec_target target;
