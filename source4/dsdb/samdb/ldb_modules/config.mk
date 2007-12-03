@@ -291,3 +291,16 @@ OBJ_FILES = \
 # End MODULE ldb_linked_attributes
 ################################################
 
+################################################
+# Start MODULE ldb_ranged_results
+[MODULE::ldb_ranged_results]
+INIT_FUNCTION = ldb_ranged_results_init
+CFLAGS = -Ilib/ldb/include
+OUTPUT_TYPE = SHARED_LIBRARY
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		ranged_results.o
+# End MODULE ldb_ranged_results
+################################################
+
