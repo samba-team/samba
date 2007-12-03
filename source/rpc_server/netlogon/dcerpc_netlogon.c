@@ -761,10 +761,10 @@ static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  netr_NETRENUMERATETRUSTEDDOMAINS 
+  netr_NetrEnumerateTurstedDomains
 */
-static WERROR dcesrv_netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRENUMERATETRUSTEDDOMAINS *r)
+static WERROR dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NetrEnumerateTrustedDomains *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -1101,11 +1101,11 @@ static WERROR dcesrv_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct dcesrv_call
 }
 
 
-/* 
-  netr_NETRENUMERATETRUSTEDDOMAINSEX 
+/*
+  netr_NetrEnumerateTrustedDomainsEx
 */
-static WERROR dcesrv_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r)
+static WERROR dcesrv_netr_NetrEnumerateTrustedDomainsEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_NetrEnumerateTrustedDomainsEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
