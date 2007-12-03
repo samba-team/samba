@@ -465,6 +465,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 
 _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 				   struct smbcli_state **c, 
+				   struct torture_context *tctx,
 				   const char *hostname, 
 				   const char *sharename,
 				   struct event_context *ev)
@@ -479,26 +480,25 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	(*c)->transport->options.use_oplocks = lp_parm_bool(global_loadparm, NULL, "torture", 
-														"use_oplocks", false);
-	(*c)->transport->options.use_level2_oplocks = lp_parm_bool(global_loadparm, NULL, "torture", 
-												"use_level2_oplocks", false);
+	(*c)->transport->options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", false);
+	(*c)->transport->options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", false);
 
 	return true;
 }
 
 _PUBLIC_ bool torture_get_conn_index(int conn_index,
 				     TALLOC_CTX *mem_ctx,
+				     struct torture_context *tctx,
 				     char **host, char **share)
 {
 	char **unc_list = NULL;
 	int num_unc_names = 0;
 	const char *p;
 
-	(*host) = talloc_strdup(mem_ctx, lp_parm_string(global_loadparm, NULL, "torture", "host"));
-	(*share) = talloc_strdup(mem_ctx, lp_parm_string(global_loadparm, NULL, "torture", "share"));
+	(*host) = talloc_strdup(mem_ctx, torture_setting_string(tctx, "host", NULL));
+	(*share) = talloc_strdup(mem_ctx, torture_setting_string(tctx, "share", NULL));
 	
-	p = lp_parm_string(global_loadparm, NULL, "torture", "unclist");
+	p = torture_setting_string(tctx, "unclist", NULL);
 	if (!p) {
 		return true;
 	}
@@ -524,25 +524,26 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 
 _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 					 int conn_index,
+					 struct torture_context *tctx,
 					 struct event_context *ev)
 {
 	char *host, *share;
 	bool ret;
 
-	if (!torture_get_conn_index(conn_index, ev, &host, &share)) {
+	if (!torture_get_conn_index(conn_index, ev, tctx, &host, &share)) {
 		return false;
 	}
 
-	ret = torture_open_connection_share(NULL, c, host, share, ev);
+	ret = torture_open_connection_share(NULL, c, tctx, host, share, ev);
 	talloc_free(host);
 	talloc_free(share);
 
 	return ret;
 }
 
-_PUBLIC_ bool torture_open_connection(struct smbcli_state **c, int conn_index)
+_PUBLIC_ bool torture_open_connection(struct smbcli_state **c, struct torture_context *tctx, int conn_index)
 {
-	return torture_open_connection_ev(c, conn_index, 
+	return torture_open_connection_ev(c, conn_index, tctx,
 					  cli_credentials_get_event_context(cmdline_credentials));
 }
 
@@ -648,7 +649,7 @@ double torture_create_procs(struct torture_context *tctx,
 
 
 			while (1) {
-				if (torture_open_connection(&current_cli, i)) {
+				if (torture_open_connection(&current_cli, tctx, i)) {
 					break;
 				}
 				if (tries-- == 0) {
@@ -766,8 +767,8 @@ static bool wrap_simple_2smb_test(struct torture_context *torture_ctx,
 
 	struct smbcli_state *cli1, *cli2;
 
-	if (!torture_open_connection(&cli1, 0) || 
-		!torture_open_connection(&cli2, 1))
+	if (!torture_open_connection(&cli1, torture_ctx, 0) || 
+		!torture_open_connection(&cli2, torture_ctx, 1))
 		return false;
 
 	fn = test->fn;
@@ -817,7 +818,7 @@ static bool wrap_simple_1smb_test(struct torture_context *torture_ctx,
 
 	struct smbcli_state *cli1;
 
-	if (!torture_open_connection(&cli1, 0))
+	if (!torture_open_connection(&cli1, torture_ctx, 0))
 		return false;
 
 	fn = test->fn;

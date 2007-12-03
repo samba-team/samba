@@ -207,7 +207,7 @@ bool torture_ping_pong(struct torture_context *torture)
 	do_writes    = torture_setting_bool(torture, "write", false);
 	lock_timeout =  torture_setting_int(torture, "lock_timeout", 100000);
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, torture, 0)) {
 		DEBUG(0,("Could not open connection\n"));
 		return false;
 	}

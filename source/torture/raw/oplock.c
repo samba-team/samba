@@ -1325,7 +1325,7 @@ bool torture_bench_oplock(struct torture_context *torture)
 
 	torture_comment(torture, "Opening %d connections\n", torture_nprocs);
 	for (i=0;i<torture_nprocs;i++) {
-		if (!torture_open_connection_ev(&cli[i], i, ev)) {
+		if (!torture_open_connection_ev(&cli[i], i, torture, ev)) {
 			return false;
 		}
 		talloc_steal(mem_ctx, cli[i]);

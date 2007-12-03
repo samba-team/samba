@@ -1840,7 +1840,7 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
+		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		talloc_free(mem_ctx);
 		return false;
@@ -1902,7 +1902,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli,
-		      torture_setting_string(torture, "host", NULL),
+		      torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		goto done;
@@ -2193,7 +2193,7 @@ bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
+		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2241,7 +2241,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
+		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2519,7 +2519,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
+		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -2705,7 +2705,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 	}
 
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
+		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", NULL))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
@@ -3255,7 +3255,7 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 	bool ret = false;
 	const char *comment = "Dummer Kommentar";
 
-	if (!(torture_open_connection(&cli, 0))) {
+	if (!(torture_open_connection(&cli, torture, 0))) {
 		return false;
 	}
 

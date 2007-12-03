@@ -42,6 +42,7 @@ static int num_connected;
 enum lock_stage {LOCK_INITIAL, LOCK_LOCK, LOCK_UNLOCK};
 
 struct benchlock_state {
+	struct torture_context *tctx;
 	struct event_context *ev;
 	struct smbcli_tree *tree;
 	TALLOC_CTX *mem_ctx;
@@ -178,7 +179,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 
 	state->te = NULL;
 
-	if (!torture_get_conn_index(state->client_num, state->mem_ctx, &host, &share)) {
+	if (!torture_get_conn_index(state->client_num, state->mem_ctx, state->tctx, &host, &share)) {
 		DEBUG(0,("Can't find host/share for reconnect?!\n"));
 		exit(1);
 	}
@@ -324,10 +325,11 @@ bool torture_bench_lock(struct torture_context *torture)
 
 	printf("Opening %d connections\n", nprocs);
 	for (i=0;i<nprocs;i++) {
+		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
 		state[i].client_num = i;
 		state[i].ev = ev;
-		if (!torture_open_connection_ev(&cli, i, ev)) {
+		if (!torture_open_connection_ev(&cli, i, torture, ev)) {
 			return false;
 		}
 		talloc_steal(mem_ctx, state);

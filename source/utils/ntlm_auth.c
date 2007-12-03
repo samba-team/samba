@@ -126,10 +126,10 @@ static void mux_printf(unsigned int mux_id, const char *format, ...)
    form DOMAIN/user into a domain and a user */
 
 static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
-					fstring user)
+					fstring user, char winbind_separator)
 {
 
-	char *p = strchr(domuser, *lp_winbind_separator(global_loadparm));
+	char *p = strchr(domuser, winbind_separator);
 
 	if (!p) {
 		return false;
@@ -470,7 +470,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!ev) {
 				exit(1);
 			}
-			msg = messaging_client_init(state, lp_messaging_path(state, global_loadparm), ev);
+			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), ev);
 			if (!msg) {
 				exit(1);
 			}
@@ -483,7 +483,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		creds = cli_credentials_init(state->gensec_state);
-		cli_credentials_set_conf(creds, global_loadparm);
+		cli_credentials_set_conf(creds, lp_ctx);
 		if (opt_username) {
 			cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
 		}
@@ -668,7 +668,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			reply_code = "AF";
 			reply_arg = talloc_asprintf(state->gensec_state, 
 						    "%s%s%s", session_info->server_info->domain_name, 
-						    lp_winbind_separator(global_loadparm), session_info->server_info->account_name);
+						    lp_winbind_separator(lp_ctx), session_info->server_info->account_name);
 			talloc_free(session_info);
 		}
 	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
@@ -744,7 +744,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				fstring fstr_user;
 				fstring fstr_domain;
 				
-				if (!parse_ntlm_auth_domain_user(full_username, fstr_user, fstr_domain)) {
+				if (!parse_ntlm_auth_domain_user(full_username, fstr_user, fstr_domain, 
+								 *lp_winbind_separator(lp_ctx))) {
 					/* username might be 'tainted', don't print into our new-line deleimianted stream */
 					mux_printf(mux_id, "Error: Could not parse into domain and username\n");
 				}

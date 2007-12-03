@@ -136,7 +136,7 @@ bool torture_disconnect(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_raw_mux");
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, torture, 0)) {
 		return false;
 	}
 
@@ -146,12 +146,12 @@ bool torture_disconnect(struct torture_context *torture)
 
 	for (i=0;i<torture_numops;i++) {
 		ret &= test_disconnect_lock(cli, mem_ctx);
-		if (!torture_open_connection(&cli, 0)) {
+		if (!torture_open_connection(&cli, torture, 0)) {
 			return false;
 		}
 
 		ret &= test_disconnect_open(cli, mem_ctx);
-		if (!torture_open_connection(&cli, 0)) {
+		if (!torture_open_connection(&cli, torture, 0)) {
 			return false;
 		}
 

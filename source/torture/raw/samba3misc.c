@@ -54,7 +54,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	}
 
 	if (!torture_open_connection_share(
-		    torture, &cli, torture_setting_string(torture, "host", NULL),
+		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
 		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
 		ret = false;
@@ -351,7 +351,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_nt, 0)) {
+	if (!torture_open_connection(&cli_nt, torture, 0)) {
 		goto fail;
 	}
 
@@ -360,7 +360,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_dos, 1)) {
+	if (!torture_open_connection(&cli_dos, torture, 1)) {
 		goto fail;
 	}
 
@@ -626,7 +626,7 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 		return false;
 	}
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, torture, 0)) {
 		goto done;
 	}
 
@@ -692,7 +692,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	struct smb_lock_entry lock_entry;
 	struct smbcli_request *req;
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		ret = false;
 		goto done;
 	}
@@ -827,7 +827,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	const char *fname = "testfile";
 	bool ret = false;
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		ret = false;
 		goto done;
 	}

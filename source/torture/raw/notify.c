@@ -836,7 +836,7 @@ done:
 /*
   basic testing of change notifies followed by a tdis
 */
-static bool test_notify_tdis(TALLOC_CTX *mem_ctx)
+static bool test_notify_tdis(struct torture_context *tctx)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -848,7 +848,7 @@ static bool test_notify_tdis(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
 	}
 
@@ -868,7 +868,7 @@ static bool test_notify_tdis(TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = BASEDIR;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -886,7 +886,7 @@ static bool test_notify_tdis(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	cli->tree = NULL;
 
-	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
@@ -898,7 +898,7 @@ done:
 /*
   basic testing of change notifies followed by a exit
 */
-static bool test_notify_exit(TALLOC_CTX *mem_ctx)
+static bool test_notify_exit(struct torture_context *tctx)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -910,7 +910,7 @@ static bool test_notify_exit(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
 	}
 
@@ -930,7 +930,7 @@ static bool test_notify_exit(TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = BASEDIR;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -947,7 +947,7 @@ static bool test_notify_exit(TALLOC_CTX *mem_ctx)
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
@@ -959,7 +959,7 @@ done:
 /*
   basic testing of change notifies followed by a ulogoff
 */
-static bool test_notify_ulogoff(TALLOC_CTX *mem_ctx)
+static bool test_notify_ulogoff(struct torture_context *tctx)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -971,7 +971,7 @@ static bool test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
 	}
 
@@ -991,7 +991,7 @@ static bool test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = BASEDIR;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -1008,7 +1008,7 @@ static bool test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 	status = smb_raw_ulogoff(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
@@ -1027,7 +1027,7 @@ static void tcp_dis_handler(struct smbcli_transport *t, void *p)
 /*
   basic testing of change notifies followed by tcp disconnect
 */
-static bool test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
+static bool test_notify_tcp_dis(struct torture_context *tctx)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -1039,7 +1039,7 @@ static bool test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
 	}
 
@@ -1059,7 +1059,7 @@ static bool test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = BASEDIR;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -1075,7 +1075,7 @@ static bool test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 
 	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250, cli);
 
-	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_LOCAL_DISCONNECT);
 
 done:

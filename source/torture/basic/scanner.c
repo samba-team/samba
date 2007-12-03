@@ -515,7 +515,7 @@ bool torture_smb_scan(struct torture_context *torture)
 	for (op=0x0;op<=0xFF;op++) {
 		if (op == SMBreadbraw) continue;
 
-		if (!torture_open_connection(&cli, 0)) {
+		if (!torture_open_connection(&cli, torture, 0)) {
 			return false;
 		}
 
