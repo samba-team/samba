@@ -55,8 +55,8 @@ static const char *local_id_string(struct cluster_ops *ops,
   TDB_CLEAR_IF_FIRST as the tmp path is wiped at startup
 */
 static struct tdb_wrap *local_tdb_tmp_open(struct cluster_ops *ops,
-					   TALLOC_CTX *mem_ctx, const char *dbname, 
-					   int flags)
+					   TALLOC_CTX *mem_ctx, 
+					   const char *dbname, int flags)
 {
 	char *path = smbd_tmp_path(mem_ctx, global_loadparm, dbname);
 	struct tdb_wrap *w;

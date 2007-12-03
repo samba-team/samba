@@ -79,7 +79,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	model_ops->terminate(event_ctx, reason);
 }
 
-/*
+/**
   the select loop has indicated that a stream is ready for IO
 */
 static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
