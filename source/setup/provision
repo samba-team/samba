@@ -142,6 +142,7 @@ if (ldapbackend) {
 	}
 	if (!ldapmodule) {
 		subobj.LDAPMODULE = "entryuuid";
+		subobj.TDB_MODULES_LIST = "";
 	}
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
 	subobj.DOMAINDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";

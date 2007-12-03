@@ -977,23 +977,25 @@ function provision_guess()
 	//   module when expanding the objectclass list)
 	// - partition must be last
 	// - each partition has its own module list then
-	modules_list        = new Array("rootdse",
-					"paged_results",
-					"ranged_results",
-					"server_sort",
-					"extended_dn",
-					"asq",
-					"samldb",
-					"rdn_name",
-					"objectclass",
-					"kludge_acl",
-					"operational",
-					"subtree_rename",
-					"subtree_delete",
-					"linked_attributes",
-					"show_deleted",
-					"partition");
+	var modules_list     = new Array("rootdse",
+					 "paged_results",
+					 "ranged_results",
+					 "server_sort",
+					 "extended_dn",
+					 "asq",
+					 "samldb",
+					 "rdn_name",
+					 "objectclass",
+					 "kludge_acl",
+					 "operational");
+	var tdb_modules_list = new Array("subtree_rename",
+					 "subtree_delete",
+					 "linked_attributes");
+	var modules_list2    = new Array("show_deleted",
+					 "partition");
 	subobj.MODULES_LIST = join(",", modules_list);
+	subobj.TDB_MODULES_LIST = "," + join(",", tdb_modules_list);
+	subobj.MODULES_LIST2 = join(",", modules_list2);
 	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
