@@ -1,5 +1,10 @@
 2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c: Put back code that was needed, move gen_new
+	into new_unique.
+
+	* lib/krb5/mcache.c (mcc_default_name): Remove const
+
 	* lib/krb5/krb5_locl.h: Add KRB5_DEFAULT_CCNAME_KCM, redefine
 	KRB5_DEFAULT_CCNAME to KRB5_DEFAULT_CCTYPE
 
