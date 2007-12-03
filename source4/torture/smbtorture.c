@@ -484,7 +484,7 @@ void run_shell(struct torture_context *tctx)
 				fprintf(stderr, "Usage: set <variable> <value>\n");
 			} else {
 				char *name = talloc_asprintf(NULL, "torture:%s", argv[1]);
-				lp_set_cmdline(global_loadparm, name, argv[2]);
+				lp_set_cmdline(tctx->lp_ctx, name, argv[2]);
 				talloc_free(name);
 			}
 		} else if (!strcmp(argv[0], "help")) {

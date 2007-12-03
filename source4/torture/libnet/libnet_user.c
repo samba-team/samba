@@ -463,7 +463,7 @@ bool torture_modifyuser(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_binding *bind;
 	struct dcerpc_pipe *p;
-	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
+	TALLOC_CTX *prep_mem_ctx;
 	struct policy_handle h;
 	struct lsa_String domain_name;
 	char *name;
@@ -499,9 +499,7 @@ bool torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	mem_ctx = talloc_init("test_modifyuser");
-
-	status = torture_rpc_binding(mem_ctx, &bind);
+	status = torture_rpc_binding(torture, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
 		goto done;
@@ -514,9 +512,9 @@ bool torture_modifyuser(struct torture_context *torture)
 		req.in.domain_name = lp_workgroup(torture->lp_ctx);
 		req.in.user_name = name;
 
-		set_test_changes(mem_ctx, &req, 1, &name, fld);
+		set_test_changes(torture, &req, 1, &name, fld);
 
-		status = libnet_ModifyUser(ctx, mem_ctx, &req);
+		status = libnet_ModifyUser(ctx, torture, &req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 			ret = false;
@@ -527,7 +525,7 @@ bool torture_modifyuser(struct torture_context *torture)
 		user_req.in.domain_name = lp_workgroup(torture->lp_ctx);
 		user_req.in.user_name = name;
 
-		status = libnet_UserInfo(ctx, mem_ctx, &user_req);
+		status = libnet_UserInfo(ctx, torture, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_UserInfo call failed: %s\n", nt_errstr(status));
 			ret = false;
@@ -567,31 +565,28 @@ bool torture_modifyuser(struct torture_context *torture)
 			req.in.user_name = name;
 			req.in.account_name = TEST_USERNAME;
 			
-			status = libnet_ModifyUser(ctx, mem_ctx, &req);
+			status = libnet_ModifyUser(ctx, torture, &req);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-				talloc_free(mem_ctx);
 				ret = false;
 				goto done;
 			}
 			
-			name = talloc_strdup(mem_ctx, TEST_USERNAME);
+			name = talloc_strdup(torture, TEST_USERNAME);
 		}
 	}
 
 cleanup:
-	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, name)) {
+	if (!test_cleanup(ctx->samr.pipe, torture, &ctx->samr.handle, name)) {
 		printf("cleanup failed\n");
 		ret = false;
 		goto done;
 	}
 
-	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close(ctx->samr.pipe, torture, &ctx->samr.handle)) {
 		printf("domain close failed\n");
 		ret = false;
 	}
-
-	talloc_free(mem_ctx);
 
 done:
 	talloc_free(ctx);

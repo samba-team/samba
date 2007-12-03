@@ -87,7 +87,7 @@ static void fill_blob_handle(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	memcpy(blob->data, b2.data, 20);
 }
 
-static void reopen(TALLOC_CTX *mem_ctx, 
+static void reopen(struct torture_context *tctx, 
 		   struct dcerpc_pipe **p, 
 		   const struct ndr_interface_table *iface)
 {
@@ -95,7 +95,7 @@ static void reopen(TALLOC_CTX *mem_ctx,
 
 	talloc_free(*p);
 
-	status = torture_rpc_connection(mem_ctx, p, iface);
+	status = torture_rpc_connection(tctx, p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to reopen '%s' - %s\n", iface->name, nt_errstr(status));
 		exit(1);
@@ -110,10 +110,10 @@ static void print_depth(int depth)
 	}
 }
 
-static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
+static void test_ptr_scan(struct torture_context *tctx, const struct ndr_interface_table *iface, 
 			  int opnum, DATA_BLOB *base_in, int min_ofs, int max_ofs, int depth);
 
-static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
+static void try_expand(struct torture_context *tctx, const struct ndr_interface_table *iface, 
 		       int opnum, DATA_BLOB *base_in, int insert_ofs, int depth)
 {
 	DATA_BLOB stub_in, stub_out;
@@ -121,7 +121,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *if
 	NTSTATUS status;
 	struct dcerpc_pipe *p = NULL;
 
-	reopen(mem_ctx, &p, iface);
+	reopen(tctx, &p, iface);
 
 	/* work out how much to expand to get a non fault */
 	for (n=0;n<2000;n++) {
@@ -130,24 +130,24 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *if
 		memcpy(stub_in.data, base_in->data, insert_ofs);
 		memcpy(stub_in.data+insert_ofs+n, base_in->data+insert_ofs, base_in->length-insert_ofs);
 
-		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, tctx, &stub_in, &stub_out);
 
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
 			printf("expand by %d gives %s\n", n, nt_errstr(status));
 			if (n >= 4) {
-				test_ptr_scan(mem_ctx, iface, opnum, &stub_in, 
+				test_ptr_scan(tctx, iface, opnum, &stub_in, 
 					      insert_ofs, insert_ofs+n, depth+1);
 			}
 			return;
 		} else {
 #if 0
 			print_depth(depth);
-			printf("expand by %d gives fault %s\n", n, dcerpc_errstr(mem_ctx, p->last_fault_code));
+			printf("expand by %d gives fault %s\n", n, dcerpc_errstr(tctx, p->last_fault_code));
 #endif
 		}
 		if (p->last_fault_code == 5) {
-			reopen(mem_ctx, &p, iface);
+			reopen(tctx, &p, iface);
 		}
 	}
 
@@ -155,7 +155,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *if
 }
 
 
-static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, 
+static void test_ptr_scan(struct torture_context *tctx, const struct ndr_interface_table *iface, 
 			  int opnum, DATA_BLOB *base_in, int min_ofs, int max_ofs, int depth)
 {
 	DATA_BLOB stub_in, stub_out;
@@ -163,7 +163,7 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table 
 	NTSTATUS status;
 	struct dcerpc_pipe *p = NULL;
 
-	reopen(mem_ctx, &p, iface);
+	reopen(tctx, &p, iface);
 
 	stub_in = data_blob(NULL, base_in->length);
 	memcpy(stub_in.data, base_in->data, base_in->length);
@@ -171,19 +171,19 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table 
 	/* work out which elements are pointers */
 	for (ofs=min_ofs;ofs<=max_ofs-4;ofs+=4) {
 		SIVAL(stub_in.data, ofs, 1);
-		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, tctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
 			printf("possible ptr at ofs %d - fault %s\n", 
-			       ofs-min_ofs, dcerpc_errstr(mem_ctx, p->last_fault_code));
+			       ofs-min_ofs, dcerpc_errstr(tctx, p->last_fault_code));
 			if (p->last_fault_code == 5) {
-				reopen(mem_ctx, &p, iface);
+				reopen(tctx, &p, iface);
 			}
 			if (depth == 0) {
-				try_expand(mem_ctx, iface, opnum, &stub_in, ofs+4, depth+1);
+				try_expand(tctx, iface, opnum, &stub_in, ofs+4, depth+1);
 			} else {
-				try_expand(mem_ctx, iface, opnum, &stub_in, max_ofs, depth+1);
+				try_expand(tctx, iface, opnum, &stub_in, max_ofs, depth+1);
 			}
 			SIVAL(stub_in.data, ofs, 0);
 			continue;
@@ -195,7 +195,7 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table 
 }
 	
 
-static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface, int opnum)
+static void test_scan_call(struct torture_context *tctx, const struct ndr_interface_table *iface, int opnum)
 {
 	DATA_BLOB stub_in, stub_out;
 	int i;
@@ -203,9 +203,9 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 	struct dcerpc_pipe *p = NULL;
 	struct policy_handle handle;
 
-	reopen(mem_ctx, &p, iface);
+	reopen(tctx, &p, iface);
 
-	get_policy_handle(p, mem_ctx, &handle);
+	get_policy_handle(p, tctx, &handle);
 
 	/* work out the minimum amount of input data */
 	for (i=0;i<2000;i++) {
@@ -213,34 +213,34 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 		data_blob_clear(&stub_in);
 
 
-		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, tctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
 			       opnum, (int)stub_in.length, (int)stub_out.length);
 			dump_data(0, stub_out.data, stub_out.length);
 			talloc_free(p);
-			test_ptr_scan(mem_ctx, iface, opnum, &stub_in, 0, stub_in.length, 0);
+			test_ptr_scan(tctx, iface, opnum, &stub_in, 0, stub_in.length, 0);
 			return;
 		}
 
-		fill_blob_handle(&stub_in, mem_ctx, &handle);
+		fill_blob_handle(&stub_in, tctx, &handle);
 
-		status = dcerpc_request(p, NULL, opnum, false, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, false, tctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d (with handle)\n", 
 			       opnum, (int)stub_in.length, (int)stub_out.length);
 			dump_data(0, stub_out.data, stub_out.length);
 			talloc_free(p);
-			test_ptr_scan(mem_ctx, iface, opnum, &stub_in, 0, stub_in.length, 0);
+			test_ptr_scan(tctx, iface, opnum, &stub_in, 0, stub_in.length, 0);
 			return;
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			printf("opnum %d  size %d fault %s\n", opnum, i, dcerpc_errstr(mem_ctx, p->last_fault_code));
+			printf("opnum %d  size %d fault %s\n", opnum, i, dcerpc_errstr(tctx, p->last_fault_code));
 			if (p->last_fault_code == 5) {
-				reopen(mem_ctx, &p, iface);
+				reopen(tctx, &p, iface);
 			}
 			continue;
 		}
@@ -253,14 +253,13 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct ndr_interface_table
 }
 
 
-static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct ndr_interface_table *iface)
+static void test_auto_scan(struct torture_context *tctx, const struct ndr_interface_table *iface)
 {
-	test_scan_call(mem_ctx, iface, 2);
+	test_scan_call(tctx, iface, 2);
 }
 
 bool torture_rpc_autoidl(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
 	const struct ndr_interface_table *iface;
 		
 	iface = ndr_table_by_name("drsuapi");
@@ -269,12 +268,9 @@ bool torture_rpc_autoidl(struct torture_context *torture)
 		return false;
 	}
 
-	mem_ctx = talloc_init("torture_rpc_autoidl");
-
 	printf("\nProbing pipe '%s'\n", iface->name);
 
-	test_auto_scan(mem_ctx, iface);
+	test_auto_scan(torture, iface);
 
-	talloc_free(mem_ctx);
 	return true;
 }
