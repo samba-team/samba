@@ -38,7 +38,7 @@ static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx,
 {
 	return ldb_wrap_connect(mem_ctx, lp_ctx, private_path(mem_ctx, 
 			        lp_ctx, lp_wins_config_url(lp_ctx)),
-				system_session(mem_ctx), NULL, 0, NULL);
+				system_session(mem_ctx, lp_ctx), NULL, 0, NULL);
 }
 
 static uint64_t wins_config_db_get_seqnumber(struct ldb_context *ldb)

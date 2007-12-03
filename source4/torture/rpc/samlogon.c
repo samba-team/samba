@@ -1505,7 +1505,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	/* We only need to join as a workstation here, and in future,
 	 * if we wish to test against trusted domains, we must be a
 	 * workstation here */
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, ACB_WSTRUST, 
+	join_ctx = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_WSTRUST, 
 				       &machine_credentials);
 	if (!join_ctx) {
 		d_printf("Failed to join as Workstation\n");

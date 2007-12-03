@@ -17,7 +17,8 @@ bool torture_rpc_join(struct torture_context *torture)
 	const char *host = torture_setting_string(torture, "host", NULL);
 
 	/* Join domain as a member server. */
-	tj = torture_join_domain(TORTURE_NETBIOS_NAME,
+	tj = torture_join_domain(torture,
+				 TORTURE_NETBIOS_NAME,
 				 ACB_WSTRUST,
 				 &machine_account);
 
@@ -42,7 +43,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	torture_leave_domain(tj);
         
 	/* Join domain as a domain controller. */
-	tj = torture_join_domain(TORTURE_NETBIOS_NAME,
+	tj = torture_join_domain(torture, TORTURE_NETBIOS_NAME,
 				 ACB_SVRTRUST,
 				 &machine_account);
 	if (!tj) {

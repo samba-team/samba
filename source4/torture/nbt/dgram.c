@@ -295,7 +295,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
 
-	join_ctx = torture_join_domain(TEST_NAME, 
+	join_ctx = torture_join_domain(tctx, TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
 	torture_assert(tctx, join_ctx != NULL,
 		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",

@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
+#include "param/param.h"
 
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
@@ -124,6 +125,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, private->samdb, 
+					     lp_netbios_name(global_loadparm),
 					     private->msg, 
 					     private->realm_ref_msg,
 					     data_blob(NULL, 0),

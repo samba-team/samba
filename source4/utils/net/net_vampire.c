@@ -24,6 +24,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/samr.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 static int net_samdump_keytab_usage(struct net_context *ctx, int argc, const char **argv)
 {
@@ -151,7 +152,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 	r.in.binding_string = NULL;
 
 	/* Needed to override the ACLs on ldb */
-	r.in.session_info = system_session(libnetctx);
+	r.in.session_info = system_session(libnetctx, global_loadparm);
 
 	status = libnet_samsync_ldb(libnetctx, libnetctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

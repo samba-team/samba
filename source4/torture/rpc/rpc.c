@@ -137,7 +137,7 @@ static bool torture_rpc_setup_machine(struct torture_context *tctx,
 
 	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
 	tcase_data->credentials = cmdline_credentials;
-	tcase_data->join_ctx = torture_join_domain(tcase->machine_name,
+	tcase_data->join_ctx = torture_join_domain(tctx, tcase->machine_name,
 						   ACB_SVRTRUST, 
 						   &tcase_data->credentials);
 	if (tcase_data->join_ctx == NULL)

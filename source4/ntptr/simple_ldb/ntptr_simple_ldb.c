@@ -42,9 +42,9 @@
   connect to the SPOOLSS database
   return a ldb_context pointer on success, or NULL on failure
  */
-static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx)
+static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, global_loadparm, lp_spoolss_url(global_loadparm), system_session(mem_ctx), 
+	return ldb_wrap_connect(mem_ctx, lp_ctx, lp_spoolss_url(lp_ctx), system_session(mem_ctx, lp_ctx), 
 				NULL, 0, NULL);
 }
 
@@ -87,7 +87,7 @@ static int sptr_db_search(struct ldb_context *ldb,
 
 static NTSTATUS sptr_init_context(struct ntptr_context *ntptr)
 {
-	struct ldb_context *sptr_db = sptr_db_connect(ntptr);
+	struct ldb_context *sptr_db = sptr_db_connect(ntptr, global_loadparm);
 	NT_STATUS_HAVE_NO_MEMORY(sptr_db);
 
 	ntptr->private_data = sptr_db;

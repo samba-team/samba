@@ -150,11 +150,12 @@ static NTSTATUS generate_session_info(TALLOC_CTX *mem_ctx,
 /**
   Create a system session, with machine account credentials
 */
-_PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx) 
+_PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
 	nt_status = auth_system_session_info(mem_ctx,
+					     lp_ctx,
 					     &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
@@ -205,11 +206,11 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 /*
   Create a system session, but with anonymous credentials (so we do not need to open secrets.ldb)
 */
-_PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx) 
+_PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = _auth_system_session_info(mem_ctx, global_loadparm, false, &session_info);
+	nt_status = _auth_system_session_info(mem_ctx, lp_ctx, false, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -219,11 +220,12 @@ _PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx)
 
 
 _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
+					   struct loadparm_context *lp_ctx,
 					   struct auth_session_info **_session_info) 
 {
 	return _auth_system_session_info(parent_ctx, 
-			global_loadparm,
-			lp_parm_bool(global_loadparm, NULL, "system", "anonymous", false), 
+			lp_ctx,
+			lp_parm_bool(lp_ctx, NULL, "system", "anonymous", false), 
 			_session_info);
 }
 

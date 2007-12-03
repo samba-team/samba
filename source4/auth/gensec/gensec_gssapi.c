@@ -1322,7 +1322,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	} else if (!lp_parm_bool(global_loadparm, NULL, "gensec", "require_pac", false)) {
 		DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
+		nt_status = sam_get_server_info_principal(mem_ctx, global_loadparm, principal_string,
 							  &server_info);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
