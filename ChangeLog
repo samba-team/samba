@@ -1,5 +1,14 @@
 2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/fcache.c (fcc_move): make sure ->version is uptodate.
+
+	* kcm/acquire.c: use krb5_free_cred_contents
+
+	* kuser/kimpersonate.c: use krb5_free_cred_contents
+	
+	* kuser/kinit.c: Use krb5_cc_move to make an atomic switch of the
+	cred cache.
+
 	* lib/krb5/cache.c: Put back code that was needed, move gen_new
 	into new_unique.
 
