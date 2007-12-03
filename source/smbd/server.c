@@ -313,7 +313,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	/* initialise clustering if needed */
-	cluster_ctdb_init(event_ctx, model);
+	cluster_ctdb_init(global_loadparm, event_ctx, model);
 
 	if (opt_interactive) {
 		/* catch EOF on stdin */

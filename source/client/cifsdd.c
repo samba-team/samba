@@ -398,7 +398,7 @@ static void set_max_xmit(struct loadparm_context *lp_ctx, uint64_t iomax)
 	lp_set_cmdline(lp_ctx, "max xmit", buf);
 }
 
-static int copy_files(void)
+static int copy_files(struct loadparm_context *lp_ctx)
 {
 	uint8_t *	iobuf;	/* IO buffer. */
 	uint64_t	iomax;	/* Size of the IO buffer. */
@@ -595,7 +595,7 @@ int main(int argc, const char ** argv)
 
 	CatchSignal(SIGINT, dd_handle_signal);
 	CatchSignal(SIGUSR1, dd_handle_signal);
-	return(copy_files());
+	return(copy_files(global_loadparm));
 }
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */

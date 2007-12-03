@@ -197,12 +197,13 @@ static struct cluster_ops cluster_ctdb_ops = {
 };
 
 /* initialise ctdb */
-void cluster_ctdb_init(struct event_context *ev, const char *model)
+void cluster_ctdb_init(struct loadparm_context *lp_ctx, 
+		       struct event_context *ev, const char *model)
 {
 	struct cluster_state *state;
 	int ret;
 
-	if (!lp_parm_bool(global_loadparm, NULL, "ctdb", "enable", false)) {
+	if (!lp_parm_bool(lp_ctx, NULL, "ctdb", "enable", false)) {
 		return;
 	}
 

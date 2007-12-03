@@ -77,7 +77,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
  * Create a new anonymous credential
  * @param mem_ctx TALLOC_CTX parent for credentials structure 
  */
-struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx) 
+struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx)
 {
 	struct cli_credentials *anon_credentials;
 
