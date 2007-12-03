@@ -55,9 +55,35 @@ static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_wkssvc_getjoininformation(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc,
+					    const char **argv)
+{
+	const char *server_name;
+	const char *name_buffer;
+	enum wkssvc_NetJoinStatus name_type;
+	NTSTATUS status;
+
+	server_name = cli->cli->desthost;
+	name_buffer = "";
+
+	status = rpccli_wkssvc_NetrGetJoinInformation(cli, mem_ctx,
+						      server_name, &name_buffer,
+						      &name_type);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	printf("%s (%d)\n", name_buffer, name_type);
+
+	return WERR_OK;
+}
+
 struct cmd_set wkssvc_commands[] = {
 
 	{ "WKSSVC" },
 	{ "wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, PI_WKSSVC, NULL, "Query WKSSVC Workstation Information", "" },
+	{ "getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, PI_WKSSVC, NULL, "Query WKSSVC Join Information", "" },
 	{ NULL }
 };
