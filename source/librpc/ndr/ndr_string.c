@@ -31,7 +31,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	int ret;
-	int chset = CH_UTF16;
+	charset_t chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
