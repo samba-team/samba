@@ -730,3 +730,32 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	data_blob_free(&confounded_session_key);
 }
+
+void decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					struct wkssvc_PasswordBuffer *pwd_buf,
+					DATA_BLOB *session_key,
+					char **pwd)
+{
+	uint8_t buffer[516];
+	struct MD5Context ctx;
+	uint32_t pwd_len;
+
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+	int confounder_len = 8;
+	uint8_t confounder[8];
+
+	memcpy(&confounder, &pwd_buf->data[0], confounder_len);
+	memcpy(&buffer, &pwd_buf->data[8], 516);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, session_key->data, session_key->length);
+	MD5Update(&ctx, confounder, confounder_len);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	SamOEMhashBlob(buffer, 516, &confounded_session_key);
+
+	decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, STR_UNICODE);
+
+	data_blob_free(&confounded_session_key);
+}
