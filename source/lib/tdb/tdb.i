@@ -45,7 +45,8 @@ typedef TDB_CONTEXT tdb;
 
 /* The tdb functions will crash if a NULL tdb context is passed */
 
-%include exception.i
+%import exception.i
+%import stdint.i
 
 %typemap(check) TDB_CONTEXT* {
 	if ($1 == NULL)
