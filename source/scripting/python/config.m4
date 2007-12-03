@@ -1,9 +1,12 @@
+m4_include(scripting/python/ac_pkg_swig.m4)
+
 AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 	version to use, for example '2.3'. This string 
 	will be appended to the Python interpreter
 	canonical name.])
 
-AC_PATH_PROG(SWIG,swig,no)
+AC_PROG_SWIG(1.3.25)
+
 AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
 if test -z "$PYTHON"; then
 	working_python=no
