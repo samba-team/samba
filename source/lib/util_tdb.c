@@ -561,14 +561,14 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 	int len;
 	int *i;
 	void **p;
-	char *s, **b;
+	char *s, **b, **ps;
 	char c;
 	const uint8 *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
 	va_start(ap, fmt);
-	
+
 	while (*fmt) {
 		switch ((c=*fmt++)) {
 		case 'b':
@@ -597,7 +597,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			p = va_arg(ap, void **);
 			if (bufsize < len)
 				goto no_space;
-			/* 
+			/*
 			 * This isn't a real pointer - only a token (1 or 0)
 			 * to mark the fact a pointer is present.
 			 */
@@ -605,11 +605,10 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			*p = (void *)(IVAL(buf, 0) ? (void *)1 : NULL);
 			break;
 		case 'P':
-			s = va_arg(ap,char *);
+			/* Return malloc'ed string. */
+			ps = va_arg(ap,char **);
 			len = strlen((const char *)buf) + 1;
-			if (bufsize < len || len > sizeof(pstring))
-				goto no_space;
-			memcpy(s, buf, len);
+			*ps = SMB_STRDUP((const char *)buf);
 			break;
 		case 'f':
 			s = va_arg(ap,char *);
@@ -638,7 +637,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			memcpy(*b, buf+4, *i);
 			break;
 		default:
-			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
+			DEBUG(0,("Unknown tdb_unpack format %c in %s\n",
 				 c, fmt));
 
 			len = 0;
@@ -651,7 +650,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	DEBUG(18,("tdb_unpack(%s, %d) -> %d\n", 
+	DEBUG(18,("tdb_unpack(%s, %d) -> %d\n",
 		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
 
 	return PTR_DIFF(buf, buf0);
@@ -673,7 +672,7 @@ static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *fo
 	va_start(ap, format);
 	vasprintf(&ptr, format, ap);
 	va_end(ap);
-	
+
 	if (!ptr || !*ptr)
 		return;
 

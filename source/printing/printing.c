@@ -1352,17 +1352,19 @@ static void print_queue_receive(struct messaging_context *msg,
 				DATA_BLOB *data)
 {
 	fstring sharename;
-	pstring lpqcommand, lprmcommand;
+	char *lpqcommand = NULL, *lprmcommand = NULL;
 	int printing_type;
 	size_t len;
 
 	len = tdb_unpack( (uint8 *)data->data, data->length, "fdPP",
 		sharename,
 		&printing_type,
-		lpqcommand,
-		lprmcommand );
+		&lpqcommand,
+		&lprmcommand );
 
 	if ( len == -1 ) {
+		SAFE_FREE(lpqcommand);
+		SAFE_FREE(lprmcommand);
 		DEBUG(0,("print_queue_receive: Got invalid print queue update message\n"));
 		return;
 	}
@@ -1371,6 +1373,8 @@ static void print_queue_receive(struct messaging_context *msg,
 		get_printer_fns_from_type((enum printing_types)printing_type),
 		lpqcommand, lprmcommand );
 
+	SAFE_FREE(lpqcommand);
+	SAFE_FREE(lprmcommand);
 	return;
 }
 
