@@ -239,6 +239,7 @@ typedef struct krb5_context_data {
 
 #define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
 #define KRB5_DEFAULT_CCNAME_API "API:"
+#define KRB5_DEFAULT_CCNAME_KCM "KCM:%{uid}"
 
 #define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
 #define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
@@ -248,11 +249,11 @@ typedef struct krb5_context_data {
  * Configurable options
  */
 
-#ifndef KRB5_DEFAULT_CCNAME
+#ifndef KRB5_DEFAULT_CCTYPE
 #ifdef __APPLE__
-#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_API
+#define KRB5_DEFAULT_CCTYPE (&krb5_acc_ops)
 #else
-#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_FILE
+#define KRB5_DEFAULT_CCTYPE (&krb5_fcc_ops)
 #endif
 #endif
 
