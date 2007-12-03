@@ -1,6 +1,29 @@
 2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_locl.h: Add KRB5_DEFAULT_CCNAME_KCM, redefine
+	KRB5_DEFAULT_CCNAME to KRB5_DEFAULT_CCTYPE
+
+	* lib/krb5/cache.c: Use krb5_cc_ops->default_name to get the
+	default name.
+
+	* lib/krb5/kcm.c: Implement krb5_cc_ops->default_name.
+
+	* lib/krb5/mcache.c: Implement krb5_cc_ops->default_name.
+
+	* lib/krb5/fcache.c: Implement krb5_cc_ops->default_name.
+
+	* lib/krb5/krb5.h: Add krb5_cc_ops->default_name.
+
+	* lib/krb5/acache.c: Free context when done, implement
+	krb5_cc_ops->default_name.
+
+	* lib/krb5/kcm.c: implement dummy kcm_move
+
+	* lib/krb5/mcache.c: Implement the move operation.
+
 	* lib/krb5/version-script.map: export krb5_cc_move
+
+	* lib/krb5/cache.c: New function krb5_cc_move().
 
 	* lib/krb5/fcache.c: Implement the move operation.
 
