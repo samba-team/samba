@@ -285,7 +285,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
+NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security,
+				     struct loadparm_context *lp_ctx)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	NTSTATUS nt_status;
@@ -297,17 +298,17 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->role = NTLMSSP_CLIENT;
 
-	gensec_ntlmssp_state->domain = lp_workgroup(global_loadparm);
+	gensec_ntlmssp_state->domain = lp_workgroup(lp_ctx);
 
-	gensec_ntlmssp_state->unicode = lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "unicode", true);
+	gensec_ntlmssp_state->unicode = lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "unicode", true);
 
-	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "send_nt_reponse", true);
+	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "send_nt_reponse", true);
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth(global_loadparm) 
-					      && (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "allow_lm_key", false)
-						  || lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "lm_key", false)));
+	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth(lp_ctx) 
+					      && (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "allow_lm_key", false)
+						  || lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "lm_key", false)));
 
-	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth(global_loadparm);
+	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth(lp_ctx);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_INITIAL;
 
@@ -315,27 +316,27 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "128bit", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "128bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "56bit", false)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "56bit", false)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "lm_key", false)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "lm_key", false)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "keyexchange", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "keyexchange", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "alwayssign", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "alwayssign", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;		
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "ntlmssp_client", "ntlm2", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "ntlmssp_client", "ntlm2", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	} else {
 		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
