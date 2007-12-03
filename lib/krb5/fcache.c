@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -767,6 +767,19 @@ fcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
     return 0;
 }
 
+static krb5_error_code
+fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
+{
+    krb5_error_code ret = 0;
+
+    if (rename(FILENAME(from), FILENAME(to)) != 0) {
+	ret = errno;
+	krb5_set_error_string(context, "Rename of file failed: %s", 
+			      strerror(ret));
+    }
+    return ret;
+}
+
 /**
  * Variable containing the FILE based credential cache implemention.
  *
@@ -792,5 +805,6 @@ const krb5_cc_ops krb5_fcc_ops = {
     fcc_get_version,
     fcc_get_cache_first,
     fcc_get_cache_next,
-    fcc_end_cache_get
+    fcc_end_cache_get,
+    fcc_move
 };
