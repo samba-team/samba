@@ -4921,7 +4921,7 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 {
 	return rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, 
 					    pipe_hnd->cli->desthost, 
-					    atoi(argv[0]));
+					    atoi(argv[0]), NULL);
 }
 
 /** 
