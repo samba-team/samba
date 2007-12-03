@@ -1051,6 +1051,41 @@ static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netr_NetrEnumerateTrustedDomains(struct torture_context *tctx,
+						  struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct netr_NetrEnumerateTrustedDomains r;
+	struct netr_Blob trusted_domains_blob;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.out.trusted_domains_blob = &trusted_domains_blob;
+
+	status = dcerpc_netr_NetrEnumerateTrustedDomains(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_NetrEnumerateTrustedDomains");
+	torture_assert_werr_ok(tctx, r.out.result, "NetrEnumerateTrustedDomains");
+
+	return true;
+}
+
+static bool test_netr_NetrEnumerateTrustedDomainsEx(struct torture_context *tctx,
+						    struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct netr_NetrEnumerateTrustedDomainsEx r;
+	struct netr_DomainTrustList dom_trust_list;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.out.dom_trust_list = &dom_trust_list;
+
+	status = dcerpc_netr_NetrEnumerateTrustedDomainsEx(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "netr_NetrEnumerateTrustedDomainsEx");
+	torture_assert_werr_ok(tctx, r.out.result, "NetrEnumerateTrustedDomainsEx");
+
+	return true;
+}
+
+
 static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_context *tctx,
 				     const char *computer_name, 
 				     const char *expected_site) 
@@ -1479,6 +1514,8 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync2", test_DatabaseSync2);
 	torture_rpc_tcase_add_test(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 	torture_rpc_tcase_add_test(tcase, "DsrEnumerateDomainTrusts", test_DsrEnumerateDomainTrusts);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomainsEx", test_netr_NetrEnumerateTrustedDomainsEx);
 	test = torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo_async", test_GetDomainInfo_async);
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "DsRGetDCName", test_netr_DsRGetDCName);

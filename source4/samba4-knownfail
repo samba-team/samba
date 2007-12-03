@@ -24,6 +24,8 @@ RPC-NETLOGON.*/LogonControl
 RPC-NETLOGON.*/LogonControl2
 RPC-NETLOGON.*/GetAnyDCName
 RPC-NETLOGON.*/DsrEnumerateDomainTrusts
+RPC-NETLOGON.*/NetrEnumerateTrustedDomains
+RPC-NETLOGON.*/NetrEnumerateTrustedDomainsEx
 RPC-NETLOGON.*/DsrGetDcSiteCoverageW
 RPC-NETLOGON.*/DsRAddressToSitenamesW
 RPC-NETLOGON.*/DsRAddressToSitenamesExW
