@@ -98,7 +98,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	return acl;
 }
 
-static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
+static bool aixjfs2_get_nfs4_acl(const char *name,
 	SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
@@ -108,15 +108,15 @@ static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
 	nfs4_ace_int_t *jfs2_ace = NULL;
 	acl_type_t type;
 
-	DEBUG(10,("jfs2 get_nt_acl invoked for %s\n", fsp->fsp_name));
+	DEBUG(10,("jfs2 get_nt_acl invoked for %s\n", name));
 
 	memset(&type, 0, sizeof(acl_type_t));
 	type.u64 = ACL_NFS4;
 
-	pacl = aixjfs2_getacl_alloc(fsp->fsp_name, &type);
+	pacl = aixjfs2_getacl_alloc(name, &type);
         if (pacl == NULL) {
 		DEBUG(9, ("aixjfs2_getacl_alloc failed for %s with %s\n",
-				fsp->fsp_name, strerror(errno)));
+				name, strerror(errno)));
 		if (errno==ENOSYS)
 			*pretryPosix = True;
 		return False;
@@ -166,7 +166,7 @@ static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
 	bool	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(fsp, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(fsp->fsp_name, &pacl, &retryPosix);
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
