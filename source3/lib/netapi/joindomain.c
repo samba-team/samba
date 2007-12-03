@@ -89,13 +89,11 @@ WERROR NetJoinDomain(const char *server_name,
 					       server_name, domain_name,
 					       account_ou, Account,
 					       &encrypted_password,
-					       join_flags);
+					       join_flags, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
-
-	werr = WERR_OK;
 
  done:
 	if (cli) {
@@ -166,13 +164,12 @@ WERROR NetUnjoinDomain(const char *server_name,
 						 server_name,
 						 account,
 						 &encrypted_password,
-						 unjoin_flags);
+						 unjoin_flags,
+						 &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
-
-	werr = WERR_OK;
 
  done:
 	if (cli) {

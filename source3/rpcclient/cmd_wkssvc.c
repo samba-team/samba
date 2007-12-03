@@ -27,6 +27,7 @@ static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 				      const char **argv)
 {
 	NTSTATUS status;
+	WERROR werr;
 	uint32_t level = 100;
 	union wkssvc_NetWkstaInfo info;
 	const char *server_name;
@@ -36,12 +37,13 @@ static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 	status = rpccli_wkssvc_NetWkstaGetInfo(cli, mem_ctx,
 					       server_name,
 					       level,
-					       &info);
+					       &info,
+					       &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
 
-	return WERR_OK;
+	return werr;
 }
 
 struct cmd_set wkssvc_commands[] = {
