@@ -48,8 +48,11 @@ static int net_dom_unjoin(int argc, const char **argv)
 	const char *password = NULL;
 	uint32_t unjoin_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE |
 				WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	struct cli_state *cli = NULL;
 	bool reboot = false;
+	NTSTATUS status;
 	WERROR werr;
+	int ret = -1;
 	int i;
 
 	if (argc < 1) {
@@ -76,16 +79,47 @@ static int net_dom_unjoin(int argc, const char **argv)
 		}
 	}
 
+	if (reboot) {
+		status = net_make_ipc_connection_ex(opt_workgroup, server_name,
+						    NULL, 0, &cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			return -1;
+		}
+	}
+
 	werr = NetUnjoinDomain(server_name, account, password, unjoin_flags);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("Failed to unjoin domain: %s\n",
 			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
-			return -1;
+		goto done;
 	}
 
-	/* reboot then */
+	if (reboot) {
+		opt_comment = "Shutting down due to a domain membership change";
+		opt_reboot = true;
+		opt_timeout = 30;
 
-	return 0;
+		ret = run_rpc_command(cli, PI_INITSHUTDOWN, 0,
+				      rpc_init_shutdown_internals,
+				      argc, argv);
+		if (ret == 0) {
+			goto done;
+		}
+
+		ret = run_rpc_command(cli, PI_WINREG, 0,
+				      rpc_reg_shutdown_internals,
+				      argc, argv);
+		goto done;
+	}
+
+	ret = 0;
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return ret;
 }
 
 static int net_dom_join(int argc, const char **argv)
@@ -97,8 +131,11 @@ static int net_dom_join(int argc, const char **argv)
 	const char *password = NULL;
 	uint32_t join_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 			      WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	struct cli_state *cli = NULL;
 	bool reboot = false;
+	NTSTATUS status;
 	WERROR werr;
+	int ret = -1;
 	int i;
 
 	if (argc < 1) {
@@ -141,6 +178,14 @@ static int net_dom_join(int argc, const char **argv)
 		}
 	}
 
+	if (reboot) {
+		status = net_make_ipc_connection_ex(opt_workgroup, server_name,
+						    NULL, 0, &cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			return -1;
+		}
+	}
+
 	/* check if domain is a domain or a workgroup */
 
 	werr = NetJoinDomain(server_name, domain_name, account_ou,
@@ -148,12 +193,35 @@ static int net_dom_join(int argc, const char **argv)
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("Failed to join domain: %s\n",
 			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
-			return -1;
+		goto done;
 	}
 
-	/* reboot then */
+	if (reboot) {
+		opt_comment = "Shutting down due to a domain membership change";
+		opt_reboot = true;
+		opt_timeout = 30;
 
-	return 0;
+		ret = run_rpc_command(cli, PI_INITSHUTDOWN, 0,
+				      rpc_init_shutdown_internals,
+				      argc, argv);
+		if (ret == 0) {
+			goto done;
+		}
+
+		ret = run_rpc_command(cli, PI_WINREG, 0,
+				      rpc_reg_shutdown_internals,
+				      argc, argv);
+		goto done;
+	}
+
+	ret = 0;
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return ret;
 }
 
 int net_dom(int argc, const char **argv)
@@ -161,6 +229,7 @@ int net_dom(int argc, const char **argv)
 	struct functable func[] = {
 		{"JOIN", net_dom_join},
 		{"UNJOIN", net_dom_unjoin},
+		{"HELP", net_help_dom},
 		{NULL, NULL}
 	};
 

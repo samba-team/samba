@@ -5181,7 +5181,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid, 
+NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli, 
 						struct rpc_pipe_client *pipe_hnd,
@@ -5234,7 +5234,7 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid, 
+NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli, 
 						struct rpc_pipe_client *pipe_hnd,
