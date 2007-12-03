@@ -187,7 +187,9 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
-	bool ret = lp_load(lp_configfile(global_loadparm));
+	bool ret;
+	
+	ret = lp_load(lp_configfile(global_loadparm), NULL);
 	if (ret) {
 		unload_interfaces();
 	}

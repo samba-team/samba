@@ -52,9 +52,9 @@ static void popt_common_callback(poptContext con,
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		if (!lp_loaded()) {
 			if (getenv("SMB_CONF_PATH"))
-				lp_load(getenv("SMB_CONF_PATH"));
+				lp_load(getenv("SMB_CONF_PATH"), NULL);
 			else
-				lp_load(dyn_CONFIGFILE);
+				lp_load(dyn_CONFIGFILE, NULL);
 		}
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
@@ -101,7 +101,7 @@ static void popt_common_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			lp_load(arg);
+			lp_load(arg, NULL);
 		}
 		break;
 

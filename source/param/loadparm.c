@@ -2407,7 +2407,7 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 
 _PUBLIC_ _DEPRECATED_ bool lp_load_default(void)
 {
-	return lp_load(dyn_CONFIGFILE);
+	return lp_load(dyn_CONFIGFILE, NULL);
 }
 
 /***************************************************************************
@@ -2415,12 +2415,15 @@ _PUBLIC_ _DEPRECATED_ bool lp_load_default(void)
  False on failure.
 ***************************************************************************/
 
-bool lp_load(const char *filename)
+bool lp_load(const char *filename, struct loadparm_context **ret_lp)
 {
 	char *n2;
 	bool bRetval;
 	struct param_opt *data;
 	struct loadparm_context *lp_ctx = &loadparm;
+
+	if (ret_lp != NULL)
+		*ret_lp = NULL;
 
 	filename = talloc_strdup(talloc_autofree_context(), filename);
 
@@ -2469,6 +2472,9 @@ bool lp_load(const char *filename)
 	}
 
 	close_iconv();
+
+	if (ret_lp != NULL)
+		*ret_lp = lp_ctx;
 
 	return bRetval;
 }

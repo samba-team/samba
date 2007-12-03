@@ -460,6 +460,7 @@ static void usage(void)
 	int opt;
 	char *p;
 	int seed;
+	struct loadparm_context *lp_ctx;
 
 	setlinebuf(stdout);
 
@@ -483,7 +484,7 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	lp_load(dyn_CONFIGFILE);
+	lp_load(dyn_CONFIGFILE, &lp_ctx);
 
 	if (getenv("USER")) {
 		fstrcpy(username,getenv("USER"));

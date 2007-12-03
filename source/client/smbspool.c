@@ -50,6 +50,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct smbcli_state *cli;	/* SMB interface */
+  struct loadparm_context *lp_ctx;
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
   if (argc > 2 && strncmp(argv[0],"smb://", 6) && !strncmp(argv[1],"smb://", 6)) {
@@ -176,13 +177,13 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
 
   setup_logging(argv[0], DEBUG_STDOUT);
 
-  if (!lp_load(dyn_CONFIGFILE)) {
+  if (!lp_load(dyn_CONFIGFILE, &lp_ctx)) {
 	  fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", lp_config_file());
 	  return (1);
   }
 
   if (workgroup == NULL)
-    workgroup = lp_workgroup();
+    workgroup = lp_workgroup(lp_ctx);
 
   do
   {

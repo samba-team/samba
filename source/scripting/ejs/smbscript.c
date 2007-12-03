@@ -49,18 +49,19 @@ int main(int argc, const char **argv)
 	const char *fname;
 	struct MprVar *return_var;
 	int exit_status, i;
+	struct loadparm_context *lp_ctx;
 
 	fault_setup(argv[0]);
 
 	if (getenv("SMB_CONF_PATH")) {
-		lp_load(getenv("SMB_CONF_PATH"));
+		lp_load(getenv("SMB_CONF_PATH"), &lp_ctx);
 	} else {
-		lp_load(dyn_CONFIGFILE);
+		lp_load(dyn_CONFIGFILE, &lp_ctx);
 	}
 
 	ldb_global_init();
 
-	gensec_init(global_loadparm);
+	gensec_init(lp_ctx);
 	mprSetCtx(mem_ctx);
 
 
