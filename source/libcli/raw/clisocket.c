@@ -239,7 +239,7 @@ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 
 	make_nbt_name(&nbt_name, host, name_type);
 	
-	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx);
+	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx, lp_name_resolve_order(global_loadparm));
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return NULL;

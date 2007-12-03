@@ -108,7 +108,7 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
-	nt_status = auth_generate_session_info(tmp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(tmp_ctx, global_loadparm, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));

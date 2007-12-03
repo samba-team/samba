@@ -59,7 +59,7 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -150,6 +150,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
+				    struct loadparm_context *lp_ctx,
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) 
 {
@@ -166,7 +167,7 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	session_info->session_key = server_info->user_session_key;
 
 	nt_status = security_token_create(session_info,
-					  global_loadparm,
+					  lp_ctx,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  server_info->n_domain_groups,
