@@ -603,7 +603,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 		if (gensec_security->ops->client_start) {
-			status = gensec_security->ops->client_start(gensec_security);
+			status = gensec_security->ops->client_start(gensec_security, global_loadparm);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("Failed to start GENSEC client mech %s: %s\n",
 					  gensec_security->ops->name, nt_errstr(status))); 

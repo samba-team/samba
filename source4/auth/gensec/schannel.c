@@ -218,7 +218,8 @@ static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS schannel_client_start(struct gensec_security *gensec_security) 
+static NTSTATUS schannel_client_start(struct gensec_security *gensec_security, 
+				      struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS status;
 	struct schannel_state *state;

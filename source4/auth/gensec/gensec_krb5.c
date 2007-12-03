@@ -210,7 +210,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gen
 	return nt_status;
 }
 
-static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
@@ -322,9 +322,9 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 }
 
-static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
 {
-	NTSTATUS nt_status = gensec_krb5_client_start(gensec_security);
+	NTSTATUS nt_status = gensec_krb5_client_start(gensec_security, lp_ctx);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		struct gensec_krb5_state *gensec_krb5_state;

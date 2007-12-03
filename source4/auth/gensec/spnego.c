@@ -47,11 +47,11 @@ struct spnego_state {
 };
 
 
-static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc(gensec_security, struct spnego_state);		
+	spnego_state = talloc(gensec_security, struct spnego_state);
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}

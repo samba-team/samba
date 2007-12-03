@@ -298,7 +298,7 @@ static NTSTATUS gensec_gssapi_sasl_server_start(struct gensec_security *gensec_s
 	return nt_status;
 }
 
-static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
@@ -324,7 +324,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = gensec_gssapi_start(gensec_security, global_loadparm);
+	nt_status = gensec_gssapi_start(gensec_security, lp_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -334,7 +334,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 
 	principal = gensec_get_target_principal(gensec_security);
-	if (principal && lp_client_use_spnego_principal(global_loadparm)) {
+	if (principal && lp_client_use_spnego_principal(lp_ctx)) {
 		name_type = GSS_C_NULL_OID;
 	} else {
 		principal = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
@@ -380,11 +380,11 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_gssapi_sasl_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_gssapi_sasl_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
 {
 	NTSTATUS nt_status;
 	struct gensec_gssapi_state *gensec_gssapi_state;
-	nt_status = gensec_gssapi_client_start(gensec_security);
+	nt_status = gensec_gssapi_client_start(gensec_security, lp_ctx);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
