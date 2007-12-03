@@ -209,18 +209,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_new_unique(krb5_context context, const char *type, 
 		   const char *hint, krb5_ccache *id)
 {
-    const krb5_cc_ops *ops;
-
-    if (type == NULL)
-	type = KRB5_DEFAULT_CCNAME;
-
-    ops = krb5_cc_get_prefix_ops(context, type);
-    if (ops == NULL) {
-	krb5_set_error_string(context, "Credential cache type %s is unknown",
-			      type);
-	return KRB5_CC_UNKNOWN_TYPE;
-    }
-
+    const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
     return krb5_cc_gen_new(context, ops, id);
 }
 
@@ -431,11 +420,17 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
-	    if (e == NULL)
-		e = KRB5_DEFAULT_CCNAME;
-	    ret = _krb5_expand_default_cc_name(context, e, &p);
-	    if (ret)
-		return ret;
+	    if (e) {
+		ret = _krb5_expand_default_cc_name(context, e, &p);
+		if (ret)
+		    return ret;
+	    }
+	    if (e == NULL) {
+		const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
+		ret = (*ops->default_name)(context, &p);
+		if (ret)
+		    return ret;
+	    }
 	}
     } else
 	p = strdup(name);
