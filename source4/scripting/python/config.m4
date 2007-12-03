@@ -5,7 +5,7 @@ AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 	will be appended to the Python interpreter
 	canonical name.])
 
-AC_PROG_SWIG(1.3.25)
+AC_PROG_SWIG(1.3.31)
 
 AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
 if test -z "$PYTHON"; then
