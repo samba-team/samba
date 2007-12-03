@@ -1028,3 +1028,35 @@ krb5_cc_cache_match (krb5_context context,
     return 0;
 }
 
+/**
+ * Move the content from one credential cache to another. The
+ * operation is an atomic switch. 
+ *
+ * @param context a Keberos context
+ * @param from the credential cache to move the content from
+ * @param to the credential cache to move the content to
+
+ * @return On sucess, from is freed. On failure, error code is
+ * returned and from and to are both still allocated.
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code
+krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
+{
+    krb5_error_code ret;
+
+    if (strcmp(from->ops->prefix, to->ops->prefix) != 0) {
+	krb5_set_error_string(context, "Moving credentials between diffrent "
+			      "types not yet supported");
+	return KRB5_CC_NOSUPP;
+    }
+
+    ret = (*to->ops->move)(context, from, to);
+    if (ret == 0) {
+	memset(from, 0, sizeof(*from));
+	free(from);
+    }
+    return ret;
+}
