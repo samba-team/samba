@@ -776,7 +776,18 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	ret = errno;
 	krb5_set_error_string(context, "Rename of file failed: %s", 
 			      strerror(ret));
+	return ret;
     }
+    /* make sure ->version is uptodate */
+    {
+	krb5_storage *sp;
+	int fd;
+	ret = init_fcc (context, to, &sp, &fd);
+	krb5_storage_free(sp);
+	fcc_unlock(context, fd);
+	close(fd);
+    }
+
     return ret;
 }
 
