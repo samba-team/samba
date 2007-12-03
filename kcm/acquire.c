@@ -153,7 +153,7 @@ kcm_ccache_acquire(krb5_context context,
     if (ret) {
 	kcm_log(0, "Failed to store credentials for cache %s: %s",
 		ccache->name, krb5_get_err_text(context, ret));
-	krb5_free_creds_contents(context, &cred);
+	krb5_free_cred_contents(context, &cred);
 	goto out;
     }
 
@@ -334,7 +334,7 @@ get_salt_and_kvno(krb5_context context,
     }
     /* ccache may have been modified but it will get trashed anyway */
 
-    krb5_free_creds_contents(context, &creds);
+    krb5_free_cred_contents(context, &creds);
     krb5_free_kdc_rep(context, &reply);
 
     return ret;
