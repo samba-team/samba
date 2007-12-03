@@ -47,6 +47,6 @@ EXTRA_DIST = \
 CLEANFILES = \
 	krb5-config \
 	krb5-config.new \
-	heimdal-gssapi.gc \
+	heimdal-gssapi.pc \
 	heimdal-gssapi.pc.new
 
