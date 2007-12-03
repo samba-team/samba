@@ -836,6 +836,13 @@ kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return EINVAL;
 }
 
+static krb5_error_code
+kcm_default_name(krb5_context context, char **str)
+{
+    return _krb5_expand_default_cc_name(context, 
+					KRB5_DEFAULT_CCNAME_KCM,
+					str);
+}
 
 /**
  * Variable containing the KCM based credential cache implemention.
