@@ -565,8 +565,8 @@ static void usage(void)
 
 	servers[0] = cli_credentials_init(talloc_autofree_context());
 	servers[1] = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(servers[0]);
-	cli_credentials_guess(servers[1]);
+	cli_credentials_guess(servers[0], global_loadparm);
+	cli_credentials_guess(servers[1], global_loadparm);
 
 	seed = time(NULL);
 

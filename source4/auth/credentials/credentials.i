@@ -85,7 +85,7 @@ typedef struct cli_credentials {
         bool set_workstation(const char *workstation, 
                              enum credentials_obtained obtained=CRED_SPECIFIED);
 
-        void guess(void);
+        void guess(struct loadparm_context *lp_ctx = NULL);
         bool is_anonymous(void);
 
         const struct samr_Password *get_nt_hash(TALLOC_CTX *mem_ctx);

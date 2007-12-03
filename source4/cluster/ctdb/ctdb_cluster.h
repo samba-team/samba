@@ -19,4 +19,5 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-void cluster_ctdb_init(struct event_context *ev, const char *model);
+void cluster_ctdb_init(struct loadparm_context *lp_ctx,
+		       struct event_context *ev, const char *model);
