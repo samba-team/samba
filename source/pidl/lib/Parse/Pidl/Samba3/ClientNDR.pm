@@ -46,6 +46,11 @@ sub ParseFunction($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 		$defargs .= ", " . DeclLong($_);
 	}
+
+	if ($fn->{RETURN_TYPE} eq "WERROR") {
+		$defargs .= ", WERROR *werror";
+	}
+
 	$self->fn_declare("NTSTATUS rpccli_$fn->{NAME}(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx$defargs)");
 	$self->pidl("{");
 	$self->indent;
@@ -123,6 +128,12 @@ sub ParseFunction($$$)
 	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
 		$self->pidl("return r.out.result;");
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
+		$self->pidl("if (werror) {");
+		$self->indent;
+		$self->pidl("*werror = r.out.result;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
 		$self->pidl("return werror_to_ntstatus(r.out.result);");
 	} else {
 		warning($fn->{ORIGINAL}, "Unable to convert $fn->{RETURN_TYPE} to NTSTATUS");
