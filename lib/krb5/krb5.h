@@ -419,6 +419,7 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
     krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
     krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
+    krb5_error_code (*default_name)(krb5_context, char **);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
