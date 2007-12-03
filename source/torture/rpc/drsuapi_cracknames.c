@@ -204,8 +204,9 @@ static bool test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-bool test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct DsPrivate *priv)
+bool test_DsCrackNames(struct torture_context *tctx,
+		       struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		       struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
@@ -589,7 +590,7 @@ bool test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.comment = "display name for Microsoft Support Account",
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE,
-				.skip = lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)
+				.skip = torture_setting_bool(tctx, "samba4", false)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,

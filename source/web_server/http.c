@@ -139,7 +139,8 @@ static int http_readFile(EspHandle handle,
                          const char *path,
                          const char *base_dir)
 {
-	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
+	struct websrv_context *web = talloc_get_type(handle, 
+						     struct websrv_context);
 	int fd = -1;
 	struct stat st;
 	*buf = NULL;
@@ -169,12 +170,11 @@ failed:
 	return -1;
 }
 
-static int http_readFileFromSwatDir(EspHandle handle,
-                                       char **buf,
-                                       int *len,
+static int http_readFileFromSwatDir(EspHandle handle, char **buf, int *len,
                                        const char *path)
 {
-    return http_readFile(handle, buf, len, path, lp_swat_directory(global_loadparm));
+    return http_readFile(handle, buf, len, path, 
+			 lp_swat_directory(global_loadparm));
 }
 
 

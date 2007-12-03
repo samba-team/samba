@@ -346,7 +346,8 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
+NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
+				    struct loadparm_context *lp_ctx)
 {
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine
@@ -356,7 +357,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN,
 					   filter);
 }

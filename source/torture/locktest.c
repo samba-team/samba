@@ -105,7 +105,8 @@ static struct record *recorded;
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(char *share, int snum, int conn)
+static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
+					char *share, int snum, int conn)
 {
 	struct smbcli_state *c;
 	fstring server, myname;
@@ -124,7 +125,7 @@ static struct smbcli_state *connect_one(char *share, int snum, int conn)
 		char **unc_list = NULL;
 		int num_unc_names;
 		const char *p;
-		p = lp_parm_string(global_loadparm, NULL, "torture", "unclist");
+		p = lp_parm_string(lp_ctx, NULL, "torture", "unclist");
 		if (p) {
 			char *h, *s;
 			unc_list = file_lines_load(p, &num_unc_names, NULL);
@@ -183,7 +184,8 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum
 			}
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(share[server], server, conn);
+		cli[server][conn] = connect_one(global_loadparm, share[server], 
+						server, conn);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
 			exit(1);
