@@ -60,7 +60,7 @@ static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 /**
  re-initialize iconv conversion descriptors
 **/
-_PUBLIC_ void init_iconv(void)
+_PUBLIC_ void close_iconv(void)
 {
 	unsigned c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
@@ -79,7 +79,8 @@ _PUBLIC_ void init_iconv(void)
 /*
   on-demand initialisation of conversion handles
 */
-static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
+static smb_iconv_t get_conv_handle(struct loadparm_context *lp_ctx,
+				   charset_t from, charset_t to)
 {
 	const char *n1, *n2;
 	static int initialised;
@@ -98,27 +99,27 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
 		setlocale(LC_ALL, "C");
 #endif
 
-		atexit(init_iconv);
+		atexit(close_iconv);
 	}
 
 	if (conv_handles[from][to]) {
 		return conv_handles[from][to];
 	}
 
-	n1 = charset_name(global_loadparm, from);
-	n2 = charset_name(global_loadparm, to);
+	n1 = charset_name(lp_ctx, from);
+	n2 = charset_name(lp_ctx, to);
 
 	conv_handles[from][to] = smb_iconv_open(n2,n1);
 	
 	if (conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
-		    strcasecmp(charset_name(global_loadparm, CH_DOS), "ASCII") != 0) {
+		    strcasecmp(charset_name(lp_ctx, CH_DOS), "ASCII") != 0) {
 			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
-				 charset_name(global_loadparm, CH_DOS)));
-			lp_set_cmdline(global_loadparm, "dos charset", "ASCII");
+				 charset_name(lp_ctx, CH_DOS)));
+			lp_set_cmdline(lp_ctx, "dos charset", "ASCII");
 
-			n1 = charset_name(global_loadparm, from);
-			n2 = charset_name(global_loadparm, to);
+			n1 = charset_name(lp_ctx, from);
+			n2 = charset_name(lp_ctx, to);
 			
 			conv_handles[from][to] = smb_iconv_open(n2,n1);
 		}
@@ -150,7 +151,7 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 	if (srclen == (size_t)-1)
 		srclen = strlen(inbuf)+1;
 
-	descriptor = get_conv_handle(from, to);
+	descriptor = get_conv_handle(global_loadparm, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
@@ -189,39 +190,15 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 	}
 	return destlen-o_len;
 }
-
-/**
- * Convert between character sets, allocating a new buffer using talloc for the result.
- *
- * @param srclen length of source buffer.
- * @param dest always set at least to NULL
- * @note -1 is not accepted for srclen.
- *
- * @returns Size in bytes of the converted string; or -1 in case of error.
- **/
-
-_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			      void const *src, size_t srclen, void **dest)
+	
+_PUBLIC_ ssize_t convert_string_talloc_descriptor(TALLOC_CTX *ctx, smb_iconv_t descriptor, void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf, *ob;
-	smb_iconv_t descriptor;
 
 	*dest = NULL;
-
-	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
-		return (size_t)-1;
-
-	descriptor = get_conv_handle(from, to);
-
-	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		/* conversion not supported, return -1*/
-		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
-			  charset_name(global_loadparm, from), charset_name(global_loadparm, to)));
-		return -1;
-	}
 
 	/* it is _very_ rare that a conversion increases the size by
 	   more than 3x */
@@ -270,6 +247,38 @@ convert:
 	*dest = ob;
 
 	return destlen;
+}
+
+/**
+ * Convert between character sets, allocating a new buffer using talloc for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL
+ * @note -1 is not accepted for srclen.
+ *
+ * @returns Size in bytes of the converted string; or -1 in case of error.
+ **/
+
+_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+			      void const *src, size_t srclen, void **dest)
+{
+	smb_iconv_t descriptor;
+
+	*dest = NULL;
+
+	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
+		return (size_t)-1;
+
+	descriptor = get_conv_handle(global_loadparm, from, to);
+
+	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
+		/* conversion not supported, return -1*/
+		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
+			  charset_name(global_loadparm, from), charset_name(global_loadparm, to)));
+		return -1;
+	}
+
+	return convert_string_talloc_descriptor(ctx, descriptor, src, srclen, dest);
 }
 
 /**
@@ -621,7 +630,7 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
-	descriptor = get_conv_handle(CH_UNIX, CH_UTF16);
+	descriptor = get_conv_handle(global_loadparm, CH_UNIX, CH_UTF16);
 	if (descriptor == (smb_iconv_t)-1) {
 		*size = 1;
 		return INVALID_CODEPOINT;
@@ -684,7 +693,7 @@ _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 		return 1;
 	}
 
-	descriptor = get_conv_handle(CH_UTF16, CH_UNIX);
+	descriptor = get_conv_handle(global_loadparm, CH_UTF16, CH_UNIX);
 	if (descriptor == (smb_iconv_t)-1) {
 		return -1;
 	}
