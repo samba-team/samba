@@ -245,7 +245,7 @@ unmount smbfs  (this is a bailout routine to clean up if a reconnect fails)
 	Code blatently stolen from smbumount.c
 		-mhw-
 ****************************************************************************/
-static void smb_umount(char *mount_point)
+static void smb_umount(const char *mount_point)
 {
 	int fd;
         struct mntent *mnt;
@@ -323,7 +323,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(const char *the_service, char *mount_point, struct smbcli_state *c)
+static void send_fs_socket(const char *the_service, const char *mount_point, struct smbcli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
