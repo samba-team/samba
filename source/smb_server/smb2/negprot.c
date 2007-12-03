@@ -39,6 +39,7 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 
 	nt_status = gensec_server_start(req,
 					req->smb_conn->connection->event.ctx,
+					global_loadparm,
 					req->smb_conn->connection->msg_ctx,
 					&gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {

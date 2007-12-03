@@ -112,7 +112,7 @@ static int gensec_sasl_dispose(struct gensec_sasl_state *gensec_sasl_state)
 	return 0;
 }
 
-static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security, struct loadparm_context *lp_ctx)
+static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_sasl_state *gensec_sasl_state;
 	const char *service = gensec_get_target_service(gensec_security);

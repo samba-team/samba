@@ -28,6 +28,7 @@
 #include "lib/socket/netif.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+#include "param/param.h"
 
 /*
   startup the nbtd task
@@ -62,7 +63,7 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
-	nbtsrv->sam_ctx = samdb_connect(nbtsrv, task->lp_ctx, anonymous_session(nbtsrv));
+	nbtsrv->sam_ctx = samdb_connect(nbtsrv, task->lp_ctx, anonymous_session(nbtsrv, global_loadparm));
 	if (nbtsrv->sam_ctx == NULL) {
 		task_server_terminate(task, "nbtd failed to open samdb");
 		return;

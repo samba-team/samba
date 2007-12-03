@@ -309,7 +309,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	init_iconv();
+	close_iconv();
 
 	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEl:")) != EOF) {
 		switch (opt) {
