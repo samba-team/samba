@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -56,6 +56,45 @@ is($x->{res}, "NTSTATUS rpccli_bar(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 \t
 \t/* Return result */
 \treturn NT_STATUS_OK;
+}
+
+");
+
+$x = new Parse::Pidl::Samba3::ClientNDR();
+
+$fn = { NAME => "bar", ELEMENTS => [ ], RETURN_TYPE => "WERROR" };
+$x->ParseFunction("foo", $fn);
+is($x->{res}, "NTSTATUS rpccli_bar(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+{
+\tstruct bar r;
+\tNTSTATUS status;
+\t
+\t/* In parameters */
+\t
+\tif (DEBUGLEVEL >= 10)
+\t\tNDR_PRINT_IN_DEBUG(bar, &r);
+\t
+\tstatus = cli_do_rpc_ndr(cli, mem_ctx, PI_FOO, &ndr_table_foo, NDR_BAR, &r);
+\t
+\tif (!NT_STATUS_IS_OK(status)) {
+\t\treturn status;
+\t}
+\t
+\tif (DEBUGLEVEL >= 10)
+\t\tNDR_PRINT_OUT_DEBUG(bar, &r);
+\t
+\tif (NT_STATUS_IS_ERR(status)) {
+\t\treturn status;
+\t}
+\t
+\t/* Return variables */
+\t
+\t/* Return result */
+\tif (werror) {
+\t\t*werror = r.out.result;
+\t}
+\t
+\treturn werror_to_ntstatus(r.out.result);
 }
 
 ");
