@@ -870,7 +870,8 @@ const krb5_cc_ops krb5_kcm_ops = {
     NULL,
     NULL,
     NULL,
-    kcm_move
+    kcm_move,
+    kcm_default_name
 };
 
 krb5_boolean
