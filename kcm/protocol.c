@@ -252,14 +252,14 @@ kcm_op_store(krb5_context context,
 				    name, &ccache);
     if (ret) {
 	free(name);
-	krb5_free_creds_contents(context, &creds);
+	krb5_free_cred_contents(context, &creds);
 	return ret;
     }
 
     ret = kcm_ccache_store_cred(context, ccache, &creds, 0);
     if (ret) {
 	free(name);
-	krb5_free_creds_contents(context, &creds);
+	krb5_free_cred_contents(context, &creds);
 	kcm_release_ccache(context, &ccache);
 	return ret;
     }
@@ -320,7 +320,7 @@ kcm_op_retrieve(krb5_context context,
 	strcmp(mcreds.server->name.name_string.val[0], KRB5_TGS_NAME) == 0)
     {
 	free(name);
-	krb5_free_creds_contents(context, &mcreds);
+	krb5_free_cred_contents(context, &mcreds);
 	return KRB5_FCC_PERM;
     }
 
@@ -328,7 +328,7 @@ kcm_op_retrieve(krb5_context context,
 				    name, &ccache);
     if (ret) {
 	free(name);
-	krb5_free_creds_contents(context, &mcreds);
+	krb5_free_cred_contents(context, &mcreds);
 	return ret;
     }
 
@@ -356,7 +356,7 @@ kcm_op_retrieve(krb5_context context,
     }
 
     free(name);
-    krb5_free_creds_contents(context, &mcreds);
+    krb5_free_cred_contents(context, &mcreds);
     kcm_release_ccache(context, &ccache);
 
     if (free_creds)
@@ -608,7 +608,7 @@ kcm_op_remove_cred(krb5_context context,
 				    name, &ccache);
     if (ret) {
 	free(name);
-	krb5_free_creds_contents(context, &mcreds);
+	krb5_free_cred_contents(context, &mcreds);
 	return ret;
     }
 
@@ -617,7 +617,7 @@ kcm_op_remove_cred(krb5_context context,
     /* XXX need to remove any events that match */
 
     free(name);
-    krb5_free_creds_contents(context, &mcreds);
+    krb5_free_cred_contents(context, &mcreds);
     kcm_release_ccache(context, &ccache);
 
     return ret;
