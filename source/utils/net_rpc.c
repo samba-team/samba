@@ -5603,6 +5603,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	char* domain_name_pol;
 	char* acct_name;
 	fstring pdc_name;
+	char *dc_name;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -5655,7 +5656,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 */
 
 	nt_status = connect_to_ipc_anonymous(&cli, &server_ss, (char*)pdc_name);
-	
+
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
 			domain_name, nt_errstr(nt_status)));
@@ -5665,13 +5666,14 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/*
 	 * Use NetServerEnum2 to make sure we're talking to a proper server
 	 */
-	 
-	if (!cli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
+
+	if (!cli_get_pdc_name(cli, domain_name, &dc_name)) {
 		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
 			 for domain %s\n", domain_name));
 		cli_shutdown(cli);
 		return -1;
 	}
+	SAFE_FREE(dc_name);
 	 
 	if (!(mem_ctx = talloc_init("establishing trust relationship to "
 				    "domain %s", domain_name))) {
