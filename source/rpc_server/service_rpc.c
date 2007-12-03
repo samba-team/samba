@@ -216,7 +216,9 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 
 
 
-static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, 
+				   struct loadparm_context *lp_ctx,
+				   struct dcesrv_endpoint *e,
 			    struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -241,8 +243,10 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv
 	return status;
 }
 
-static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-			       struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, 
+				      struct loadparm_context *lp_ctx,
+				      struct dcesrv_endpoint *e,
+				      struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -256,7 +260,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dce
 		e->ep_description->endpoint = talloc_strdup(dce_ctx, "DEFAULT");
 	}
 
-	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(global_loadparm), 
+	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(lp_ctx), 
 				    e->ep_description->endpoint);
 
 	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
@@ -310,8 +314,10 @@ static NTSTATUS add_socket_rpc_pipe_iface(struct dcesrv_context *dce_ctx, struct
 	return status;
 }
 
-static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-				   struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, 
+				 struct loadparm_context *lp_ctx,
+				 struct dcesrv_endpoint *e,
+				 struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
 
@@ -357,13 +363,15 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	return status;
 }
 
-static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-				   struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, 
+				  struct loadparm_context *lp_ctx,
+				  struct dcesrv_endpoint *e,
+				  struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
 
 	/* Add TCP/IP sockets */
-	if (lp_interfaces(global_loadparm) && lp_bind_interfaces_only(global_loadparm)) {
+	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
 		int num_interfaces = iface_count();
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
@@ -373,7 +381,7 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_
 		}
 	} else {
 		status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, 
-						  lp_socket_address(global_loadparm));
+						  lp_socket_address(lp_ctx));
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -381,21 +389,23 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_
 }
 
 
-static NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+static NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, 
+			      struct loadparm_context *lp_ctx,
+			      struct dcesrv_endpoint *e,
 			  struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	switch (e->ep_description->transport) {
 	case NCACN_UNIX_STREAM:
-		return dcesrv_add_ep_unix(dce_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_unix(dce_ctx, lp_ctx, e, event_ctx, model_ops);
 
 	case NCALRPC:
-		return dcesrv_add_ep_ncalrpc(dce_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_ncalrpc(dce_ctx, lp_ctx, e, event_ctx, model_ops);
 
 	case NCACN_IP_TCP:
-		return dcesrv_add_ep_tcp(dce_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_tcp(dce_ctx, lp_ctx, e, event_ctx, model_ops);
 
 	case NCACN_NP:
-		return dcesrv_add_ep_np(dce_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_np(dce_ctx, lp_ctx, e, event_ctx, model_ops);
 
 	default:
 		return NT_STATUS_NOT_SUPPORTED;
@@ -424,7 +434,7 @@ static void dcesrv_task_init(struct task_server *task)
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		status = dcesrv_add_ep(dce_ctx, e, task->event_ctx, task->model_ops);
+		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx, task->model_ops);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

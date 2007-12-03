@@ -57,7 +57,7 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv->wins_interface  = NULL;
 
 	/* start listening on the configured network interfaces */
-	status = nbtd_startup_interfaces(nbtsrv);
+	status = nbtd_startup_interfaces(nbtsrv, task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup interfaces");
 		return;
