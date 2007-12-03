@@ -136,7 +136,7 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 		rec->banned_nodes[pnn] = NULL;
 	}
 
-	rec->banned_nodes[pnn] = talloc(rec, struct ban_state);
+	rec->banned_nodes[pnn] = talloc(rec->banned_nodes, struct ban_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes[pnn]);
 
 	rec->banned_nodes[pnn]->rec = rec;
