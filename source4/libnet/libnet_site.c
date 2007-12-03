@@ -24,8 +24,9 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/resolve/resolve.h"
+#include "param/param.h"
 
-/*
+/**
  * 1. Setup a CLDAP socket.
  * 2. Lookup the default Site-Name.
  */
@@ -145,7 +146,7 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(&name, r, &dest_addr, NULL);
+	status = resolve_name(&name, r, &dest_addr, NULL, lp_name_resolve_order(global_loadparm));
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

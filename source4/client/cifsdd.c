@@ -390,12 +390,12 @@ static struct dd_iohandle * open_file(const char * which)
 	return(handle);
 }
 
-static void set_max_xmit(uint64_t iomax)
+static void set_max_xmit(struct loadparm_context *lp_ctx, uint64_t iomax)
 {
 	char buf[64];
 
 	snprintf(buf, sizeof(buf), "%llu", (unsigned long long)iomax);
-	lp_set_cmdline(global_loadparm, "max xmit", buf);
+	lp_set_cmdline(lp_ctx, "max xmit", buf);
 }
 
 static int copy_files(void)
@@ -426,7 +426,7 @@ static int copy_files(void)
 		return(EOM_EXIT_CODE);
 	}
 
-	set_max_xmit(MAX(ibs, obs));
+	set_max_xmit(global_loadparm, MAX(ibs, obs));
 
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, lp_max_xmit(global_loadparm)));

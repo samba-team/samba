@@ -78,14 +78,14 @@ struct DsSyncTest {
 	} old_dc;
 };
 
-static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
+static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 {
 	NTSTATUS status;
 	struct DsSyncTest *ctx;
 	struct drsuapi_DsBindInfo28 *our_bind_info28;
 	struct drsuapi_DsBindInfoCtr *our_bind_info_ctr;
-	const char *binding = lp_parm_string(global_loadparm, NULL, "torture", "binding");
-	ctx = talloc_zero(mem_ctx, struct DsSyncTest);
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	ctx = talloc_zero(tctx, struct DsSyncTest);
 	if (!ctx) return NULL;
 
 	status = dcerpc_parse_binding(ctx, binding, &ctx->drsuapi_binding);
@@ -149,7 +149,7 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-	if (lp_parm_bool(global_loadparm, NULL, "dssync", "xpress", false)) {
+	if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "xpress", false)) {
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
@@ -246,7 +246,7 @@ static bool test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *creden
 	return ret;
 }
 
-static bool test_GetInfo(struct DsSyncTest *ctx)
+static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
@@ -265,7 +265,7 @@ static bool test_GetInfo(struct DsSyncTest *ctx)
 	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;		
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup(global_loadparm));
+	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup(tctx->lp_ctx));
 
 	status = dcerpc_drsuapi_DsCrackNames(ctx->admin.drsuapi.pipe, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -413,18 +413,19 @@ static DATA_BLOB decrypt_blob(TALLOC_CTX *mem_ctx,
 	return plain_buffer;
 }
 
-static void test_analyse_objects(struct DsSyncTest *ctx,
+static void test_analyse_objects(struct torture_context *tctx, 
+				 struct DsSyncTest *ctx,
 				 const DATA_BLOB *gensec_skey,
 				 struct drsuapi_DsReplicaObjectListItemEx *cur)
 {
 	static uint32_t object_id;
 	const char *save_values_dir;
 
-	if (!lp_parm_bool(global_loadparm, NULL, "dssync", "print_pwd_blobs", false)) {
+	if (!lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
 		return;	
 	}
 
-	save_values_dir = lp_parm_string(global_loadparm, NULL, "dssync", "save_pwd_blobs_dir");
+	save_values_dir = lp_parm_string(tctx->lp_ctx, NULL, "dssync", "save_pwd_blobs_dir");
 
 	for (; cur; cur = cur->next_object) {
 		const char *dn;
@@ -531,7 +532,7 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 	}
 }
 
-static bool test_FetchData(struct DsSyncTest *ctx)
+static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -560,17 +561,17 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
-	partition = lp_parm_string(global_loadparm, NULL, "dssync", "partition");
+	partition = lp_parm_string(tctx->lp_ctx, NULL, "dssync", "partition");
 	if (partition == NULL) {
 		partition = ctx->domain_dn;
 		printf("dssync:partition not specified, defaulting to %s.\n", ctx->domain_dn);
 	}
 
-	highest_usn = lp_parm_int(global_loadparm, NULL, "dssync", "highest_usn", 0);
+	highest_usn = lp_parm_int(tctx->lp_ctx, NULL, "dssync", "highest_usn", 0);
 
-	array[0].level = lp_parm_int(global_loadparm, NULL, "dssync", "get_nc_changes_level", array[0].level);
+	array[0].level = lp_parm_int(tctx->lp_ctx, NULL, "dssync", "get_nc_changes_level", array[0].level);
 
-	if (lp_parm_bool(global_loadparm, NULL, "dssync", "print_pwd_blobs", false)) {
+	if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
 		const struct samr_Password *nthash;
 		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
 		if (nthash) {
@@ -605,10 +606,10 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 			r.in.req.req5.highwatermark.highest_usn		= highest_usn;
 			r.in.req.req5.uptodateness_vector		= NULL;
 			r.in.req.req5.replica_flags			= 0;
-			if (lp_parm_bool(global_loadparm, NULL, "dssync", "compression", false)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(global_loadparm, NULL, "dssync", "neighbour_writeable", true)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req5.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
@@ -636,10 +637,10 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 			r.in.req.req8.highwatermark.highest_usn		= highest_usn;
 			r.in.req.req8.uptodateness_vector		= NULL;
 			r.in.req.req8.replica_flags			= 0;
-			if (lp_parm_bool(global_loadparm, NULL, "dssync", "compression", false)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(global_loadparm, NULL, "dssync", "neighbour_writeable", true)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
@@ -704,7 +705,7 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 					(long long)ctr1->new_highwatermark.tmp_highest_usn,
 					(long long)ctr1->new_highwatermark.highest_usn));
 
-				test_analyse_objects(ctx, &gensec_skey, ctr1->first_object);
+				test_analyse_objects(tctx, ctx, &gensec_skey, ctr1->first_object);
 
 				if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
 					r.in.req.req5.highwatermark = ctr1->new_highwatermark;
@@ -727,7 +728,7 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 					(long long)ctr6->new_highwatermark.tmp_highest_usn,
 					(long long)ctr6->new_highwatermark.highest_usn));
 
-				test_analyse_objects(ctx, &gensec_skey, ctr6->first_object);
+				test_analyse_objects(tctx, ctx, &gensec_skey, ctr6->first_object);
 
 				if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
 					r.in.req.req8.highwatermark = ctr6->new_highwatermark;
@@ -742,7 +743,8 @@ static bool test_FetchData(struct DsSyncTest *ctx)
 	return ret;
 }
 
-static bool test_FetchNT4Data(struct DsSyncTest *ctx)
+static bool test_FetchNT4Data(struct torture_context *tctx, 
+			      struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -759,8 +761,8 @@ static bool test_FetchNT4Data(struct DsSyncTest *ctx)
 	r.in.bind_handle	= &ctx->new_dc.drsuapi.bind_handle;
 	r.in.level		= 1;
 
-	r.in.req.req1.unknown1	= lp_parm_int(global_loadparm, NULL, "dssync", "nt4-1", 3);
-	r.in.req.req1.unknown2	= lp_parm_int(global_loadparm, NULL, "dssync", "nt4-2", 0x00004000);
+	r.in.req.req1.unknown1	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-1", 3);
+	r.in.req.req1.unknown2	= lp_parm_int(tctx->lp_ctx, NULL, "dssync", "nt4-2", 0x00004000);
 
 	while (1) {
 		r.in.req.req1.length	= cookie.length;
@@ -806,7 +808,7 @@ bool torture_rpc_dssync(struct torture_context *torture)
 	struct DsSyncTest *ctx;
 	
 	mem_ctx = talloc_init("torture_rpc_dssync");
-	ctx = test_create_context(mem_ctx);
+	ctx = test_create_context(torture);
 	
 	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
 	if (!ret) {
@@ -816,13 +818,13 @@ bool torture_rpc_dssync(struct torture_context *torture)
 	if (!ret) {
 		return ret;
 	}
-	ret &= test_GetInfo(ctx);
+	ret &= test_GetInfo(torture, ctx);
 	ret &= _test_DsBind(ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
 	if (!ret) {
 		return ret;
 	}
-	ret &= test_FetchData(ctx);
-	ret &= test_FetchNT4Data(ctx);
+	ret &= test_FetchData(torture, ctx);
+	ret &= test_FetchNT4Data(torture, ctx);
 
 	return ret;
 }

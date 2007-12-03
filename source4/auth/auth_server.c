@@ -45,7 +45,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, bool unicode, i
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		strupper(desthost);
 
-		if(!resolve_name( desthost, &dest_ip, 0x20)) {
+		if(!resolve_name( desthost, &dest_ip, 0x20, lp_name_resolve_order(global_loadparm))) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
 		}

@@ -34,7 +34,7 @@ static bool iconv_untestable(struct torture_context *tctx)
 {
 	iconv_t cd;
 
-	if (!lp_parm_bool(global_loadparm, NULL, "iconv", "native", true))
+	if (!lp_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true))
 		torture_skip(tctx, "system iconv disabled - skipping test");
 
 	cd = iconv_open("UTF-16LE", "UCS-4LE");

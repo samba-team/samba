@@ -70,7 +70,7 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	result = 0;
 
-	nt_status = resolve_name(&name, tmp_ctx, &reply_addr, event_context_find(tmp_ctx));
+	nt_status = resolve_name(&name, tmp_ctx, &reply_addr, event_context_find(tmp_ctx), lp_name_resolve_order(global_loadparm));
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(argv[0], "value", mprString(reply_addr));

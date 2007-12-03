@@ -24,6 +24,7 @@
 #include "libcli/cldap/cldap.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 struct bench_state {
 	int pass_count, fail_count;
@@ -114,7 +115,7 @@ bool torture_bench_cldap(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, torture, &address, event_context_find(torture));
+	status = resolve_name(&name, torture, &address, event_context_find(torture), lp_name_resolve_order(torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));
