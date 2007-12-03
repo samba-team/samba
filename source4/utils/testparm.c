@@ -184,6 +184,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 	static const char *cname;
 	static const char *caddr;
 	static bool show_defaults = false;
+	struct loadparm_context *lp_ctx;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -238,15 +239,15 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 
 	fprintf(stderr, "Loaded smb config files from %s\n", lp_configfile(global_loadparm));
 
-	if (!lp_load(lp_configfile(global_loadparm))) {
+	if (!lp_load(lp_configfile(global_loadparm), &lp_ctx)) {
 		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}
 
 	fprintf(stderr,"Loaded services file OK.\n");
 
-	ret = do_global_checks(global_loadparm);
-	ret |= do_share_checks(global_loadparm, cname, caddr, silent_mode, show_defaults, section_name, parameter_name);
+	ret = do_global_checks(lp_ctx);
+	ret |= do_share_checks(lp_ctx, cname, caddr, silent_mode, show_defaults, section_name, parameter_name);
 
 	return(ret);
 }

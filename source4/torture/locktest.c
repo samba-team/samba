@@ -543,6 +543,7 @@ static void usage(void)
 	int opt;
 	int seed, server;
 	int username_count=0;
+	struct loadparm_context *lp_ctx;
 
 	setlinebuf(stdout);
 
@@ -563,12 +564,12 @@ static void usage(void)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load(dyn_CONFIGFILE);
+	lp_load(dyn_CONFIGFILE, &lp_ctx);
 
 	servers[0] = cli_credentials_init(talloc_autofree_context());
 	servers[1] = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(servers[0], global_loadparm);
-	cli_credentials_guess(servers[1], global_loadparm);
+	cli_credentials_guess(servers[0], lp_ctx);
+	cli_credentials_guess(servers[1], lp_ctx);
 
 	seed = time(NULL);
 
@@ -617,10 +618,10 @@ static void usage(void)
 			exact_error_codes = true;
 			break;
 		case 'l':
-			lp_set_cmdline(global_loadparm, "torture:unclist", optarg);
+			lp_set_cmdline(lp_ctx, "torture:unclist", optarg);
 			break;
 		case 'W':
-			lp_set_cmdline(global_loadparm, "workgroup", optarg);
+			lp_set_cmdline(lp_ctx, "workgroup", optarg);
 			break;
 		case 'h':
 			usage();
@@ -639,7 +640,7 @@ static void usage(void)
 		servers[1] = servers[0];
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(lp_ctx);
 
 	argc -= optind;
 	argv += optind;

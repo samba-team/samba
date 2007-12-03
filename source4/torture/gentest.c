@@ -2172,6 +2172,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	int opt;
 	int i, username_count=0;
 	bool ret;
+	struct loadparm_context *lp_ctx;
 
 	setlinebuf(stdout);
 
@@ -2196,12 +2197,12 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load(dyn_CONFIGFILE);
+	lp_load(dyn_CONFIGFILE, &lp_ctx);
 
 	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
 	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(servers[0].credentials, global_loadparm);
-	cli_credentials_guess(servers[1].credentials, global_loadparm);
+	cli_credentials_guess(servers[0].credentials, lp_ctx);
+	cli_credentials_guess(servers[1].credentials, lp_ctx);
 
 	options.seed = time(NULL);
 	options.numops = 1000;
@@ -2265,7 +2266,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		}
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(lp_ctx);
 
 	if (username_count == 0) {
 		usage();

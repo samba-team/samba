@@ -323,7 +323,8 @@ static void smb_umount(const char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(const char *the_service, const char *mount_point, struct smbcli_state *c)
+static void send_fs_socket(struct loadparm_context *lp_ctx,
+			   const char *the_service, const char *mount_point, struct smbcli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -407,7 +408,7 @@ static void send_fs_socket(const char *the_service, const char *mount_point, str
 			pause();
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
 			c = do_connection(the_service, 
-					  lp_unicode(global_loadparm), 
+					  lp_unicode(lp_ctx), 
 					  lp_cli_maxprotocol(global_loadparm));
 		}
 	}
@@ -529,7 +530,7 @@ static void init_mount(void)
 	   for any reason, we will have to unmount the mount point.  There
 	   is no exit from the next call...
 	*/
-	send_fs_socket(service, mount_point, c);
+	send_fs_socket(global_loadparm, service, mount_point, c);
 }
 
 
@@ -852,6 +853,7 @@ static void parse_mount_smb(int argc, char **argv)
 	extern char *optarg;
 	extern int optind;
 	char *p;
+	struct loadparm_context *lp_ctx;
 
 	DEBUGLEVEL = 1;
 
@@ -882,7 +884,7 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 
 	if (getenv("PASSWD")) {
-		pstrcpy(password,getenv("PASSWD"));
+		pstrcpy(password, getenv("PASSWD"));
 		got_pass = true;
 	}
 
@@ -895,7 +897,7 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(dyn_CONFIGFILE)) {
+	if (!lp_load(dyn_CONFIGFILE, &lp_ctx)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			lp_config_file());
 	}

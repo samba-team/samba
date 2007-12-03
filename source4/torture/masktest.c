@@ -281,6 +281,7 @@ static void usage(void)
 	struct smbcli_state *cli;	
 	int opt;
 	int seed;
+	struct loadparm_context *lp_ctx;
 
 	setlinebuf(stdout);
 
@@ -302,10 +303,10 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	lp_load(dyn_CONFIGFILE);
+	lp_load(dyn_CONFIGFILE, &lp_ctx);
 
 	credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(credentials, global_loadparm);
+	cli_credentials_guess(credentials, lp_ctx);
 
 	seed = time(NULL);
 
@@ -326,7 +327,7 @@ static void usage(void)
 			verbose++;
 			break;
 		case 'M':
-			lp_set_cmdline(global_loadparm, "max protocol", optarg);
+			lp_set_cmdline(lp_ctx, "max protocol", optarg);
 			break;
 		case 'U':
 			cli_credentials_parse_string(credentials, optarg, CRED_SPECIFIED);
@@ -358,7 +359,7 @@ static void usage(void)
 		}
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(lp_ctx);
 
 	argc -= optind;
 	argv += optind;
