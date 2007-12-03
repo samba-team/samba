@@ -2461,10 +2461,11 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_char swig_types[2]
 #define SWIGTYPE_p_cli_credentials swig_types[3]
 #define SWIGTYPE_p_dcerpc_pipe swig_types[4]
-#define SWIGTYPE_p_p_dcerpc_pipe swig_types[5]
-#define SWIGTYPE_p_uint32_t swig_types[6]
-static swig_type_info *swig_types[8];
-static swig_module_info swig_module = {swig_types, 7, 0, 0, 0, 0};
+#define SWIGTYPE_p_loadparm_context swig_types[5]
+#define SWIGTYPE_p_p_dcerpc_pipe swig_types[6]
+#define SWIGTYPE_p_uint32_t swig_types[7]
+static swig_type_info *swig_types[9];
+static swig_module_info swig_module = {swig_types, 8, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3371,17 +3372,21 @@ fail:
 SWIGINTERN PyObject *_wrap_Credentials_guess(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   cli_credentials *arg1 = (cli_credentials *) 0 ;
+  struct loadparm_context *arg2 = (struct loadparm_context *) NULL ;
   void *argp1 = 0 ;
   int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
   PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self", NULL 
+    (char *) "self",(char *) "lp_ctx", NULL 
   };
   
   {
     arg1 = NULL;
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_guess",kwnames,&obj0)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Credentials_guess",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
     if (!SWIG_IsOK(res1)) {
@@ -3389,7 +3394,14 @@ SWIGINTERN PyObject *_wrap_Credentials_guess(PyObject *SWIGUNUSEDPARM(self), PyO
     }
     arg1 = (cli_credentials *)(argp1);
   }
-  cli_credentials_guess(arg1);
+  if (obj1) {
+    res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Credentials_guess" "', argument " "2"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg2 = (struct loadparm_context *)(argp2);
+  }
+  cli_credentials_guess(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -3678,6 +3690,7 @@ static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_dcerpc_pipe = {"_p_dcerpc_pipe", "struct dcerpc_pipe *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_dcerpc_pipe = {"_p_p_dcerpc_pipe", "struct dcerpc_pipe **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_uint32_t = {"_p_uint32_t", "uint32_t *", 0, 0, (void*)0, 0};
 
@@ -3687,6 +3700,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
   &_swigt__p_cli_credentials,
   &_swigt__p_dcerpc_pipe,
+  &_swigt__p_loadparm_context,
   &_swigt__p_p_dcerpc_pipe,
   &_swigt__p_uint32_t,
 };
@@ -3696,6 +3710,7 @@ static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentials, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_dcerpc_pipe[] = {  {&_swigt__p_dcerpc_pipe, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_dcerpc_pipe[] = {  {&_swigt__p_p_dcerpc_pipe, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_uint32_t[] = {  {&_swigt__p_uint32_t, 0, 0, 0},{0, 0, 0, 0}};
 
@@ -3705,6 +3720,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
   _swigc__p_cli_credentials,
   _swigc__p_dcerpc_pipe,
+  _swigc__p_loadparm_context,
   _swigc__p_p_dcerpc_pipe,
   _swigc__p_uint32_t,
 };

@@ -153,7 +153,6 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 	}
 	if (creds == NULL) {
 		creds = cli_credentials_init(mprMemCtx());
-		cli_credentials_guess(creds);
 		cli_credentials_set_anonymous(creds);
 	}
 

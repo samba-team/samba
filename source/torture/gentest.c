@@ -2200,8 +2200,8 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
 	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(servers[0].credentials);
-	cli_credentials_guess(servers[1].credentials);
+	cli_credentials_guess(servers[0].credentials, global_loadparm);
+	cli_credentials_guess(servers[1].credentials, global_loadparm);
 
 	options.seed = time(NULL);
 	options.numops = 1000;

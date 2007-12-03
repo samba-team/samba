@@ -305,7 +305,7 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE);
 
 	credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(credentials);
+	cli_credentials_guess(credentials, global_loadparm);
 
 	seed = time(NULL);
 

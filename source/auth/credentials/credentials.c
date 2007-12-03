@@ -635,11 +635,14 @@ void cli_credentials_set_conf(struct cli_credentials *cred,
  * 
  * @param cred Credentials structure to fill in
  */
-void cli_credentials_guess(struct cli_credentials *cred)
+void cli_credentials_guess(struct cli_credentials *cred,
+			   struct loadparm_context *lp_ctx)
 {
 	char *p;
 
-	cli_credentials_set_conf(cred, global_loadparm);
+	if (lp_ctx != NULL) {
+		cli_credentials_set_conf(cred, global_loadparm);
+	}
 	
 	if (getenv("LOGNAME")) {
 		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESS_ENV);
