@@ -979,6 +979,7 @@ function provision_guess()
 	// - each partition has its own module list then
 	modules_list        = new Array("rootdse",
 					"paged_results",
+					"ranged_results",
 					"server_sort",
 					"extended_dn",
 					"asq",
