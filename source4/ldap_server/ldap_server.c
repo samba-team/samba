@@ -404,7 +404,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->server_credentials = server_credentials;
 
 	/* Connections start out anonymous */
-	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {
+	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, global_loadparm, &conn->session_info))) {
 		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
 		return;
 	}

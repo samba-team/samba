@@ -253,10 +253,11 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
-				  struct ldb_message *msg,
-				  struct ldb_message *msg_domain_ref,
-				  DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
-				  struct auth_serversupplied_info **_server_info)
+					   const char *netbios_name,
+					   struct ldb_message *msg,
+					   struct ldb_message *msg_domain_ref,
+					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
+					   struct auth_serversupplied_info **_server_info)
 {
 	struct auth_serversupplied_info *server_info;
 	struct ldb_message **group_msgs;
@@ -345,7 +346,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->home_drive = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
+	server_info->logon_server = talloc_strdup(server_info, netbios_name);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
@@ -423,7 +424,9 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 }
 				   
 /* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
-NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principal,
+NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, 
+				       struct loadparm_context *lp_ctx,
+				       const char *principal,
 				       struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
@@ -439,7 +442,7 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, global_loadparm, system_session(tmp_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, lp_ctx, system_session(tmp_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -451,7 +454,8 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, msgs[0], msgs_domain_ref[0],
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, lp_netbios_name(lp_ctx),
+					     msgs[0], msgs_domain_ref[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (NT_STATUS_IS_OK(nt_status)) {

@@ -726,7 +726,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return false;
 
-	s->netbios_name = lp_parm_string(global_loadparm, NULL, "become dc", "smbtorture dc");
+	s->netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
 		s->netbios_name = "smbtorturedc";
 	}
@@ -745,7 +745,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	if (!s->path.secrets_keytab) return false;
 
 	/* Join domain as a member server. */
-	s->tj = torture_join_domain(s->netbios_name,
+	s->tj = torture_join_domain(torture, s->netbios_name,
 				 ACB_WSTRUST,
 				 &s->machine_account);
 	if (!s->tj) {

@@ -278,7 +278,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	/* Do *not* remove this, until you have removed
 	 * passdb/secrets.c, and proved that Samba still builds... */
 	/* Setup the SECRETS subsystem */
-	if (!secrets_init()) {
+	if (!secrets_init(global_loadparm)) {
 		exit(1);
 	}
 
