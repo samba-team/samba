@@ -232,3 +232,8 @@ source/lib/events/events.py
 source/lib/events/events_wrap.c
 source/libcli/security/security_wrap.c
 source/libcli/security/security.py
+tmpccache
+source/tdbtest.ldb
+source/tdbtest.ldb.2
+source/templates.ldb
+source/tmpccache
