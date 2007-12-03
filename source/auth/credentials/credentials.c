@@ -641,7 +641,7 @@ void cli_credentials_guess(struct cli_credentials *cred,
 	char *p;
 
 	if (lp_ctx != NULL) {
-		cli_credentials_set_conf(cred, global_loadparm);
+		cli_credentials_set_conf(cred, lp_ctx);
 	}
 	
 	if (getenv("LOGNAME")) {

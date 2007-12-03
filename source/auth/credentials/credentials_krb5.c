@@ -199,7 +199,8 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 }
 
 
-static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_container **_ccc)
+static int cli_credentials_new_ccache(struct cli_credentials *cred, 
+				      struct ccache_container **_ccc)
 {
 	krb5_error_code ret;
 	struct ccache_container *ccc = talloc(cred, struct ccache_container);
@@ -466,7 +467,8 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+					       &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}

@@ -79,8 +79,8 @@ static const char *ctdb_id_string(struct cluster_ops *ops,
   correct operation of fcntl locks on the shared fileystem.
 */
 static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
-					  TALLOC_CTX *mem_ctx, const char *dbname, 
-					  int flags)
+					  TALLOC_CTX *mem_ctx, 
+					  const char *dbname, int flags)
 {
 	const char *dir = lp_parm_string(global_loadparm, NULL, "ctdb", "shared data");
 	char *path;
