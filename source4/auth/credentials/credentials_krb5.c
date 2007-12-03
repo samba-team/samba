@@ -141,7 +141,8 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+					       &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
 		return ret;
@@ -215,7 +216,8 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccach
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+					       &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
 		return ret;
@@ -225,7 +227,8 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccach
 		return ENOMEM;
 	}
 
-	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, &ccc->ccache);
+	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, 
+			      &ccc->ccache);
 	if (ret) {
 		DEBUG(1,("failed to generate a new krb5 ccache (%s): %s\n", 
 			 ccache_name,

@@ -572,7 +572,7 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 	if (filter == NULL) goto failed;
 
 	search.in.dest_address = io->in.dest_address;
-	search.in.dest_port    = lp_cldap_port(global_loadparm);
+	search.in.dest_port    = io->in.dest_port;
 	search.in.filter       = filter;
 	search.in.attributes   = attr;
 	search.in.timeout      = 2;

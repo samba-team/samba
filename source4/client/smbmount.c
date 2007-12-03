@@ -406,7 +406,9 @@ static void send_fs_socket(const char *the_service, const char *mount_point, str
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
-			c = do_connection(the_service, lp_unicode(global_loadparm), lp_cli_maxprotocol(global_loadparm));
+			c = do_connection(the_service, 
+					  lp_unicode(global_loadparm), 
+					  lp_cli_maxprotocol(global_loadparm));
 		}
 	}
 

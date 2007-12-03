@@ -3066,7 +3066,7 @@ static int do_host_query(const char *query_host, const char *workgroup)
 /****************************************************************************
 handle a message operation
 ****************************************************************************/
-static int do_message_op(const char *netbios_name, const char *desthost, const char *destip, int name_type)
+static int do_message_op(const char *netbios_name, const char *desthost, const char *destip, int name_type, const char **name_resolve_order, int max_xmit, int max_mux)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
@@ -3078,7 +3078,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 
 	server_name = destip ? destip : desthost;
 
-	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, lp_name_resolve_order(global_loadparm), lp_max_xmit(global_loadparm), lp_maxmux(global_loadparm))) {
+	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, name_resolve_order, max_xmit, max_mux)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
@@ -3223,7 +3223,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 	}
 
 	if (message) {
-		return do_message_op(lp_netbios_name(global_loadparm), desthost, dest_ip, name_type);
+		return do_message_op(lp_netbios_name(global_loadparm), desthost, dest_ip, name_type, lp_name_resolve_order(global_loadparm), lp_max_xmit(global_loadparm), lp_maxmux(global_loadparm));
 	}
 	
 

@@ -327,7 +327,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	}
 
 	if (domain_guid == NULL && domain == NULL) {
-		domain = lp_realm(global_loadparm);
+		domain = lp_realm(cldapd->task->lp_ctx);
 	}
 
 	if (version == -1) {
@@ -339,7 +339,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 
 	status = cldapd_netlogon_fill(cldapd, tmp_ctx, domain, domain_guid, 
 				      user, src->addr, 
-				      version, global_loadparm, &netlogon);
+				      version, cldapd->task->lp_ctx, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
