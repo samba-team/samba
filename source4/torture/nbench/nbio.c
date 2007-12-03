@@ -157,7 +157,7 @@ static bool nb_reopen_all_files(void)
 	return true;
 }
 
-bool nb_reconnect(struct smbcli_state **cli, int client)
+bool nb_reconnect(struct smbcli_state **cli, struct torture_context *tctx, int client)
 {
 	children[client].connected = false;
 
@@ -165,7 +165,7 @@ bool nb_reconnect(struct smbcli_state **cli, int client)
 		talloc_free(*cli);
 	}
 
-	if (!torture_open_connection(cli, client)) {
+	if (!torture_open_connection(cli, tctx, client)) {
 		printf("nb_reconnect: failed to connect\n");
 		*cli = NULL;
 		return false;

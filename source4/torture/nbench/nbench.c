@@ -39,14 +39,14 @@ static int read_only;
 static unsigned long nb_max_retries;
 
 #define NB_RETRY(op) \
-	for (n=0;n<=nb_max_retries && !op;n++) do_reconnect(&cli, client)
+	for (n=0;n<=nb_max_retries && !op;n++) do_reconnect(&cli, tctx, client)
 
-static void do_reconnect(struct smbcli_state **cli, int client)
+static void do_reconnect(struct smbcli_state **cli, struct torture_context *tctx, int client)
 {
 	int n;
 	printf("[%d] Reconnecting client %d\n", nbench_line_count, client);
 	for (n=0;n<nb_max_retries;n++) {
-		if (nb_reconnect(cli, client)) {
+		if (nb_reconnect(cli, tctx, client)) {
 			printf("[%d] Reconnected client %d\n", nbench_line_count, client);
 			return;
 		}
@@ -244,7 +244,7 @@ bool torture_nbench(struct torture_context *torture)
 	}
 
 	if (torture_nprocs > 1) {
-		if (!torture_open_connection(&cli, 0)) {
+		if (!torture_open_connection(&cli, torture, 0)) {
 			return false;
 		}
 

@@ -1363,7 +1363,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 		return false;
 	}
 
-	if (!torture_open_connection_share(mem_ctx, &cli, host, share, ev)) {
+	if (!torture_open_connection_share(mem_ctx, &cli, tctx, host, share, ev)) {
 		return false;
 	}
 
@@ -1371,7 +1371,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 
 	for (i=0; i<num_files; i++) {
 		if (!torture_open_connection_share(mem_ctx, &(clients[i]),
-						   host, share, ev)) {
+						   tctx, host, share, ev)) {
 			DEBUG(0, ("Could not open %d'th connection\n", i));
 			return false;
 		}

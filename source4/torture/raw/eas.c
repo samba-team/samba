@@ -469,7 +469,7 @@ bool torture_max_eas(struct torture_context *torture)
 	struct smbcli_state *cli;
 	bool ret = true;
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, torture, 0)) {
 		return false;
 	}
 

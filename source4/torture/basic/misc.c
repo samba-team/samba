@@ -194,7 +194,7 @@ bool torture_holdcon(struct torture_context *tctx)
 	cli = malloc_array_p(struct smbcli_state *, torture_numops);
 
 	for (i=0;i<torture_numops;i++) {
-		if (!torture_open_connection(&cli[i], i)) {
+		if (!torture_open_connection(&cli[i], tctx, i)) {
 			return false;
 		}
 		if (torture_setting_bool(tctx, "progress", true)) {

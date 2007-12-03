@@ -1373,10 +1373,10 @@ static bool deltest21(struct torture_context *tctx)
 	struct smbcli_state *cli2;
 	bool correct = true;
 
-	if (!torture_open_connection(&cli1, 0))
+	if (!torture_open_connection(&cli1, tctx, 0))
 		return false;
 
-	if (!torture_open_connection(&cli2, 1))
+	if (!torture_open_connection(&cli2, tctx, 1))
 		return false;
 
 	del_clean_area(cli1, cli2);
@@ -1404,7 +1404,7 @@ static bool deltest21(struct torture_context *tctx)
 
 	fnum1 = -1;
 
-	if (!torture_open_connection(&cli1, 0)) {
+	if (!torture_open_connection(&cli1, tctx, 0)) {
 		return false;
 	}
 
@@ -1440,7 +1440,7 @@ static bool deltest22(struct torture_context *tctx)
 	struct smbcli_state *cli1;
 	bool correct = true;
 
-	if (!torture_open_connection(&cli1, 0))
+	if (!torture_open_connection(&cli1, tctx, 0))
 		return false;
 
 	smbcli_deltree(cli1->tree, dname);

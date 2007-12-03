@@ -115,13 +115,14 @@ static bool test_NetShareDel(TALLOC_CTX *mem_ctx,
 
 static bool test_CreateDir(TALLOC_CTX *mem_ctx,
 			   struct smbcli_state **cli,
+			   struct torture_context *tctx,
 			   const char *host,
 			   const char *share,
 			   const char *dir)
 {
 	printf("Creating directory %s\n", dir);
 
-	if (!torture_open_connection_share(mem_ctx, cli, host, share, NULL)) {
+	if (!torture_open_connection_share(mem_ctx, cli, tctx, host, share, NULL)) {
 		return false;
 	}
 
@@ -480,6 +481,7 @@ static bool test_AddStdRootForced(struct dcerpc_pipe *p,
 
 static void test_cleanup_stdroot(struct dcerpc_pipe *p,
 				 TALLOC_CTX *mem_ctx,
+				 struct torture_context *tctx,
 				 const char *host,
 				 const char *sharename,
 				 const char *dir)
@@ -490,13 +492,14 @@ static void test_cleanup_stdroot(struct dcerpc_pipe *p,
 
 	test_RemoveStdRoot(p, mem_ctx, host, sharename);
 	test_NetShareDel(mem_ctx, host, sharename);
-	torture_open_connection_share(mem_ctx, &cli, host, "C$", NULL);
+	torture_open_connection_share(mem_ctx, &cli, tctx, host, "C$", NULL);
 	test_DeleteDir(cli, dir);
 	torture_close_connection(cli);
 }
 
 static bool test_StdRoot(struct dcerpc_pipe *p,
 			 TALLOC_CTX *mem_ctx,
+			 struct torture_context *tctx,
 			 const char *host)
 {
 	const char *sharename = SMBTORTURE_DFS_SHARENAME;
@@ -507,9 +510,9 @@ static bool test_StdRoot(struct dcerpc_pipe *p,
 
 	printf("Testing StdRoot\n");
 
-	test_cleanup_stdroot(p, mem_ctx, host, sharename, dir);
+	test_cleanup_stdroot(p, mem_ctx, tctx, host, sharename, dir);
 
-	ret &= test_CreateDir(mem_ctx, &cli, host, "C$", dir);
+	ret &= test_CreateDir(mem_ctx, &cli, tctx, host, "C$", dir);
 	ret &= test_NetShareAdd(mem_ctx, host, sharename, path);
 	ret &= test_AddStdRoot(p, mem_ctx, host, sharename);
 	ret &= test_RemoveStdRoot(p, mem_ctx, host, sharename);
@@ -652,7 +655,7 @@ bool torture_rpc_dfs(struct torture_context *torture)
 	ret &= test_ManagerInitialize(p, torture, host);
 	ret &= test_Enum(p, torture);
 	ret &= test_EnumEx(p, torture, host);
-	ret &= test_StdRoot(p, torture, host);
+	ret &= test_StdRoot(p, torture, torture, host);
 	ret &= test_FtRoot(p, torture, host);
 	ret &= test_DcAddress(p, torture, host);
 

@@ -370,7 +370,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 	}
 
 	torture_comment(tctx, "Opening secondary connection\n");
-	if (!torture_open_connection(&cli2, 1)) {
+	if (!torture_open_connection(&cli2, tctx, 1)) {
 		torture_comment(tctx, "Failed to open secondary connection\n");
 		correct = false;
 	}
@@ -1450,7 +1450,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_nt, 0)) {
+	if (!torture_open_connection(&cli_nt, tctx, 0)) {
 		goto fail;
 	}
 
@@ -1459,7 +1459,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_dos, 1)) {
+	if (!torture_open_connection(&cli_dos, tctx, 1)) {
 		goto fail;
 	}
 

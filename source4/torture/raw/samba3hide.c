@@ -135,7 +135,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 	struct smbcli_tree *hideunwrite;
 
 	if (!torture_open_connection_share(
-		    torture, &cli, torture_setting_string(torture, "host", NULL),
+		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
 		    torture_setting_string(torture, "share", NULL), NULL)) {
 		d_printf("torture_open_connection_share failed\n");
 		return false;
@@ -283,7 +283,7 @@ bool torture_samba3_closeerr(struct torture_context *tctx)
 	const char *fname = "closeerr.dir\\closerr.txt";
 	int fnum;
 
-	if (!torture_open_connection(&cli, 0)) {
+	if (!torture_open_connection(&cli, tctx, 0)) {
 		goto fail;
 	}
 
