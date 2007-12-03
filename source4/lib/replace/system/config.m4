@@ -16,6 +16,28 @@ AC_HEADER_SYS_WAIT
 # capability
 AC_CHECK_HEADERS(sys/capability.h)
 
+case "$host_os" in
+*linux*)
+AC_CACHE_CHECK([for broken RedHat 7.2 system header files],samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS,[
+AC_TRY_COMPILE([
+	#ifdef HAVE_SYS_VFS_H
+	#include <sys/vfs.h>
+	#endif
+	#ifdef HAVE_SYS_CAPABILITY_H
+	#include <sys/capability.h>
+	#endif
+	],[
+	int i;
+	],
+	samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=no,
+	samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=yes
+)])
+if test x"$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
+	AC_DEFINE(BROKEN_REDHAT_7_SYSTEM_HEADERS,1,[Broken RedHat 7.2 system header files])
+fi
+;;
+esac
+
 # passwd
 AC_CHECK_HEADERS(grp.h sys/id.h compat.h shadow.h sys/priv.h pwd.h sys/security.h)
 AC_CHECK_FUNCS(getpwnam_r getpwuid_r getpwent_r)
