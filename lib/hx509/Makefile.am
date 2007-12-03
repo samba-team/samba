@@ -334,7 +334,6 @@ EXTRA_DIST = \
 	data/proxy10-test.key \
 	data/revoke.crt \
 	data/revoke.key \
-	data/serial \
 	data/sf-class2-root.pem \
 	data/static-file \
 	data/sub-ca.crt \
