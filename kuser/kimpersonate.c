@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -206,7 +206,7 @@ create_krb5_tickets (krb5_context context, krb5_keytab kt)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
-    krb5_free_creds_contents (context, &cred);
+    krb5_free_cred_contents (context, &cred);
     krb5_cc_close (context, ccache);
     
     return 0;
