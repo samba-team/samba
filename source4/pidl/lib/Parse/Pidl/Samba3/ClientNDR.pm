@@ -47,7 +47,7 @@ sub ParseFunction($$$)
 		$defargs .= ", " . DeclLong($_);
 	}
 
-	if ($fn->{RETURN_TYPE} eq "WERROR") {
+	if (defined($fn->{RETURN_TYPE}) && ($fn->{RETURN_TYPE} eq "WERROR")) {
 		$defargs .= ", WERROR *werror";
 	}
 
