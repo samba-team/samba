@@ -185,12 +185,7 @@ krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
 {
-    krb5_error_code ret;
-
-    ret = _krb5_cc_allocate(context, ops, id);
-    if (ret)
-	return ret;
-    return (*id)->ops->gen_new(context, id);
+    return krb5_cc_new_unique(context, ops->prefix, NULL, id);
 }
 
 /**
@@ -210,7 +205,21 @@ krb5_cc_new_unique(krb5_context context, const char *type,
 		   const char *hint, krb5_ccache *id)
 {
     const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
-    return krb5_cc_gen_new(context, ops, id);
+    krb5_error_code ret;
+
+    if (type) {
+	ops = krb5_cc_get_prefix_ops(context, type);
+	if (ops == NULL) {
+	    krb5_set_error_string(context,
+				  "Credential cache type %s is unknown", type);
+	    return KRB5_CC_UNKNOWN_TYPE;
+	}
+    }
+
+    ret = _krb5_cc_allocate(context, ops, id);
+    if (ret)
+	return ret;
+    return (*id)->ops->gen_new(context, id);
 }
 
 /**
