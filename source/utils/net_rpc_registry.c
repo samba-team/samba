@@ -86,9 +86,9 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, hive_hnd, key, 0,
-				       access_mask, key_hnd);
+				       access_mask, key_hnd, NULL);
 	if (!(NT_STATUS_IS_OK(status))) {
-		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, hive_hnd);
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, hive_hnd, NULL);
 		return status;
 	}
 
@@ -120,7 +120,7 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 	status = rpccli_winreg_QueryInfoKey(
 		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
 		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
-		&max_valbufsize, &secdescsize, &last_changed_time );
+		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
@@ -145,6 +145,7 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 		struct winreg_StringBuf class_buf;
 		struct winreg_StringBuf name_buf;
 		NTTIME modtime;
+		WERROR werr;
 
 		c = '\0';
 		class_buf.name = &c;
@@ -158,9 +159,9 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 
 		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, key_hnd,
 					       i, &name_buf, &class_buf,
-					       &modtime);
+					       &modtime, &werr);
 		
-		if (W_ERROR_EQUAL(ntstatus_to_werror(status),
+		if (W_ERROR_EQUAL(werr,
 				  WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
@@ -233,7 +234,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 	status = rpccli_winreg_QueryInfoKey(
 		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
 		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
-		&max_valbufsize, &secdescsize, &last_changed_time );
+		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
@@ -273,9 +274,9 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
 						 i, &name_buf, &type,
 						 data, &data_size,
-						 &value_length );
+						 &value_length, &err);
 
-		if ( W_ERROR_EQUAL(ntstatus_to_werror(status),
+		if ( W_ERROR_EQUAL(err,
 				   WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
@@ -326,7 +327,7 @@ static NTSTATUS registry_getsd(TALLOC_CTX *mem_ctx,
 			       struct KeySecurityData *sd)
 {
 	return rpccli_winreg_GetKeySecurity(pipe_hnd, mem_ctx, key_hnd,
-					    sec_info, sd);
+					    sec_info, sd, NULL);
 }
 
 
@@ -351,7 +352,7 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 	name_string.name = name;
 	result = rpccli_winreg_SetValue(pipe_hnd, blob.data, key_hnd,
 					name_string, value->type,
-					blob.data, blob.length);
+					blob.data, blob.length, NULL);
 	TALLOC_FREE(blob.data);
 	return result;
 }
@@ -406,8 +407,8 @@ static NTSTATUS rpc_registry_setvalue_internal(const DOM_SID *domain_sid,
 	}
 
  error:
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 
 	return NT_STATUS_OK;
 }
@@ -450,15 +451,15 @@ static NTSTATUS rpc_registry_deletevalue_internal(const DOM_SID *domain_sid,
 	valuename.name = argv[1];
 
 	status = rpccli_winreg_DeleteValue(pipe_hnd, mem_ctx, &key_hnd,
-					   valuename);
+					   valuename, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_deletevalue failed: %s\n",
 			  nt_errstr(status));
 	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 
 	return NT_STATUS_OK;
 }
@@ -508,11 +509,11 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 
 	status = rpccli_winreg_CreateKey(pipe_hnd, mem_ctx, &hive_hnd, key,
 					 keyclass, 0, REG_KEY_READ, NULL,
-					 &key_hnd, &action);
+					 &key_hnd, &action, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "createkey returned %s\n",
 			  nt_errstr(status));
-		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 		return status;
 	}
 
@@ -528,8 +529,8 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 			break;
 	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 
 	return status;
 }
@@ -571,8 +572,8 @@ static NTSTATUS rpc_registry_deletekey_internal(const DOM_SID *domain_sid,
 		return status;
 	}
 
-	status = rpccli_winreg_DeleteKey(pipe_hnd, mem_ctx, &hive_hnd, key);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd);
+	status = rpccli_winreg_DeleteKey(pipe_hnd, mem_ctx, &hive_hnd, key, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "deletekey returned %s\n",
@@ -684,8 +685,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		d_printf("\n");
 	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
 
 	return status;
 }
@@ -729,15 +730,15 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	}
 
 	filename.name = argv[1];
-	status = rpccli_winreg_SaveKey( pipe_hnd, mem_ctx, &pol_key, &filename, NULL  );
+	status = rpccli_winreg_SaveKey( pipe_hnd, mem_ctx, &pol_key, &filename, NULL, NULL);
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
 	}
 	
 	/* cleanup */
 	
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key );
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive );
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
 
 	return status;
 }
@@ -1045,8 +1046,8 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	display_sec_desc(&sec_desc);
 
  out:
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
 
 	return status;
 }

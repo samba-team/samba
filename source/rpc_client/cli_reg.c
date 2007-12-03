@@ -35,23 +35,23 @@ NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	{
 	case HKEY_CLASSES_ROOT:
 		return rpccli_winreg_OpenHKCR( cli, mem_ctx, NULL, 
-			access_mask, reg_hnd );
+			access_mask, reg_hnd, NULL);
 
 	case HKEY_LOCAL_MACHINE:
 		return rpccli_winreg_OpenHKLM( cli, mem_ctx, NULL, 
-			access_mask, reg_hnd );
+			access_mask, reg_hnd, NULL);
 
 	case HKEY_USERS:
 		return rpccli_winreg_OpenHKU( cli, mem_ctx, NULL, 
-			access_mask, reg_hnd );
+			access_mask, reg_hnd, NULL);
 
 	case HKEY_CURRENT_USER:
 		return rpccli_winreg_OpenHKCU( cli, mem_ctx, NULL, 
-			access_mask, reg_hnd );
+			access_mask, reg_hnd, NULL);
 
 	case HKEY_PERFORMANCE_DATA:
 		return rpccli_winreg_OpenHKPD( cli, mem_ctx, NULL, 
-			access_mask, reg_hnd );
+			access_mask, reg_hnd, NULL);
 
 	default:
 		/* fall through to end of function */
