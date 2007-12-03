@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_netlogon.h"
 
-NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasInfo *info)
+NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasInfo *info, WERROR *werror)
 {
 	struct netr_LogonUasLogon r;
 	NTSTATUS status;
@@ -38,10 +38,14 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasLogoffInfo *info)
+NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, const char *account_name, const char *workstation, struct netr_UasLogoffInfo *info, WERROR *werror)
 {
 	struct netr_LogonUasLogoff r;
 	NTSTATUS status;
@@ -71,6 +75,10 @@ NTSTATUS rpccli_netr_LogonUasLogoff(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	*info = *r.out.info;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -456,7 +464,7 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, enum netr_LogonControlCode function_code, uint32_t level, union netr_CONTROL_QUERY_INFORMATION *info)
+NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, enum netr_LogonControlCode function_code, uint32_t level, union netr_CONTROL_QUERY_INFORMATION *info, WERROR *werror)
 {
 	struct netr_LogonControl r;
 	NTSTATUS status;
@@ -486,10 +494,14 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	*info = *r.out.info;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *domainname, const char **dcname)
+NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, const char *domainname, const char **dcname, WERROR *werror)
 {
 	struct netr_GetAnyDCName r;
 	NTSTATUS status;
@@ -518,10 +530,14 @@ NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	*dcname = *r.out.dcname;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, uint32_t function_code, uint32_t level, union netr_CONTROL_DATA_INFORMATION data, union netr_CONTROL_QUERY_INFORMATION *query)
+NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, uint32_t function_code, uint32_t level, union netr_CONTROL_DATA_INFORMATION data, union netr_CONTROL_QUERY_INFORMATION *query, WERROR *werror)
 {
 	struct netr_LogonControl2 r;
 	NTSTATUS status;
@@ -552,6 +568,10 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	*query = *r.out.query;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -673,7 +693,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, uint32_t function_code, uint32_t level, union netr_CONTROL_DATA_INFORMATION data, union netr_CONTROL_QUERY_INFORMATION *query)
+NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *logon_server, uint32_t function_code, uint32_t level, union netr_CONTROL_DATA_INFORMATION data, union netr_CONTROL_QUERY_INFORMATION *query, WERROR *werror)
 {
 	struct netr_LogonControl2Ex r;
 	NTSTATUS status;
@@ -704,10 +724,14 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	*query = *r.out.query;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRENUMERATETRUSTEDDOMAINS r;
 	NTSTATUS status;
@@ -733,10 +757,14 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli, TA
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, struct GUID *site_guid, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
+NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, struct GUID *site_guid, uint32_t flags, struct netr_DsRGetDCNameInfo *info, WERROR *werror)
 {
 	struct netr_DsRGetDCName r;
 	NTSTATUS status;
@@ -770,10 +798,14 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONDUMMYROUTINE1 r;
 	NTSTATUS status;
@@ -799,10 +831,14 @@ NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli, TALLOC_
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONSETSERVICEBITS r;
 	NTSTATUS status;
@@ -828,10 +864,14 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli, TALLOC
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONGETTRUSTRID r;
 	NTSTATUS status;
@@ -857,10 +897,14 @@ NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli, TALLOC_CT
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONCOMPUTESERVERDIGEST r;
 	NTSTATUS status;
@@ -886,10 +930,14 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli, T
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONCOMPUTECLIENTDIGEST r;
 	NTSTATUS status;
@@ -915,6 +963,10 @@ NTSTATUS rpccli_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct rpc_pipe_client *cli, T
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -956,7 +1008,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate3(struct rpc_pipe_client *cli, TALLOC_CTX
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
+NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info, WERROR *werror)
 {
 	struct netr_DsRGetDCNameEx r;
 	NTSTATUS status;
@@ -990,10 +1042,14 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site)
+NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site, WERROR *werror)
 {
 	struct netr_DsRGetSiteName r;
 	NTSTATUS status;
@@ -1021,6 +1077,10 @@ NTSTATUS rpccli_netr_DsRGetSiteName(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	*site = *r.out.site;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1097,7 +1157,7 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRSERVERPASSWORDGET r;
 	NTSTATUS status;
@@ -1123,10 +1183,14 @@ NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli, TALLOC_C
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONSENDTOSAM r;
 	NTSTATUS status;
@@ -1152,10 +1216,14 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli, TALLOC_CTX 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_DSRADDRESSTOSITENAMESW r;
 	NTSTATUS status;
@@ -1181,10 +1249,14 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli, TALLOC_
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client_account, uint32_t mask, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info)
+NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client_account, uint32_t mask, const char *domain_name, struct GUID *domain_guid, const char *site_name, uint32_t flags, struct netr_DsRGetDCNameInfo *info, WERROR *werror)
 {
 	struct netr_DsRGetDCNameEx2 r;
 	NTSTATUS status;
@@ -1220,10 +1292,14 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN r;
 	NTSTATUS status;
@@ -1249,10 +1325,14 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRENUMERATETRUSTEDDOMAINSEX r;
 	NTSTATUS status;
@@ -1278,10 +1358,14 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli, 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_DSRADDRESSTOSITENAMESEXW r;
 	NTSTATUS status;
@@ -1307,10 +1391,14 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli, TALLO
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_DSRGETDCSITECOVERAGEW r;
 	NTSTATUS status;
@@ -1336,6 +1424,10 @@ NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli, TALLOC_C
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1377,7 +1469,7 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t trust_flags, uint32_t *count, struct netr_DomainTrust **trusts)
+NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_name, uint32_t trust_flags, uint32_t *count, struct netr_DomainTrust **trusts, WERROR *werror)
 {
 	struct netr_DsrEnumerateDomainTrusts r;
 	NTSTATUS status;
@@ -1407,10 +1499,14 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli, TALLO
 	memcpy(trusts, r.out.trusts, count);
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_DSRDEREGISTERDNSHOSTRECORDS r;
 	NTSTATUS status;
@@ -1436,10 +1532,14 @@ NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli, TA
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRSERVERTRUSTPASSWORDSGET r;
 	NTSTATUS status;
@@ -1465,10 +1565,14 @@ NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli, TA
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_DSRGETFORESTTRUSTINFORMATION r;
 	NTSTATUS status;
@@ -1494,10 +1598,14 @@ NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, T
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRGETFORESTTRUSTINFORMATION r;
 	NTSTATUS status;
@@ -1523,6 +1631,10 @@ NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli, 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1569,7 +1681,7 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli, TALLOC_
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct netr_NETRSERVERGETTRUSTINFO r;
 	NTSTATUS status;
@@ -1595,6 +1707,10 @@ NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli, TALLOC_
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 

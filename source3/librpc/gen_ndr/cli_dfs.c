@@ -36,7 +36,7 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *path, const char *server, const char *share, const char *comment, uint32_t flags)
+NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *path, const char *server, const char *share, const char *comment, uint32_t flags, WERROR *werror)
 {
 	struct dfs_Add r;
 	NTSTATUS status;
@@ -67,10 +67,14 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename)
+NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, WERROR *werror)
 {
 	struct dfs_Remove r;
 	NTSTATUS status;
@@ -99,10 +103,14 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info)
+NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info, WERROR *werror)
 {
 	struct dfs_SetInfo r;
 	NTSTATUS status;
@@ -133,10 +141,14 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info)
+NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_entry_path, const char *servername, const char *sharename, uint32_t level, union dfs_Info *info, WERROR *werror)
 {
 	struct dfs_GetInfo r;
 	NTSTATUS status;
@@ -167,10 +179,14 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 	*info = *r.out.info;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
+NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total, WERROR *werror)
 {
 	struct dfs_Enum r;
 	NTSTATUS status;
@@ -206,10 +222,14 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint3
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_Rename r;
 	NTSTATUS status;
@@ -235,10 +255,14 @@ NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_Move r;
 	NTSTATUS status;
@@ -264,10 +288,14 @@ NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_ManagerGetConfigInfo r;
 	NTSTATUS status;
@@ -293,10 +321,14 @@ NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_ManagerSendSiteInfo r;
 	NTSTATUS status;
@@ -322,10 +354,14 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli, TALLOC_CTX 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, const char *comment, const char *dfs_config_dn, uint8_t unknown1, uint32_t flags, struct dfs_UnknownStruct **unknown2)
+NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, const char *comment, const char *dfs_config_dn, uint8_t unknown1, uint32_t flags, struct dfs_UnknownStruct **unknown2, WERROR *werror)
 {
 	struct dfs_AddFtRoot r;
 	NTSTATUS status;
@@ -363,10 +399,14 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, uint32_t flags, struct dfs_UnknownStruct **unknown)
+NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *dns_servername, const char *dfsname, const char *rootshare, uint32_t flags, struct dfs_UnknownStruct **unknown, WERROR *werror)
 {
 	struct dfs_RemoveFtRoot r;
 	NTSTATUS status;
@@ -401,10 +441,14 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, uint32_t flags)
+NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, uint32_t flags, WERROR *werror)
 {
 	struct dfs_AddStdRoot r;
 	NTSTATUS status;
@@ -434,10 +478,14 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, uint32_t flags)
+NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, uint32_t flags, WERROR *werror)
 {
 	struct dfs_RemoveStdRoot r;
 	NTSTATUS status;
@@ -466,10 +514,14 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, uint32_t flags)
+NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, uint32_t flags, WERROR *werror)
 {
 	struct dfs_ManagerInitialize r;
 	NTSTATUS status;
@@ -497,10 +549,14 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, const char *store)
+NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, const char *comment, const char *store, WERROR *werror)
 {
 	struct dfs_AddStdRootForced r;
 	NTSTATUS status;
@@ -530,10 +586,14 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_GetDcAddress r;
 	NTSTATUS status;
@@ -559,10 +619,14 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_SetDcAddress r;
 	NTSTATUS status;
@@ -588,10 +652,14 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare)
+NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *servername, const char *rootshare, WERROR *werror)
 {
 	struct dfs_FlushFtTable r;
 	NTSTATUS status;
@@ -619,10 +687,14 @@ NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_Add2 r;
 	NTSTATUS status;
@@ -648,10 +720,14 @@ NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_Remove2 r;
 	NTSTATUS status;
@@ -677,10 +753,14 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total)
+NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *dfs_name, uint32_t level, uint32_t bufsize, struct dfs_EnumStruct *info, uint32_t *total, WERROR *werror)
 {
 	struct dfs_EnumEx r;
 	NTSTATUS status;
@@ -717,10 +797,14 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct dfs_SetInfo2 r;
 	NTSTATUS status;
@@ -746,6 +830,10 @@ NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
