@@ -699,29 +699,6 @@ struct timespec {
 #include "ctdbd_conn.h"
 #include "talloc_stack.h"
 
-/*
- * Type for wide character dirent structure.
- * Only d_name is defined by POSIX.
- */
-
-typedef struct smb_wdirent {
-	wpstring        d_name;
-} SMB_STRUCT_WDIRENT;
-
-/*
- * Type for wide character passwd structure.
- */
-
-typedef struct smb_wpasswd {
-	wfstring       pw_name;
-	char           *pw_passwd;
-	uid_t          pw_uid;
-	gid_t          pw_gid;
-	wpstring       pw_gecos;
-	wpstring       pw_dir;
-	wpstring       pw_shell;
-} SMB_STRUCT_WPASSWD;
-
 /* used in net.c */
 struct functable {
 	const char *funcname;

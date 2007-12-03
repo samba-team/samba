@@ -86,40 +86,12 @@ size_t __unsafe_string_function_usage_here_char__(void);
 
 #define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
-#define fstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(fstring)) \
-    ? __unsafe_string_function_usage_here_char__() \
-    : (((d)[sizeof(fstring)-1]) = '\0'))
-#define pstrterminate(d) (CHECK_STRING_SIZE(d, sizeof(pstring)) \
-    ? __unsafe_string_function_usage_here_char__() \
-    : (((d)[sizeof(pstring)-1]) = '\0'))
-
-#define wpstrcpy(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcpy_w((d),(s),sizeof(wpstring)))
-#define wpstrcat(d,s) ((sizeof(d) != sizeof(wpstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcat_w((d),(s),sizeof(wpstring)))
-#define wfstrcpy(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcpy_w((d),(s),sizeof(wfstring)))
-#define wfstrcat(d,s) ((sizeof(d) != sizeof(wfstring) && sizeof(d) != sizeof(smb_ucs2_t *)) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcat_w((d),(s),sizeof(wfstring)))
-
 #define push_pstring_base(dest, src, pstring_base) \
     (CHECK_STRING_SIZE(pstring_base, sizeof(pstring)) \
     ? __unsafe_string_function_usage_here_size_t__() \
     : push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE))
 
 #else /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
-
-#define fstrterminate(d) (((d)[sizeof(fstring)-1]) = '\0')
-#define pstrterminate(d) (((d)[sizeof(pstring)-1]) = '\0')
-
-#define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
-#define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
-#define wfstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wfstring))
-#define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
 
 #define push_pstring_base(dest, src, pstring_base) \
     push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
@@ -143,9 +115,6 @@ size_t __unsafe_string_function_usage_here_char__(void);
 /* the addition of the DEVELOPER checks in safe_strcpy means we must
  * update a lot of code. To make this a little easier here are some
  * functions that provide the lengths with less pain */
-#define pstrcpy_base(dest, src, pstring_base) \
-    safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
-
 
 /* Inside the _fn variants of these is a call to clobber_region(), -
  * which might destroy the stack on a buggy function.  We help the

@@ -3956,7 +3956,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char 
 
 	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info->drivername));
 
-	pstrcpy(info->comment, "");
+	strlcpy(info->comment, "", sizeof(info->comment));
 	fstrcpy(info->printprocessor, "winprint");
 	fstrcpy(info->datatype, "RAW");
 
