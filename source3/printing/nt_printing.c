@@ -4017,6 +4017,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
+	char *comment = NULL;
 
 	kbuf = make_printer_tdbkey(talloc_tos(), sharename);
 
@@ -4042,12 +4043,17 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 			info->sharename,
 			info->portname,
 			info->drivername,
-			info->comment,
+			&comment,
 			info->location,
 			info->sepfile,
 			info->printprocessor,
 			info->datatype,
 			info->parameters);
+
+	if (comment) {
+		strlcpy(info->comment, comment, sizeof(info->comment));
+		SAFE_FREE(comment);
+	}
 
 	/* Samba has to have shared raw drivers. */
 	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;

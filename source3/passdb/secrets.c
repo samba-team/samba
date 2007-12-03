@@ -484,6 +484,7 @@ static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
 					  TRUSTED_DOM_PASS* pass)
 {
 	int idx, len = 0;
+	char *passp = NULL;
 
 	if (!pack_buf || !pass) return -1;
 
@@ -495,7 +496,11 @@ static size_t tdb_trusted_dom_pass_unpack(uint8 *pack_buf, int bufsize,
 				   &pass->uni_name[idx]);
 
 	len += tdb_unpack(pack_buf + len, bufsize - len, "dPd",
-			  &pass->pass_len, &pass->pass, &pass->mod_time);
+			  &pass->pass_len, &passp, &pass->mod_time);
+	if (passp) {
+		fstrcpy(pass->pass, passp);
+	}
+	SAFE_FREE(passp);
 
 	/* unpack domain sid */
 	len += tdb_sid_unpack(pack_buf + len, bufsize - len,
