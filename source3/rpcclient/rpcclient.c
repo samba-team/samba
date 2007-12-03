@@ -502,6 +502,7 @@ extern struct cmd_set ds_commands[];
 extern struct cmd_set echo_commands[];
 extern struct cmd_set shutdown_commands[];
 extern struct cmd_set test_commands[];
+extern struct cmd_set wkssvc_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -515,6 +516,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	echo_commands,
 	shutdown_commands,
  	test_commands,
+	wkssvc_commands,
 	NULL
 };
 
