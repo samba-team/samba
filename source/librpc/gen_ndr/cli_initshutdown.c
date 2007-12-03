@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_initshutdown.h"
 
-NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot)
+NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, WERROR *werror)
 {
 	struct initshutdown_Init r;
 	NTSTATUS status;
@@ -37,10 +37,14 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *server)
+NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *server, WERROR *werror)
 {
 	struct initshutdown_Abort r;
 	NTSTATUS status;
@@ -67,10 +71,14 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, uint32_t reason)
+NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, uint32_t reason, WERROR *werror)
 {
 	struct initshutdown_InitEx r;
 	NTSTATUS status;
@@ -102,6 +110,10 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 

@@ -6,7 +6,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_svcctl.h"
 
-NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_CloseServiceHandle r;
 	NTSTATUS status;
@@ -34,10 +34,14 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CT
 	*handle = *r.out.handle;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t control, struct SERVICE_STATUS *service_status)
+NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t control, struct SERVICE_STATUS *service_status, WERROR *werror)
 {
 	struct svcctl_ControlService r;
 	NTSTATUS status;
@@ -66,10 +70,14 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*service_status = *r.out.service_status;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_DeleteService r;
 	NTSTATUS status;
@@ -96,10 +104,14 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct policy_handle *lock)
+NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct policy_handle *lock, WERROR *werror)
 {
 	struct svcctl_LockServiceDatabase r;
 	NTSTATUS status;
@@ -127,10 +139,14 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_C
 	*lock = *r.out.lock;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_QueryServiceObjectSecurity r;
 	NTSTATUS status;
@@ -156,10 +172,14 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, T
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_SetServiceObjectSecurity r;
 	NTSTATUS status;
@@ -185,10 +205,14 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TAL
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct SERVICE_STATUS *service_status)
+NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct SERVICE_STATUS *service_status, WERROR *werror)
 {
 	struct svcctl_QueryServiceStatus r;
 	NTSTATUS status;
@@ -216,10 +240,14 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CT
 	*service_status = *r.out.service_status;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_SetServiceStatus r;
 	NTSTATUS status;
@@ -245,10 +273,14 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX 
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *lock)
+NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *lock, WERROR *werror)
 {
 	struct svcctl_UnlockServiceDatabase r;
 	NTSTATUS status;
@@ -276,10 +308,14 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC
 	*lock = *r.out.lock;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_NotifyBootConfigStatus r;
 	NTSTATUS status;
@@ -305,10 +341,14 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLO
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t bits, uint32_t bitson, uint32_t immediate)
+NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t bits, uint32_t bitson, uint32_t immediate, WERROR *werror)
 {
 	struct svcctl_SCSetServiceBitsW r;
 	NTSTATUS status;
@@ -338,10 +378,14 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t start, uint32_t error, const char *binary_path, const char *load_order_group, uint32_t *tag_id, const char *dependencies, const char *service_start_name, const char *password, const char *display_name)
+NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t start, uint32_t error, const char *binary_path, const char *load_order_group, uint32_t *tag_id, const char *dependencies, const char *service_start_name, const char *password, const char *display_name, WERROR *werror)
 {
 	struct svcctl_ChangeServiceConfigW r;
 	NTSTATUS status;
@@ -378,10 +422,14 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_
 	*tag_id = *r.out.tag_id;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, const char *DisplayName, uint32_t desired_access, uint32_t type, uint32_t start_type, uint32_t error_control, const char *binary_path, const char *LoadOrderGroupKey, uint32_t *TagId, uint8_t *dependencies, uint32_t dependencies_size, const char *service_start_name, uint8_t *password, uint32_t password_size, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, const char *DisplayName, uint32_t desired_access, uint32_t type, uint32_t start_type, uint32_t error_control, const char *binary_path, const char *LoadOrderGroupKey, uint32_t *TagId, uint8_t *dependencies, uint32_t dependencies_size, const char *service_start_name, uint8_t *password, uint32_t password_size, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_CreateServiceW r;
 	NTSTATUS status;
@@ -426,10 +474,14 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*handle = *r.out.handle;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
+NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned, WERROR *werror)
 {
 	struct svcctl_EnumDependentServicesW r;
 	NTSTATUS status;
@@ -463,10 +515,14 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 	*services_returned = *r.out.services_returned;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t state, uint32_t buf_size, uint8_t *service, uint32_t *bytes_needed, uint32_t *services_returned, uint32_t *resume_handle)
+NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t state, uint32_t buf_size, uint8_t *service, uint32_t *bytes_needed, uint32_t *services_returned, uint32_t *resume_handle, WERROR *werror)
 {
 	struct svcctl_EnumServicesStatusW r;
 	NTSTATUS status;
@@ -503,10 +559,14 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *MachineName, const char *DatabaseName, uint32_t access_mask, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *MachineName, const char *DatabaseName, uint32_t access_mask, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_OpenSCManagerW r;
 	NTSTATUS status;
@@ -536,10 +596,14 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*handle = *r.out.handle;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, uint32_t access_mask, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, uint32_t access_mask, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_OpenServiceW r;
 	NTSTATUS status;
@@ -569,10 +633,14 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	*handle = *r.out.handle;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint8_t *query, uint32_t buf_size, uint32_t *bytes_needed)
+NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint8_t *query, uint32_t buf_size, uint32_t *bytes_needed, WERROR *werror)
 {
 	struct svcctl_QueryServiceConfigW r;
 	NTSTATUS status;
@@ -602,10 +670,14 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size)
+NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size, WERROR *werror)
 {
 	struct svcctl_QueryServiceLockStatusW r;
 	NTSTATUS status;
@@ -635,10 +707,14 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALL
 	*required_buf_size = *r.out.required_buf_size;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t NumArgs, const char *Arguments)
+NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t NumArgs, const char *Arguments, WERROR *werror)
 {
 	struct svcctl_StartServiceW r;
 	NTSTATUS status;
@@ -667,10 +743,14 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **display_name, uint32_t *display_name_length)
+NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **display_name, uint32_t *display_name_length, WERROR *werror)
 {
 	struct svcctl_GetServiceDisplayNameW r;
 	NTSTATUS status;
@@ -703,10 +783,14 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **key_name, uint32_t *display_name_length)
+NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **key_name, uint32_t *display_name_length, WERROR *werror)
 {
 	struct svcctl_GetServiceKeyNameW r;
 	NTSTATUS status;
@@ -739,10 +823,14 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t bits, uint32_t bitson, uint32_t immediate)
+NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t bits, uint32_t bitson, uint32_t immediate, WERROR *werror)
 {
 	struct svcctl_SCSetServiceBitsA r;
 	NTSTATUS status;
@@ -772,10 +860,14 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t start, uint32_t error, const char *binary_path, const char *load_order_group, uint32_t *tag_id, const char *dependencies, const char *service_start_name, const char *password, const char *display_name)
+NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t start, uint32_t error, const char *binary_path, const char *load_order_group, uint32_t *tag_id, const char *dependencies, const char *service_start_name, const char *password, const char *display_name, WERROR *werror)
 {
 	struct svcctl_ChangeServiceConfigA r;
 	NTSTATUS status;
@@ -812,10 +904,14 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_
 	*tag_id = *r.out.tag_id;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *ServiceName, const char *DisplayName, uint32_t desired_access, uint32_t type, uint32_t start_type, uint32_t error_control, const char *binary_path, const char *LoadOrderGroupKey, uint32_t *TagId, const char *dependencies, const char *service_start_name, const char *password)
+NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *ServiceName, const char *DisplayName, uint32_t desired_access, uint32_t type, uint32_t start_type, uint32_t error_control, const char *binary_path, const char *LoadOrderGroupKey, uint32_t *TagId, const char *dependencies, const char *service_start_name, const char *password, WERROR *werror)
 {
 	struct svcctl_CreateServiceA r;
 	NTSTATUS status;
@@ -856,10 +952,14 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned)
+NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *service, uint32_t state, struct ENUM_SERVICE_STATUS *service_status, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *services_returned, WERROR *werror)
 {
 	struct svcctl_EnumDependentServicesA r;
 	NTSTATUS status;
@@ -893,10 +993,14 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 	*services_returned = *r.out.services_returned;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t state, uint32_t buf_size, uint8_t *service, uint32_t *bytes_needed, uint32_t *services_returned, uint32_t *resume_handle)
+NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t type, uint32_t state, uint32_t buf_size, uint8_t *service, uint32_t *bytes_needed, uint32_t *services_returned, uint32_t *resume_handle, WERROR *werror)
 {
 	struct svcctl_EnumServicesStatusA r;
 	NTSTATUS status;
@@ -933,10 +1037,14 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *MachineName, const char *DatabaseName, uint32_t access_mask, struct policy_handle *handle)
+NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *MachineName, const char *DatabaseName, uint32_t access_mask, struct policy_handle *handle, WERROR *werror)
 {
 	struct svcctl_OpenSCManagerA r;
 	NTSTATUS status;
@@ -966,10 +1074,14 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*handle = *r.out.handle;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, uint32_t access_mask)
+NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager_handle, const char *ServiceName, uint32_t access_mask, WERROR *werror)
 {
 	struct svcctl_OpenServiceA r;
 	NTSTATUS status;
@@ -998,10 +1110,14 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint8_t *query, uint32_t buf_size, uint32_t *bytes_needed)
+NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint8_t *query, uint32_t buf_size, uint32_t *bytes_needed, WERROR *werror)
 {
 	struct svcctl_QueryServiceConfigA r;
 	NTSTATUS status;
@@ -1031,10 +1147,14 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size)
+NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t buf_size, struct SERVICE_LOCK_STATUS *lock_status, uint32_t *required_buf_size, WERROR *werror)
 {
 	struct svcctl_QueryServiceLockStatusA r;
 	NTSTATUS status;
@@ -1064,10 +1184,14 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALL
 	*required_buf_size = *r.out.required_buf_size;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t NumArgs, const char *Arguments)
+NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t NumArgs, const char *Arguments, WERROR *werror)
 {
 	struct svcctl_StartServiceA r;
 	NTSTATUS status;
@@ -1096,10 +1220,14 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **display_name, uint32_t *display_name_length)
+NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **display_name, uint32_t *display_name_length, WERROR *werror)
 {
 	struct svcctl_GetServiceDisplayNameA r;
 	NTSTATUS status;
@@ -1132,10 +1260,14 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLO
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **key_name, uint32_t *display_name_length)
+NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *service_name, const char **key_name, uint32_t *display_name_length, WERROR *werror)
 {
 	struct svcctl_GetServiceKeyNameA r;
 	NTSTATUS status;
@@ -1168,10 +1300,14 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CT
 	}
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_GetCurrentGroupeStateW r;
 	NTSTATUS status;
@@ -1197,10 +1333,14 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLO
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_EnumServiceGroupW r;
 	NTSTATUS status;
@@ -1226,10 +1366,14 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *info)
+NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *info, WERROR *werror)
 {
 	struct svcctl_ChangeServiceConfig2A r;
 	NTSTATUS status;
@@ -1258,10 +1402,14 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *info)
+NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *info, WERROR *werror)
 {
 	struct svcctl_ChangeServiceConfig2W r;
 	NTSTATUS status;
@@ -1290,10 +1438,14 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed)
+NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed, WERROR *werror)
 {
 	struct svcctl_QueryServiceConfig2A r;
 	NTSTATUS status;
@@ -1324,10 +1476,14 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed)
+NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed, WERROR *werror)
 {
 	struct svcctl_QueryServiceConfig2W r;
 	NTSTATUS status;
@@ -1358,10 +1514,14 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed)
+NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t info_level, uint8_t *buffer, uint32_t buf_size, uint32_t *bytes_needed, WERROR *werror)
 {
 	struct svcctl_QueryServiceStatusEx r;
 	NTSTATUS status;
@@ -1392,10 +1552,14 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_
 	*bytes_needed = *r.out.bytes_needed;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager, uint32_t info_level, uint32_t type, uint32_t state, uint8_t *services, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *service_returned, uint32_t *resume_handle, const char **group_name)
+NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager, uint32_t info_level, uint32_t type, uint32_t state, uint8_t *services, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *service_returned, uint32_t *resume_handle, const char **group_name, WERROR *werror)
 {
 	struct EnumServicesStatusExA r;
 	NTSTATUS status;
@@ -1434,10 +1598,14 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*group_name = *r.out.group_name;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager, uint32_t info_level, uint32_t type, uint32_t state, uint8_t *services, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *service_returned, uint32_t *resume_handle, const char **group_name)
+NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *scmanager, uint32_t info_level, uint32_t type, uint32_t state, uint8_t *services, uint32_t buf_size, uint32_t *bytes_needed, uint32_t *service_returned, uint32_t *resume_handle, const char **group_name, WERROR *werror)
 {
 	struct EnumServicesStatusExW r;
 	NTSTATUS status;
@@ -1476,10 +1644,14 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	*group_name = *r.out.group_name;
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
 {
 	struct svcctl_SCSendTSMessage r;
 	NTSTATUS status;
@@ -1505,6 +1677,10 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *
 	/* Return variables */
 	
 	/* Return result */
+	if (werror) {
+		*werror = r.out.result;
+	}
+	
 	return werror_to_ntstatus(r.out.result);
 }
 
