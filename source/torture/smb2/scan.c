@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 #include "torture/smb2/proto.h"
 
@@ -199,7 +200,9 @@ bool torture_smb2_scan(struct torture_context *torture)
 	int opcode;
 	struct smb2_request *req;
 
-	status = smb2_connect(mem_ctx, host, share, credentials, &tree, 
+	status = smb2_connect(mem_ctx, host, share, 
+			      lp_name_resolve_order(torture->lp_ctx), 
+			      credentials, &tree, 
 			      event_context_find(mem_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connection failed - %s\n", nt_errstr(status));
@@ -214,7 +217,9 @@ bool torture_smb2_scan(struct torture_context *torture)
 		smb2_transport_send(req);
 		if (!smb2_request_receive(req)) {
 			talloc_free(tree);
-			status = smb2_connect(mem_ctx, host, share, credentials, &tree, 
+			status = smb2_connect(mem_ctx, host, share, 
+					      lp_name_resolve_order(torture->lp_ctx), 
+					      credentials, &tree, 
 					      event_context_find(mem_ctx));
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Connection failed - %s\n", nt_errstr(status));
