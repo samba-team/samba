@@ -55,7 +55,7 @@ struct composite_context *wb_name2domain_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	ok = wb_samba3_split_username(state, global_loadparm, name, &user_dom, &user_name);
+	ok = wb_samba3_split_username(state, service->task->lp_ctx, name, &user_dom, &user_name);
 	if(!ok) {
 		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
 		return result;

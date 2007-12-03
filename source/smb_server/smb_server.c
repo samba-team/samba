@@ -42,7 +42,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data,0) != 0) {
-		status = smbsrv_init_smb_connection(smb_conn, global_loadparm);
+		status = smbsrv_init_smb_connection(smb_conn, smb_conn->lp_ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
@@ -58,12 +58,12 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 
 	switch (protocol_version) {
 	case SMB_MAGIC:
-		status = smbsrv_init_smb_connection(smb_conn, global_loadparm);
+		status = smbsrv_init_smb_connection(smb_conn, smb_conn->lp_ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	case SMB2_MAGIC:
-		if (lp_srv_maxprotocol(global_loadparm) < PROTOCOL_SMB2) break;
+		if (lp_srv_maxprotocol(smb_conn->lp_ctx) < PROTOCOL_SMB2) break;
 		status = smbsrv_init_smb2_connection(smb_conn);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
@@ -149,6 +149,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 	packet_set_fde(smb_conn->packet, conn->event.fde);
 	packet_set_serialise(smb_conn->packet);
 
+	smb_conn->lp_ctx = global_loadparm;
 	smb_conn->connection = conn;
 	conn->private = smb_conn;
 

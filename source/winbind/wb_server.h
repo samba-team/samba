@@ -99,6 +99,8 @@ struct wbsrv_connection {
 	uint32_t pending_calls;
 
 	struct packet_context *packet;
+
+	struct loadparm_context *lp_ctx;
 };
 
 #define WBSRV_SAMBA3_SET_STRING(dest, src) do { \

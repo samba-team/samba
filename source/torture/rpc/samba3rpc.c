@@ -1219,7 +1219,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
  * credentials
  */
 
-static bool test_join3(TALLOC_CTX *mem_ctx,
+static bool test_join3(struct torture_context *tctx,
 		       bool use_level25,
 		       struct cli_credentials *smb_creds,
 		       struct cli_credentials *samr_creds,
@@ -1230,8 +1230,8 @@ static bool test_join3(TALLOC_CTX *mem_ctx,
 	struct smbcli_state *cli;
 	struct cli_credentials *wks_creds;
 
-	status = smbcli_full_connection(mem_ctx, &cli,
-					lp_parm_string(global_loadparm, NULL, "torture", "host"),
+	status = smbcli_full_connection(tctx, &cli,
+					torture_setting_string(tctx, "host", NULL),
 					"IPC$", NULL, smb_creds, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
@@ -1245,7 +1245,7 @@ static bool test_join3(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	cli_credentials_set_conf(wks_creds, global_loadparm);
+	cli_credentials_set_conf(wks_creds, tctx->lp_ctx);
 	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
@@ -1287,21 +1287,13 @@ static bool test_join3(TALLOC_CTX *mem_ctx,
 
 bool torture_samba3_sessionkey(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
 	bool ret = false;
 	struct cli_credentials *anon_creds;
 	const char *wks_name;
 
 	wks_name = torture_setting_string(torture, "wksname", get_myname());
 
-	mem_ctx = talloc_init("torture_samba3_sessionkey");
-
-	if (mem_ctx == NULL) {
-		d_printf("talloc_init failed\n");
-		return false;
-	}
-
-	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+	if (!(anon_creds = create_anon_creds(torture))) {
 		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
@@ -1313,27 +1305,27 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
 		/* Samba3 in the build farm right now does this happily. Need
 		 * to fix :-) */
 
-		if (test_join3(mem_ctx, false, anon_creds, NULL, wks_name)) {
+		if (test_join3(torture, false, anon_creds, NULL, wks_name)) {
 			d_printf("join using anonymous bind on an anonymous smb "
 				 "connection succeeded -- HUH??\n");
 			ret = false;
 		}
 	}
 
-	if (!test_join3(mem_ctx, false, anon_creds, cmdline_credentials,
+	if (!test_join3(torture, false, anon_creds, cmdline_credentials,
 			wks_name)) {
 		d_printf("join using ntlmssp bind on an anonymous smb "
 			 "connection failed\n");
 		ret = false;
 	}
 
-	if (!test_join3(mem_ctx, false, cmdline_credentials, NULL, wks_name)) {
+	if (!test_join3(torture, false, cmdline_credentials, NULL, wks_name)) {
 		d_printf("join using anonymous bind on an authenticated smb "
 			 "connection failed\n");
 		ret = false;
 	}
 
-	if (!test_join3(mem_ctx, false, cmdline_credentials,
+	if (!test_join3(torture, false, cmdline_credentials,
 			cmdline_credentials,
 			wks_name)) {
 		d_printf("join using ntlmssp bind on an authenticated smb "
@@ -1345,14 +1337,14 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
 	 * The following two are tests for setuserinfolevel 25
 	 */
 
-	if (!test_join3(mem_ctx, true, anon_creds, cmdline_credentials,
+	if (!test_join3(torture, true, anon_creds, cmdline_credentials,
 			wks_name)) {
 		d_printf("join using ntlmssp bind on an anonymous smb "
 			 "connection failed\n");
 		ret = false;
 	}
 
-	if (!test_join3(mem_ctx, true, cmdline_credentials, NULL, wks_name)) {
+	if (!test_join3(torture, true, cmdline_credentials, NULL, wks_name)) {
 		d_printf("join using anonymous bind on an authenticated smb "
 			 "connection failed\n");
 		ret = false;

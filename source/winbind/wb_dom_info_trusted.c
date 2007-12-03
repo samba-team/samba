@@ -193,7 +193,7 @@ static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 	
 	make_nbt_name(&name, state->info->dcs[0].name, 0x20);
 	ctx = resolve_name_send(&name, state->service->task->event_ctx,
-				lp_name_resolve_order(global_loadparm));
+			lp_name_resolve_order(state->service->task->lp_ctx));
 
 	composite_continue(state->ctx, ctx, trusted_dom_info_recv_dcaddr,
 			   state);

@@ -86,7 +86,7 @@ static void cmd_getpwnam_recv_domain(struct composite_context *ctx)
 	user_info = talloc(state, struct libnet_UserInfo);
 	if (composite_nomem(user_info, state->ctx)) return;
 
-	ok= wb_samba3_split_username(state, global_loadparm, state->name, &user_dom, &user_name);
+	ok= wb_samba3_split_username(state, state->service->task->lp_ctx, state->name, &user_dom, &user_name);
 	if(!ok){
 		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
 		return;
@@ -124,12 +124,14 @@ static void cmd_getpwnam_recv_user_info(struct composite_context *ctx)
 	WBSRV_SAMBA3_SET_STRING(pw->pw_name, user_info->out.account_name);
 	WBSRV_SAMBA3_SET_STRING(pw->pw_passwd, "*");
 	WBSRV_SAMBA3_SET_STRING(pw->pw_gecos, user_info->out.full_name);
-	WBSRV_SAMBA3_SET_STRING(pw->pw_dir, lp_template_homedir(global_loadparm));
+	WBSRV_SAMBA3_SET_STRING(pw->pw_dir, 
+		lp_template_homedir(state->service->task->lp_ctx));
 	all_string_sub(pw->pw_dir, "%WORKGROUP%", state->workgroup_name,
 			sizeof(fstring) - 1);
 	all_string_sub(pw->pw_dir, "%ACCOUNTNAME%", user_info->out.account_name,
 			sizeof(fstring) - 1);
-	WBSRV_SAMBA3_SET_STRING(pw->pw_shell, lp_template_shell(global_loadparm));
+	WBSRV_SAMBA3_SET_STRING(pw->pw_shell, 
+		lp_template_shell(state->service->task->lp_ctx));
 
 	state->group_sid = dom_sid_dup(state, user_info->out.primary_group_sid);
 	if(composite_nomem(state->group_sid, state->ctx)) return;

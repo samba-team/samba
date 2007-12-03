@@ -786,7 +786,7 @@ static bool wbinfo_auth(char *username)
 
 /* Authenticate a user with a challenge/response */
 
-static bool wbinfo_auth_crap(char *username)
+static bool wbinfo_auth_crap(struct loadparm_context *lp_ctx, char *username)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -819,7 +819,7 @@ static bool wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8);
         
-	if (lp_client_ntlmv2_auth(global_loadparm)) {
+	if (lp_client_ntlmv2_auth(lp_ctx)) {
 		DATA_BLOB server_chal;
 		DATA_BLOB names_blob;	
 
@@ -836,7 +836,7 @@ static bool wbinfo_auth_crap(char *username)
 		server_chal = data_blob(request.data.auth_crap.chal, 8); 
 		
 		/* Pretend this is a login to 'us', for blob purposes */
-		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(global_loadparm), lp_workgroup(global_loadparm));
+		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(lp_ctx), lp_workgroup(lp_ctx));
 		
 		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain, pass, &server_chal, 
 				      &names_blob,
@@ -862,7 +862,7 @@ static bool wbinfo_auth_crap(char *username)
 		data_blob_free(&lm_response);
 
 	} else {
-		if (lp_client_lanman_auth(global_loadparm) 
+		if (lp_client_lanman_auth(lp_ctx) 
 		    && SMBencrypt(pass, request.data.auth_crap.chal, 
 			       (unsigned char *)request.data.auth_crap.lm_resp)) {
 			request.data.auth_crap.lm_resp_len = 24;
@@ -1218,7 +1218,7 @@ int main(int argc, char **argv, char **envp)
 					got_error = true;
 				}
 
-				if (!wbinfo_auth_crap(string_arg)) {
+				if (!wbinfo_auth_crap(global_loadparm, string_arg)) {
 					d_fprintf(stderr, "Could not authenticate user %s with "
 						"challenge/response\n", string_arg);
 					got_error = true;

@@ -246,7 +246,6 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 	fprintf(stderr,"Loaded services file OK.\n");
 
 	ret = do_global_checks(global_loadparm);
-
 	ret |= do_share_checks(global_loadparm, cname, caddr, silent_mode, show_defaults, section_name, parameter_name);
 
 	return(ret);

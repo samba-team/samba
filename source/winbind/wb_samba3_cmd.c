@@ -86,7 +86,7 @@ NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	s3call->response.data.info.winbind_separator = *lp_winbind_separator(global_loadparm);
+	s3call->response.data.info.winbind_separator = *lp_winbind_separator(s3call->wbconn->lp_ctx);
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version,
 				SAMBA_VERSION_STRING);
 	return NT_STATUS_OK;
@@ -96,7 +96,7 @@ NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name,
-				lp_workgroup(global_loadparm));
+				lp_workgroup(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
 
@@ -104,7 +104,7 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name,
-				lp_netbios_name(global_loadparm));
+				lp_netbios_name(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
 
@@ -112,7 +112,7 @@ NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	s3call->response.extra_data.data =
-		smbd_tmp_path(s3call, global_loadparm, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+		smbd_tmp_path(s3call, s3call->wbconn->lp_ctx, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data.data);
 	return NT_STATUS_OK;
 }
@@ -545,7 +545,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 		s3call->wbconn->listen_socket->service;
 	char *user, *domain;
 
-	if (!wb_samba3_split_username(s3call, global_loadparm,
+	if (!wb_samba3_split_username(s3call, s3call->wbconn->lp_ctx,
 				 s3call->request.data.auth.user,
 				 &domain, &user)) {
 		return NT_STATUS_NO_SUCH_USER;

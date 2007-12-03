@@ -516,7 +516,7 @@ NTSTATUS smbsrv_init_smb2_connection(struct smbsrv_connection *smb_conn)
 
 	/* this is the size that w2k uses, and it appears to be important for
 	   good performance */
-	smb_conn->negotiate.max_recv = lp_max_xmit(global_loadparm);
+	smb_conn->negotiate.max_recv = lp_max_xmit(smb_conn->lp_ctx);
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
