@@ -33,7 +33,7 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = auth_anonymous_session_info(mem_ctx, &session_info);
+	nt_status = auth_anonymous_session_info(mem_ctx, global_loadparm, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -41,6 +41,7 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx)
 }
 
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
@@ -49,6 +50,7 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	
 	nt_status = auth_anonymous_server_info(mem_ctx,
+					       lp_netbios_name(lp_ctx),
 					       &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -66,7 +68,7 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials, global_loadparm);
+	cli_credentials_set_conf(session_info->credentials, lp_ctx);
 	cli_credentials_set_anonymous(session_info->credentials);
 	
 	*_session_info = session_info;
@@ -74,7 +76,9 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **_server_info) 
+NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
+				    const char *netbios_name,
+				    struct auth_serversupplied_info **_server_info) 
 {
 	struct auth_serversupplied_info *server_info;
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
@@ -122,7 +126,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversuppl
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
-	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name(global_loadparm));
+	server_info->logon_server = talloc_strdup(server_info, netbios_name);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = 0;

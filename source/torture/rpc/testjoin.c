@@ -299,7 +299,8 @@ failed:
 }
 
 
-_PUBLIC_ struct test_join *torture_join_domain(const char *machine_name, 
+_PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
+					       const char *machine_name, 
 				      uint32_t acct_flags,
 				      struct cli_credentials **machine_credentials)
 {
@@ -328,9 +329,9 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	tj->libnet_r = libnet_r;
 		
 	libnet_ctx->cred = cmdline_credentials;
-	libnet_r->in.binding = lp_parm_string(global_loadparm, NULL, "torture", "binding");
+	libnet_r->in.binding = torture_setting_string(tctx, "binding", NULL);
 	if (!libnet_r->in.binding) {
-		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", lp_parm_string(global_loadparm, NULL, "torture", "host"));
+		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", torture_setting_string(tctx, "host", NULL));
 	}
 	libnet_r->in.level = LIBNET_JOINDOMAIN_SPECIFIED;
 	libnet_r->in.netbios_name = machine_name;
@@ -383,7 +384,7 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	
 	u.info21.description.string = talloc_asprintf(tj, 
 						      "Samba4 torture account created by host %s: %s", 
-						      lp_netbios_name(global_loadparm), timestring(tj, time(NULL)));
+						      lp_netbios_name(tctx->lp_ctx), timestring(tj, time(NULL)));
 
 	status = dcerpc_samr_SetUserInfo(tj->p, tj, &s);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -391,7 +392,7 @@ _PUBLIC_ struct test_join *torture_join_domain(const char *machine_name,
 	}
 
 	*machine_credentials = cli_credentials_init(tj);
-	cli_credentials_set_conf(*machine_credentials, global_loadparm);
+	cli_credentials_set_conf(*machine_credentials, tctx->lp_ctx);
 	cli_credentials_set_workstation(*machine_credentials, machine_name, CRED_SPECIFIED);
 	cli_credentials_set_domain(*machine_credentials, libnet_r->out.domain_name, CRED_SPECIFIED);
 	if (libnet_r->out.realm) {

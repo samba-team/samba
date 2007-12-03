@@ -32,7 +32,7 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 
 	}
 
 	(*ctx)->ops = ops;
-	(*ctx)->priv_data = NULL;
+	(*ctx)->priv_data = global_loadparm;
 
 	return NT_STATUS_OK;
 }
@@ -268,7 +268,7 @@ static NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	int num_services;
 	const char **n;
        
-	num_services = lp_numservices(global_loadparm);
+	num_services = lp_numservices((struct loadparm_context *)ctx->priv_data);
 
 	n = talloc_array(mem_ctx, const char *, num_services);
 	if (!n) {
@@ -277,7 +277,7 @@ static NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_services; i++) {
-		n[i] = talloc_strdup(n, lp_servicename(lp_servicebynum(global_loadparm, i)));
+		n[i] = talloc_strdup(n, lp_servicename(lp_servicebynum((struct loadparm_context *)ctx->priv_data, i)));
 		if (!n[i]) {
 			DEBUG(0,("ERROR: Out of memory!\n"));
 			talloc_free(n);
@@ -299,7 +299,7 @@ static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 	struct share_config *s;
 	struct loadparm_service *service;
 
-	service = lp_service(global_loadparm, name);
+	service = lp_service((struct loadparm_context *)ctx->priv_data, name);
 
 	if (service == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;

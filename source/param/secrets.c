@@ -61,7 +61,7 @@ void secrets_shutdown(void)
 /**
  * open up the secrets database
  */
-bool secrets_init(void)
+bool secrets_init(struct loadparm_context *lp_ctx)
 {
 	char *fname;
 	uint8_t dummy;
@@ -69,8 +69,7 @@ bool secrets_init(void)
 	if (tdb != NULL)
 		return true;
 
-	fname = private_path(NULL, global_loadparm,
-						 "secrets.tdb");
+	fname = private_path(NULL, lp_ctx, "secrets.tdb");
 
 	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, 
 						O_RDWR|O_CREAT, 0600);
@@ -141,6 +140,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_cont
  * @return pointer to a SID object if the SID could be obtained, NULL otherwise
  */
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
+				       struct loadparm_context *lp_ctx,
 				       const char *domain)
 {
 	struct ldb_context *ldb;
@@ -149,7 +149,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { "objectSid", NULL };
 	struct dom_sid *result = NULL;
 
-	ldb = secrets_db_connect(mem_ctx, global_loadparm);
+	ldb = secrets_db_connect(mem_ctx, lp_ctx);
 	if (ldb == NULL) {
 		DEBUG(5, ("secrets_db_connect failed\n"));
 		return NULL;

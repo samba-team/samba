@@ -134,7 +134,7 @@ NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx,
 
 	ops = share_backend_by_name(backend_name);
 	if (!ops) {
-		DEBUG(0, ("share_init_connection: share backend [%s] not found!\n", lp_share_backend(global_loadparm)));
+		DEBUG(0, ("share_init_connection: share backend [%s] not found!\n", backend_name));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

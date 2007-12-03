@@ -544,7 +544,7 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			r.in.req.req5.highwatermark.highest_usn		= 0;
 			r.in.req.req5.uptodateness_vector		= NULL;
 			r.in.req.req5.replica_flags			= 0;
-			if (lp_parm_bool(global_loadparm, NULL, "drsuapi","compression", false)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi","compression", false)) {
 				r.in.req.req5.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
 			r.in.req.req5.max_object_count			= 0;
@@ -566,10 +566,10 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			r.in.req.req8.highwatermark.highest_usn		= 0;
 			r.in.req.req8.uptodateness_vector		= NULL;
 			r.in.req.req8.replica_flags			= 0;
-			if (lp_parm_bool(global_loadparm, NULL, "drsuapi", "compression", false)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "compression", false)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
 			}
-			if (lp_parm_bool(global_loadparm, NULL, "drsuapi", "neighbour_writeable", true)) {
+			if (lp_parm_bool(tctx->lp_ctx, NULL, "drsuapi", "neighbour_writeable", true)) {
 				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
 			}
 			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
@@ -699,7 +699,7 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 
 	ZERO_STRUCT(priv);
 
-	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
+	priv.join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_credentials);
 	if (!priv.join) {
 		torture_fail(torture, "Failed to join as BDC");
@@ -751,7 +751,7 @@ bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 
 	ZERO_STRUCT(priv);
 
-	priv.join = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
+	priv.join = torture_join_domain(torture, TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_credentials);
 	if (!priv.join) {
 		torture_fail(torture, "Failed to join as BDC\n");

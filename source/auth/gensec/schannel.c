@@ -183,7 +183,7 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 					 struct auth_session_info **_session_info) 
 {
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-	return auth_anonymous_session_info(state, _session_info);
+	return auth_anonymous_session_info(state, global_loadparm, _session_info);
 }
 
 static NTSTATUS schannel_start(struct gensec_security *gensec_security)

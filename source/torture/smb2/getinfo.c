@@ -77,7 +77,7 @@ static struct {
 /*
   test fileinfo levels
 */
-static bool torture_smb2_fileinfo(struct smb2_tree *tree)
+static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	struct smb2_handle hfile, hdir;
 	NTSTATUS status;
@@ -105,7 +105,7 @@ static bool torture_smb2_fileinfo(struct smb2_tree *tree)
 			file_levels[i].dinfo.query_secdesc.in.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+			if (torture_setting_bool(tctx, "samba4", false)) {
 				continue;
 			}
 			file_levels[i].finfo.all_eas.in.continue_flags = 
@@ -192,7 +192,7 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	}
 	torture_setup_complex_file(tree, DNAME ":streamtwo");
 
-	ret &= torture_smb2_fileinfo(tree);
+	ret &= torture_smb2_fileinfo(torture, tree);
 	ret &= torture_smb2_fsinfo(tree);
 
 	talloc_free(mem_ctx);

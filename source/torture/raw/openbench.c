@@ -129,7 +129,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.service_type = state->service_type;
 	io->in.credentials  = cmdline_credentials;
 	io->in.fallback_to_anonymous = false;
-	io->in.workgroup    = lp_workgroup(global_loadparm);
+	io->in.workgroup    = lp_workgroup(state->tctx->lp_ctx);
 
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);

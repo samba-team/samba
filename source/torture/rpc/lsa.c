@@ -1305,14 +1305,14 @@ static bool test_EnumAccountRights(struct dcerpc_pipe *p,
 
 
 static bool test_QuerySecurity(struct dcerpc_pipe *p, 
-			     TALLOC_CTX *mem_ctx, 
+			     struct torture_context *tctx, 
 			     struct policy_handle *handle,
 			     struct policy_handle *acct_handle)
 {
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping QuerySecurity test against Samba4\n");
 		return true;
 	}
@@ -1322,7 +1322,7 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 	r.in.handle = acct_handle;
 	r.in.sec_info = 7;
 
-	status = dcerpc_lsa_QuerySecurity(p, mem_ctx, &r);
+	status = dcerpc_lsa_QuerySecurity(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("QuerySecurity failed - %s\n", nt_errstr(status));
 		return false;
@@ -1539,7 +1539,7 @@ static bool test_EnumPrivs(struct dcerpc_pipe *p,
 }
 
 static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p, 
-					     TALLOC_CTX *mem_ctx, 
+					     struct torture_context *tctx, 
 					     struct policy_handle *handle,
 					     const char *trusted_domain_name)
 {
@@ -1551,7 +1551,7 @@ static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 
 	printf("\nTesting lsaRQueryForestTrustInformation\n");
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping QueryForestTrustInformation against Samba4\n");
 		return true;
 	}
@@ -1569,7 +1569,7 @@ static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 	r.in.unknown = 0;
 	r.out.forest_trust_info = &info_ptr;
 
-	status = dcerpc_lsa_lsaRQueryForestTrustInformation(p, mem_ctx, &r);
+	status = dcerpc_lsa_lsaRQueryForestTrustInformation(p, tctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("lsaRQueryForestTrustInformation failed - %s\n", nt_errstr(status));
@@ -1911,14 +1911,14 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 }
 
 static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p, 
-				 TALLOC_CTX *mem_ctx, 
+				 struct torture_context *tctx, 
 				 struct policy_handle *handle)
 {
 	struct lsa_QueryDomainInformationPolicy r;
 	NTSTATUS status;
 	int i;
 	bool ret = true;
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping QueryDomainInformationPolicy test against Samba4\n");
 		return true;
 	}
@@ -1931,7 +1931,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 
 		printf("\ntrying QueryDomainInformationPolicy level %d\n", i);
 
-		status = dcerpc_lsa_QueryDomainInformationPolicy(p, mem_ctx, &r);
+		status = dcerpc_lsa_QueryDomainInformationPolicy(p, tctx, &r);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
@@ -1945,7 +1945,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 
 
 static bool test_QueryInfoPolicy(struct dcerpc_pipe *p, 
-				 TALLOC_CTX *mem_ctx, 
+				 struct torture_context *tctx, 
 				 struct policy_handle *handle)
 {
 	struct lsa_QueryInfoPolicy r;
@@ -1954,7 +1954,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	bool ret = true;
 	printf("\nTesting QueryInfoPolicy\n");
 
-	if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false)) {
 		printf("skipping QueryInfoPolicy against Samba4\n");
 		return true;
 	}
@@ -1965,7 +1965,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 
 		printf("\ntrying QueryInfoPolicy level %d\n", i);
 
-		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+		status = dcerpc_lsa_QueryInfoPolicy(p, tctx, &r);
 
 		switch (i) {
 		case LSA_POLICY_INFO_DB:
@@ -1985,7 +1985,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			}
 			break;
 		default:
-			if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+			if (torture_setting_bool(tctx, "samba4", false)) {
 				/* Other levels not implemented yet */
 				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 					printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
@@ -2003,18 +2003,18 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 
 			struct lsa_TransNameArray tnames;
 			tnames.count = 10;
-			tnames.names = talloc_array(mem_ctx, struct lsa_TranslatedName, tnames.count);
+			tnames.names = talloc_array(tctx, struct lsa_TranslatedName, tnames.count);
 			tnames.names[0].name.string = r.out.info->dns.name.string;
 			tnames.names[1].name.string = r.out.info->dns.dns_domain.string;
-			tnames.names[2].name.string = talloc_asprintf(mem_ctx, "%s\\", r.out.info->dns.name.string);
-			tnames.names[3].name.string = talloc_asprintf(mem_ctx, "%s\\", r.out.info->dns.dns_domain.string);
-			tnames.names[4].name.string = talloc_asprintf(mem_ctx, "%s\\guest", r.out.info->dns.name.string);
-			tnames.names[5].name.string = talloc_asprintf(mem_ctx, "%s\\krbtgt", r.out.info->dns.name.string);
-			tnames.names[6].name.string = talloc_asprintf(mem_ctx, "%s\\guest", r.out.info->dns.dns_domain.string);
-			tnames.names[7].name.string = talloc_asprintf(mem_ctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
-			tnames.names[8].name.string = talloc_asprintf(mem_ctx, "krbtgt@%s", r.out.info->dns.name.string);
-			tnames.names[9].name.string = talloc_asprintf(mem_ctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
-			ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.name.string);
+			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.dns_domain.string);
+			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.name.string);
+			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.name.string);
+			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.dns_domain.string);
+			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
+			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.name.string);
+			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
+			ret &= test_LookupNames(p, tctx, handle, &tnames);
 		}
 	}
 
@@ -2022,7 +2022,7 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 }
 
 static bool test_QueryInfoPolicy2(struct dcerpc_pipe *p, 
-				  TALLOC_CTX *mem_ctx, 
+				  struct torture_context *tctx, 
 				  struct policy_handle *handle)
 {
 	struct lsa_QueryInfoPolicy2 r;
@@ -2036,7 +2036,7 @@ static bool test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 
 		printf("\ntrying QueryInfoPolicy2 level %d\n", i);
 
-		status = dcerpc_lsa_QueryInfoPolicy2(p, mem_ctx, &r);
+		status = dcerpc_lsa_QueryInfoPolicy2(p, tctx, &r);
 		
 		switch (i) {
 		case LSA_POLICY_INFO_DB:
@@ -2056,7 +2056,7 @@ static bool test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 			}
 			break;
 		default:
-			if (lp_parm_bool(global_loadparm, NULL, "torture", "samba4", false)) {
+			if (torture_setting_bool(tctx, "samba4", false)) {
 				/* Other levels not implemented yet */
 				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 					printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
@@ -2128,99 +2128,93 @@ bool test_lsa_Close(struct dcerpc_pipe *p,
 	return true;
 }
 
-bool torture_rpc_lsa(struct torture_context *torture)
+bool torture_rpc_lsa(struct torture_context *tctx)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
 	bool ret = true;
 	struct policy_handle *handle;
 
-	mem_ctx = talloc_init("torture_rpc_lsa");
-
-	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
+	status = torture_rpc_connection(tctx, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
 		return false;
 	}
 
-	if (!test_OpenPolicy(p, mem_ctx)) {
+	if (!test_OpenPolicy(p, tctx)) {
 		ret = false;
 	}
 
-	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
+	if (!test_lsa_OpenPolicy2(p, tctx, &handle)) {
 		ret = false;
 	}
 
 	if (handle) {
-		if (!test_LookupNames_wellknown(p, mem_ctx, handle)) {
+		if (!test_LookupNames_wellknown(p, tctx, handle)) {
 			ret = false;
 		}		
 
-		if (!test_LookupNames_bogus(p, mem_ctx, handle)) {
+		if (!test_LookupNames_bogus(p, tctx, handle)) {
 			ret = false;
 		}		
 
-		if (!test_LookupSids_async(p, mem_ctx, handle)) {
+		if (!test_LookupSids_async(p, tctx, handle)) {
 			ret = false;
 		}
 
-		if (!test_QueryDomainInfoPolicy(p, mem_ctx, handle)) {
+		if (!test_QueryDomainInfoPolicy(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_CreateAccount(p, mem_ctx, handle)) {
+		if (!test_CreateAccount(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_CreateSecret(p, mem_ctx, handle)) {
+		if (!test_CreateSecret(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_CreateTrustedDomain(p, mem_ctx, handle)) {
+		if (!test_CreateTrustedDomain(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_EnumAccounts(p, mem_ctx, handle)) {
+		if (!test_EnumAccounts(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_EnumPrivs(p, mem_ctx, handle)) {
+		if (!test_EnumPrivs(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_QueryInfoPolicy(p, mem_ctx, handle)) {
+		if (!test_QueryInfoPolicy(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_QueryInfoPolicy2(p, mem_ctx, handle)) {
+		if (!test_QueryInfoPolicy2(p, tctx, handle)) {
 			ret = false;
 		}
 		
 #if 0
-		if (!test_Delete(p, mem_ctx, handle)) {
+		if (!test_Delete(p, tctx, handle)) {
 			ret = false;
 		}
 #endif
 		
-		if (!test_many_LookupSids(p, mem_ctx, handle)) {
+		if (!test_many_LookupSids(p, tctx, handle)) {
 			ret = false;
 		}
 		
-		if (!test_lsa_Close(p, mem_ctx, handle)) {
+		if (!test_lsa_Close(p, tctx, handle)) {
 			ret = false;
 		}
 	} else {
-		if (!test_many_LookupSids(p, mem_ctx, handle)) {
+		if (!test_many_LookupSids(p, tctx, handle)) {
 			ret = false;
 		}
 	}
 
-	if (!test_GetUserName(p, mem_ctx)) {
+	if (!test_GetUserName(p, tctx)) {
 		ret = false;
 	}
-		
-	talloc_free(mem_ctx);
 
 	return ret;
 }

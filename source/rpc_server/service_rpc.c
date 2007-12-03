@@ -107,7 +107,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct auth_session_info *session_info = NULL;
 
-	status = auth_anonymous_session_info(srv_conn, &session_info);
+	status = auth_anonymous_session_info(srv_conn, global_loadparm, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: auth_anonymous_session_info failed: %s\n", 
 			nt_errstr(status)));
@@ -414,13 +414,13 @@ static void dcesrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[dcesrv]");
 
 	status = dcesrv_init_context(task->event_ctx,
-				     lp_dcerpc_endpoint_servers(global_loadparm),
+				     lp_dcerpc_endpoint_servers(task->lp_ctx),
 				     &dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir(global_loadparm))) {
-		mkdir(lp_ncalrpc_dir(global_loadparm), 0755);
+	if (!directory_exist(lp_ncalrpc_dir(task->lp_ctx))) {
+		mkdir(lp_ncalrpc_dir(task->lp_ctx), 0755);
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {

@@ -226,7 +226,7 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 			if (unix_name) {
 				asprintf(unix_name, 
 					 "%s%c%s", domain,
-					 *lp_winbind_separator(global_loadparm), 
+					 *lp_winbind_separator(lp_ctx), 
 					 username);
 			}
 		} else {
