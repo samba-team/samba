@@ -185,7 +185,7 @@ acl_match_acl(krb5_context context,
  * if (ret)
  *     krb5_errx(context, 1, "acl didn't match");
  * ret = krb5_acl_match_string(context, "foo foo baz/kaka",
- *     "ss", "foo", &s, "foo/*");
+ *     "ss", "foo", &s, "foo/\\*");
  * if (ret) {
  *     // no need to free(s) on error
  *     assert(s == NULL);
