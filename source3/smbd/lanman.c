@@ -2130,6 +2130,7 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	NTSTATUS result;
 	DOM_SID user_sid;
 	enum lsa_SidType type;
+	char *endp = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	if (!str1 || !str2 || !UserName || !p) {
@@ -2168,6 +2169,7 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	SSVAL(*rparam,2,0);		/* converter word */
 
 	p = *rdata;
+	endp = *rdata + *rdata_len;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -2181,7 +2183,7 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 
-	/* Lookup the user information; This should only be one of 
+	/* Lookup the user information; This should only be one of
 	   our accounts (not remote domains) */
 
 	become_root();					/* ROOT BLOCK */
@@ -2218,12 +2220,11 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	}
 
 	for (i=0; i<num_groups; i++) {
-
 		const char *grp_name;
-	
+
 		if ( lookup_sid(mem_ctx, &sids[i], NULL, &grp_name, NULL) ) {
-			pstrcpy(p, grp_name);
-			p += 21; 
+			strlcpy(p, grp_name, PTR_DIFF(endp,p));
+			p += 21;
 			count++;
 		}
 	}
@@ -2264,6 +2265,7 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
+	char *endp = NULL;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2278,7 +2280,7 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	  * e -> return parameter number of entries
 	  * h -> return parameter total number of users
 	  */
-  
+
 	resume_context = get_safe_SVAL(param,tpscnt,p,0,-1);
 	cli_buf_size= get_safe_SVAL(param,tpscnt,p,2,0);
 	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n",
@@ -2301,6 +2303,7 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	p = *rdata;
+	endp = *rdata + *rdata_len;
 
 	become_root();
 	search = pdb_search_users(ACB_NORMAL);
@@ -2319,13 +2322,13 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 
 	for (i=0; i<num_users; i++) {
 		const char *name = users[i].account_name;
-		
+
 		if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)) {
-			pstrcpy(p,name); 
+			strlcpy(p,name,PTR_DIFF(endp,p));
 			DEBUG(10,("api_RNetUserEnum:adding entry %d username "
 				  "%s\n",count_sent,p));
-			p += 21; 
-			count_sent++; 
+			p += 21;
+			count_sent++;
 		} else {
 			/* set overflow error */
 			DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
@@ -3035,6 +3038,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	char *p2;
+	char *endp;
 	int level = get_safe_SVAL(param,tpscnt,p,0,-1);
 
 	if (!str1 || !str2 || !p) {
@@ -3064,13 +3068,15 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	SSVAL(*rparam,2,0);		/* converter word */
 
 	p = *rdata;
+	endp = *rdata + *rdata_len;
+
 	p2 = get_safe_ptr(*rdata,*rdata_len,p,22);
 	if (!p2) {
 		return False;
 	}
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
-	pstrcpy(p2,get_local_machine_name());
+	strlcpy(p2,get_local_machine_name(),PTR_DIFF(endp,p2));
 	strupper_m(p2);
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
@@ -3079,7 +3085,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	p += 4;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
-	pstrcpy(p2,current_user_info.smb_name);
+	strlcpy(p2,current_user_info.smb_name,PTR_DIFF(endp,p2));
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -3087,7 +3093,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	p += 4;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
-	pstrcpy(p2,lp_workgroup());
+	strlcpy(p2,lp_workgroup(),PTR_DIFF(endp,p2));
 	strupper_m(p2);
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
@@ -3100,7 +3106,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	p += 2;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
-	pstrcpy(p2,lp_workgroup());	/* don't know.  login domain?? */
+	strlcpy(p2,lp_workgroup(),PTR_DIFF(endp,p2));	/* don't know.  login domain?? */
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -3108,7 +3114,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	p += 4;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* don't know */
-	pstrcpy(p2,"");
+	strlcpy(p2,"",PTR_DIFF(endp,p2));
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -3305,6 +3311,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	char *p = skip_string(param,tpscnt,UserName);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	char *p2;
+	char *endp;
 	const char *level_string;
 
 	/* get NIS home of a previously validated user - simeon */
@@ -3355,6 +3362,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,2,0);		/* converter word */
 
 	p = *rdata;
+	endp = *rdata + *rdata_len;
 	p2 = get_safe_ptr(*rdata,*rdata_len,p,usri11_end);
 	if (!p2) {
 		return False;
@@ -3370,14 +3378,14 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 
 	if (uLevel >= 10) {
 		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
-		pstrcpy(p2,"Comment");
+		strlcpy(p2,"Comment",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
 
 		SIVAL(p,usri11_usr_comment,PTR_DIFF(p2,p)); /* user_comment */
-		pstrcpy(p2,"UserComment");
+		strlcpy(p2,"UserComment",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3385,7 +3393,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
+		strlcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName),PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3398,13 +3406,13 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
+		strlcpy(p2, vuser && vuser->homedir ? vuser->homedir : "",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
 		}
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
-		pstrcpy(p2,"");
+		strlcpy(p2,"",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3414,7 +3422,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SSVALS(p,usri11_bad_pw_count,-1);	/* bad pw counts */
 		SSVALS(p,usri11_num_logons,-1);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
-		pstrcpy(p2,"\\\\*");
+		strlcpy(p2,"\\\\*",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3422,7 +3430,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SSVAL(p,usri11_country_code,0);		/* country code */
 
 		SIVAL(p,usri11_workstations,PTR_DIFF(p2,p)); /* workstations */
-		pstrcpy(p2,"");
+		strlcpy(p2,"",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3449,7 +3457,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
+		strlcpy(p2, vuser && vuser->homedir ? vuser->homedir : "",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3458,7 +3466,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
+		strlcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "",PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3466,14 +3474,14 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		if (uLevel == 2) {
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
+   			strlcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName),PTR_DIFF(endp,p2));
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
 			}
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
-			pstrcpy(p2,"");
+			strlcpy(p2,"",PTR_DIFF(endp,p2));
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
