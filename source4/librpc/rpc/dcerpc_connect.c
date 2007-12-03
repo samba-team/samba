@@ -235,7 +235,9 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_C
 	}
 
 	/* send smb2 connect request */
-	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", s->io.creds,
+	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", 
+				     lp_name_resolve_order(global_loadparm),
+				     s->io.creds,
 				     c->event_ctx);
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 	return c;

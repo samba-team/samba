@@ -377,7 +377,8 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 	return NULL;
 }
 
-static void ldap_connect_got_sock(struct composite_context *ctx, struct ldap_connection *conn) 
+static void ldap_connect_got_sock(struct composite_context *ctx, 
+				  struct ldap_connection *conn) 
 {
 	/* setup a handler for events on this socket */
 	conn->event.fde = event_add_fd(conn->event.event_ctx, conn->sock, 

@@ -56,8 +56,9 @@ static int map_ldb_error(struct ldb_context *ldb, int err, const char **errstrin
 NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
 {
 	conn->ldb = ldb_wrap_connect(conn, 
-				     global_loadparm,
-				     lp_sam_url(global_loadparm), conn->session_info,
+				     conn->lp_ctx,
+				     lp_sam_url(conn->lp_ctx), 
+				     conn->session_info,
 				     NULL, conn->global_catalog ? LDB_FLG_RDONLY : 0, NULL);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

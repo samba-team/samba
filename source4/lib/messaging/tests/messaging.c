@@ -66,23 +66,22 @@ static bool test_ping_speed(struct torture_context *tctx)
 	struct timeval tv;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	uint32_t msg_ping, msg_exit;
-	TALLOC_CTX *mem_ctx = tctx;
 
-	lp_set_cmdline(global_loadparm, "pid directory", "piddir.tmp");
+	lp_set_cmdline(tctx->lp_ctx, "pid directory", "piddir.tmp");
 
 	ev = tctx->ev;
 
-	msg_server_ctx = messaging_init(mem_ctx, 
-					lp_messaging_path(tctx, global_loadparm), 
+	msg_server_ctx = messaging_init(tctx, 
+					lp_messaging_path(tctx, tctx->lp_ctx), 
 					cluster_id(1), ev);
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init ping messaging context");
 		
 	messaging_register_tmp(msg_server_ctx, NULL, ping_message, &msg_ping);
-	messaging_register_tmp(msg_server_ctx, mem_ctx, exit_message, &msg_exit);
+	messaging_register_tmp(msg_server_ctx, tctx, exit_message, &msg_exit);
 
-	msg_client_ctx = messaging_init(mem_ctx, 
-					lp_messaging_path(mem_ctx, global_loadparm), 
+	msg_client_ctx = messaging_init(tctx, 
+					lp_messaging_path(tctx, tctx->lp_ctx), 
 					cluster_id(2), ev);
 
 	torture_assert(tctx, msg_client_ctx != NULL, 

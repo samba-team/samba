@@ -30,15 +30,19 @@
 /*
   wrapper around smbcli_sock_connect()
 */
-bool smbcli_socket_connect(struct smbcli_state *cli, const char *server)
+bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
+			   const char **name_resolve_order,
+			   int max_xmit, int max_mux)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_connect_byname(server, 0, NULL, NULL);
+	sock = smbcli_sock_connect_byname(server, 0, NULL, name_resolve_order, 
+					  NULL);
 
 	if (sock == NULL) return false;
 	
-	cli->transport = smbcli_transport_init(sock, cli, true);
+	cli->transport = smbcli_transport_init(sock, cli, true, max_xmit,
+					       max_mux);
 	if (!cli->transport) {
 		return false;
 	}

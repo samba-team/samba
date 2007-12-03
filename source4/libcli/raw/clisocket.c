@@ -199,6 +199,7 @@ resolve a hostname and connect
 ****************************************************************************/
 struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 						 TALLOC_CTX *mem_ctx,
+						 const char **name_resolve_order,
 						 struct event_context *event_ctx)
 {
 	int name_type = NBT_NAME_SERVER;
@@ -239,7 +240,7 @@ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 
 	make_nbt_name(&nbt_name, host, name_type);
 	
-	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx, lp_name_resolve_order(global_loadparm));
+	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx, name_resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return NULL;

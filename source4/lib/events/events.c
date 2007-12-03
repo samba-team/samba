@@ -183,11 +183,6 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 
 	event_backend_init();
 
-#if _SAMBA_BUILD_
-	if (name == NULL) {
-		name = lp_parm_string(global_loadparm, NULL, "event", "backend");
-	}
-#endif
 	if (name == NULL) {
 		name = event_default_backend;
 	}

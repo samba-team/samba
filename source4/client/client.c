@@ -3078,7 +3078,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 
 	server_name = destip ? destip : desthost;
 
-	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name)) {
+	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, lp_name_resolve_order(global_loadparm), lp_max_xmit(global_loadparm), lp_maxmux(global_loadparm))) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
