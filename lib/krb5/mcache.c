@@ -434,6 +434,18 @@ mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return 0;
 }
 
+static krb5_error_code
+mcc_default_name(krb5_context context, const char **str)
+{
+    *str = strdup("MEMORY:");
+    if (*str == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+
 /**
  * Variable containing the MEMORY based credential cache implemention.
  *
@@ -460,5 +472,6 @@ const krb5_cc_ops krb5_mcc_ops = {
     mcc_get_cache_first,
     mcc_get_cache_next,
     mcc_end_cache_get,
-    mcc_move
+    mcc_move,
+    mcc_default_name
 };
