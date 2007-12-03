@@ -680,24 +680,6 @@ int sys_chroot(const char *dname)
 
 #if defined(HAVE_POSIX_CAPABILITIES)
 
-#ifdef HAVE_SYS_CAPABILITY_H
-
-#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H) && !defined(_PPC_STATFS_H)
-#define _I386_STATFS_H
-#define _PPC_STATFS_H
-#define BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
-#include <sys/capability.h>
-
-#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#undef _I386_STATFS_H
-#undef _PPC_STATFS_H
-#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
-#endif /* HAVE_SYS_CAPABILITY_H */
-
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
