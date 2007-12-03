@@ -435,7 +435,7 @@ mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 }
 
 static krb5_error_code
-mcc_default_name(krb5_context context, const char **str)
+mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
     if (*str == NULL) {
