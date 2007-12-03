@@ -653,40 +653,38 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	message("Adding DomainDN: " + subobj.DOMAINDN + " (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
 	message("Modifying DomainDN: " + subobj.DOMAINDN + "\n");
-	var modify_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
-	if (!modify_ok) {
+	var modify_basedn_ok = setup_ldb_modify("provision_basedn_modify.ldif", info, samdb);
+	if (!modify_basedn_ok) {
 		if (!add_ok) {
 			message("%s", "Failed to both add and modify " + subobj.DOMAINDN + " in target " + subobj.DOMAINDN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
 		};
-		assert(modify_ok);
+		assert(modify_basedn_ok);
 	};
 
 	message("Adding configuration container (permitted to fail)\n");
-	var add_ok = setup_add_ldif("provision_configuration_basedn.ldif", info, samdb, true);
+	var add_config_ok = setup_add_ldif("provision_configuration_basedn.ldif", info, samdb, true);
 	message("Modifying configuration container\n");
-	var modify_ok = setup_ldb_modify("provision_configuration_basedn_modify.ldif", info, samdb);
-	if (!modify_ok) {
-		if (!add_ok) {
+	var modify_config_ok = setup_ldb_modify("provision_configuration_basedn_modify.ldif", info, samdb);
+	if (!modify_config_ok) {
+		if (!add_config_ok) {
 			message("%s", "Failed to both add and modify " + subobj.CONFIGDN + " in target " + subobj.CONFIGDN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
-			assert(modify_ok);
 		}
-		assert(modify_ok);
+		assert(modify_config_ok);
 	}
 
 	message("Adding schema container (permitted to fail)\n");
-	var add_ok = setup_add_ldif("provision_schema_basedn.ldif", info, samdb, true);
+	var add_schema_ok = setup_add_ldif("provision_schema_basedn.ldif", info, samdb, true);
 	message("Modifying schema container\n");
-	var modify_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
-	if (!modify_ok) {
-		if (!add_ok) {
+	var modify_schema_ok = setup_ldb_modify("provision_schema_basedn_modify.ldif", info, samdb);
+	if (!modify_schema_ok) {
+		if (!add_schema_ok) {
 			message("%s", "Failed to both add and modify " + subobj.SCHEMADN + " in target " + subobj.SCHEMADN_LDB + ": " + samdb.errstring() + "\n");
 			message("Perhaps you need to run the provision script with the --ldap-base-dn option, and add this record to the backend manually\n"); 
-			assert(modify_ok);
 		}
 		message("Failed to modify the schema container: " + samdb.errstring() + "\n");
-		assert(modify_ok);
+		assert(modify_schema_ok);
 	}
 
 	message("Setting up sam.ldb Samba4 schema\n");
@@ -711,26 +709,24 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	setup_add_ldif("display_specifiers.ldif", info, samdb, false);
 
 	message("Adding users container (permitted to fail)\n");
-	var add_ok = setup_add_ldif("provision_users_add.ldif", info, samdb, true);
+	var add_users_ok = setup_add_ldif("provision_users_add.ldif", info, samdb, true);
 	message("Modifying users container\n");
-	var modify_ok = setup_ldb_modify("provision_users_modify.ldif", info, samdb);
-	if (!modify_ok) {
-		if (!add_ok) {
+	var modify_users_ok = setup_ldb_modify("provision_users_modify.ldif", info, samdb);
+	if (!modify_users_ok) {
+		if (!add_users_ok) {
 			message("Failed to both add and modify the users container\n");
-			assert(modify_ok);
 		}
-		assert(modify_ok);
+		assert(modify_users_ok);
 	}
 	message("Adding computers container (permitted to fail)\n");
-	var add_ok = setup_add_ldif("provision_computers_add.ldif", info, samdb, true);
+	var add_computers_ok = setup_add_ldif("provision_computers_add.ldif", info, samdb, true);
 	message("Modifying computers container\n");
-	var modify_ok = setup_ldb_modify("provision_computers_modify.ldif", info, samdb);
-	if (!modify_ok) {
-		if (!add_ok) {
+	var modify_computers_ok = setup_ldb_modify("provision_computers_modify.ldif", info, samdb);
+	if (!modify_computers_ok) {
+		if (!add_computers_ok) {
 			message("Failed to both add and modify the computers container\n");
-			assert(modify_ok);
 		}
-		assert(modify_ok);
+		assert(modify_computers_ok);
 	}
 
 	message("Setting up sam.ldb data\n");
