@@ -60,6 +60,7 @@ static void wbsrv_accept(struct stream_connection *conn)
 	}
 	wbconn->conn	      = conn;
 	wbconn->listen_socket = listen_socket;
+	wbconn->lp_ctx        = global_loadparm;
 	conn->private         = wbconn;
 
 	wbconn->packet = packet_init(wbconn);

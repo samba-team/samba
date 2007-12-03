@@ -40,7 +40,8 @@ static void sesssetup_common_strings(struct smbsrv_request *req,
 {
 	(*os) = talloc_asprintf(req, "Unix");
 	(*lanman) = talloc_asprintf(req, "Samba %s", SAMBA_VERSION_STRING);
-	(*domain) = talloc_asprintf(req, "%s", lp_workgroup(global_loadparm));
+	(*domain) = talloc_asprintf(req, "%s", 
+				    lp_workgroup(req->smb_conn->lp_ctx));
 }
 
 static void smbsrv_sesssetup_backend_send(struct smbsrv_request *req,
@@ -69,7 +70,8 @@ static void sesssetup_old_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, global_loadparm, server_info, &session_info);
+	status = auth_generate_session_info(req, req->smb_conn->lp_ctx, 
+					    server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
@@ -164,7 +166,8 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, global_loadparm, server_info, &session_info);
+	status = auth_generate_session_info(req, req->smb_conn->lp_ctx, 
+					    server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* allocate a new session */
@@ -246,7 +249,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		status = auth_context_create(req, 
 					     req->smb_conn->connection->event.ctx,
 					     req->smb_conn->connection->msg_ctx,
-					     global_loadparm,
+					     req->smb_conn->lp_ctx,
 					     &auth_context);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	} else {
@@ -380,7 +383,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 
 		status = gensec_server_start(req,
 					     req->smb_conn->connection->event.ctx,
-					     global_loadparm,
+					     req->smb_conn->lp_ctx,
 					     req->smb_conn->connection->msg_ctx,
 					     &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {

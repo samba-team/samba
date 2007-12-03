@@ -374,6 +374,8 @@ struct smbsrv_connection {
 	} statistics;
 
 	struct share_context *share_context;
+
+	struct loadparm_context *lp_ctx;
 };
 
 struct model_ops;
