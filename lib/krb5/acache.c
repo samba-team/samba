@@ -557,6 +557,10 @@ acc_destroy(krb5_context context,
 	error = (*a->ccache->func->destroy)(a->ccache);
 	a->ccache = NULL;
     }
+    if (a->context) {
+	error = (a->context->func->release)(a->context);
+	a->context = NULL;
+    }
     return translate_cc_error(context, error);
 }
 
@@ -892,6 +896,40 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return translate_cc_error(context, error);
 }
 
+static krb5_error_code
+acc_default_name(krb5_context context, char **str)
+{
+    krb5_error_code ret;
+    cc_context_t cc;
+    cc_string_t name;
+    int32_t error;
+
+    ret = init_ccapi(context);
+    if (ret)
+	return ret;
+
+    error = (*init_func)(&cc, ccapi_version_3, NULL, NULL);
+    if (error)
+	return translate_cc_error(context, error);
+
+    error = (*cc->func->get_default_ccache_name)(cc, &name);
+    if (error) {
+	(*cc->func->release)(cc);
+	return translate_cc_error(context, error);
+    }
+	
+    asprintf(str, "API:%s", name->data);
+    (*name->func->release)(name);
+    (*cc->func->release)(cc);
+
+    if (*str == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
+
 /**
  * Variable containing the API based credential cache implemention.
  *
@@ -918,5 +956,6 @@ const krb5_cc_ops krb5_acc_ops = {
     acc_get_cache_first,
     acc_get_cache_next,
     acc_end_cache_get,
-    acc_move
+    acc_move,
+    acc_default_name
 };
