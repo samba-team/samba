@@ -29,14 +29,15 @@
 
 
 	
-bool count_calls(TALLOC_CTX *mem_ctx,
+bool count_calls(struct torture_context *tctx,
+		 TALLOC_CTX *mem_ctx,
 		 const struct ndr_interface_table *iface,
 	bool all) 
 {
 	struct dcerpc_pipe *p;
 	DATA_BLOB stub_in, stub_out;
 	int i;
-	NTSTATUS status = torture_rpc_connection(mem_ctx, &p, iface);
+	NTSTATUS status = torture_rpc_connection(tctx, &p, iface);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)
 	    || NT_STATUS_EQUAL(NT_STATUS_NET_WRITE_FAULT, status)
 	    || NT_STATUS_EQUAL(NT_STATUS_PORT_UNREACHABLE, status)
@@ -107,10 +108,6 @@ bool torture_rpc_countcalls(struct torture_context *torture)
 	const char *iface_name;
 	bool ret = true;
 	const struct ndr_interface_list *l;
-	TALLOC_CTX *mem_ctx = talloc_named(torture, 0, "torture_rpc_countcalls context");
-	if (!mem_ctx) {
-		return false;
-	}
 	iface_name = lp_parm_string(torture->lp_ctx, NULL, "countcalls", "interface");
 	if (iface_name != NULL) {
 		iface = ndr_table_by_name(iface_name);
@@ -118,13 +115,13 @@ bool torture_rpc_countcalls(struct torture_context *torture)
 			printf("Unknown interface '%s'\n", iface_name);
 			return false;
 		}
-		return count_calls(mem_ctx, iface, false);
+		return count_calls(torture, torture, iface, false);
 	}
 
 	for (l=ndr_table_list();l;l=l->next) {		
 		TALLOC_CTX *loop_ctx;
-		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_councalls loop context");
-		ret &= count_calls(loop_ctx, l->table, true);
+		loop_ctx = talloc_named(torture, 0, "torture_rpc_councalls loop context");
+		ret &= count_calls(torture, loop_ctx, l->table, true);
 		talloc_free(loop_ctx);
 	}
 	return ret;

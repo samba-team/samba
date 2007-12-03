@@ -387,7 +387,12 @@ const char *torture_setting_string(struct torture_context *test,
 				   const char *name, 
 				   const char *default_value)
 {
-	const char *ret = lp_parm_string(test->lp_ctx, NULL, "torture", name);
+	const char *ret;
+
+	SMB_ASSERT(test != NULL);
+	SMB_ASSERT(test->lp_ctx != NULL);
+	
+	ret = lp_parm_string(test->lp_ctx, NULL, "torture", name);
 
 	if (ret == NULL)
 		return default_value;
