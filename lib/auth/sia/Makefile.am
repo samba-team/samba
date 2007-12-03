@@ -66,8 +66,10 @@ MOD = libsia_krb4.so
 
 endif
 
-EXTRA_DIST = sia.c krb4_matrix.conf krb4+c2_matrix.conf \
-	krb5_matrix.conf krb5+c2_matrix.conf security.patch
+EXTRA_DIST = sia.c sia_locl.h posix_getpw.c \
+	krb4_matrix.conf krb4+c2_matrix.conf \
+	krb5_matrix.conf krb5+c2_matrix.conf \
+	security.patch
 
 foodir = $(libdir)
 foo_DATA = $(MOD)
