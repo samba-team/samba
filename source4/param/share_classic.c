@@ -23,7 +23,9 @@
 #include "param/share.h"
 #include "param/param.h"
 
-static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct share_context **ctx)
+static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, 
+			      const struct share_ops *ops, 
+			      struct share_context **ctx)
 {
 	*ctx = talloc(mem_ctx, struct share_context);
 	if (!*ctx) {
@@ -37,7 +39,9 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 
 	return NT_STATUS_OK;
 }
 
-static const char *sclassic_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
+static const char *sclassic_string_option(struct share_config *scfg, 
+					  const char *opt_name, 
+					  const char *defval)
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);

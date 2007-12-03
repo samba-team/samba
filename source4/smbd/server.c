@@ -334,7 +334,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
-	status = server_service_startup(event_ctx, global_loadparm, model, lp_server_services(global_loadparm));
+	status = server_service_startup(event_ctx, global_loadparm, model, 
+					lp_server_services(global_loadparm));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;

@@ -719,7 +719,7 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 #endif
 	ret &= test_DsGetDomainControllerInfo(p, torture, &priv);
 
-	ret &= test_DsCrackNames(p, torture, &priv);
+	ret &= test_DsCrackNames(torture, p, torture, &priv);
 
 	ret &= test_DsWriteAccountSpn(p, torture, &priv);
 
@@ -771,7 +771,7 @@ bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 		/* We don't care if this fails, we just need some info from it */
 		test_DsGetDomainControllerInfo(p, torture, &priv);
 		
-		ret &= test_DsCrackNames(p, torture, &priv);
+		ret &= test_DsCrackNames(torture, p, torture, &priv);
 		
 		ret &= test_DsUnbind(p, torture, &priv);
 	}

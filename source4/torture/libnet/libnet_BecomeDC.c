@@ -254,7 +254,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	talloc_free(s->ldb);
 
-	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", s->path.samdb_ldb));
+	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
+		 s->path.samdb_ldb));
 
 	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
 				  system_session(s, global_loadparm),

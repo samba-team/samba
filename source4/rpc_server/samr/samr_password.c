@@ -38,8 +38,9 @@
 /* 
   samr_ChangePasswordUser 
 */
-NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				 struct samr_ChangePasswordUser *r)
+NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, 
+					TALLOC_CTX *mem_ctx,
+					struct samr_ChangePasswordUser *r)
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;

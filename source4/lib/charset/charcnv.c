@@ -274,7 +274,8 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
 		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
-			  charset_name(global_loadparm, from), charset_name(global_loadparm, to)));
+			  charset_name(global_loadparm, from), 
+			  charset_name(global_loadparm, to)));
 		return -1;
 	}
 
