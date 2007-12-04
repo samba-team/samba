@@ -43,17 +43,14 @@ OM_uint32 _gss_ntlm_delete_sec_context
 {
     if (context_handle) {
 	ntlm_ctx ctx = (ntlm_ctx)*context_handle;
+	gss_cred_id_t cred = (gss_cred_id_t)ctx->client;
+
 	*context_handle = GSS_C_NO_CONTEXT;
 
 	if (ctx->server)
 	    (*ctx->server->nsi_destroy)(minor_status, ctx->ictx);
 
-	if (ctx->client.username)
-	    free(ctx->client.username);
-	if (ctx->client.key.data) {
-	    memset(ctx->client.key.data, 0, ctx->client.key.length);
-	    free(ctx->client.key.data);
-	}
+	_gss_ntlm_release_cred(NULL, &cred);
 
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);

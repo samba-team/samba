@@ -166,15 +166,27 @@ out:
 }
 
 int
-_gss_ntlm_get_user_info(const char *domain,
-			char **username, 
-			struct ntlm_buf *key)
+_gss_ntlm_get_user_cred(const char *domain,
+			ntlm_cred *rcred)
 {
+    ntlm_cred cred;
     int ret;
-
-    ret = get_user_file(domain, username, key);
+ 
+    cred = calloc(1, sizeof(*cred));
+    if (cred == NULL)
+	return ENOMEM;
+    
+    ret = get_user_file(domain, &cred->username, &cred->key);
     if (ret)
-	ret = get_user_ccache(domain, username, key);
+	ret = get_user_ccache(domain, &cred->username, &cred->key);
+    if (ret) {
+	free(cred);
+	return ret;
+    }
+    
+    cred->domain = strdup(domain);
+    *rcred = cred;
+
     return ret;
 }
 
@@ -220,9 +232,7 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = _gss_ntlm_get_user_info(name->domain,
-				      &ctx->client.username, 
-				      &ctx->client.key);
+	ret = _gss_ntlm_get_user_cred(name->domain, &ctx->client);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
@@ -285,7 +295,7 @@ _gss_ntlm_init_sec_context
 
 	memset(&type3, 0, sizeof(type3));
 
-	type3.username = ctx->client.username;
+	type3.username = ctx->client->username;
 	type3.flags = type2.flags;
 	type3.targetname = type2.targetname;
 	type3.ws = rk_UNCONST("workstation");
@@ -309,12 +319,12 @@ _gss_ntlm_init_sec_context
 
 		ret = heim_ntlm_calculate_ntlm2_sess(nonce,
 						     type2.challange,
-						     ctx->client.key.data,
+						     ctx->client->key.data,
 						     &type3.lm,
 						     &type3.ntlm);
 	    } else {
-		ret = heim_ntlm_calculate_ntlm1(ctx->client.key.data, 
-						ctx->client.key.length,
+		ret = heim_ntlm_calculate_ntlm1(ctx->client->key.data, 
+						ctx->client->key.length,
 						type2.challange,
 						&type3.ntlm);
 
@@ -325,8 +335,8 @@ _gss_ntlm_init_sec_context
 		return GSS_S_FAILURE;
 	    }
 
-	    ret = heim_ntlm_build_ntlm1_master(ctx->client.key.data, 
-					       ctx->client.key.length,
+	    ret = heim_ntlm_build_ntlm1_master(ctx->client->key.data, 
+					       ctx->client->key.length,
 					       &sessionkey,
 					       &type3.sessionkey);
 	    if (ret) {
@@ -375,9 +385,9 @@ _gss_ntlm_init_sec_context
 		return GSS_S_FAILURE;
 	    }
 
-	    ret = heim_ntlm_calculate_ntlm2(ctx->client.key.data,
-					    ctx->client.key.length,
-					    ctx->client.username,
+	    ret = heim_ntlm_calculate_ntlm2(ctx->client->key.data,
+					    ctx->client->key.length,
+					    ctx->client->username,
 					    name->domain,
 					    type2.challange,
 					    &type2.targetinfo,

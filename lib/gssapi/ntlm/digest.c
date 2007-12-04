@@ -45,6 +45,7 @@ struct ntlmkrb5 {
     krb5_realm kerberos_realm;
     krb5_ccache id;
     krb5_data opaque;
+    int destroy;
     OM_uint32 flags;
     struct ntlm_buf key;
     krb5_data sessionkey;
@@ -58,11 +59,11 @@ static OM_uint32 kdc_destroy(OM_uint32 *, void *);
  */
 
 static krb5_error_code
-get_ccache(krb5_context context, krb5_ccache *id)
+get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
 {
     krb5_principal principal = NULL;
     krb5_error_code ret;
-    krb5_keytab kt;
+    krb5_keytab kt = NULL;
 
     *id = NULL;
     
@@ -85,7 +86,7 @@ get_ccache(krb5_context context, krb5_ccache *id)
     
     ret = krb5_cc_cache_match(context, principal, NULL, id);
     if (ret == 0)
-	goto out;
+	return 0;
     
     /* did not find in default credcache, lets try default keytab */
     ret = krb5_kt_default(context, &kt);
@@ -93,27 +94,55 @@ get_ccache(krb5_context context, krb5_ccache *id)
 	goto out;
 
     /* XXX check in keytab */
-#if 0
     {
-	krb5_creds cred = NULL;
+	krb5_get_init_creds_opt *opt;
+	krb5_creds cred;
 
+	memset(&cred, 0, sizeof(cred));
+
+	ret = krb5_cc_new_unique(context, "MEMORY", NULL, id);
+	if (ret)
+	    goto out;
+	*destroy = 1;
+	ret = krb5_get_init_creds_opt_alloc(context, &opt);
+	if (ret)
+	    goto out;
 	ret = krb5_get_init_creds_keytab (context,
 					  &cred,
 					  principal,
 					  kt,
+					  0,
 					  NULL,
-					  NULL,
-					  NULL);
+					  opt);
+	krb5_get_init_creds_opt_free(context, opt);
 	if (ret)
 	    goto out;
-	ret = krb5_cc_initialize (context, ccache, cred.client);
-	ret = krb5_cc_store_cred (context, ccache, &cred);
+	ret = krb5_cc_initialize (context, *id, cred.client);
+	if (ret) {
+	    krb5_free_cred_contents (context, &cred);
+	    goto out;
+	}
+	ret = krb5_cc_store_cred (context, *id, &cred);
 	krb5_free_cred_contents (context, &cred);
+	if (ret)
+	    goto out;
     }
-#endif
+
     krb5_kt_close(context, kt);
     
+    return 0;
+
 out:
+    if (*destroy)
+	krb5_cc_destroy(context, *id);
+    else
+	krb5_cc_close(context, *id);
+
+    *id = NULL;
+
+    if (kt)
+	krb5_kt_close(context, kt);
+
     if (principal)
 	krb5_free_principal(context, principal);
     return ret;
@@ -143,7 +172,7 @@ kdc_alloc(OM_uint32 *minor, void **ctx)
 	return GSS_S_FAILURE;
     }
 
-    ret = get_ccache(c->context, &c->id);
+    ret = get_ccache(c->context, &c->destroy, &c->id);
     if (ret) {
 	kdc_destroy(&junk, c);
 	*minor = ret;
@@ -162,6 +191,23 @@ kdc_alloc(OM_uint32 *minor, void **ctx)
     return GSS_S_COMPLETE;
 }
 
+static int
+kdc_probe(OM_uint32 *minor, void *ctx, const char *realm)
+{
+    struct ntlmkrb5 *c = ctx;
+    krb5_error_code ret;
+    unsigned flags;
+
+    ret = krb5_digest_probe(c->context, realm, c->id, &flags);
+    if (ret)
+	return ret;
+    
+    if ((flags & (1|2|4)) == 0)
+	return EINVAL;
+
+    return 0;
+}
+
 /*
  *
  */
@@ -174,8 +220,12 @@ kdc_destroy(OM_uint32 *minor, void *ctx)
     krb5_data_free(&c->sessionkey);
     if (c->ntlm)
 	krb5_ntlm_free(c->context, c->ntlm);
-    if (c->id)
-	krb5_cc_close(c->context, c->id);
+    if (c->id) {
+	if (c->destroy)
+	    krb5_cc_destroy(c->context, c->id);
+	else
+	    krb5_cc_close(c->context, c->id);
+    }
     if (c->context)
 	krb5_free_context(c->context);
     memset(c, 0, sizeof(*c));
@@ -378,6 +428,7 @@ kdc_free_buffer(struct ntlm_buf *sessionkey)
 struct ntlm_server_interface ntlmsspi_kdc_digest = {
     kdc_alloc,
     kdc_destroy,
+    kdc_probe,
     kdc_type2,
     kdc_type3,
     kdc_free_buffer

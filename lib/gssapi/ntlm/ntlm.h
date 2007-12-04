@@ -63,20 +63,16 @@ typedef OM_uint32
 typedef OM_uint32
 (*ntlm_interface_destroy)(OM_uint32 *, void *);
 
-typedef OM_uint32
-(*ntlm_interface_type2)(OM_uint32 *minor_status,
-			void *ctx,
-			uint32_t flags,
-			const char *hostname,
-			const char *domain,
-			uint32_t *ret_flags,
-			struct ntlm_buf *type2);
+typedef int
+(*ntlm_interface_probe)(OM_uint32 *, void *, const char *);
 
 typedef OM_uint32
-(*ntlm_interface_type3)(OM_uint32 *minor_status,
-			void *ctx,
-			const struct ntlm_type3 *type3,
-			struct ntlm_buf *sessionkey);
+(*ntlm_interface_type2)(OM_uint32 *, void *, uint32_t, const char *,
+			const char *, uint32_t *, struct ntlm_buf *);
+
+typedef OM_uint32
+(*ntlm_interface_type3)(OM_uint32 *, void *, const struct ntlm_type3 *,
+			struct ntlm_buf *);
 
 typedef void
 (*ntlm_interface_free_buffer)(struct ntlm_buf *);
@@ -84,6 +80,7 @@ typedef void
 struct ntlm_server_interface {
     ntlm_interface_init nsi_init;
     ntlm_interface_destroy nsi_destroy;
+    ntlm_interface_probe nsi_probe;
     ntlm_interface_type2 nsi_type2;
     ntlm_interface_type3 nsi_type3;
     ntlm_interface_free_buffer nsi_free_buffer;
@@ -99,13 +96,16 @@ struct ntlmv2_key {
 
 extern struct ntlm_server_interface ntlmsspi_kdc_digest;
 
+typedef struct ntlm_cred {
+    char *username;
+    char *domain;
+    struct ntlm_buf key;
+} *ntlm_cred;
+
 typedef struct {
     struct ntlm_server_interface *server;
     void *ictx;
-    struct {
-	char *username;
-	struct ntlm_buf key;
-    } client;
+    ntlm_cred client;
     OM_uint32 gssflags;
     uint32_t flags;
     uint32_t status;
@@ -126,10 +126,6 @@ typedef struct {
 	} v2;
     } u;
 } *ntlm_ctx;
-
-typedef struct {
-    int foo;
-} *ntlm_cred;
 
 typedef struct {
     char domain[1];

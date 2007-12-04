@@ -46,6 +46,7 @@ OM_uint32 _gss_ntlm_acquire_cred
             OM_uint32 * time_rec
            )
 {
+    ntlm_name name = (ntlm_name) desired_name;
     OM_uint32 maj_stat;
     ntlm_ctx ctx;
 
@@ -57,14 +58,30 @@ OM_uint32 _gss_ntlm_acquire_cred
     if (time_rec)
 	*time_rec = GSS_C_INDEFINITE;
 
-    maj_stat = _gss_ntlm_allocate_ctx(min_stat, &ctx);
-    if (maj_stat != GSS_S_COMPLETE)
-	return maj_stat;
+    if (desired_name == NULL)
+	return GSS_S_NO_CRED;
 
-    {
-	gss_ctx_id_t context = (gss_ctx_id_t)ctx;
-	_gss_ntlm_delete_sec_context(min_stat, &context, NULL);
-	*min_stat = 0;
+    if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_ACCEPT) {
+
+	maj_stat = _gss_ntlm_allocate_ctx(min_stat, &ctx);
+	if (maj_stat != GSS_S_COMPLETE)
+	    return maj_stat;
+	
+	maj_stat = (*ctx->server->nsi_probe)(min_stat, ctx->ictx, 
+					     name->domain);
+
+	if (maj_stat)
+	    return maj_stat;
+
+	{
+	    gss_ctx_id_t context = (gss_ctx_id_t)ctx;
+	    _gss_ntlm_delete_sec_context(min_stat, &context, NULL);
+	    *min_stat = 0;
+	}
+    }	
+
+    if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
+	/* check if cred exists XXX */
     }
 
     return (GSS_S_COMPLETE);

@@ -43,7 +43,6 @@ OM_uint32
 _gss_ntlm_allocate_ctx(OM_uint32 *minor_status, ntlm_ctx *ctx)
 {
     OM_uint32 maj_stat;
-    /* krb5_error_code ret; */
 
     *ctx = calloc(1, sizeof(**ctx));
 
@@ -123,10 +122,19 @@ _gss_ntlm_accept_sec_context
 	}
 
 	if ((type1.flags & NTLM_NEG_UNICODE) == 0) {
+	    heim_ntlm_free_type1(&type1);
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = EINVAL;
 	    return GSS_S_FAILURE;
 	}
+
+	major_status = (*ctx->server->nsi_probe)(minor_status, ctx->ictx, NULL);
+	if (major_status) {
+	    heim_ntlm_free_type1(&type1);
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
+	    return major_status;
+	}
+
 
 	if (type1.flags & NTLM_NEG_SIGN)
 	    ctx->gssflags |= GSS_C_CONF_FLAG;
