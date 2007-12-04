@@ -199,7 +199,8 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 /*
   perform a sasl bind using the given credentials
 */
-NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
+NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
+			struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;

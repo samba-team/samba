@@ -205,8 +205,9 @@ static void continue_smb2_connect(struct composite_context *ctx)
    Initiate async open of a rpc connection request on SMB2 using
    the binding structure to determine the endpoint and options
 */
-static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem_ctx,
-									struct dcerpc_pipe_connect *io)
+static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
+					TALLOC_CTX *mem_ctx,
+					struct dcerpc_pipe_connect *io)
 {
 	struct composite_context *c;
 	struct pipe_np_smb2_state *s;
@@ -235,7 +236,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_C
 
 	/* send smb2 connect request */
 	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", 
-				     lp_name_resolve_order(global_loadparm),
+				     s->io.name_resolve_order,
 				     s->io.creds,
 				     c->event_ctx);
 	composite_continue(c, conn_req, continue_smb2_connect, c);
@@ -518,6 +519,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.binding      = s->binding;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
+	pc.name_resolve_order = lp_name_resolve_order(global_loadparm);
 
 	/* connect dcerpc pipe depending on required transport */
 	switch (s->binding->transport) {

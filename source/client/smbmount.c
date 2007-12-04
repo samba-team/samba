@@ -409,7 +409,7 @@ static void send_fs_socket(struct loadparm_context *lp_ctx,
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
 			c = do_connection(the_service, 
 					  lp_unicode(lp_ctx), 
-					  lp_cli_maxprotocol(global_loadparm));
+					  lp_cli_maxprotocol(lp_ctx));
 		}
 	}
 
@@ -422,7 +422,7 @@ static void send_fs_socket(struct loadparm_context *lp_ctx,
 /**
  * Mount a smbfs
  **/
-static void init_mount(void)
+static void init_mount(struct loadparm_context *lp_ctx)
 {
 	char mount_point[MAXPATHLEN+1];
 	pstring tmp;
@@ -437,7 +437,7 @@ static void init_mount(void)
 	}
 
 
-	c = do_connection(service, lp_unicode(global_loadparm), lp_cli_maxprotocol(global_loadparm));
+	c = do_connection(service, lp_unicode(lp_ctx), lp_cli_maxprotocol(lp_ctx));
 	if (!c) {
 		fprintf(stderr,"SMB connection failed\n");
 		exit(1);
@@ -530,7 +530,7 @@ static void init_mount(void)
 	   for any reason, we will have to unmount the mount point.  There
 	   is no exit from the next call...
 	*/
-	send_fs_socket(global_loadparm, service, mount_point, c);
+	send_fs_socket(lp_ctx, service, mount_point, c);
 }
 
 
@@ -923,6 +923,6 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 	strupper(my_netbios_name);
 
-	init_mount();
+	init_mount(global_loadparm);
 	return 0;
 }
