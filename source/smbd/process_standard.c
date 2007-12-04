@@ -195,9 +195,9 @@ _NORETURN_ static void standard_terminate(struct event_context *ev, const char *
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
 
-	/* this close_iconv() has the effect of freeing the iconv context memory,
+	/* this reload_charcnv() has the effect of freeing the iconv context memory,
 	   which makes leak checking easier */
-	close_iconv();
+	reload_charcnv();
 
 	/* the secrets db should really hang off the connection structure */
 	secrets_shutdown();

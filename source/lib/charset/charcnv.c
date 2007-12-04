@@ -38,16 +38,26 @@
  * @sa lib/iconv.c
  */
 
+struct smb_iconv_convenience {
+	const char *unix_charset;
+	const char *dos_charset;
+	const char *display_charset;
+	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
+};
+
+static struct smb_iconv_convenience *global_smb_iconv_convenience = NULL;
+
+
 /**
  * Return the name of a charset to give to iconv().
  **/
-static const char *charset_name(struct loadparm_context *lp_ctx, charset_t ch)
+static const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
 {
 	switch (ch) {
 	case CH_UTF16: return "UTF-16LE";
-	case CH_UNIX: return lp_unix_charset(lp_ctx);
-	case CH_DOS: return lp_dos_charset(lp_ctx);
-	case CH_DISPLAY: return lp_display_charset(lp_ctx);
+	case CH_UNIX: return ic->unix_charset;
+	case CH_DOS: return ic->dos_charset;
+	case CH_DISPLAY: return ic->display_charset;
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
 	default:
@@ -55,31 +65,57 @@ static const char *charset_name(struct loadparm_context *lp_ctx, charset_t ch)
 	}
 }
 
-static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
-
 /**
  re-initialize iconv conversion descriptors
 **/
-_PUBLIC_ void close_iconv(void)
+static int close_iconv(struct smb_iconv_convenience *data)
 {
 	unsigned c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
-			if (conv_handles[c1][c2] != NULL) {
-				if (conv_handles[c1][c2] != (smb_iconv_t)-1) {
-					smb_iconv_close(conv_handles[c1][c2]);
+			if (data->conv_handles[c1][c2] != NULL) {
+				if (data->conv_handles[c1][c2] != (smb_iconv_t)-1) {
+					smb_iconv_close(data->conv_handles[c1][c2]);
 				}
-				conv_handles[c1][c2] = NULL;
+				data->conv_handles[c1][c2] = NULL;
 			}
 		}
 	}
 
+	return 0;
+}
+
+struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
+							 struct loadparm_context *lp_ctx)
+{
+	struct smb_iconv_convenience *ret = talloc_zero(mem_ctx, 
+							struct smb_iconv_convenience);
+
+	talloc_set_destructor(ret, close_iconv);
+
+	ret->display_charset = talloc_strdup(ret, lp_display_charset(lp_ctx));
+	ret->dos_charset = talloc_strdup(ret, lp_dos_charset(lp_ctx));
+	ret->unix_charset = talloc_strdup(ret, lp_unix_charset(lp_ctx));
+
+	return ret;
+}
+
+
+_PUBLIC_ void reload_charcnv(void)
+{
+	talloc_free(global_smb_iconv_convenience);
+	global_smb_iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), global_loadparm);
+}
+
+static void free_global_smb_iconv_convenience(void)
+{
+	talloc_free(global_smb_iconv_convenience);
 }
 
 /*
   on-demand initialisation of conversion handles
 */
-static smb_iconv_t get_conv_handle(struct loadparm_context *lp_ctx,
+static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 				   charset_t from, charset_t to)
 {
 	const char *n1, *n2;
@@ -98,34 +134,33 @@ static smb_iconv_t get_conv_handle(struct loadparm_context *lp_ctx,
 		*/
 		setlocale(LC_ALL, "C");
 #endif
-
-		atexit(close_iconv);
+		atexit(free_global_smb_iconv_convenience);
 	}
 
-	if (conv_handles[from][to]) {
-		return conv_handles[from][to];
+	if (ic->conv_handles[from][to]) {
+		return ic->conv_handles[from][to];
 	}
 
-	n1 = charset_name(lp_ctx, from);
-	n2 = charset_name(lp_ctx, to);
+	n1 = charset_name(ic, from);
+	n2 = charset_name(ic, to);
 
-	conv_handles[from][to] = smb_iconv_open(n2,n1);
+	ic->conv_handles[from][to] = smb_iconv_open(n2,n1);
 	
-	if (conv_handles[from][to] == (smb_iconv_t)-1) {
+	if (ic->conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
-		    strcasecmp(charset_name(lp_ctx, CH_DOS), "ASCII") != 0) {
+		    strcasecmp(charset_name(ic, CH_DOS), "ASCII") != 0) {
 			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
-				 charset_name(lp_ctx, CH_DOS)));
-			lp_set_cmdline(lp_ctx, "dos charset", "ASCII");
+				 charset_name(ic, CH_DOS)));
+			ic->dos_charset = "ASCII";
 
-			n1 = charset_name(lp_ctx, from);
-			n2 = charset_name(lp_ctx, to);
+			n1 = charset_name(ic, from);
+			n2 = charset_name(ic, to);
 			
-			conv_handles[from][to] = smb_iconv_open(n2,n1);
+			ic->conv_handles[from][to] = smb_iconv_open(n2,n1);
 		}
 	}
 
-	return conv_handles[from][to];
+	return ic->conv_handles[from][to];
 }
 
 
@@ -151,7 +186,7 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 	if (srclen == (size_t)-1)
 		srclen = strlen(inbuf)+1;
 
-	descriptor = get_conv_handle(global_loadparm, from, to);
+	descriptor = get_conv_handle(global_smb_iconv_convenience, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
@@ -173,12 +208,12 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 				reason="No more room"; 
 				if (from == CH_UNIX) {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
-						 charset_name(global_loadparm, from), charset_name(global_loadparm, to),
+						 charset_name(global_smb_iconv_convenience, from), charset_name(global_smb_iconv_convenience, to),
 						 (int)srclen, (int)destlen, 
 						 (const char *)src));
 				} else {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
-						 charset_name(global_loadparm, from), charset_name(global_loadparm, to),
+						 charset_name(global_smb_iconv_convenience, from), charset_name(global_smb_iconv_convenience, to),
 						 (int)srclen, (int)destlen));
 				}
 			       return -1;
@@ -269,13 +304,13 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_
 	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
 		return (size_t)-1;
 
-	descriptor = get_conv_handle(global_loadparm, from, to);
+	descriptor = get_conv_handle(global_smb_iconv_convenience, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
 		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
-			  charset_name(global_loadparm, from), 
-			  charset_name(global_loadparm, to)));
+			  charset_name(global_smb_iconv_convenience, from), 
+			  charset_name(global_smb_iconv_convenience, to)));
 		return -1;
 	}
 
@@ -631,7 +666,7 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
-	descriptor = get_conv_handle(global_loadparm, CH_UNIX, CH_UTF16);
+	descriptor = get_conv_handle(global_smb_iconv_convenience, CH_UNIX, CH_UTF16);
 	if (descriptor == (smb_iconv_t)-1) {
 		*size = 1;
 		return INVALID_CODEPOINT;
@@ -694,7 +729,8 @@ _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 		return 1;
 	}
 
-	descriptor = get_conv_handle(global_loadparm, CH_UTF16, CH_UNIX);
+	descriptor = get_conv_handle(global_smb_iconv_convenience, 
+				     CH_UTF16, CH_UNIX);
 	if (descriptor == (smb_iconv_t)-1) {
 		return -1;
 	}

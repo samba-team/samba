@@ -2471,7 +2471,7 @@ bool lp_load(const char *filename, struct loadparm_context **ret_lp)
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
-	close_iconv();
+	reload_charcnv();
 
 	if (ret_lp != NULL)
 		*ret_lp = lp_ctx;
