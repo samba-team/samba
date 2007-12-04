@@ -61,6 +61,28 @@ usage (int ret)
 static krb5_context context;
 
 int
+digest_probe(struct digest_probe_options *opt,
+	     int argc, char ** argv)
+{
+    krb5_error_code ret;
+    krb5_realm realm;
+    unsigned flags;
+
+    realm = opt->realm_string;
+
+    if (realm == NULL)
+	errx(1, "realm missing");
+
+    ret = krb5_digest_probe(context, realm, id, &flags);
+    if (ret)
+	krb5_err(context, 1, ret, "digest_probe");
+
+    printf("flags: %u\n", flags);
+
+    return 0;
+}
+
+int
 digest_server_init(struct digest_server_init_options *opt,
 		   int argc, char ** argv)
 {
