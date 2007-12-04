@@ -48,7 +48,7 @@ static NTSTATUS zfs_get_nt_acl_common(const char *name,
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside"));
+				  "reside", name));
 		} else {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", name,
 					strerror(errno)));
@@ -149,7 +149,7 @@ static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside"));
+				  "reside", fsp->fsp_name));
 		} else {
 			DEBUG(9, ("acl(ACE_SETACL, %s): %s ", fsp->fsp_name,
 					strerror(errno)));
