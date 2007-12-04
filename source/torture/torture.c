@@ -4781,6 +4781,47 @@ static BOOL run_error_map_extract(int dummy) {
 	return True;
 }
 
+static BOOL run_sesssetup_bench(int dummy)
+{
+	static struct cli_state *c;
+	NTSTATUS status;
+	int i;
+
+	if (!(c = open_nbt_connection())) {
+		return false;
+	}
+
+	if (!cli_negprot(c)) {
+		printf("%s rejected the NT-error negprot (%s)\n", host,
+		       cli_errstr(c));
+		cli_shutdown(c);
+		return false;
+	}
+
+	for (i=0; i<torture_numops; i++) {
+		status = cli_session_setup(
+			c, username,
+			password, strlen(password),
+			password, strlen(password),
+			workgroup);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) cli_session_setup failed: %s\n",
+				 __location__, nt_errstr(status));
+			return false;
+		}
+
+		if (!cli_ulogoff(c)) {
+			d_printf("(%s) cli_ulogoff failed: %s\n",
+				 __location__, cli_errstr(c));
+			return false;
+		}
+
+		c->vuid = 0;
+	}
+
+	return True;
+}
+
 static BOOL run_local_substitute(int dummy)
 {
 	TALLOC_CTX *mem_ctx;
@@ -5026,6 +5067,7 @@ static struct {
 	{"CHKPATH",  torture_chkpath_test, 0},
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
+	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{NULL, NULL, 0}};
