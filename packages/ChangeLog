@@ -1,3 +1,7 @@
+2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mac/mac.sh: Packagemaker switch location.
+	
 2007-10-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: SUBDIRS += debian
