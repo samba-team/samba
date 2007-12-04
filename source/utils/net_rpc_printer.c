@@ -108,7 +108,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 
 static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 {
-	pstring text;
+	char *text;
 
 	switch(value.type) {
 	case REG_DWORD:
@@ -117,12 +117,18 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 		break;
 
 	case REG_SZ:
-		rpcstr_pull(text, value.data_p, sizeof(text), value.size,
-			    STR_TERMINATE);
+		rpcstr_pull_talloc(talloc_tos(),
+				&text,
+				value.data_p,
+				value.size,
+				STR_TERMINATE);
+		if (!text) {
+			break;
+		}
 		d_printf("\t[%s:%s]: REG_SZ: %s\n", subkey, value.valuename, text);
 		break;
 
-	case REG_BINARY: 
+	case REG_BINARY:
 		d_printf("\t[%s:%s]: REG_BINARY: unknown length value not displayed\n", 
 			 subkey, value.valuename);
 		break;
@@ -1033,7 +1039,7 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, num_printers; 
 	uint32 level = 2;
-	pstring printername, sharename;
+	char *printername, *sharename;
 	PRINTER_INFO_CTR ctr;
 
 	printf("listing printers\n");
@@ -1042,15 +1048,22 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
 		return nt_status;
 
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
-		
-		d_printf("printer %d: %s, shared as: %s\n", 
-			i+1, printername, sharename);
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+
+		if (printername && sharename) {
+			d_printf("printer %d: %s, shared as: %s\n",
+				i+1, printername, sharename);
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -1148,7 +1161,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, num_printers; 
 	uint32 level = 7;
-	pstring printername, sharename;
+	char *printername, *sharename;
 	PRINTER_INFO_CTR ctr, ctr_pub;
 	POLICY_HND hnd;
 	bool got_hnd = False;
@@ -1159,12 +1172,20 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 		return nt_status;
 
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			goto done;
+		}
 
 		/* open printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
@@ -1274,8 +1295,8 @@ NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, num_printers; 
 	uint32 level = 7;
-	pstring printername, sharename;
-	pstring guid;
+	char *printername, *sharename;
+	char *guid;
 	PRINTER_INFO_CTR ctr, ctr_pub;
 	POLICY_HND hnd;
 	bool got_hnd = False;
@@ -1285,14 +1306,22 @@ NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
 		return nt_status;
 
 	for (i = 0; i < num_printers; i++) {
-
 		ZERO_STRUCT(ctr_pub);
 
 		/* do some initialization */
-		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			goto done;
+		}
 
 		/* open printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
@@ -1305,8 +1334,14 @@ NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, &ctr_pub)) 
 			goto done;
 
-		rpcstr_pull(guid, ctr_pub.printers_7->guid.buffer, sizeof(guid), -1, STR_TERMINATE);
-
+		rpcstr_pull_talloc(mem_ctx,
+				&guid,
+				ctr_pub.printers_7->guid.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!guid) {
+			goto done;
+		}
 		state = ctr_pub.printers_7->action;
 		switch (state) {
 			case SPOOL_DS_PUBLISH:
@@ -1367,7 +1402,7 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
 	uint32 i = 0;
 	uint32 num_printers;
 	uint32 level = 2;
-	pstring printername = "", sharename = "";
+	char *printername, *sharename;
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
@@ -1395,20 +1430,30 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
-	} 
-	
+	}
+
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr_enum.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr_enum.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
-		/* we can reset NT_STATUS here because we do not 
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr_enum.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr_enum.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* we can reset NT_STATUS here because we do not
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
-		
+
 		d_printf("migrating printer ACLs for:     [%s] / [%s]\n", 
 			printername, sharename);
 
@@ -1515,7 +1560,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
 	uint32 i, f;
 	uint32 num_printers;
 	uint32 level = 1;
-	pstring printername = "", sharename = "";
+	char *printername, *sharename;
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
@@ -1524,16 +1569,15 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
 	uint32 num_forms;
 	FORM_1 *forms;
 	struct cli_state *cli_dst = NULL;
-	
+
 	ZERO_STRUCT(ctr_enum);
 
 	DEBUG(3,("copying forms\n"));
-	
+
 	/* connect destination PI_SPOOLSS */
 	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
-	
 
 	/* enum src printers */
 	if (!get_printer_info(pipe_hnd, mem_ctx, 2, argc, argv, &num_printers, &ctr_enum)) {
@@ -1545,22 +1589,30 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
-	} 
-	
+	}
 
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr_enum.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr_enum.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
-		/* we can reset NT_STATUS here because we do not 
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr_enum.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr_enum.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+		/* we can reset NT_STATUS here because we do not
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
-		
-		d_printf("migrating printer forms for:    [%s] / [%s]\n", 
+
+		d_printf("migrating printer forms for:    [%s] / [%s]\n",
 			printername, sharename);
 
 
@@ -1690,7 +1742,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 	uint32 i, p;
 	uint32 num_printers;
 	uint32 level = 3;
-	pstring printername = "", sharename = "";
+	char *printername, *sharename;
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
 	bool got_src_driver_share = False;
@@ -1708,7 +1760,6 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 	ZERO_STRUCT(drv_ctr_dst);
 	ZERO_STRUCT(info_ctr_enum);
 	ZERO_STRUCT(info_ctr_dst);
-
 
 	DEBUG(3,("copying printer-drivers\n"));
 
@@ -1744,17 +1795,27 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
-	} 
-	
+	}
+
 
 	/* do something for all printers */
 	for (p = 0; p < num_printers; p++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, info_ctr_enum.printers_2[p].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, info_ctr_enum.printers_2[p].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				info_ctr_enum.printers_2[p].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				info_ctr_enum.printers_2[p].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
 		/* we can reset NT_STATUS here because we do not 
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1766,7 +1827,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 		if (!net_spoolss_open_printer_ex(pipe_hnd_dst, mem_ctx, sharename,
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) 
 			goto done;
-			
+
 		got_hnd_dst = True;
 
 		/* check for existing dst printer */
@@ -1911,7 +1972,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 	PRINTER_INFO_CTR ctr_src, ctr_dst, ctr_enum;
 	struct cli_state *cli_dst = NULL;
 	POLICY_HND hnd_dst, hnd_src;
-	pstring printername, sharename;
+	char *printername, *sharename;
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
@@ -1933,21 +1994,29 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
-	} 
-	
+	}
 
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr_enum.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr_enum.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
-		/* we can reset NT_STATUS here because we do not 
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr_enum.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr_enum.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+		/* we can reset NT_STATUS here because we do not
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
-		
+
 		d_printf("migrating printer queue for:    [%s] / [%s]\n", 
 			printername, sharename);
 
@@ -2061,7 +2130,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 	uint32 i = 0, p = 0, j = 0;
 	uint32 num_printers, val_needed, data_needed;
 	uint32 level = 2;
-	pstring printername = "", sharename = "";
+	char *printername, *sharename;
 	bool got_hnd_src = False;
 	bool got_hnd_dst = False;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
@@ -2082,7 +2151,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
-
 
 	/* enum src printers */
 	if (!get_printer_info(pipe_hnd, mem_ctx, level, argc, argv, &num_printers, &ctr_enum)) {
@@ -2106,17 +2174,25 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
-
 		/* do some initialization */
-		rpcstr_pull(printername, ctr_enum.printers_2[i].printername.buffer, 
-			sizeof(printername), -1, STR_TERMINATE);
-		rpcstr_pull(sharename, ctr_enum.printers_2[i].sharename.buffer, 
-			sizeof(sharename), -1, STR_TERMINATE);
-		
+		rpcstr_pull_talloc(mem_ctx,
+				&printername,
+				ctr_enum.printers_2[i].printername.buffer,
+				-1,
+				STR_TERMINATE);
+		rpcstr_pull_talloc(mem_ctx,
+				&sharename,
+				ctr_enum.printers_2[i].sharename.buffer,
+				-1,
+				STR_TERMINATE);
+		if (!printername || !sharename) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 		/* we can reset NT_STATUS here because we do not 
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
-		
+
 		d_printf("migrating printer settings for: [%s] / [%s]\n", 
 			printername, sharename);
 
@@ -2257,9 +2333,15 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 
 		curkey = keylist;
 		while (*curkey != 0) {
-
-			pstring subkey;
-			rpcstr_pull(subkey, curkey, sizeof(subkey), -1, STR_TERMINATE);
+			char *subkey;
+			rpcstr_pull_talloc(mem_ctx,
+					&subkey,
+					curkey,
+					-1,
+					STR_TERMINATE);
+			if (!subkey) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			curkey += strlen(subkey) + 1;
 
