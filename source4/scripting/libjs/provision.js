@@ -563,6 +563,44 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 	return true;
 }
 
+function load_schema(subobj, message, samdb)
+{
+	var lp = loadparm_init();
+	var src = lp.get("setup directory") + "/" + "schema.ldif";
+
+	if (! sys.stat(src)) {
+		message("Template file not found: %s\n",src);
+		assert(0);
+	}
+
+	var schema_data = sys.file_load(src);
+
+	src = lp.get("setup directory") + "/" + "schema_samba4.ldif";
+
+	if (! sys.stat(src)) {
+		message("Template file not found: %s\n",src);
+		assert(0);
+	}
+
+	schema_data = schema_data + sys.file_load(src);
+
+	schema_data = substitute_var(schema_data, subobj);
+
+	src = lp.get("setup directory") + "/" + "provision_schema_basedn_modify.ldif";
+
+	if (! sys.stat(src)) {
+		message("Template file not found: %s\n",src);
+		assert(0);
+	}
+
+	var head_data = sys.file_load(src);
+	head_data = substitute_var(head_data, subobj);
+
+	var ok = samdb.attach_dsdb_schema_from_ldif(head_data, schema_data);
+	return ok;
+}
+
+
 /*
   provision samba4 - caution, this wipes all existing data!
 */
@@ -648,7 +686,14 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	}
 	samdb.close();
 
+	message("Pre-loading the Samba4 and AD schema\n");
+	
 	samdb = open_ldb(info, paths.samdb, false);
+
+	samdb.set_domain_sid(subobj.DOMAINSID);
+
+	var load_schema_ok = load_schema(subobj, message, samdb);
+	assert(load_schema_ok.is_ok);
 
 	message("Adding DomainDN: " + subobj.DOMAINDN + " (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_basedn.ldif", info, samdb, true);
@@ -691,16 +736,6 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	setup_add_ldif("schema_samba4.ldif", info, samdb, false);
 	message("Setting up sam.ldb AD schema\n");
 	setup_add_ldif("schema.ldif", info, samdb, false);
-
-	// (hack) Reload, now we have the schema loaded.  
-	var commit_ok = samdb.transaction_commit();
-	if (!commit_ok) {
-		info.message("samdb commit failed: " + samdb.errstring() + "\n");
-		assert(commit_ok);
-	}
-	samdb.close();
-
-	samdb = open_ldb(info, paths.samdb, false);
 
 	message("Setting up sam.ldb configuration data\n");
 	setup_add_ldif("provision_configuration.ldif", info, samdb, false);

@@ -3,8 +3,6 @@
 ###############################
 dn: ${DOMAINDN}
 changetype: modify
-replace: dnsDomain
-dnsDomain: ${DNSDOMAIN}
 -
 replace: dc
 dc: ${RDN_DC}
@@ -78,12 +76,6 @@ isCriticalSystemObject: TRUE
 replace: subRefs
 subRefs: ${CONFIGDN}
 subRefs: ${SCHEMADN}
--
-replace: masteredBy
-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
--
-replace: msDs-masteredBy
-msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -
 replace: gPLink
 gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};2]

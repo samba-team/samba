@@ -61,4 +61,9 @@ systemFlags: 33554432
 dMDLocation: ${SCHEMADN}
 invocationId: ${INVOCATIONID}
 msDS-Behavior-Version: 2
-
+msDS-hasMasterNCs: ${CONFIGDN}
+msDS-hasMasterNCs: ${SCHEMADN}
+msDS-hasMasterNCs: ${DOMAINDN}
+hasMasterNCs: ${CONFIGDN}
+hasMasterNCs: ${SCHEMADN}
+hasMasterNCs: ${DOMAINDN}

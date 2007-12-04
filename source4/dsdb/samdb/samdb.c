@@ -1136,6 +1136,43 @@ failed:
 	return NULL;
 }
 
+bool samdb_set_domain_sid(struct ldb_context *ldb, const struct dom_sid *dom_sid_in)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct dom_sid *dom_sid_new;
+	struct dom_sid *dom_sid_old;
+
+	/* see if we have a cached copy */
+	dom_sid_old = talloc_get_type(ldb_get_opaque(ldb, 
+						     "cache.domain_sid"), struct dom_sid);
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	dom_sid_new = dom_sid_dup(tmp_ctx, dom_sid_in);
+	if (!dom_sid_new) {
+		goto failed;
+	}
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.domain_sid", dom_sid_new) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, dom_sid_new);
+	talloc_free(tmp_ctx);
+	talloc_free(dom_sid_old);
+
+	return true;
+
+failed:
+	DEBUG(1,("Failed to set our own cached domain SID in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return false;
+}
+
 /* Obtain the short name of the flexible single master operator
  * (FSMO), such as the PDC Emulator */
 const char *samdb_result_fsmo_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 

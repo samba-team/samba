@@ -96,18 +96,21 @@ attributeID: 1.3.6.1.4.1.7165.4.1.5
 attributeSyntax: 2.5.5.5
 oMSyntax: 22
 
-dn: cn=dnsDomain,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: dnsDomain
-isSingleValued: FALSE
-systemFlags: 17
-systemOnly: TRUE
-schemaIDGUID: A40165E6-5E45-44A7-A8FA-186C94333018
-adminDisplayName: DNS-Domain
-attributeID: 1.3.6.1.4.1.7165.4.1.6
-attributeSyntax: 2.5.5.4
-oMSyntax: 20
+#
+# Not used anymore
+#
+#dn: cn=dnsDomain,${SCHEMADN}
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: dnsDomain
+#isSingleValued: FALSE
+#systemFlags: 17
+#systemOnly: TRUE
+#schemaIDGUID: A40165E6-5E45-44A7-A8FA-186C94333018
+#adminDisplayName: DNS-Domain
+#attributeID: 1.3.6.1.4.1.7165.4.1.6
+#attributeSyntax: 2.5.5.4
+#oMSyntax: 20
 
 dn: cn=privilege,${SCHEMADN}
 objectClass: top

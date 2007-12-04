@@ -28,6 +28,7 @@
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
+#include "libcli/security/security.h"
 
 /*
   get the connected db
@@ -598,7 +599,7 @@ static int ejs_ldb_attach_dsdb_schema_from_ldif(MprVarHandle eid, int argc, char
 }
 
 /*
-  commit a ldb attach a dsdb_schema from ldif files
+  set a particular invocationId against the running LDB
   usage:
    ok = ldb.set_ntds_invocationId("7729aa4b-f990-41ad-b81a-8b6a14090f41");
 */
@@ -640,9 +641,9 @@ static int ejs_ldb_set_ntds_invocationId(MprVarHandle eid, int argc, char **argv
 }
 
 /*
-  commit a ldb attach a dsdb_schema from ldif files
+  attach a particular ntds objectGUID against the current ldb
   usage:
-   ok = ldb.get_ntds_objectGUID("7729aa4b-f990-41ad-b81a-8b6a14090f41");
+   ok = ldb.set_ntds_objectGUID("7729aa4b-f990-41ad-b81a-8b6a14090f41");
 */
 static int ejs_ldb_set_ntds_objectGUID(MprVarHandle eid, int argc, char **argv)
 {
@@ -682,6 +683,48 @@ static int ejs_ldb_set_ntds_objectGUID(MprVarHandle eid, int argc, char **argv)
 }
 
 /*
+  attach a particular domain SID against the current ldb
+  usage:
+   ok = ldb.set_domain_sid("S-S-1-5-21-3065342217-3567412576-2214182334");
+*/
+static int ejs_ldb_set_domain_sid(MprVarHandle eid, int argc, char **argv)
+{
+	struct ldb_context *ldb;
+	struct dom_sid *dom_sid;
+	char *dom_sid_str;
+	bool ok;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.set_domain_sid invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	dom_sid_str = argv[0];
+
+	dom_sid = dom_sid_parse_talloc(NULL, dom_sid_str);
+	if (!dom_sid) {
+		ejsSetErrorMsg(eid, "ldb.set_domain_sid - failed to parse domain sid '%s'\n",
+				dom_sid_str);
+		return -1;
+	}
+
+	ok = samdb_set_domain_sid(ldb, dom_sid);
+	talloc_free(dom_sid);
+	if (!ok) {
+		ejsSetErrorMsg(eid, "ldb.set_domain_sid - failed to set cached ntds invocationId\n");
+		return -1;
+	}
+
+	mpr_Return(eid, mprCreateBoolVar(ok));
+	return 0;
+}
+
+/*
   initialise ldb ejs subsystem
 */
 static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -708,6 +751,8 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 			      ejs_ldb_set_ntds_invocationId);
 	mprSetStringCFunction(ldb, "set_ntds_objectGUID",
 			      ejs_ldb_set_ntds_objectGUID);
+	mprSetStringCFunction(ldb, "set_domain_sid",
+			      ejs_ldb_set_domain_sid);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
 	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
 	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));
