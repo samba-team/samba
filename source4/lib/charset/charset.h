@@ -70,6 +70,8 @@ typedef struct smb_iconv_s {
 #define STR_TERMINATE_ASCII 128 /* only terminate if ascii */
 #define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
 
+struct loadparm_context;
+
 #include "lib/charset/charset_proto.h"
 
 /* replace some string functions with multi-byte

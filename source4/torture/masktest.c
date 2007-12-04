@@ -310,7 +310,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	close_iconv();
+	reload_charcnv();
 
 	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEl:")) != EOF) {
 		switch (opt) {
