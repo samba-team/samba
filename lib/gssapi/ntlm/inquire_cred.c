@@ -57,6 +57,9 @@ OM_uint32 _gss_ntlm_inquire_cred
     if (mechanisms)
 	*mechanisms = GSS_C_NO_OID_SET;
 
+    if (cred_handle == GSS_C_NO_CREDENTIAL)
+	return GSS_C_NO_CREDENTIAL;
+
     if (mechanisms) {
         ret = gss_create_empty_oid_set(minor_status, mechanisms);
         if (ret)
