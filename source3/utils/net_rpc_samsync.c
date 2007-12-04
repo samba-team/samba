@@ -409,7 +409,7 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 	/* Logon Hours */
 	if (delta->buf_logon_hrs.buffer) {
-		pstring oldstr, newstr;
+		char oldstr[44], newstr[44];
 		pdb_sethexhours(oldstr, pdb_get_hours(account));
 		pdb_sethexhours(newstr, delta->buf_logon_hrs.buffer);
 		if (!strequal(oldstr, newstr))
@@ -470,7 +470,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 {
 	NTSTATUS nt_ret = NT_STATUS_UNSUCCESSFUL;
 	fstring account;
-	pstring add_script;
+	char *add_script = NULL;
 	struct samu *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
@@ -489,21 +489,33 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	if (!(passwd = Get_Pwnam(account))) {
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
-			pstrcpy(add_script, lp_adduser_script());
+			add_script = talloc_strdup(sam_account,
+					lp_adduser_script());
 		} else if ( (delta->acb_info & ACB_WSTRUST) ||
 			    (delta->acb_info & ACB_SVRTRUST) ||
 			    (delta->acb_info & ACB_DOMTRUST) ) {
-			pstrcpy(add_script, lp_addmachine_script());
+			add_script = talloc_strdup(sam_account,
+					lp_addmachine_script());
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
 				  pdb_encode_acct_ctrl(delta->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
 			nt_ret = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
+		if (!add_script) {
+			nt_ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 		if (*add_script) {
 			int add_ret;
-			all_string_sub(add_script, "%u", account,
-				       sizeof(account));
+			add_script = talloc_all_string_sub(sam_account,
+					add_script,
+					"%u",
+					account);
+			if (!add_script) {
+				nt_ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
@@ -511,7 +523,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 				smb_nscd_flush_user_cache();
 			}
 		}
-		
+
 		/* try and find the possible unix account again */
 		if ( !(passwd = Get_Pwnam(account)) ) {
 			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
@@ -519,7 +531,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			goto done;
 		}
 	}
-	
+
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, delta->user_rid);
 
@@ -563,7 +575,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 			}
 		}
-	}	
+	}
 
 	if ( !passwd ) {
 		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", 
@@ -831,7 +843,7 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 {
 	time_t u_max_age, u_min_age, u_logout, u_lockoutreset, u_lockouttime;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	pstring domname;
+	char *domname;
 
 	u_max_age = uint64s_nt_time_to_unix_abs(&delta->max_pwd_age);
 	u_min_age = uint64s_nt_time_to_unix_abs(&delta->min_pwd_age);
@@ -839,9 +851,12 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	u_lockoutreset = uint64s_nt_time_to_unix_abs(&delta->account_lockout.reset_count);
 	u_lockouttime = uint64s_nt_time_to_unix_abs(&delta->account_lockout.lockout_duration);
 
-	unistr2_to_ascii(domname, &delta->uni_dom_name, sizeof(domname));
+	domname = unistr2_to_ascii_talloc(talloc_tos(), &delta->uni_dom_name);
+	if (!domname) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	/* we don't handle BUILTIN account policies */	
+	/* we don't handle BUILTIN account policies */
 	if (!strequal(domname, get_global_sam_name())) {
 		printf("skipping SAM_DOMAIN_INFO delta for '%s' (is not my domain)\n", domname);
 		return NT_STATUS_OK;
