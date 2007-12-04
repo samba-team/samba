@@ -36,6 +36,7 @@
 #endif
 
 /* Include tdb headers */
+#include <stdint.h>
 #include <signal.h>
 #include <tdb.h>
 #include <fcntl.h>

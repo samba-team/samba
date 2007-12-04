@@ -2504,6 +2504,7 @@ static swig_module_info swig_module = {swig_types, 11, 0, 0, 0, 0};
 #endif
 
 /* Include tdb headers */
+#include <stdint.h>
 #include <signal.h>
 #include <tdb.h>
 #include <fcntl.h>
