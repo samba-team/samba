@@ -126,7 +126,8 @@ check-python: build-python
 	LD_LIBRARY_PATH=. PYTHONPATH=.:build/lib.linux-i686-2.4 trial python/tests/simple.py
 
 install-swig:
-	cp tdb.i `swig -swiglib`
+	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
+	cp tdb.i $(DESTDIR)`$(SWIG) -swiglib`
 
 clean-python:
 	./setup.py clean
