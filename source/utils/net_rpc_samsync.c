@@ -1277,67 +1277,91 @@ static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
 	/* Map the groups created by populate_ldap_for_ldif */
 	groupmap[0].rid = 512;
 	groupmap[0].gidNumber = 512;
-	pstr_sprintf(groupmap[0].sambaSID, "%s-512", sid);
-	pstr_sprintf(groupmap[0].group_dn, "cn=Domain Admins,ou=%s,%s", 
-                     group_attr, suffix);
+	snprintf(groupmap[0].sambaSID, sizeof(groupmap[0].sambaSID),
+			"%s-512", sid);
+	snprintf(groupmap[0].group_dn, sizeof(groupmap[0].group_dn),
+			"cn=Domain Admins,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[0].rid = 512;
-	pstr_sprintf(accountmap[0].cn, "%s", "Domain Admins");
+	snprintf(accountmap[0].cn, sizeof(accountmap[0].cn),
+			"%s", "Domain Admins");
 
 	groupmap[1].rid = 513;
 	groupmap[1].gidNumber = 513;
-	pstr_sprintf(groupmap[1].sambaSID, "%s-513", sid);
-	pstr_sprintf(groupmap[1].group_dn, "cn=Domain Users,ou=%s,%s", 
-                     group_attr, suffix);
+	snprintf(groupmap[1].sambaSID, sizeof(groupmap[1].sambaSID),
+			"%s-513", sid);
+	snprintf(groupmap[1].group_dn, sizeof(groupmap[1].group_dn),
+			"cn=Domain Users,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[1].rid = 513;
-	pstr_sprintf(accountmap[1].cn, "%s", "Domain Users");
+	snprintf(accountmap[1].cn, sizeof(accountmap[1].cn),
+			"%s", "Domain Users");
 
 	groupmap[2].rid = 514;
 	groupmap[2].gidNumber = 514;
-	pstr_sprintf(groupmap[2].sambaSID, "%s-514", sid);
-	pstr_sprintf(groupmap[2].group_dn, "cn=Domain Guests,ou=%s,%s", 
-                     group_attr, suffix);
+	snprintf(groupmap[2].sambaSID, sizeof(groupmap[2].sambaSID),
+			"%s-514", sid);
+	snprintf(groupmap[2].group_dn, sizeof(groupmap[2].group_dn),
+			"cn=Domain Guests,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[2].rid = 514;
-	pstr_sprintf(accountmap[2].cn, "%s", "Domain Guests");
+	snprintf(accountmap[2].cn, sizeof(accountmap[2].cn),
+			"%s", "Domain Guests");
 
 	groupmap[3].rid = 515;
 	groupmap[3].gidNumber = 515;
-	pstr_sprintf(groupmap[3].sambaSID, "%s-515", sid);
-	pstr_sprintf(groupmap[3].group_dn, "cn=Domain Computers,ou=%s,%s",
-                     group_attr, suffix);
+	snprintf(groupmap[3].sambaSID, sizeof(groupmap[3].sambaSID),
+			"%s-515", sid);
+	snprintf(groupmap[3].group_dn, sizeof(groupmap[3].group_dn),
+			"cn=Domain Computers,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[3].rid = 515;
-	pstr_sprintf(accountmap[3].cn, "%s", "Domain Computers");
+	snprintf(accountmap[3].cn, sizeof(accountmap[3].cn),
+			"%s", "Domain Computers");
 
 	groupmap[4].rid = 544;
 	groupmap[4].gidNumber = 544;
-	pstr_sprintf(groupmap[4].sambaSID, "%s-544", builtin_sid);
-	pstr_sprintf(groupmap[4].group_dn, "cn=Administrators,ou=%s,%s",
-                     group_attr, suffix);
+	snprintf(groupmap[4].sambaSID, sizeof(groupmap[4].sambaSID),
+			"%s-544", builtin_sid);
+	snprintf(groupmap[4].group_dn, sizeof(groupmap[4].group_dn),
+			"cn=Administrators,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[4].rid = 515;
-	pstr_sprintf(accountmap[4].cn, "%s", "Administrators");
+	snprintf(accountmap[4].cn, sizeof(accountmap[4].cn),
+			"%s", "Administrators");
 
 	groupmap[5].rid = 550;
 	groupmap[5].gidNumber = 550;
-	pstr_sprintf(groupmap[5].sambaSID, "%s-550", builtin_sid);
-	pstr_sprintf(groupmap[5].group_dn, "cn=Print Operators,ou=%s,%s",
-                     group_attr, suffix);
+	snprintf(groupmap[5].sambaSID, sizeof(groupmap[5].sambaSID),
+			"%s-550", builtin_sid);
+	snprintf(groupmap[5].group_dn, sizeof(groupmap[5].group_dn),
+			"cn=Print Operators,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[5].rid = 550;
-	pstr_sprintf(accountmap[5].cn, "%s", "Print Operators");
+	snprintf(accountmap[5].cn, sizeof(accountmap[5].cn),
+			"%s", "Print Operators");
 
 	groupmap[6].rid = 551;
 	groupmap[6].gidNumber = 551;
-	pstr_sprintf(groupmap[6].sambaSID, "%s-551", builtin_sid);
-	pstr_sprintf(groupmap[6].group_dn, "cn=Backup Operators,ou=%s,%s",
-                     group_attr, suffix);
+	snprintf(groupmap[6].sambaSID, sizeof(groupmap[6].sambaSID),
+			"%s-551", builtin_sid);
+	snprintf(groupmap[6].group_dn, sizeof(groupmap[6].group_dn),
+			"cn=Backup Operators,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[6].rid = 551;
-	pstr_sprintf(accountmap[6].cn, "%s", "Backup Operators");
+	snprintf(accountmap[6].cn, sizeof(accountmap[6].cn),
+			"%s", "Backup Operators");
 
 	groupmap[7].rid = 552;
 	groupmap[7].gidNumber = 552;
-	pstr_sprintf(groupmap[7].sambaSID, "%s-552", builtin_sid);
-	pstr_sprintf(groupmap[7].group_dn, "cn=Replicators,ou=%s,%s",
-		     group_attr, suffix);
+	snprintf(groupmap[7].sambaSID, sizeof(groupmap[7].sambaSID),
+			"%s-552", builtin_sid);
+	snprintf(groupmap[7].group_dn, sizeof(groupmap[7].group_dn),
+			"cn=Replicators,ou=%s,%s",
+			group_attr, suffix);
 	accountmap[7].rid = 551;
-	pstr_sprintf(accountmap[7].cn, "%s", "Replicators");
+	snprintf(accountmap[7].cn, sizeof(accountmap[7].cn),
+			"%s", "Replicators");
 	SAFE_FREE(group_attr);
 	return NT_STATUS_OK;
 }
@@ -1412,8 +1436,8 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
 
 	/* Get the group name */
-	unistr2_to_ascii(groupname, 
-	  		 &(delta->group_info.uni_grp_name),
+	unistr2_to_ascii(groupname,
+	  		 &delta->group_info.uni_grp_name,
 			 sizeof(groupname));
 
 	/* Set up the group type (always 2 for group info) */
@@ -1439,8 +1463,9 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	g_rid = delta->group_info.gid.g_rid;
 	groupmap->rid = g_rid;
 	groupmap->gidNumber = ldif_gid;
-	pstr_sprintf(groupmap->sambaSID, "%s-%d", sid, g_rid);
-	pstr_sprintf(groupmap->group_dn, 
+	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
+			"%s-%d", sid, g_rid);
+	snprintf(groupmap->group_dn, sizeof(groupmap->group_dn),
 		     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
 
 	/* Write the data to the temporary add ldif file */
@@ -1483,7 +1508,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	int i;
 
 	/* Get the username */
-	unistr2_to_ascii(username, 
+	unistr2_to_ascii(username,
 			 &(delta->account_info.uni_acct_name),
 			 sizeof(username));
 
@@ -1492,21 +1517,21 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 
 	/* Map the rid and username for group member info later */
 	accountmap->rid = rid;
-	pstr_sprintf(accountmap->cn, "%s", username);
+	snprintf(accountmap->cn, sizeof(accountmap->cn), "%s", username);
 
 	/* Get the home directory */
 	if (delta->account_info.acb_info & ACB_NORMAL) {
 		unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
 				 sizeof(homedir));
 		if (!*homedir) {
-			pstr_sprintf(homedir, "/home/%s", username);
+			snprintf(homedir, sizeof(homedir), "/home/%s", username);
 		} else {
-			pstr_sprintf(homedir, "/nobodyshomedir");
+			snprintf(homedir, sizeof(homedir), "/nobodyshomedir");
 		}
 		ou = lp_ldap_user_suffix();
 	} else {
 		ou = lp_ldap_machine_suffix();
-		pstr_sprintf(homedir, "/machinehomedir");
+		snprintf(homedir, sizeof(homedir), "/machinehomedir");
 	}
 
         /* Get the logon script */
@@ -1568,7 +1593,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	gidNumber = groupmap[i].gidNumber;
-	pstr_sprintf(sambaSID, groupmap[i].sambaSID);
+	snprintf(sambaSID, sizeof(sambaSID), groupmap[i].sambaSID);
 
 	/* Set up sambaAcctFlags */
 	flags = pdb_encode_acct_ctrl(delta->account_info.acb_info,
@@ -1677,7 +1702,8 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 	/* Map the group rid and gid */
 	g_rid = delta->group_info.gid.g_rid;
 	groupmap->gidNumber = ldif_gid;
-	pstr_sprintf(groupmap->sambaSID, "%s-%d", sid, g_rid);
+	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
+			"%s-%d", sid, g_rid);
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,
@@ -1704,7 +1730,7 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
 					    SAM_DELTA_HDR *hdr_delta,
 					    GROUPMAP *groupmap,
-					    ACCOUNTMAP *accountmap, 
+					    ACCOUNTMAP *accountmap,
 					    FILE *mod_fd, int alloced)
 {
 	fstring group_dn;
@@ -1718,11 +1744,11 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
 			if (groupmap[j].rid == group_rid) break;
 		}
 		if (j == alloced){
-			DEBUG(1, ("Could not find rid %d in groupmap array\n", 
+			DEBUG(1, ("Could not find rid %d in groupmap array\n",
 				  group_rid));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		pstr_sprintf(group_dn, "%s", groupmap[j].group_dn);
+		snprintf(group_dn, sizeof(group_dn), "%s", groupmap[j].group_dn);
 		fprintf(mod_fd, "dn: %s\n", group_dn);
 
 		/* Get the cn for each member */
