@@ -263,7 +263,7 @@ _gss_ntlm_init_sec_context
 	*context_handle = (gss_ctx_id_t)ctx;
 
 	if (initiator_cred_handle != GSS_C_NO_CREDENTIAL) {
-	    ntlm_cred cred = initiator_cred_handle;
+	    ntlm_cred cred = (ntlm_cred)initiator_cred_handle;
 	    ret = _gss_copy_cred(cred, &ctx->client);
 	} else
 	    ret = _gss_ntlm_get_user_cred(name->domain, &ctx->client);
