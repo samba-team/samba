@@ -1331,6 +1331,25 @@ _kdc_do_digest(krb5_context context,
 		version, ireq.u.ntlmRequest.username);
 	break;
     }
+    case choice_DigestReqInner_supportedMechs:
+
+	r.element = choice_DigestRepInner_supportedMechs;
+	memset(&r.u.supportedMechs, 0, sizeof(r.u.supportedMechs));
+
+	if (config->digests_allowed & NTLM_V1)
+	    r.u.supportedMechs.ntlm_v1 = 1;
+	if (config->digests_allowed & NTLM_V1_SESSION)
+	    r.u.supportedMechs.ntlm_v1_session = 1;
+	if (config->digests_allowed & NTLM_V2)
+	    r.u.supportedMechs.ntlm_v2 = 1;
+	if (config->digests_allowed & DIGEST_MD5)
+	    r.u.supportedMechs.digest_md5 = 1;
+	if (config->digests_allowed & CHAP_MD5)
+	    r.u.supportedMechs.chap_md5 = 1;
+	if (config->digests_allowed & MS_CHAP_V2)
+	    r.u.supportedMechs.ms_chap_v2 = 1;
+	break;
+
     default: {
 	char *s;
 	krb5_set_error_string(context, "unknown operation to digest");
