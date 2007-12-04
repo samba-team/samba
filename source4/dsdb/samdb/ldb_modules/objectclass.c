@@ -349,7 +349,7 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 	for (i=0; i < msg->num_elements; i++) {
 		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
 		if (!attribute) {
-			ldb_asprintf_errstring(ldb, "objectclass %s is not a valid objectClass in schema", msg->elements[i].name);
+			ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
 			return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
 		}
 		msg->elements[i].name = attribute->lDAPDisplayName;
