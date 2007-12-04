@@ -1,5 +1,13 @@
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: Add _gss_ntlm_get_user_info() that
+	return the user info so it can be used by external modules.
+
+	* ntlm/inquire_cred.c: use the right error code.
+
+	* ntlm/inquire_cred.c: Return GSS_C_NO_CREDENTIAL if there is no
+	credential, ntlm have (not yet) a default credential.
+	
 	* mech/gss_release_oid_set.c: Avoid trying to deref NULL, from
 	Phil Fisher.
 
