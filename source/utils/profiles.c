@@ -120,7 +120,7 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	REGVAL_CTR *values;
 	REGSUBKEY_CTR *subkeys;
 	int i;
-	pstring path;
+	char *path;
 
 	/* swap out the SIDs in the security descriptor */
 
@@ -160,13 +160,18 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 	/* write each one of the subkeys out */
 
-	pstr_sprintf( path, "%s%s%s", parentpath, parent ? "\\" : "", nk->keyname );
-	
+	path = talloc_asprintf(subkeys, "%s%s%s",
+			parentpath, parent ? "\\" : "",nk->keyname);
+	if (!path) {
+		TALLOC_FREE( subkeys );
+		return false;
+	}
+
 	nk->subkey_index = 0;
-	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
-		if ( !copy_registry_tree( infile, subkey, key, outfile, path ) ) {
-			TALLOC_FREE( subkeys );
-			return False;
+	while ((subkey = regfio_fetch_subkey(infile, nk))) {
+		if (!copy_registry_tree( infile, subkey, key, outfile, path)) {
+			TALLOC_FREE(subkeys);
+			return false;
 		}
 	}
 
@@ -184,10 +189,11 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 int main( int argc, char *argv[] )
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int opt;
 	REGF_FILE *infile, *outfile;
 	REGF_NK_REC *nk;
-	pstring orig_filename, new_filename;
+	char *orig_filename, *new_filename;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "change-sid", 'c', POPT_ARG_STRING, NULL, 'c', "Provides SID to change" },
@@ -207,7 +213,7 @@ int main( int argc, char *argv[] )
 	dbf = x_stderr;
 	x_setbuf( x_stderr, NULL );
 
-	pc = poptGetContext("profiles", argc, (const char **)argv, long_options, 
+	pc = poptGetContext("profiles", argc, (const char **)argv, long_options,
 		POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<profilefile>");
@@ -237,7 +243,7 @@ int main( int argc, char *argv[] )
 		}
 	}
 
-	poptGetArg(pc); 
+	poptGetArg(pc);
 
 	if (!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
@@ -250,39 +256,48 @@ int main( int argc, char *argv[] )
 		exit(252);
 	}
 
-	pstrcpy( orig_filename, poptPeekArg(pc) );
-	pstr_sprintf( new_filename, "%s.new", orig_filename );
-	
-	if ( !(infile = regfio_open( orig_filename, O_RDONLY, 0 )) ) {
+	orig_filename = talloc_strdup(frame, poptPeekArg(pc));
+	if (!orig_filename) {
+		exit(ENOMEM);
+	}
+	new_filename = talloc_asprintf(frame,
+					"%s.new",
+					orig_filename);
+	if (!new_filename) {
+		exit(ENOMEM);
+	}
+
+	if (!(infile = regfio_open( orig_filename, O_RDONLY, 0))) {
 		fprintf( stderr, "Failed to open %s!\n", orig_filename );
 		fprintf( stderr, "Error was (%s)\n", strerror(errno) );
 		exit (1);
 	}
-	
+
 	if ( !(outfile = regfio_open( new_filename, (O_RDWR|O_CREAT|O_TRUNC), (S_IREAD|S_IWRITE) )) ) {
 		fprintf( stderr, "Failed to open new file %s!\n", new_filename );
 		fprintf( stderr, "Error was (%s)\n", strerror(errno) );
 		exit (1);
 	}
-	
+
 	/* actually do the update now */
-	
+
 	if ((nk = regfio_rootkey( infile )) == NULL) {
 		fprintf(stderr, "Could not get rootkey\n");
 		exit(3);
 	}
-	
-	if ( !copy_registry_tree( infile, nk, NULL, outfile, "" ) ) {
+
+	if (!copy_registry_tree( infile, nk, NULL, outfile, "")) {
 		fprintf(stderr, "Failed to write updated registry file!\n");
 		exit(2);
 	}
-	
+
 	/* cleanup */
-	
-	regfio_close( infile );
-	regfio_close( outfile );
+
+	regfio_close(infile);
+	regfio_close(outfile);
 
 	poptFreeContext(pc);
 
-	return( 0 );
+	TALLOC_FREE(frame);
+	return 0;
 }

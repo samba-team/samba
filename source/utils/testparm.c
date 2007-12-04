@@ -82,18 +82,19 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 */
 
 	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !lp_passwordserver()) {
-		pstring sec_setting;
+		const char *sec_setting;
 		if(lp_security() == SEC_SERVER)
-			pstrcpy(sec_setting, "server");
+			sec_setting = "server";
 		else if(lp_security() == SEC_DOMAIN)
-			pstrcpy(sec_setting, "domain");
+			sec_setting = "domain";
+		else
+			sec_setting = "";
 
 		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
 to a valid password server.\n", sec_setting );
 		ret = 1;
 	}
 
-	
 	/*
 	 * Password chat sanity checks.
 	 */
@@ -113,16 +114,17 @@ to a valid password server.\n", sec_setting );
 parameter.\n" );
 				ret = 1;
 			} else {
-				pstring passwd_prog;
-				pstring truncated_prog;
+				const char *passwd_prog;
+				char *truncated_prog = NULL;
 				const char *p;
 
-				pstrcpy( passwd_prog, lp_passwd_program());
+				passwd_prog = lp_passwd_program();
 				p = passwd_prog;
 				*truncated_prog = '\0';
-				next_token(&p, truncated_prog, NULL, sizeof(pstring));
-
-				if(access(truncated_prog, F_OK) == -1) {
+				next_token_talloc(talloc_tos(),
+						&p,
+						&truncated_prog, NULL);
+				if (truncated_prog && access(truncated_prog, F_OK) == -1) {
 					fprintf(stderr, "ERROR: the 'unix password sync' parameter is set and the 'passwd program' (%s) \
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 					ret = 1;

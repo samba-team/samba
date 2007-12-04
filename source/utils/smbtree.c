@@ -32,7 +32,7 @@ static enum tree_level level = LEV_SHARE;
 
 struct name_list {
         struct name_list *prev, *next;
-        pstring name, comment;
+        char *name, *comment;
         uint32 server_type;
 };
 
@@ -57,9 +57,16 @@ static void add_name(const char *machine_name, uint32 server_type,
 
         ZERO_STRUCTP(new_name);
 
-        pstrcpy(new_name->name, machine_name);
-        pstrcpy(new_name->comment, comment);
+	new_name->name = SMB_STRDUP(machine_name);
+	new_name->comment = SMB_STRDUP(comment);
         new_name->server_type = server_type;
+
+	if (!new_name->name || !new_name->comment) {
+		SAFE_FREE(new_name->name);
+		SAFE_FREE(new_name->comment);
+		SAFE_FREE(new_name);
+		return;
+	}
 
         DLIST_ADD(*name_list, new_name);
 }
@@ -199,7 +206,7 @@ static bool get_shares(char *server_name, struct user_auth_info *user_info)
 
 	if (get_rpc_shares(cli, add_name, &shares))
 		return True;
-	
+
         if (!cli_RNetShareEnum(cli, add_name, &shares))
                 return False;
 
@@ -268,7 +275,7 @@ static bool print_tree(struct user_auth_info *user_info)
 		POPT_TABLEEND
 	};
 	poptContext pc;
-	
+
 	/* Initialise samba stuff */
 	load_case_tables();
 
@@ -278,7 +285,7 @@ static bool print_tree(struct user_auth_info *user_info)
 
 	setup_logging(argv[0],True);
 
-	pc = poptGetContext("smbtree", argc, (const char **)argv, long_options, 
+	pc = poptGetContext("smbtree", argc, (const char **)argv, long_options,
 						POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
@@ -291,9 +298,11 @@ static bool print_tree(struct user_auth_info *user_info)
 	if (!cmdline_auth_info.got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(cmdline_auth_info.password, pass);
+			strlcpy(cmdline_auth_info.password,
+					pass,
+					sizeof(cmdline_auth_info.password));
 		}
-        cmdline_auth_info.got_pass = True;
+		cmdline_auth_info.got_pass = true;
 	}
 
 	/* Now do our stuff */

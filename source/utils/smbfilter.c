@@ -78,7 +78,7 @@ static void filter_request(char *buf)
 {
 	int msg_type = CVAL(buf,0);
 	int type = CVAL(buf,smb_com);
-	pstring name1,name2;
+	fstring name1,name2;
 	unsigned x;
 
 	if (msg_type) {
@@ -228,15 +228,15 @@ static void start_filter(char *desthost)
 int main(int argc, char *argv[])
 {
 	char *desthost;
-	pstring configfile;
+	const char *configfile;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	load_case_tables();
 
 	setup_logging(argv[0],True);
-  
-	pstrcpy(configfile,dyn_CONFIGFILE);
- 
+
+	configfile = dyn_CONFIGFILE;
+
 	if (argc < 2) {
 		fprintf(stderr,"smbfilter <desthost> <netbiosname>\n");
 		exit(1);
