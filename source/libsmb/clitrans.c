@@ -95,14 +95,9 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 		return False;
 	}
 
-	/* Note we're in a trans state. Save the sequence
-	 * numbers for replies. */
-	client_set_trans_sign_state_on(cli, mid);
-
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || cli_is_error(cli)) {
-			client_set_trans_sign_state_off(cli, mid);
 			return(False);
 		}
 
@@ -144,7 +139,6 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 
 			show_msg(cli->outbuf);
 			if (!cli_send_smb(cli)) {
-				client_set_trans_sign_state_off(cli, mid);
 				return False;
 			}
 
@@ -323,7 +317,6 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 
   out:
 
-	client_set_trans_sign_state_off(cli, SVAL(cli->inbuf,smb_mid));
 	return ret;
 }
 
@@ -391,14 +384,9 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 		return False;
 	}	
 
-	/* Note we're in a trans state. Save the sequence
-	 * numbers for replies. */
-	client_set_trans_sign_state_on(cli, mid);
-
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || cli_is_error(cli)) {
-			client_set_trans_sign_state_off(cli, mid);
 			return(False);
 		}
 
@@ -440,7 +428,6 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 			show_msg(cli->outbuf);
 
 			if (!cli_send_smb(cli)) {
-				client_set_trans_sign_state_off(cli, mid);
 				return False;
 			}
 			
@@ -640,6 +627,5 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 
   out:
 
-	client_set_trans_sign_state_off(cli, SVAL(cli->inbuf,smb_mid));
 	return ret;
 }
