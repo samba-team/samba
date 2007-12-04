@@ -1,4 +1,13 @@
+2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/error_string.c: Make krb5_get_error_string return an
+	allocated string to make the function indempotent. From
+	Zeqing (Fred) Xia.
+
 2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_locl.h (krb5_context_data): Flag if
+	default_cc_name was set by the user.
 
 	* lib/krb5/fcache.c (fcc_move): make sure ->version is uptodate.
 
