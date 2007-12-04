@@ -131,18 +131,19 @@ acquire_cred_service(const char *service,
     gss_cred_id_t cred_handle;
     OM_uint32 time_rec;
     gss_buffer_desc name_buffer;
-    gss_name_t name;
+    gss_name_t name = GSS_C_NO_NAME;
 
-    name_buffer.value = rk_UNCONST(service);
-    name_buffer.length = strlen(service);
-
-    major_status = gss_import_name(&minor_status,
-				   &name_buffer,
-				   nametype,
-				   &name);
-    if (GSS_ERROR(major_status))
-	errx(1, "import_name failed");
-
+    if (service) {
+	name_buffer.value = rk_UNCONST(service);
+	name_buffer.length = strlen(service);
+	
+	major_status = gss_import_name(&minor_status,
+				       &name_buffer,
+				       nametype,
+				       &name);
+	if (GSS_ERROR(major_status))
+	    errx(1, "import_name failed");
+    }
 
     major_status = gss_acquire_cred(&minor_status, 
 				    name,
@@ -160,7 +161,8 @@ acquire_cred_service(const char *service,
 	gss_release_cred(&minor_status, &cred_handle);
     }
 
-    gss_release_name(&minor_status, &name);
+    if (name != GSS_C_NO_NAME)
+	gss_release_name(&minor_status, &name);
 
     if (GSS_ERROR(major_status))
 	exit(1);
@@ -245,8 +247,7 @@ main(int argc, char **argv)
 		 gssapi_err(major_status, minor_status, GSS_C_NO_OID));
     }
 
-    if (acquire_name)
-	acquire_cred_service(acquire_name, type, flag);
+    acquire_cred_service(acquire_name, type, flag);
 
     return 0;
 }
