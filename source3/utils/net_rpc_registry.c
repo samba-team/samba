@@ -759,7 +759,7 @@ static int rpc_registry_save( int argc, const char **argv )
 static void dump_values( REGF_NK_REC *nk )
 {
 	int i, j;
-	pstring data_str;
+	char *data_str = NULL;
 	uint32 data_size, data;
 
 	if ( !nk->values )
@@ -772,7 +772,14 @@ static void dump_values( REGF_NK_REC *nk )
 		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
 		switch ( nk->values[i].type ) {
 			case REG_SZ:
-				rpcstr_pull( data_str, nk->values[i].data, sizeof(data_str), -1, STR_TERMINATE );
+				rpcstr_pull_talloc(talloc_tos(),
+						&data_str,
+						nk->values[i].data,
+						-1,
+						STR_TERMINATE);
+				if (!data_str) {
+					break;
+				}
 				d_printf( "%s", data_str );
 				break;
 			case REG_MULTI_SZ:
@@ -806,16 +813,19 @@ static void dump_values( REGF_NK_REC *nk )
 static bool dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *parent )
 {
 	REGF_NK_REC *key;
-	pstring regpath;
 
 	/* depth first dump of the registry tree */
 
 	while ( (key = regfio_fetch_subkey( file, nk )) ) {
-		pstr_sprintf( regpath, "%s\\%s", parent, key->keyname );
+		char *regpath;
+		if (asprintf(&regpath, "%s\\%s", parent, key->keyname) < 0) {
+			break;
+		}
 		d_printf("[%s]\n", regpath );
 		dump_values( key );
 		d_printf("\n");
 		dump_registry_tree( file, key, regpath );
+		SAFE_FREE(regpath);
 	}
 
 	return True;
@@ -829,10 +839,10 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 			         const char *parentpath )
 {
 	REGF_NK_REC *key, *subkey;
-	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
+	REGVAL_CTR *values = NULL;
+	REGSUBKEY_CTR *subkeys = NULL;
 	int i;
-	pstring path;
+	char *path = NULL;
 
 	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
@@ -841,36 +851,45 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) ) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
+		TALLOC_FREE(subkeys);
 		return False;
 	}
 
 	/* copy values into the REGVAL_CTR */
-	
+
 	for ( i=0; i<nk->num_values; i++ ) {
 		regval_ctr_addvalue( values, nk->values[i].valuename, nk->values[i].type,
 			(const char *)nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */
-	
+
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
 		regsubkey_ctr_addkey( subkeys, subkey->keyname );
 	}
-	
+
 	key = regfio_write_key( outfile, nk->keyname, values, subkeys, nk->sec_desc->sec_desc, parent );
 
 	/* write each one of the subkeys out */
 
-	pstr_sprintf( path, "%s%s%s", parentpath, parent ? "\\" : "", nk->keyname );
+	path = talloc_asprintf(subkeys,
+			"%s%s%s",
+			parentpath,
+			parent ? "\\" : "",
+			nk->keyname);
+	if (!path) {
+		TALLOC_FREE(subkeys);
+		return false;
+	}
+
 	nk->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
 		write_registry_tree( infile, subkey, key, outfile, path );
 	}
 
-	TALLOC_FREE( subkeys );
-
 	d_printf("[%s]\n", path );
-	
+	TALLOC_FREE(subkeys);
+
 	return True;
 }
 

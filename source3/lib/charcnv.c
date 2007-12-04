@@ -592,7 +592,7 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 					goto use_as_is;
 				break;
 			case E2BIG:
-				goto convert;		
+				goto convert;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
 				if (!conv_silent)
@@ -1503,6 +1503,12 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			if (len < src_len/2)
 				len++;
 			src_len = len*2;
+		} else {
+			/*
+			 * src_len == -1 - alloc interface won't take this
+			 * so we must calculate.
+			 */
+			src_len = (strlen_w((const smb_ucs2_t *)src)+1)*sizeof(smb_ucs2_t);
 		}
 		/* Ensure we don't use an insane length from the client. */
 		if (src_len >= 1024*1024) {
