@@ -190,6 +190,36 @@ _gss_ntlm_get_user_cred(const char *domain,
     return ret;
 }
 
+static int
+_gss_copy_cred(ntlm_cred from, ntlm_cred *to)
+{
+    *to = calloc(1, sizeof(*to));
+    if (*to == NULL)
+	return ENOMEM;
+    (*to)->username = strdup(from->username);
+    if ((*to)->username == NULL) {
+	free(*to);
+	return ENOMEM;
+    }
+    (*to)->domain = strdup(from->domain);
+    if ((*to)->domain == NULL) {
+	free((*to)->username);
+	free(*to);
+	return ENOMEM;
+    }
+    (*to)->key.data = malloc(from->key.length);
+    if ((*to)->key.data == NULL) {
+	free((*to)->domain);
+	free((*to)->username);
+	free(*to);
+	return ENOMEM;
+    }
+    memcpy((*to)->key.data, from->key.data, from->key.length);
+    (*to)->key.length = from->key.length;
+
+    return 0;
+}
+
 OM_uint32
 _gss_ntlm_init_sec_context
            (OM_uint32 * minor_status,
@@ -232,7 +262,12 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = _gss_ntlm_get_user_cred(name->domain, &ctx->client);
+	if (initiator_cred_handle != GSS_C_NO_CREDENTIAL) {
+	    ntlm_cred cred = initiator_cred_handle;
+	    ret = _gss_copy_cred(cred, &ctx->client);
+	} else
+	    ret = _gss_ntlm_get_user_cred(name->domain, &ctx->client);
+
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
