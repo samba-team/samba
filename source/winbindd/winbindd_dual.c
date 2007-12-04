@@ -471,11 +471,15 @@ void setup_domain_child(struct winbindd_domain *domain,
 			const char *explicit_logfile)
 {
 	if (explicit_logfile != NULL) {
-		pstr_sprintf(child->logfilename, "%s/log.winbindd-%s",
-			     dyn_LOGFILEBASE, explicit_logfile);
+		if (asprintf(&child->logfilename, "%s/log.winbindd-%s",
+			     dyn_LOGFILEBASE, explicit_logfile) < 0) {
+			smb_panic("Internal error: asprintf failed");
+		}
 	} else if (domain != NULL) {
-		pstr_sprintf(child->logfilename, "%s/log.wb-%s",
-			     dyn_LOGFILEBASE, domain->name);
+		if (asprintf(&child->logfilename, "%s/log.wb-%s",
+			     dyn_LOGFILEBASE, domain->name) < 0) {
+			smb_panic("Internal error: asprintf failed");
+		}
 	} else {
 		smb_panic("Internal error: domain == NULL && "
 			  "explicit_logfile == NULL");
@@ -507,6 +511,7 @@ void winbind_child_died(pid_t pid)
 	child->event.fd = 0;
 	child->event.flags = 0;
 	child->pid = 0;
+	SAFE_FREE(child->logfilename);
 
 	schedule_async_request(child);
 }

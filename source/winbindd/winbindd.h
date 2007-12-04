@@ -150,7 +150,7 @@ struct winbindd_child {
 
 	pid_t pid;
 	struct winbindd_domain *domain;
-	pstring logfilename;
+	char *logfilename;
 
 	struct fd_event event;
 	struct timed_event *lockout_policy_event;
@@ -166,8 +166,8 @@ struct winbindd_domain {
 	fstring alt_name;                      /* alt Domain name, if any (FQDN for ADS) */
 	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
-	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */	
-	uint32 domain_type;                    /* Domain type from rpc_ds.h */	
+	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */
+	uint32 domain_type;                    /* Domain type from rpc_ds.h */
 	uint32 domain_trust_attribs;           /* Trust attribs from rpc_ds.h */
 	bool initialized;		       /* Did we already ask for the domain mode? */
 	bool native_mode;                      /* is this a win2k domain in native mode ? */
@@ -187,7 +187,7 @@ struct winbindd_domain {
 
         /* Private data for the backends (used for connection cache) */
 
-	void *private_data; 
+	void *private_data;
 
 	/* A working DC */
 	fstring dcname;
