@@ -873,6 +873,7 @@ bool cli_resolve_path_pstring( const char *mountpt,
 	if (tpath) {
 		pstrcpy(targetpath, tpath);
 	}
+	TALLOC_FREE(ctx);
 	return ret;
 }
 
