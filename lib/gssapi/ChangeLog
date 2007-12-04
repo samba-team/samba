@@ -1,3 +1,13 @@
+2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_release_oid_set.c: Avoid trying to deref NULL, from
+	Phil Fisher.
+
+2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* test_acquire_cred.c: Always try to fetch cred (even with
+	GSS_C_NO_NAME).
+
 2007-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mech/gss_krb5.c: Readd gss_krb5_get_tkt_flags.
