@@ -54,7 +54,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	};
 
 	if (dsdb_get_schema(module->ldb)) {
-	  return ldb_next_init(module);
+		return ldb_next_init(module);
 	}
 
 	schema_dn = samdb_schema_dn(module->ldb);
@@ -96,9 +96,9 @@ static int schema_fsmo_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (ret != LDB_SUCCESS) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search the schema head: %d:%s",
-			      ret, ldb_strerror(ret));
+		ldb_asprintf_errstring(module->ldb, 
+				       "schema_fsmo_init: failed to search the schema head: %s",
+				       ldb_errstring(module->ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -151,9 +151,9 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 "(objectClass=attributeSchema)", NULL,
 			 &a_res);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search attributeSchema objects: %d:%s",
-			      ret, ldb_strerror(ret));
+		ldb_asprintf_errstring(module->ldb, 
+				       "schema_fsmo_init: failed to search attributeSchema objects: %s",
+				       ldb_errstring(module->ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -190,9 +190,9 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 "(objectClass=classSchema)", NULL,
 			 &c_res);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to search classSchema objects: %d:%s",
-			      ret, ldb_strerror(ret));
+		ldb_asprintf_errstring(module->ldb, 
+				       "schema_fsmo_init: failed to search classSchema objects: %s",
+				       ldb_errstring(module->ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
