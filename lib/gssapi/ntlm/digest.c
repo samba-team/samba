@@ -198,7 +198,7 @@ kdc_probe(OM_uint32 *minor, void *ctx, const char *realm)
     krb5_error_code ret;
     unsigned flags;
 
-    ret = krb5_digest_probe(c->context, realm, c->id, &flags);
+    ret = krb5_digest_probe(c->context, rk_UNCONST(realm), c->id, &flags);
     if (ret)
 	return ret;
     
