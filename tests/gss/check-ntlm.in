@@ -124,7 +124,7 @@ ${kinitds} --password-file=${objdir}/barpassword digestserver@${R} || exitcode=1
 echo "======probe"
 KRB5CCNAME="$cacheds"
 
- ${kdigest} digest-probe --realm=${R} > /dev/null|| \
+ ${kdigest} digest-probe --realm=${R} > /dev/null || \
      { exitcode=1; echo "test failed"; }
 
 echo "======context building ntlm"
