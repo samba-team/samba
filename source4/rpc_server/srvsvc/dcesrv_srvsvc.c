@@ -1499,7 +1499,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info101->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx);
 		info101->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
 		info101->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_ctx);
-		info101->comment	= talloc_strdup(mem_ctx, lp_serverstring(global_loadparm));
+		info101->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info101->comment);
 
 		r->out.info.info101 = info101;
@@ -1519,7 +1519,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info102->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx);
 		info102->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx);
 		info102->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_ctx);
-		info102->comment	= talloc_strdup(mem_ctx, lp_serverstring(global_loadparm));
+		info102->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info102->comment);
 
 		info102->users		= dcesrv_common_get_users(mem_ctx, dce_ctx);

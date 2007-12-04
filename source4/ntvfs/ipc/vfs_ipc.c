@@ -31,6 +31,7 @@
 #include "ntvfs/ipc/proto.h"
 #include "rpc_server/dcerpc_server.h"
 #include "libcli/raw/ioctl.h"
+#include "param/param.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
@@ -108,7 +109,7 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	private->pipe_list = NULL;
 
 	/* setup the DCERPC server subsystem */
-	status = dcesrv_init_ipc_context(private, &private->dcesrv);
+	status = dcesrv_init_ipc_context(private, global_loadparm, &private->dcesrv);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;

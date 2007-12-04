@@ -261,6 +261,9 @@ struct dcesrv_context {
 			struct dcesrv_interface iface;
 		} *interface_list;
 	} *endpoint_list;
+
+	/* loadparm context to use for this connection */
+	struct loadparm_context *lp_ctx;
 };
 
 /* this structure is used by modules to determine the size of some critical types */

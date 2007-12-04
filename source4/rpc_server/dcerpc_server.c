@@ -386,11 +386,11 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 }
 
 
-static void dcesrv_init_hdr(struct ncacn_packet *pkt)
+static void dcesrv_init_hdr(struct ncacn_packet *pkt, bool bigendian)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
-	if (lp_rpc_big_endian(global_loadparm)) {
+	if (bigendian) {
 		pkt->drep[0] = 0;
 	} else {
 		pkt->drep[0] = DCERPC_DREP_LE;
@@ -447,7 +447,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	NTSTATUS status;
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt);
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
@@ -486,7 +486,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	NTSTATUS status;
 
 	/* setup a bind_nak */
-	dcesrv_init_hdr(&pkt);
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
@@ -596,7 +596,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt);
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
@@ -752,7 +752,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 
 	/* setup a alter_resp */
-	dcesrv_init_hdr(&pkt);
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;
@@ -892,7 +892,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   pointers */
 	push->ptr_count = call->ndr_pull->ptr_count;
 
-	if (lp_rpc_big_endian(global_loadparm)) {
+	if (lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx)) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -921,7 +921,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		}
 
 		/* form the dcerpc response packet */
-		dcesrv_init_hdr(&pkt);
+		dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 		pkt.auth_length = 0;
 		pkt.call_id = call->pkt.call_id;
 		pkt.ptype = DCERPC_PKT_RESPONSE;
@@ -1248,7 +1248,9 @@ _PUBLIC_ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	return status;
 }
 
-_PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_servers, struct dcesrv_context **_dce_ctx)
+_PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
+				      struct loadparm_context *lp_ctx,
+				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
@@ -1262,6 +1264,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint
 	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;
+	dce_ctx->lp_ctx = lp_ctx;
 
 	for (i=0;endpoint_servers[i];i++) {
 		const struct dcesrv_endpoint_server *ep_server;
@@ -1368,12 +1371,13 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 /*
   initialise the dcerpc server context for ncacn_np based services
 */
-_PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
+_PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+					  struct dcesrv_context **_dce_ctx)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 
-	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(global_loadparm), &dce_ctx);
+	status = dcesrv_init_context(mem_ctx, lp_ctx, lp_dcerpc_endpoint_servers(lp_ctx), &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*_dce_ctx = dce_ctx;

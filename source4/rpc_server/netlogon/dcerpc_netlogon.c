@@ -92,7 +92,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, global_loadparm));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -165,7 +165,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	creds->account_name = talloc_steal(creds, r->in.account_name);
 	
 	creds->computer_name = talloc_steal(creds, r->in.computer_name);
-	creds->domain = talloc_strdup(creds, lp_workgroup(global_loadparm));
+	creds->domain = talloc_strdup(creds, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx));
 
 	creds->secure_channel_type = r->in.secure_channel_type;
 
@@ -173,7 +173,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 
 	/* remember this session key state */
-	nt_status = schannel_store_session_key(mem_ctx, global_loadparm, creds);
+	nt_status = schannel_store_session_key(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, creds);
 
 	return nt_status;
 }
@@ -301,7 +301,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -339,7 +339,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, system_session(mem_ctx, global_loadparm));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -432,7 +432,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, 
 						dce_call->event_ctx, dce_call->msg_ctx,
-						global_loadparm,
+						dce_call->conn->dce_ctx->lp_ctx,
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -459,7 +459,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, 
 						dce_call->event_ctx, dce_call->msg_ctx,
-						global_loadparm,
+						dce_call->conn->dce_ctx->lp_ctx,
 						&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -531,7 +531,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
 		sam6->base = *sam;
-		sam6->forest.string = lp_realm(global_loadparm);
+		sam6->forest.string = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
 							 sam->account_name.string, sam6->forest.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
@@ -555,7 +555,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 {
 	NTSTATUS nt_status;
 	struct creds_CredentialState *creds;
-	nt_status = schannel_fetch_session_key(mem_ctx, global_loadparm, r->in.computer_name, lp_workgroup(global_loadparm), &creds);
+	nt_status = schannel_fetch_session_key(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, r->in.computer_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx), &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -885,7 +885,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 					      NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -989,7 +989,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
@@ -1008,8 +1008,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
 	 */
 	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", 
-							  lp_netbios_name(global_loadparm), 
-							  lp_realm(global_loadparm));
+							  lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
+							  lp_realm(dce_call->conn->dce_ctx->lp_ctx));
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_unc);
 	r->out.info->dc_address		= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->dc_address);
@@ -1147,7 +1147,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx, global_loadparm, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}

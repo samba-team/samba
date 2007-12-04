@@ -231,7 +231,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	status = smbsrv_add_socket(p->conn->event_ctx, tctx->lp_ctx, &single_ops, address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
-	status = dcesrv_init_context(tctx, endpoints, &dce_ctx);
+	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);
 	torture_assert_ntstatus_ok(tctx, status, 
 				   "unable to initialize DCE/RPC server");
 

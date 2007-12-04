@@ -424,6 +424,7 @@ static void dcesrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[dcesrv]");
 
 	status = dcesrv_init_context(task->event_ctx,
+				     task->lp_ctx,
 				     lp_dcerpc_endpoint_servers(task->lp_ctx),
 				     &dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
@@ -466,5 +467,3 @@ NTSTATUS server_service_rpc_init(void)
 	
 	return register_server_service("rpc", dcesrv_init);
 }
-
-
