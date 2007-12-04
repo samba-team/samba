@@ -165,6 +165,19 @@ out:
     return ret;
 }
 
+int
+_gss_ntlm_get_user_info(const char *domain,
+			char **username, 
+			struct ntlm_buf *key)
+{
+    int ret;
+
+    ret = get_user_file(domain, username, key);
+    if (ret)
+	ret = get_user_ccache(domain, username, key);
+    return ret;
+}
+
 OM_uint32
 _gss_ntlm_init_sec_context
            (OM_uint32 * minor_status,
@@ -195,10 +208,10 @@ _gss_ntlm_init_sec_context
 	*actual_mech_type = GSS_C_NO_OID;
 
     if (*context_handle == GSS_C_NO_CONTEXT) {
-	krb5_error_code ret;
 	struct ntlm_type1 type1;
 	struct ntlm_buf data;
 	uint32_t flags = 0;
+	int ret;
 	
 	ctx = calloc(1, sizeof(*ctx));
 	if (ctx == NULL) {
@@ -207,11 +220,9 @@ _gss_ntlm_init_sec_context
 	}
 	*context_handle = (gss_ctx_id_t)ctx;
 
-	ret = get_user_file(name->domain, 
-			    &ctx->client.username, &ctx->client.key);
-	if (ret)
-	    ret = get_user_ccache(name->domain,
-				  &ctx->client.username, &ctx->client.key);
+	ret = _gss_ntlm_get_user_info(name->domain,
+				      &ctx->client.username, 
+				      &ctx->client.key);
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
