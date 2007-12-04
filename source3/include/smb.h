@@ -150,10 +150,6 @@ typedef union unid_t {
 
 typedef uint16 smb_ucs2_t;
 
-/* ucs2 string types. */
-typedef smb_ucs2_t wpstring[PSTRING_LEN];
-typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8
 #else

@@ -243,10 +243,10 @@ struct winbindd_request {
 		struct {
 			/* We deliberatedly don't split into domain/user to
                            avoid having the client know what the separator
-                           character is. */	
+                           character is. */
 			fstring user;
 			fstring pass;
-			pstring require_membership_of_sid;
+			char require_membership_of_sid[1024];
 			fstring krb5_cc_type;
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
@@ -287,7 +287,7 @@ struct winbindd_request {
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
 		struct {
 			fstring dom_name;       /* lookupname */
-			fstring name;       
+			fstring name;
 		} name;
 		uint32_t num_entries;  /* getpwent, getgrent */
 		struct {
