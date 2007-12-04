@@ -91,7 +91,7 @@ static int subtree_delete_check_for_children(struct subtree_delete_context *ac)
 		
 		/* Ensure any (io) errors during the search for
 		 * children don't propgate back in the error string */
-		ldb_set_errstr(ac->module->ldb, NULL);
+		ldb_set_errstring(ac->module->ldb, NULL);
 
 		ac->down_req = req;
 		ac->step = SD_DO_DEL;
