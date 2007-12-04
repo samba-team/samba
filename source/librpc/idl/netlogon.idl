@@ -1112,7 +1112,15 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1f */
-	WERROR netr_NETRSERVERPASSWORDGET();
+	WERROR netr_ServerPasswordGet(
+		[in]  [string,charset(UTF16)] uint16 *server_name,
+		[in]  [string,charset(UTF16)] uint16 account_name[],
+		[in]  netr_SchannelType secure_channel_type,
+		[in]  [string,charset(UTF16)] uint16 computer_name[],
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[out,ref] samr_Password *password
+		);
 
 	/****************/
 	/* Function 0x20 */

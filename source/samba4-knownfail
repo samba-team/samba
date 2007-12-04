@@ -29,5 +29,6 @@ RPC-NETLOGON.*/NetrEnumerateTrustedDomainsEx
 RPC-NETLOGON.*/DsrGetDcSiteCoverageW
 RPC-NETLOGON.*/DsRAddressToSitenamesW
 RPC-NETLOGON.*/DsRAddressToSitenamesExW
+RPC-NETLOGON.*/GetPassword
 BASE-CHARSET.*/Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet

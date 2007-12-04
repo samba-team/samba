@@ -438,6 +438,36 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetPassword(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct cli_credentials *machine_credentials)
+{
+	struct netr_ServerPasswordGet r;
+	struct creds_CredentialState *creds;
+	struct netr_Authenticator credential;
+	NTSTATUS status;
+	struct netr_Authenticator return_authenticator;
+	struct samr_Password password;
+
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
+	}
+
+	creds_client_authenticator(creds, &credential);
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.password = &password;
+
+	status = dcerpc_netr_ServerPasswordGet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordGet");
+
+	return true;
+}
 /*
   try a netlogon SamLogon
 */

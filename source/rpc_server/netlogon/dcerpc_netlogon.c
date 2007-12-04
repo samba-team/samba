@@ -946,11 +946,11 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 
 
-/* 
-  netr_NETRSERVERPASSWORDGET 
+/*
+  netr_ServerPasswordGet
 */
-static WERROR dcesrv_netr_NETRSERVERPASSWORDGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRSERVERPASSWORDGET *r)
+static WERROR dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_ServerPasswordGet *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
