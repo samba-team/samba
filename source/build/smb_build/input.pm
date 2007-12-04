@@ -150,6 +150,8 @@ sub check_python($$)
 {
 	my ($INPUT, $python) = @_;
 
+	return if ($INPUT->{LIBPYTHON}{ENABLE} ne "YES");
+
 	$python->{INSTALLDIR} = "PYTHONDIR";
 	push (@{$python->{PUBLIC_DEPENDENCIES}}, "LIBPYTHON");
 	if (defined($python->{SWIG_FILE})) {
