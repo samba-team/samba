@@ -382,6 +382,10 @@ environment_changed(krb5_context context)
 {
     const char *e;
 
+    /* if the cc name was set, don't change it */
+    if (context->default_cc_name_set)
+	return 0;
+
     if(issuid())
 	return 0;
 
@@ -441,8 +445,11 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 		    return ret;
 	    }
 	}
-    } else
+	context->default_cc_name_set = 0;
+    } else {
 	p = strdup(name);
+	context->default_cc_name_set = 1;
+    }
 
     if (p == NULL) {
 	krb5_set_error_string(context, "malloc - out of memory");
