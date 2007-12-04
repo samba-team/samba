@@ -79,9 +79,16 @@ OM_uint32 _gss_ntlm_acquire_cred
 	    *min_stat = 0;
 	}
     }	
-
     if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
-	/* check if cred exists XXX */
+	gss_cred_id_t gcred;
+	ntlm_cred cred;
+
+	*min_stat = _gss_ntlm_get_user_cred(name->domain, &cred);
+	if (*min_stat)
+	    return GSS_S_FAILURE;
+
+	gcred = (gss_cred_id_t)cred;
+	_gss_ntlm_release_cred(NULL, &gcred);
     }
 
     return (GSS_S_COMPLETE);
