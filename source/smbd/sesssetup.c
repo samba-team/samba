@@ -624,7 +624,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 		/* NB. This is *NOT* an error case. JRA */
 		auth_ntlmssp_end(auth_ntlmssp_state);
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_intermediate_vuid(vuid);
 	}
 
 	return ret;
@@ -690,7 +690,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	status = parse_spnego_mechanisms(blob1, &secblob, &got_kerberos_mechanism);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_intermediate_vuid(vuid);
 		return ERROR_NT(nt_status_squash(status));
 	}
 
@@ -704,7 +704,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		data_blob_free(&secblob);
 		if (destroy_vuid) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_intermediate_vuid(vuid);
 		}
 		return ret;
 	}
@@ -717,7 +717,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	status = auth_ntlmssp_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_intermediate_vuid(vuid);
 		return ERROR_NT(nt_status_squash(status));
 	}
 
@@ -755,7 +755,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		file_save("auth.dat", blob1.data, blob1.length);
 #endif
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_intermediate_vuid(vuid);
 
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
@@ -776,7 +776,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 				data_blob_free(&auth);
 				if (destroy_vuid) {
 					/* Kill the intermediate vuid */
-					invalidate_vuid(vuid);
+					invalidate_intermediate_vuid(vuid);
 				}
 				return ret;
 			}
@@ -789,7 +789,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	
 	if (!*auth_ntlmssp_state) {
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_intermediate_vuid(vuid);
 
 		/* auth before negotiatiate? */
 		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
@@ -1112,7 +1112,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			/* Real error - kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_intermediate_vuid(vuid);
 		}
 		data_blob_free(&blob1);
 		return ERROR_NT(nt_status_squash(status));
@@ -1140,7 +1140,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 			status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
-				invalidate_vuid(vuid);
+				invalidate_intermediate_vuid(vuid);
 				data_blob_free(&blob1);
 				return ERROR_NT(nt_status_squash(status));
 			}

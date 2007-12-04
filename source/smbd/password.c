@@ -116,6 +116,19 @@ void invalidate_vuid(uint16 vuid)
 	num_validated_vuids--;
 }
 
+void invalidate_intermediate_vuid(uint16 vuid)
+{
+	user_struct *vuser = get_partial_auth_user_struct(vuid);
+
+	if (vuser == NULL)
+		return;
+
+	DLIST_REMOVE(validated_users, vuser);
+
+	SAFE_FREE(vuser);
+	num_validated_vuids--;
+}
+
 /****************************************************************************
  Invalidate all vuid entries for this process.
 ****************************************************************************/
