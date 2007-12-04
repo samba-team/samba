@@ -1,5 +1,7 @@
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: Use credential if it was passed in.
+
 	* ntlm/acquire_cred.c: Check if there is initial creds with
 	_gss_ntlm_get_user_cred().
 
