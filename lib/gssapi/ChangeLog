@@ -1,5 +1,8 @@
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/acquire_cred.c: Check if there is initial creds with
+	_gss_ntlm_get_user_cred().
+
 	* ntlm/init_sec_context.c: Add _gss_ntlm_get_user_info() that
 	return the user info so it can be used by external modules.
 
