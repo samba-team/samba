@@ -111,6 +111,14 @@ _gss_ntlm_accept_sec_context
 	    return major_status;
 	*context_handle = (gss_ctx_id_t)ctx;
 	
+	/* check if the mechs is allowed by remote service */
+	major_status = (*ctx->server->nsi_probe)(minor_status, ctx->ictx, NULL);
+	if (major_status) {
+	    heim_ntlm_free_type1(&type1);
+	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
+	    return major_status;
+	}
+
 	data.data = input_token_buffer->value;
 	data.length = input_token_buffer->length;
 	
@@ -127,14 +135,6 @@ _gss_ntlm_accept_sec_context
 	    *minor_status = EINVAL;
 	    return GSS_S_FAILURE;
 	}
-
-	major_status = (*ctx->server->nsi_probe)(minor_status, ctx->ictx, NULL);
-	if (major_status) {
-	    heim_ntlm_free_type1(&type1);
-	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
-	    return major_status;
-	}
-
 
 	if (type1.flags & NTLM_NEG_SIGN)
 	    ctx->gssflags |= GSS_C_CONF_FLAG;
