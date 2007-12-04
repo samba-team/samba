@@ -221,11 +221,11 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 
 	/* TODO: chaeck if entry is a user or a workstation */
 	if (!sam_pwent) return -1;
-	
+
 	if (verbosity) {
-		pstring temp;
+		char temp[44];
 		const uint8 *hours;
-		
+
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		printf ("Account Flags:        %s\n", pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent), NEW_PW_FORMAT_SPACE_PADDED_LEN));
@@ -242,34 +242,34 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		printf ("Account desc:         %s\n", pdb_get_acct_desc(sam_pwent));
 		printf ("Workstations:         %s\n", pdb_get_workstations(sam_pwent));
 		printf ("Munged dial:          %s\n", pdb_get_munged_dial(sam_pwent));
-		
+
 		tmp = pdb_get_logon_time(sam_pwent);
 		printf ("Logon time:           %s\n", tmp ? http_timestring(tmp) : "0");
-		
+
 		tmp = pdb_get_logoff_time(sam_pwent);
 		printf ("Logoff time:          %s\n", tmp ? http_timestring(tmp) : "0");
-		
+
 		tmp = pdb_get_kickoff_time(sam_pwent);
 		printf ("Kickoff time:         %s\n", tmp ? http_timestring(tmp) : "0");
-		
+
 		tmp = pdb_get_pass_last_set_time(sam_pwent);
 		printf ("Password last set:    %s\n", tmp ? http_timestring(tmp) : "0");
-		
+
 		tmp = pdb_get_pass_can_change_time(sam_pwent);
 		printf ("Password can change:  %s\n", tmp ? http_timestring(tmp) : "0");
-		
+
 		tmp = pdb_get_pass_must_change_time(sam_pwent);
 		printf ("Password must change: %s\n", tmp ? http_timestring(tmp) : "0");
 
 		tmp = pdb_get_bad_password_time(sam_pwent);
 		printf ("Last bad password   : %s\n", tmp ? http_timestring(tmp) : "0");
-		printf ("Bad password count  : %d\n", 
+		printf ("Bad password count  : %d\n",
 			pdb_get_bad_password_count(sam_pwent));
-		
+
 		hours = pdb_get_hours(sam_pwent);
 		pdb_sethexhours(temp, hours);
 		printf ("Logon hours         : %s\n", temp);
-		
+
 	} else if (smbpwdstyle) {
 		char lm_passwd[33];
 		char nt_passwd[33];
@@ -277,7 +277,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		uid = nametouid(pdb_get_username(sam_pwent));
 		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
-			
+
 		printf("%s:%lu:%s:%s:%s:LCT-%08X:\n",
 		       pdb_get_username(sam_pwent),
 		       (unsigned long)uid,

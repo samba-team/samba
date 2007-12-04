@@ -569,7 +569,7 @@ because the NT docs say this can't be done :-). JRA.
 *******************************************************/
 
 static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
-		     char *filename, char *new_username)
+			const char *filename, const char *new_username)
 {
 	int fnum;
 	DOM_SID sid;
@@ -848,8 +848,8 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	static char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
-	fstring path;
-	pstring filename;
+	char *path;
+	char *filename = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -868,10 +868,8 @@ static struct cli_state *connect_one(const char *server, const char *share)
 
 	struct cli_state *cli;
 	TALLOC_CTX *frame = talloc_stackframe();
-	pstring owner_username;
-	fstring server;
-
-	owner_username[0] = '\0';
+	const char *owner_username = "";
+	char *server;
 
 	load_case_tables();
 
@@ -888,7 +886,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	load_interfaces();
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
-	
+
 	poptSetOtherOptionHelp(pc, "//server1/share1 filename\nACLs look like: "
 		"'ACL:user:[ALLOWED|DENIED]/flags/permissions'");
 
@@ -915,35 +913,44 @@ static struct cli_state *connect_one(const char *server, const char *share)
 			break;
 
 		case 'C':
-			pstrcpy(owner_username,poptGetOptArg(pc));
+			owner_username = poptGetOptArg(pc);
 			change_mode = REQUEST_CHOWN;
 			break;
 
 		case 'G':
-			pstrcpy(owner_username,poptGetOptArg(pc));
+			owner_username = poptGetOptArg(pc);
 			change_mode = REQUEST_CHGRP;
 			break;
 		}
 	}
 
 	/* Make connection to server */
-	if(!poptPeekArg(pc)) { 
+	if(!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
 		return -1;
 	}
-	
-	fstrcpy(path, poptGetArg(pc));
-	
-	if(!poptPeekArg(pc)) { 
-		poptPrintUsage(pc, stderr, 0);	
+
+	path = talloc_strdup(frame, poptGetArg(pc));
+	if (!path) {
 		return -1;
 	}
-	
-	pstrcpy(filename, poptGetArg(pc));
 
-	all_string_sub(path,"/","\\",0);
+	if(!poptPeekArg(pc)) {
+		poptPrintUsage(pc, stderr, 0);
+		return -1;
+	}
 
-	fstrcpy(server,path+2);
+	filename = talloc_strdup(frame, poptGetArg(pc));
+	if (!filename) {
+		return -1;
+	}
+
+	string_replace(path,'/','\\');
+
+	server = talloc_strdup(frame, path+2);
+	if (!server) {
+		return -1;
+	}
 	share = strchr_m(server,'\\');
 	if (!share) {
 		printf("Invalid argument: %s\n", share);
@@ -956,19 +963,20 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	if (!test_args) {
 		cli = connect_one(server, share);
 		if (!cli) {
-			TALLOC_FREE(frame);
 			exit(EXIT_FAILED);
 		}
 	} else {
 		exit(0);
 	}
 
-	all_string_sub(filename, "/", "\\", 0);
+	string_replace(filename, '/', '\\');
 	if (filename[0] != '\\') {
-		pstring s;
-		s[0] = '\\';
-		safe_strcpy(&s[1], filename, sizeof(pstring)-2);
-		pstrcpy(filename, s);
+		filename = talloc_asprintf(frame,
+				"\\%s",
+				filename);
+		if (!filename) {
+			return -1;
+		}
 	}
 
 	/* Perform requested action */

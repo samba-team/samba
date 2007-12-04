@@ -252,7 +252,7 @@ static bool get_require_membership_sid(void) {
 }
 /* Authenticate a user with a plaintext password */
 
-static bool check_plaintext_auth(const char *user, const char *pass, 
+static bool check_plaintext_auth(const char *user, const char *pass,
 				 bool stdout_diagnostics)
 {
 	struct winbindd_request request;
@@ -270,49 +270,52 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 
 	fstrcpy(request.data.auth.user, user);
 	fstrcpy(request.data.auth.pass, pass);
-	if (require_membership_of_sid)
-		pstrcpy(request.data.auth.require_membership_of_sid, require_membership_of_sid);
+	if (require_membership_of_sid) {
+		strlcpy(request.data.auth.require_membership_of_sid,
+			require_membership_of_sid,
+			sizeof(request.data.auth.require_membership_of_sid));
+	}
 
 	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
-	
+
 	if (stdout_diagnostics) {
 		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
 			d_printf("Reading winbind reply failed! (0x01)\n");
 		}
-		
-		d_printf("%s: %s (0x%x)\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.error_string, 
+
+		d_printf("%s: %s (0x%x)\n",
+			 response.data.auth.nt_status_string,
+			 response.data.auth.error_string,
 			 response.data.auth.nt_status);
 	} else {
 		if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
 			DEBUG(1, ("Reading winbind reply failed! (0x01)\n"));
 		}
-		
-		DEBUG(3, ("%s: %s (0x%x)\n", 
-			  response.data.auth.nt_status_string, 
+
+		DEBUG(3, ("%s: %s (0x%x)\n",
+			  response.data.auth.nt_status_string,
 			  response.data.auth.error_string,
-			  response.data.auth.nt_status));		
+			  response.data.auth.nt_status));
 	}
-		
+
         return (result == NSS_STATUS_SUCCESS);
 }
 
 /* authenticate a user with an encrypted username/password */
 
-NTSTATUS contact_winbind_auth_crap(const char *username, 
-				   const char *domain, 
+NTSTATUS contact_winbind_auth_crap(const char *username,
+				   const char *domain,
 				   const char *workstation,
-				   const DATA_BLOB *challenge, 
-				   const DATA_BLOB *lm_response, 
-				   const DATA_BLOB *nt_response, 
-				   uint32 flags, 
-				   uint8 lm_key[8], 
-				   uint8 user_session_key[16], 
-				   char **error_string, 
-				   char **unix_name) 
+				   const DATA_BLOB *challenge,
+				   const DATA_BLOB *lm_response,
+				   const DATA_BLOB *nt_response,
+				   uint32 flags,
+				   uint8 lm_key[8],
+				   uint8 user_session_key[16],
+				   char **error_string,
+				   char **unix_name)
 {
 	NTSTATUS nt_status;
         NSS_STATUS result;
@@ -994,16 +997,22 @@ static void offer_gss_spnego_mechs(void) {
 	SPNEGO_DATA spnego;
 	ssize_t len;
 	char *reply_base64;
-
-	pstring principal;
-	pstring myname_lower;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *principal;
+	char *myname_lower;
 
 	ZERO_STRUCT(spnego);
 
-	pstrcpy(myname_lower, global_myname());
+	myname_lower = talloc_strdup(ctx, global_myname());
+	if (!myname_lower) {
+		return;
+	}
 	strlower_m(myname_lower);
 
-	pstr_sprintf(principal, "%s$@%s", myname_lower, lp_realm());
+	principal = talloc_asprintf(ctx, "%s$@%s", myname_lower, lp_realm());
+	if (!principal) {
+		return;
+	}
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
@@ -1047,13 +1056,14 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	char *user = NULL;
 	char *domain = NULL;
 
 	const char *reply_code;
 	char       *reply_base64;
-	pstring     reply_argument;
+	char *reply_argument = NULL;
 
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("SPENGO query [%s] invalid", buf));
@@ -1065,7 +1075,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
 	} else if (strncmp(buf, "KK", 2) == 0) {
-		
+		;
 	} else {
 		DEBUG(1, ("SPENGO query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -1235,16 +1245,22 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	if (NT_STATUS_IS_OK(status)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		reply_code = "AF";
-		pstr_sprintf(reply_argument, "%s\\%s", domain, user);
+		reply_argument = talloc_asprintf(ctx, "%s\\%s", domain, user);
 	} else if (NT_STATUS_EQUAL(status,
 				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		reply_code = "TT";
-		pstr_sprintf(reply_argument, "*");
+		reply_argument = talloc_strdup(ctx, "*");
 	} else {
 		response.negTokenTarg.negResult = SPNEGO_REJECT;
 		reply_code = "NA";
-		pstrcpy(reply_argument, nt_errstr(status));
+		reply_argument = talloc_strdup(ctx, nt_errstr(status));
+	}
+
+	if (!reply_argument) {
+		DEBUG(1, ("Could not write SPNEGO data blob\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
 	}
 
 	SAFE_FREE(user);
@@ -1401,7 +1417,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 	SPNEGO_DATA reply;
 	char *reply_base64;
 	int retval;
-	
+
 	const char *my_mechs[] = {OID_KERBEROS5_OLD, NULL};
 	ssize_t len;
 
@@ -1426,8 +1442,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL, NULL);
 
 	if (retval) {
-
-		pstring user;
+		char *user = NULL;
 
 		/* Let's try to first get the TGT, for that we need a
                    password. */
@@ -1438,7 +1453,10 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 			return True;
 		}
 
-		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
+		user = talloc_asprintf(talloc_tos(), "%s@%s", opt_username, opt_domain);
+		if (!user) {
+			return false;
+		}
 
 		if ((retval = kerberos_kinit_password(user, opt_password, 0, NULL))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
