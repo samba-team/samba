@@ -1,3 +1,7 @@
+2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* digest.asn1: Add supportedMechs request.
+	
 2007-10-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: Some "old" windows enctypes. From Andy Polyakov.
