@@ -985,6 +985,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	const char * const attrs[] = { "dnsDomain", "objectGUID", NULL };
 	void *sam_ctx;
 	struct ldb_message **res;
+	struct ldb_dn *domain_dn;
 	int ret;
 
 	ZERO_STRUCT(r->out);
@@ -994,9 +995,13 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-				"(&(objectClass=domainDNS)(dnsDomain=%s))",
-				r->in.domain_name);
+	domain_dn = samdb_dns_domain_to_dn(sam_ctx, mem_ctx,
+					   r->in.domain_name);   
+	if (domain_dn == NULL) {
+		return WERR_DS_SERVICE_UNAVAILABLE;
+	}
+
+	ret = gendb_search_dn(sam_ctx, mem_ctx, domain_dn, &res, attrs);
 	if (ret != 1) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
