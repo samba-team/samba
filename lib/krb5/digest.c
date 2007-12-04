@@ -1143,3 +1143,57 @@ krb5_ntlm_rep_get_sessionkey(krb5_context context,
 			  ntlm->response.sessionkey->data,
 			  ntlm->response.sessionkey->length);
 }
+
+/**
+ * Get the supported/allowed mechanism for this principal.
+ *
+ * @param context A Keberos context.
+ * @param realm The realm of the KDC.
+ * @param ccache The credential cache to use when talking to the KDC.
+ * @param flags The supported mechanism.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_digest
+ */
+
+krb5_error_code
+krb5_digest_probe(krb5_context context,
+		  krb5_realm realm,
+		  krb5_ccache ccache,
+		  unsigned *flags)
+{
+    DigestReqInner ireq;
+    DigestRepInner irep;
+    krb5_error_code ret;
+
+    memset(&ireq, 0, sizeof(ireq));
+    memset(&irep, 0, sizeof(irep));
+
+    ireq.element = choice_DigestReqInner_supportedMechs;
+
+    ret = digest_request(context, realm, ccache,
+			 KRB5_KU_DIGEST_ENCRYPT, &ireq, &irep);
+    if (ret)
+	goto out;
+
+    if (irep.element == choice_DigestRepInner_error) {
+	krb5_set_error_string(context, "Digest probe error: %s",
+			      irep.u.error.reason);
+	ret = irep.u.error.code;
+	goto out;
+    }
+
+    if (irep.element != choice_DigestRepInner_supportedMechs) {
+	krb5_set_error_string(context, "Digest reply not an probe");
+	ret = EINVAL;
+	goto out;
+    }
+
+    *flags = DigestTypes2int(irep.u.supportedMechs);
+
+out:
+    free_DigestRepInner(&irep);
+
+    return ret;
+}
