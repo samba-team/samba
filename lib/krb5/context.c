@@ -183,6 +183,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, int, large_msg_size, 1400, "large_message_size");
     INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonicalize_hostname");
     context->default_cc_name = NULL;
+    context->default_cc_name_set = 0;
     return 0;
 }
 
