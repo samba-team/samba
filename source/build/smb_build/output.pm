@@ -8,26 +8,35 @@
 package output;
 use strict;
 
-sub add_dir($$)
+sub add_dir_str($$)
 {
-	my ($dir,$files) = @_;
-	my @ret = ();
+	my ($dir,$file) = @_;
 	my $dirsep = "/";
 
 	$dir =~ s/^\.$//g;
 	$dir =~ s/^\.\///g;
 
 	$dirsep = "" if ($dir eq "");
-	
-	foreach (@$files) {
-		if (substr($_, 0, 1) ne "\$") {
-			$_ = "$dir$dirsep$_";
-			s/([^\/\.]+)\/\.\.\///g;
-			s/([^\/\.]+)\/\.\.\///g;
-		}
-		push (@ret, $_);
+
+	my $ret = $file;
+	if (substr($ret, 0, 1) ne "\$") {
+		$ret = "$dir$dirsep$file";
+		$ret =~ s/([^\/\.]+)\/\.\.\///g;
+		$ret =~ s/([^\/\.]+)\/\.\.\///g;
 	}
-	
+
+	return $ret;
+}
+
+sub add_dir_array($$)
+{
+	my ($dir,$files) = @_;
+	my @ret = ();
+
+	foreach (@{$files}) {
+		push (@ret, add_dir_str($dir, $_));
+	}
+
 	return @ret;
 }
 
@@ -136,7 +145,8 @@ sub create_output($$)
 		next unless(defined($part->{OUTPUT_TYPE}));
 
 		# Combine object lists
-		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{OBJ_FILES})) if defined($part->{OBJ_FILES});
+		my @list = add_dir_array($part->{BASEDIR}, $part->{OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, @list) if defined($part->{OBJ_FILES});
 
 		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
 		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
