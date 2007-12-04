@@ -68,18 +68,36 @@ static void ctdb_unban_node(struct ctdb_recoverd *rec, uint32_t pnn)
 		return;
 	}
 
-	if (pnn == ctdb->pnn) {
-		/* make sure we remember we are no longer banned in case 
-		   there is an election */
-		rec->node_flags &= ~NODE_FLAGS_BANNED;
+	/* If we are unbanning a different node then just pass the ban info on */
+	if (pnn != ctdb->pnn) {
+		TDB_DATA data;
+		int ret;
+		
+		DEBUG(0,("Unanning remote node %u. Passing the ban request on to the remote node.\n", pnn));
+
+		data.dptr = (uint8_t *)&pnn;
+		data.dsize = sizeof(uint32_t);
+
+		ret = ctdb_send_message(ctdb, pnn, CTDB_SRVID_UNBAN_NODE, data);
+		if (ret != 0) {
+			DEBUG(0,("Failed to unban node %u\n", pnn));
+			return;
+		}
+
+		return;
 	}
+
+	/* make sure we remember we are no longer banned in case 
+	   there is an election */
+	rec->node_flags &= ~NODE_FLAGS_BANNED;
+
+	DEBUG(0,("Clearing ban flag on node %u\n", pnn));
+	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, 0, NODE_FLAGS_BANNED);
 
 	if (rec->banned_nodes[pnn] == NULL) {
 		DEBUG(0,("No ban recorded for this node. ctdb_unban_node() request ignored\n"));
 		return;
 	}
-
-	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, 0, NODE_FLAGS_BANNED);
 
 	talloc_free(rec->banned_nodes[pnn]);
 	rec->banned_nodes[pnn] = NULL;
@@ -95,7 +113,7 @@ static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, s
 	struct ctdb_recoverd *rec = state->rec;
 	uint32_t pnn = state->banned_node;
 
-	DEBUG(0,("Node %u is now unbanned\n", pnn));
+	DEBUG(0,("Ban timeout. Node %u is now unbanned te:0x%08x\n", pnn, (int)te));
 	ctdb_unban_node(rec, pnn);
 }
 
@@ -118,17 +136,38 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 		return;
 	}
 
-	if (pnn == ctdb->pnn) {
-		DEBUG(0,("self ban - lowering our election priority\n"));
-		/* banning ourselves - lower our election priority */
-		rec->priority_time = timeval_current();
+	/* If we are banning a different node then just pass the ban info on */
+	if (pnn != ctdb->pnn) {
+		struct ctdb_ban_info b;
+		TDB_DATA data;
+		int ret;
+		
+		DEBUG(0,("Banning remote node %u for %u seconds. Passing the ban request on to the remote node.\n", pnn, ban_time));
 
-		/* make sure we remember we are banned in case there is an 
-		   election */
-		rec->node_flags |= NODE_FLAGS_BANNED;
+		b.pnn = pnn;
+		b.ban_time = ban_time;
+
+		data.dptr = (uint8_t *)&b;
+		data.dsize = sizeof(b);
+
+		ret = ctdb_send_message(ctdb, pnn, CTDB_SRVID_BAN_NODE, data);
+		if (ret != 0) {
+			DEBUG(0,("Failed to ban node %u\n", pnn));
+			return;
+		}
+
+		return;
 	}
 
+	DEBUG(0,("self ban - lowering our election priority\n"));
 	ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, NODE_FLAGS_BANNED, 0);
+
+	/* banning ourselves - lower our election priority */
+	rec->priority_time = timeval_current();
+
+	/* make sure we remember we are banned in case there is an 
+	   election */
+	rec->node_flags |= NODE_FLAGS_BANNED;
 
 	if (rec->banned_nodes[pnn] != NULL) {
 		DEBUG(0,("Re-banning an already banned node. Remove previous ban and set a new ban.\n"));		
@@ -136,7 +175,7 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 		rec->banned_nodes[pnn] = NULL;
 	}
 
-	rec->banned_nodes[pnn] = talloc(rec, struct ban_state);
+	rec->banned_nodes[pnn] = talloc(rec->banned_nodes, struct ban_state);
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes[pnn]);
 
 	rec->banned_nodes[pnn]->rec = rec;
@@ -648,8 +687,6 @@ static void ban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	struct ctdb_ban_info *b = (struct ctdb_ban_info *)data.dptr;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
-	uint32_t recmaster;
-	int ret;
 
 	if (data.dsize != sizeof(*b)) {
 		DEBUG(0,("Bad data in ban_handler\n"));
@@ -657,21 +694,14 @@ static void ban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
-	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
-		talloc_free(mem_ctx);
+	if (b->pnn != ctdb->pnn) {
+		DEBUG(0,("Got a ban request for pnn:%u but our pnn is %u. Ignoring ban request\n", b->pnn, ctdb->pnn));
 		return;
 	}
 
-	if (recmaster != ctdb->pnn) {
-		DEBUG(0,("We are not the recmaster - ignoring ban request\n"));
-		talloc_free(mem_ctx);
-		return;
-	}
-
-	DEBUG(0,("Node %u has been banned for %u seconds by the administrator\n", 
+	DEBUG(0,("Node %u has been banned for %u seconds\n", 
 		 b->pnn, b->ban_time));
+
 	ctdb_ban_node(rec, b->pnn, b->ban_time);
 	talloc_free(mem_ctx);
 }
@@ -685,8 +715,6 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	uint32_t pnn;
-	int ret;
-	uint32_t recmaster;
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,("Bad data in unban_handler\n"));
@@ -695,20 +723,12 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 	pnn = *(uint32_t *)data.dptr;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
-	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to find the recmaster\n"));
-		talloc_free(mem_ctx);
+	if (pnn != ctdb->pnn) {
+		DEBUG(0,("Got an unban request for pnn:%u but our pnn is %u. Ignoring unban request\n", pnn, ctdb->pnn));
 		return;
 	}
 
-	if (recmaster != ctdb->pnn) {
-		DEBUG(0,("We are not the recmaster - ignoring unban request\n"));
-		talloc_free(mem_ctx);
-		return;
-	}
-
-	DEBUG(0,("Node %u has been unbanned by the administrator\n", pnn));
+	DEBUG(0,("Node %u has been unbanned.\n", pnn));
 	ctdb_unban_node(rec, pnn);
 	talloc_free(mem_ctx);
 }
@@ -828,7 +848,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			data.dptr = (uint8_t *)&c;
 			data.dsize = sizeof(c);
 
-			ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+			ctdb_send_message(ctdb, ctdb->pnn,
 					CTDB_SRVID_NODE_FLAGS_CHANGED, 
 					data);
 
@@ -1743,11 +1763,6 @@ again:
 	/* count how many active nodes there are */
 	num_active = 0;
 	for (i=0; i<nodemap->num; i++) {
-		if (rec->banned_nodes[nodemap->nodes[i].pnn] != NULL) {
-			nodemap->nodes[i].flags |= NODE_FLAGS_BANNED;
-		} else {
-			nodemap->nodes[i].flags &= ~NODE_FLAGS_BANNED;
-		}
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			num_active++;
 		}

@@ -635,7 +635,6 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t recmaster;
 	struct ctdb_ban_info b;
 	TDB_DATA data;
 	uint32_t ban_time;
@@ -646,21 +645,15 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ban_time = strtoul(argv[0], NULL, 0);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
-		DEBUG(0,("Failed to find the recmaster\n"));
-		return -1;
-	}
-
 	b.pnn = options.pnn;
 	b.ban_time = ban_time;
 
 	data.dptr = (uint8_t *)&b;
 	data.dsize = sizeof(b);
 
-	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_BAN_NODE, data);
+	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_BAN_NODE, data);
 	if (ret != 0) {
-		DEBUG(0,("Failed to tell the recmaster to ban node %u\n", options.pnn));
+		DEBUG(0,("Failed to ban node %u\n", options.pnn));
 		return -1;
 	}
 	
@@ -674,21 +667,14 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t recmaster;
 	TDB_DATA data;
-
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
-		DEBUG(0,("Failed to find the recmaster\n"));
-		return -1;
-	}
 
 	data.dptr = (uint8_t *)&options.pnn;
 	data.dsize = sizeof(uint32_t);
 
-	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_UNBAN_NODE, data);
+	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_UNBAN_NODE, data);
 	if (ret != 0) {
-		DEBUG(0,("Failed to tell the recmaster to unban node %u\n", options.pnn));
+		DEBUG(0,("Failed to to unban node %u\n", options.pnn));
 		return -1;
 	}
 	
