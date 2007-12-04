@@ -281,7 +281,7 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 
 	if (module && module->ops->init_context &&
 		module->ops->init_context(module) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "module initialization failed\n");
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "module %s initialization failed\n", module->ops->name);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
