@@ -35,7 +35,7 @@ gss_release_oid_set(OM_uint32 *minor_status,
 {
 
 	*minor_status = 0;
-	if (*set) {
+	if (set && *set) {
 		if ((*set)->elements)
 			free((*set)->elements);
 		free(*set);
