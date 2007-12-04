@@ -257,8 +257,23 @@ static OM_uint32 acquire_acceptor_cred
 	    goto end;
 	krb5_kt_free_entry(context, &entry);
 	ret = GSS_S_COMPLETE;
-    }
- 
+    } else {
+	/* 
+	 * Check if there is at least one entry in the keytab before
+	 * declaring it as an useful keytab.
+	 */
+	krb5_keytab_entry tmp;
+	krb5_kt_cursor c;
+
+	kret = krb5_kt_start_seq_get (context, handle->keytab, &c);
+	if (kret)
+	    goto end;
+	if (krb5_kt_next_entry(context, handle->keytab, &tmp, &c) == 0) {
+	    krb5_kt_free_entry(context, &tmp);
+	    ret = GSS_S_COMPLETE; /* ok found one entry */
+	}
+	krb5_kt_end_seq_get (context, handle->keytab, &c);
+    } 
 end:
     if (ret != GSS_S_COMPLETE) {
 	if (handle->keytab != NULL)
