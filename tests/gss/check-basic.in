@@ -110,6 +110,13 @@ echo "keytab"
 ${acquire_cred} \
     --acquire-type=accept \
     --acquire-name=host@host.test.h5l.se || exit 1
+echo "keytab w/o name"
+${acquire_cred} \
+    --acquire-type=accept || exit 1
+echo "keytab w/ wrong name"
+${acquire_cred} \
+    --acquire-type=accept \
+    --acquire-name=host@host2.test.h5l.se 2>/dev/null && exit 1
 echo "init using keytab"
 ${acquire_cred} \
     --acquire-type=initiate \
