@@ -24,6 +24,7 @@
 struct net_context {
 	TALLOC_CTX *mem_ctx;
 	struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx;
 };
 
 struct net_functable {

@@ -45,6 +45,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc.h"
+#include "param/param.h"
 
 /*
   run a function from a function table. If not found then
@@ -192,6 +193,7 @@ static int binary_net(int argc, const char **argv)
 
 	ZERO_STRUCTP(ctx);
 	ctx->mem_ctx = mem_ctx;
+	ctx->lp_ctx = global_loadparm;
 	ctx->credentials = cmdline_credentials;
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
