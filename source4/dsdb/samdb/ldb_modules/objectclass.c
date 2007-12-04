@@ -453,6 +453,9 @@ static int objectclass_do_add(struct ldb_handle *h)
 	if (ac->search_res == NULL) {
 		if (ldb_dn_compare(ldb_get_root_basedn(ac->module->ldb), ac->orig_req->op.add.message->dn) == 0) {
 			/* Allow the tree to be started */
+			
+			/* but don't keep any error string, it's meaningless */
+			ldb_set_errstring(ac->module->ldb, NULL);
 		} else {
 			ldb_asprintf_errstring(ac->module->ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(ac->orig_req->op.add.message->dn));
