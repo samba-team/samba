@@ -33,6 +33,15 @@
 /* $Id$ */
 
 command = {
+	name = "digest-probe"
+	option = {
+		long = "realm"
+		type = "string"
+		help = "Kerberos realm to communicate with"
+	}
+	help = "probe what mech is allowed/supported for this server"
+}
+command = {
 	name = "digest-server-init"
 	option = {
 		long = "type"
