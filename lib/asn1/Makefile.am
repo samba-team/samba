@@ -431,6 +431,7 @@ gen_files_digest =					\
 	asn1_DigestReqInner.x				\
 	asn1_DigestRequest.x				\
 	asn1_DigestResponse.x				\
+	asn1_DigestTypes.x				\
 	asn1_NTLMInit.x					\
 	asn1_NTLMInitReply.x				\
 	asn1_NTLMRequest.x				\
@@ -565,7 +566,7 @@ cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
 
 krb5_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
-	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA --sequence=ETYPE-INFO --sequence=ETYPE-INFO2 $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
 
 pkinit_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1 pkinit_asn1 || (rm -f pkinit_asn1_files ; exit 1)
