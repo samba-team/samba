@@ -509,8 +509,10 @@ void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
 	if (buf && *buf) {
-		create_rpc_blob(str, strlen(buf));
-		str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
+		size_t len = strlen(buf);
+		create_rpc_blob(str, len);
+		str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len,
+				buf, len);
 	}
 }
 

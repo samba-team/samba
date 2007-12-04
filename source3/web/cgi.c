@@ -173,7 +173,7 @@ void cgi_load_variables(void)
 			variables[num_variables].name = SMB_STRDUP(tok);
 			variables[num_variables].value = SMB_STRDUP(p+1);
 
-			if (!variables[num_variables].name || 
+			if (!variables[num_variables].name ||
 			    !variables[num_variables].value)
 				continue;
 
@@ -186,32 +186,36 @@ void cgi_load_variables(void)
                         printf("<!== Commandline var %s has value \"%s\"  ==>\n",
                                variables[num_variables].name,
                                variables[num_variables].value);
-#endif						
+#endif
 			num_variables++;
 			if (num_variables == MAX_VARIABLES) break;
 		}
 
 	}
 #ifdef DEBUG_COMMENTS
-        printf("<!== End dump in cgi_load_variables() ==>\n");   
+        printf("<!== End dump in cgi_load_variables() ==>\n");
 #endif
 
 	/* variables from the client are in UTF-8 - convert them
 	   to our internal unix charset before use */
 	for (i=0;i<num_variables;i++) {
-		pstring dest;
+		TALLOC_CTX *frame = talloc_stackframe();
+		char *dest;
 
-		convert_string(CH_UTF8, CH_UNIX, 
-			       variables[i].name, -1, 
-			       dest, sizeof(dest), True);
-		free(variables[i].name);
-		variables[i].name = SMB_STRDUP(dest);
+		dest = NULL;
+		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
+			       variables[i].name, -1,
+			       &dest, True);
+		SAFE_FREE(variables[i].name);
+		variables[i].name = SMB_STRDUP(dest ? dest : "");
 
-		convert_string(CH_UTF8, CH_UNIX, 
+		dest = NULL;
+		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
 			       variables[i].value, -1,
-			       dest, sizeof(dest), True);
-		free(variables[i].value);
-		variables[i].value = SMB_STRDUP(dest);
+			       &dest, True);
+		SAFE_FREE(variables[i].value);
+		variables[i].value = SMB_STRDUP(dest ? dest : "");
+		TALLOC_FREE(frame);
 	}
 }
 
@@ -219,7 +223,7 @@ void cgi_load_variables(void)
 /***************************************************************************
   find a variable passed via CGI
   Doesn't quite do what you think in the case of POST text variables, because
-  if they exist they might have a value of "" or even " ", depending on the 
+  if they exist they might have a value of "" or even " ", depending on the
   browser. Also doesn't allow for variables[] containing multiple variables
   with the same name and the same or different values.
   ***************************************************************************/

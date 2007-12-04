@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-#define _(x) lang_msg_rotate(x)
+#define _(x) lang_msg_rotate(talloc_tos(),x)
 
 #define PIDMAP		struct PidMap
 
@@ -99,11 +99,20 @@ static char *mapPid2Machine (struct server_id pid)
 	return pidbuf;
 }
 
-static char *tstring(time_t t)
+static const char *tstring(TALLOC_CTX *ctx, time_t t)
 {
-	static pstring buf;
-	pstrcpy(buf, time_to_asc(t));
-	all_string_sub(buf," ","&nbsp;",sizeof(buf));
+	char *buf;
+	buf = talloc_strdup(ctx, time_to_asc(t));
+	if (!buf) {
+		return "";
+	}
+	buf = talloc_all_string_sub(ctx,
+			buf,
+			" ",
+			"&nbsp;");
+	if (!buf) {
+		return "";
+	}
 	return buf;
 }
 
@@ -162,7 +171,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 
 	push_utf8_allocate(&utf8_fname, fname);
 	printf("<td>%s</td><td>%s</td></tr>\n",
-	       utf8_fname,tstring(e->time.tv_sec));
+	       utf8_fname,tstring(talloc_tos(),e->time.tv_sec));
 	SAFE_FREE(utf8_fname);
 }
 
@@ -199,7 +208,7 @@ static int traverse_fn2(struct db_record *rec,
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       procid_str_static(&crec->pid),
 	       crec->machine, crec->addr,
-	       tstring(crec->start));
+	       tstring(talloc_tos(),crec->start));
 	if (geteuid() == 0) {
 		printf("<td><input type=submit value=\"X\" name=\"kill_%s\"></td>\n",
 		       procid_str_static(&crec->pid));
@@ -222,7 +231,7 @@ static int traverse_fn3(struct db_record *rec,
 	       crec->servicename, uidtoname(crec->uid),
 	       gidtoname(crec->gid),procid_str_static(&crec->pid),
 	       crec->machine,
-	       tstring(crec->start));
+	       tstring(talloc_tos(),crec->start));
 	return 0;
 }
 
@@ -235,6 +244,7 @@ void status_page(void)
 	int refresh_interval=30;
 	int nr_running=0;
 	bool waitup = False;
+	TALLOC_CTX *ctx = talloc_stackframe();
 
 	smbd_pid = pid_to_procid(pidfile_pid("smbd"));
 
@@ -311,7 +321,7 @@ void status_page(void)
 	}
 
 	connections_forall(traverse_fn1, NULL);
- 
+
 	initPid2Machine ();
 
 	printf("<H2>%s</H2>\n", _("Server Status"));
@@ -438,4 +448,5 @@ void status_page(void)
 		       refresh_interval*1000);
 		printf("//-->\n</script>\n");
 	}
+	TALLOC_FREE(ctx);
 }
