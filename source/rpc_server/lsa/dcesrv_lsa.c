@@ -264,7 +264,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 
 		ZERO_STRUCT(domain_guid);
 
-		switch (lp_server_role(global_loadparm)) {
+		switch (lp_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
 			role		= DS_ROLE_STANDALONE_SERVER;
 			break;
@@ -280,13 +280,13 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 			break;
 		}
 
-		switch (lp_server_role(global_loadparm)) {
+		switch (lp_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
+			domain		= talloc_strdup(mem_ctx, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			break;
 		case ROLE_DOMAIN_MEMBER:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
+			domain		= talloc_strdup(mem_ctx, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			/* TODO: what is with dns_domain and forest and guid? */
 			break;
@@ -1713,8 +1713,8 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx, 
-											  global_loadparm));
+		secret_state->sam_ldb = talloc_reference(secret_state, 
+							 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
 				   ldb_dn_new(mem_ctx, secret_state->sam_ldb, "cn=LSA Secrets"),
@@ -1833,7 +1833,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	
 	} else {
 		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 secrets_db_connect(mem_ctx, global_loadparm));
+				 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 
 		secret_state->global = false;
 		name = r->in.name.string;

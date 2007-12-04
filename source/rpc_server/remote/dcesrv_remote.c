@@ -40,12 +40,12 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
         NTSTATUS status;
 	const struct ndr_interface_table *table;
         struct dcesrv_remote_private *private;
-	const char *binding = lp_parm_string(global_loadparm, NULL, "dcerpc_remote", "binding");
+	const char *binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
 	bool machine_account;
 
-	machine_account = lp_parm_bool(global_loadparm, NULL, "dcerpc_remote", "use_machine_account", false);
+	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
 
 	private = talloc(dce_call->conn, struct dcesrv_remote_private);
 	if (!private) {
@@ -60,9 +60,9 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	user = lp_parm_string(global_loadparm, NULL, "dcerpc_remote", "user");
-	pass = lp_parm_string(global_loadparm, NULL, "dcerpc_remote", "password");
-	domain = lp_parm_string(global_loadparm, NULL, "dceprc_remote", "domain");
+	user = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "user");
+	pass = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
+	domain = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
 
 	table = ndr_table_by_uuid(&iface->syntax_id.uuid); /* FIXME: What about if_version ? */
 	if (!table) {
@@ -76,7 +76,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		cli_credentials_set_conf(credentials, global_loadparm);
+		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
@@ -85,7 +85,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	} else if (machine_account) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
 		credentials = cli_credentials_init(private);
-		cli_credentials_set_conf(credentials, global_loadparm);
+		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 		}
@@ -224,7 +224,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	int i;
-	const char **ifaces = str_list_make(dce_ctx, lp_parm_string(global_loadparm, NULL, "dcerpc_remote", "interfaces"),NULL);
+	const char **ifaces = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_remote", "interfaces"),NULL);
 
 	if (!ifaces) {
 		DEBUG(3,("remote_op_init_server: no interfaces configured\n"));

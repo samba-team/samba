@@ -36,7 +36,7 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 	struct sidmap_context *sidmap;
 	uid_t uid;
 
-	sidmap = sidmap_open(mem_ctx, global_loadparm);
+	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
 	if (sidmap == NULL) {
 		DEBUG(10, ("sidmap_open failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -56,7 +56,7 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 	struct sidmap_context *sidmap;
 	uid_t uid;
 
-	sidmap = sidmap_open(mem_ctx, global_loadparm);
+	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
 	if (sidmap == NULL) {
 		DEBUG(10, ("sidmap_open failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -80,7 +80,7 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 	struct sidmap_context *sidmap;
 	gid_t gid;
 
-	sidmap = sidmap_open(mem_ctx, global_loadparm);
+	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
 	if (sidmap == NULL) {
 		DEBUG(10, ("sidmap_open failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -100,7 +100,7 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 	struct sidmap_context *sidmap;
 	gid_t gid;
 
-	sidmap = sidmap_open(mem_ctx, global_loadparm);
+	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
 	if (sidmap == NULL) {
 		DEBUG(10, ("sidmap_open failed\n"));
 		return NT_STATUS_NO_MEMORY;

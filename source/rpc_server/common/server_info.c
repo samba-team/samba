@@ -36,7 +36,7 @@ _PUBLIC_ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ct
 {
 	enum srvsvc_PlatformId id;
 
-	id = lp_parm_int(global_loadparm, NULL, "server_info", "platform_id", PLATFORM_ID_NT);
+	id = lp_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "platform_id", PLATFORM_ID_NT);
 
 	return id;
 }
@@ -47,7 +47,7 @@ _PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct d
 
 	/* if there's no string return our NETBIOS name */
 	if (!p) {
-		return talloc_strdup(mem_ctx, lp_netbios_name(global_loadparm));
+		return talloc_strdup(mem_ctx, lp_netbios_name(dce_ctx->lp_ctx));
 	}
 
 	/* if there're '\\\\' in front remove them otherwise just pass the string */
@@ -60,25 +60,25 @@ _PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct d
 
 const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return talloc_strdup(mem_ctx, lp_workgroup(global_loadparm));
+	return talloc_strdup(mem_ctx, lp_workgroup(dce_ctx->lp_ctx));
 }
 
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(global_loadparm, NULL, "server_info", "version_major", 5);
+	return lp_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(global_loadparm, NULL, "server_info", "version_minor", 2);
+	return lp_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "version_minor", 2);
 }
 
 /* This hardcoded value should go into a ldb database! */
 _PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
-	return lp_parm_int(global_loadparm, NULL, "server_info", "version_build", 3790);
+	return lp_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "version_build", 3790);
 }
 
 /* This hardcoded value should go into a ldb database! */
@@ -89,7 +89,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
 
-	switch (lp_announce_as(global_loadparm)) {
+	switch (lp_announce_as(dce_ctx->lp_ctx)) {
 		case ANNOUNCE_AS_NT_SERVER:
 			default_server_announce |= SV_TYPE_SERVER_NT;
 			/* fall through... */
@@ -106,7 +106,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 			break;
 	}
 
-	switch (lp_server_role(global_loadparm)) {
+	switch (lp_server_role(dce_ctx->lp_ctx)) {
 		case ROLE_DOMAIN_MEMBER:
 			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
 			break;
@@ -118,7 +118,7 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 				break;
 			}
 			/* open main ldb */
-			samctx = samdb_connect(tmp_ctx, global_loadparm, anonymous_session(tmp_ctx, global_loadparm));
+			samctx = samdb_connect(tmp_ctx, global_loadparm, anonymous_session(tmp_ctx, dce_ctx->lp_ctx));
 			if (samctx == NULL) {
 				DEBUG(2,("Unable to open samdb in determining server announce flags\n"));
 			} else {
@@ -138,10 +138,10 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 		default:
 			break;
 	}
-	if (lp_time_server(global_loadparm))
+	if (lp_time_server(dce_ctx->lp_ctx))
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
 
-	if (lp_host_msdfs(global_loadparm))
+	if (lp_host_msdfs(dce_ctx->lp_ctx))
 		default_server_announce |= SV_TYPE_DFS_SERVER;
 
 

@@ -59,7 +59,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = gensec_server_start(dce_conn, call->event_ctx, global_loadparm, call->msg_ctx, &auth->gensec_security);
+	status = gensec_server_start(dce_conn, call->event_ctx, call->conn->dce_ctx->lp_ctx, call->msg_ctx, &auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC for DCERPC server: %s\n", nt_errstr(status)));
 		return false;
@@ -72,7 +72,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 	
-	cli_credentials_set_conf(server_credentials, global_loadparm);
+	cli_credentials_set_conf(server_credentials, call->conn->dce_ctx->lp_ctx);
 	status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
