@@ -2853,10 +2853,10 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	case ADS_EXTENDED_DN_HEX_STRING: {
-		pstring buf;
+		fstring buf;
 		size_t buf_len;
 
-		buf_len = strhex_to_str(buf, strlen(p), p);
+		buf_len = strhex_to_str(buf, sizeof(buf), p, strlen(p));
 		if (buf_len == 0) {
 			return False;
 		}

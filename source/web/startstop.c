@@ -25,60 +25,60 @@
 /** Startup smbd from web interface. */
 void start_smbd(void)
 {
-	pstring binfile;
+	char *binfile = NULL;
 
-	if (geteuid() != 0) return;
+	if (geteuid() != 0) {
+		 return;
+	}
 
 	if (fork()) {
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", dyn_SBINDIR);
-
-	become_daemon(True, False);
-
-	execl(binfile, binfile, "-D", NULL);
-
+	if (asprintf(&binfile, "%s/smbd", dyn_SBINDIR) > 0) {
+		become_daemon(true, false);
+		execl(binfile, binfile, "-D", NULL);
+	}
 	exit(0);
 }
 
 /* startup nmbd */
 void start_nmbd(void)
 {
-	pstring binfile;
+	char *binfile = NULL;
 
-	if (geteuid() != 0) return;
+	if (geteuid() != 0) {
+		return;
+	}
 
 	if (fork()) {
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", dyn_SBINDIR);
-	
-	become_daemon(True, False);
-
-	execl(binfile, binfile, "-D", NULL);
-
+	if (asprintf(&binfile, "%s/nmbd", dyn_SBINDIR) > 0) {
+		become_daemon(true, false);
+		execl(binfile, binfile, "-D", NULL);
+	}
 	exit(0);
 }
 
 /** Startup winbindd from web interface. */
 void start_winbindd(void)
 {
-	pstring binfile;
+	char *binfile = NULL;
 
-	if (geteuid() != 0) return;
+	if (geteuid() != 0) {
+		return;
+	}
 
 	if (fork()) {
 		return;
 	}
 
-	slprintf(binfile, sizeof(pstring) - 1, "%s/winbindd", dyn_SBINDIR);
-
-	become_daemon(True, False);
-
-	execl(binfile, binfile, NULL);
-
+	if (asprintf(&binfile, "%s/winbindd", dyn_SBINDIR) > 0) {
+		become_daemon(true, false);
+		execl(binfile, binfile, NULL);
+	}
 	exit(0);
 }
 

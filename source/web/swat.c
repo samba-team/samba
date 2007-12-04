@@ -51,7 +51,7 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
-#define _(x) lang_msg_rotate(x)
+#define _(x) lang_msg_rotate(talloc_tos(),x)
 
 /****************************************************************************
 ****************************************************************************/
@@ -77,16 +77,30 @@ static char *fix_backslash(const char *str)
 	return newstring;
 }
 
-static char *fix_quotes(const char *str)
+static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
 {
-	static pstring newstring;
-	char *p = newstring;
-	size_t newstring_len = sizeof(newstring);
+	char *newstring = NULL;
+	char *p = NULL;
+	size_t newstring_len;
 	int quote_len = strlen("&quot;");
 
+	/* Count the number of quotes. */
+	newstring_len = 1;
 	while (*str) {
-		if ( *str == '\"' && (newstring_len - PTR_DIFF(p, newstring) - 1) > quote_len ) {
-			strncpy( p, "&quot;", quote_len); 
+		if ( *str == '\"') {
+			newstring_len += quote_len;
+		} else {
+			newstring_len++;
+		}
+		++str;
+	}
+	newstring = TALLOC_ARRAY(ctx, char, newstring_len);
+	if (!newstring) {
+		return "";
+	}
+	for (p = newstring; *str; str++) {
+		if ( *str == '\"') {
+			strncpy( p, "&quot;", quote_len);
 			p += quote_len;
 		} else {
 			*p++ = *str;
@@ -180,25 +194,24 @@ static void print_header(void)
    "i18n_translated_parm" class is used to change the color of the
    translated parameter with CSS.
    **************************************************************** */
-static const char* get_parm_translated(
+static const char *get_parm_translated(TALLOC_CTX *ctx,
 	const char* pAnchor, const char* pHelp, const char* pLabel)
 {
-	const char* pTranslated = _(pLabel);
-	static pstring output;
-	if(strcmp(pLabel, pTranslated) != 0)
-	{
-		pstr_sprintf(output,
+	const char *pTranslated = _(pLabel);
+	char *output;
+	if(strcmp(pLabel, pTranslated) != 0) {
+		output = talloc_asprintf(ctx,
 		  "<A HREF=\"/swat/help/manpages/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s <br><span class=\"i18n_translated_parm\">%s</span>",
 		   pAnchor, pHelp, pLabel, pTranslated);
 		return output;
 	}
-	pstr_sprintf(output, 
+	output = talloc_asprintf(ctx,
 	  "<A HREF=\"/swat/help/manpages/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s",
 	  pAnchor, pHelp, pLabel);
 	return output;
 }
 /****************************************************************************
- finish off the page 
+ finish off the page
 ****************************************************************************/
 static void print_footer(void)
 {
@@ -208,19 +221,21 @@ static void print_footer(void)
 }
 
 /****************************************************************************
-  display one editable parameter in a form 
+  display one editable parameter in a form
 ****************************************************************************/
 static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
 	void *ptr = parm->ptr;
 	char *utf8_s1, *utf8_s2;
+	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (parm->p_class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
+	printf("<tr><td>%s</td><td>", get_parm_translated(ctx,
+				stripspaceupper(parm->label), _("Help"), parm->label));
 	switch (parm->type) {
 	case P_CHAR:
 		printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
@@ -256,7 +271,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			char **list = (char **)(parm->def.lvalue);
 			for (; *list; list++) {
 				/* enclose in HTML encoded quotes if the string contains a space */
-				if ( strchr_m(*list, ' ') ) 
+				if ( strchr_m(*list, ' ') )
 					printf("&quot;%s&quot;%s", *list, ((*(list+1))?", ":""));
 				else
 					printf("%s%s", *list, ((*(list+1))?", ":""));
@@ -269,7 +284,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_USTRING:
 		push_utf8_allocate(&utf8_s1, *(char **)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), fix_quotes(utf8_s1));
+		       make_parm_name(parm->label), fix_quotes(ctx, utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
@@ -279,7 +294,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_UGSTRING:
 		push_utf8_allocate(&utf8_s1, (char *)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), fix_quotes(utf8_s1));
+		       make_parm_name(parm->label), fix_quotes(ctx, utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
@@ -331,6 +346,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 	}
 	printf("</td></tr>\n");
+	TALLOC_FREE(ctx);
 }
 
 /****************************************************************************
@@ -510,14 +526,17 @@ static void commit_parameters(int snum)
 {
 	int i = 0;
 	struct parm_struct *parm;
-	pstring label;
+	char *label;
 	const char *v;
 
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
-		slprintf(label, sizeof(label)-1, "parm_%s", make_parm_name(parm->label));
-		if ((v = cgi_variable(label)) != NULL) {
-			if (parm->flags & FLAG_HIDE) continue;
-			commit_parameter(snum, parm, v); 
+		if (asprintf(&label, "parm_%s", make_parm_name(parm->label)) > 0) {
+			if ((v = cgi_variable(label)) != NULL) {
+				if (parm->flags & FLAG_HIDE)
+					continue;
+				commit_parameter(snum, parm, v);
+			}
+			SAFE_FREE(label);
 		}
 	}
 }
@@ -720,9 +739,8 @@ static void wizard_page(void)
 
 		/* Have to create Homes share? */
 		if ((HomeExpo == 1) && (have_home == -1)) {
-			pstring unix_share;
-			
-			pstrcpy(unix_share,HOMES_NAME);
+			const char *unix_share = HOMES_NAME;
+
 			load_config(False);
 			lp_copy_service(GLOBAL_SECTION_SNUM, unix_share);
 			iNumNonAutoPrintServices = lp_numservices();
@@ -749,7 +767,6 @@ static void wizard_page(void)
 			winstype = 1;
 		if (lp_wins_server_list() && strlen(*lp_wins_server_list()))
  		        winstype = 2;
- 		
 
 		/* Do we have a homes share? */
 		have_home = lp_servicenumber(HOMES_NAME);
@@ -1339,22 +1356,24 @@ static void printers_page(void)
   doesn't have more calls to _() than the number of buffers
 */
 
-const char *lang_msg_rotate(const char *msgid)
+const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 {
-#define NUM_LANG_BUFS 16
-	char *msgstr;
-	static pstring bufs[NUM_LANG_BUFS];
-	static int next;
+	const char *msgstr;
+	const char *ret;
 
-	msgstr = (char *)lang_msg(msgid);
-	if (!msgstr) return msgid;
+	msgstr = lang_msg(msgid);
+	if (!msgstr) {
+		return msgid;
+	}
 
-	pstrcpy(bufs[next], msgstr);
-	msgstr = bufs[next];
+	ret = talloc_strdup(ctx, msgstr);
 
-	next = (next+1) % NUM_LANG_BUFS;
+	lang_msg_free(msgstr);
+	if (!ret) {
+		return msgid;
+	}
 
-	return msgstr;
+	return ret;
 }
 
 /**
