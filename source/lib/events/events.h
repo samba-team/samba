@@ -22,8 +22,8 @@
 #ifndef __EVENTS_H__
 #define __EVENTS_H__
 
+#include <stdint.h>
 #include <talloc.h>
-#include <stdlib.h>
 
 struct event_context;
 struct event_ops;
