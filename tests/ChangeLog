@@ -1,3 +1,7 @@
+2007-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-basic.in: Test GSS_C_NO_NAME too.
+
 2007-10-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: Try multiple enctypes.
