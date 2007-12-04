@@ -125,5 +125,8 @@ check-python: build-python
 	# FIXME: Should be more portable:
 	LD_LIBRARY_PATH=. PYTHONPATH=.:build/lib.linux-i686-2.4 trial python/tests/simple.py
 
+install-swig:
+	cp tdb.i `swig -swiglib`
+
 clean-python:
 	./setup.py clean
