@@ -1269,7 +1269,16 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2a */
-	WERROR netr_NETRSERVERTRUSTPASSWORDSGET();
+	NTSTATUS netr_ServerTrustPasswordsGet(
+		[in]  [string,charset(UTF16)] uint16 *server_name,
+		[in]  [string,charset(UTF16)] uint16 account_name[],
+		[in]  netr_SchannelType secure_channel_type,
+		[in]  [string,charset(UTF16)] uint16 computer_name[],
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[out,ref] samr_Password *password,
+		[out,ref] samr_Password *password2
+	);
 
 	/****************/
 	/* Function 0x2b */
