@@ -177,6 +177,7 @@ struct dcerpc_pipe_connect {
 	const char *pipe_name;
 	const struct ndr_interface_table *interface;
 	struct cli_credentials *creds;
+	const char **name_resolve_order;
 };
 
 

@@ -784,7 +784,8 @@ static void becomeDC_recv_cldap(struct cldap_request *req)
 	becomeDC_connect_ldap1(s);
 }
 
-static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s, struct becomeDC_ldap *ldap)
+static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s, 
+				      struct becomeDC_ldap *ldap)
 {
 	char *url;
 

@@ -39,7 +39,8 @@
 /**
   process command line options
 */
-struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
+struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, 
+					int argc, const char **argv,
 					void (*usage)(void))
 {
 	static struct ldb_cmdline options; /* needs to be static for older compilers */
