@@ -175,7 +175,8 @@ int register_vuid(auth_serversupplied_info *server_info,
 	ZERO_STRUCTP(vuser);
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
-	while( get_valid_user_struct(next_vuid) != NULL ) {
+	while( (get_valid_user_struct(next_vuid) != NULL)
+	       || (get_partial_auth_user_struct(next_vuid) != NULL) ) {
 		next_vuid++;
 		/* Check for vuid wrap. */
 		if (next_vuid == UID_FIELD_INVALID)
