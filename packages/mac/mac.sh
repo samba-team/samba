@@ -36,7 +36,7 @@ replace="s,[@]VERSION[@],${version},g"
 sed -e $replace < ${base}/Info.plist.in > ./Info.plist
 
 echo "Build package"
-/Developer/Tools/packagemaker \
+/Developer/usr/bin/packagemaker \
     -build \
     -ds \
     -f ${destdir} \
