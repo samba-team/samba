@@ -46,7 +46,9 @@ static NTSTATUS zfs_get_nt_acl_common(const char *name,
 	/* read the number of file aces */
 	if((naces = acl(name, ACE_GETACLCNT, 0, NULL)) == -1) {
 		if(errno == ENOSYS) {
-			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not supported on the filesystem where the file reside"));
+			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not "
+				  "supported on the filesystem where the file "
+				  "reside"));
 		} else {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", name,
 					strerror(errno)));
@@ -145,7 +147,9 @@ static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	/* store acl */
 	if(acl(fsp->fsp_name, ACE_SETACL, naces, acebuf)) {
 		if(errno == ENOSYS) {
-			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not supported on the filesystem where the file reside"));
+			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
+				  "supported on the filesystem where the file "
+				  "reside"));
 		} else {
 			DEBUG(9, ("acl(ACE_SETACL, %s): %s ", fsp->fsp_name,
 					strerror(errno)));
@@ -219,7 +223,7 @@ static NTSTATUS zfsacl_set_nt_acl(vfs_handle_struct *handle,
 
 /* VFS operations structure */
 
-static vfs_op_tuple zfsacl_ops[] = {	
+static vfs_op_tuple zfsacl_ops[] = {
 	{SMB_VFS_OP(zfsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
