@@ -752,7 +752,7 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 			goto bad_param;
 
 		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
-		       dcnt);      
+		       dcnt);
 	}
 
 	if ((state->received_param < state->total_param) ||
@@ -761,10 +761,11 @@ void reply_transs(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	/* construct_reply_common has done us the favor to pre-fill the
-	 * command field with SMBtranss which is wrong :-)
-	 */
-	SCVAL(req->outbuf,smb_com,SMBtrans);
+        /*
+	 * construct_reply_common will copy smb_com from inbuf to
+	 * outbuf. SMBtranss is wrong here.
+         */
+        SCVAL(req->inbuf,smb_com,SMBtrans);
 
 	handle_trans(conn, req, state);
 
