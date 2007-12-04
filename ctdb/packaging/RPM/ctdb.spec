@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 16
+Release: 17
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -115,3 +115,13 @@ fi
 %{_mandir}/man1/onnode.1.gz
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_private.h
+
+%changelog
+* Tue Dec 04 2007 : Version 1.0.17
+ - fixed bugs related to ban/unban of nodes
+ - fixed a race condition that could lead to monitoring being permanently disabled,
+   which would lead to long recovery times
+ - make deterministic IPs the default
+ - fixed a bug related to continuous recovery 
+ - added a debugging option --node-ip
+
