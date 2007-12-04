@@ -158,9 +158,12 @@ sub check_python($$)
 		my $dirname = dirname($python->{SWIG_FILE});
 		my $basename = basename($python->{SWIG_FILE}, ".i");
 
-		$python->{OBJ_FILES} = ["$dirname/$basename\_wrap.o"];
+		$dirname .= "/" unless $dirname =~ /\/$/;
+		$dirname = "" if $dirname eq "./";
+
+		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
-		$python->{PYTHON_FILES} = ["$dirname/$basename.py"];
+		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
 	} else {
 		my $basename = $python->{NAME};
 		$basename =~ s/^python_//g;
