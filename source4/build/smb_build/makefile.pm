@@ -7,6 +7,7 @@
 
 package smb_build::makefile;
 use smb_build::env;
+use smb_build::output;
 use File::Basename;
 use strict;
 
@@ -463,12 +464,8 @@ sub Header($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $dir = $ctx->{BASEDIR};
-
-	$dir =~ s/^\.\///g;
-
 	foreach (@{$ctx->{PUBLIC_HEADERS}}) {
-		push (@{$self->{headers}}, "$dir/$_");
+		push (@{$self->{headers}}, output::add_dir_str($ctx->{BASEDIR}, $_));
 	}
 }
 
@@ -533,21 +530,19 @@ sub PythonFiles($$)
 
 	foreach (@{$ctx->{PYTHON_FILES}}) {
 		my $target = "bin/python/".basename($_);
-		$self->output("$target: $ctx->{BASEDIR}/$_\n" .
-		              "\tcp $ctx->{BASEDIR}/$_ \$@\n\n");
+		my $source = output::add_dir_str($ctx->{BASEDIR}, $_);
+		$self->output("$target: $source\n" .
+		              "\tcp $source \$@\n\n");
 		push (@{$self->{python_dsos}}, $target);
-  }
+	}
 }
 
 sub Manpage($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $dir = $ctx->{BASEDIR};
-	
-	$dir =~ s/^\.\///g;
-
-	push (@{$self->{manpages}}, "$dir/$ctx->{MANPAGE}");
+	my $path = output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE});
+	push (@{$self->{manpages}}, $path);
 }
 
 sub PkgConfig($$$)
@@ -561,7 +556,7 @@ sub PkgConfig($$$)
 
 	return if (not defined($ctx->{DESCRIPTION}));
 
-	my $path = "$ctx->{BASEDIR}/$link_name.pc";
+	my $path = output::add_dir_str($ctx->{BASEDIR}, "$link_name.pc");
 
 	push (@{$self->{pc_files}}, $path);
 
@@ -648,37 +643,39 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $dir = $ctx->{BASEDIR};
-
-	$dir =~ s/^\.\///g;
-
 	my $target = "";
-
 	my $comment = "Creating ";
+
+	my $priv = undef;
+	my $pub = undef;
+
 	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
-		$target.= "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
-		$comment.= "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
+		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
+		$target .= $priv;
+		$comment .= $priv;
 		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
 			$comment .= " and ";
 			$target.= " ";
 		}
-		push (@{$self->{proto_headers}}, "$dir/$ctx->{PRIVATE_PROTO_HEADER}");
+		push (@{$self->{proto_headers}}, $priv);
 	} else {
 		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
+		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
 	}
-	
+
 	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$comment.= "$dir/$ctx->{PUBLIC_PROTO_HEADER}";
-		$target .= "$dir/$ctx->{PUBLIC_PROTO_HEADER}";
-		push (@{$self->{proto_headers}}, "$dir/$ctx->{PUBLIC_PROTO_HEADER}");
+		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
+		$comment .= $pub;
+		$target .= $pub;
+		push (@{$self->{proto_headers}}, $pub);
 	} else {
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
-	}	
+		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
+	}
 
-	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
+	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
 	$self->output("\t\@echo \"$comment\"\n");
-
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
