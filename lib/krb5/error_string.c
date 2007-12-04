@@ -86,14 +86,26 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     return 0;
 }
 
+/**
+ * Return the error message in context. On error or no error string,
+ * the function returns NULL.
+ *
+ * @param context Kerberos 5 context
+ *
+ * @return an error string, needs to be freed with
+ * krb5_free_error_string(). The functions return NULL on error.
+ *
+ * @ingroup krb5_error
+ */
+
 char * KRB5_LIB_FUNCTION
 krb5_get_error_string(krb5_context context)
 {
-    char *ret;
+    char *ret = NULL;
 
     HEIMDAL_MUTEX_lock(context->mutex);
-    ret = context->error_string;
-    context->error_string = NULL;
+    if (context->error_string)
+	ret = strdup(context->error_string);
     HEIMDAL_MUTEX_unlock(context->mutex);
     return ret;
 }
@@ -115,8 +127,8 @@ krb5_have_error_string(krb5_context context)
  * @param context Kerberos 5 context
  * @param code Error code related to the error
  *
- * @return an error string, needs to be freed with krb5_xfree(). The
- * functions return NULL on error.
+ * @return an error string, needs to be freed with
+ * krb5_free_error_string(). The functions return NULL on error.
  *
  * @ingroup krb5_error
  */
