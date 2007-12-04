@@ -53,6 +53,7 @@ kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 kinitds="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cacheds --no-afslog"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
+kdigest="${TESTS_ENVIRONMENT} ../../kuser/kdigest"
 
 context="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_context"
 
@@ -120,10 +121,16 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 echo "Getting digestserver initial tickets"
 ${kinitds} --password-file=${objdir}/barpassword digestserver@${R} || exitcode=1
 
+echo "======probe"
+KRB5CCNAME="$cacheds"
+
+ ${kdigest} digest-probe --realm=${R} > /dev/null|| \
+     { exitcode=1; echo "test failed"; }
+
 echo "======context building ntlm"
 
-NTLM_USER_FILE="${srcdir}/ntlm-user-file.txt-no" \
-KRB5CCNAME="$cache" \
+NTLM_USER_FILE="${srcdir}/ntlm-user-file.txt-no"
+KRB5CCNAME="$cache"
 
 echo "no NTLM initiator creds"
 ${context} --mech-type=ntlm \
@@ -131,7 +138,7 @@ ${context} --mech-type=ntlm \
         --name-type=hostbased-service \
         --ret-mech-type=ntlm \
         host@host.test.h5l.se 2> /dev/null && \
-        { exitcode=1 ; echo test failed; }
+        { exitcode=1 ; echo "test failed"; }
 
 echo "Getting client initial tickets (with ntlm creds)"
 ${kinit} --password-file=${objdir}/foopassword --ntlm-domain=TEST user1@${R} || exitcode=1
@@ -142,7 +149,7 @@ ${context} --mech-type=ntlm \
         --name-type=hostbased-service \
         --ret-mech-type=ntlm \
         host@host.test.h5l.se || \
-        { exitcode=1 ; echo test failed; }
+        { exitcode=1 ; echo "test failed"; }
 
 echo "NTLM initiator krb5 creds (getverifymic, wrapunwrap)"
 ${context} --mech-type=ntlm \
@@ -151,7 +158,7 @@ ${context} --mech-type=ntlm \
         --ret-mech-type=ntlm \
         --getverifymic --wrapunwrap \
         host@host.test.h5l.se || \
-        { exitcode=1 ; echo test failed; }
+        { exitcode=1 ; echo "test failed"; }
 
 trap "" EXIT
 
