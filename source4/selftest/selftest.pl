@@ -403,7 +403,7 @@ if (defined($ENV{RUN_FROM_BUILD_FARM}) and
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
-$ENV{LDB_MODULE_PATH} = "$old_pwd/bin/modules/ldb";
+$ENV{LDB_MODULES_PATH} = "$old_pwd/bin/modules/ldb";
 $ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
 if (defined($ENV{LD_LIBRARY_PATH})) {
 	$ENV{LD_LIBRARY_PATH} = "$old_pwd/bin/shared:$ENV{LD_LIBRARY_PATH}";
