@@ -213,3 +213,4 @@ source/tdbtest.ldb
 source/tdbtest.ldb.2
 source/templates.ldb
 source/tmpccache
+source/lib/util/util_ldb.h

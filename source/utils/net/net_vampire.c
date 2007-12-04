@@ -152,7 +152,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 	r.in.binding_string = NULL;
 
 	/* Needed to override the ACLs on ldb */
-	r.in.session_info = system_session(libnetctx, global_loadparm);
+	r.in.session_info = system_session(libnetctx, ctx->lp_ctx);
 
 	status = libnet_samsync_ldb(libnetctx, libnetctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

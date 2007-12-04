@@ -35,6 +35,7 @@
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
 	struct event_context *event_ctx;
+	struct loadparm_context *lp_ctx;
 
 	struct winbind_SamLogon *req;
 	char *unix_username;
@@ -77,6 +78,7 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 	state = talloc(result, struct pam_auth_crap_state);
 	if (state == NULL) goto failed;
 	state->ctx = result;
+	state->lp_ctx = service->task->lp_ctx;
 	result->private_data = state;
 
 	state->req = talloc(state, struct winbind_SamLogon);
@@ -176,7 +178,7 @@ static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 
 	state->unix_username = talloc_asprintf(state, "%s%s%s", 
 					       state->domain_name,
-					       lp_winbind_separator(global_loadparm),
+					       lp_winbind_separator(state->lp_ctx),
 					       state->user_name);
 	if (composite_nomem(state->unix_username, state->ctx)) return;
 
