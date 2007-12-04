@@ -1206,11 +1206,11 @@ static WERROR dcesrv_netr_DSRDEREGISTERDNSHOSTRECORDS(struct dcesrv_call_state *
 }
 
 
-/* 
-  netr_NETRSERVERTRUSTPASSWORDSGET 
+/*
+  netr_ServerTrustPasswordsGet
 */
-static WERROR dcesrv_netr_NETRSERVERTRUSTPASSWORDSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRSERVERTRUSTPASSWORDSGET *r)
+static NTSTATUS dcesrv_netr_ServerTrustPasswordsGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_ServerTrustPasswordsGet *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

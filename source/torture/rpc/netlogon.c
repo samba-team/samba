@@ -468,6 +468,39 @@ static bool test_GetPassword(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_GetTrustPasswords(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct cli_credentials *machine_credentials)
+{
+	struct netr_ServerTrustPasswordsGet r;
+	struct creds_CredentialState *creds;
+	struct netr_Authenticator credential;
+	NTSTATUS status;
+	struct netr_Authenticator return_authenticator;
+	struct samr_Password password, password2;
+
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
+	}
+
+	creds_client_authenticator(creds, &credential);
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type = SEC_CHAN_BDC;
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.password = &password;
+	r.out.password2 = &password2;
+
+	status = dcerpc_netr_ServerTrustPasswordsGet(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ServerTrustPasswordsGet");
+
+	return true;
+}
+
 /*
   try a netlogon SamLogon
 */
@@ -1531,6 +1564,8 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
+	torture_rpc_tcase_add_test_creds(tcase, "GetPassword", test_GetPassword);
+	torture_rpc_tcase_add_test_creds(tcase, "GetTrustPasswords", test_GetTrustPasswords);
 	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync", test_DatabaseSync);
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseDeltas", test_DatabaseDeltas);
