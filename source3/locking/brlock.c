@@ -258,7 +258,7 @@ static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *loc
  Open up the brlock.tdb database.
 ****************************************************************************/
 
-void brl_init(int read_only)
+void brl_init(bool read_only)
 {
 	if (brlock_db) {
 		return;
@@ -279,11 +279,8 @@ void brl_init(int read_only)
  Close down the brlock.tdb database.
 ****************************************************************************/
 
-void brl_shutdown(int read_only)
+void brl_shutdown(void)
 {
-	if (!brlock_db) {
-		return;
-	}
 	TALLOC_FREE(brlock_db);
 }
 

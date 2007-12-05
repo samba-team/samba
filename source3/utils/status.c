@@ -440,7 +440,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 			TALLOC_FREE(db);
 		}
 
-		if (!locking_init(1)) {
+		if (!locking_init_readonly()) {
 			d_printf("Can't initialise locking module - exiting\n");
 			ret = 1;
 			goto done;

@@ -427,7 +427,7 @@ void status_page(void)
 	printf("<table border=1>\n");
 	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n", _("PID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
 
-	locking_init(1);
+	locking_init_readonly();
 	share_mode_forall(print_share_mode, NULL);
 	locking_end();
 	printf("</table>\n");
