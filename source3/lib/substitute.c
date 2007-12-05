@@ -416,9 +416,9 @@ static const char *automount_path(const char *user_name)
 
 	if (lp_nis_home_map()) {
 		const char *home_path_start;
-		const char *automount_value = automount_lookup(user_name);
+		char *automount_value = automount_lookup(ctx, user_name);
 
-		if(strlen(automount_value) > 0) {
+		if(automount_value && strlen(automount_value) > 0) {
 			home_path_start = strchr_m(automount_value,':');
 			if (home_path_start != NULL) {
 				DEBUG(5, ("NIS lookup succeeded. "
@@ -472,7 +472,7 @@ static const char *automount_server(const char *user_name)
 	if (lp_nis_home_map()) {
 		char *p;
 		char *srv;
-		char *automount_value = automount_lookup(user_name);
+		char *automount_value = automount_lookup(ctx, user_name);
 		if (!automount_value) {
 			return "";
 		}
