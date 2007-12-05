@@ -42,6 +42,7 @@ echo "Build package"
 
 cd ..
 echo "Build disk image"
+rm "heimdal-${version}.dmg"
 /usr/bin/hdiutil create -volname "Heimdal-${version}" -srcfolder ${imgdir} "heimdal-${version}.dmg" || exit 1
 
 echo "Clean"
