@@ -1289,11 +1289,6 @@ void fstring_sub(char *s,const char *pattern,const char *insert)
 	string_sub(s, pattern, insert, sizeof(fstring));
 }
 
-void pstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(pstring));
-}
-
 /**
  Similar to string_sub2, but it will accept only allocated strings
  and may realloc them so pay attention at what you pass on no
