@@ -224,7 +224,10 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 			var res2 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
 			var i;
 			if (res2.error != 0) {
-				info.message("ldb search failed: " + res.errstr + "\n");
+				if (res2.error == 32) {
+					break;
+				}
+				info.message("ldb search failed: " + res2.errstr + "\n");
 				continue;
 			}
 			previous_remaining = current_remaining;
@@ -235,7 +238,7 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 			
 			var res3 = ldb.search(anything, basedn, ldb.SCOPE_SUBTREE, attrs);
 			if (res3.error != 0) {
-				info.message("ldb search failed: " + res.errstr + "\n");
+				info.message("ldb search failed: " + res3.errstr + "\n");
 				continue;
 			}
 			if (res3.msgs.length != 0) {
