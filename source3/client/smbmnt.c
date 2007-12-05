@@ -157,10 +157,18 @@ static int mount_ok(char *mount_point)
 static int
 do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 {
-	pstring opts;
+	char *opts;
 	struct utsname uts;
 	char *release, *major, *minor;
 	char *data1, *data2;
+	int ret;
+
+	if (asprintf(&opts,
+			"version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
+			mount_uid, mount_gid, data->file_mode,
+			data->dir_mode,options) < 0) {
+		return -1;
+	}
 
 	uname(&uts);
 	release = uts.release;
@@ -176,12 +184,13 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 		data2 = (char *) data;
 	}
 
-	slprintf(opts, sizeof(opts)-1,
-		 "version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
-		 mount_uid, mount_gid, data->file_mode, data->dir_mode,options);
-	if (mount(share_name, ".", "smbfs", flags, data1) == 0)
+	if (mount(share_name, ".", "smbfs", flags, data1) == 0) {
+		SAFE_FREE(opts);
 		return 0;
-	return mount(share_name, ".", "smbfs", flags, data2);
+	}
+	ret = mount(share_name, ".", "smbfs", flags, data2);
+	SAFE_FREE(opts);
+	return ret;
 }
 
  int main(int argc, char *argv[])
