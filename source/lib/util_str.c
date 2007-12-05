@@ -2053,7 +2053,8 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx,
 	const char *str;
 	char *s;
 	int num, lsize;
-	pstring tok;
+	char *tok;
+	TALLOC_CTX *frame = NULL;
 
 	if (!string || !*string)
 		return NULL;
@@ -2072,7 +2073,8 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx,
 	list = NULL;
 
 	str = s;
-	while (next_token(&str, tok, sep, sizeof(tok))) {
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &str, &tok, sep)) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
 			if (mem_ctx) {
@@ -2094,6 +2096,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx,
 				} else {
 					SAFE_FREE(s);
 				}
+				TALLOC_FREE(frame);
 				return NULL;
 			} else {
 				list = rlist;
@@ -2116,11 +2119,14 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx,
 			} else {
 				SAFE_FREE(s);
 			}
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 
 		num++;
 	}
+
+	TALLOC_FREE(frame);
 
 	if (mem_ctx) {
 		TALLOC_FREE(s);
