@@ -423,7 +423,6 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 	SMB_BIG_UINT allocation_size;
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
-	int oplock_request = 0;
 	uint32 fattr=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
@@ -501,7 +500,7 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 	status = create_file(conn, req, root_dir_fid, fname, flags,
 			     access_mask, file_attributes, share_access,
 			     create_disposition, create_options,
-			     oplock_request, allocation_size, NULL, NULL,
+			     allocation_size, NULL, NULL,
 			     &fsp, &info, &oplock_granted, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -812,7 +811,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	char *params = *ppparams;
 	char *data = *ppdata;
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
-	int oplock_request = 0;
 	uint32 fattr=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
@@ -946,7 +944,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	status = create_file(conn, req, root_dir_fid, fname, flags,
 			     access_mask, file_attributes, share_access,
 			     create_disposition, create_options,
-			     oplock_request, allocation_size, sd, ea_list,
+			     allocation_size, sd, ea_list,
 			     &fsp, &info, &oplock_granted, &sbuf);
 
 	if(!NT_STATUS_IS_OK(status)) {
