@@ -264,14 +264,13 @@ static struct printif *get_printer_fns( int snum )
  Useful function to generate a tdb key.
 ****************************************************************************/
 
-static TDB_DATA print_key(uint32 jobid)
+static TDB_DATA print_key(uint32 jobid, uint32 *tmp)
 {
-	static uint32 j;
 	TDB_DATA ret;
 
-	SIVAL(&j, 0, jobid);
-	ret.dptr = (uint8 *)&j;
-	ret.dsize = sizeof(j);
+	SIVAL(tmp, 0, jobid);
+	ret.dptr = (uint8 *)tmp;
+	ret.dsize = sizeof(*tmp);
 	return ret;
 }
 
@@ -333,6 +332,7 @@ int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 {
 	static struct printjob 	pjob;
+	uint32_t tmp;
 	TDB_DATA 		ret;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
 	
@@ -343,7 +343,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 		return NULL;
 	}
 
-	ret = tdb_fetch(pdb->tdb, print_key(jobid));
+	ret = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
 	release_print_db(pdb);
 
 	if (!ret.dptr) {
@@ -430,7 +430,7 @@ uint32 sysjob_to_jobid(int unix_jobid)
  Send notifications based on what has changed after a pjob_store.
 ****************************************************************************/
 
-static struct {
+static const struct {
 	uint32 lpq_status;
 	uint32 spoolss_status;
 } lpq_to_spoolss_status_map[] = {
@@ -512,6 +512,7 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 
 static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjob)
 {
+	uint32_t tmp;
 	TDB_DATA 		old_data, new_data;
 	bool 			ret = False;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
@@ -524,7 +525,7 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 
 	/* Get old data */
 
-	old_data = tdb_fetch(pdb->tdb, print_key(jobid));
+	old_data = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
 
 	/* Doh!  Now we have to pack/unpack data since the NT_DEVICEMODE was added */
 
@@ -565,7 +566,8 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 
 	new_data.dptr = buf;
 	new_data.dsize = len;
-	ret = (tdb_store(pdb->tdb, print_key(jobid), new_data, TDB_REPLACE) == 0);
+	ret = (tdb_store(pdb->tdb, print_key(jobid, &tmp), new_data,
+			 TDB_REPLACE) == 0);
 
 	release_print_db(pdb);
 
@@ -601,6 +603,7 @@ done:
 
 void pjob_delete(const char* sharename, uint32 jobid)
 {
+	uint32_t tmp;
 	struct printjob *pjob;
 	uint32 job_status = 0;
 	struct tdb_print_db *pdb;
@@ -628,7 +631,7 @@ void pjob_delete(const char* sharename, uint32 jobid)
 	
 	/* Remove from printing.tdb */
 
-	tdb_delete(pdb->tdb, print_key(jobid));
+	tdb_delete(pdb->tdb, print_key(jobid, &tmp));
 	remove_from_jobs_changed(sharename, jobid);
 	release_print_db( pdb );
 	rap_jobid_delete(sharename, jobid);
@@ -1758,10 +1761,11 @@ bool print_job_exists(const char* sharename, uint32 jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	bool ret;
+	uint32_t tmp;
 
 	if (!pdb)
 		return False;
-	ret = tdb_exists(pdb->tdb, print_key(jobid));
+	ret = tdb_exists(pdb->tdb, print_key(jobid, &tmp));
 	release_print_db(pdb);
 	return ret;
 }
@@ -2302,10 +2306,12 @@ static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 
 	/* Store a dummy placeholder. */
 	{
+		uint32_t tmp;
 		TDB_DATA dum;
 		dum.dptr = NULL;
 		dum.dsize = 0;
-		if (tdb_store(pdb->tdb, print_key(jobid), dum, TDB_INSERT) == -1) {
+		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dum,
+			      TDB_INSERT) == -1) {
 			DEBUG(3, ("allocate_print_jobid: jobid (%d) failed to store placeholder.\n",
 				jobid ));
 			return False;
