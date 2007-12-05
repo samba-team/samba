@@ -1,5 +1,11 @@
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kdigest.c (digest-probe): implement command.
+
+	* kuser/kdigest-commands.in (digest-probe): new command
+	
+	* kdc/digest.c: Implement supportedMechs request.
+
 	* lib/krb5/error_string.c: Make krb5_get_error_string return an
 	allocated string to make the function indempotent. From
 	Zeqing (Fred) Xia.
