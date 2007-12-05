@@ -27,14 +27,14 @@ extern bool in_client;
 extern char *optarg;
 extern int optind;
 
-static pstring credentials;
-static pstring my_netbios_name;
-static pstring password;
-static pstring username;
-static pstring workgroup;
-static pstring mpoint;
-static pstring service;
-static pstring options;
+static char *credentials;
+static fstring my_netbios_name;
+static char *password;
+static char *username;
+static fstring workgroup;
+static char *mpoint;
+static char *service;
+static char *options;
 
 static struct sockaddr_storage dest_ip;
 static bool have_ip;
@@ -122,15 +122,22 @@ static struct cli_state *do_connection(char *the_service)
 	struct nmb_name called, calling;
 	char *server_n;
 	struct sockaddr_storage ip;
-	pstring server;
+	char *server;
 	char *share;
+	const char *c_username;
+	const char *c_password;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (the_service[0] != '\\' || the_service[1] != '\\') {
 		usage();
 		exit(1);
 	}
 
-	pstrcpy(server, the_service+2);
+	server = talloc_strdup(ctx, the_service+2);
+	if (!server) {
+		fprintf(stderr,"Out of memory\n");
+		exit(ENOMEM);
+	}
 	share = strchr_m(server,'\\');
 	if (!share) {
 		usage();
@@ -195,7 +202,10 @@ static struct cli_state *do_connection(char *the_service)
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(password, pass);
+			password = talloc_strdup(talloc_tos(), pass);
+			if (!password) {
+				return NULL;
+			}
 		}
 	}
 
@@ -211,13 +221,17 @@ static struct cli_state *do_connection(char *the_service)
 		c->force_dos_errors = True;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(c, username, 
-					       password, strlen(password),
-					       password, strlen(password),
-					       workgroup))) {
+	c_password = password ? password : "";
+	c_username = username ? username : "";
+
+	if (!NT_STATUS_IS_OK(cli_session_setup(c,
+					c_username,
+					c_password, strlen(c_password),
+					c_password, strlen(c_password),
+					workgroup))) {
 		/* if a password was not supplied then try again with a
 			null username */
-		if (password[0] || !username[0] ||
+		if (c_password[0] || !c_username[0] ||
 		    !NT_STATUS_IS_OK(cli_session_setup(c, "", "", 0, "", 0, workgroup))) {
 			DEBUG(0,("%d: session setup failed: %s\n",
 				sys_getpid(), cli_errstr(c)));
@@ -230,7 +244,7 @@ static struct cli_state *do_connection(char *the_service)
 	DEBUG(4,("%d: session setup ok\n", sys_getpid()));
 
 	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
+			    c_password, strlen(c_password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
 			 sys_getpid(), cli_errstr(c)));
 		cli_shutdown(c);
@@ -243,7 +257,6 @@ static struct cli_state *do_connection(char *the_service)
 
 	return c;
 }
-
 
 /****************************************************************************
 unmount smbfs  (this is a bailout routine to clean up if a reconnect fails)
@@ -428,13 +441,16 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 /**
  * Mount a smbfs
  **/
+
+#define NUM_ARGS 20
+
 static void init_mount(void)
 {
 	char mount_point[PATH_MAX+1];
-	pstring tmp;
-	pstring svc2;
+	TALLOC_CTX *ctx = talloc_tos();
+	char *svc2;
 	struct cli_state *c;
-	const char *args[20];
+	const char *args[NUM_ARGS];
 	int i, status;
 
 	if (realpath(mpoint, mount_point) == NULL) {
@@ -455,11 +471,15 @@ static void init_mount(void)
 	*/
 	daemonize();
 
-	pstrcpy(svc2, service);
+	svc2 = talloc_strdup(ctx, service);
+	if (!svc2) {
+		fprintf(stderr, "Out of memory.\n");
+		exit(ENOMEM);
+	}
 	string_replace(svc2, '\\','/');
 	string_replace(svc2, ' ','_');
 
-	memset(args, 0, sizeof(args[0])*20);
+	memset(args, 0, sizeof(args[0])*NUM_ARGS);
 
 	i=0;
 	args[i++] = "smbmnt";
@@ -468,30 +488,46 @@ static void init_mount(void)
 	args[i++] = "-s";
 	args[i++] = svc2;
 
-	if (mount_ro) {
+	if (mount_ro && i < NUM_ARGS-2) {
 		args[i++] = "-r";
 	}
-	if (mount_uid) {
-		slprintf(tmp, sizeof(tmp)-1, "%d", mount_uid);
+	if (mount_uid && i < NUM_ARGS-3) {
 		args[i++] = "-u";
-		args[i++] = smb_xstrdup(tmp);
+		args[i] = talloc_asprintf(ctx, "%d", mount_uid);
+		if (!args[i]) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
+		i++;
 	}
-	if (mount_gid) {
-		slprintf(tmp, sizeof(tmp)-1, "%d", mount_gid);
+	if (mount_gid && i < NUM_ARGS-3) {
 		args[i++] = "-g";
-		args[i++] = smb_xstrdup(tmp);
+		args[i] = talloc_asprintf(ctx, "%d", mount_gid);
+		if (!args[i]) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
+		i++;
 	}
-	if (mount_fmask) {
-		slprintf(tmp, sizeof(tmp)-1, "0%o", mount_fmask);
+	if (mount_fmask && i < NUM_ARGS-3) {
 		args[i++] = "-f";
-		args[i++] = smb_xstrdup(tmp);
+		args[i] = talloc_asprintf(ctx, "0%o", mount_fmask);
+		if (!args[i]) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
+		i++;
 	}
-	if (mount_dmask) {
-		slprintf(tmp, sizeof(tmp)-1, "0%o", mount_dmask);
+	if (mount_dmask && i < NUM_ARGS-3) {
 		args[i++] = "-d";
-		args[i++] = smb_xstrdup(tmp);
+		args[i] = talloc_asprintf(ctx, "0%o", mount_dmask);
+		if (!args[i]) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
+		i++;
 	}
-	if (options) {
+	if (options && i < NUM_ARGS-3) {
 		args[i++] = "-o";
 		args[i++] = options;
 	}
@@ -500,7 +536,7 @@ static void init_mount(void)
 		char *smbmnt_path;
 
 		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
-		
+
 		if (file_exist(smbmnt_path, NULL)) {
 			execv(smbmnt_path, (char * const *)args);
 			fprintf(stderr,
@@ -544,22 +580,33 @@ static void init_mount(void)
 get a password from a a file or file descriptor
 exit on failure (from smbclient, move to libsmb or shared .c file?)
 ****************************************************************************/
+
 static void get_password_file(void)
 {
 	int fd = -1;
 	char *p;
 	bool close_it = False;
-	pstring spec;
+	char *spec;
+	TALLOC_CTX *ctx = talloc_tos();
 	char pass[128];
 
 	if ((p = getenv("PASSWD_FD")) != NULL) {
-		pstrcpy(spec, "descriptor ");
-		pstrcat(spec, p);
-		sscanf(p, "%d", &fd);
+		spec = talloc_asprintf(ctx,
+				"descriptor %s",
+				p);
+		if (!spec) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
+		fd = atoi(p);
 		close_it = False;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
 		fd = sys_open(p, O_RDONLY, 0);
-		pstrcpy(spec, p);
+		spec = talloc_strdup(ctx, p);
+		if (!spec) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(ENOMEM);
+		}
 		if (fd < 0) {
 			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
 				spec, strerror(errno));
@@ -593,7 +640,7 @@ static void get_password_file(void)
 			exit(1);
 		}
 	}
-	pstrcpy(password, pass);
+	password = talloc_strdup(ctx, pass);
 	if (close_it)
 		close(fd);
 }
@@ -602,7 +649,8 @@ static void get_password_file(void)
 get username and password from a credentials file
 exit on failure (from smbclient, move to libsmb or shared .c file?)
 ****************************************************************************/
-static void read_credentials_file(char *filename)
+
+static void read_credentials_file(const char *filename)
 {
 	FILE *auth;
 	fstring buf;
@@ -645,11 +693,11 @@ static void read_credentials_file(char *filename)
 
 		if (strwicmp("password", param) == 0)
 		{
-			pstrcpy(password, val);
+			password = talloc_strdup(talloc_tos(),val);
 			got_pass = True;
 		}
 		else if (strwicmp("username", param) == 0) {
-			pstrcpy(username, val);
+			username = talloc_strdup(talloc_tos(), val);
 		}
 
 		memset(buf, 0, sizeof(buf));
@@ -716,7 +764,7 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opts;
 	char *opteq;
 	int val;
-	char *p;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	/* FIXME: This function can silently fail if the arguments are
 	 * not in the expected order.
@@ -733,9 +781,17 @@ static void parse_mount_smb(int argc, char **argv)
 		usage();
 		exit(1);
 	}
-	
-	pstrcpy(service, argv[1]);
-	pstrcpy(mpoint, argv[2]);
+
+	service = talloc_strdup(ctx, argv[1]);
+	if (!service) {
+		fprintf(stderr,"Out of memory\n");
+		exit(ENOMEM);
+	}
+	mpoint = talloc_strdup(ctx, argv[2]);
+	if (!mpoint) {
+		fprintf(stderr,"Out of memory\n");
+		exit(ENOMEM);
+	}
 
 	/* Convert any '/' characters in the service name to
 	   '\' characters */
@@ -748,8 +804,11 @@ static void parse_mount_smb(int argc, char **argv)
 		return;
 	}
 
-	options[0] = 0;
-	p = options;
+	options = talloc_strdup(ctx, "");
+	if (!options) {
+		fprintf(stderr,"Out of memory\n");
+		exit(ENOMEM);
+	}
 
 	/*
 	 * option parsing from nfsmount.c (util-linux-2.9u)
@@ -760,30 +819,46 @@ static void parse_mount_smb(int argc, char **argv)
                         val = atoi(opteq + 1);
                         *opteq = '\0';
 
-                        if (!strcmp(opts, "username") || 
+                        if (!strcmp(opts, "username") ||
 			    !strcmp(opts, "logon")) {
 				char *lp;
 				got_user = True;
-				pstrcpy(username,opteq+1);
+				username = talloc_strdup(ctx, opteq+1);
+				if (!username) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 				if ((lp=strchr_m(username,'%'))) {
 					*lp = 0;
-					pstrcpy(password,lp+1);
+					password = talloc_strdup(ctx, lp+1);
+					if (!password) {
+						fprintf(stderr,"Out of memory\n");
+						exit(ENOMEM);
+					}
 					got_pass = True;
 					memset(strchr_m(opteq+1,'%')+1,'X',strlen(password));
 				}
 				if ((lp=strchr_m(username,'/'))) {
 					*lp = 0;
-					pstrcpy(workgroup,lp+1);
+					fstrcpy(workgroup,lp+1);
 				}
 			} else if(!strcmp(opts, "passwd") ||
 				  !strcmp(opts, "password")) {
-				pstrcpy(password,opteq+1);
+				password = talloc_strdup(ctx,opteq+1);
+				if (!password) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 				got_pass = True;
 				memset(opteq+1,'X',strlen(password));
 			} else if(!strcmp(opts, "credentials")) {
-				pstrcpy(credentials,opteq+1);
+				credentials = talloc_strdup(ctx,opteq+1);
+				if (!credentials) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 			} else if(!strcmp(opts, "netbiosname")) {
-				pstrcpy(my_netbios_name,opteq+1);
+				fstrcpy(my_netbios_name,opteq+1);
 			} else if(!strcmp(opts, "uid")) {
 				mount_uid = nametouid(opteq+1);
 			} else if(!strcmp(opts, "gid")) {
@@ -804,14 +879,19 @@ static void parse_mount_smb(int argc, char **argv)
 				}
 				have_ip = True;
 			} else if(!strcmp(opts, "workgroup")) {
-				pstrcpy(workgroup,opteq+1);
+				fstrcpy(workgroup,opteq+1);
 			} else if(!strcmp(opts, "sockopt")) {
 				lp_do_parameter(-1, "socket options", opteq+1);
 			} else if(!strcmp(opts, "scope")) {
 				set_global_scope(opteq+1);
 			} else {
-				slprintf(p, sizeof(pstring) - (p - options) - 1, "%s=%s,", opts, opteq+1);
-				p += strlen(p);
+				options = talloc_asprintf_append(options,
+							"%s=%s,",
+							opts, opteq+1);
+				if (!options) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 			}
 		} else {
 			val = 1;
@@ -819,7 +899,11 @@ static void parse_mount_smb(int argc, char **argv)
 				fprintf(stderr, "Unhandled option: %s\n", opteq+1);
 				exit(1);
 			} else if(!strcmp(opts, "guest")) {
-				*password = '\0';
+				password = talloc_strdup(talloc_tos(), "");
+				if (!password) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 				got_pass = True;
 			} else if(!strcmp(opts, "krb")) {
 #ifdef HAVE_KRB5
@@ -840,21 +924,24 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "lfs")) {
 				smbfs_has_lfs = True;
 			} else {
-				strncpy(p, opts, sizeof(pstring) - (p - options) - 1);
-				p += strlen(opts);
-				*p++ = ',';
-				*p = 0;
+				options = talloc_asprintf_append(options,
+						"%s,",
+						opts);
+				if (!options) {
+					fprintf(stderr,"Out of memory\n");
+					exit(ENOMEM);
+				}
 			}
 		}
 	}
 
-	if (!*service) {
+	if (!service || !*service) {
 		usage();
 		exit(1);
 	}
 
-	if (p != options) {
-		*(p-1) = 0;	/* remove trailing , */
+	if (options && *options && options[strlen(options)-1] == ',') {
+		options[strlen(options)-1] = '\0';	/* remove trailing , */
 		DEBUG(3,("passthrough options '%s'\n", options));
 	}
 }
@@ -888,11 +975,17 @@ static void parse_mount_smb(int argc, char **argv)
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	if (getenv("USER")) {
-		pstrcpy(username,getenv("USER"));
+		username = talloc_strdup(frame, getenv("USER"));
+		if (!username) {
+			exit(ENOMEM);
+		}
 
 		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
-			pstrcpy(password,p+1);
+			password = talloc_strdup(frame, p+1);
+			if (!password) {
+				exit(ENOMEM);
+			}
 			got_pass = True;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
@@ -900,7 +993,10 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 
 	if (getenv("PASSWD")) {
-		pstrcpy(password,getenv("PASSWD"));
+		password = talloc_strdup(frame, getenv("PASSWD"));
+		if (!password) {
+			exit(ENOMEM);
+		}
 		got_pass = True;
 	}
 
@@ -909,8 +1005,11 @@ static void parse_mount_smb(int argc, char **argv)
 		got_pass = True;
 	}
 
-	if (*username == 0 && getenv("LOGNAME")) {
-		pstrcpy(username,getenv("LOGNAME"));
+	if ((!username || *username == 0) && getenv("LOGNAME")) {
+		username = talloc_strdup(frame, getenv("LOGNAME"));
+		if (!username) {
+			exit(ENOMEM);
+		}
 	}
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
@@ -924,19 +1023,19 @@ static void parse_mount_smb(int argc, char **argv)
 		got_pass = True;
 	}
 
-	if (*credentials != 0) {
+	if (credentials && *credentials != 0) {
 		read_credentials_file(credentials);
 	}
 
 	DEBUG(3,("mount.smbfs started (version %s)\n", SAMBA_VERSION_STRING));
 
 	if (*workgroup == 0) {
-		pstrcpy(workgroup,lp_workgroup());
+		fstrcpy(workgroup,lp_workgroup());
 	}
 
 	load_interfaces();
 	if (!*my_netbios_name) {
-		pstrcpy(my_netbios_name, myhostname());
+		fstrcpy(my_netbios_name, myhostname());
 	}
 	strupper_m(my_netbios_name);
 
