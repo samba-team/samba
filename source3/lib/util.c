@@ -1384,7 +1384,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
 		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-		return last_value;
+		return NULL;
 	}
 
 	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
