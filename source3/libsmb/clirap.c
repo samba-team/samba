@@ -451,29 +451,35 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
  Send a qpathinfo call.
 ****************************************************************************/
 
-bool cli_qpathinfo(struct cli_state *cli, const char *fname,
-		   time_t *change_time,
-                   time_t *access_time,
-                   time_t *write_time,
-		   SMB_OFF_T *size, uint16 *mode)
+bool cli_qpathinfo(struct cli_state *cli,
+			const char *fname,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time,
+			SMB_OFF_T *size,
+			uint16 *mode)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	unsigned int rparam_len, rdata_len;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[1024];
+	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	bool ret;
 	time_t (*date_fn)(struct cli_state *, const void *);
 	char *p;
+	size_t nlen = 2*(strlen(fname)+1);
 
+	param = SMB_MALLOC(6+nlen+2);
+	if (!param) {
+		return false;
+	}
 	p = param;
-	memset(p, 0, 6);
+	memset(p, '\0', 6);
 	SSVAL(p, 0, SMB_INFO_STANDARD);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
-
+	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	do {
@@ -499,6 +505,7 @@ bool cli_qpathinfo(struct cli_state *cli, const char *fname,
 		}
 	} while (count-- && ret==False);
 
+	SAFE_FREE(param);
 	if (!ret || !rdata || rdata_len < 22) {
 		return False;
 	}
@@ -545,14 +552,19 @@ bool cli_setpathinfo(struct cli_state *cli, const char *fname,
 	unsigned int param_len = 0;
 	unsigned int rparam_len, rdata_len;
 	uint16 setup = TRANSACT2_SETPATHINFO;
-	char param[1024];
-        char data[1024];
+	char *param;
+	char data[40];
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	bool ret;
 	char *p;
+	size_t nlen = 2*(strlen(fname)+1);
 
-	memset(param, 0, sizeof(param));
+	param = SMB_MALLOC(6+nlen+2);
+	if (!param) {
+		return false;
+	}
+	memset(param, '\0', 6);
 	memset(data, 0, sizeof(data));
 
         p = param;
@@ -564,7 +576,7 @@ bool cli_setpathinfo(struct cli_state *cli, const char *fname,
 	p += 6;
 
         /* Add the file name */
-	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
 
 	param_len = PTR_DIFF(p, param);
 
@@ -618,6 +630,7 @@ bool cli_setpathinfo(struct cli_state *cli, const char *fname,
 		}
 	} while (count-- && ret==False);
 
+	SAFE_FREE(param);
 	if (!ret) {
 		return False;
 	}
@@ -642,15 +655,20 @@ bool cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[1024];
+	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
+	size_t nlen = 2*(strlen(fname)+1);
 
+	param = SMB_MALLOC(6+nlen+2);
+	if (!param) {
+		return false;
+	}
 	p = param;
-	memset(p, 0, 6);
+	memset(param, '\0', 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
 
 	param_len = PTR_DIFF(p, param);
 
@@ -661,9 +679,11 @@ bool cli_qpathinfo2(struct cli_state *cli, const char *fname,
                             param, param_len, 10,         /* param, length, max */
                             NULL, data_len, cli->max_xmit /* data, length, max */
                            )) {
+		SAFE_FREE(param);
 		return False;
 	}
 
+	SAFE_FREE(param);
 	if (!cli_receive_trans(cli, SMBtrans2,
                                &rparam, &param_len,
                                &rdata, &data_len)) {
@@ -826,11 +846,12 @@ bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[1024+6];
+	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 	char *path;
 	int len;
+	size_t nlen;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	path = talloc_strdup(frame, name);
@@ -844,25 +865,33 @@ bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	if ( path[len-1] == '\\' || path[len-1] == '/') {
 		path[len-1] = '\0';
 	}
+	nlen = 2*(strlen(path)+1);
 
+	param = TALLOC_ARRAY(frame,char,6+nlen+2);
+	if (!param) {
+		return false;
+	}
 	p = param;
-	memset(p, 0, 6);
+	memset(param, '\0', 6);
+
 	SSVAL(p, 0, SMB_QUERY_FILE_BASIC_INFO);
 	p += 6;
-	p += clistr_push(cli, p, path, sizeof(param)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, path, nlen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
-	TALLOC_FREE(frame);
 
 	if (!cli_send_trans(cli, SMBtrans2,
-		NULL,                        /* name */
-		-1, 0,                       /* fid, flags */
-		&setup, 1, 0,                /* setup, length, max */
-		param, param_len, 2,         /* param, length, max */
-		NULL,  0, cli->max_xmit      /* data, length, max */
-		)) {
-			return False;
+			NULL,                        /* name */
+			-1, 0,                       /* fid, flags */
+			&setup, 1, 0,                /* setup, length, max */
+			param, param_len, 2,         /* param, length, max */
+			NULL,  0, cli->max_xmit      /* data, length, max */
+			)) {
+		TALLOC_FREE(frame);
+		return False;
 	}
+
+	TALLOC_FREE(frame);
 
 	if (!cli_receive_trans(cli, SMBtrans2,
 		&rparam, &param_len,
@@ -952,19 +981,23 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
-	char param[1024+6];
+	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	char *p;
 	bool ret;
 	unsigned int len;
+	size_t nlen = 2*(strlen(fname)+1);
 
+	param = SMB_MALLOC(6+nlen+2);
+	if (!param) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	p = param;
-	memset(p, 0, 6);
+	memset(param, '\0', 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALT_NAME_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(param)-6, STR_TERMINATE);
-
+	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	do {
@@ -988,6 +1021,8 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 			smb_msleep(100);
 		}
 	} while (count-- && ret==False);
+
+	SAFE_FREE(param);
 
 	if (!ret || !rdata || data_len < 4) {
 		return NT_STATUS_UNSUCCESSFUL;
