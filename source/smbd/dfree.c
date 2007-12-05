@@ -150,10 +150,10 @@ SMB_BIG_UINT sys_disk_free(connection_struct *conn, const char *path, bool small
 	}
 
 	if ((*dsize)<1) {
-		static int done;
+		static bool done = false;
 		if (!done) {
 			DEBUG(0,("WARNING: dfree is broken on this system\n"));
-			done=1;
+			done=true;
 		}
 		*dsize = 20*1024*1024/(*bsize);
 		*dfree = MAX(1,*dfree);
