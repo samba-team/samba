@@ -1178,12 +1178,6 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 	return src_len;
 }
 
-
-size_t pull_ascii_pstring(char *dest, const void *src)
-{
-	return pull_ascii(dest, src, sizeof(pstring), -1, STR_TERMINATE);
-}
-
 size_t pull_ascii_fstring(char *dest, const void *src)
 {
 	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);

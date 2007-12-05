@@ -28,11 +28,13 @@ static int total_errors;
 
 static void *find_fn(const char *name)
 {
-	pstring s;
+	char *s;
 	static void *h;
 	void *res;
 
-	pstr_sprintf(s, "_nss_%s_%s", nss_name, name);
+	if (asprintf(&s, "_nss_%s_%s", nss_name, name) < 0) {
+		exit(1);
+	}
 
 	if (!h) {
 		h = sys_dlopen(so_path, RTLD_LAZY);
@@ -45,8 +47,10 @@ static void *find_fn(const char *name)
 	if (!res) {
 		printf("Can't find function %s\n", s);
 		total_errors++;
+		SAFE_FREE(s);
 		return NULL;
 	}
+	SAFE_FREE(s);
 	return res;
 }
 
