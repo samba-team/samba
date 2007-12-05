@@ -23,6 +23,9 @@
 #define OP_MIN 0
 #define OP_MAX 20
 
+#define DATA_SIZE 1024
+#define PARAM_SIZE 1024
+
 /****************************************************************************
 look for a partial hit
 ****************************************************************************/
@@ -84,14 +87,14 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_trans2(cli, op, param, data, param_len,
-			 sizeof(pstring), rparam_len, rdata_len);
+			 DATA_SIZE, rparam_len, rdata_len);
 #if VERBOSE 
 	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
-	while (*data_len < sizeof(pstring)) {
+	while (*data_len < DATA_SIZE) {
 		ret = try_trans2(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
 		if (NT_STATUS_IS_OK(ret)) break;
@@ -115,7 +118,7 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 	int data_len = 0;
 	int param_len = 0;
 	unsigned int rparam_len, rdata_len;
-	pstring param, data;
+	char param[PARAM_SIZE], data[DATA_SIZE];
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
@@ -286,14 +289,14 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_nttrans(cli, op, param, data, param_len,
-			 sizeof(pstring), rparam_len, rdata_len);
+			 DATA_SIZE, rparam_len, rdata_len);
 #if VERBOSE 
 	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
-	while (*data_len < sizeof(pstring)) {
+	while (*data_len < DATA_SIZE) {
 		ret = try_nttrans(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
 		if (NT_STATUS_IS_OK(ret)) break;
@@ -317,7 +320,7 @@ static bool scan_nttrans(struct cli_state *cli, int op, int level,
 	int data_len = 0;
 	int param_len = 0;
 	unsigned int rparam_len, rdata_len;
-	pstring param, data;
+	char param[PARAM_SIZE], data[DATA_SIZE];
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));

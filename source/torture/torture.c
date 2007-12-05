@@ -810,7 +810,7 @@ static bool run_netbench(int client)
 {
 	struct cli_state *cli;
 	int i;
-	pstring line;
+	char line[1024];
 	char cname[20];
 	FILE *f;
 	const char *params[20];
@@ -841,7 +841,7 @@ static bool run_netbench(int client)
 		/* printf("[%d] %s\n", line_count, line); */
 
 		all_string_sub(line,"client1", cname, sizeof(line));
-		
+
 		/* parse the command parameters */
 		params[0] = strtok(line," ");
 		i = 0;
@@ -2041,7 +2041,7 @@ static bool run_fdpasstest(int dummy)
 	struct cli_state *cli1, *cli2;
 	const char *fname = "\\fdpass.tst";
 	int fnum1;
-	pstring buf;
+	char buf[1024];
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -2095,7 +2095,7 @@ static bool run_fdsesstest(int dummy)
 	const char *fname1 = "\\fdsess1.tst";
 	int fnum1;
 	int fnum2;
-	pstring buf;
+	char buf[1024];
 	bool ret = True;
 
 	if (!torture_open_connection(&cli, 0))
@@ -2317,7 +2317,7 @@ static bool run_randomipc(int dummy)
 	char *rparam = NULL;
 	char *rdata = NULL;
 	unsigned int rdrcnt,rprcnt;
-	pstring param;
+	char param[1024];
 	int api, param_len, i;
 	struct cli_state *cli;
 	bool correct = True;
@@ -2480,7 +2480,7 @@ static bool run_trans2test(int dummy)
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
 	const char *fname2 = "\\trans2\\trans2.tst";
-	pstring pname;
+	char pname[1024];
 	bool correct = True;
 
 	printf("starting trans2 test\n");
