@@ -2454,7 +2454,6 @@ NTSTATUS create_file(connection_struct *conn,
 		     uint32_t share_access,
 		     uint32_t create_disposition,
 		     uint32_t create_options,
-		     int oplock_request,
 		     SMB_BIG_UINT allocation_size,
 		     struct security_descriptor *sd,
 		     struct ea_list *ea_list,
@@ -2470,6 +2469,7 @@ NTSTATUS create_file(connection_struct *conn,
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
+	int oplock_request;
 	NTSTATUS status;
 
 	DEBUG(10,("create_file: flags = 0x%x, access_mask = 0x%x "
@@ -2619,18 +2619,22 @@ NTSTATUS create_file(connection_struct *conn,
 			? BATCH_OPLOCK : 0;
 	}
 
-	status = resolve_dfspath(
-		talloc_tos(), conn, req->flags2 & FLAGS2_DFS_PATHNAMES,
-		fname, &fname);
+	if (req == NULL) {
+		oplock_request |= INTERNAL_OPEN_ONLY;
+	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * For PATH_NOT_COVERED we had
-		 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-		 *		   ERRSRV, ERRbadpath);
-		 * Need to fix in callers
-		 */
-		goto fail;
+	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
+		status = resolve_dfspath(talloc_tos(), conn, true, fname, &fname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * For PATH_NOT_COVERED we had
+			 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+			 *		   ERRSRV, ERRbadpath);
+			 * Need to fix in callers
+			 */
+			goto fail;
+		}
 	}
 
 	/*
@@ -2852,9 +2856,15 @@ NTSTATUS create_file(connection_struct *conn,
 		   info, (int)oplock_granted));
 
 	*result = fsp;
-	*pinfo = info;
-	*poplock_granted = oplock_granted;
-	*psbuf = sbuf;
+	if (pinfo != NULL) {
+		*pinfo = info;
+	}
+	if (poplock_granted != NULL) {
+		*poplock_granted = oplock_granted;
+	}
+	if (psbuf != NULL) {
+		*psbuf = sbuf;
+	}
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
