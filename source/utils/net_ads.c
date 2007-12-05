@@ -1636,12 +1636,17 @@ int net_ads_join(int argc, const char **argv)
 	}
 
 	if ( createupn ) {
-		pstring upn;
+		char *upn;
 
 		/* default to using the short UPN name */
-		if ( !machineupn ) {
-			snprintf( upn, sizeof(upn), "host/%s@%s", global_myname(), 
-				ads->config.realm );
+		if (!machineupn ) {
+			upn = talloc_asprintf(ctx,
+					"host/%s@%s", global_myname(),
+					ads->config.realm );
+			if (!upn) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
 			machineupn = upn;
 		}
 

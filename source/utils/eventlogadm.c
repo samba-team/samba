@@ -85,7 +85,7 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 	ELOG_TDB *etdb;
 
 	/* fixed constants are bad bad bad  */
-	pstring linein;
+	char linein[1024];
 	bool is_eor;
 	Eventlog_entry ee;
 	int rcnum;

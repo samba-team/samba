@@ -125,13 +125,15 @@ static void print_brl(struct file_id id,
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
-		pstring cmd;
 		static SMB_INO_T lastino;
 
 		if (lastino != ino) {
-			slprintf(cmd, sizeof(cmd), 
-				 "egrep POSIX.*%u /proc/locks", (int)ino);
-			system(cmd);
+			char *cmd;
+			if (asprintf(&cmd,
+				 "egrep POSIX.*%u /proc/locks", (int)ino) > 0) {
+				system(cmd);
+				SAFE_FREE(cmd);
+			}
 		}
 		lastino = ino;
 	}

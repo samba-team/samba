@@ -64,16 +64,21 @@ static struct record *recorded;
 
 static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fname, int flags)
 {
-	pstring path;
+	char *path;
 
 	switch (fstype) {
 	case FSTYPE_SMB:
 		return cli_open(c, fname, flags, DENY_NONE);
 
 	case FSTYPE_NFS:
-		slprintf(path, sizeof(path), "%s%s", nfs, fname);
-		pstring_sub(path,"\\", "/");
-		return open(path, flags, 0666);
+		if (asprintf(&path, "%s%s", nfs, fname) > 0) {
+			int ret;
+			string_replace(path,'\\', '/');
+			ret = open(path, flags, 0666);
+			SAFE_FREE(path);
+			return ret;
+		}
+		break;
 	}
 
 	return -1;
