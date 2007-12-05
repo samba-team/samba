@@ -920,7 +920,7 @@ static NTSTATUS idmap_can_map(const struct id_map *map,
 	if ( (dom = find_idmap_domain_from_sid( map->sid )) == NULL ) {
 		/* huh, couldn't find a suitable domain,
 		 *  let's just leave it unmapped */
-		DEBUG(10, ("Could not find idmap backend for SID %s",
+		DEBUG(10, ("Could not find idmap backend for SID %s\n",
 			   sid_string_static(map->sid)));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
