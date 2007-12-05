@@ -279,10 +279,15 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 	while (module && module->ops->init_context == NULL) 
 		module = module->next;
 
-	if (module && module->ops->init_context &&
-		module->ops->init_context(module) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "module %s initialization failed\n", module->ops->name);
-		return LDB_ERR_OPERATIONS_ERROR;
+	/* init is different in that it is not an error if modules
+	 * do not require initialization */
+
+	if (module) {
+		int ret = module->ops->init_context(module);
+		if (ret != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "module %s initialization failed\n", module->ops->name);
+			return ret;
+		}
 	}
 
 	return LDB_SUCCESS;
@@ -434,18 +439,9 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 
 int ldb_next_init(struct ldb_module *module)
 {
-	/* init is different in that it is not an error if modules
-	 * do not require initialization */
-
 	module = module->next;
 
-	while (module && module->ops->init_context == NULL) 
-		module = module->next;
-
-	if (module == NULL) 
-		return LDB_SUCCESS;
-
-	return module->ops->init_context(module);
+	return ldb_init_module_chain(module->ldb, module);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)
