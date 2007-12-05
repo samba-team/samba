@@ -1640,7 +1640,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		}
 		else {
 			status = SMB_VFS_GET_NT_ACL(
-				fsp, fsp->fsp_name, security_info_wanted, &psd);
+				conn, fsp->fsp_name, security_info_wanted, &psd);
 		}
 	}
 

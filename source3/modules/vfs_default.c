@@ -956,13 +956,13 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
-				   files_struct *fsp, const char *name,
+				   const char *name,
 				   uint32 security_info, SEC_DESC **ppdesc)
 {
 	NTSTATUS result;
 
 	START_PROFILE(get_nt_acl);
-	result = posix_get_nt_acl(fsp->conn, fsp->fsp_name, security_info, ppdesc);
+	result = posix_get_nt_acl(handle->conn, name, security_info, ppdesc);
 	END_PROFILE(get_nt_acl);
 	return result;
 }

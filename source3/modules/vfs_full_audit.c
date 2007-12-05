@@ -1547,8 +1547,7 @@ static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info,
-					 ppdesc);
+	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
 
 	do_log(SMB_VFS_OP_GET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", fsp->fsp_name);

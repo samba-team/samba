@@ -75,6 +75,9 @@
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
 /* Leave at 22 - not yet released. Added recvfile. */
 /* Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl */
+/* Leave at 22 - not yet released. Change get_nt_acl to *not* take a
+ * files_struct. - obnox.*/
+
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -311,7 +314,6 @@ struct vfs_ops {
 					uint32 security_info,
 					struct security_descriptor **ppdesc);
 		NTSTATUS (*get_nt_acl)(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
 				       const char *name,
 				       uint32 security_info,
 				       struct security_descriptor **ppdesc);

@@ -249,7 +249,7 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, const char *name,
+	const char *name,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
