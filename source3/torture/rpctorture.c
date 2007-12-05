@@ -23,8 +23,6 @@
 #define REGISTER 0
 #endif
 
-extern pstring global_myname;
-
 extern file_info def_finfo;
 
 #define CNV_LANG(s) dos2unix_format(s,False)
@@ -35,7 +33,7 @@ struct cli_state *smb_cli = &smbcli;
 
 FILE *out_hnd;
 
-static pstring password; /* local copy only, if one is entered */
+static char *password; /* local copy only, if one is entered */
 
 /****************************************************************************
 initialise smb client structure
@@ -85,7 +83,6 @@ static void rpcclient_stop(void)
 ****************************************************************************/
 void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
 {
-	pstring cmd;
 	int i;
 
 	/* establish connections.  nothing to stop these being re-established. */
@@ -110,8 +107,7 @@ void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state 
 
 		if (password[0] != 0)
 		{
-			slprintf(cmd, sizeof(cmd)-1, "1");
-			set_first_token(cmd);
+			set_first_token("1");
 		}
 		else
 		{
@@ -129,7 +125,6 @@ void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state 
 ****************************************************************************/
 void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
 {
-	pstring cmd;
 	int i;
 
 	/* establish connections.  nothing to stop these being re-established. */
@@ -142,13 +137,15 @@ void run_ntlogin_test(int num_ops, struct client_info *cli_info, struct cli_stat
 		                 cli_info->dest_host, cli_info->name_type);
 		return;
 	}
-	
+
 	for (i = 0; i < num_ops; i++)
 	{
-		slprintf(cmd, sizeof(cmd)-1, "%s %s", cli->user_name, password);
-		set_first_token(cmd);
-
-		cmd_netlogon_login_test(cli_info);
+		char *cmd;
+		if (asprintf(&cmd, "%s %s", cli->user_name, password) > 0) {
+			set_first_token(cmd);
+			cmd_netlogon_login_test(cli_info);
+			SAFE_FREE(cmd);
+		}
 	}
 
 	rpcclient_stop();
@@ -218,13 +215,12 @@ enum client_action
 	int opt;
 	extern char *optarg;
 	extern int optind;
-	pstring term_code;
 	bool got_pass = False;
 	char *cmd_str="";
 	enum client_action cli_action = CLIENT_NONE;
 	int nprocs = 1;
 	int numops = 100;
-	pstring logfile;
+	char *logfile;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	struct client_info cli_info;
@@ -232,12 +228,6 @@ enum client_action
 	out_hnd = stdout;
 
 	rpcclient_init();
-
-#ifdef KANJI
-	pstrcpy(term_code, KANJI);
-#else /* KANJI */
-	*term_code = 0;
-#endif /* KANJI */
 
 	if (!lp_load(dyn_CONFIGFILE,True, False, False, True))
 	{
@@ -290,12 +280,10 @@ enum client_action
 
 	setup_logging(pname, True);
 
-	global_myname = get_myname(global_myname);
-	if (!global_myname) {
-		fprintf(stderr, "Failed to get my hostname.\n");
+	password = talloc_strdup(frame, "");
+	if (!password) {
+		exit(1);
 	}
-
-	password[0] = 0;
 
 	if (argc < 2)
 	{
@@ -332,8 +320,10 @@ enum client_action
 		if (argc > 1 && (*argv[1] != '-'))
 		{
 			got_pass = True;
-			pstrcpy(password,argv[1]);  
-			memset(argv[1],'X',strlen(argv[1]));
+			password = talloc_strdup(frame, argv[1]);
+			if (!password) {
+				exit(1);
+			}
 			argc--;
 			argv++;
 		}
@@ -382,9 +372,11 @@ enum client_action
 				if ((lp=strchr_m(smb_cli->user_name,'%')))
 				{
 					*lp = 0;
-					pstrcpy(password,lp+1);
+					password = talloc_strdup(frame, lp+1);
+					if (!password) {
+						exit(1);
+					}
 					got_pass = True;
-					memset(strchr_m(optarg,'%')+1,'X',strlen(password));
 				}
 				break;
 			}
@@ -425,7 +417,7 @@ enum client_action
 
 			case 'n':
 			{
-				fstrcpy(global_myname, optarg);
+				set_global_myname(optarg);
 				break;
 			}
 
@@ -440,9 +432,10 @@ enum client_action
 
 			case 'l':
 			{
-				slprintf(logfile, sizeof(logfile)-1,
-				         "%s.client",optarg);
-				lp_set_logfile(logfile);
+				if (asprintf(&logfile, "%s.client",optarg) > 0) {
+					lp_set_logfile(logfile);
+					SAFE_FREE(logfile);
+				}
 				break;
 			}
 
@@ -466,12 +459,6 @@ enum client_action
 				break;
 			}
 
-			case 't':
-			{
-				pstrcpy(term_code, optarg);
-				break;
-			}
-
 			default:
 			{
 				usage(pname);
@@ -487,8 +474,8 @@ enum client_action
 		exit(1);
 	}
 
-	strupper_m(global_myname);
-	fstrcpy(cli_info.myhostname, global_myname);
+	fstrcpy(cli_info.myhostname, global_myname());
+	strupper_m(cli_info.myhostname);
 
 	DEBUG(3,("%s client started (version %s)\n",current_timestring(False),SAMBA_VERSION_STRING));
 
@@ -525,7 +512,10 @@ enum client_action
 	else 
 	{
 		char *pwd = getpass("Enter Password:");
-		safe_strcpy(password, pwd, sizeof(password));
+		password = talloc_strdup(frame, pwd);
+		if (!password) {
+			exit(1);
+		}
 		pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
 	}
 
