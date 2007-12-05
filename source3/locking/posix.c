@@ -322,34 +322,16 @@ struct lock_ref_count_key {
 }; 
 
 /*******************************************************************
- Form a static locking key for a dev/inode pair for the fd array.
-******************************************************************/
-
-static TDB_DATA fd_array_key(struct file_id id)
-{
-	static struct file_id key;
-	TDB_DATA kbuf;
-	key = id;
-	kbuf.dptr = (uint8 *)&key;
-	kbuf.dsize = sizeof(key);
-	return kbuf;
-}
-
-/*******************************************************************
  Form a static locking key for a dev/inode pair for the lock ref count
 ******************************************************************/
 
-static TDB_DATA locking_ref_count_key(struct file_id id)
+static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp,
+					  struct lock_ref_count_key *tmp)
 {
-	static struct lock_ref_count_key key;
-	TDB_DATA kbuf;
-
-	memset(&key, '\0', sizeof(key));
-	key.id = id;
-	key.r = 'r';
-	kbuf.dptr = (uint8 *)&key;
-	kbuf.dsize = sizeof(key);
-	return kbuf;
+	ZERO_STRUCTP(tmp);
+	tmp->id = fsp->file_id;
+	tmp->r = 'r';
+	return make_tdb_data((uint8_t *)tmp, sizeof(*tmp));
 }
 
 /*******************************************************************
@@ -358,16 +340,7 @@ static TDB_DATA locking_ref_count_key(struct file_id id)
 
 static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 {
-	return fd_array_key(fsp->file_id);
-}
-
-/*******************************************************************
- Convenience function to get a lock ref count key from an fsp.
-******************************************************************/
-
-static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp)
-{
-	return locking_ref_count_key(fsp->file_id);
+	return make_tdb_data((uint8 *)&fsp->file_id, sizeof(fsp->file_id));
 }
 
 /*******************************************************************
@@ -425,7 +398,8 @@ bool posix_locking_end(void)
 
 static void increment_windows_lock_ref_count(files_struct *fsp)
 {
-	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
+	struct lock_ref_count_key tmp;
+	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp, &tmp);
 	TDB_DATA dbuf;
 	int lock_ref_count;
 
@@ -454,7 +428,8 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 
 static void decrement_windows_lock_ref_count(files_struct *fsp)
 {
-	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
+	struct lock_ref_count_key tmp;
+	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp, &tmp);
 	TDB_DATA dbuf;
 	int lock_ref_count;
 
@@ -486,7 +461,8 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 
 void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 {
-	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
+	struct lock_ref_count_key tmp;
+	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp, &tmp);
 	TDB_DATA dbuf;
 	int lock_ref_count;
 
@@ -518,7 +494,8 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 
 static int get_windows_lock_ref_count(files_struct *fsp)
 {
-	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
+	struct lock_ref_count_key tmp;
+	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp, &tmp);
 	TDB_DATA dbuf;
 	int lock_ref_count;
 
@@ -541,7 +518,8 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 
 static void delete_windows_lock_ref_count(files_struct *fsp)
 {
-	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
+	struct lock_ref_count_key tmp;
+	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp, &tmp);
 
 	/* Not a bug if it doesn't exist - no locks were ever granted. */
 	tdb_delete(posix_pending_close_tdb, kbuf);
