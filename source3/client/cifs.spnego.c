@@ -148,7 +148,7 @@ int decode_key_description(const char *desc, int *ver, secType_t * sec,
 
 int main(const int argc, char *const argv[])
 {
-	struct cifs_spnego_msg *keydata;
+	struct cifs_spnego_msg *keydata = NULL;
 	DATA_BLOB secblob = data_blob_null;
 	DATA_BLOB sess_key = data_blob_null;
 	secType_t sectype;
