@@ -38,7 +38,7 @@ echo "Build package"
     --info ${base}/Info.plist \
     --out ${imgdir}/Heimdal.pkg \
     --resources ${base}/Resources \
-    -ds || exit 1
+    --domain system || exit 1
 
 cd ..
 echo "Build disk image"
