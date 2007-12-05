@@ -1301,7 +1301,7 @@ int interpret_protocol(const char *str,int def)
  Returns a malloc'ed string.
 *******************************************************************/
 
-static char *strip_mount_options(const char *str)
+static char *strip_mount_options(TALLOC_CTX *ctx, const char *str)
 {
 	if (*str == '-') {
 		const char *p = str;
@@ -1310,7 +1310,7 @@ static char *strip_mount_options(const char *str)
 		while(*p && isspace(*p))
 			p++;
 		if(*p) {
-			return SMB_STRDUP(p);
+			return talloc_strdup(ctx, p);
 		}
 	}
 	return NULL;
@@ -1319,63 +1319,62 @@ static char *strip_mount_options(const char *str)
 /*******************************************************************
  Patch from jkf@soton.ac.uk
  Split Luke's automount_server into YP lookup and string splitter
- so can easily implement automount_path(). 
- As we may end up doing both, cache the last YP result. 
+ so can easily implement automount_path().
+ Returns a malloc'ed string.
 *******************************************************************/
 
 #ifdef WITH_NISPLUS_HOME
-char *automount_lookup(const char *user_name)
+char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
-	static fstring last_key = "";
-	static pstring last_value = "";
- 
+	char *value = NULL;
+
 	char *nis_map = (char *)lp_nis_home_map_name();
- 
+
 	char buffer[NIS_MAXATTRVAL + 1];
 	nis_result *result;
 	nis_object *object;
 	entry_obj  *entry;
-	char *tmpstr = NULL;
- 
-	if (strcmp(user_name, last_key)) {
-		slprintf(buffer, sizeof(buffer)-1, "[key=%s],%s", user_name, nis_map);
-		DEBUG(5, ("NIS+ querystring: %s\n", buffer));
- 
-		if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL)) {
-			if (result->status != NIS_SUCCESS) {
-				DEBUG(3, ("NIS+ query failed: %s\n", nis_sperrno(result->status)));
-				fstrcpy(last_key, ""); pstrcpy(last_value, "");
-			} else {
-				object = result->objects.objects_val;
-				if (object->zo_data.zo_type == ENTRY_OBJ) {
-					entry = &object->zo_data.objdata_u.en_data;
-					DEBUG(5, ("NIS+ entry type: %s\n", entry->en_type));
-					DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
- 
-					pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
-					pstring_sub(last_value, "&", user_name);
-					fstrcpy(last_key, user_name);
+
+	snprintf(buffer, sizeof(buffer), "[key=%s],%s", user_name, nis_map);
+	DEBUG(5, ("NIS+ querystring: %s\n", buffer));
+
+	if (result = nis_list(buffer, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP, NULL, NULL)) {
+		if (result->status != NIS_SUCCESS) {
+			DEBUG(3, ("NIS+ query failed: %s\n", nis_sperrno(result->status)));
+		} else {
+			object = result->objects.objects_val;
+			if (object->zo_data.zo_type == ENTRY_OBJ) {
+				entry = &object->zo_data.objdata_u.en_data;
+				DEBUG(5, ("NIS+ entry type: %s\n", entry->en_type));
+				DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
+
+				value = talloc_strdup(ctx,
+						entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
+				if (!value) {
+					nis_freeresult(result);
+					return NULL;
 				}
+				value = talloc_string_sub(ctx,
+						value,
+						"&",
+						user_name);
 			}
 		}
-		nis_freeresult(result);
 	}
+	nis_freeresult(result);
 
-	tmpstr = strip_mount_options(last_value);
-	if (tmpstr) {
-		pstrcpy(last_value, tmpstr);
-		SAFE_FREE(tmpstr);
+	if (value) {
+		value = strip_mount_options(ctx, value);
+		DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n",
+					user_name, value));
 	}
-
-	DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
-	return last_value;
+	return value;
 }
 #else /* WITH_NISPLUS_HOME */
 
-char *automount_lookup(const char *user_name)
+char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
-	static fstring last_key = "";
-	static pstring last_value = "";
+	char *value = NULL;
 
 	int nis_error;        /* returned by yp all functions */
 	char *nis_result;     /* yp_match inits this */
@@ -1390,38 +1389,27 @@ char *automount_lookup(const char *user_name)
 
 	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
 
-	if (!strcmp(user_name, last_key)) {
-		nis_result = last_value;
-		nis_result_len = strlen(last_value);
-		nis_error = 0;
-  	} else {
-		if ((nis_error = yp_match(nis_domain, nis_map, user_name, strlen(user_name),
-				&nis_result, &nis_result_len)) == 0) {
-			char *tmpstr = NULL;
-			fstrcpy(last_key, user_name);
-			pstrcpy(last_value, nis_result);
-			tmpstr = strip_mount_options(last_value);
-			if (tmpstr) {
-				pstrcpy(last_value, tmpstr);
-				SAFE_FREE(tmpstr);
-			}
-
-		} else if(nis_error == YPERR_KEY) {
-
-			/* If Key lookup fails user home server is not in nis_map 
-				use default information for server, and home directory */
-			last_value[0] = 0;
-			DEBUG(3, ("YP Key not found:  while looking up \"%s\" in map \"%s\"\n", 
-					user_name, nis_map));
-			DEBUG(3, ("using defaults for server and home directory\n"));
-		} else {
-			DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
-					yperr_string(nis_error), user_name, nis_map));
+	if ((nis_error = yp_match(nis_domain, nis_map, user_name,
+					strlen(user_name), &nis_result,
+					&nis_result_len)) == 0) {
+		value = talloc_strdup(ctx, nis_result);
+		if (!value) {
+			return NULL;
 		}
+		value = strip_mount_options(ctx, value);
+	} else if(nis_error == YPERR_KEY) {
+		DEBUG(3, ("YP Key not found:  while looking up \"%s\" in map \"%s\"\n", 
+				user_name, nis_map));
+		DEBUG(3, ("using defaults for server and home directory\n"));
+	} else {
+		DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
+				yperr_string(nis_error), user_name, nis_map));
 	}
 
-	DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
-	return last_value;
+	if (value) {
+		DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, value));
+	}
+	return value;
 }
 #endif /* WITH_NISPLUS_HOME */
 #endif
