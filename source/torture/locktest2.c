@@ -558,7 +558,7 @@ static void usage(void)
 	DEBUG(0,("seed=%u\n", seed));
 	srandom(seed);
 
-	locking_init(1);
+	locking_init_readonly();
 	test_locks(share1, share2, nfspath1, nfspath2);
 
 	return(0);

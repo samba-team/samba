@@ -385,9 +385,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
  Initialise the locking functions.
 ****************************************************************************/
 
-static int open_read_only;
-
-bool locking_init(int read_only)
+static bool locking_init_internal(bool read_only)
 {
 	brl_init(read_only);
 
@@ -408,9 +406,17 @@ bool locking_init(int read_only)
 	if (!posix_locking_init(read_only))
 		return False;
 
-	open_read_only = read_only;
-
 	return True;
+}
+
+bool locking_init(void)
+{
+	return locking_init_internal(false);
+}
+
+bool locking_init_readonly(void)
+{
+	return locking_init_internal(true);
 }
 
 /*******************************************************************
@@ -419,11 +425,9 @@ bool locking_init(int read_only)
 
 bool locking_end(void)
 {
-	brl_shutdown(open_read_only);
-	if (lock_db) {
-		TALLOC_FREE(lock_db);
-	}
-	return True;
+	brl_shutdown();
+	TALLOC_FREE(lock_db);
+	return true;
 }
 
 /*******************************************************************

@@ -347,7 +347,7 @@ static TDB_DATA fd_array_key_fsp(files_struct *fsp)
  Create the in-memory POSIX lock databases.
 ********************************************************************/
 
-bool posix_locking_init(int read_only)
+bool posix_locking_init(bool read_only)
 {
 	if (posix_pending_close_tdb) {
 		return True;

@@ -1174,7 +1174,7 @@ extern void build_options(bool screen);
 	if (!connections_init(True))
 		exit(1);
 
-	if (!locking_init(0))
+	if (!locking_init())
 		exit(1);
 
 	namecache_enable();

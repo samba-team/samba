@@ -1403,7 +1403,7 @@ void start_background_queue(void)
 		claim_connection( NULL, "smbd lpq backend",
 			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
-		if (!locking_init(0)) {
+		if (!locking_init()) {
 			exit(1);
 		}
 
