@@ -24,9 +24,13 @@ sub new($$$$) {
 
 sub openldap_start($$$) {
         my ($slapd_conf, $uri, $logs) = @_;
-        my $oldpath = $ENV{PATH};
-        $ENV{PATH} = "/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-        system("slapd -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
+  	my $oldpath = $ENV{PATH};
+	my $olpath = "";
+	if (defined $ENV{OPENLDAP_PATH}) {
+	        $olpath = "$ENV{OPENLDAP_PATH}:"
+	}
+	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
+        system("slapd -d63 -f $slapd_conf -h $uri > $logs 2>&1 &");
         $ENV{PATH} = $oldpath;
 }
 
