@@ -35,7 +35,7 @@ echo "Build package"
 /Developer/usr/bin/packagemaker \
     --version "${version}" \
     --root ${destdir} \
-    --info ${base}/Info.plist
+    --info ${base}/Info.plist \
     --out ${imgdir}/Heimdal.pkg \
     --resources ${base}/Resources \
     -ds || exit 1
