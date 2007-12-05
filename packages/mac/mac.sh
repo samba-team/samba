@@ -31,18 +31,16 @@ make check > /dev/null || exit 1
 echo "Install"
 make install DESTDIR=${destdir} > /dev/null || exit 1 
 
-replace="s,[@]VERSION[@],${version},g"
-
-sed -e $replace < ${base}/Info.plist.in > ./Info.plist
-
 echo "Build package"
 /Developer/usr/bin/packagemaker \
-    -build \
-    -ds \
-    -f ${destdir} \
-    -p ${imgdir}/Heimdal.pkg \
-    -r ${base}/Resources \
-    -i ./Info.plist || exit 1
+    --version "${version}" \
+    --root ${destdir} \
+    --info ${base}/Info.plist
+    --out ${imgdir}/Heimdal.pkg \
+    --resources ${base}/Resources \
+    -ds || exit 1
+
+exit 0
 
 cd ..
 echo "Build disk image"
