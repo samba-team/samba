@@ -52,9 +52,9 @@
  *
  */
 
-char magic_char = '~';
+static char magic_char = '~';
 
-static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
+static const char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
 static unsigned char chartest[256]  = { 0 };
