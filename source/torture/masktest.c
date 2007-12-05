@@ -95,9 +95,9 @@ static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
 			n++;
 		}
 	}
-	
+
 	if (! *n) goto match;
-	
+
  nomatch:
 	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
 	return -1;
@@ -144,17 +144,16 @@ static bool reg_match_one(struct cli_state *cli, const char *pattern, const char
 	return ms_fnmatch(pattern, file, cli->protocol, False) == 0;
 }
 
-static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, char *short_name)
+static char *reg_test(struct cli_state *cli, const char *pattern, const char *long_name, const char *short_name)
 {
 	static fstring ret;
+	const char *new_pattern = 1+strrchr_m(pattern,'\\');
+
 	fstrcpy(ret, "---");
-
-	pattern = 1+strrchr_m(pattern,'\\');
-
-	if (reg_match_one(cli, pattern, ".")) ret[0] = '+';
-	if (reg_match_one(cli, pattern, "..")) ret[1] = '+';
-	if (reg_match_one(cli, pattern, long_name) || 
-	    (*short_name && reg_match_one(cli, pattern, short_name))) ret[2] = '+';
+	if (reg_match_one(cli, new_pattern, ".")) ret[0] = '+';
+	if (reg_match_one(cli, new_pattern, "..")) ret[1] = '+';
+	if (reg_match_one(cli, new_pattern, long_name) ||
+	    (*short_name && reg_match_one(cli, new_pattern, short_name))) ret[2] = '+';
 	return ret;
 }
 
@@ -245,7 +244,7 @@ static struct cli_state *connect_one(char *share)
 	if (*c->server_domain || *c->server_os || *c->server_type)
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 			c->server_domain,c->server_os,c->server_type));
-	
+
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, share, "?????",
@@ -268,16 +267,17 @@ static void listfn(const char *mnt, file_info *f, const char *s, void *state)
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';
 	} else if (strcmp(f->name,"..") == 0) {
-		resultp[1] = '+';		
+		resultp[1] = '+';
 	} else {
 		resultp[2] = '+';
 	}
 	f_info = f;
 }
 
-static void get_real_name(struct cli_state *cli, 
-			  pstring long_name, fstring short_name)
+static void get_real_name(struct cli_state *cli,
+			  char **pp_long_name, fstring short_name)
 {
+	*pp_long_name = NULL;
 	/* nasty hack to force level 260 listings - tridge */
 	cli->capabilities |= CAP_NT_SMBS;
 	if (max_protocol <= PROTOCOL_LANMAN1) {
@@ -288,12 +288,15 @@ static void get_real_name(struct cli_state *cli,
 	if (f_info) {
 		fstrcpy(short_name, f_info->short_name);
 		strlower_m(short_name);
-		pstrcpy(long_name, f_info->name);
-		strlower_m(long_name);
+		*pp_long_name = SMB_STRDUP(f_info->name);
+		if (!*pp_long_name) {
+			return;
+		}
+		strlower_m(*pp_long_name);
 	}
 
 	if (*short_name == 0) {
-		fstrcpy(short_name, long_name);
+		fstrcpy(short_name, *pp_long_name);
 	}
 
 #if 0
@@ -303,14 +306,14 @@ static void get_real_name(struct cli_state *cli,
 #endif
 }
 
-static void testpair(struct cli_state *cli, char *mask, char *file)
+static void testpair(struct cli_state *cli, const char *mask, const char *file)
 {
 	int fnum;
 	fstring res1;
 	char *res2;
 	static int count;
 	fstring short_name;
-	pstring long_name;
+	char *long_name = NULL;
 
 	count++;
 
@@ -326,14 +329,17 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	resultp = res1;
 	fstrcpy(short_name, "");
 	f_info = NULL;
-	get_real_name(cli, long_name, short_name);
+	get_real_name(cli, &long_name, short_name);
+	if (!long_name) {
+		return;
+	}
 	f_info = NULL;
 	fstrcpy(res1, "---");
 	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
-	if (showall || 
+	if (showall ||
 	    ((strcmp(res1, res2) && !ignore_dot_errors) ||
 	     (strcmp(res1+2, res2+2) && ignore_dot_errors))) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
@@ -344,15 +350,17 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	cli_unlink(cli, file);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
+	SAFE_FREE(long_name);
 }
 
-static void test_mask(int argc, char *argv[], 
+static void test_mask(int argc, char *argv[],
 		      struct cli_state *cli)
 {
-	pstring mask, file;
+	char *mask, *file;
 	int l1, l2, i, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
+	TALLOC_CTX *ctx = talloc_tos();
 
 	cli_mkdir(cli, "\\masktest");
 
@@ -360,10 +368,15 @@ static void test_mask(int argc, char *argv[],
 
 	if (argc >= 2) {
 		while (argc >= 2) {
-			pstrcpy(mask,"\\masktest\\");
-			pstrcpy(file,"\\masktest\\");
-			pstrcat(mask, argv[0]);
-			pstrcat(file, argv[1]);
+			mask = talloc_asprintf(ctx,
+					"\\masktest\\%s",
+					argv[0]);
+			file = talloc_asprintf(ctx,
+					"\\masktest\\%s",
+					argv[1]);
+			if (!mask || !file) {
+				goto finished;
+			}
 			testpair(cli, mask, file);
 			argv += 2;
 			argc -= 2;
@@ -374,8 +387,13 @@ static void test_mask(int argc, char *argv[],
 	while (1) {
 		l1 = 1 + random() % 20;
 		l2 = 1 + random() % 20;
-		pstrcpy(mask,"\\masktest\\");
-		pstrcpy(file,"\\masktest\\");
+		mask = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
+		file = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
+		if (!mask || !file) {
+			goto finished;
+		}
+		memcpy(mask,"\\masktest\\",strlen("\\masktest\\")+1);
+		memcpy(file,"\\masktest\\",strlen("\\masktest\\")+1);
 		l = strlen(mask);
 		for (i=0;i<l1;i++) {
 			mask[i+l] = maskchars[random() % mc_len];
@@ -396,6 +414,8 @@ static void test_mask(int argc, char *argv[],
 		testpair(cli, mask, file);
 		if (NumLoops && (--NumLoops == 0))
 			break;
+		TALLOC_FREE(mask);
+		TALLOC_FREE(file);
 	}
 
  finished:
@@ -435,10 +455,11 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share;
-	struct cli_state *cli;	
+	struct cli_state *cli;
 	int opt;
 	char *p;
 	int seed;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	setlinebuf(stdout);
 
@@ -539,5 +560,6 @@ static void usage(void)
 
 	test_mask(argc, argv, cli);
 
+	TALLOC_FREE(frame);
 	return(0);
 }
