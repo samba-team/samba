@@ -198,7 +198,10 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 	var j;
 
 	var res = ldb.search("(objectClass=*)", "", ldb.SCOPE_BASE, rootDSE_attrs);
-	assert(res.error == 0);
+	if (res.error != 0) {
+		info.message("rootdse search failed: " + res.errstr + "\n");
+		assert(res.error == 0);
+	}
 	assert(res.msgs.length == 1);
 	if (typeof(res.msgs[0].namingContexts) == "undefined") {
 		return;
