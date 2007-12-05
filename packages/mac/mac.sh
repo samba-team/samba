@@ -40,8 +40,6 @@ echo "Build package"
     --resources ${base}/Resources \
     -ds || exit 1
 
-exit 0
-
 cd ..
 echo "Build disk image"
 /usr/bin/hdiutil create -volname "Heimdal-${version}" -srcfolder ${imgdir} "heimdal-${version}.dmg" || exit 1
