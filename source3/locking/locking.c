@@ -430,14 +430,10 @@ bool locking_end(void)
  Form a static locking key for a dev/inode pair.
 ******************************************************************/
 
-static TDB_DATA locking_key(struct file_id id)
+static TDB_DATA locking_key(const struct file_id *id, struct file_id *tmp)
 {
-	static struct file_id key;	
-	TDB_DATA kbuf;
-	key = id;
-	kbuf.dptr = (uint8 *)&key;
-	kbuf.dsize = sizeof(key);
-	return kbuf;
+	*tmp = *id;
+	return make_tdb_data((const uint8_t *)tmp, sizeof(*tmp));
 }
 
 /*******************************************************************
@@ -783,12 +779,13 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 }
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    struct file_id id,
+					    const struct file_id id,
 					    const char *servicepath,
 					    const char *fname)
 {
 	struct share_mode_lock *lck;
-	TDB_DATA key = locking_key(id);
+	struct file_id tmp;
+	TDB_DATA key = locking_key(&id, &tmp);
 
 	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -814,12 +811,13 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 }
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  struct file_id id,
+						  const struct file_id id,
 						  const char *servicepath,
 						  const char *fname)
 {
 	struct share_mode_lock *lck;
-	TDB_DATA key = locking_key(id);
+	struct file_id tmp;
+	TDB_DATA key = locking_key(&id, &tmp);
 	TDB_DATA data;
 
 	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
