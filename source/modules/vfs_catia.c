@@ -290,8 +290,7 @@ static NTSTATUS catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
 			       struct  security_descriptor **ppdesc)
 {
-        return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info,
-				       ppdesc);
+        return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
 }
 
 static NTSTATUS catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,

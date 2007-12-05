@@ -3307,7 +3307,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 		return status;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(parent_fsp, parent_fsp->fsp_name,
+	status = SMB_VFS_GET_NT_ACL(parent_fsp->conn, parent_fsp->fsp_name,
 				    DACL_SECURITY_INFORMATION, &parent_sd );
 
 	close_file(parent_fsp, NORMAL_CLOSE);

@@ -189,7 +189,6 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
 				const char *name,  uint32 security_info,
 				struct security_descriptor **ppdesc)
 {
