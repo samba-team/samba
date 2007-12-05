@@ -7,9 +7,9 @@
 	<key>CFBundleName</key>
 	<string>Heimdal</string>
 	<key>CFBundleIdentifier</key>
-	<string>se.h5l.heimdal</string>
+	<string>org.h5l.heimdal.pkg</string>
 	<key>CFBundleShortVersionString</key>
-	<string>@VERSION@</string>
+	<string>1.0</string>
 	<key>IFPkgFlagAllowBackRev</key>
 	<true/>
 	<key>IFPkgFlagAuthorizationAction</key>
