@@ -24,6 +24,7 @@
 #include "utils/net.h"
 
 static int net_mode_share;
+static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
 /**
  * @file net_rpc.c
@@ -3588,7 +3589,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
  *
  * @return 		Boolean result
  **/
-bool sync_files(struct copy_clistate *cp_clistate, pstring mask)
+static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 {
 	struct cli_state *targetcli;
 	char *targetpath = NULL;
@@ -3680,7 +3681,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	struct copy_clistate cp_clistate;
 	bool got_src_share = False;
 	bool got_dst_share = False;
-	pstring mask = "\\*";
+	const char *mask = "\\*";
 	char *dst = NULL;
 
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
