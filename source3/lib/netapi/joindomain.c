@@ -181,3 +181,56 @@ WERROR NetUnjoinDomain(const char *server_name,
 
 	return werr;
 }
+
+WERROR NetGetJoinInformation(const char *server_name,
+			     const char **name_buffer,
+			     uint16_t *name_type)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	mem_ctx = talloc_init("NetGetJoinInformation");
+	if (!mem_ctx) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	status = cli_full_connection(&cli, NULL, server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     opt_user_name, opt_workgroup,
+				     opt_password, 0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
+					    &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	};
+
+	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, mem_ctx,
+						      server_name,
+						      name_buffer,
+						      (enum wkssvc_NetJoinStatus *)name_type,
+						      &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+	TALLOC_FREE(mem_ctx);
+
+	return werr;
+}
