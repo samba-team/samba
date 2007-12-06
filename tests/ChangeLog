@@ -1,3 +1,7 @@
+2007-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kadmin.in: Check that admin-less principal works.
+
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-ntlm.in: test kdigest digest-probe command.
