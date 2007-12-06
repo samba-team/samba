@@ -599,7 +599,8 @@ static int nbtd_wins_randomize1Clist_sort(void *p1,/* (const char **) */
 	return match_bits2 - match_bits1;
 }
 
-static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_address *src)
+static void nbtd_wins_randomize1Clist(struct loadparm_context *lp_ctx,
+				      const char **addresses, struct socket_address *src)
 {
 	const char *mask;
 	const char *tmp;
@@ -615,7 +616,7 @@ static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_addr
 	ldb_qsort(addresses, num_addrs , sizeof(addresses[0]),
 		  src, (ldb_qsort_cmp_fn_t)nbtd_wins_randomize1Clist_sort);
 
-	mask = lp_parm_string(global_loadparm, NULL, "nbtd", "wins_randomize1Clist_mask");
+	mask = lp_parm_string(lp_ctx, NULL, "nbtd", "wins_randomize1Clist_mask");
 	if (!mask) {
 		mask = "255.255.255.0";
 	}
@@ -662,7 +663,8 @@ static void nbtd_wins_randomize1Clist(const char **addresses, struct socket_addr
 /*
   query a name
 */
-static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock, 
+static void nbtd_winsserver_query(struct loadparm_context *lp_ctx,
+				  struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *packet, 
 				  struct socket_address *src)
 {
@@ -692,7 +694,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	 * Value: 0 = deactivated, 1 = activated
 	 */
 	if (name->type == NBT_NAME_LOGON && 
-	    lp_parm_bool(global_loadparm, NULL, "nbtd", "wins_prepend1Bto1Cqueries", true)) {
+	    lp_parm_bool(lp_ctx, NULL, "nbtd", "wins_prepend1Bto1Cqueries", true)) {
 		struct nbt_name name_1b;
 
 		name_1b = *name;
@@ -706,7 +708,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!lp_wins_dns_proxy(global_loadparm)) {
+		if (!lp_wins_dns_proxy(lp_ctx)) {
 			goto notfound;
 		}
 
@@ -788,8 +790,8 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	 * Value: 0 = deactivated, 1 = activated
 	 */
 	if (name->type == NBT_NAME_LOGON && 
-	    lp_parm_bool(global_loadparm, NULL, "nbtd", "wins_randomize1Clist", false)) {
-		nbtd_wins_randomize1Clist(addresses, src);
+	    lp_parm_bool(lp_ctx, NULL, "nbtd", "wins_randomize1Clist", false)) {
+		nbtd_wins_randomize1Clist(lp_ctx, addresses, src);
 	}
 
 found:
@@ -933,7 +935,7 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
-		nbtd_winsserver_query(nbtsock, packet, src);
+		nbtd_winsserver_query(iface->nbtsrv->task->lp_ctx, nbtsock, packet, src);
 		break;
 
 	case NBT_OPCODE_REGISTER:
@@ -957,7 +959,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
 	uint32_t tmp;
 
-	if (!lp_wins_support(global_loadparm)) {
+	if (!lp_wins_support(nbtsrv->task->lp_ctx)) {
 		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
 	}
@@ -965,14 +967,15 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	nbtsrv->winssrv = talloc_zero(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
-	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl(global_loadparm);
-	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl(global_loadparm);
-	tmp = lp_parm_int(global_loadparm, NULL, "wreplsrv", "tombstone_interval", 6*24*60*60);
+	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl(nbtsrv->task->lp_ctx);
+	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl(nbtsrv->task->lp_ctx);
+	tmp = lp_parm_int(nbtsrv->task->lp_ctx, NULL, "wreplsrv", "tombstone_interval", 6*24*60*60);
 	nbtsrv->winssrv->config.tombstone_interval = tmp;
-	tmp = lp_parm_int(global_loadparm, NULL, "wreplsrv"," tombstone_timeout", 1*24*60*60);
+	tmp = lp_parm_int(nbtsrv->task->lp_ctx, NULL, "wreplsrv"," tombstone_timeout", 1*24*60*60);
 	nbtsrv->winssrv->config.tombstone_timeout = tmp;
 
-	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, WINSDB_HANDLE_CALLER_NBTD);
+	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->lp_ctx,
+						      WINSDB_HANDLE_CALLER_NBTD);
 	if (!nbtsrv->winssrv->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

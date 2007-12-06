@@ -107,7 +107,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct auth_session_info *session_info = NULL;
 
-	status = auth_anonymous_session_info(srv_conn, global_loadparm, &session_info);
+	status = auth_anonymous_session_info(srv_conn, dcesrv_sock->dcesrv_ctx->lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: auth_anonymous_session_info failed: %s\n", 
 			nt_errstr(status)));
@@ -234,6 +234,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 
 	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
 				     "unix", e->ep_description->endpoint, &port, 
+				     lp_socket_options(lp_ctx), 
 				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
@@ -271,7 +272,9 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
 	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
-				     "unix", full_path, &port, dcesrv_sock);
+				     "unix", full_path, &port, 
+				     lp_socket_options(lp_ctx), 
+				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed - %s\n",
 			 e->ep_description->endpoint, full_path, nt_errstr(status)));
@@ -350,7 +353,9 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
 	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
-				     "ipv4", address, &port, dcesrv_sock);
+				     "ipv4", address, &port, 
+				     lp_socket_options(dce_ctx->lp_ctx), 
+				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n", 
 			 address, port, nt_errstr(status)));

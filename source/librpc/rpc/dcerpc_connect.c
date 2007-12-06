@@ -444,7 +444,8 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	s->io  = *io;
 
 	/* send pipe open request */
-	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, s->io.binding->endpoint);
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lp_ncalrpc_dir(global_loadparm), 
+					      s->io.binding->endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
 	return c;
 }

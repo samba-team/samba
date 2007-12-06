@@ -597,6 +597,7 @@ static void continue_np_open_socket(struct composite_context *ctx)
   Send pipe open request on ncalrpc
 */
 struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *conn,
+						     const char *ncalrpc_dir,
 						     const char *identifier)
 {
 	char *canon = NULL;
@@ -619,7 +620,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	s->conn = conn;
 
 	string_replace(canon, '/', '\\');
-	s->full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(global_loadparm), canon);
+	s->full_path = talloc_asprintf(canon, "%s/%s", ncalrpc_dir, canon);
 	if (composite_nomem(s->full_path, c)) return c;
 
 	/* prepare server address using path and transport name */
@@ -648,8 +649,8 @@ NTSTATUS dcerpc_pipe_open_pipe_recv(struct composite_context *c)
 /*
   Open a rpc pipe on a named pipe - sync version
 */
-NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *conn, const char *identifier)
+NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *conn, const char *ncalrpc_dir, const char *identifier)
 {
-	struct composite_context *c = dcerpc_pipe_open_pipe_send(conn, identifier);
+	struct composite_context *c = dcerpc_pipe_open_pipe_send(conn, ncalrpc_dir, identifier);
 	return dcerpc_pipe_open_pipe_recv(c);
 }

@@ -454,7 +454,9 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	int options;
 
 	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
-				     "ipv4", address, &port, ldap_service);
+				     "ipv4", address, &port, 
+				     lp_socket_options(lp_ctx), 
+				     ldap_service);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 			 address, port, nt_errstr(status)));
@@ -464,7 +466,9 @@ static NTSTATUS add_socket(struct event_context *event_context,
 		/* add ldaps server */
 		port = 636;
 		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
-					     "ipv4", address, &port, ldap_service);
+					     "ipv4", address, &port, 
+					     lp_socket_options(lp_ctx), 
+					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
@@ -495,7 +499,9 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	if (options & 0x000000001) {
 		port = 3268;
 		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
-					     "ipv4", address, &port, ldap_service);
+					     "ipv4", address, &port, 
+				     	     lp_socket_options(lp_ctx), 
+					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
@@ -564,7 +570,9 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task->event_ctx, model_ops, &ldap_stream_ops, 
-				     "unix", ldapi_path, NULL, ldap_service);
+				     "unix", ldapi_path, NULL, 
+				     lp_socket_options(task->lp_ctx), 
+				     ldap_service);
 	talloc_free(ldapi_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",

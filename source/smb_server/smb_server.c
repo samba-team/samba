@@ -188,7 +188,9 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
 		status = stream_setup_socket(event_context, model_ops, &smb_stream_ops, 
-					     "ipv4", address, &port, NULL);
+					     "ipv4", address, &port, 
+					     lp_socket_options(lp_ctx), 
+					     NULL);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 

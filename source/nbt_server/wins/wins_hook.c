@@ -38,15 +38,14 @@ static const char *wins_hook_action_string(enum wins_hook_action action)
 }
 
 void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec, 
-	       enum wins_hook_action action)
+	       enum wins_hook_action action, const char *wins_hook_script)
 {
-	const char *script = lp_wins_hook(global_loadparm);
 	uint32_t i, length;
 	int child;
 	char *cmd = NULL;
 	TALLOC_CTX *tmp_mem = NULL;
 
-	if (!script || !script[0]) return;
+	if (!wins_hook_script || !wins_hook_script[0]) return;
 
 	tmp_mem = talloc_new(h);
 	if (!tmp_mem) goto failed;
@@ -59,7 +58,7 @@ void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec,
 
 	cmd = talloc_asprintf(tmp_mem,
 			      "%s %s %s %02x %ld",
-			      script,
+			      wins_hook_script,
 			      wins_hook_action_string(action),
 			      rec->name->name,
 			      rec->name->type,
@@ -92,5 +91,5 @@ void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec,
 	return;
 failed:
 	talloc_free(tmp_mem);
-	DEBUG(0,("FAILED: calling wins hook '%s'\n", script));
+	DEBUG(0,("FAILED: calling wins hook '%s'\n", wins_hook_script));
 }

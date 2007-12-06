@@ -28,6 +28,7 @@
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 
 struct sec_conn_state {
@@ -96,7 +97,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 		return c;
 
 	case NCALRPC:
-		pipe_ncalrpc_req = dcerpc_pipe_open_pipe_send(s->pipe2->conn,
+		pipe_ncalrpc_req = dcerpc_pipe_open_pipe_send(s->pipe2->conn, lp_ncalrpc_dir(global_loadparm), 
 							      s->binding->endpoint);
 		composite_continue(c, pipe_ncalrpc_req, continue_open_pipe, c);
 		return c;

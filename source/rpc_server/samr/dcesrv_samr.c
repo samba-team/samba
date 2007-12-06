@@ -494,9 +494,10 @@ static NTSTATUS dcesrv_samr_info_DomInfo1(struct samr_domain_state *state,
 /*
   return DomInfo2
 */
-static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo2 *info)
+static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state, 
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo2 *info)
 {
 	enum server_role role = lp_server_role(global_loadparm);
 

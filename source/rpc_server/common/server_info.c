@@ -64,21 +64,21 @@ const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lp_parm_int(dce_ctx ? dce_ctx->lp_ctx : global_loadparm, NULL, "server_info", "version_major", 5);
+	return lp_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lp_parm_int(dce_ctx ? dce_ctx->lp_ctx : global_loadparm, NULL, "server_info", "version_minor", 2);
+	return lp_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return lp_parm_int(dce_ctx ? dce_ctx->lp_ctx : global_loadparm, NULL, "server_info", "version_build", 3790);
+	return lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
 }
 
 /* This hardcoded value should go into a ldb database! */

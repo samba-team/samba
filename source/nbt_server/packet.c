@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
+#include "smbd/service_task.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
@@ -78,7 +79,7 @@ bool nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
 	/* if its not from the nbt port, then it wasn't a broadcast from us */
-	if (src->port != lp_nbt_port(global_loadparm)) {
+	if (src->port != lp_nbt_port(iface->nbtsrv->task->lp_ctx)) {
 		return false;
 	}
 

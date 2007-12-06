@@ -258,14 +258,15 @@ static void websrv_task_init(struct task_server *task)
 			status = stream_setup_socket(task->event_ctx, model_ops, 
 						     &web_stream_ops, 
 						     "ipv4", address, 
-						     &port, task);
+						     &port, lp_socket_options(task->lp_ctx), 
+						     task);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
 		status = stream_setup_socket(task->event_ctx, model_ops, 
 					     &web_stream_ops, 
 					     "ipv4", lp_socket_address(task->lp_ctx), 
-					     &port, task);
+					     &port, lp_socket_options(task->lp_ctx), task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

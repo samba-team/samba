@@ -161,6 +161,7 @@ static void winbind_task_init(struct task_server *task)
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
+				     lp_socket_options(task->lp_ctx), 
 				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
@@ -176,6 +177,7 @@ static void winbind_task_init(struct task_server *task)
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
+				     lp_socket_options(task->lp_ctx), 
 				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 

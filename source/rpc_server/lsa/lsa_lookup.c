@@ -195,7 +195,8 @@ static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx,
 /*
   lookup a SID for 1 name
 */
-static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_lsa_lookup_name(struct loadparm_context *lp_ctx,
+				       struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
 				const char *name, const char **authority_name, 
 				struct dom_sid **sid, enum lsa_SidType *rtype)
 {
@@ -217,7 +218,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CT
 		}
 		username = p + 1;
 	} else if (strchr_m(name, '@')) {
-		status = crack_name_to_nt4_name(mem_ctx, global_loadparm, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
+		status = crack_name_to_nt4_name(mem_ctx, lp_ctx, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -263,7 +264,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CT
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -273,7 +274,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CT
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -283,7 +284,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CT
 		if (!name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = dcesrv_lsa_lookup_name(state, mem_ctx, name, authority_name, sid, rtype);
+		status = dcesrv_lsa_lookup_name(lp_ctx, state, mem_ctx, name, authority_name, sid, rtype);
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -679,6 +680,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 	struct lsa_policy_state *policy_state;
 	struct dcesrv_handle *policy_handle;
 	int i;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -719,7 +721,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		status2 = dcesrv_lsa_lookup_name(policy_state, mem_ctx, name, &authority_name, &sid, &rtype);
+		status2 = dcesrv_lsa_lookup_name(lp_ctx, policy_state, mem_ctx, name, &authority_name, &sid, &rtype);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
 			continue;
 		}
@@ -812,6 +814,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
 	int i;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	r->out.domains = NULL;
 
@@ -851,7 +854,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		status2 = dcesrv_lsa_lookup_name(state, mem_ctx, name, 
+		status2 = dcesrv_lsa_lookup_name(lp_ctx, state, mem_ctx, name, 
 						 &authority_name, &sid, &rtype);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;

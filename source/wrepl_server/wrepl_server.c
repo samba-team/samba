@@ -74,7 +74,7 @@ failed:
 static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service, 
 				     struct loadparm_context *lp_ctx)
 {
-	service->wins_db     = winsdb_connect(service, WINSDB_HANDLE_CALLER_WREPL);
+	service->wins_db     = winsdb_connect(service, lp_ctx, WINSDB_HANDLE_CALLER_WREPL);
 	if (!service->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
