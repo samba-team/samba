@@ -491,7 +491,9 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 
 	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
 				     &kdc_tcp_stream_ops, 
-				     "ip", address, &kdc_port, kdc);
+				     "ip", address, &kdc_port, 
+				     lp_socket_options(kdc->task->lp_ctx), 
+				     kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, kdc_port, nt_errstr(status)));
@@ -501,7 +503,9 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 
 	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
 				     &kpasswdd_tcp_stream_ops, 
-				     "ip", address, &kpasswd_port, kdc);
+				     "ip", address, &kpasswd_port, 
+				     lp_socket_options(kdc->task->lp_ctx), 
+				     kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, kpasswd_port, nt_errstr(status)));

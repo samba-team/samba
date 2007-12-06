@@ -117,7 +117,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 {
 	uint32_t refresh_time;
-	uint32_t max_refresh_time = lp_parm_int(global_loadparm, NULL, "nbtd", "max_refresh_time", 7200);
+	uint32_t max_refresh_time = lp_parm_int(iname->iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "max_refresh_time", 7200);
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
@@ -170,7 +170,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 				     uint16_t nb_flags)
 {
 	struct nbtd_iface_name *iname;
-	const char *scope = lp_netbios_scope(global_loadparm);
+	const char *scope = lp_netbios_scope(iface->nbtsrv->task->lp_ctx);
 	struct nbt_name_register_bcast io;
 	struct composite_context *creq;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
@@ -187,7 +187,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 		iname->name.scope = NULL;
 	}
 	iname->nb_flags          = nb_flags;
-	iname->ttl               = lp_parm_int(global_loadparm, NULL, "nbtd", "bcast_ttl", 300000);
+	iname->ttl               = lp_parm_int(iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "bcast_ttl", 300000);
 	iname->registration_time = timeval_zero();
 	iname->wins_server       = NULL;
 
@@ -260,29 +260,29 @@ void nbtd_register_names(struct nbtd_server *nbtsrv)
 
 	/* note that we don't initially mark the names "ACTIVE". They are 
 	   marked active once registration is successful */
-	nbtd_register_name(nbtsrv, lp_netbios_name(global_loadparm), NBT_NAME_CLIENT, nb_flags);
-	nbtd_register_name(nbtsrv, lp_netbios_name(global_loadparm), NBT_NAME_USER,   nb_flags);
-	nbtd_register_name(nbtsrv, lp_netbios_name(global_loadparm), NBT_NAME_SERVER, nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(nbtsrv->task->lp_ctx), NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(nbtsrv->task->lp_ctx), NBT_NAME_USER,   nb_flags);
+	nbtd_register_name(nbtsrv, lp_netbios_name(nbtsrv->task->lp_ctx), NBT_NAME_SERVER, nb_flags);
 
-	aliases = lp_netbios_aliases(global_loadparm);
+	aliases = lp_netbios_aliases(nbtsrv->task->lp_ctx);
 	while (aliases && aliases[0]) {
 		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_CLIENT, nb_flags);
 		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_SERVER, nb_flags);
 		aliases++;
 	}
 
-	if (lp_server_role(global_loadparm) == ROLE_DOMAIN_CONTROLLER)	{
+	if (lp_server_role(nbtsrv->task->lp_ctx) == ROLE_DOMAIN_CONTROLLER)	{
 		bool is_pdc = samdb_is_pdc(nbtsrv->sam_ctx);
 		if (is_pdc) {
-			nbtd_register_name(nbtsrv, lp_workgroup(global_loadparm),
+			nbtd_register_name(nbtsrv, lp_workgroup(nbtsrv->task->lp_ctx),
 					   NBT_NAME_PDC, nb_flags);
 		}
-		nbtd_register_name(nbtsrv, lp_workgroup(global_loadparm),
+		nbtd_register_name(nbtsrv, lp_workgroup(nbtsrv->task->lp_ctx),
 				   NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
 	}
 
 	nb_flags |= NBT_NM_GROUP;
-	nbtd_register_name(nbtsrv, lp_workgroup(global_loadparm), NBT_NAME_CLIENT, nb_flags);
+	nbtd_register_name(nbtsrv, lp_workgroup(nbtsrv->task->lp_ctx), NBT_NAME_CLIENT, nb_flags);
 
 	nb_flags |= NBT_NM_PERMANENT;
 	nbtd_register_name(nbtsrv, "__SAMBA__",       NBT_NAME_CLIENT, nb_flags);

@@ -850,7 +850,7 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
-	wins_hook(h, rec, WINS_HOOK_ADD);
+	wins_hook(h, rec, WINS_HOOK_ADD, h->hook_script);
 
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
@@ -899,7 +899,7 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
-	wins_hook(h, rec, WINS_HOOK_MODIFY);
+	wins_hook(h, rec, WINS_HOOK_MODIFY, h->hook_script);
 
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
@@ -934,7 +934,7 @@ uint8_t winsdb_delete(struct winsdb_handle *h, struct winsdb_record *rec)
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
-	wins_hook(h, rec, WINS_HOOK_DELETE);
+	wins_hook(h, rec, WINS_HOOK_DELETE, h->hook_script);
 
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
@@ -945,7 +945,7 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-static bool winsdb_check_or_add_module_list(struct winsdb_handle *h)
+static bool winsdb_check_or_add_module_list(struct loadparm_context *lp_ctx, struct winsdb_handle *h)
 {
 	int trans;
 	int ret;
@@ -988,11 +988,11 @@ static bool winsdb_check_or_add_module_list(struct winsdb_handle *h)
 	talloc_free(h->ldb);
 	h->ldb = NULL;
 
-	if (lp_parm_bool(global_loadparm, NULL,"winsdb", "nosync", false)) {
+	if (lp_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, global_loadparm, lock_path(h, global_loadparm, lp_wins_url(global_loadparm)),
+	h->ldb = ldb_wrap_connect(h, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
 				  NULL, NULL, flags, NULL);
 	if (!h->ldb) goto failed;
 
@@ -1010,7 +1010,8 @@ failed:
 	return false;
 }
 
-struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_caller caller)
+struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+				     enum winsdb_handle_caller caller)
 {
 	struct winsdb_handle *h = NULL;
 	const char *owner;
@@ -1021,17 +1022,18 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 	h = talloc(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
 
-	if (lp_parm_bool(global_loadparm, NULL,"winsdb", "nosync", false)) {
+	if (lp_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, global_loadparm, lock_path(h, global_loadparm, lp_wins_url(global_loadparm)),
+	h->ldb = ldb_wrap_connect(h, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
 				  NULL, NULL, flags, NULL);
 	if (!h->ldb) goto failed;	
 
 	h->caller = caller;
+	h->hook_script = lp_wins_hook(lp_ctx);
 
-	owner = lp_parm_string(global_loadparm, NULL, "winsdb", "local_owner");
+	owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 	if (!owner) {
 		owner = iface_n_ip(0);
 	}
@@ -1040,7 +1042,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_cal
 	if (!h->local_owner) goto failed;
 
 	/* make sure the module list is available and used */
-	ret = winsdb_check_or_add_module_list(h);
+	ret = winsdb_check_or_add_module_list(lp_ctx, h);
 	if (!ret) goto failed;
 
 	ldb_err = ldb_set_opaque(h->ldb, "winsdb_handle", h);

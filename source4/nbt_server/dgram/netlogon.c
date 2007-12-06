@@ -28,6 +28,7 @@
 #include "util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "smbd/service_task.h"
 
 /*
   reply to a GETDC request
@@ -53,7 +54,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, global_loadparm, anonymous_session(packet, global_loadparm));
+	samctx = samdb_connect(packet, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->lp_ctx));
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;
@@ -75,7 +76,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	reply.command = NETLOGON_RESPONSE_FROM_PDC;
 	pdc = &reply.req.response;
 
-	pdc->pdc_name         = lp_netbios_name(global_loadparm);
+	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
 	pdc->unicode_pdc_name = pdc->pdc_name;
 	pdc->domain_name      = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
 	pdc->nt_version       = 1;
@@ -87,7 +88,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
-				      lp_netbios_name(global_loadparm),
+				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
 				      netlogon->req.pdc.mailslot_name,
 				      &reply);
 }
@@ -111,7 +112,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	const char *dom_attrs[] = {"objectGUID", NULL};
 	struct ldb_message **ref_res, **dom_res;
 	int ret;
-	const char **services = lp_server_services(global_loadparm);
+	const char **services = lp_server_services(iface->nbtsrv->task->lp_ctx);
 	const char *my_ip = reply_iface->ip_address; 
 	struct ldb_dn *partitions_basedn;
 	if (!my_ip) {
@@ -124,7 +125,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, global_loadparm, anonymous_session(packet, global_loadparm));
+	samctx = samdb_connect(packet, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->lp_ctx));
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;
@@ -185,17 +186,17 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	pdc->domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
 	pdc->forest           = samdb_result_string(ref_res[0], "dnsRoot", 
-						    lp_realm(global_loadparm));
+						    lp_realm(iface->nbtsrv->task->lp_ctx));
 	pdc->dns_domain       = samdb_result_string(ref_res[0], "dnsRoot", 
-						    lp_realm(global_loadparm));
+						    lp_realm(iface->nbtsrv->task->lp_ctx));
 
 	/* TODO: get our full DNS name from somewhere else */
 	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
 						strlower_talloc(packet, 
-								lp_netbios_name(global_loadparm)), 
+								lp_netbios_name(iface->nbtsrv->task->lp_ctx)), 
 						pdc->dns_domain);
 	pdc->domain           = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
-	pdc->pdc_name         = lp_netbios_name(global_loadparm);
+	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
 	pdc->user_name        = netlogon->req.pdc2.user_name;
 	/* TODO: we need to make sure these are in our DNS zone */
 	pdc->server_site      = "Default-First-Site-Name";
@@ -211,7 +212,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
-				      lp_netbios_name(global_loadparm),
+				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
 				      netlogon->req.pdc2.mailslot_name,
 				      &reply);
 }

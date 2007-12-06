@@ -65,6 +65,9 @@ struct winsdb_handle {
 
 	/* local owner address */
 	const char *local_owner;
+
+	/* wins hook script */
+	const char *hook_script;
 };
 
 enum wins_hook_action {

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
+#include "smbd/service_task.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
@@ -50,9 +51,9 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 	logon = &reply.req.reply;
 
 	logon->server           = talloc_asprintf(packet, "\\\\%s", 
-						  lp_netbios_name(global_loadparm));
+						  lp_netbios_name(iface->nbtsrv->task->lp_ctx));
 	logon->user_name        = ntlogon->req.logon.user_name;
-	logon->domain           = lp_workgroup(global_loadparm);
+	logon->domain           = lp_workgroup(iface->nbtsrv->task->lp_ctx);
 	logon->nt_version       = 1;
 	logon->lmnt_token       = 0xFFFF;
 	logon->lm20_token       = 0xFFFF;
@@ -61,7 +62,7 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_ntlogon_reply(reply_iface->dgmsock, 
 				     packet, 
-				     lp_netbios_name(global_loadparm),
+				     lp_netbios_name(iface->nbtsrv->task->lp_ctx),
 				     ntlogon->req.logon.mailslot_name,
 				     &reply);
 }

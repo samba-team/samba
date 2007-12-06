@@ -246,7 +246,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct loadparm_context *lp_
 	struct ldb_context *ldb;
 	int ret;
 
-	ldb = schannel_db_connect(mem_ctx, global_loadparm);
+	ldb = schannel_db_connect(mem_ctx, lp_ctx);
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -262,7 +262,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct loadparm_context *lp_
 	 * update the structure */ 
 	
 	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name, 
-						   lp_workgroup(global_loadparm),
+						   lp_workgroup(lp_ctx),
 						   &creds);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = creds_server_step_check(creds, 

@@ -24,6 +24,7 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
+#include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
@@ -81,7 +82,7 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 	if (!(packet->operation & NBT_FLAG_BROADCAST) &&
 	   (packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
 	   (iname->nb_flags & NBT_NM_GROUP) &&
-	   lp_wins_support(global_loadparm)) {
+	   lp_wins_support(iface->nbtsrv->task->lp_ctx)) {
 		nbtd_winsserver_request(nbtsock, packet, src);
 		return;
 	}

@@ -170,9 +170,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
-		os.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
-		os.minor		= dcesrv_common_get_version_minor(mem_ctx, NULL);
-		os.build		= dcesrv_common_get_version_build(mem_ctx, NULL);
+		os.major		= dcesrv_common_get_version_major(mem_ctx, global_loadparm);
+		os.minor		= dcesrv_common_get_version_minor(mem_ctx, global_loadparm);
+		os.build		= dcesrv_common_get_version_build(mem_ctx, global_loadparm);
 		os.extra_string		= "";
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
@@ -188,9 +188,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersionEx os_ex;
 
-		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
-		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, NULL);
-		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, NULL);
+		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, global_loadparm);
+		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, global_loadparm);
+		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, global_loadparm);
 		os_ex.extra_string		= "";
 		os_ex.unknown2		= 0;
 		os_ex.unknown3		= 0;
