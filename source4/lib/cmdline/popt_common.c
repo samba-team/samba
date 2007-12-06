@@ -41,7 +41,19 @@ enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
-static void popt_common_callback(poptContext con, 
+static void popt_version_callback(poptContext con,
+			   enum poptCallbackReason reason,
+			   const struct poptOption *opt,
+			   const char *arg, const void *data)
+{
+	switch(opt->val) {
+	case 'V':
+		printf("Version %s\n", SAMBA_VERSION_STRING );
+		exit(0);
+	}
+}
+
+static void popt_samba_callback(poptContext con, 
 			   enum poptCallbackReason reason,
 			   const struct poptOption *opt,
 			   const char *arg, const void *data)
@@ -70,6 +82,7 @@ static void popt_common_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
+
 		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */
 		fault_setup(poptGetInvocationName(con));
@@ -81,22 +94,28 @@ static void popt_common_callback(poptContext con,
 	}
 
 	switch(opt->val) {
+
+	case OPT_LEAK_REPORT:
+		talloc_enable_leak_report();
+		break;
+
+	case OPT_LEAK_REPORT_FULL:
+		talloc_enable_leak_report_full();
+		break;
+
+	case OPT_OPTION:
+		if (!lp_set_option(lp_ctx, arg)) {
+			fprintf(stderr, "Error setting option '%s'\n", arg);
+			exit(1);
+		}
+		break;
+
 	case 'd':
 		lp_set_cmdline(lp_ctx, "log level", arg);
 		break;
 
 	case OPT_DEBUG_STDERR:
 		setup_logging(pname, DEBUG_STDERR);
-		break;
-
-	case 'V':
-		printf("Version %s\n", SAMBA_VERSION_STRING );
-		exit(0);
-
-	case 'O':
-		if (arg) {
-			lp_set_cmdline(lp_ctx, "socket options", arg);
-		}
 		break;
 
 	case 's':
@@ -112,7 +131,27 @@ static void popt_common_callback(poptContext con,
 			talloc_free(new_logfile);
 		}
 		break;
-		
+	
+
+	}
+
+}
+
+
+static void popt_common_callback(poptContext con, 
+			   enum poptCallbackReason reason,
+			   const struct poptOption *opt,
+			   const char *arg, const void *data)
+{
+	struct loadparm_context *lp_ctx = global_loadparm; /* FIXME: allow overriding */
+
+	switch(opt->val) {
+	case 'O':
+		if (arg) {
+			lp_set_cmdline(lp_ctx, "socket options", arg);
+		}
+		break;
+	
 	case 'W':
 		lp_set_cmdline(lp_ctx, "workgroup", arg);
 		break;
@@ -137,19 +176,8 @@ static void popt_common_callback(poptContext con,
 		lp_set_cmdline(lp_ctx, "name resolve order", arg);
 		break;
 
-	case OPT_OPTION:
-		if (!lp_set_option(lp_ctx, arg)) {
-			fprintf(stderr, "Error setting option '%s'\n", arg);
-			exit(1);
-		}
-		break;
-
-	case OPT_LEAK_REPORT:
-		talloc_enable_leak_report();
-		break;
-
-	case OPT_LEAK_REPORT_FULL:
-		talloc_enable_leak_report_full();
+	case 'S':
+		lp_set_cmdline(lp_ctx, "client signing", arg);
 		break;
 
 	}
@@ -160,6 +188,7 @@ struct poptOption popt_common_connection[] = {
 	{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
+	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "realm", 0, POPT_ARG_STRING, NULL, 'r', "Set the realm name", "REALM" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
@@ -168,7 +197,7 @@ struct poptOption popt_common_connection[] = {
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_samba_callback },
 	{ "debuglevel",   'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "debug-stderr", 0, POPT_ARG_NONE, NULL, OPT_DEBUG_STDERR, "Send debug output to STDERR", NULL },
 	{ "configfile",   's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
@@ -180,7 +209,7 @@ struct poptOption popt_common_samba[] = {
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_version_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	{ NULL }
 };
