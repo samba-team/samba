@@ -157,7 +157,8 @@ static bool is_utf16(const char *name)
 /*
   simple iconv_open() wrapper
  */
-smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
+smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode, 
+			   bool native_iconv)
 {
 	smb_iconv_t ret;
 	const struct charset_functions *from=NULL, *to=NULL;
@@ -199,7 +200,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if ((!from || !to) && !lp_parm_bool(global_loadparm, NULL, "iconv", "native", true)) {
+	if ((!from || !to) && !native_iconv) {
 		goto failed;
 	}
 	if (!from) {

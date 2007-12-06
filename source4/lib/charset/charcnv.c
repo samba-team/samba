@@ -42,10 +42,9 @@ struct smb_iconv_convenience {
 	const char *unix_charset;
 	const char *dos_charset;
 	const char *display_charset;
+	bool native_iconv;
 	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 };
-
-static struct smb_iconv_convenience *global_smb_iconv_convenience = NULL;
 
 
 /**
@@ -86,30 +85,26 @@ static int close_iconv(struct smb_iconv_convenience *data)
 }
 
 struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
-							 struct loadparm_context *lp_ctx)
+							 const char *dos_charset,
+							 const char *unix_charset,
+							 const char *display_charset,
+							 bool native_iconv)
 {
 	struct smb_iconv_convenience *ret = talloc_zero(mem_ctx, 
-							struct smb_iconv_convenience);
+					struct smb_iconv_convenience);
+
+	if (ret == NULL) {
+		return NULL;
+	}
 
 	talloc_set_destructor(ret, close_iconv);
 
-	ret->display_charset = talloc_strdup(ret, lp_display_charset(lp_ctx));
-	ret->dos_charset = talloc_strdup(ret, lp_dos_charset(lp_ctx));
-	ret->unix_charset = talloc_strdup(ret, lp_unix_charset(lp_ctx));
+	ret->dos_charset = talloc_strdup(ret, dos_charset);
+	ret->unix_charset = talloc_strdup(ret, unix_charset);
+	ret->display_charset = talloc_strdup(ret, display_charset);
+	ret->native_iconv = native_iconv;
 
 	return ret;
-}
-
-
-_PUBLIC_ void reload_charcnv(void)
-{
-	talloc_free(global_smb_iconv_convenience);
-	global_smb_iconv_convenience = smb_iconv_convenience_init(talloc_autofree_context(), global_loadparm);
-}
-
-static void free_global_smb_iconv_convenience(void)
-{
-	talloc_free(global_smb_iconv_convenience);
 }
 
 /*
@@ -120,8 +115,7 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 {
 	const char *n1, *n2;
 	static int initialised;
-	/* auto-free iconv memory on exit so valgrind reports are easier
-	   to look at */
+
 	if (initialised == 0) {
 		initialised = 1;
 		
@@ -134,7 +128,6 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 		*/
 		setlocale(LC_ALL, "C");
 #endif
-		atexit(free_global_smb_iconv_convenience);
 	}
 
 	if (ic->conv_handles[from][to]) {
@@ -144,7 +137,7 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 	n1 = charset_name(ic, from);
 	n2 = charset_name(ic, to);
 
-	ic->conv_handles[from][to] = smb_iconv_open(n2,n1);
+	ic->conv_handles[from][to] = smb_iconv_open(n2, n1, ic->native_iconv);
 	
 	if (ic->conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
@@ -156,7 +149,8 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 			n1 = charset_name(ic, from);
 			n2 = charset_name(ic, to);
 			
-			ic->conv_handles[from][to] = smb_iconv_open(n2,n1);
+			ic->conv_handles[from][to] = smb_iconv_open(n2, n1,
+				ic->native_iconv);
 		}
 	}
 
