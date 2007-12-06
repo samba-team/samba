@@ -54,6 +54,8 @@ static void popt_common_credentials_callback(poptContext con,
 						const struct poptOption *opt,
 						const char *arg, const void *data)
 {
+	struct cli_credentials *creds = data;
+
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		cmdline_credentials = cli_credentials_init(talloc_autofree_context());
 		return;
@@ -94,10 +96,6 @@ static void popt_common_credentials_callback(poptContext con,
 		cli_credentials_parse_file(cmdline_credentials, arg, CRED_SPECIFIED);
 		break;
 
-	case 'S':
-		lp_set_cmdline(global_loadparm, "client signing", arg);
-		break;
-
 	case 'P':
 		/* Later, after this is all over, get the machine account details from the secrets.ldb */
 		cli_credentials_set_machine_account_pending(cmdline_credentials);
@@ -136,7 +134,6 @@ struct poptOption popt_common_credentials[] = {
 	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, 'N', "Don't ask for a password" },
 	{ "password", 0, POPT_ARG_STRING, NULL, OPT_PASSWORD, "Password" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
-	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos" },
