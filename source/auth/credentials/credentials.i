@@ -50,9 +50,7 @@ typedef struct cli_credentials {
         cli_credentials() {
             return cli_credentials_init(NULL);
         }
-        ~cli_credentials() {
-            talloc_free($self);
-        }
+        ~cli_credentials() { talloc_free($self); }
         /* username */
         const char *get_username(void);
         bool set_username(const char *value, 
