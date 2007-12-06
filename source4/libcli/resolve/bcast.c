@@ -23,15 +23,16 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
-/*
+/**
   broadcast name resolution method - async send
  */
 struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
 						  struct event_context *event_ctx,
 						  struct nbt_name *name)
 {
-	int num_interfaces = iface_count();
+	int num_interfaces = iface_count(global_loadparm);
 	const char **address_list;
 	struct composite_context *c;
 	int i, count=0;
@@ -40,7 +41,7 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_n_bcast(i);
+		const char *bcast = iface_n_bcast(global_loadparm, i);
 		if (bcast == NULL) continue;
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {

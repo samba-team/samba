@@ -522,14 +522,14 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 */
 static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_context *lp_ctx)
 {
-	int num_interfaces = iface_count();
+	int num_interfaces = iface_count(lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);
 	NTSTATUS status;
 	
 	int i;
 	
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(lp_ctx, i));
 		status = kdc_add_socket(kdc, address, lp_krb5_port(lp_ctx), 
 					lp_kpasswd_port(lp_ctx));
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -571,7 +571,7 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	if (iface_count() == 0) {
+	if (iface_count(task->lp_ctx) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured");
 		return;
 	}

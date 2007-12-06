@@ -377,10 +377,10 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 
 	/* Add TCP/IP sockets */
 	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
-		int num_interfaces = iface_count();
+		int num_interfaces = iface_count(lp_ctx);
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(i);
+			const char *address = iface_n_ip(lp_ctx, i);
 			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}

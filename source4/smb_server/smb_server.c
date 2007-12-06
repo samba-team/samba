@@ -220,7 +220,7 @@ static void smbsrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[smbsrv]");
 
 	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
-		int num_interfaces = iface_count();
+		int num_interfaces = iface_count(task->lp_ctx);
 		int i;
 
 		/* We have been given an interfaces line, and been 
@@ -228,7 +228,7 @@ static void smbsrv_task_init(struct task_server *task)
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(i);
+			const char *address = iface_n_ip(task->lp_ctx, i);
 			status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops, address);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}

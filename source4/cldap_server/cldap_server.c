@@ -123,7 +123,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 */
 static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct loadparm_context *lp_ctx)
 {
-	int num_interfaces = iface_count();
+	int num_interfaces = iface_count(lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
 
@@ -136,7 +136,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 		int i;
 
 		for (i=0; i<num_interfaces; i++) {
-			const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
+			const char *address = talloc_strdup(tmp_ctx, iface_n_ip(lp_ctx, i));
 			status = cldapd_add_socket(cldapd, lp_ctx, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
@@ -155,7 +155,7 @@ static void cldapd_task_init(struct task_server *task)
 	struct cldapd_server *cldapd;
 	NTSTATUS status;
 
-	if (iface_count() == 0) {
+	if (iface_count(task->lp_ctx) == 0) {
 		task_server_terminate(task, "cldapd: no network interfaces configured");
 		return;
 	}

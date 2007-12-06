@@ -251,10 +251,10 @@ static void websrv_task_init(struct task_server *task)
 	if (!model_ops) goto failed;
 
 	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
-		int num_interfaces = iface_count();
+		int num_interfaces = iface_count(task->lp_ctx);
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(i);
+			const char *address = iface_n_ip(task->lp_ctx, i);
 			status = stream_setup_socket(task->event_ctx, model_ops, 
 						     &web_stream_ops, 
 						     "ipv4", address, 

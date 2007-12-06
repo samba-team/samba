@@ -241,9 +241,9 @@ static bool process_one(const char *name, int nbt_port)
 		status = do_node_query(nbtsock, options.unicast_address, 
 				       nbt_port, node_name, node_type, false);
 	} else {
-		int i, num_interfaces = iface_count();
+		int i, num_interfaces = iface_count(global_loadparm);
 		for (i=0;i<num_interfaces;i++) {
-			const char *bcast = iface_n_bcast(i);
+			const char *bcast = iface_n_bcast(global_loadparm, i);
 			if (bcast == NULL) continue;
 			status = do_node_query(nbtsock, bcast, nbt_port, 
 					       node_name, node_type, true);

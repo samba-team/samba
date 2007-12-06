@@ -235,12 +235,12 @@ void unload_interfaces(void)
 /**
   how many interfaces do we have
   **/
-int iface_count(void)
+int iface_count(struct loadparm_context *lp_ctx)
 {
 	int ret = 0;
 	struct interface *i;
 
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	for (i=local_interfaces;i;i=i->next)
 		ret++;
@@ -250,11 +250,11 @@ int iface_count(void)
 /**
   return IP of the Nth interface
   **/
-const char *iface_n_ip(int n)
+const char *iface_n_ip(struct loadparm_context *lp_ctx, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
@@ -268,11 +268,11 @@ const char *iface_n_ip(int n)
 /**
   return bcast of the Nth interface
   **/
-const char *iface_n_bcast(int n)
+const char *iface_n_bcast(struct loadparm_context *lp_ctx, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
@@ -286,11 +286,11 @@ const char *iface_n_bcast(int n)
 /**
   return netmask of the Nth interface
   **/
-const char *iface_n_netmask(int n)
+const char *iface_n_netmask(struct loadparm_context *lp_ctx, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
@@ -305,29 +305,29 @@ const char *iface_n_netmask(int n)
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-const char *iface_best_ip(const char *dest)
+const char *iface_best_ip(struct loadparm_context *lp_ctx, const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
 
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	ip.s_addr = interpret_addr(dest);
 	iface = iface_find(ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
-	return iface_n_ip(0);
+	return iface_n_ip(lp_ctx, 0);
 }
 
 /**
   return true if an IP is one one of our local networks
 */
-bool iface_is_local(const char *dest)
+bool iface_is_local(struct loadparm_context *lp_ctx, const char *dest)
 {
 	struct in_addr ip;
 
-	load_interfaces(lp_interfaces(global_loadparm));
+	load_interfaces(lp_interfaces(lp_ctx));
 
 	ip.s_addr = interpret_addr(dest);
 	if (iface_find(ip, true)) {

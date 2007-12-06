@@ -84,12 +84,13 @@ static int wins_ldb_init(struct ldb_module *ctx)
 {
 	struct winsdb_handle *h;
 	const char *owner;
+	struct loadparm_context *lp_ctx = ldb_get_opaque(ctx->ldb, "loadparm");
 
 	ctx->private_data = NULL;
 
-	owner = lp_parm_string(global_loadparm, NULL, "winsdb", "local_owner");
+	owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 	if (!owner) {
-		owner = iface_n_ip(0);
+		owner = iface_n_ip(lp_ctx, 0);
 		if (!owner) {
 			owner = "0.0.0.0";
 		}
