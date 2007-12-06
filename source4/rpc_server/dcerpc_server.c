@@ -486,7 +486,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	NTSTATUS status;
 
 	/* setup a bind_nak */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
@@ -596,7 +596,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
@@ -752,7 +752,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 
 	/* setup a alter_resp */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(global_loadparm));
+	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;

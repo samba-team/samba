@@ -63,6 +63,7 @@ NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
 */
 NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_dgram_packet *request,
+				      const char *my_netbios_name,
 				      const char *mailslot_name,
 				      struct nbt_ntlogon_packet *reply)
 {
@@ -80,7 +81,7 @@ NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	make_nbt_name_client(&myname, lp_netbios_name(global_loadparm));
+	make_nbt_name_client(&myname, my_netbios_name);
 
 	dest = socket_address_from_strings(tmp_ctx, 
 					   dgmsock->sock->backend_name, 
