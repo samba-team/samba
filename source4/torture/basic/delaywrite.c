@@ -629,6 +629,37 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 #define COMPARE_WRITE_TIME_LESS(given,correct) \
 	COMPARE_WRITE_TIME_CMP(given,correct,>=)
 
+#define COMPARE_ACCESS_TIME_CMP(given, correct, cmp) do { \
+	NTTIME g = (given).basic_info.out.access_time; \
+	NTTIME c = (correct).basic_info.out.access_time; \
+	if (g cmp c) { \
+		torture_result(tctx, TORTURE_FAIL, __location__": wrong access_time (%s)%s %s (%s)%s", \
+				#given, nt_time_string(tctx, g), \
+				#cmp, #correct, nt_time_string(tctx, c)); \
+		ret = false; \
+		goto done; \
+	} \
+} while (0)
+#define COMPARE_ACCESS_TIME_EQUAL(given,correct) \
+	COMPARE_ACCESS_TIME_CMP(given,correct,!=)
+#define COMPARE_ACCESS_TIME_GREATER(given,correct) \
+	COMPARE_ACCESS_TIME_CMP(given,correct,<=)
+#define COMPARE_ACCESS_TIME_LESS(given,correct) \
+	COMPARE_ACCESS_TIME_CMP(given,correct,>=)
+
+#define COMPARE_BOTH_TIMES_EQUAL(given,correct) do { \
+	COMPARE_ACCESS_TIME_EQUAL(given,correct); \
+	COMPARE_WRITE_TIME_EQUAL(given,correct); \
+} while (0)
+#define COMPARE_BOTH_TIMES_GEATER(given,correct) do { \
+	COMPARE_ACCESS_TIME_GREATER(given,correct); \
+	COMPARE_WRITE_TIME_GREATER(given,correct); \
+} while (0)
+#define COMPARE_BOTH_TIMES_LESS(given,correct) do { \
+	COMPARE_ACCESS_TIME_LESS(given,correct); \
+	COMPARE_WRITE_TIME_LESS(given,correct); \
+} while (0)
+
 #define GET_INFO_FILE(finfo) do { \
 	NTSTATUS _status; \
 	_status = smb_raw_fileinfo(cli->tree, tctx, &finfo); \
@@ -638,7 +669,8 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 			       nt_errstr(_status)); \
 		goto done; \
 	} \
-	torture_comment(tctx, "fileinfo: Write time (%s)\n", \
+	torture_comment(tctx, "fileinfo: Access(%s) Write(%s)\n", \
+			nt_time_string(tctx, finfo.basic_info.out.access_time), \
 			nt_time_string(tctx, finfo.basic_info.out.write_time)); \
 } while (0)
 #define GET_INFO_PATH(pinfo) do { \
@@ -650,13 +682,14 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 		ret = false; \
 		goto done; \
 	} \
-	torture_comment(tctx, "pathinfo: Write time (%s)\n", \
+	torture_comment(tctx, "pathinfo: Access(%s) Write(%s)\n", \
+			nt_time_string(tctx, pinfo.basic_info.out.access_time), \
 			nt_time_string(tctx, pinfo.basic_info.out.write_time)); \
 } while (0)
 #define GET_INFO_BOTH(finfo,pinfo) do { \
 	GET_INFO_FILE(finfo); \
 	GET_INFO_PATH(pinfo); \
-	COMPARE_WRITE_TIME_EQUAL(finfo,pinfo); \
+	COMPARE_BOTH_TIMES_EQUAL(finfo,pinfo); \
 } while (0)
 
 #define SET_INFO_FILE_EX(finfo, wrtime, tree, tfnum) do { \
