@@ -604,15 +604,30 @@ List all current items in the cache.
 <refsect2>
 <title>GETLOCALSID [DOMAIN]</title>
 
-<para>Print the SID of the specified domain, or if the parameter is
-omitted, the SID of the domain the local server is in.</para>
+<para>Prints the SID of the specified domain, or if the parameter is
+omitted, the SID of the local server.</para>
 
 </refsect2>
 
 <refsect2>
 <title>SETLOCALSID S-1-5-21-x-y-z</title>
 
-<para>Sets domain sid for the local server to the specified SID.</para>
+<para>Sets SID for the local server to the specified SID.</para>
+
+</refsect2>
+
+<refsect2>
+<title>GETDOMAINSID</title>
+
+<para>Prints the local machine SID and the SID of the current 
+domain.</para>
+
+</refsect2>
+
+<refsect2>
+<title>SETDOMAINSID</title>
+
+<para>Sets the SID of the current domain.</para>
 
 </refsect2>
 
