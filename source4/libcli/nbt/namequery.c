@@ -54,7 +54,7 @@ _PUBLIC_ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nb
 	packet->questions[0].question_class = NBT_QCLASS_IP;
 
 	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name,
-					   io->in.dest_addr, lp_nbt_port(global_loadparm));
+					   io->in.dest_addr, io->in.dest_port);
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
 				    io->in.timeout, io->in.retries, false);
