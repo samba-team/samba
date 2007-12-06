@@ -329,7 +329,7 @@ static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
 		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
-	if (wrapped.length < wrapped.length) {
+	if (wrapped.length < unwrapped.length) {
 		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 	}
 

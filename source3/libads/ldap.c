@@ -42,7 +42,7 @@
 #define LDAP_SERVER_TREE_DELETE_OID	"1.2.840.113556.1.4.805"
 
 static SIG_ATOMIC_T gotalarm;
-                                                                                                                   
+
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
