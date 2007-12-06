@@ -1117,7 +1117,7 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_master_key_set = 0;
 	(*db)->hdb_db = NULL;
 
-	nt_status = auth_system_session_info(*db, global_loadparm, &session_info);
+	nt_status = auth_system_session_info(*db, lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
