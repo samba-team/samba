@@ -697,10 +697,10 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	union smb_setfileinfo sfinfo; \
 	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO; \
 	sfinfo.basic_info.in.file.fnum = tfnum; \
-	sfinfo.basic_info.in.create_time = (finfo).basic_info.out.create_time; \
-	sfinfo.basic_info.in.access_time = (finfo).basic_info.out.access_time; \
+	sfinfo.basic_info.in.create_time = 0; \
+	sfinfo.basic_info.in.access_time = 0; \
 	unix_to_nt_time(&sfinfo.basic_info.in.write_time, (wrtime)); \
-	sfinfo.basic_info.in.change_time = finfo1.basic_info.out.change_time; \
+	sfinfo.basic_info.in.change_time = 0; \
 	sfinfo.basic_info.in.attrib = finfo1.basic_info.out.attrib; \
 	_status = smb_raw_setfileinfo(tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(_status)) { \
