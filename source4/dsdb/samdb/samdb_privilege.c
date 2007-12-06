@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"

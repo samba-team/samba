@@ -28,7 +28,7 @@
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
 
 extern const char *user_attrs[];

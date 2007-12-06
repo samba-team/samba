@@ -17,6 +17,7 @@ PRIVATE_DEPENDENCIES = auth_session
 PRIVATE_PROTO_HEADER = auth_sam.h
 OBJ_FILES = sam.o auth_sam_reply.o ntlm_check.o 
 PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB
+PRIVATE_DEPENDENCIES = LDAP_ENCODE
 
 #######################
 # Start MODULE auth_sam

@@ -31,7 +31,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/common/flags.h"
 #include "dsdb/samdb/samdb.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
 #include "rpc_server/samr/proto.h"
 #include "util/util_ldb.h"
