@@ -29,6 +29,7 @@
 #include "libcli/composite/composite.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
+#include "param/param.h"
 
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
 
@@ -330,7 +331,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	state->wrepl_socket	= wrepl_socket;
 
 	if (!our_ip) {
-		our_ip = iface_best_ip(peer_ip);
+		our_ip = iface_best_ip(global_loadparm, peer_ip);
 	}
 
 	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 

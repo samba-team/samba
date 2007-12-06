@@ -38,7 +38,7 @@ static void nbtd_task_init(struct task_server *task)
 	struct nbtd_server *nbtsrv;
 	NTSTATUS status;
 
-	if (iface_count() == 0) {
+	if (iface_count(task->lp_ctx) == 0) {
 		task_server_terminate(task, "nbtd: no network interfaces configured");
 		return;
 	}

@@ -77,7 +77,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	/* favor a local address if possible */
 	state->reply_addr = NULL;
 	for (i=0;i<q->out.num_addrs;i++) {
-		if (iface_is_local(q->out.reply_addrs[i])) {
+		if (iface_is_local(global_loadparm, q->out.reply_addrs[i])) {
 			state->reply_addr = talloc_steal(state, 
 							 q->out.reply_addrs[i]);
 			break;

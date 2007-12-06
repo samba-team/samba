@@ -1035,7 +1035,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, struct loadparm_contex
 
 	owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 	if (!owner) {
-		owner = iface_n_ip(0);
+		owner = iface_n_ip(lp_ctx, 0);
 	}
 
 	h->local_owner = talloc_strdup(h, owner);

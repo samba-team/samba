@@ -187,7 +187,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 					       lp_workgroup(lp_ctx));
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
-	pdc_ip           = iface_best_ip(src_address);
+	pdc_ip           = iface_best_ip(lp_ctx, src_address);
 
 	ZERO_STRUCTP(netlogon);
 

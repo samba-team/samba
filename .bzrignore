@@ -208,7 +208,7 @@ source/lib/ldb/tdbtest.ldb
 libtdb.so.*
 libtalloc.so.*
 source/lib/registry/tests/proto.h
-tmpccache
+source/libcli/ldap/ldap_ndr.h
 source/tdbtest.ldb
 source/tdbtest.ldb.2
 source/templates.ldb

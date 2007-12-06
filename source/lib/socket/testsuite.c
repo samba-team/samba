@@ -48,7 +48,7 @@ static bool test_udp(struct torture_context *tctx)
 	talloc_steal(mem_ctx, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
-						iface_best_ip("127.0.0.1"), 0);
+						iface_best_ip(tctx->lp_ctx, "127.0.0.1"), 0);
 
 	torture_assert(tctx, localhost, "Localhost not found");
 
@@ -56,10 +56,11 @@ static bool test_udp(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "listen on socket 1");
 
 	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	torture_assert(tctx, srv_addr != NULL && strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) == 0,
+	torture_assert(tctx, srv_addr != NULL && 
+		       strcmp(srv_addr->addr, iface_best_ip(tctx->lp_ctx, "127.0.0.1")) == 0,
 				   talloc_asprintf(tctx, 
 		"Expected server address of %s but got %s",
-		      iface_best_ip("127.0.0.1"), srv_addr ? srv_addr->addr : NULL));
+		      iface_best_ip(tctx->lp_ctx, "127.0.0.1"), srv_addr ? srv_addr->addr : NULL));
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);
 
@@ -129,7 +130,7 @@ static bool test_tcp(struct torture_context *tctx)
 	talloc_steal(mem_ctx, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
-						iface_best_ip("127.0.0.1"), 0);
+						iface_best_ip(tctx->lp_ctx, "127.0.0.1"), 0);
 	torture_assert(tctx, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
@@ -139,7 +140,7 @@ static bool test_tcp(struct torture_context *tctx)
 	torture_assert(tctx, srv_addr && srv_addr->addr, 
 				   "Unexpected socket_get_my_addr NULL\n");
 
-	torture_assert_str_equal(tctx, srv_addr->addr, iface_best_ip("127.0.0.1"), 
+	torture_assert_str_equal(tctx, srv_addr->addr, iface_best_ip(tctx->lp_ctx, "127.0.0.1"), 
 			"Unexpected server address");
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);

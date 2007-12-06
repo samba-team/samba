@@ -226,7 +226,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 
 	lp_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
 
-	address = iface_n_ip(0);
+	address = iface_n_ip(tctx->lp_ctx, 0);
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);
 	status = smbsrv_add_socket(p->conn->event_ctx, tctx->lp_ctx, &single_ops, address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
