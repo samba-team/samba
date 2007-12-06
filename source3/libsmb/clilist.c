@@ -218,7 +218,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int param_len, data_len;
 	uint16 setup;
-	char param[1024];
+	char *param;
 	const char *mnt;
 	uint32 resume_key = 0;
 	DATA_BLOB last_name_raw = data_blob(NULL, 0);
@@ -232,9 +232,16 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	while (ff_eos == 0) {
+		size_t nlen = 2*(strlen(mask)+1);
+
 		loop_count++;
 		if (loop_count > 200) {
 			DEBUG(0,("Error: Looping in FIND_NEXT??\n"));
+			break;
+		}
+
+		param = SMB_MALLOC(12+nlen+last_name_raw.length+2);
+		if (!param) {
 			break;
 		}
 
@@ -246,8 +253,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,6,info_level);
 			SIVAL(param,8,0);
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, sizeof(param)-12,
-					 STR_TERMINATE);
+			p += clistr_push(cli, param+12, mask,
+					 nlen, STR_TERMINATE);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -260,11 +267,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			   can miss filenames. Use last filename continue instead. JRA */
 			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			p = param+12;
-			if (last_name_raw.length && (last_name_raw.length < (sizeof(param)-12))) {
+			if (last_name_raw.length) {
 				memcpy(p, last_name_raw.data, last_name_raw.length);
 				p += last_name_raw.length;
 			} else {
-				p += clistr_push(cli, param+12, mask, sizeof(param)-12, STR_TERMINATE);
+				p += clistr_push(cli, param+12, mask,
+						nlen, STR_TERMINATE);
 			}
 		}
 
@@ -283,8 +291,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				    cli->max_xmit	    /* data, length, max. */
 #endif
 				    )) {
+			SAFE_FREE(param);
 			break;
 		}
+
+		SAFE_FREE(param);
 
 		if (!cli_receive_trans(cli, SMBtrans2,
 				       &rparam, &param_len,
