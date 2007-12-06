@@ -3937,6 +3937,7 @@ static int do_message_op(void)
  int main(int argc,char *argv[])
 {
 	pstring base_directory;
+	int len = 0;
 	int opt;
 	pstring query_host;
 	bool message = False;
@@ -4148,6 +4149,12 @@ static int do_message_op(void)
 			d_printf("\n%s: Not enough '\\' characters in service\n",service);
 			poptPrintUsage(pc, stderr, 0);
 			exit(1);
+		}
+		/* Remove trailing slashes */
+		len = strlen(service);
+		while(len > 0 && service[len - 1] == '\\') {
+			--len;
+			service[len] = '\0';
 		}
 	}
 	
