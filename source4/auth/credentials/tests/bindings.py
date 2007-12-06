@@ -84,9 +84,10 @@ class CredentialsTests(unittest.TestCase):
         self.creds.guess()
 
     def test_authentication_requested(self):
+        self.creds.set_username("")
         self.assertFalse(self.creds.authentication_requested())
+        self.creds.set_username("somebody")
+        self.assertTrue(self.creds.authentication_requested())
 
     def test_wrong_password(self):
-        self.assertTrue(self.creds.wrong_password())
-        self.assertTrue(self.creds.wrong_password())
         self.assertFalse(self.creds.wrong_password())
