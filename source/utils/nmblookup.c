@@ -179,7 +179,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static bool process_one(const char *name)
+static bool process_one(const char *name, int nbt_port)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
@@ -235,17 +235,17 @@ static bool process_one(const char *name)
 	}
 
 	if (options.broadcast_address) {
-		status = do_node_query(nbtsock, options.broadcast_address, lp_nbt_port(global_loadparm),
+		status = do_node_query(nbtsock, options.broadcast_address, nbt_port,
 				       node_name, node_type, true);
 	} else if (options.unicast_address) {
 		status = do_node_query(nbtsock, options.unicast_address, 
-				       lp_nbt_port(global_loadparm), node_name, node_type, false);
+				       nbt_port, node_name, node_type, false);
 	} else {
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
 			const char *bcast = iface_n_bcast(i);
 			if (bcast == NULL) continue;
-			status = do_node_query(nbtsock, bcast, lp_nbt_port(global_loadparm),
+			status = do_node_query(nbtsock, bcast, nbt_port, 
 					       node_name, node_type, true);
 			if (NT_STATUS_IS_OK(status)) break;
 		}
@@ -353,7 +353,7 @@ int main(int argc, const char *argv[])
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(name);
+		ret &= process_one(name, lp_nbt_port(global_loadparm));
 	}
 
 	poptFreeContext(pc);
