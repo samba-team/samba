@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-extern file_info def_finfo;
-
 /****************************************************************************
  Calculate a safe next_entry_offset.
 ****************************************************************************/
@@ -44,7 +42,8 @@ static size_t calc_next_entry_offset(const char *base, const char *pdata_end)
  by NT and 2 is used by OS/2
 ****************************************************************************/
 
-static size_t interpret_long_filename(struct cli_state *cli,
+static size_t interpret_long_filename(TALLOC_CTX *ctx,
+					struct cli_state *cli,
 					int level,
 					const char *p,
 					const char *pdata_end,
@@ -52,20 +51,16 @@ static size_t interpret_long_filename(struct cli_state *cli,
 					uint32 *p_resume_key,
 					DATA_BLOB *p_last_name_raw)
 {
-	file_info finfo2;
 	int len;
+	size_t ret;
 	const char *base = p;
 
 	data_blob_free(p_last_name_raw);
 
-	if (!finfo) {
-		finfo = &finfo2;
-	}
-
 	if (p_resume_key) {
 		*p_resume_key = 0;
 	}
-	memcpy(finfo,&def_finfo,sizeof(*finfo));
+	ZERO_STRUCTP(finfo);
 	finfo->cli = cli;
 
 	switch (level) {
@@ -90,10 +85,16 @@ static size_t interpret_long_filename(struct cli_state *cli,
 			   important to cope with the differences
 			   between win2000 and win9x for this call
 			   (tridge) */
-			p += clistr_pull(cli, finfo->name, p,
-					 sizeof(finfo->name),
-					 len+2,
-					 STR_TERMINATE);
+			ret = clistr_pull_talloc(ctx,
+						cli,
+						&finfo->name,
+						p,
+						len+2,
+						STR_TERMINATE);
+			if (ret == (size_t)-1) {
+				return pdata_end - base;
+			}
+			p += ret;
 			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */
@@ -113,10 +114,16 @@ static size_t interpret_long_filename(struct cli_state *cli,
 			if (p + len + 1 > pdata_end) {
 				return pdata_end - base;
 			}
-			p += clistr_pull(cli, finfo->name, p,
-					 sizeof(finfo->name),
-					 len,
-					 STR_NOALIGN);
+			ret = clistr_pull_talloc(ctx,
+						cli,
+						&finfo->name,
+						p,
+					 	len,
+						STR_NOALIGN);
+			if (ret == (size_t)-1) {
+				return pdata_end - base;
+			}
+			p += ret;
 			return PTR_DIFF(p, base) + 1;
 
 		case 260: /* NT uses this, but also accepts 2 */
@@ -168,9 +175,15 @@ static size_t interpret_long_filename(struct cli_state *cli,
 			if (p + namelen < p || p + namelen > pdata_end) {
 				return pdata_end - base;
 			}
-			clistr_pull(cli, finfo->name, p,
-				    sizeof(finfo->name),
-				    namelen, 0);
+			ret = clistr_pull_talloc(ctx,
+						cli,
+						&finfo->name,
+						p,
+				    		namelen,
+						0);
+			if (ret == (size_t)-1) {
+				return pdata_end - base;
+			}
 
 			/* To be robust in the face of unicode conversion failures
 			   we need to copy the raw bytes of the last name seen here.
@@ -221,6 +234,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	char *param;
 	const char *mnt;
 	uint32 resume_key = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB last_name_raw = data_blob(NULL, 0);
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -228,6 +242,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	mask = SMB_STRDUP(Mask);
 	if (!mask) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -292,6 +307,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 #endif
 				    )) {
 			SAFE_FREE(param);
+			TALLOC_FREE(frame);
 			break;
 		}
 
@@ -352,7 +368,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				/* Last entry - fixup the last offset length. */
 				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
 			}
-			p2 += interpret_long_filename(cli,
+			p2 += interpret_long_filename(frame,
+							cli,
 							info_level,
 							p2,
 							rdata_end,
@@ -417,14 +434,15 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
                 /* no connection problem.  let user function add each entry */
 		rdata_end = dirlist + dirlist_len;
                 for (p=dirlist,i=0;i<total_received;i++) {
-                        p += interpret_long_filename(cli,
+                        p += interpret_long_filename(frame,
+							cli,
 							info_level,
 							p,
 							rdata_end,
 							&finfo,
 							NULL,
 							NULL);
-                        fn( mnt,&finfo, Mask, state );
+                        fn(mnt,&finfo, Mask, state);
                 }
         }
 
@@ -432,6 +450,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	SAFE_FREE(dirlist);
 	data_blob_free(&last_name_raw);
 	SAFE_FREE(mask);
+	TALLOC_FREE(frame);
 	return(total_received);
 }
 
@@ -440,10 +459,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
  The length of the structure is returned.
 ****************************************************************************/
 
-static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
+static int interpret_short_filename(TALLOC_CTX *ctx,
+				struct cli_state *cli,
+				char *p,
+				file_info *finfo)
 {
-
-	*finfo = def_finfo;
+	ZERO_STRUCTP(finfo);
 
 	finfo->cli = cli;
 	finfo->mode = CVAL(p,21);
@@ -454,15 +475,20 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
-	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
-	if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
-		strncpy(finfo->short_name,finfo->name, sizeof(finfo->short_name)-1);
-		finfo->short_name[sizeof(finfo->short_name)-1] = '\0';
+	clistr_pull_talloc(ctx,
+			cli,
+			&finfo->name,
+			p+30,
+			12,
+			STR_ASCII);
+	if (!finfo->name) {
+		finfo->name = talloc_strdup(ctx, finfo->short_name);
+	} else if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
+		finfo->name = talloc_strdup(ctx, finfo->short_name);
 	}
 
 	return(DIR_STRUCT_SIZE);
 }
-
 
 /****************************************************************************
  Do a directory listing, calling fn on each file found.
@@ -482,6 +508,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int i;
 	char *dirlist = NULL;
 	char *mask = NULL;
+	TALLOC_CTX *frame = NULL;
 
 	ZERO_ARRAY(status);
 
@@ -507,7 +534,9 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
 
-		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE);
+		p += clistr_push(cli, p, first?mask:"",
+				cli->bufsize - PTR_DIFF(p,cli->outbuf),
+				STR_TERMINATE);
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);
@@ -577,11 +606,13 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
 	}
 
+	frame = talloc_stackframe();
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
-		p += interpret_short_filename(cli, p,&finfo);
+		p += interpret_short_filename(frame,cli, p,&finfo);
 		fn("\\", &finfo, Mask, state);
 	}
+	TALLOC_FREE(frame);
 
 	SAFE_FREE(mask);
 	SAFE_FREE(dirlist);
