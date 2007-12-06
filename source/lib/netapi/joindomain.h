@@ -27,3 +27,6 @@ WERROR NetUnjoinDomain(const char *server_name,
 		       const char *account,
 		       const char *password,
 		       uint32_t unjoin_flags);
+WERROR NetGetJoinInformation(const char *server_name,
+			     const char **name_buffer,
+			     uint16_t *name_type);
