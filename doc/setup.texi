@@ -107,7 +107,7 @@ SRV-record for your realm, or your Kerberos server has DNS CNAME
 @section Creating the database
 
 The database library will look for the database in the directory
-@file{/var/heimdal}, so you should probably create that directory.
+@file{@value{dbdir}}, so you should probably create that directory.
 Make sure the directory has restrictive permissions.
 
 @example
