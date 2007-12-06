@@ -1353,6 +1353,16 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
+bin/netapi.@SHLIBEXT@: $(BINARY_PREREQS) $(NETAPI_OBJ)
+	@echo Linking shared library $@
+	@$(SHLD_DSO) $(NETAPI_OBJ) $(LIBS) \
+		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS) \
+		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+
+bin/netapi.a: $(BINARY_PREREQS) $(NETAPI_OBJ)
+	@echo Linking non-shared library $@
+	@-$(AR) -rc $@ $(NETAPI_OBJ)
+
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LIBS) \
