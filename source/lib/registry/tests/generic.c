@@ -52,7 +52,7 @@ static bool test_reg_val_data_string_dword(struct torture_context *ctx)
 static bool test_reg_val_data_string_sz(struct torture_context *ctx)
 {
 	DATA_BLOB db;
-	db.length = convert_string_talloc(ctx, CH_UNIX, CH_UTF16,
+	db.length = convert_string_talloc(ctx, global_smb_iconv_convenience, CH_UNIX, CH_UTF16,
 					  "bla", 3, (void **)&db.data);
 	torture_assert_str_equal(ctx, "bla",
 				 reg_val_data_string(ctx, REG_SZ, db),
@@ -87,7 +87,7 @@ static bool test_reg_val_data_string_empty(struct torture_context *ctx)
 static bool test_reg_val_description(struct torture_context *ctx)
 {
 	DATA_BLOB data;
-	data.length = convert_string_talloc(ctx, CH_UNIX, CH_UTF16,
+	data.length = convert_string_talloc(ctx, global_smb_iconv_convenience, CH_UNIX, CH_UTF16,
 					    "stationary traveller",
 					    strlen("stationary traveller"),
 					    (void **)&data.data);
@@ -101,7 +101,7 @@ static bool test_reg_val_description(struct torture_context *ctx)
 static bool test_reg_val_description_nullname(struct torture_context *ctx)
 {
 	DATA_BLOB data;
-	data.length = convert_string_talloc(ctx, CH_UNIX, CH_UTF16,
+	data.length = convert_string_talloc(ctx, global_smb_iconv_convenience, CH_UNIX, CH_UTF16,
 					    "west berlin",
 					    strlen("west berlin"),
 					    (void **)&data.data);

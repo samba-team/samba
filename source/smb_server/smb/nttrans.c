@@ -372,7 +372,7 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 		ssize_t len;
 
 		SIVAL(p, 4, info->nttrans.out.changes[i].action);
-		len = push_string(p + 12, info->nttrans.out.changes[i].name.s, 
+		len = push_string(global_smb_iconv_convenience, p + 12, info->nttrans.out.changes[i].name.s, 
 				  op->trans->out.params.length - 
 				  (p+12 - op->trans->out.params.data), STR_UNICODE);
 		SIVAL(p, 8, len);

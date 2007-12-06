@@ -82,7 +82,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
-						    chset, CH_UNIX, 
+						    global_smb_iconv_convenience, chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len2 + c_len_term)*byte_mul,
 						    (void **)&as);
@@ -119,6 +119,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    global_smb_iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
@@ -157,6 +158,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    global_smb_iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
@@ -191,6 +193,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    global_smb_iconv_convenience,
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len3 + c_len_term)*byte_mul,
@@ -223,6 +226,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    global_smb_iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    len3,
@@ -243,7 +247,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
 		ret = convert_string_talloc(ndr->current_mem_ctx,
-					    chset, CH_UNIX, 
+					    global_smb_iconv_convenience, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1,
 					    (void **)&as);
@@ -260,6 +264,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		len1 = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
 		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
 		ret = convert_string_talloc(ndr->current_mem_ctx,
+					    global_smb_iconv_convenience,
 					    chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*byte_mul,
@@ -285,6 +290,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
 			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    global_smb_iconv_convenience,
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    len1,
@@ -349,7 +355,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	       LIBNDR_FLAG_STR_FIXLEN32))) {
 		s_len++;
 	}
-	d_len = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len, (void **)&dest);
+	d_len = convert_string_talloc(ndr, global_smb_iconv_convenience, CH_UNIX, chset, s, s_len, (void **)&dest);
 	if (d_len == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
@@ -683,7 +689,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
-	ret = convert_string_talloc(ndr->current_mem_ctx,
+	ret = convert_string_talloc(ndr->current_mem_ctx, global_smb_iconv_convenience,
 				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    length*byte_mul,
@@ -708,7 +714,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	required = byte_mul * length;
 	
 	NDR_PUSH_NEED_BYTES(ndr, required);
-	ret = convert_string(CH_UNIX, chset, 
+	ret = convert_string(global_smb_iconv_convenience, CH_UNIX, chset, 
 			     var, strlen(var),
 			     ndr->data+ndr->offset, required);
 	if (ret == -1) {

@@ -36,7 +36,7 @@ static WERROR preg_read_utf16(int fd, char *c)
 	if (read(fd, &v, 2) < 2) {
 		return WERR_GENERAL_FAILURE;
 	}
-	push_codepoint(c, v);
+	push_codepoint(global_smb_iconv_convenience, c, v);
 	return WERR_OK;
 }
 

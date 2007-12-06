@@ -181,7 +181,7 @@ uint32_t pvfs_name_hash(const char *key, size_t length)
 
 	while (*key && length--) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(key, &c_size);
+		codepoint_t c = next_codepoint(global_smb_iconv_convenience, key, &c_size);
 		c = toupper_w(c);
                 value *= fnv1_prime;
                 value ^= (uint32_t)c;

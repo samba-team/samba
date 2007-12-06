@@ -64,7 +64,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, global_smb_iconv_convenience, (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -75,7 +75,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ascii_talloc(pointers, (char **)&pointers[i].data, s);
+			n = push_ascii_talloc(pointers, global_smb_iconv_convenience, (char **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -87,7 +87,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			n = va_arg(ap, int);
 			intargs[i] = n;
 			s = va_arg(ap, char *);
-			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, global_smb_iconv_convenience, (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -236,7 +236,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return false;
 
 				if (0 < len1) {
-					pull_string(p, blob->data + ptr, sizeof(p), 
+					pull_string(global_smb_iconv_convenience, p, blob->data + ptr, sizeof(p), 
 						    len1, STR_UNICODE|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -266,7 +266,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return false;	
 
 				if (0 < len1) {
-					pull_string(p, blob->data + ptr, sizeof(p), 
+					pull_string(global_smb_iconv_convenience, p, blob->data + ptr, sizeof(p), 
 						    len1, STR_ASCII|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -320,7 +320,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			if (blob->data + head_ofs < (uint8_t *)head_ofs || blob->data + head_ofs < blob->data)
 				return false;	
 	
-			head_ofs += pull_string(p, blob->data+head_ofs, sizeof(p), 
+			head_ofs += pull_string(global_smb_iconv_convenience, p, blob->data+head_ofs, sizeof(p), 
 						blob->length - head_ofs, 
 						STR_ASCII|STR_TERMINATE);
 			if (strcmp(s, p) != 0) {

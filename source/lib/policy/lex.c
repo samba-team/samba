@@ -600,7 +600,7 @@ static bool utf16 = false;
 		if (fread(&v, 2, 1, yyin) < 1) \
 			result = YY_NULL; \
 		else \
-			result = push_codepoint(buf, v); \
+			result = push_codepoint(global_smb_iconv_convenience, buf, v); \
 	} else { \
 		int c = getc(yyin); \
 		result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \

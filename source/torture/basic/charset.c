@@ -55,7 +55,7 @@ static NTSTATUS unicode_open(struct torture_context *tctx,
 	}
 	SSVAL(ucs_name, i*2, 0);
 
-	i = convert_string_talloc(ucs_name, CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
+	i = convert_string_talloc(ucs_name, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
 	if (i == -1) {
 		torture_comment(tctx, "Failed to convert UCS2 Name into unix - convert_string_talloc() failure\n");
 		talloc_free(ucs_name);

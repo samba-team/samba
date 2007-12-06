@@ -71,6 +71,8 @@ typedef struct smb_iconv_s {
 #define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
 
 struct loadparm_context;
+struct smb_iconv_convenience;
+extern struct smb_iconv_convenience *global_smb_iconv_convenience;
 
 #include "lib/charset/charset_proto.h"
 

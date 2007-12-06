@@ -4,6 +4,7 @@
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -167,9 +168,10 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
-		      void const *src, size_t srclen, 
-		      void *dest, size_t destlen)
+_PUBLIC_ ssize_t convert_string(struct smb_iconv_convenience *ic,
+				charset_t from, charset_t to,
+				void const *src, size_t srclen, 
+				void *dest, size_t destlen)
 {
 	size_t i_len, o_len;
 	size_t retval;
@@ -180,7 +182,7 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 	if (srclen == (size_t)-1)
 		srclen = strlen(inbuf)+1;
 
-	descriptor = get_conv_handle(global_smb_iconv_convenience, from, to);
+	descriptor = get_conv_handle(ic, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
@@ -202,12 +204,12 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 				reason="No more room"; 
 				if (from == CH_UNIX) {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
-						 charset_name(global_smb_iconv_convenience, from), charset_name(global_smb_iconv_convenience, to),
+						 charset_name(ic, from), charset_name(ic, to),
 						 (int)srclen, (int)destlen, 
 						 (const char *)src));
 				} else {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
-						 charset_name(global_smb_iconv_convenience, from), charset_name(global_smb_iconv_convenience, to),
+						 charset_name(ic, from), charset_name(ic, to),
 						 (int)srclen, (int)destlen));
 				}
 			       return -1;
@@ -288,8 +290,11 @@ convert:
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			      void const *src, size_t srclen, void **dest)
+_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+				       struct smb_iconv_convenience *ic, 
+				       charset_t from, charset_t to, 
+				       void const *src, size_t srclen, 
+				       void **dest)
 {
 	smb_iconv_t descriptor;
 
@@ -298,13 +303,13 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_
 	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
 		return (size_t)-1;
 
-	descriptor = get_conv_handle(global_smb_iconv_convenience, from, to);
+	descriptor = get_conv_handle(ic, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
 		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
-			  charset_name(global_smb_iconv_convenience, from), 
-			  charset_name(global_smb_iconv_convenience, to)));
+			  charset_name(ic, from), 
+			  charset_name(ic, to)));
 		return -1;
 	}
 
@@ -325,7 +330,8 @@ _PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_
  * @param dest_len the maximum length in bytes allowed in the
  * destination.  If @p dest_len is -1 then no maximum is used.
  **/
-static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
+static ssize_t push_ascii(struct smb_iconv_convenience *ic, 
+			  void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len;
 	ssize_t ret;
@@ -335,7 +341,7 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
 		if (tmpbuf == NULL) {
 			return -1;
 		}
-		ret = push_ascii(dest, tmpbuf, dest_len, flags & ~STR_UPPER);
+		ret = push_ascii(ic, dest, tmpbuf, dest_len, flags & ~STR_UPPER);
 		talloc_free(tmpbuf);
 		return ret;
 	}
@@ -345,7 +351,7 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
-	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
+	return convert_string(ic, CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
 /**
@@ -357,11 +363,11 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-_PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, ic, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
 }
 
 
@@ -380,7 +386,7 @@ _PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
  * @param src_len is the length of the source area in bytes.
  * @returns the number of bytes occupied by the string in @p src.
  **/
-static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static ssize_t pull_ascii(struct smb_iconv_convenience *ic, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -395,7 +401,7 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
 		}
 	}
 
-	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(ic, CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
 
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
@@ -419,7 +425,8 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
  * @param dest_len is the maximum length allowed in the
  * destination. If dest_len is -1 then no maxiumum is used.
  **/
-static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
+static ssize_t push_ucs2(struct smb_iconv_convenience *ic, 
+			 void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
 	size_t src_len = strlen(src);
@@ -430,7 +437,7 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
 		if (tmpbuf == NULL) {
 			return -1;
 		}
-		ret = push_ucs2(dest, tmpbuf, dest_len, flags & ~STR_UPPER);
+		ret = push_ucs2(ic, dest, tmpbuf, dest_len, flags & ~STR_UPPER);
 		talloc_free(tmpbuf);
 		return ret;
 	}
@@ -448,7 +455,7 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	ret = convert_string(CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
+	ret = convert_string(ic, CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
 	if (ret == (size_t)-1) {
 		return 0;
 	}
@@ -468,11 +475,11 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-_PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+_PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, void **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, dest);
+	return convert_string_talloc(ctx, ic, CH_UNIX, CH_UTF16, src, src_len, dest);
 }
 
 
@@ -484,11 +491,11 @@ _PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, ic, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
 }
 
 /**
@@ -502,7 +509,7 @@ _PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  The resulting string in "dest" is always null terminated.
 **/
 
-static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static size_t pull_ucs2(struct smb_iconv_convenience *ic, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -524,7 +531,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
-	ret = convert_string(CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(ic, CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
 
@@ -539,11 +546,11 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, ic, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -554,11 +561,11 @@ _PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
+_PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const void *src)
 {
 	size_t src_len = utf16_len(src);
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, ic, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -569,11 +576,11 @@ _PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, ic, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
@@ -590,12 +597,13 @@ _PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  is -1 then no maxiumum is used.
 **/
 
-_PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
+_PUBLIC_ ssize_t push_string(struct smb_iconv_convenience *ic, 
+			     void *dest, const char *src, size_t dest_len, int flags)
 {
 	if (flags & STR_ASCII) {
-		return push_ascii(dest, src, dest_len, flags);
+		return push_ascii(ic, dest, src, dest_len, flags);
 	} else if (flags & STR_UNICODE) {
-		return push_ucs2(dest, src, dest_len, flags);
+		return push_ucs2(ic, dest, src, dest_len, flags);
 	} else {
 		smb_panic("push_string requires either STR_ASCII or STR_UNICODE flag to be set");
 		return -1;
@@ -617,12 +625,13 @@ _PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int f
  The resulting string in "dest" is always null terminated.
 **/
 
-_PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+_PUBLIC_ ssize_t pull_string(struct smb_iconv_convenience *ic,
+			     char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	if (flags & STR_ASCII) {
-		return pull_ascii(dest, src, dest_len, src_len, flags);
+		return pull_ascii(ic, dest, src, dest_len, src_len, flags);
 	} else if (flags & STR_UNICODE) {
-		return pull_ucs2(dest, src, dest_len, src_len, flags);
+		return pull_ucs2(ic, dest, src, dest_len, src_len, flags);
 	} else {
 		smb_panic("pull_string requires either STR_ASCII or STR_UNICODE flag to be set");
 		return -1;
@@ -639,7 +648,8 @@ _PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_
 
   return INVALID_CODEPOINT if the next character cannot be converted
 */
-_PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
+_PUBLIC_ codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 
+				    const char *str, size_t *size)
 {
 	/* it cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -660,7 +670,7 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
-	descriptor = get_conv_handle(global_smb_iconv_convenience, CH_UNIX, CH_UTF16);
+	descriptor = get_conv_handle(ic, CH_UNIX, CH_UTF16);
 	if (descriptor == (smb_iconv_t)-1) {
 		*size = 1;
 		return INVALID_CODEPOINT;
@@ -711,7 +721,8 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
   return the number of bytes occupied by the CH_UNIX character, or
   -1 on failure
 */
-_PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
+_PUBLIC_ ssize_t push_codepoint(struct smb_iconv_convenience *ic, 
+				char *str, codepoint_t c)
 {
 	smb_iconv_t descriptor;
 	uint8_t buf[4];
@@ -723,7 +734,7 @@ _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 		return 1;
 	}
 
-	descriptor = get_conv_handle(global_smb_iconv_convenience, 
+	descriptor = get_conv_handle(ic, 
 				     CH_UTF16, CH_UNIX);
 	if (descriptor == (smb_iconv_t)-1) {
 		return -1;

@@ -153,7 +153,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(ctx, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
+	ret = convert_string_talloc(ctx, global_smb_iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -175,7 +175,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
+	ret = convert_string(global_smb_iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
