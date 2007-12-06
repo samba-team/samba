@@ -32,6 +32,15 @@ static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 	union wkssvc_NetWkstaInfo info;
 	const char *server_name;
 
+	if (argc > 2) {
+		printf("usage: %s <level>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 1) {
+		level = atoi(argv[1]);
+	}
+
 	server_name = cli->cli->desthost;
 
 	status = rpccli_wkssvc_NetWkstaGetInfo(cli, mem_ctx,
