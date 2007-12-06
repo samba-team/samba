@@ -78,6 +78,7 @@ ${kadmin} -l \
     ${R} || exit 1
 
 ${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
+${kadmin} -l add -p foo --use-defaults bar@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
@@ -94,14 +95,30 @@ fi
 
 trap "kill ${kdcpid} ${kadmpid}" EXIT
 
-echo "kinit"
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
 ${kinit} --password-file=${objdir}/foopassword \
-    -S kadmin/admin@${R} foo/admin@${R} || exit 1
+    -S kadmin/admin@${R} bar@${R} || exit 1
+echo "kadmin"
+env KRB5CCNAME=${cache} \
+${kadmin} -p bar@${R} add -p foo --use-defaults kaka2@${R} || 
+	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+${kadmin} -l get kaka2@${R} > /dev/null ||
+	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
 ${kadmind} -d &
 kadmpid=$!
 sleep 1
+
+echo "kinit (admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} foo/admin@${R} || exit 1
 
 echo "kadmin"
 env KRB5CCNAME=${cache} \
