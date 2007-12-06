@@ -30,7 +30,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "lib/util/util_tdb.h"
 #include "lib/util/util_ldb.h"
-#include "dsdb/samdb/samdb.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static struct tdb_wrap *tdb;
 
@@ -148,6 +148,8 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	int ldb_ret;
 	const char *attrs[] = { "objectSid", NULL };
 	struct dom_sid *result = NULL;
+	const struct ldb_val *v;
+	enum ndr_err_code ndr_err;
 
 	ldb = secrets_db_connect(mem_ctx, lp_ctx);
 	if (ldb == NULL) {
@@ -180,10 +182,22 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
-	if (result == NULL) {
+	v = ldb_msg_find_ldb_val(msgs[0], "objectSid");
+	if (v == NULL) {
 		DEBUG(0, ("Domain object for %s does not contain a SID!\n",
 			  domain));
+		return NULL;
+	}
+	result = talloc(mem_ctx, struct dom_sid);
+	if (result == NULL) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	ndr_err = ndr_pull_struct_blob(v, result, result,
+				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(result);
 		talloc_free(ldb);
 		return NULL;
 	}
