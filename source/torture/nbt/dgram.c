@@ -124,7 +124,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	make_nbt_name_client(&myname, TEST_NAME);
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
-					   address, 0);
+					   address, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, dest != NULL, "Error getting address");
 
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
@@ -204,7 +204,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	make_nbt_name_client(&myname, TEST_NAME);
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
-					   address, 0);
+					   address, lp_dgram_port(tctx->lp_ctx));
 
 	torture_assert(tctx, dest != NULL, "Error getting address");
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
@@ -323,7 +323,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	make_nbt_name_client(&myname, TEST_NAME);
 
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
-					   address, 0);
+					   address, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, dest != NULL, "Error getting address");
 	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
 					     &name, dest, &myname, &logon);
