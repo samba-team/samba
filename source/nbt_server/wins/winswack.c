@@ -26,6 +26,7 @@
 #include "nbt_server/wins/winsserver.h"
 #include "system/time.h"
 #include "libcli/composite/composite.h"
+#include "param/param.h"
 
 struct wins_challenge_state {
 	struct wins_challenge_io *io;
@@ -46,6 +47,7 @@ static void wins_challenge_handler(struct nbt_name_request *req)
 		if (state->current_address < state->io->in.num_addresses) {
 			struct nbtd_interface *iface;
 
+			state->query.in.dest_port = lp_nbt_port(global_loadparm);
 			state->query.in.dest_addr = state->io->in.addresses[state->current_address];
 			
 			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, true);
@@ -103,6 +105,7 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 
 	/* setup a name query to the first address */
 	state->query.in.name        = *state->io->in.name;
+	state->query.in.dest_port   = lp_nbt_port(global_loadparm);
 	state->query.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->query.in.broadcast   = false;
 	state->query.in.wins_lookup = true;

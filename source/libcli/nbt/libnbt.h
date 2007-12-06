@@ -128,6 +128,7 @@ struct nbt_name_query {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
+		uint16_t dest_port;
 		bool broadcast;
 		bool wins_lookup;
 		int timeout; /* in seconds */

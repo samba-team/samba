@@ -151,6 +151,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	for (i=0;i<state->num_queries;i++) {
 		state->io_queries[i].in.name        = state->name;
 		state->io_queries[i].in.dest_addr   = talloc_strdup(state->io_queries, address_list[i]);
+		state->io_queries[i].in.dest_port   = lp_nbt_port(global_loadparm);
 		if (composite_nomem(state->io_queries[i].in.dest_addr, c)) return c;
 
 		state->io_queries[i].in.broadcast   = broadcast;

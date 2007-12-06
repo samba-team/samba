@@ -24,6 +24,7 @@
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
+#include "param/param.h"
 
 struct result_struct {
 	int num_pass;
@@ -61,6 +62,7 @@ static bool bench_namequery(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
+	io.in.dest_port = lp_nbt_port(global_loadparm);
 	io.in.broadcast = false;
 	io.in.wins_lookup = false;
 	io.in.timeout = 1;

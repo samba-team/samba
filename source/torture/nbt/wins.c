@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
+#include "param/param.h"
 
 #define CHECK_VALUE(tctx, v, correct) \
 	torture_assert_int_equal(tctx, v, correct, "Incorrect value")
@@ -113,6 +114,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_comment(tctx, "query the name to make sure its there\n");
 	query.in.name = *name;
 	query.in.dest_addr = address;
+	query.in.dest_port = lp_nbt_port(tctx->lp_ctx);
 	query.in.broadcast = false;
 	query.in.wins_lookup = true;
 	query.in.timeout = 3;

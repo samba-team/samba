@@ -29,6 +29,7 @@
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "libcli/nbt/libnbt.h"
+#include "param/param.h"
 
 /* command line options */
 static struct {
@@ -142,6 +143,7 @@ static bool do_node_status(struct nbt_name_socket *nbtsock,
 /* do a single node query */
 static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 			      const char *addr, 
+			      uint16_t port,
 			      const char *node_name, 
 			      enum nbt_name_type node_type,
 			      bool broadcast)
@@ -154,6 +156,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 	io.in.name.type = node_type;
 	io.in.name.scope = NULL;
 	io.in.dest_addr = addr;
+	io.in.dest_port = port;
 	io.in.broadcast = broadcast;
 	io.in.wins_lookup = options.wins_lookup;
 	io.in.timeout = 1;
@@ -232,15 +235,18 @@ static bool process_one(const char *name)
 	}
 
 	if (options.broadcast_address) {
-		status = do_node_query(nbtsock, options.broadcast_address, node_name, node_type, true);
+		status = do_node_query(nbtsock, options.broadcast_address, lp_nbt_port(global_loadparm),
+				       node_name, node_type, true);
 	} else if (options.unicast_address) {
-		status = do_node_query(nbtsock, options.unicast_address, node_name, node_type, false);
+		status = do_node_query(nbtsock, options.unicast_address, 
+				       lp_nbt_port(global_loadparm), node_name, node_type, false);
 	} else {
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
 			const char *bcast = iface_n_bcast(i);
 			if (bcast == NULL) continue;
-			status = do_node_query(nbtsock, bcast, node_name, node_type, true);
+			status = do_node_query(nbtsock, bcast, lp_nbt_port(global_loadparm),
+					       node_name, node_type, true);
 			if (NT_STATUS_IS_OK(status)) break;
 		}
 	}
