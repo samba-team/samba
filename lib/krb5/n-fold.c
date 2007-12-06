@@ -80,7 +80,7 @@ rr13(unsigned char *buf, size_t len)
     return 0;
 }
 
-/* Add `b' to `a', both beeing one's complement numbers. */
+/* Add `b' to `a', both being one's complement numbers. */
 static void
 add1(unsigned char *a, unsigned char *b, size_t len)
 {
