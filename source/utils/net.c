@@ -715,10 +715,15 @@ static int net_getdomainsid(int argc, const char **argv)
 	DOM_SID domain_sid;
 	fstring sid_str;
 
+	if (argc > 0) {
+		d_printf("usage: net getdomainsid\n");
+		return 1;
+	}
+
 	if(!initialize_password_db(False, NULL)) {
-		DEBUG(0, ("WARNING: Could not open passdb - domain sid may "
+		DEBUG(0, ("WARNING: Could not open passdb - domain SID may "
 			  "not reflect passdb\n"
-			  "backend knowledge (such as the sid stored in "
+			  "backend knowledge (such as the SID stored in "
 			  "LDAP)\n"));
 	}
 
@@ -739,7 +744,7 @@ static int net_getdomainsid(int argc, const char **argv)
 		return 1;
 	}
 	sid_to_string(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", global_myname(), sid_str);
+	d_printf("SID for local machine %s is: %s\n", global_myname(), sid_str);
 
 	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
 		d_fprintf(stderr, "Could not fetch domain SID\n");
