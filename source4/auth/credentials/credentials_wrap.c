@@ -2503,9 +2503,7 @@ typedef struct cli_credentials cli_credentials;
 SWIGINTERN cli_credentials *new_cli_credentials(){
             return cli_credentials_init(NULL);
         }
-SWIGINTERN void delete_cli_credentials(cli_credentials *self){
-            talloc_free(self);
-        }
+SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
