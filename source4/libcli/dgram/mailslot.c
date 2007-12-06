@@ -150,27 +150,20 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 			     enum dgram_msg_type msg_type,
 			     const char *mailslot_name,
 			     struct nbt_name *dest_name,
-			     struct socket_address *_dest,
+			     struct socket_address *dest,
 			     struct nbt_name *src_name,
 			     DATA_BLOB *request)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_dgram_packet packet;
-	struct socket_address *dest;
 	struct dgram_message *msg;
 	struct dgram_smb_packet *smb;
 	struct smb_trans_body *trans;
 	struct socket_address *src;
 	NTSTATUS status;
 
-	if (_dest->port == 0) {
-		dest = socket_address_from_strings(tmp_ctx, _dest->family, 
-						   _dest->addr, lp_dgram_port(global_loadparm));
-	} else {
-		dest = _dest;
-	}
-	if (!dest) {
-		return NT_STATUS_NO_MEMORY;
+	if (dest->port == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(packet);
