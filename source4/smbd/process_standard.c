@@ -29,6 +29,7 @@
 #include "param/secrets.h"
 #include "system/filesys.h"
 #include "cluster/cluster.h"
+#include "param/param.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H
