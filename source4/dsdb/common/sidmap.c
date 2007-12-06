@@ -25,7 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap_ndr.h"
-#include "ldb.h"
+#include "lib/ldb/include/ldb.h"
 #include "util/util_ldb.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
