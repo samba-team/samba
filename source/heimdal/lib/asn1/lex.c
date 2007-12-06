@@ -343,6 +343,9 @@ FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
 typedef int yy_state_type;
 
 extern int yylineno;
+
+int yylineno = 1;
+
 extern char *yytext;
 #define yytext_ptr yytext
 
@@ -849,7 +852,7 @@ static unsigned lineno = 1;
 static void unterminated(const char *, unsigned);
 
 /* This is for broken old lexes (solaris 10 and hpux) */
-#line 852 "heimdal/lib/asn1/lex.c"
+#line 855 "heimdal/lib/asn1/lex.c"
 
 #define INITIAL 0
 
@@ -1004,7 +1007,7 @@ YY_DECL
     
 #line 68 "lex.l"
 
-#line 1007 "heimdal/lib/asn1/lex.c"
+#line 1010 "heimdal/lib/asn1/lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -1673,7 +1676,7 @@ YY_RULE_SETUP
 #line 274 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1676 "heimdal/lib/asn1/lex.c"
+#line 1679 "heimdal/lib/asn1/lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1904,7 +1907,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), num_to_read );
+			(yy_n_chars), (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -2405,7 +2408,7 @@ YY_BUFFER_STATE yy_scan_buffer  (char * base, yy_size_t  size )
 
 /** Setup the input buffer state to scan a string. The next call to yylex() will
  * scan from a @e copy of @a str.
- * @param str a NUL-terminated string to scan
+ * @param yystr a NUL-terminated string to scan
  * 
  * @return the newly allocated buffer state object.
  * @note If you want to scan bytes that may contain NUL values, then use
@@ -2483,6 +2486,15 @@ static void yy_fatal_error (yyconst char* msg )
 
 /* Accessor  methods (get/set functions) to struct members. */
 
+/** Get the current line number.
+ * 
+ */
+int yyget_lineno  (void)
+{
+        
+    return yylineno;
+}
+
 /** Get the input stream.
  * 
  */
@@ -2514,6 +2526,16 @@ int yyget_leng  (void)
 char *yyget_text  (void)
 {
         return yytext;
+}
+
+/** Set the current line number.
+ * @param line_number
+ * 
+ */
+void yyset_lineno (int  line_number )
+{
+    
+    yylineno = line_number;
 }
 
 /** Set the input stream. This does not discard the current

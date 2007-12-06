@@ -92,7 +92,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(mem_ctx, global_loadparm));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, 
+				system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -233,7 +234,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
   the caller needs some of that information.
 
 */
-static NTSTATUS dcesrv_netr_creds_server_step_check(const char *computer_name,
+static NTSTATUS dcesrv_netr_creds_server_step_check(struct loadparm_context *lp_ctx,
+						    const char *computer_name,
 					     TALLOC_CTX *mem_ctx, 
 					     struct netr_Authenticator *received_authenticator,
 					     struct netr_Authenticator *return_authenticator,
@@ -296,7 +298,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 
-	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call->conn->dce_ctx->lp_ctx,
+							r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -334,7 +337,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	struct samr_CryptPassword password_buf;
 
-	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call->conn->dce_ctx->lp_ctx,
+							r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -583,7 +587,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
 	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
-	nt_status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call->conn->dce_ctx->lp_ctx,
+							r->in.computer_name, mem_ctx, 
 						 r->in.credential, return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -879,7 +884,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	const char *local_domain;
 
-	status = dcesrv_netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
+	status = dcesrv_netr_creds_server_step_check(dce_call->conn->dce_ctx->lp_ctx,
+						     r->in.computer_name, mem_ctx, 
 					      r->in.credential, 
 					      r->out.return_authenticator,
 					      NULL);

@@ -87,6 +87,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
+				      lp_netbios_name(global_loadparm),
 				      netlogon->req.pdc.mailslot_name,
 				      &reply);
 }
@@ -210,6 +211,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
+				      lp_netbios_name(global_loadparm),
 				      netlogon->req.pdc2.mailslot_name,
 				      &reply);
 }

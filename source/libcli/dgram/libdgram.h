@@ -123,6 +123,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_netlogon_packet *request);
 NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 				       struct nbt_dgram_packet *request,
+				       const char *my_netbios_name,
 				       const char *mailslot_name,
 				       struct nbt_netlogon_packet *reply);
 NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
@@ -138,6 +139,7 @@ NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
 				     struct nbt_ntlogon_packet *request);
 NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
 				       struct nbt_dgram_packet *request,
+				       const char *my_netbios_name,
 				       const char *mailslot_name,
 				       struct nbt_ntlogon_packet *reply);
 NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,

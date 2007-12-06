@@ -61,6 +61,7 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_ntlogon_reply(reply_iface->dgmsock, 
 				     packet, 
+				     lp_netbios_name(global_loadparm),
 				     ntlogon->req.logon.mailslot_name,
 				     &reply);
 }
