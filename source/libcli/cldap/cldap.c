@@ -35,6 +35,7 @@
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "libcli/cldap/cldap.h"
 #include "lib/socket/socket.h"
 #include "libcli/security/security.h"

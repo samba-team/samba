@@ -32,8 +32,9 @@
  */
 
 #include "includes.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "ldb/include/ldb_errors.h"
+#include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/samr.h"

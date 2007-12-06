@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/events/events.h"
