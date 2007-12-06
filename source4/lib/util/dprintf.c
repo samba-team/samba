@@ -55,7 +55,7 @@ again:
 		SAFE_FREE(p);
 		return -1;
 	}
-	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
+	clen = convert_string(global_smb_iconv_convenience, CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
         if (clen == -1) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */

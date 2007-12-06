@@ -54,7 +54,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		data->length = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16,
+		data->length = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF8, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data);
 		break;
@@ -85,7 +85,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+		val.length = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX,
 						   (void *)data.data,
 						   data.length,
 						   (void **)&val.data);

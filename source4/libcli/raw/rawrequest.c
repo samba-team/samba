@@ -418,7 +418,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uin
 
 	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
-	len = push_string(req->out.data + req->out.data_size, str, len, flags);
+	len = push_string(global_smb_iconv_convenience, req->out.data + req->out.data_size, str, len, flags);
 
 	smbcli_req_grow_data(req, len + req->out.data_size);
 
@@ -574,7 +574,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest);
+	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -616,7 +616,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)dest);
+	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -626,7 +626,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-/*
+/**
   pull a string from a request packet, returning a talloced string
 
   the string length is limited by the 3 things:
@@ -651,7 +651,7 @@ size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 }
 
 
-/*
+/**
   pull a DATA_BLOB from a reply packet, returning a talloced blob
   make sure we don't go past end of packet
 
@@ -723,7 +723,7 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
 	return ret;
 }
 
-/*
+/**
   pull a UCS2 string from a blob, returning a talloced unix string
 
   the string length is limited by the 3 things:
@@ -769,7 +769,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 
 	src_len2 = utf16_len_n(src, src_len);
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -779,7 +779,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 	return src_len2 + alignment;
 }
 
-/*
+/**
   pull a ascii string from a blob, returning a talloced string
 
   the string length is limited by the 3 things:
@@ -815,7 +815,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -826,7 +826,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-/*
+/**
   pull a string from a blob, returning a talloced struct smb_wire_string
 
   the string length is limited by the 3 things:
@@ -895,7 +895,7 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 					   blob->data+str_offset, dest->private_length, flags);
 }
 
-/*
+/**
   pull a string from a blob, returning a talloced char *
 
   Currently only used by the UNIX search info level.
@@ -965,7 +965,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 		return 0;
 	}
 
-	len = push_string(blob->data + blob->length, str, max_len, flags);
+	len = push_string(global_smb_iconv_convenience, blob->data + blob->length, str, max_len, flags);
 
 	blob->length += len;
 

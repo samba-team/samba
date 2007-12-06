@@ -408,7 +408,7 @@ size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, 
 		dest = req->out.buffer + PTR_DIFF(dest, buf0);
 	}
 
-	len = push_string(dest, str, len, flags);
+	len = push_string(global_smb_iconv_convenience, dest, str, len, flags);
 
 	grow_size = len + PTR_DIFF(dest, req->out.data);
 
@@ -447,7 +447,7 @@ size_t req_append_var_block(struct smbsrv_request *req,
 	req_grow_data(req, byte_len + 3 + req->out.data_size);
 	return byte_len + 3;
 }
-/*
+/**
   pull a UCS2 string from a request packet, returning a talloced unix string
 
   the string length is limited by the 3 things:
@@ -494,7 +494,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		return src_len2 + alignment;
 	}
 
-	ret = convert_string_talloc(req, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(req, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -505,7 +505,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 	return src_len2 + alignment;
 }
 
-/*
+/**
   pull a ascii string from a request packet, returning a talloced string
 
   the string length is limited by the 3 things:
@@ -543,7 +543,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(req, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(req, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -554,7 +554,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 	return src_len2;
 }
 
-/*
+/**
   pull a string from a request packet, returning a talloced string
 
   the string length is limited by the 3 things:
@@ -578,7 +578,7 @@ size_t req_pull_string(struct smbsrv_request *req, const char **dest, const uint
 }
 
 
-/*
+/**
   pull a ASCII4 string buffer from a request packet, returning a talloced string
   
   an ASCII4 buffer is a null terminated string that has a prefix
@@ -611,7 +611,7 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint
 	return ret + 1;
 }
 
-/*
+/**
   pull a DATA_BLOB from a request packet, returning a talloced blob
 
   return false if any part is outside the data portion of the packet

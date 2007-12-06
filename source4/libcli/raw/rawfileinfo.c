@@ -61,7 +61,9 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		if (nlen > blob.length - (ofs + 24)) {
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
-		size = convert_string_talloc(io->streams, CH_UTF16, CH_UNIX,
+		size = convert_string_talloc(io->streams, 
+					     global_smb_iconv_convenience,
+					     CH_UTF16, CH_UNIX,
 					     blob.data+ofs+24, nlen, &vstr);
 		if (size == -1) {
 			return NT_STATUS_ILLEGAL_CHARACTER;

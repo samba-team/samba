@@ -64,6 +64,5 @@ struct loadparm_service;
 
 extern struct loadparm_context *global_loadparm;
 extern struct loadparm_service sDefault;
-extern struct smb_iconv_convenience *global_smb_iconv_convenience;
 
 #endif /* _PARAM_H */
