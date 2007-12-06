@@ -80,10 +80,45 @@ static WERROR cmd_wkssvc_getjoininformation(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	const char *server_name = cli->cli->desthost;
+	const char *message_name = cli->cli->desthost;
+	const char *message_sender_name = cli->cli->desthost;
+	smb_ucs2_t *message_buffer = NULL;
+	size_t message_size = 0;
+	NTSTATUS status;
+	WERROR werr;
+
+	message_size = push_ucs2_talloc(mem_ctx,
+					&message_buffer,
+					"my message");
+	if (message_size == -1) {
+		return WERR_NOMEM;
+	}
+
+	status = rpccli_wkssvc_NetrMessageBufferSend(cli, mem_ctx,
+						     server_name,
+						     message_name,
+						     message_sender_name,
+						     (uint8_t *)message_buffer,
+						     message_size,
+						     &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return werr;
+}
+
 struct cmd_set wkssvc_commands[] = {
 
 	{ "WKSSVC" },
-	{ "wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, PI_WKSSVC, NULL, "Query WKSSVC Workstation Information", "" },
-	{ "getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, PI_WKSSVC, NULL, "Query WKSSVC Join Information", "" },
+	{ "wkssvc_wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, PI_WKSSVC, NULL, "Query WKSSVC Workstation Information", "" },
+	{ "wkssvc_getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, PI_WKSSVC, NULL, "Query WKSSVC Join Information", "" },
+	{ "wkssvc_messagebuffersend", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_messagebuffersend, PI_WKSSVC, NULL, "Send WKSSVC message", "" },
 	{ NULL }
 };
