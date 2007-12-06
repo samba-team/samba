@@ -534,7 +534,7 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 	info.message = message;
 	info.session_info = session_info;
 
-	message("Setting up teplates into " + paths.templates + "\n");
+	message("Setting up templates into " + paths.templates + "\n");
 	setup_ldb("provision_templates.ldif", info, paths.templates);
 
 	/* Also wipes the database */
@@ -667,7 +667,7 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var reg = reg_open();
 	reg.apply_patchfile(lp.get("setup directory") + "/provision.reg")
 
-	message("Setting up teplates into " + paths.templates + "\n");
+	message("Setting up templates into " + paths.templates + "\n");
 	setup_ldb("provision_templates.ldif", info, paths.templates);
 
 	message("Setting up sam.ldb partitions\n");
