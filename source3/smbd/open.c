@@ -2102,7 +2102,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)file_attributes));
 
 	if (is_ntfs_stream_name(fname)) {
-		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
+		DEBUG(2, ("open_directory: %s is a stream name!\n", fname));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
