@@ -497,9 +497,9 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 		}
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname, flags,
+	status = create_file(conn, req, root_dir_fid, fname,
 			     access_mask, share_access, create_disposition,
-			     create_options, file_attributes,
+			     create_options, file_attributes, flags,
 			     allocation_size, NULL, NULL,
 			     &fsp, &info, &oplock_granted, &sbuf);
 
@@ -941,9 +941,9 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname, flags,
+	status = create_file(conn, req, root_dir_fid, fname,
 			     access_mask, share_access, create_disposition,
-			     create_options, file_attributes,
+			     create_options, file_attributes, flags,
 			     allocation_size, sd, ea_list,
 			     &fsp, &info, &oplock_granted, &sbuf);
 
