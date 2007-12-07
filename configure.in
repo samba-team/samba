@@ -77,6 +77,16 @@ fi
 AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
 
 
+dnl path where the hdb directory is stored
+AC_ARG_WITH([hdbdir], 
+	[AC_HELP_STRING([--with-hdbdir],
+		[Default location for KDC database @<:@default=/var/heimdal@:>@])],
+	[],
+	[with_hdbdir=/var/heimdal])
+HDB_dir="$with_hdbdir"
+AC_SUBST([HDB_dir])
+
+
 dnl no kerberos4 any more
 with_krb4=no
 AC_SUBST(INCLUDE_krb4)
