@@ -4343,7 +4343,7 @@ static int process(const char *base_directory)
 		return 1;
 	}
 
-	if (*base_directory) {
+	if (base_directory && *base_directory) {
 		rc = do_cd(base_directory);
 		if (rc) {
 			cli_cm_shutdown();
@@ -4412,7 +4412,7 @@ static int do_tar_op(const char *base_directory)
 
 	recurse=true;
 
-	if (*base_directory)  {
+	if (base_directory && *base_directory)  {
 		ret = do_cd(base_directory);
 		if (ret) {
 			cli_cm_shutdown();
@@ -4711,7 +4711,7 @@ static int do_message_op(void)
 
 	load_interfaces();
 
-	if (service_opt) {
+	if (service_opt && service) {
 		size_t len;
 
 		/* Convert any '/' characters in the service name to '\' characters */
@@ -4764,7 +4764,7 @@ static int do_message_op(void)
 		return do_tar_op(base_directory);
 	}
 
-	if (query_host) {
+	if (query_host && *query_host) {
 		char *qhost = query_host;
 		char *slash;
 
