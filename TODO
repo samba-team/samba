@@ -10,7 +10,7 @@ handle readline hiding in readline/readline.h
 
 ** appl/popper
 
-Implement RFC1731 and 1734, pop over GSS-API
+Add security layer to pop over GSS-API
 
 * doc
 
