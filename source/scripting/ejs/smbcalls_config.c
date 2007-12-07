@@ -98,7 +98,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(service, parm);
+		parm_ptr = lp_parm_ptr(global_loadparm, service, parm);
 	} else if (strchr(argv[0], ':')) {
 		/* its a global parametric option */
 		const char *type = talloc_strndup(mprMemCtx(), 
@@ -123,7 +123,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(NULL, parm);
+		parm_ptr = lp_parm_ptr(global_loadparm, NULL, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {

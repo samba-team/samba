@@ -23,10 +23,9 @@
 
 #include "includes.h"
 #include "lib/ldb/include/ldb_includes.h"
-
+#include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 
 /*
@@ -291,7 +290,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 }
 
 /* 
-   canonicolise an objectCategory.  We use the short form as the cannoical form:
+   canonicalise an objectCategory.  We use the short form as the cannoical form:
    cn=Person,cn=Schema,cn=Configuration,<basedn> becomes 'person'
 */
 
