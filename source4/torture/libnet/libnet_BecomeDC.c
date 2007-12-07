@@ -95,6 +95,7 @@ failed:
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
+	struct torture_context *tctx;
 	const char *netbios_name;
 	struct test_join *tj;
 	struct cli_credentials *machine_account;
@@ -163,7 +164,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
 		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
-		lp_private_dir(global_loadparm),
+		lp_private_dir(s->tctx->lp_ctx),
 		s->path.samdb_ldb,
 		s->path.secrets_ldb,
 		s->path.secrets_keytab));
@@ -443,7 +444,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "become dc", "dump objects", false)) {
+	if (lp_parm_bool(s->tctx->lp_ctx, NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -485,8 +486,8 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	s->schema = NULL;
 
 	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
-				  system_session(s, global_loadparm),
+	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
+				  system_session(s, s->tctx->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
@@ -671,7 +672,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "become dc", "dump objects", false)) {
+	if (lp_parm_bool(s->tctx->lp_ctx, NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -701,7 +702,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 			return NT_STATUS_FOOBAR;
 		}
 
-		if (lp_parm_bool(global_loadparm, NULL, "become dc", "dump objects", false)) {
+		if (lp_parm_bool(s->tctx->lp_ctx, NULL, "become dc", "dump objects", false)) {
 			DEBUG(0,("# %s\n", sa->lDAPDisplayName));
 			NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, &linked_attributes[i]);
 			dump_data(0,
@@ -726,6 +727,8 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return false;
+
+	s->tctx = torture;
 
 	s->netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
