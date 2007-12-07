@@ -4764,7 +4764,7 @@ static int do_message_op(void)
 		return do_tar_op(base_directory);
 	}
 
-	if (*query_host) {
+	if (query_host) {
 		char *qhost = query_host;
 		char *slash;
 
