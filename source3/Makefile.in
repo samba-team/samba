@@ -819,16 +819,6 @@ NDRDUMP_OBJ = librpc/tools/ndrdump.o \
 			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ)
 
-RPCTORTURE_OBJ = torture/rpctorture.o \
-             rpcclient/display.o \
-             rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
-             rpcclient/cmd_samr.o \
-             rpcclient/cmd_srvsvc.o \
-             rpcclient/cmd_netlogon.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) $(SECRETS_OBJ)
-
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
@@ -1002,8 +992,6 @@ smbcquotas : SHOWFLAGS bin/smbcquotas@EXEEXT@
 smbctool: SHOWFLAGS bin/smbctool@EXEEXT@
 
 locktest2 : SHOWFLAGS bin/locktest2@EXEEXT@
-
-rpctorture : SHOWFLAGS bin/rpctorture@EXEEXT@
 
 debug2html : SHOWFLAGS bin/debug2html@EXEEXT@
 
@@ -1316,10 +1304,6 @@ bin/log2pcap@EXEEXT@: $(BINARY_PREREQS) $(LOG2PCAP_OBJ) @BUILD_POPT@
 bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@
-
-bin/rpctorture@EXEEXT@: $(BINARY_PREREQS) $(RPCTORTURE_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@
 
 bin/ndrdump@EXEEXT@: $(BINARY_PREREQS) $(NDRDUMP_OBJ) @BUILD_POPT@
 	@echo Linking $@

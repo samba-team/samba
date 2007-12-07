@@ -2175,7 +2175,6 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 				break;
 			} else {
 				safe_strcpy(list + len, de->d_name, listlen);
-				pstrcpy(list + len, de->d_name);
 				len += listlen;
 				list[len] = '\0';
 				++len;

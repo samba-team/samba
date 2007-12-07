@@ -2999,9 +2999,15 @@ static void show_parameter(int parmIndex)
 	bool hadFlag;
 	bool hadSyn;
 	bool inverse;
+#if 0
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
 		"P_UGSTRING", "P_ENUM", "P_SEP"};
+#else
+	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
+		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
+		"P_ENUM", "P_SEP"};
+#endif
 	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
 		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
 		FLAG_HIDE, FLAG_DOS_STRING};
@@ -4171,6 +4177,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			strupper_m(*(char **)parm_ptr);
 			break;
 
+#if 0
 		case P_GSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			break;
@@ -4179,6 +4186,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			strupper_m((char *)parm_ptr);
 			break;
+#endif
 
 		case P_ENUM:
 			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
@@ -4250,7 +4258,6 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
-				
 				for (; *list; list++) {
 					/* surround strings with whitespace in double quotes */
 					if ( strchr_m( *list, ' ' ) )
@@ -4261,12 +4268,14 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			}
 			break;
 
+#if 0
 		case P_GSTRING:
 		case P_UGSTRING:
 			if ((char *)ptr) {
 				fprintf(f, "%s", (char *)ptr);
 			}
 			break;
+#endif
 
 		case P_STRING:
 		case P_USTRING:
@@ -4297,10 +4306,11 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 
 		case P_CHAR:
 			return (*((char *)ptr1) == *((char *)ptr2));
-		
+
 		case P_LIST:
 			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
+#if 0
 		case P_GSTRING:
 		case P_UGSTRING:
 		{
@@ -4311,6 +4321,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 				p2 = NULL;
 			return (p1 == p2 || strequal(p1, p2));
 		}
+#endif
 		case P_STRING:
 		case P_USTRING:
 		{
@@ -4404,10 +4415,12 @@ static bool is_default(int i)
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
 					*(char **)parm_table[i].ptr);
+#if 0
 		case P_GSTRING:
 		case P_UGSTRING:
 			return strequal(parm_table[i].def.svalue,
 					(char *)parm_table[i].ptr);
+#endif
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
@@ -4814,6 +4827,7 @@ static void lp_save_defaults(void)
 					parm_table[i].def.svalue = NULL;
 				}
 				break;
+#if 0
 			case P_GSTRING:
 			case P_UGSTRING:
 				if (parm_table[i].ptr) {
@@ -4822,6 +4836,8 @@ static void lp_save_defaults(void)
 					parm_table[i].def.svalue = NULL;
 				}
 				break;
+#endif
+
 			case P_BOOL:
 			case P_BOOLREV:
 				parm_table[i].def.bvalue =

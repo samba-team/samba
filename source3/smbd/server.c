@@ -726,12 +726,12 @@ void reload_printers(void)
 bool reload_services(bool test)
 {
 	bool ret;
-	
+
 	if (lp_loaded()) {
 		char *fname = lp_configfile();
 		if (file_exist(fname, NULL) &&
 		    !strcsequal(fname, dyn_CONFIGFILE)) {
-			pstrcpy(dyn_CONFIGFILE, fname);
+			strlcpy(dyn_CONFIGFILE, fname,sizeof(dyn_CONFIGFILE));
 			test = False;
 		}
 	}
@@ -755,7 +755,7 @@ bool reload_services(bool test)
 
 	load_interfaces();
 
-	if (smbd_server_fd() != -1) {      
+	if (smbd_server_fd() != -1) {
 		set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 		set_socket_options(smbd_server_fd(), lp_socket_options());
 	}

@@ -481,7 +481,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * unix_convert later in the codepath.
 	 * If we needed to remember what we'd resolved in
 	 * dp->reqpath (as the original code did) we'd
-	 * pstrcpy(localhost, dp->reqpath) on any code
+	 * copy (localhost, dp->reqpath) on any code
 	 * path below that returns True - but I don't
 	 * think this is needed. JRA.
 	 */
