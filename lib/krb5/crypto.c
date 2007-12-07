@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -3452,13 +3452,13 @@ krb5_decrypt_EncryptedData(krb5_context context,
 #define ENTROPY_NEEDED 128
 
 static int
-seed_something(const char *seedfile)
+seed_something(void)
 {
-    char buf[1024];
+    char buf[1024], seedfile[256];
 
     /* If there is a seed file, load it. But such a file cannot be trusted,
        so use 0 for the entropy estimate */
-    if (seedfile[0]) {
+    if (RAND_file_name(seedfile, sizeof(seedfile))) {
 	int fd;
 	fd = open(seedfile, O_RDONLY);
 	if (fd >= 0) {
@@ -3467,8 +3467,10 @@ seed_something(const char *seedfile)
 	    if (ret > 0)
 		RAND_add(buf, ret, 0.0);
 	    close(fd);
-	}
-    }
+	} else
+	    seedfile[0] = '\0';
+    } else
+	seedfile[0] = '\0';
 
     /* Calling RAND_status() will try to use /dev/urandom if it exists so
        we do not have to deal with it. */
@@ -3503,13 +3505,7 @@ krb5_generate_random_block(void *buf, size_t len)
     
     HEIMDAL_MUTEX_lock(&crypto_mutex);
     if (!rng_initialized) {
-	char seedfile[256];
-
-	HEIMDAL_MUTEX_unlock(&crypto_mutex);
-	if (RAND_file_name(seedfile, sizeof(seedfile)) == 0)
-	    seedfile[0] = '\0';
-	HEIMDAL_MUTEX_lock(&crypto_mutex);
-	if (seed_something(seedfile))
+	if (seed_something())
 	    krb5_abortx(NULL, "Fatal: could not seed the "
 			"random number generator");
 	
