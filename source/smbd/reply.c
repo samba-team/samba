@@ -1597,51 +1597,30 @@ void reply_open(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBopen);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
-			&access_mask, &share_mode, &create_disposition, &create_options)) {
+	if (!map_open_params_to_ntcreate(
+		    fname, deny_mode, OPENX_FILE_EXISTS_OPEN, &access_mask,
+		    &share_mode, &create_disposition, &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		END_PROFILE(SMBopen);
 		return;
 	}
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-			access_mask,
-			share_mode,
-			create_disposition,
-			create_options,
-			dos_attr,
-			oplock_request,
-			&info, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     dos_attr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     0,				/* allocation_size */
+			     NULL,			/* sd */
+			     NULL,			/* ea_list */
+			     &fsp,			/* result */
+			     &info,			/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
