@@ -816,11 +816,10 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	NTSTATUS nt_status;
 	zero_addr(&ss);
 
-	if (!cmdline_auth_info.got_pass) {
+	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(cmdline_auth_info.password, pass);
-			cmdline_auth_info.got_pass = True;
+			set_cmdline_auth_info_password(pass);
 		}
 	}
 
@@ -831,7 +830,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 							    lp_workgroup(),
 							    get_cmdline_auth_info_password(),
 							    0,
-							    get_cmdline_auth_info.signing_state(),
+							    get_cmdline_auth_info_signing_state(),
 							    NULL))) {
 		return c;
 	} else {

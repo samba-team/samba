@@ -373,20 +373,22 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	zero_addr(&ss);
 
-	if (!cmdline_auth_info.got_pass) {
+	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(cmdline_auth_info.password, pass);
-			cmdline_auth_info.got_pass = True;
+			set_cmdline_auth_info_password(pass);
 		}
 	}
 
 	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname(), server, 
-							    &ss, 0,
-							    share, "?????",
-							    cmdline_auth_info.username, lp_workgroup(),
-							    cmdline_auth_info.password, 0,
-							    cmdline_auth_info.signing_state, NULL))) {
+						    &ss, 0,
+						    share, "?????",
+						    get_cmdline_auth_info_username(),
+						    lp_workgroup(),
+						    get_cmdline_auth_info_password(),
+						    0,
+						    get_cmdline_auth_info_signing_state(),
+						    NULL))) {
 		return c;
 	} else {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
@@ -511,7 +513,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		todo = USER_QUOTA;
 
 	if (!fix_user) {
-		username_str = talloc_strdup(frame, cmdline_auth_info.username);
+		username_str = talloc_strdup(frame, get_cmdline_auth_info_username());
 		if (!username_str) {
 			exit(EXIT_PARSE_ERROR);
 		}
