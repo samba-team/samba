@@ -128,7 +128,10 @@ struct loadparm_global
 	char *tls_cafile;
 	char *tls_crlfile;
 	char *tls_dhpfile;
+	char *logfile;
+	char *panic_action;
 	int max_mux;
+	int debuglevel;
 	int max_xmit;
 	int pwordlevel;
 	int srv_maxprotocol;
@@ -373,8 +376,8 @@ static const struct enum_list enum_server_role[] = {
  * parameters that have been duplicated by pseudonyms.
  */
 
-#define GLOBAL_VAR(name) &loadparm.Globals.name
-#define LOCAL_VAR(name) &sDefault.name
+#define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
+#define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
 	{"config file", P_STRING, P_GLOBAL, GLOBAL_VAR(szConfigFile), NULL, NULL, FLAG_HIDE},
@@ -398,7 +401,7 @@ static struct parm_struct parm_table[] = {
 	{"bind interfaces only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bBindInterfacesOnly), NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ntvfs handler", P_LIST, P_LOCAL, LOCAL_VAR(ntvfs_handler), NULL, NULL, FLAG_ADVANCED},
 	{"ntptr providor", P_STRING, P_GLOBAL, GLOBAL_VAR(ntptr_providor), NULL, NULL, FLAG_ADVANCED},
-	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, GLOBAL_VAR()dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
+	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, GLOBAL_VAR(dcerpc_ep_servers), NULL, NULL, FLAG_ADVANCED},
 	{"server services", P_LIST, P_GLOBAL, GLOBAL_VAR(server_services), NULL, NULL, FLAG_ADVANCED},
 
 	{"security", P_ENUM, P_GLOBAL, GLOBAL_VAR(security), NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
@@ -431,9 +434,9 @@ static struct parm_struct parm_table[] = {
 	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 
-	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_HIDE},
-	{"log file", P_STRING, P_GLOBAL, &logfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), NULL, NULL, FLAG_HIDE},
+	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -527,7 +530,7 @@ static struct parm_struct parm_table[] = {
 	{"volume", P_STRING, P_LOCAL, LOCAL_VAR(volume), NULL, NULL, FLAG_SHARE },
 	{"fstype", P_STRING, P_LOCAL, LOCAL_VAR(fstype), NULL, NULL, FLAG_SHARE},
 
-	{"panic action", P_STRING, P_GLOBAL, &panic_action, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"panic action", P_STRING, P_GLOBAL, GLOBAL_VAR(panic_action), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"msdfs root", P_BOOL, P_LOCAL, LOCAL_VAR(bMSDfsRoot), NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, GLOBAL_VAR(bHostMSDfs), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -537,7 +540,7 @@ static struct parm_struct parm_table[] = {
 	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
-	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
+	{NULL, P_BOOL, P_NONE, 0, NULL, NULL, 0}
 };
 
 
@@ -1237,12 +1240,17 @@ struct parm_struct *lp_parm_struct(const char *name)
 /*
   return the parameter pointer for a parameter
 */
-void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
+void *lp_parm_ptr(struct loadparm_context *lp_ctx,
+		  struct loadparm_service *service, struct parm_struct *parm)
 {
-	if (service == NULL)
-		return parm->ptr;
+	if (service == NULL) {
+		if (parm->class == P_LOCAL)
+			return ((char *)&sDefault)+parm->offset;
+		else
+			return ((char *)&lp_ctx->Globals)+parm->offset;
+	}
 
-	return ((char *)service) + PTR_DIFF(parm->ptr, &sDefault);
+	return ((char *)service) + parm->offset;
 }
 
 /***************************************************************************
@@ -1278,15 +1286,12 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].offset != -1 && parm_table[i].class == P_LOCAL &&
 		    (bcopyall || pcopymapDest[i])) {
-			void *def_ptr = parm_table[i].ptr;
 			void *src_ptr =
-				((char *)pserviceSource) + PTR_DIFF(def_ptr,
-								    &sDefault);
+				((char *)pserviceSource) + parm_table[i].offset;
 			void *dest_ptr =
-				((char *)pserviceDest) + PTR_DIFF(def_ptr,
-								  &sDefault);
+				((char *)pserviceDest) + parm_table[i].offset;
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
@@ -1689,10 +1694,10 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 	if (parm_table[parmnum].flags & FLAG_DEFAULT) {
 		parm_table[parmnum].flags &= ~FLAG_DEFAULT;
 		/* we have to also unset FLAG_DEFAULT on aliases */
-		for (i=parmnum-1;i>=0 && parm_table[i].ptr == parm_table[parmnum].ptr;i--) {
+		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
 			parm_table[i].flags &= ~FLAG_DEFAULT;
 		}
-		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].ptr == parm_table[parmnum].ptr;i++) {
+		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
 			parm_table[i].flags &= ~FLAG_DEFAULT;
 		}
 	}
@@ -1725,7 +1730,7 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	parm_ptr = parm_table[parmnum].ptr;
+	parm_ptr = lp_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
 	return set_variable(talloc_autofree_context(), parmnum, parm_ptr, 
 			    pszParmName, pszParmValue, lp_ctx);
@@ -1735,7 +1740,6 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 			     struct loadparm_service *service, 
 			     const char *pszParmName, const char *pszParmValue)
 {
-	void *def_ptr = NULL;
 	void *parm_ptr;
 	int i;
 	int parmnum = map_parameter(pszParmName);
@@ -1759,15 +1763,13 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	def_ptr = parm_table[parmnum].ptr;
-
 	if (parm_table[parmnum].class == P_GLOBAL) {
 		DEBUG(0,
 		      ("Global parameter %s found in service section!\n",
 		       pszParmName));
 		return true;
 	}
-	parm_ptr = ((char *)service) + PTR_DIFF(def_ptr, &sDefault);
+	parm_ptr = ((char *)service) + parm_table[parmnum].offset;
 
 	if (!service->copymap)
 		init_copymap(service);
@@ -1775,7 +1777,8 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 	/* this handles the aliases - set the copymap for other 
 	 * entries with the same data pointer */
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].ptr == parm_table[parmnum].ptr)
+		if (parm_table[i].offset == parm_table[parmnum].offset && 
+		    parm_table[i].class == parm_table[parmnum].class)
 			service->copymap[i] = false;
 
 	return set_variable(service, parmnum, parm_ptr, pszParmName, 
@@ -1854,10 +1857,10 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	parm_table[parmnum].flags |= FLAG_CMDLINE;
 
 	/* we have to also set FLAG_CMDLINE on aliases */
-	for (i=parmnum-1;i>=0 && parm_table[i].ptr == parm_table[parmnum].ptr;i--) {
+	for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
 		parm_table[i].flags |= FLAG_CMDLINE;
 	}
-	for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].ptr == parm_table[parmnum].ptr;i++) {
+	for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
 		parm_table[i].flags |= FLAG_CMDLINE;
 	}
 
@@ -2031,25 +2034,26 @@ static bool do_section(const char *pszSectionName, void *userdata)
 
 static bool is_default(int i)
 {
+	void *def_ptr = ((char *)&sDefault) + parm_table[i].offset;
 	if (!defaults_saved)
 		return false;
 	switch (parm_table[i].type) {
 		case P_LIST:
 			return str_list_equal((const char **)parm_table[i].def.lvalue, 
-					      (const char **)(*(char ***)parm_table[i].ptr));
+					      (const char **)def_ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
-					*(char **)parm_table[i].ptr);
+					*(char **)def_ptr);
 		case P_BOOL:
 			return parm_table[i].def.bvalue ==
-				*(int *)parm_table[i].ptr;
+				*(int *)def_ptr;
 		case P_INTEGER:
 		case P_OCTAL:
 		case P_BYTES:
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
-				*(int *)parm_table[i].ptr;
+				*(int *)def_ptr;
 	}
 	return false;
 }
@@ -2067,12 +2071,12 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, bool show_def
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].class == P_GLOBAL &&
-		    parm_table[i].ptr &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
+		    parm_table[i].offset != -1 &&
+		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
 			if (!show_defaults && (parm_table[i].flags & FLAG_DEFAULT)) 
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], parm_table[i].ptr, f);
+			print_parameter(&parm_table[i], lp_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
 			fprintf(f, "\n");
 	}
 	if (lp_ctx->Globals.param_opt != NULL) {
@@ -2098,26 +2102,24 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].class == P_LOCAL &&
-		    parm_table[i].ptr &&
+		    parm_table[i].offset != -1 &&
 		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
-			int pdiff = PTR_DIFF(parm_table[i].ptr, &sDefault);
-
+		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
 			if (pService == &sDefault) {
 				if (defaults_saved && is_default(i))
 					continue;
 			} else {
 				if (equal_parameter(parm_table[i].type,
 						    ((char *)pService) +
-						    pdiff,
+						    parm_table[i].offset,
 						    ((char *)&sDefault) +
-						    pdiff))
+						    parm_table[i].offset))
 					continue;
 			}
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f);
+					((char *)pService) + parm_table[i].offset, f);
 			fprintf(f, "\n");
 	}
 	if (pService->param_opt != NULL) {
@@ -2138,15 +2140,13 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, const char *
 	if (!parm) {
 		return false;
 	}
-	
+
 	if (isGlobal)
-		ptr = parm->ptr;
+		ptr = ((char *)&sDefault) + parm->offset;
 	else
-		ptr = ((char *)pService) +
-			PTR_DIFF(parm->ptr, &sDefault);
+		ptr = ((char *)pService) + parm->offset;
 	
-	print_parameter(parm,
-			ptr, f);
+	print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
 	return true;
 }
@@ -2162,13 +2162,13 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 	if (snum == -1) {
 		/* do the globals */
 		for (; parm_table[*i].label; (*i)++) {
-			if (!parm_table[*i].ptr
+			if (parm_table[*i].offset == -1
 			    || (*parm_table[*i].label == '-'))
 				continue;
 
 			if ((*i) > 0
-			    && (parm_table[*i].ptr ==
-				parm_table[(*i) - 1].ptr))
+			    && (parm_table[*i].offset ==
+				parm_table[(*i) - 1].offset))
 				continue;
 
 			return &parm_table[(*i)++];
@@ -2178,22 +2178,18 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_LOCAL &&
-			    parm_table[*i].ptr &&
+			    parm_table[*i].offset != -1 &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
-			     (parm_table[*i].ptr !=
-			      parm_table[(*i) - 1].ptr)))
+			     (parm_table[*i].offset !=
+			      parm_table[(*i) - 1].offset)))
 			{
-				int pdiff =
-					PTR_DIFF(parm_table[*i].ptr,
-						 &sDefault);
-
 				if (allparameters ||
 				    !equal_parameter(parm_table[*i].type,
 						     ((char *)pService) +
-						     pdiff,
+						     parm_table[*i].offset,
 						     ((char *)&sDefault) +
-						     pdiff))
+						     parm_table[*i].offset))
 				{
 					return &parm_table[(*i)++];
 				}
@@ -2259,10 +2255,12 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].ptr &&
+		    parm_table[i].offset != -1 &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
 			string_set(talloc_autofree_context(), 
-				   (char **)parm_table[i].ptr, "");
+				   (char **)(
+				   (char *)((parm_table[i].class == P_LOCAL)?&sDefault:&(lp_ctx->Globals)) +
+				   parm_table[i].offset), "");
 		}
 	}
 
@@ -2470,6 +2468,10 @@ bool lp_load(const char *filename, struct loadparm_context **ret_lp)
 	if (!lp_ctx->Globals.szWINSservers && lp_ctx->Globals.bWINSsupport) {
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
+
+	DEBUGLEVEL = lp_ctx->Globals.debuglevel;
+	logfile = lp_ctx->Globals.logfile;
+	panic_action = lp_ctx->Globals.panic_action;
 
 	reload_charcnv();
 
