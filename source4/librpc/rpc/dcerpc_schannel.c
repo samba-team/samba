@@ -224,7 +224,8 @@ static void continue_srv_auth2(struct rpc_request *req)
 */
 struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 						   struct dcerpc_pipe *p,
-						   struct cli_credentials *credentials)
+						   struct cli_credentials *credentials,
+						   struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct schannel_key_state *s;
@@ -262,7 +263,8 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	/* request the netlogon endpoint mapping */
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->binding,
 						  &ndr_table_netlogon,
-						  s->pipe->conn->event_ctx);
+						  s->pipe->conn->event_ctx,
+						  lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return c;
 
 	composite_continue(c, epm_map_req, continue_epm_map_binding, c);
@@ -371,7 +373,7 @@ struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx,
 	s->lp_ctx      = lp_ctx;
 
 	/* start getting schannel key first */
-	schan_key_req = dcerpc_schannel_key_send(c, p, credentials);
+	schan_key_req = dcerpc_schannel_key_send(c, p, credentials, lp_ctx);
 	if (composite_nomem(schan_key_req, c)) return c;
 
 	composite_continue(c, schan_key_req, continue_schannel_key, c);

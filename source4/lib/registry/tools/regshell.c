@@ -497,7 +497,7 @@ int main(int argc, char **argv)
 	ctx = talloc_zero(NULL, struct regshell_context);
 
 	if (remote != NULL) {
-		ctx->registry = reg_common_open_remote(remote,
+		ctx->registry = reg_common_open_remote(remote, global_loadparm, 
 						       cmdline_credentials);
 	} else if (file != NULL) {
 		ctx->current = reg_common_open_file(file, cmdline_credentials);
