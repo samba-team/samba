@@ -40,7 +40,7 @@
 typedef struct _client_referral {
 	uint32 proximity;
 	uint32 ttl;
-	pstring dfspath;
+	char *dfspath;
 } CLIENT_DFS_REFERRAL;
 
 struct referral {

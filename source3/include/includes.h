@@ -617,8 +617,9 @@ struct timespec {
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
-/* Our own pstrings and fstrings */
-#include "pstring.h"
+/* Our own fstrings */
+#define FSTRING_LEN 256
+typedef char fstring[FSTRING_LEN];
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
@@ -1033,8 +1034,6 @@ int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 /* PRINTFLIKE2 */
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
-/* PRINTFLIKE2 */
-int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 /* PRINTFLIKE2 */
 int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 

@@ -679,11 +679,11 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
              $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
 
-TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
-             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
-             $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
-	     $(DISPLAY_SEC_OBJ)
+#TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
+#	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+#             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
+#             $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
+#	     $(DISPLAY_SEC_OBJ)
 
 UTIL_REG_OBJ = lib/util_reg.o
 UTIL_REG_API_OBJ = lib/util_reg_api.o
@@ -1168,9 +1168,9 @@ bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
 
-bin/smbctool@EXEEXT@: $(BINARY_PREREQS) $(TOOL_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TOOL_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) -Lbin -lsmbclient
+#bin/smbctool@EXEEXT@: $(BINARY_PREREQS) $(TOOL_OBJ) @BUILD_POPT@
+#	@echo Linking $@
+#	@$(CC) $(FLAGS) -o $@ $(TOOL_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) -Lbin -lsmbclient
 
 bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@
 	@echo Linking $@
