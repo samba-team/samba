@@ -1308,9 +1308,79 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x43     */
-	/*
-	  I haven't been able to work out the format of this one yet.
-	  Seems to start with a switch level for a union?
-	*/
-	NTSTATUS samr_ValidatePassword();
+	/************************/
+	typedef [bitmap32bit] bitmap {
+		SAMR_VALIDATE_FIELD_PASSWORD_LAST_SET		= 0x00000001,
+		SAMR_VALIDATE_FIELD_BAD_PASSWORD_TIME		= 0x00000002,
+		SAMR_VALIDATE_FIELD_LOCKOUT_TIME		= 0x00000004,
+		SAMR_VALIDATE_FIELD_BAD_PASSWORD_COUNT		= 0x00000008,
+		SAMR_VALIDATE_FIELD_PASSWORD_HISTORY_LENGTH	= 0x00000010,
+		SAMR_VALIDATE_FIELD_PASSWORD_HISTORY		= 0x00000020
+	} samr_ValidateFieldsPresent;
+
+	typedef enum {
+		NetValidateAuthentication = 1,
+		NetValidatePasswordChange= 2,
+		NetValidatePasswordReset = 3
+	} samr_ValidatePasswordLevel;
+
+	typedef struct {
+		uint32 length;
+		[size_is(length)] uint8 *data;
+        } samr_ValidationBlob;
+
+	typedef struct {
+		samr_ValidateFieldsPresent fields_present;
+		NTTIME_hyper last_password_change;
+		NTTIME_hyper bad_password_time;
+		NTTIME_hyper lockout_time;
+		uint32 bad_pwd_count;
+		uint32 pwd_history_len;
+		[size_is(pwd_history_len)] samr_ValidationBlob *pwd_history;
+	} samr_ValidatePasswordInfo;
+
+	typedef struct {
+		samr_ValidatePasswordInfo info;
+		uint16 status;
+	} samr_ValidatePasswordRepCtr;
+
+	typedef [switch_type(uint16)] union {
+		[case(1)] samr_ValidatePasswordRepCtr ctr1;
+		[case(2)] samr_ValidatePasswordRepCtr ctr2;
+		[case(3)] samr_ValidatePasswordRepCtr ctr3;
+	} samr_ValidatePasswordRep;
+
+	typedef struct {
+		samr_ValidatePasswordInfo info;
+		lsa_StringLarge password;
+		lsa_StringLarge account;
+		samr_ValidationBlob hash;
+		boolean8 pwd_must_change_at_next_logon;
+		boolean8 clear_lockout;
+	} samr_ValidatePasswordReq3;
+
+	typedef struct {
+		samr_ValidatePasswordInfo info;
+		lsa_StringLarge password;
+		lsa_StringLarge account;
+		samr_ValidationBlob hash;
+		boolean8 password_matched;
+	} samr_ValidatePasswordReq2;
+
+	typedef struct {
+		samr_ValidatePasswordInfo info;
+		boolean8 password_matched;
+	} samr_ValidatePasswordReq1;
+
+	typedef [switch_type(uint16)] union {
+		[case(1)] samr_ValidatePasswordReq1 req1;
+		[case(2)] samr_ValidatePasswordReq2 req2;
+		[case(3)] samr_ValidatePasswordReq3 req3;
+	} samr_ValidatePasswordReq;
+
+	NTSTATUS samr_ValidatePassword(
+		[in] samr_ValidatePasswordLevel level,
+		[in,switch_is(level)] samr_ValidatePasswordReq req,
+		[out,switch_is(level)] samr_ValidatePasswordRep *rep
+		);
 }
