@@ -266,7 +266,8 @@ const char *cli_cm_get_mntpoint(struct cli_state *c)
 ********************************************************************/
 
 static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
-					const char *server,
+					struct cli_state *referring_cli,
+	 				const char *server,
 					const char *share,
 					bool show_hdr)
 {
@@ -289,8 +290,17 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 
 	cli_cm_set_mntpoint(node->cli, "");
 
-	return node->cli;
+	if (referring_cli && referring_cli->posix_capabilities) {
+		uint16 major, minor;
+		uint32 caplow, caphigh;
+		if (cli_unix_extensions_version(cli, &major,
+					&minor, &caplow, &caphigh)) {
+			cli_set_unix_extensions_capabilities(cli, major, minor,
+					caplow, caphigh);
+		}
+	}
 
+	return node->cli;
 }
 
 /********************************************************************
@@ -317,6 +327,7 @@ static struct cli_state *cli_cm_find(const char *server, const char *share)
 ****************************************************************************/
 
 struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
+				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
 				bool show_hdr)
@@ -327,7 +338,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 
 	c = cli_cm_find(server, share);
 	if (!c) {
-		c = cli_cm_connect(ctx, server, share, show_hdr);
+		c = cli_cm_connect(ctx, referring_cli, server, share, show_hdr);
 	}
 
 	return c;
@@ -378,17 +389,17 @@ static void cm_set_password(const char *newpass)
 	}
 }
 
-void cli_cm_set_credentials(struct user_auth_info *user)
+void cli_cm_set_credentials(void)
 {
 	SAFE_FREE(cm_creds.username);
-	cm_creds.username = SMB_STRDUP(user->username);
+	cm_creds.username = SMB_STRDUP(get_cmdline_auth_info_username());
 
-	if (user->got_pass) {
-		cm_set_password(user->password);
+	if (get_cmdline_auth_info_got_pass()) {
+		cm_set_password(get_cmdline_auth_info_password());
 	}
 
-	cm_creds.use_kerberos = user->use_kerberos;
-	cm_creds.signing_state = user->signing_state;
+	cm_creds.use_kerberos = get_cmdline_auth_info_use_kerberos();
+	cm_creds.signing_state = get_cmdline_auth_info_signing_state();
 }
 
 /****************************************************************************
@@ -729,7 +740,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Check for the referral. */
 
-	if (!(cli_ipc = cli_cm_open(ctx, rootcli->desthost, "IPC$", false))) {
+	if (!(cli_ipc = cli_cm_open(ctx, rootcli,
+					rootcli->desthost, "IPC$", false))) {
 		return false;
 	}
 
@@ -768,7 +780,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
  	 */
 
 	/* Open the connection to the target server & share */
-	if ((*targetcli = cli_cm_open(ctx, server, share, false)) == NULL) {
+	if ((*targetcli = cli_cm_open(ctx, rootcli,
+					server, share, false)) == NULL) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
 		return false;
@@ -850,31 +863,6 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	}
 
 	return true;
-}
-
-/********************************************************************
- Temporary hack - remove when pstring is dead. JRA.
-********************************************************************/
-
-bool cli_resolve_path_pstring( const char *mountpt,
-			struct cli_state *rootcli,
-			const char *path,
-			struct cli_state **targetcli,
-			pstring targetpath)
-{
-	char *tpath = NULL;
-	TALLOC_CTX *ctx = talloc_stackframe();
-	bool ret = cli_resolve_path(ctx,
-				mountpt,
-				rootcli,
-				path,
-				targetcli,
-				&tpath);
-	if (tpath) {
-		pstrcpy(targetpath, tpath);
-	}
-	TALLOC_FREE(ctx);
-	return ret;
 }
 
 /********************************************************************

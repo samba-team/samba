@@ -2671,9 +2671,9 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	nt_status = cli_full_connection(&cli_server2, global_myname(), servername2, 
 					NULL, 0,
 					"IPC$", "IPC",
-					cmdline_auth_info.username,
+					get_cmdline_auth_info_username(),
 					lp_workgroup(),
-					cmdline_auth_info.password,
+					get_cmdline_auth_info_password(),
 					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 					cmdline_auth_info.signing_state, NULL);
 

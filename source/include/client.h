@@ -142,7 +142,7 @@ struct cli_state {
 
 	smb_sign_info sign_info;
 
-	/* the session key for this CLI, outside 
+	/* the session key for this CLI, outside
 	   any per-pipe authenticaion */
 	DATA_BLOB user_session_key;
 
@@ -173,8 +173,7 @@ typedef struct file_info {
 	struct timespec mtime_ts;
 	struct timespec atime_ts;
 	struct timespec ctime_ts;
-	char name[1024];
-	char dir[1024]; /* Should use allocated PATH_MAX here.... */
+	char *name;
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */
 } file_info;
 

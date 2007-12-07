@@ -22,7 +22,7 @@
 /****************************************************************************
  Get UNIX extensions version info.
 ****************************************************************************/
-                                                                                                                   
+
 bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
                                         uint32 *pcaplow, uint32 *pcaphigh)
 {
@@ -33,18 +33,18 @@ bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *
 	unsigned int rparam_count=0, rdata_count=0;
 
 	setup = TRANSACT2_QFSINFO;
-	
+
 	SSVAL(param,0,SMB_QUERY_CIFS_UNIX_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
 		    0, 0,
 		    &setup, 1, 0,
 		    param, 2, 0,
 		    NULL, 0, 560)) {
 		goto cleanup;
 	}
-	
+
 	if (!cli_receive_trans(cli, SMBtrans2,
                               &rparam, &rparam_count,
                               &rdata, &rdata_count)) {
@@ -67,7 +67,7 @@ bool cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *
 	cli->posix_capabilities = *pcaplow = IVAL(rdata,4);
 	*pcaphigh = IVAL(rdata,8);
 
-	/* todo: but not yet needed 
+	/* todo: but not yet needed
 	 *       return the other stuff
 	 */
 
@@ -75,13 +75,13 @@ cleanup:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	return ret;	
+	return ret;
 }
 
 /****************************************************************************
  Set UNIX extensions capabilities.
 ****************************************************************************/
-                                                                                                                   
+
 bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, uint16 minor,
                                         uint32 caplow, uint32 caphigh)
 {
@@ -93,7 +93,7 @@ bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, u
 	unsigned int rparam_count=0, rdata_count=0;
 
 	setup = TRANSACT2_SETFSINFO;
-	
+
 	SSVAL(param,0,0);
 	SSVAL(param,2,SMB_SET_CIFS_UNIX_INFO);
 
@@ -102,15 +102,15 @@ bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, u
 	SIVAL(data,4,caplow);
 	SIVAL(data,8,caphigh);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
 		    0, 0,
 		    &setup, 1, 0,
 		    param, 4, 0,
 		    data, 12, 560)) {
 		goto cleanup;
 	}
-	
+
 	if (!cli_receive_trans(cli, SMBtrans2,
                               &rparam, &rparam_count,
                               &rdata, &rdata_count)) {
@@ -128,7 +128,7 @@ cleanup:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	return ret;	
+	return ret;
 }
 
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
@@ -143,18 +143,18 @@ bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
 		smb_panic("cli_get_fs_attr_info() called with NULL Pionter!");
 
 	setup = TRANSACT2_QFSINFO;
-	
+
 	SSVAL(param,0,SMB_QUERY_FS_ATTRIBUTE_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
 		    0, 0,
 		    &setup, 1, 0,
 		    param, 2, 0,
 		    NULL, 0, 560)) {
 		goto cleanup;
 	}
-	
+
 	if (!cli_receive_trans(cli, SMBtrans2,
                               &rparam, &rparam_count,
                               &rdata, &rdata_count)) {
@@ -174,7 +174,7 @@ bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
 
 	*fs_attr = IVAL(rdata,0);
 
-	/* todo: but not yet needed 
+	/* todo: but not yet needed
 	 *       return the other stuff
 	 */
 
@@ -182,7 +182,7 @@ cleanup:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	return ret;	
+	return ret;
 }
 
 bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number)
@@ -195,18 +195,18 @@ bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint
 	unsigned char nlen;
 
 	setup = TRANSACT2_QFSINFO;
-	
+
 	SSVAL(param,0,SMB_INFO_VOLUME);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
 		    0, 0,
 		    &setup, 1, 0,
 		    param, 2, 0,
 		    NULL, 0, 560)) {
 		goto cleanup;
 	}
-	
+
 	if (!cli_receive_trans(cli, SMBtrans2,
                               &rparam, &rparam_count,
                               &rdata, &rdata_count)) {
@@ -230,7 +230,7 @@ bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint
 	nlen = CVAL(rdata,l2_vol_cch);
 	clistr_pull(cli, volume_name, rdata + l2_vol_szVolLabel, sizeof(fstring), nlen, STR_NOALIGN);
 
-	/* todo: but not yet needed 
+	/* todo: but not yet needed
 	 *       return the other stuff
 	 */
 
@@ -238,7 +238,7 @@ cleanup:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	return ret;	
+	return ret;
 }
 
 bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate)
@@ -251,18 +251,18 @@ bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 	unsigned int nlen;
 
 	setup = TRANSACT2_QFSINFO;
-	
+
 	SSVAL(param,0,SMB_QUERY_FS_VOLUME_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
 		    0, 0,
 		    &setup, 1, 0,
 		    param, 2, 0,
 		    NULL, 0, 560)) {
 		goto cleanup;
 	}
-	
+
 	if (!cli_receive_trans(cli, SMBtrans2,
                               &rparam, &rparam_count,
                               &rdata, &rdata_count)) {
@@ -291,7 +291,7 @@ bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 	nlen = IVAL(rdata,12);
 	clistr_pull(cli, volume_name, rdata + 18, sizeof(fstring), nlen, STR_UNICODE);
 
-	/* todo: but not yet needed 
+	/* todo: but not yet needed
 	 *       return the other stuff
 	 */
 
@@ -299,5 +299,5 @@ cleanup:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	return ret;	
+	return ret;
 }

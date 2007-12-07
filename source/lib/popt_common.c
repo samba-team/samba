@@ -36,7 +36,57 @@
 extern bool AllowDebugChange;
 extern bool override_logfile;
 
-struct user_auth_info cmdline_auth_info;
+static struct user_auth_info cmdline_auth_info;
+
+const char *get_cmdline_auth_info_username(void)
+{
+	if (!cmdline_auth_info.username) {
+		return "";
+	}
+	return cmdline_auth_info.username;
+}
+
+void set_cmdline_auth_info_username(const char *username)
+{
+	SAFE_FREE(cmdline_auth_info.username);
+	cmdline_auth_info.username = SMB_STRDUP(username);
+	if (!cmdline_auth_info.username) {
+		exit(ENOMEM);
+	}
+}
+
+const char *get_cmdline_auth_info_password(void)
+{
+	if (!cmdline_auth_info.password) {
+		return "";
+	}
+	return cmdline_auth_info.password;
+}
+
+void set_cmdline_auth_info_password(const char *password)
+{
+	SAFE_FREE(cmdline_auth_info.password);
+	cmdline_auth_info.password = SMB_STRDUP(password);
+	if (!cmdline_auth_info.password) {
+		exit(ENOMEM);
+	}
+	cmdline_auth_info.got_pass = true;
+}
+
+int get_cmdline_auth_info_signing_state(void)
+{
+	return cmdline_auth_info.signing_state;
+}
+
+bool get_cmdline_auth_info_use_kerberos(void)
+{
+	return cmdline_auth_info.use_kerberos;
+}
+
+bool get_cmdline_auth_info_got_pass(void)
+{
+	return cmdline_auth_info.got_pass;
+}
 
 static void set_logfile(poptContext con, const char * arg)
 {
@@ -100,7 +150,7 @@ static void popt_common_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			pstrcpy(dyn_CONFIGFILE, arg);
+			strlcpy(dyn_CONFIGFILE, arg,sizeof(dyn_CONFIGFILE));
 		}
 		break;
 
@@ -213,13 +263,13 @@ static void popt_dynconfig_callback(poptContext con,
 
 	case DYN_LMHOSTSFILE:
 		if (arg) {
-			pstrcpy(dyn_LMHOSTSFILE, arg);
+			strlcpy(dyn_LMHOSTSFILE, arg,sizeof(dyn_LMHOSTSFILE));
 		}
 		break;
 
 	case DYN_LIBDIR:
 		if (arg) {
-			pstrcpy(dyn_LIBDIR, arg);
+			strlcpy(dyn_LIBDIR, arg,sizeof(dyn_LIBDIR));
 		}
 		break;
 
@@ -231,25 +281,25 @@ static void popt_dynconfig_callback(poptContext con,
 
 	case DYN_LOCKDIR:
 		if (arg) {
-			pstrcpy(dyn_LOCKDIR, arg);
+			strlcpy(dyn_LOCKDIR, arg,sizeof(dyn_LOCKDIR));
 		}
 		break;
 
 	case DYN_PIDDIR:
 		if (arg) {
-			pstrcpy(dyn_PIDDIR, arg);
+			strlcpy(dyn_PIDDIR, arg,sizeof(dyn_PIDDIR));
 		}
 		break;
 
 	case DYN_SMB_PASSWD_FILE:
 		if (arg) {
-			pstrcpy(dyn_SMB_PASSWD_FILE, arg);
+			strlcpy(dyn_SMB_PASSWD_FILE, arg,sizeof(dyn_SMB_PASSWD_FILE));
 		}
 		break;
 
 	case DYN_PRIVATE_DIR:
 		if (arg) {
-			pstrcpy(dyn_PRIVATE_DIR, arg);
+			strlcpy(dyn_PRIVATE_DIR, arg, sizeof(dyn_PRIVATE_DIR));
 		}
 		break;
 
@@ -289,7 +339,7 @@ const struct poptOption popt_common_dynconfig[] = {
  * exit on failure
  * ****************************************************************************/
 
-static void get_password_file(struct user_auth_info *a)
+static void get_password_file(void)
 {
 	int fd = -1;
 	char *p;
@@ -342,12 +392,14 @@ static void get_password_file(struct user_auth_info *a)
 		}
 	}
 	SAFE_FREE(spec);
-	pstrcpy(a->password, pass);
-	if (close_it)
+
+	set_cmdline_auth_info_password(pass);
+	if (close_it) {
 		close(fd);
+	}
 }
 
-static void get_credentials_file(const char *file, struct user_auth_info *info) 
+static void get_credentials_file(const char *file, struct user_auth_info *info)
 {
 	XFILE *auth;
 	fstring buf;
@@ -389,15 +441,22 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 		while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
 			val++;
 
-		if (strwicmp("password", param) == 0)
-		{
-			pstrcpy(info->password, val);
+		if (strwicmp("password", param) == 0) {
+			SAFE_FREE(info->password);
+			info->password = SMB_STRDUP(val);
+			if (!info->password) {
+				exit(ENOMEM);
+			}
 			info->got_pass = True;
-		}
-		else if (strwicmp("username", param) == 0)
-			pstrcpy(info->username, val);
-		else if (strwicmp("domain", param) == 0)
+		} else if (strwicmp("username", param) == 0) {
+			SAFE_FREE(info->username);
+			info->username = SMB_STRDUP(val);
+			if (!info->username) {
+				exit(ENOMEM);
+			}
+		} else if (strwicmp("domain", param) == 0) {
 			set_global_myworkgroup(val);
+		}
 		memset(buf, 0, sizeof(buf));
 	}
 	x_fclose(auth);
@@ -413,7 +472,7 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
  */
 
 
-static void popt_common_credentials_callback(poptContext con, 
+static void popt_common_credentials_callback(poptContext con,
 					enum poptCallbackReason reason,
 					const struct poptOption *opt,
 					const char *arg, const void *data)
@@ -424,24 +483,29 @@ static void popt_common_credentials_callback(poptContext con,
 		cmdline_auth_info.use_kerberos = False;
 		cmdline_auth_info.got_pass = False;
 		cmdline_auth_info.signing_state = Undefined;
-		pstrcpy(cmdline_auth_info.username, "GUEST");	
+		set_cmdline_auth_info_username("GUEST");
 
-		if (getenv("LOGNAME"))pstrcpy(cmdline_auth_info.username,getenv("LOGNAME"));
+		if (getenv("LOGNAME")) {
+			set_cmdline_auth_info_username(getenv("LOGNAME"));
+		}
 
 		if (getenv("USER")) {
-			pstrcpy(cmdline_auth_info.username,getenv("USER"));
+			char *puser = SMB_STRDUP(getenv("USER"));
+			if (!puser) {
+				exit(ENOMEM);
+			}
+			set_cmdline_auth_info_username(puser);
 
-			if ((p = strchr_m(cmdline_auth_info.username,'%'))) {
+			if ((p = strchr_m(puser,'%'))) {
 				*p = 0;
-				pstrcpy(cmdline_auth_info.password,p+1);
-				cmdline_auth_info.got_pass = True;
+				set_cmdline_auth_info_password(p+1);
 				memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(cmdline_auth_info.password));
 			}
+			SAFE_FREE(puser);
 		}
 
 		if (getenv("PASSWD")) {
-			pstrcpy(cmdline_auth_info.password,getenv("PASSWD"));
-			cmdline_auth_info.got_pass = True;
+			set_cmdline_auth_info_password(getenv("PASSWD"));
 		}
 
 		if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
@@ -468,7 +532,7 @@ static void popt_common_credentials_callback(poptContext con,
 		break;
 
 	case 'A':
-		get_credentials_file(arg, &cmdline_auth_info);
+		get_credentials_file(arg);
 		break;
 
 	case 'k':
@@ -476,22 +540,22 @@ static void popt_common_credentials_callback(poptContext con,
 		d_printf("No kerberos support compiled in\n");
 		exit(1);
 #else
-		cmdline_auth_info.use_kerberos = True;
-		cmdline_auth_info.got_pass = True;
+		cmdline_auth_info.use_kerberos = true;
+		cmdline_auth_info.got_pass = true;
 #endif
 		break;
 
 	case 'S':
 		{
 			cmdline_auth_info.signing_state = -1;
-			if (strequal(arg, "off") || strequal(arg, "no") || strequal(arg, "false"))
-				cmdline_auth_info.signing_state = False;
-			else if (strequal(arg, "on") || strequal(arg, "yes") || strequal(arg, "true") ||
-					strequal(arg, "auto") )
-				cmdline_auth_info.signing_state = True;
-			else if (strequal(arg, "force") || strequal(arg, "required") || strequal(arg, "forced"))
+			if (strequal(arg, "off") || strequal(arg, "no") || strequal(arg, "false")) {
+				cmdline_auth_info.signing_state = false;
+			} else if (strequal(arg, "on") || strequal(arg, "yes") || strequal(arg, "true") ||
+					strequal(arg, "auto")) {
+				cmdline_auth_info.signing_state = true;
+			} else if (strequal(arg, "force") || strequal(arg, "required") || strequal(arg, "forced")) {
 				cmdline_auth_info.signing_state = Required;
-			else {
+			} else {
 				fprintf(stderr, "Unknown signing option %s\n", arg );
 				exit(1);
 			}
@@ -500,34 +564,36 @@ static void popt_common_credentials_callback(poptContext con,
 	case 'P':
 	        {
 			char *opt_password = NULL;
+			char *pwd = NULL;
+
 			/* it is very useful to be able to make ads queries as the
 			   machine account for testing purposes and for domain leave */
-			
+
 			if (!secrets_init()) {
 				d_printf("ERROR: Unable to open secrets database\n");
 				exit(1);
 			}
-			
+
 			opt_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-			
+
 			if (!opt_password) {
 				d_printf("ERROR: Unable to fetch machine password\n");
 				exit(1);
 			}
-			pstr_sprintf(cmdline_auth_info.username, "%s$", 
-				     global_myname());
-			pstrcpy(cmdline_auth_info.password,opt_password);
+			if (asprintf(&pwd, "%s$", global_myname()) < 0) {
+				exit(ENOMEM);
+			}
+			set_cmdline_auth_info_username(pwd);
+			set_cmdline_auth_info_password(opt_password);
+			SAFE_FREE(pwd);
 			SAFE_FREE(opt_password);
 
 			/* machine accounts only work with kerberos */
-			cmdline_auth_info.use_kerberos = True;
-			cmdline_auth_info.got_pass = True;
+			cmdline_auth_info.use_kerberos = true;
 		}
 		break;
 	}
 }
-
-
 
 struct poptOption popt_common_credentials[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, (void *)popt_common_credentials_callback },

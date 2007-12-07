@@ -42,8 +42,8 @@ extern const struct poptOption popt_common_dynconfig[];
     "Build-time configuration overrides:", NULL },
 
 struct user_auth_info {
-	pstring username;
-	pstring password;
+	char *username;
+	char *password;
 	bool got_pass;
 	bool use_kerberos;
 	int signing_state;

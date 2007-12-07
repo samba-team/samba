@@ -20,9 +20,13 @@
 
 #include "includes.h"
 
-size_t clistr_push_fn(const char *function, unsigned int line, 
-		   struct cli_state *cli, void *dest, 
-		   const char *src, int dest_len, int flags)
+size_t clistr_push_fn(const char *function,
+			unsigned int line,
+			struct cli_state *cli,
+			void *dest,
+			const char *src,
+			int dest_len,
+			int flags)
 {
 	size_t buf_used = PTR_DIFF(dest, cli->outbuf);
 	if (dest_len == -1) {
@@ -38,23 +42,46 @@ size_t clistr_push_fn(const char *function, unsigned int line,
 				      dest, src, cli->bufsize - buf_used,
 				      flags);
 	}
-	
+
 	/* 'normal' push into size-specified buffer */
 	return push_string_fn(function, line, cli->outbuf,
 			      SVAL(cli->outbuf, smb_flg2),
 			      dest, src, dest_len, flags);
 }
 
-size_t clistr_pull_fn(const char *function, unsigned int line, 
-		   struct cli_state *cli, char *dest, const void *src, 
-		   int dest_len, int src_len, 
-		   int flags)
+size_t clistr_pull_fn(const char *function,
+			unsigned int line,
+			struct cli_state *cli,
+			char *dest,
+			const void *src,
+			int dest_len,
+			int src_len,
+			int flags)
 {
 	return pull_string_fn(function, line, cli->inbuf,
 			      SVAL(cli->inbuf, smb_flg2), dest, src, dest_len,
 			      src_len, flags);
 }
 
+size_t clistr_pull_talloc_fn(const char *function,
+				unsigned int line,
+				TALLOC_CTX *ctx,
+				struct cli_state *cli,
+				char **pp_dest,
+				const void *src,
+				int src_len,
+				int flags)
+{
+	return pull_string_talloc_fn(function,
+					line,
+					ctx,
+					cli->inbuf,
+					SVAL(cli->inbuf, smb_flg2),
+					pp_dest,
+					src,
+					src_len,
+					flags);
+}
 
 size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
 {

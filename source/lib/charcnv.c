@@ -1692,10 +1692,15 @@ size_t push_string_fn(const char *function, unsigned int line,
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_string_fn(const char *function, unsigned int line,
-		      const void *base_ptr, uint16 smb_flags2, char *dest,
-		      const void *src, size_t dest_len, size_t src_len,
-		      int flags)
+size_t pull_string_fn(const char *function,
+			unsigned int line,
+			const void *base_ptr,
+			uint16 smb_flags2,
+			char *dest,
+			const void *src,
+			size_t dest_len,
+			size_t src_len,
+			int flags)
 {
 #ifdef DEVELOPER
 	clobber_region(function, line, dest, dest_len);
