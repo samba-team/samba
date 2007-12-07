@@ -226,7 +226,7 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 
 	torture_assert(tctx, data->msg_ctx2 = 
 		       messaging_init(tctx, 
-				      lp_messaging_path(tctx, global_loadparm),
+				      lp_messaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(MSG_ID2), data->ev),
 		       "Failed to init second messaging context");
 

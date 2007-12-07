@@ -230,7 +230,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_ldb = ldb_wrap_connect(tmp_ctx, global_loadparm, 
+	remote_ldb = ldb_wrap_connect(tmp_ctx, ctx->lp_ctx, 
 				      remote_ldb_url, 
 				      NULL, ctx->cred, 0, NULL);
 	if (!remote_ldb) {
@@ -538,8 +538,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
 		} else {
 			/* Bugger, we just lost our way to automaticly find the domain name */
-			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup(global_loadparm));
-			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm(global_loadparm));
+			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup(ctx->lp_ctx));
+			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm(ctx->lp_ctx));
 		}
 	}
 
@@ -891,7 +891,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_reference(tmp_mem, lp_netbios_name(global_loadparm));
+		netbios_name = talloc_reference(tmp_mem, lp_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
@@ -910,7 +910,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	 * Local secrets are stored in secrets.ldb 
 	 * open it to make sure we can write the info into it after the join
 	 */
-	ldb = secrets_db_connect(tmp_mem, global_loadparm);
+	ldb = secrets_db_connect(tmp_mem, ctx->lp_ctx);
 	if (!ldb) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 

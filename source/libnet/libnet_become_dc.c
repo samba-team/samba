@@ -738,7 +738,7 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 	struct cldap_request *req;
 
 	s->cldap.io.in.dest_address	= s->source_dsa.address;
-	s->cldap.io.in.dest_port	= lp_cldap_port(global_loadparm);
+	s->cldap.io.in.dest_port	= lp_cldap_port(s->libnet->lp_ctx);
 	s->cldap.io.in.realm		= s->domain.dns_name;
 	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
 	s->cldap.io.in.user		= NULL;
@@ -792,7 +792,7 @@ static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s,
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	ldap->ldb = ldb_wrap_connect(s, global_loadparm, url,
+	ldap->ldb = ldb_wrap_connect(s, s->libnet->lp_ctx, url,
 				     NULL,
 				     s->libnet->cred,
 				     0, NULL);
@@ -1513,7 +1513,7 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
-		if (lp_parm_bool(global_loadparm, NULL, "become_dc", "print", false)) {
+		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
 			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		} else {

@@ -45,7 +45,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev,
 	ctx->lp_ctx = lp_ctx;
 
 	/* name resolution methods */
-	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order(global_loadparm));
+	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order(lp_ctx));
 
 	/* connected services' params */
 	ZERO_STRUCT(ctx->samr);

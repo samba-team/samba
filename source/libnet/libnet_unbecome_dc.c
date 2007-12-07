@@ -258,7 +258,7 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	struct cldap_request *req;
 
 	s->cldap.io.in.dest_address	= s->source_dsa.address;
-	s->cldap.io.in.dest_port	= lp_cldap_port(global_loadparm);
+	s->cldap.io.in.dest_port	= lp_cldap_port(s->libnet->lp_ctx);
 	s->cldap.io.in.realm		= s->domain.dns_name;
 	s->cldap.io.in.host		= s->dest_dsa.netbios_name;
 	s->cldap.io.in.user		= NULL;
@@ -309,7 +309,7 @@ static NTSTATUS unbecomeDC_ldap_connect(struct libnet_UnbecomeDC_state *s)
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	s->ldap.ldb = ldb_wrap_connect(s, global_loadparm, url,
+	s->ldap.ldb = ldb_wrap_connect(s, s->libnet->lp_ctx, url,
 				       NULL,
 				       s->libnet->cred,
 				       0, NULL);

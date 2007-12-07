@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "param/param.h"
+
 /*
   this type allows us to distinguish handle types
 */
@@ -49,6 +51,7 @@ struct samr_domain_state {
 	struct dom_sid *domain_sid;
 	const char *domain_name;
 	struct ldb_dn *domain_dn;
+	enum server_role role;
 };
 
 /*
