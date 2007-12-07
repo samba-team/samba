@@ -251,14 +251,22 @@ man_MANS =					\
 	krb5_warn.3				\
 	verify_krb5_conf.8
 
-dist_include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_ccapi.h
+dist_include_HEADERS = \
+	krb5.h \
+	krb5-protos.h \
+	krb5-private.h \
+	krb5_ccapi.h
+
 nodist_include_HEADERS = krb5_err.h heim_err.h k524_err.h 
 
 # XXX use nobase_include_HEADERS = krb5/locate_plugin.h
 krb5dir = $(includedir)/krb5
 krb5_HEADERS = locate_plugin.h
 
-build_HEADERZ = $(krb5_HEADERS) krb_err.h # XXX
+build_HEADERZ = \
+	heim_threads.h \
+	$(krb5_HEADERS) \
+	krb_err.h
 
 CLEANFILES = \
 	krb5_err.c krb5_err.h \
