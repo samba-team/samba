@@ -2447,7 +2447,7 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 NTSTATUS create_file(connection_struct *conn,
 		     struct smb_request *req,
 		     uint16_t root_dir_fid,
-		     char *fname,
+		     const char *fname,
 		     uint32_t flags,
 		     uint32_t access_mask,
 		     uint32_t file_attributes,
@@ -2624,7 +2624,10 @@ NTSTATUS create_file(connection_struct *conn,
 	}
 
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
-		status = resolve_dfspath(talloc_tos(), conn, true, fname, &fname);
+		char *resolved_fname;
+
+		status = resolve_dfspath(talloc_tos(), conn, true, fname,
+					 &resolved_fname);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/*
@@ -2635,6 +2638,7 @@ NTSTATUS create_file(connection_struct *conn,
 			 */
 			goto fail;
 		}
+		fname = resolved_fname;
 	}
 
 	/*
@@ -2646,10 +2650,15 @@ NTSTATUS create_file(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	status = unix_convert(talloc_tos(), conn, fname, False, &fname, NULL,
-			      &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	{
+		char *converted_fname;
+
+		status = unix_convert(talloc_tos(), conn, fname, False,
+				      &converted_fname, NULL, &sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		fname = converted_fname;
 	}
 
 	/* All file access must go through check_name() */
