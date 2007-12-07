@@ -34,6 +34,7 @@ struct finddcs_state {
 	struct composite_context *ctx;
 	struct messaging_context *msg_ctx;
 
+	const char *my_netbios_name;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
 
@@ -60,6 +61,7 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req);
  */
 
 struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
+				       const char *my_netbios_name,
 				       const char *domain_name,
 				       int name_type,
 				       struct dom_sid *domain_sid,
@@ -80,6 +82,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 
 	state->ctx = c;
 
+	state->my_netbios_name = talloc_strdup(state, my_netbios_name);
 	state->domain_name = talloc_strdup(state, domain_name);
 	if (composite_nomem(state->domain_name, c)) return c;
 
@@ -144,9 +147,8 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 
 	state->r.in.domainname = state->domain_name;
 	state->r.in.ip_address = state->dcs[0].address;
-	state->r.in.my_computername = lp_netbios_name(global_loadparm);
-	state->r.in.my_accountname = talloc_asprintf(state, "%s$",
-					lp_netbios_name(global_loadparm));
+	state->r.in.my_computername = state->my_netbios_name;
+	state->r.in.my_accountname = talloc_asprintf(state, "%s$", state->my_netbios_name);
 	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
 	state->r.in.account_control = ACB_WSTRUST;
 	state->r.in.domain_sid = state->domain_sid;
@@ -244,6 +246,7 @@ NTSTATUS finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
+		 const char *my_netbios_name,
 		 const char *domain_name, int name_type, 
 		 struct dom_sid *domain_sid,
 		 const char **methods,
@@ -252,6 +255,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {
 	struct composite_context *c = finddcs_send(mem_ctx,
+						   my_netbios_name,
 						   domain_name, name_type,
 						   domain_sid, methods, 
 						   event_ctx, msg_ctx);
