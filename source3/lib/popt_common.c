@@ -112,7 +112,7 @@ static void popt_common_callback(poptContext con,
 		if (arg) {
 			set_logfile(con, arg);
 			override_logfile = True;
-			pstr_sprintf(dyn_LOGFILEBASE, "%s", arg);
+			snprintf(dyn_LOGFILEBASE, sizeof(dyn_LOGFILEBASE), "%s", arg);
 		}
 		break;
 
