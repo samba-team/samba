@@ -43,8 +43,10 @@
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */
 
+#ifndef FSTRING_LEN
 #define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
+#endif
 
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
