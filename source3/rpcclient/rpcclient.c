@@ -823,10 +823,10 @@ out_free:
 	 * from stdin if necessary
 	 */
 
-	if (!cmdline_auth_info.got_pass) {
+	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password:");
 		if (pass) {
-			pstrcpy(cmdline_auth_info.password, pass);
+			set_cmdline_auth_info_password(pass);
 		}
 	}
 
@@ -838,11 +838,11 @@ out_free:
 	nt_status = cli_full_connection(&cli, global_myname(), server,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
-					cmdline_auth_info.username,
+					get_cmdline_auth_info_username(),
 					lp_workgroup(),
-					cmdline_auth_info.password,
-					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
-					cmdline_auth_info.signing_state,NULL);
+					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_use_kerberos() ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
+					get_cmdline_auth_info_signing_state(),NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
