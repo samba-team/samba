@@ -265,7 +265,7 @@ static bool print_tree(struct user_auth_info *user_info)
  int main(int argc,char *argv[])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct user_auth_info local_user_info;
+	struct user_auth_info local_auth_info;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
@@ -305,7 +305,7 @@ static bool print_tree(struct user_auth_info *user_info)
 
 	/* Now do our stuff */
 
-	if (!get_cmdline_auth_info_copy(&local_user_info)) {
+	if (!get_cmdline_auth_info_copy(&local_auth_info)) {
 		return 1;
 	}
 
