@@ -2453,14 +2453,13 @@ NTSTATUS create_file(connection_struct *conn,
 		     uint32_t create_disposition,
 		     uint32_t create_options,
 		     uint32_t file_attributes,
-		     uint32_t flags,
+		     uint32_t oplock_request,
 		     SMB_BIG_UINT allocation_size,
 		     struct security_descriptor *sd,
 		     struct ea_list *ea_list,
 
 		     files_struct **result,
 		     int *pinfo,
-		     uint8_t *poplock_granted,
 		     SMB_STRUCT_STAT *psbuf)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -2468,21 +2467,20 @@ NTSTATUS create_file(connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
-	uint8_t oplock_granted = NO_OPLOCK_RETURN;
-	int oplock_request;
 	NTSTATUS status;
 
-	DEBUG(10,("create_file: flags = 0x%x, access_mask = 0x%x "
+	DEBUG(10,("create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
+		  "oplock_request = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
 		  "fname = %s\n",
-		  (unsigned int)flags,
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
 		  (unsigned int)share_access,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
+		  (unsigned int)oplock_request,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, fname));
 
@@ -2611,12 +2609,6 @@ NTSTATUS create_file(connection_struct *conn,
 
 			goto done;
 		}
-	}
-
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
-			? BATCH_OPLOCK : 0;
 	}
 
 	if (req == NULL) {
@@ -2835,41 +2827,12 @@ NTSTATUS create_file(connection_struct *conn,
 		}
 	}
 
-	/*
-	 * If the caller set the extended oplock request bit
-	 * and we granted one (by whatever means) - set the
-	 * correct bit for extended oplock reply.
-	 */
-
-	if (oplock_request &&
-	    (lp_fake_oplocks(SNUM(conn))
-	     || EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))) {
-
-		/*
-		 * Exclusive oplock granted
-		 */
-
-		if (flags & REQUEST_BATCH_OPLOCK) {
-			oplock_granted = BATCH_OPLOCK_RETURN;
-		} else {
-			oplock_granted = EXCLUSIVE_OPLOCK_RETURN;
-		}
-	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		oplock_granted = LEVEL_II_OPLOCK_RETURN;
-	} else {
-		oplock_granted = NO_OPLOCK_RETURN;
-	}
-
  done:
-	DEBUG(10, ("create_file: info=%d, oplock_granted=%d\n",
-		   info, (int)oplock_granted));
+	DEBUG(10, ("create_file: info=%d\n", info));
 
 	*result = fsp;
 	if (pinfo != NULL) {
 		*pinfo = info;
-	}
-	if (poplock_granted != NULL) {
-		*poplock_granted = oplock_granted;
 	}
 	if (psbuf != NULL) {
 		*psbuf = sbuf;
