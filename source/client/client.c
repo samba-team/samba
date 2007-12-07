@@ -1313,10 +1313,8 @@ static int cmd_mget(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	uint16 attribute = aSYSTEM | aHIDDEN;
-	char *mget_mask;
-	char *buf;
-
-	*mget_mask = 0;
+	char *mget_mask = NULL;
+	char *buf = NULL;
 
 	if (recurse) {
 		attribute |= aDIR;
@@ -4369,7 +4367,7 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	cli = cli_cm_open(talloc_tos(), query_host, "IPC$", true);
+	cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
 	if (!cli)
 		return 1;
 
@@ -4382,7 +4380,7 @@ static int do_host_query(const char *query_host)
 
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
-		cli = cli_cm_open(talloc_tos(), query_host, "IPC$", true);
+		cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
 	}
 
 	if (cli == NULL) {
@@ -4575,7 +4573,7 @@ static int do_message_op(void)
 		}
 
 		/* if the service has already been retrieved then check if we have also a password */
-		if (service_opt && (!cmdline_auth_info.got_pass) && poptPeekArg(pc)) {
+		if (service_opt && (!get_cmdline_auth_info_got_pass()) && poptPeekArg(pc)) {
 			set_cmdline_auth_info_password(poptGetArg(pc));
 		}
 

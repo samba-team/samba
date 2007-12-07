@@ -38,6 +38,8 @@
 #include "clitar.h"
 #include "client/client_proto.h"
 
+static pstring cur_dir; /* FIXME !!! JRA*/
+
 static int clipfind(char **aret, int ret, char *tok);
 
 typedef struct file_info_struct file_info2;
@@ -102,7 +104,6 @@ static char **cliplist=NULL;
 static int clipn=0;
 static bool must_free_cliplist = False;
 
-extern file_info def_finfo;
 extern bool lowercase;
 extern uint16 cnum;
 extern bool readbraw_supported;
@@ -117,7 +118,7 @@ static int tarhandle;
 static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t mtime,
 			   const char *amode, unsigned char ftype);
 static void do_atar(char *rname,char *lname,file_info *finfo1);
-static void do_tar(file_info *finfo);
+static void do_tar(file_info *finfo, const char *dir);
 static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, size_t l);
 static int dotarbuf(int f, char *b, int n);
@@ -629,14 +630,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		finfo.ctime_ts = finfo1 -> ctime_ts;
 		finfo.name  = finfo1 -> name;
 	} else {
-		finfo.size  = def_finfo.size;
-		finfo.mode  = def_finfo.mode;
-		finfo.uid   = def_finfo.uid;
-		finfo.gid   = def_finfo.gid;
-		finfo.mtime_ts = def_finfo.mtime_ts;
-		finfo.atime_ts = def_finfo.atime_ts;
-		finfo.ctime_ts = def_finfo.ctime_ts;
-		finfo.name  = def_finfo.name;
+		/* DEAL WITH NULL finfo1. */
+		/* FIXME !!! JRA */
 	}
 
 	if (dry_run) {
@@ -650,7 +645,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
 	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
 
-	pstring_clean_name(rname);
+/*	pstring_clean_name(rname); FIXME !!! JRA  */
 
 	if (fnum == -1) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
@@ -793,7 +788,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 Append single file to tar file (or not)
 ***************************************************************************/
 
-static void do_tar(file_info *finfo)
+static void do_tar(file_info *finfo, const char *dir)
 {
 	pstring rname;
 
