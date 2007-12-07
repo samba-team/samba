@@ -108,7 +108,7 @@ int
 _krb5_xunlock(krb5_context context, int fd)
 {
     int ret;
-#ifdef HAVE_FCNTL_LOCK
+#ifdef HAVE_FCNTL
     struct flock l;
     l.l_start = 0;
     l.l_len = 0;
