@@ -189,13 +189,12 @@ RAND_file_name(char *filename, size_t size)
 		pathp = 1;
 	}
     }
-    if (e == NULL) {
-	struct passwd *pw = getpwuid(getuid());	
-	if (pw) {
-	    e = pw->pw_dir;
-	    pathp = 1;
-	}
-    }
+    /* 
+     * Here we really want to call getpwuid(getuid()) but this will
+     * cause recursive lookups if the nss library uses
+     * gssapi/krb5/hcrypto to authenticate to the ldap servers.
+     */
+
     if (e == NULL)
 	return NULL;
 
