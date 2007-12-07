@@ -83,8 +83,8 @@ AC_ARG_WITH([hdbdir],
 		[Default location for KDC database @<:@default=/var/heimdal@:>@])],
 	[],
 	[with_hdbdir=/var/heimdal])
-HDB_dir="$with_hdbdir"
-AC_SUBST([HDB_dir])
+DIR_hdbdir="$with_hdbdir"
+AC_SUBST([DIR_hdbdir])
 
 
 dnl no kerberos4 any more
