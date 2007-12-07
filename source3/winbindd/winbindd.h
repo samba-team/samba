@@ -137,10 +137,10 @@ struct winbindd_async_request;
 struct winbindd_domain;
 
 struct winbindd_child_dispatch_table {
-	enum winbindd_cmd cmd;
-	enum winbindd_result (*fn)(struct winbindd_domain *domain,
-				   struct winbindd_cli_state *state);
-	const char *winbindd_cmd_name;
+	const char *name;
+	enum winbindd_cmd struct_cmd;
+	enum winbindd_result (*struct_fn)(struct winbindd_domain *domain,
+					  struct winbindd_cli_state *state);
 };
 
 extern const struct winbindd_child_dispatch_table domain_dispatch_table[];

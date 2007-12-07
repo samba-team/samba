@@ -409,27 +409,77 @@ void sendto_domain(struct winbindd_cli_state *state,
 }
 
 const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
-
-	{ WINBINDD_LOOKUPSID,            winbindd_dual_lookupsid,             "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME,           winbindd_dual_lookupname,            "LOOKUPNAME" },
-	{ WINBINDD_LOOKUPRIDS,           winbindd_dual_lookuprids,            "LOOKUPRIDS" },
-	{ WINBINDD_LIST_TRUSTDOM,        winbindd_dual_list_trusted_domains,  "LIST_TRUSTDOM" },
-	{ WINBINDD_INIT_CONNECTION,      winbindd_dual_init_connection,       "INIT_CONNECTION" },
-	{ WINBINDD_GETDCNAME,            winbindd_dual_getdcname,             "GETDCNAME" },
-	{ WINBINDD_SHOW_SEQUENCE,        winbindd_dual_show_sequence,         "SHOW_SEQUENCE" },
-	{ WINBINDD_PAM_AUTH,             winbindd_dual_pam_auth,              "PAM_AUTH" },
-	{ WINBINDD_PAM_AUTH_CRAP,        winbindd_dual_pam_auth_crap,         "AUTH_CRAP" },
-	{ WINBINDD_PAM_LOGOFF,           winbindd_dual_pam_logoff,            "PAM_LOGOFF" },
-	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,winbindd_dual_pam_chng_pswd_auth_crap,"CHNG_PSWD_AUTH_CRAP" },
-	{ WINBINDD_PAM_CHAUTHTOK,        winbindd_dual_pam_chauthtok,         "PAM_CHAUTHTOK" },
-	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
-	{ WINBINDD_DUAL_USERINFO,        winbindd_dual_userinfo,              "DUAL_USERINFO" },
-	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
-	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
-	{ WINBINDD_CCACHE_NTLMAUTH,      winbindd_dual_ccache_ntlm_auth,      "CCACHE_NTLM_AUTH" },
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
+	{
+		.name		= "LOOKUPSID",
+		.struct_cmd	= WINBINDD_LOOKUPSID,
+		.struct_fn	= winbindd_dual_lookupsid,
+	},{
+		.name		= "LOOKUPNAME",
+		.struct_cmd	= WINBINDD_LOOKUPNAME,
+		.struct_fn	= winbindd_dual_lookupname,
+	},{
+		.name		= "LOOKUPRIDS",
+		.struct_cmd	= WINBINDD_LOOKUPRIDS,
+		.struct_fn	= winbindd_dual_lookuprids,
+	},{
+		.name		= "LIST_TRUSTDOM",
+		.struct_cmd	= WINBINDD_LIST_TRUSTDOM,
+		.struct_fn	= winbindd_dual_list_trusted_domains,
+	},{
+		.name		= "INIT_CONNECTION",
+		.struct_cmd	= WINBINDD_INIT_CONNECTION,
+		.struct_fn	= winbindd_dual_init_connection,
+	},{
+		.name		= "GETDCNAME",
+		.struct_cmd	= WINBINDD_GETDCNAME,
+		.struct_fn	= winbindd_dual_getdcname,
+	},{
+		.name		= "SHOW_SEQUENCE",
+		.struct_cmd	= WINBINDD_SHOW_SEQUENCE,
+		.struct_fn	= winbindd_dual_show_sequence,
+	},{
+		.name		= "PAM_AUTH",
+		.struct_cmd	= WINBINDD_PAM_AUTH,
+		.struct_fn	= winbindd_dual_pam_auth,
+	},{
+		.name		= "AUTH_CRAP",
+		.struct_cmd	= WINBINDD_PAM_AUTH_CRAP,
+		.struct_fn	= winbindd_dual_pam_auth_crap,
+	},{
+		.name		= "PAM_LOGOFF",
+		.struct_cmd	= WINBINDD_PAM_LOGOFF,
+		.struct_fn	= winbindd_dual_pam_logoff,
+	},{
+		.name		= "CHNG_PSWD_AUTH_CRAP",
+		.struct_cmd	= WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,
+		.struct_fn	= winbindd_dual_pam_chng_pswd_auth_crap,
+	},{
+		.name		= "PAM_CHAUTHTOK",
+		.struct_cmd	= WINBINDD_PAM_CHAUTHTOK,
+		.struct_fn	= winbindd_dual_pam_chauthtok,
+	},{
+		.name		= "CHECK_MACHACC",
+		.struct_cmd	= WINBINDD_CHECK_MACHACC,
+		.struct_fn	= winbindd_dual_check_machine_acct,
+	},{
+		.name		= "DUAL_USERINFO",
+		.struct_cmd	= WINBINDD_DUAL_USERINFO,
+		.struct_fn	= winbindd_dual_userinfo,
+	},{
+		.name		= "GETUSERDOMGROUPS",
+		.struct_cmd	= WINBINDD_GETUSERDOMGROUPS,
+		.struct_fn	= winbindd_dual_getuserdomgroups,
+	},{
+		.name		= "GETSIDALIASES",
+		.struct_cmd	= WINBINDD_DUAL_GETSIDALIASES,
+		.struct_fn	= winbindd_dual_getsidaliases,
+	},{
+		.name		= "CCACHE_NTLM_AUTH",
+		.struct_cmd	= WINBINDD_CCACHE_NTLMAUTH,
+		.struct_fn	= winbindd_dual_ccache_ntlm_auth,
+	},{
+		.name		= NULL,
+	}
 };
 
 static void child_process_request(struct winbindd_child *child,
@@ -449,20 +499,18 @@ static void child_process_request(struct winbindd_child *child,
 
 	/* Process command */
 
-	for (; table->fn; table++) {
-		if (state->request.cmd == table->cmd) {
-			DEBUG(10,("process_request: request fn %s\n",
-				  table->winbindd_cmd_name ));
-			state->response.result = table->fn(domain, state);
-			break;
+	for (; table->name; table++) {
+		if (state->request.cmd == table->struct_cmd) {
+			DEBUG(10,("child_process_request: request fn %s\n",
+				  table->name));
+			state->response.result = table->struct_fn(domain, state);
+			return;
 		}
 	}
 
-	if (!table->fn) {
-		DEBUG(1 ,("child_process_request: unknown request fn number %d\n",
-			  (int)state->request.cmd ));
-		state->response.result = WINBINDD_ERROR;
-	}
+	DEBUG(1 ,("child_process_request: unknown request fn number %d\n",
+		  (int)state->request.cmd));
+	state->response.result = WINBINDD_ERROR;
 }
 
 void setup_domain_child(struct winbindd_domain *domain,
