@@ -35,6 +35,7 @@ struct wins_state {
 	int pass_count;
 	int fail_count;
 	const char *wins_server;
+	uint16_t wins_port;
 	const char *my_ip;
 	uint32_t ttl;
 };
@@ -185,7 +186,7 @@ static void generate_query(struct nbt_name_socket *nbtsock, struct wins_state *s
 
 	io.in.name            = generate_name(tmp_ctx, idx);
 	io.in.dest_addr       = state->wins_server;
-	io.in.dest_port       = lp_nbt_port(global_loadparm);
+	io.in.dest_port       = state->wins_port;
 	io.in.broadcast       = false;
 	io.in.wins_lookup     = true;
 	io.in.timeout         = 2;
@@ -241,6 +242,7 @@ static bool bench_wins(struct torture_context *tctx)
 	state->num_names = torture_entries;
 	state->registered = talloc_zero_array(state, bool, state->num_names);
 	state->wins_server = address;
+	state->wins_port = lp_nbt_port(tctx->lp_ctx);
 	state->my_ip = talloc_strdup(tctx, iface_best_ip(tctx->lp_ctx, address));
 	state->ttl = timelimit;
 

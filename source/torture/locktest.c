@@ -168,7 +168,8 @@ static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
 }
 
 
-static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
+static void reconnect(struct loadparm_context *lp_ctx,
+		      struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		      char *share[NSERVERS])
 {
 	int server, conn, f;
@@ -184,7 +185,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum
 			}
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(global_loadparm, share[server], 
+		cli[server][conn] = connect_one(lp_ctx, share[server], 
 						server, conn);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
@@ -387,7 +388,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static void test_locks(char *share[NSERVERS])
+static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
@@ -438,7 +439,7 @@ static void test_locks(char *share[NSERVERS])
 #endif
 	}
 
-	reconnect(cli, fnum, share);
+	reconnect(lp_ctx, cli, fnum, share);
 	open_files(cli, fnum);
 	n = retest(cli, fnum, numops);
 
@@ -451,7 +452,7 @@ static void test_locks(char *share[NSERVERS])
 		n1 = n;
 
 		close_files(cli, fnum);
-		reconnect(cli, fnum, share);
+		reconnect(lp_ctx, cli, fnum, share);
 		open_files(cli, fnum);
 
 		for (i=0;i<n-skip;i+=skip) {
@@ -489,7 +490,7 @@ static void test_locks(char *share[NSERVERS])
 	}
 
 	close_files(cli, fnum);
-	reconnect(cli, fnum, share);
+	reconnect(lp_ctx, cli, fnum, share);
 	open_files(cli, fnum);
 	showall = true;
 	n1 = retest(cli, fnum, n);
@@ -649,7 +650,7 @@ static void usage(void)
 		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
 
-	test_locks(share);
+	test_locks(lp_ctx, share);
 
 	return(0);
 }

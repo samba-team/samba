@@ -129,7 +129,7 @@ static int load_proxy_info(struct ldb_module *module)
 		ldb_oom(module->ldb);
 		goto failed;
 	}
-	cli_credentials_guess(creds, global_loadparm);
+	cli_credentials_guess(creds, ldb_get_opaque(module->ldb, "loadparm"));
 	cli_credentials_set_username(creds, username, CRED_SPECIFIED);
 	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
 

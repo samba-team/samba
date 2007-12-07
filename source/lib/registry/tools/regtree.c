@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	}
 
 	if (remote != NULL) {
-		h = reg_common_open_remote(remote, cmdline_credentials);
+		h = reg_common_open_remote(remote, global_loadparm, cmdline_credentials);
 	} else if (file != NULL) {
 		start_key = reg_common_open_file(file, cmdline_credentials);
 	} else {
