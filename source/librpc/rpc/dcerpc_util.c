@@ -895,7 +895,8 @@ static void continue_epm_map(struct rpc_request *req)
 struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 						      struct dcerpc_binding *binding,
 						      const struct ndr_interface_table *table,
-						      struct event_context *ev)
+						      struct event_context *ev,
+						      struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct epm_map_binding_state *s;
@@ -984,7 +985,8 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	/* initiate rpc pipe connection */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, epmapper_binding, 
 						      &ndr_table_epmapper,
-						      anon_creds, c->event_ctx);
+						      anon_creds, c->event_ctx,
+						      lp_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 	
 	composite_continue(c, pipe_connect_req, continue_epm_recv_binding, c);
@@ -1008,11 +1010,12 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
   Get endpoint mapping for rpc connection
 */
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const struct ndr_interface_table *table, struct event_context *ev)
+				const struct ndr_interface_table *table, struct event_context *ev,
+				struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 
-	c = dcerpc_epm_map_binding_send(mem_ctx, binding, table, ev);
+	c = dcerpc_epm_map_binding_send(mem_ctx, binding, table, ev, lp_ctx);
 	return dcerpc_epm_map_binding_recv(c);
 }
 
@@ -1021,6 +1024,7 @@ struct pipe_auth_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;
 	const struct ndr_interface_table *table;
+	struct loadparm_context *lp_ctx;
 	struct cli_credentials *credentials;
 };
 
@@ -1124,7 +1128,8 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, DCERPC_AUTH_TYPE_NTLMSSP,
+					 s->credentials, s->lp_ctx,
+					 DCERPC_AUTH_TYPE_NTLMSSP,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -1155,7 +1160,7 @@ static void continue_spnego_after_wrong_pass(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+					 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -1184,7 +1189,8 @@ static void continue_auth_none(struct composite_context *ctx)
 struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p, 
 						struct dcerpc_binding *binding,
 						const struct ndr_interface_table *table,
-						struct cli_credentials *credentials)
+						struct cli_credentials *credentials,
+						struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_auth_state *s;
@@ -1207,6 +1213,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	s->table        = table;
 	s->credentials  = credentials;
 	s->pipe         = p;
+	s->lp_ctx       = lp_ctx;
 
 	conn = s->pipe->conn;
 	conn->flags = binding->flags;
@@ -1226,7 +1233,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		 * the schannel bind, then we have to get these
 		 * first */
 		auth_schannel_req = dcerpc_bind_auth_schannel_send(c, s->pipe, s->table,
-								   s->credentials,
+								   s->credentials, s->lp_ctx,
 								   dcerpc_auth_level(conn));
 		composite_continue(c, auth_schannel_req, continue_auth_schannel, c);
 		return c;
@@ -1272,7 +1279,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	} else {
 		/* try SPNEGO with fallback to NTLMSSP */
 		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+						 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
 						 dcerpc_auth_level(conn),
 						 s->table->authservices->names[0]);
 		composite_continue(c, auth_req, continue_auth_auto, c);
@@ -1280,7 +1287,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	}
 
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, auth_type,
+					 s->credentials, s->lp_ctx, auth_type,
 					 dcerpc_auth_level(conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -1326,11 +1333,12 @@ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 
 			  struct dcerpc_binding *binding,
 			  const struct ndr_interface_table *table,
-			  struct cli_credentials *credentials)
+			  struct cli_credentials *credentials,
+			  struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 
-	c = dcerpc_pipe_auth_send(*p, binding, table, credentials);
+	c = dcerpc_pipe_auth_send(*p, binding, table, credentials, lp_ctx);
 	return dcerpc_pipe_auth_recv(c, mem_ctx, p);
 }
 

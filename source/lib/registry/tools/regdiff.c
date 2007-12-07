@@ -44,7 +44,7 @@ static struct registry_context *open_backend(poptContext pc,
 		error = reg_open_samba(NULL, &ctx, lp_ctx, NULL, cmdline_credentials);
 		break;
 	case REG_REMOTE:
-		error = reg_open_remote(&ctx, NULL, cmdline_credentials,
+		error = reg_open_remote(&ctx, NULL, cmdline_credentials, lp_ctx,
 					remote_host, NULL);
 		break;
 	case REG_NULL:

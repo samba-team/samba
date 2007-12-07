@@ -78,7 +78,7 @@ bool torture_async_bind(struct torture_context *torture)
 	for (i = 0; i < torture_numasync; i++) {
 		table[i] = &ndr_table_lsarpc;
 		bind_req[i] = dcerpc_pipe_connect_send(mem_ctx, binding_string,
-						       table[i], creds, evt_ctx);
+						       table[i], creds, evt_ctx, torture->lp_ctx);
 	}
 
 	/* recv bind requests */

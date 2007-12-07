@@ -2545,7 +2545,7 @@ static void display_share_result(struct srvsvc_NetShareCtr1 *ctr1)
 /****************************************************************************
 try and browse available shares on a host
 ****************************************************************************/
-static bool browse_host(const char *query_host)
+static bool browse_host(struct loadparm_context *lp_ctx, const char *query_host)
 {
 	struct dcerpc_pipe *p;
 	char *binding;
@@ -2559,7 +2559,8 @@ static bool browse_host(const char *query_host)
 
 	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
 					 &ndr_table_srvsvc,
-				     cmdline_credentials, NULL);
+				     cmdline_credentials, NULL,
+				     lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));
@@ -3055,9 +3056,9 @@ static struct smbclient_context *do_connect(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 handle a -L query
 ****************************************************************************/
-static int do_host_query(const char *query_host, const char *workgroup)
+static int do_host_query(struct loadparm_context *lp_ctx, const char *query_host, const char *workgroup)
 {
-	browse_host(query_host);
+	browse_host(lp_ctx, query_host);
 	list_servers(workgroup);
 	return(0);
 }
@@ -3219,7 +3220,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 	}
   
 	if (query_host) {
-		return do_host_query(query_host, lp_workgroup(global_loadparm));
+		return do_host_query(global_loadparm, query_host, lp_workgroup(global_loadparm));
 	}
 
 	if (message) {

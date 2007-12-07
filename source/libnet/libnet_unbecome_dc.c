@@ -540,7 +540,8 @@ static void unbecomeDC_drsuapi_connect_send(struct libnet_UnbecomeDC_state *s)
 	if (!composite_is_ok(c)) return;
 
 	creq = dcerpc_pipe_connect_b_send(s, s->drsuapi.binding, &ndr_table_drsuapi,
-					  s->libnet->cred, s->libnet->event_ctx);
+					  s->libnet->cred, s->libnet->event_ctx,
+					  s->libnet->lp_ctx);
 	composite_continue(c, creq, unbecomeDC_drsuapi_connect_recv, s);
 }
 

@@ -114,7 +114,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 				       drsuapi_binding,
 				       &ndr_table_drsuapi,
 				       ctx->cred, 
-				       ctx->event_ctx);
+				       ctx->event_ctx,
+				       ctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(r,
 					"Connection to DRSUAPI pipe of PDC of domain '%s' failed: %s",
@@ -506,7 +507,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	status = dcerpc_pipe_auth(tmp_ctx, &samr_pipe,
 				  connect_with_info->out.dcerpc_pipe->binding, 
-				  &ndr_table_samr, ctx->cred);
+				  &ndr_table_samr, ctx->cred, ctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						"SAMR bind failed: %s",

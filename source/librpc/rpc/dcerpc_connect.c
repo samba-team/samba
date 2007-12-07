@@ -468,6 +468,7 @@ struct pipe_connect_state {
 	struct dcerpc_binding *binding;
 	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx;
 };
 
 
@@ -663,7 +664,7 @@ static void continue_pipe_connect(struct composite_context *c, struct pipe_conne
 	}
 
 	auth_bind_req = dcerpc_pipe_auth_send(s->pipe, s->binding, s->table,
-					      s->credentials);
+					      s->credentials, s->lp_ctx);
 	composite_continue(c, auth_bind_req, continue_pipe_auth, c);
 }
 
@@ -703,7 +704,8 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
-						     struct event_context *ev)
+						     struct event_context *ev,
+						     struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_connect_state *s;
@@ -735,6 +737,7 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	s->binding      = binding;
 	s->table        = table;
 	s->credentials  = credentials;
+	s->lp_ctx 	= lp_ctx;
 
 	event_add_timed(c->event_ctx, c,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
@@ -744,7 +747,8 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	case NCA_UNKNOWN: {
 		struct composite_context *binding_req;
 		binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
-							  s->pipe->conn->event_ctx);
+							  s->pipe->conn->event_ctx,
+							  s->lp_ctx);
 		composite_continue(c, binding_req, continue_map_binding, c);
 		return c;
 		}
@@ -755,7 +759,8 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 		if (!s->binding->endpoint) {
 			struct composite_context *binding_req;
 			binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
-								  s->pipe->conn->event_ctx);
+								  s->pipe->conn->event_ctx,
+								  s->lp_ctx);
 			composite_continue(c, binding_req, continue_map_binding, c);
 			return c;
 		}
@@ -799,12 +804,13 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
-			       struct event_context *ev)
+			       struct event_context *ev,
+			       struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	
 	c = dcerpc_pipe_connect_b_send(parent_ctx, binding, table,
-				       credentials, ev);
+				       credentials, ev, lp_ctx);
 	return dcerpc_pipe_connect_b_recv(c, parent_ctx, pp);
 }
 
@@ -826,7 +832,7 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 						   const char *binding,
 						   const struct ndr_interface_table *table,
 						   struct cli_credentials *credentials,
-						   struct event_context *ev)
+						   struct event_context *ev, struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_conn_state *s;
@@ -867,7 +873,7 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	   is established
 	 */
 	pipe_conn_req = dcerpc_pipe_connect_b_send(c, b, table,
-						   credentials, ev);
+						   credentials, ev, lp_ctx);
 	composite_continue(c, pipe_conn_req, continue_pipe_connect_b, c);
 	return c;
 }
@@ -922,12 +928,12 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     const char *binding,
 			     const struct ndr_interface_table *table,
 			     struct cli_credentials *credentials,
-			     struct event_context *ev)
+			     struct event_context *ev,
+			     struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	c = dcerpc_pipe_connect_send(parent_ctx, binding, 
-				     table,
-				     credentials, ev);
+				     table, credentials, ev, lp_ctx);
 	return dcerpc_pipe_connect_recv(c, parent_ctx, pp);
 }
 

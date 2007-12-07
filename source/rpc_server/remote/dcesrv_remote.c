@@ -103,7 +103,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 	status = dcerpc_pipe_connect(private, 
 				     &(private->c_pipe), binding, table,
-				     credentials, dce_call->event_ctx);
+				     credentials, dce_call->event_ctx,
+				     dce_call->conn->dce_ctx->lp_ctx);
 
 	talloc_free(credentials);
 	if (!NT_STATUS_IS_OK(status)) {

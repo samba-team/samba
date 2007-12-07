@@ -182,7 +182,7 @@ static bool _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
 				       &ndr_table_drsuapi,
-				       credentials, event);
+				       credentials, event, global_loadparm);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));

@@ -70,7 +70,8 @@ struct composite_context *wb_connect_samr_send(TALLOC_CTX *mem_ctx,
 	ctx = dcerpc_secondary_auth_connection_send(domain->netlogon_pipe,
 						    domain->samr_binding,
 						    &ndr_table_samr,
-						    domain->libnet_ctx->cred);
+						    domain->libnet_ctx->cred,
+						    domain->libnet_ctx->lp_ctx);
 	composite_continue(state->ctx, ctx, connect_samr_recv_pipe, state);
 	return result;
 	

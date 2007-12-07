@@ -216,7 +216,7 @@ bool torture_groupinfo_api(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare torture group info");
 
-	ctx = libnet_context_init(NULL);
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,

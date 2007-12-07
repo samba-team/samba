@@ -68,7 +68,8 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
                              const char *binding,
                              const char *pipe_uuid,
                              uint32_t pipe_version,
-			     struct cli_credentials *credentials);
+			     struct cli_credentials *credentials,
+                 struct loadparm_context *lp_ctx);
 
 %typemap(in) DATA_BLOB * (DATA_BLOB temp_data_blob) {
 	temp_data_blob.data = PyString_AsString($input);

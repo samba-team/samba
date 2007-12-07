@@ -212,6 +212,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						struct dcerpc_pipe *p,
 						const struct ndr_interface_table *table,
 						struct cli_credentials *credentials,
+						struct loadparm_context *lp_ctx,
 						uint8_t auth_type, uint8_t auth_level,
 						const char *service)
 {
@@ -240,7 +241,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	c->status = gensec_client_start(p, &sec->generic_state,
 					p->conn->event_ctx,
-					global_loadparm);
+					lp_ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n",
 			  nt_errstr(c->status)));
@@ -374,11 +375,12 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
+			  struct loadparm_context *lp_ctx,
 			  uint8_t auth_type, uint8_t auth_level,
 			  const char *service)
 {
 	struct composite_context *creq;
-	creq = dcerpc_bind_auth_send(p, p, table, credentials,
+	creq = dcerpc_bind_auth_send(p, p, table, credentials, lp_ctx,
 				     auth_type, auth_level, service);
 	return dcerpc_bind_auth_recv(creq);
 }

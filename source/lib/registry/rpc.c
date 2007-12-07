@@ -375,6 +375,7 @@ static struct registry_operations reg_backend_rpc = {
 _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 				struct auth_session_info *session_info,
 				struct cli_credentials *credentials,
+				struct loadparm_context *lp_ctx,
 				const char *location, struct event_context *ev)
 {
 	NTSTATUS status;
@@ -393,7 +394,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 	status = dcerpc_pipe_connect(*ctx /* TALLOC_CTX */,
 				     &p, location,
 					 &ndr_table_winreg,
-				     credentials, ev);
+				     credentials, ev, lp_ctx);
 	rctx->pipe = p;
 
 	if(NT_STATUS_IS_ERR(status)) {

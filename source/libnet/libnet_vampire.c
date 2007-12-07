@@ -270,7 +270,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	}
 
 	nt_status = dcerpc_bind_auth_schannel(samsync_ctx, p, &ndr_table_netlogon,
-					      machine_account, DCERPC_AUTH_LEVEL_PRIVACY);
+					      machine_account, ctx->lp_ctx, DCERPC_AUTH_LEVEL_PRIVACY);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,

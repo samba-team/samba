@@ -120,7 +120,7 @@ bool torture_rpc_scanner(struct torture_context *torture)
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(torture, b, l->table, NULL);
+			status = dcerpc_epm_map_binding(torture, b, l->table, NULL, torture->lp_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to map port for uuid %s\n", 
 					   GUID_string(loop_ctx, &l->table->syntax_id.uuid));

@@ -51,20 +51,6 @@
 #include "param/param.h"
 #include "lib/registry/registry.h"
 
-static struct cli_credentials *create_anon_creds(TALLOC_CTX *mem_ctx)
-{
-	struct cli_credentials *result;
-
-	if (!(result = cli_credentials_init(mem_ctx))) {
-		return NULL;
-	}
-
-	cli_credentials_set_conf(result, global_loadparm);
-	cli_credentials_set_anonymous(result);
-
-	return result;
-}
-
 /*
  * This tests a RPC call using an invalid vuid
  */
@@ -153,7 +139,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+	if (!(anon_creds = cli_credentials_init_anon(mem_ctx))) {
 		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
@@ -199,6 +185,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 
 static bool bindtest(struct smbcli_state *cli,
 		     struct cli_credentials *credentials,
+		     struct loadparm_context *lp_ctx,
 		     uint8_t auth_type, uint8_t auth_level)
 {
 	TALLOC_CTX *mem_ctx;
@@ -232,7 +219,7 @@ static bool bindtest(struct smbcli_state *cli,
 	}
 
 	status = dcerpc_bind_auth(lsa_pipe, &ndr_table_lsarpc,
-				  credentials, auth_type, auth_level,
+				  credentials, lp_ctx, auth_type, auth_level,
 				  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_bind_auth failed: %s\n", nt_errstr(status));
@@ -310,13 +297,13 @@ bool torture_bind_samba3(struct torture_context *torture)
 
 	ret = true;
 
-	ret &= bindtest(cli, cmdline_credentials, DCERPC_AUTH_TYPE_NTLMSSP,
+	ret &= bindtest(cli, cmdline_credentials, torture->lp_ctx, DCERPC_AUTH_TYPE_NTLMSSP,
 			DCERPC_AUTH_LEVEL_INTEGRITY);
-	ret &= bindtest(cli, cmdline_credentials, DCERPC_AUTH_TYPE_NTLMSSP,
+	ret &= bindtest(cli, cmdline_credentials, torture->lp_ctx, DCERPC_AUTH_TYPE_NTLMSSP,
 			DCERPC_AUTH_LEVEL_PRIVACY);
-	ret &= bindtest(cli, cmdline_credentials, DCERPC_AUTH_TYPE_SPNEGO,
+	ret &= bindtest(cli, cmdline_credentials, torture->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
 			DCERPC_AUTH_LEVEL_INTEGRITY);
-	ret &= bindtest(cli, cmdline_credentials, DCERPC_AUTH_TYPE_SPNEGO,
+	ret &= bindtest(cli, cmdline_credentials, torture->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
 			DCERPC_AUTH_LEVEL_PRIVACY);
 
  done:
@@ -330,6 +317,7 @@ bool torture_bind_samba3(struct torture_context *torture)
 
 static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       TALLOC_CTX *mem_ctx,
+			       struct loadparm_context *lp_ctx,
 			       struct cli_credentials *admin_creds,
 			       uint8_t auth_type,
 			       uint8_t auth_level,
@@ -372,7 +360,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	if (admin_creds != NULL) {
 		status = dcerpc_bind_auth(samr_pipe, &ndr_table_samr,
-					  admin_creds, auth_type, auth_level,
+					  admin_creds, lp_ctx, auth_type, auth_level,
 					  NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("dcerpc_bind_auth failed: %s\n",
@@ -504,6 +492,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
  */
 
 static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
+			struct loadparm_context *lp_ctx,
 			struct cli_credentials *admin_creds,
 			const char *username, const char *password,
 			char **domain_name,
@@ -520,7 +509,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		return false;
 	}
 
-	status = get_usr_handle(cli, tmp_ctx, admin_creds,
+	status = get_usr_handle(cli, tmp_ctx, lp_ctx, admin_creds,
 				DCERPC_AUTH_TYPE_NTLMSSP,
 				DCERPC_AUTH_LEVEL_INTEGRITY,
 				username, domain_name, &samr_pipe, &wks_handle,
@@ -616,6 +605,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
  */
 
 static bool delete_user(struct smbcli_state *cli,
+			struct loadparm_context *lp_ctx,
 			struct cli_credentials *admin_creds,
 			const char *username)
 {
@@ -631,7 +621,7 @@ static bool delete_user(struct smbcli_state *cli,
 		return false;
 	}
 
-	status = get_usr_handle(cli, mem_ctx, admin_creds,
+	status = get_usr_handle(cli, mem_ctx, lp_ctx, admin_creds,
 				DCERPC_AUTH_TYPE_NTLMSSP,
 				DCERPC_AUTH_LEVEL_INTEGRITY,
 				username, &dom_name, &samr_pipe,
@@ -667,6 +657,7 @@ static bool delete_user(struct smbcli_state *cli,
  */
 
 static bool join3(struct smbcli_state *cli,
+		  struct loadparm_context *lp_ctx,
 		  bool use_level25,
 		  struct cli_credentials *admin_creds,
 		  struct cli_credentials *wks_creds)
@@ -684,7 +675,7 @@ static bool join3(struct smbcli_state *cli,
 	}
 
 	status = get_usr_handle(
-		cli, mem_ctx, admin_creds,
+		cli, mem_ctx, lp_ctx, admin_creds,
 		DCERPC_AUTH_TYPE_NTLMSSP,
 		DCERPC_AUTH_LEVEL_PRIVACY,
 		talloc_asprintf(mem_ctx, "%s$",
@@ -908,6 +899,7 @@ static bool auth2(struct smbcli_state *cli,
  */
 
 static bool schan(struct smbcli_state *cli,
+		  struct loadparm_context *lp_ctx,
 		  struct cli_credentials *wks_creds,
 		  struct cli_credentials *user_creds)
 {
@@ -944,7 +936,7 @@ static bool schan(struct smbcli_state *cli,
 #if 1
 	net_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 	status = dcerpc_bind_auth(net_pipe, &ndr_table_netlogon,
-				  wks_creds, DCERPC_AUTH_TYPE_SCHANNEL,
+				  wks_creds, lp_ctx, DCERPC_AUTH_TYPE_SCHANNEL,
 				  DCERPC_AUTH_LEVEL_PRIVACY,
 				  NULL);
 #else
@@ -1105,6 +1097,7 @@ static bool schan(struct smbcli_state *cli,
  */
 
 static bool leave(struct smbcli_state *cli,
+		  struct loadparm_context *lp_ctx,
 		  struct cli_credentials *admin_creds,
 		  struct cli_credentials *wks_creds)
 {
@@ -1112,7 +1105,7 @@ static bool leave(struct smbcli_state *cli,
 		NULL, "%s$", cli_credentials_get_workstation(wks_creds));
 	bool ret;
 
-	ret = delete_user(cli, admin_creds, wks_name);
+	ret = delete_user(cli, lp_ctx, admin_creds, wks_name);
 	talloc_free(wks_name);
 	return ret;
 }
@@ -1144,7 +1137,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 		return false;
 	}
 
-	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+	if (!(anon_creds = cli_credentials_init_anon(mem_ctx))) {
 		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
@@ -1172,7 +1165,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 				     generate_random_str(wks_creds, 8),
 				     CRED_SPECIFIED);
 
-	if (!join3(cli, false, cmdline_credentials, wks_creds)) {
+	if (!join3(cli, torture->lp_ctx, false, cmdline_credentials, wks_creds)) {
 		d_printf("join failed\n");
 		goto done;
 	}
@@ -1195,14 +1188,14 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 		}
 
 		for (j=0; j<2; j++) {
-			if (!schan(cli, wks_creds, cmdline_credentials)) {
+			if (!schan(cli, torture->lp_ctx, wks_creds, cmdline_credentials)) {
 				d_printf("schan failed\n");
 				goto done;
 			}
 		}
 	}
 
-	if (!leave(cli, cmdline_credentials, wks_creds)) {
+	if (!leave(cli, torture->lp_ctx, cmdline_credentials, wks_creds)) {
 		d_printf("leave failed\n");
 		goto done;
 	}
@@ -1253,7 +1246,7 @@ static bool test_join3(struct torture_context *tctx,
 				     generate_random_str(wks_creds, 8),
 				     CRED_SPECIFIED);
 
-	if (!join3(cli, use_level25, samr_creds, wks_creds)) {
+	if (!join3(cli, tctx->lp_ctx, use_level25, samr_creds, wks_creds)) {
 		d_printf("join failed\n");
 		goto done;
 	}
@@ -1267,7 +1260,7 @@ static bool test_join3(struct torture_context *tctx,
 		goto done;
 	}
 
-	if (!leave(cli, samr_creds, wks_creds)) {
+	if (!leave(cli, tctx->lp_ctx, samr_creds, wks_creds)) {
 		d_printf("leave failed\n");
 		goto done;
 	}
@@ -1293,7 +1286,7 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
 
 	wks_name = torture_setting_string(torture, "wksname", get_myname());
 
-	if (!(anon_creds = create_anon_creds(torture))) {
+	if (!(anon_creds = cli_credentials_init_anon(torture))) {
 		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
@@ -1611,7 +1604,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 
 	talloc_free(cli);
 
-	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+	if (!(anon_creds = cli_credentials_init_anon(mem_ctx))) {
 		d_printf("(%s) create_anon_creds failed\n", __location__);
 		ret = false;
 		goto done;
@@ -1655,7 +1648,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 				     generate_random_str(user_creds, 8),
 				     CRED_SPECIFIED);
 
-	if (!create_user(mem_ctx, cli, cmdline_credentials,
+	if (!create_user(mem_ctx, cli, torture->lp_ctx, cmdline_credentials,
 			 cli_credentials_get_username(user_creds),
 			 cli_credentials_get_password(user_creds),
 			 &domain_name, &created_sid)) {
@@ -1720,7 +1713,8 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	}
 
  delete:
-	if (!delete_user(cli, cmdline_credentials,
+	if (!delete_user(cli, torture->lp_ctx, 
+			 cmdline_credentials,
 			 cli_credentials_get_username(user_creds))) {
 		d_printf("(%s) delete_user failed\n", __location__);
 		ret = false;
