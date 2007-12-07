@@ -367,13 +367,6 @@ bool get_cmdline_auth_info_got_pass(void)
 	return cmdline_auth_info.got_pass;
 }
 
-/* This should only be used by lib/popt_common.c JRA */
-void set_cmdline_auth_info_no_password(void)
-{
-	SAFE_FREE(cmdline_auth_info.password);
-	cmdline_auth_info.got_pass = false;
-}
-
 bool get_cmdline_auth_info_copy(struct user_auth_info *info)
 {
 	*info = cmdline_auth_info;

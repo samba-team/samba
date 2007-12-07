@@ -524,7 +524,7 @@ static void popt_common_credentials_callback(poptContext con,
 		}
 		break;
 	case 'N':
-		set_cmdline_auth_info_no_password();
+		set_cmdline_auth_info_password("");
 		break;
 	}
 }
