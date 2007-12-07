@@ -2211,9 +2211,9 @@ void dump_data(int level, const unsigned char *buf1,int len)
 		n = MIN(8,i%16);
 		print_asc(level,&buf[i-(i%16)],n); DEBUGADD(level,( " " ));
 		n = (i%16) - n;
-		if (n>0) print_asc(level,&buf[i-n],n); 
-		DEBUGADD(level,("\n"));    
-	}	
+		if (n>0) print_asc(level,&buf[i-n],n);
+		DEBUGADD(level,("\n"));
+	}
 }
 
 void dump_data_pw(const char *msg, const uchar * data, size_t len)
@@ -2229,10 +2229,10 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 
 char *tab_depth(int depth)
 {
-	static pstring spaces;
+	static fstring spaces;
 	size_t len = depth * 4;
-	if (len > sizeof(pstring)-1) {
-		len = sizeof(pstring)-1;
+	if (len > sizeof(fstring)-1) {
+		len = sizeof(fstring)-1;
 	}
 
 	memset(spaces, ' ', len);
@@ -2254,7 +2254,7 @@ int str_checksum(const char *s)
 	int res = 0;
 	int c;
 	int i=0;
-	
+
 	while(*s) {
 		c = *s;
 		res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
@@ -2564,7 +2564,7 @@ char *pid_path(const char *name)
  *
  * @param name File to find, relative to LIBDIR.
  *
- * @retval Pointer to a static #pstring containing the full path.
+ * @retval Pointer to a string containing the full path.
  **/
 
 char *lib_path(const char *name)

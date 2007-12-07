@@ -1277,7 +1277,7 @@ void fstring_sub(char *s,const char *pattern,const char *insert)
 /**
  Similar to string_sub2, but it will accept only allocated strings
  and may realloc them so pay attention at what you pass on no
- pointers inside strings, no pstrings or const may be passed
+ pointers inside strings, no const may be passed
  as string.
 **/
 
@@ -1992,21 +1992,6 @@ char *binary_string(char *buf, int len)
 	s[j] = 0;
 	return s;
 }
-/**
- Just a typesafety wrapper for snprintf into a pstring.
-**/
-
- int pstr_sprintf(pstring s, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = vsnprintf(s, PSTRING_LEN, fmt, ap);
-	va_end(ap);
-	return ret;
-}
-
 
 /**
  Just a typesafety wrapper for snprintf into a fstring.

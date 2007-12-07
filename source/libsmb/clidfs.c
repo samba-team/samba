@@ -570,7 +570,8 @@ static bool cli_dfs_check_error( struct cli_state *cli, NTSTATUS status )
  Get the dfs referral link.
 ********************************************************************/
 
-bool cli_dfs_get_referral(struct cli_state *cli,
+bool cli_dfs_get_referral(TALLOC_CTX *ctx,
+			struct cli_state *cli,
 			const char *path,
 			CLIENT_DFS_REFERRAL**refs,
 			size_t *num_refs,
@@ -579,30 +580,40 @@ bool cli_dfs_get_referral(struct cli_state *cli,
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_GET_DFS_REFERRAL;
-	char param[1024+2];
+	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
+	char *endp;
 	size_t pathlen = 2*(strlen(path)+1);
 	uint16 num_referrals;
 	CLIENT_DFS_REFERRAL *referrals = NULL;
+	bool ret = false;
 
-	memset(param, 0, sizeof(param));
+	*num_refs = 0;
+	*refs = NULL;
+
+	param = SMB_MALLOC(2+pathlen+2);
+	if (!param) {
+		return false;
+	}
 	SSVAL(param, 0, 0x03);	/* max referral level */
 	p = &param[2];
 
-	p += clistr_push(cli, p, path, MIN(pathlen, sizeof(param)-2),
-			STR_TERMINATE);
+	p += clistr_push(cli, p, path, pathlen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2,
-		NULL,                        /* name */
-		-1, 0,                          /* fid, flags */
-		&setup, 1, 0,                   /* setup, length, max */
-		param, param_len, 2,            /* param, length, max */
-		NULL, 0, cli->max_xmit /* data, length, max */
-		)) {
-			return false;
+			NULL,                        /* name */
+			-1, 0,                          /* fid, flags */
+			&setup, 1, 0,                   /* setup, length, max */
+			param, param_len, 2,            /* param, length, max */
+			NULL, 0, cli->max_xmit /* data, length, max */
+			)) {
+		SAFE_FREE(param);
+		return false;
 	}
+
+	SAFE_FREE(param);
 
 	if (!cli_receive_trans(cli, SMBtrans2,
 		&rparam, &param_len,
@@ -610,51 +621,74 @@ bool cli_dfs_get_referral(struct cli_state *cli,
 			return false;
 	}
 
-	*consumed     = SVAL( rdata, 0 );
-	num_referrals = SVAL( rdata, 2 );
+	if (data_len < 4) {
+		goto out;
+	}
 
-	if ( num_referrals != 0 ) {
+	endp = rdata + data_len;
+
+	*consumed     = SVAL(rdata, 0);
+	num_referrals = SVAL(rdata, 2);
+
+	if (num_referrals != 0) {
 		uint16 ref_version;
 		uint16 ref_size;
 		int i;
 		uint16 node_offset;
 
-		referrals = SMB_XMALLOC_ARRAY( CLIENT_DFS_REFERRAL,
+		referrals = TALLOC_ARRAY(ctx, CLIENT_DFS_REFERRAL,
 				num_referrals);
 
+		if (!referrals) {
+			goto out;
+		}
 		/* start at the referrals array */
 
 		p = rdata+8;
-		for ( i=0; i<num_referrals; i++ ) {
-			ref_version = SVAL( p, 0 );
-			ref_size    = SVAL( p, 2 );
-			node_offset = SVAL( p, 16 );
+		for (i=0; i<num_referrals && p < endp; i++) {
+			if (p + 18 > endp) {
+				goto out;
+			}
+			ref_version = SVAL(p, 0);
+			ref_size    = SVAL(p, 2);
+			node_offset = SVAL(p, 16);
 
-			if ( ref_version != 3 ) {
+			if (ref_version != 3) {
 				p += ref_size;
 				continue;
 			}
 
-			referrals[i].proximity = SVAL( p, 8 );
-			referrals[i].ttl       = SVAL( p, 10 );
+			referrals[i].proximity = SVAL(p, 8);
+			referrals[i].ttl       = SVAL(p, 10);
 
-			clistr_pull( cli, referrals[i].dfspath, p+node_offset,
-				sizeof(referrals[i].dfspath), -1,
+			if (p + node_offset > endp) {
+				goto out;
+			}
+			clistr_pull_talloc(ctx, cli, &referrals[i].dfspath,
+				p+node_offset,
 				STR_TERMINATE|STR_UNICODE );
 
+			if (!referrals[i].dfspath) {
+				goto out;
+			}
 			p += ref_size;
 		}
+		if (i < num_referrals) {
+			goto out;
+		}
 	}
+
+	ret = true;
 
 	*num_refs = num_referrals;
 	*refs = referrals;
 
+  out:
+
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
-
-	return true;
+	return ret;
 }
-
 
 /********************************************************************
 ********************************************************************/
@@ -667,7 +701,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 			char **pp_targetpath)
 {
 	CLIENT_DFS_REFERRAL *refs = NULL;
-	size_t num_refs;
+	size_t num_refs = 0;
 	uint16 consumed;
 	struct cli_state *cli_ipc = NULL;
 	char *dfs_path = NULL;
@@ -746,15 +780,17 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	if (!cli_dfs_get_referral(cli_ipc, dfs_path, &refs,
+	if (!cli_dfs_get_referral(ctx, cli_ipc, dfs_path, &refs,
 			&num_refs, &consumed) || !num_refs) {
 		return false;
 	}
 
 	/* Just store the first referral for now. */
 
+	if (!refs[0].dfspath) {
+		return false;
+	}
 	split_dfs_path(ctx, refs[0].dfspath, &server, &share, &extrapath );
-	SAFE_FREE(refs);
 
 	if (!server || !share) {
 		return false;
@@ -876,7 +912,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				char **pp_newshare )
 {
 	CLIENT_DFS_REFERRAL *refs = NULL;
-	size_t num_refs;
+	size_t num_refs = 0;
 	uint16 consumed;
 	char *fullpath = NULL;
 	bool res;
@@ -908,24 +944,24 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	res = cli_dfs_get_referral(cli, fullpath, &refs, &num_refs, &consumed);
+	res = cli_dfs_get_referral(ctx, cli, fullpath, &refs, &num_refs, &consumed);
 
 	if (!cli_tdis(cli)) {
-		SAFE_FREE(refs);
 		return false;
 	}
 
 	cli->cnum = cnum;
 
 	if (!res || !num_refs) {
-		SAFE_FREE(refs);
+		return false;
+	}
+
+	if (!refs[0].dfspath) {
 		return false;
 	}
 
 	split_dfs_path(ctx, refs[0].dfspath, pp_newserver,
 			pp_newshare, &newextrapath );
-
-	SAFE_FREE(refs);
 
 	if (!pp_newserver || !pp_newshare) {
 		return false;

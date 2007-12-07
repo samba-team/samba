@@ -27,15 +27,15 @@ extern char const *dyn_SBINDIR,
 	*dyn_BINDIR,
 	*dyn_SWATDIR;
 
-extern pstring dyn_CONFIGFILE;
-extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
-extern pstring dyn_LIBDIR;
-extern pstring dyn_CODEPAGEDIR;
+extern char dyn_CONFIGFILE[1024];
+extern char dyn_LOGFILEBASE[1024], dyn_LMHOSTSFILE[1024];
+extern char dyn_LIBDIR[1024];
+extern char dyn_CODEPAGEDIR[1024];
 extern fstring dyn_SHLIBEXT;
-extern pstring dyn_LOCKDIR;
-extern pstring dyn_PIDDIR;
-extern pstring dyn_SMB_PASSWD_FILE;
-extern pstring dyn_PRIVATE_DIR;
+extern char dyn_LOCKDIR[1024];
+extern char dyn_PIDDIR[1024];
+extern char dyn_SMB_PASSWD_FILE[1024];
+extern char dyn_PRIVATE_DIR[1024];
 
 char *dyn_STATEDIR(void);
 char *dyn_CACHEDIR(void);

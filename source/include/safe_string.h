@@ -86,15 +86,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 
 #define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
-#define push_pstring_base(dest, src, pstring_base) \
-    (CHECK_STRING_SIZE(pstring_base, sizeof(pstring)) \
-    ? __unsafe_string_function_usage_here_size_t__() \
-    : push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE))
-
 #else /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
-
-#define push_pstring_base(dest, src, pstring_base) \
-    push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
 
 #endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
@@ -105,8 +97,6 @@ size_t __unsafe_string_function_usage_here_char__(void);
    but the best we can do in C) and may tag with function name/number to
    record the last 'clobber region' on that string */
 
-#define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
-#define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 #define nstrcpy(d,s) safe_strcpy((d), (s),sizeof(nstring)-1)
