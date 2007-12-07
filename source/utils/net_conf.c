@@ -474,10 +474,6 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 	case P_USTRING:
 		valstr = talloc_asprintf(ctx, "%s", *(char **)ptr);
 		break;
-	case P_GSTRING:
-	case P_UGSTRING:
-		valstr = talloc_asprintf(ctx, "%s", (char *)ptr);
-		break;
 	case P_BOOL:
 		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(*(bool *)ptr));
 		break;
