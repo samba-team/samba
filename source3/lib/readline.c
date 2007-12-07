@@ -53,7 +53,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 				char **(completion_fn)(const char *text, int start, int end))
 {
 	fd_set fds;
-	static char *line;
+	char *line = NULL;
 	struct timeval timeout;
 	int fd = x_fileno(x_stdin);
 	char *ret;
@@ -64,11 +64,9 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 		x_fflush(x_stdout);
 	}
 
-	if (line == NULL) {
-		line = (char *)SMB_MALLOC(BUFSIZ);
-		if (!line) {
-			return NULL;
-		}
+	line = (char *)SMB_MALLOC(BUFSIZ);
+	if (!line) {
+		return NULL;
 	}
 
 	while (1) {
@@ -80,10 +78,14 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 
 		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
 			ret = x_fgets(line, BUFSIZ, x_stdin);
+			if (ret == 0) {
+				SAFE_FREE(line);
+			}
 			return ret;
 		}
-		if (callback)
+		if (callback) {
 			callback();
+		}
 	}
 }
 
@@ -91,7 +93,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
  Display the prompt and wait for input. Call callback() regularly.
 ****************************************************************************/
 
-char *smb_readline(const char *prompt, void (*callback)(void), 
+char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end))
 {
 	char *ret;
@@ -99,7 +101,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 
 	interactive = isatty(x_fileno(x_stdin)) || getenv("CLI_FORCE_INTERACTIVE");
 	if (!interactive) {
-	    return smb_readline_replacement(NULL, callback, completion_fn);
+		return smb_readline_replacement(NULL, callback, completion_fn);
 	}
 
 #if HAVE_LIBREADLINE
@@ -167,7 +169,7 @@ int cmd_history(void)
 	int i;
 
 	hlist = history_list();
-	
+
 	for (i = 0; hlist && hlist[i]; i++) {
 		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
 	}
@@ -177,4 +179,3 @@ int cmd_history(void)
 
 	return 0;
 }
-

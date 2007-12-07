@@ -579,15 +579,18 @@ int main(int argc, char *argv[])
 	/* Loop around accepting commands */
 
 	while(1) {
-		char *line;
+		char *line = NULL;
 
 		line = smb_readline("vfstest $> ", NULL, completion_fn);
 
-		if (line == NULL)
+		if (line == NULL) {
 			break;
+		}
 
-		if (line[0] != '\n')
+		if (line[0] != '\n') {
 			process_cmd(&vfs, line);
+		}
+		SAFE_FREE(line);
 	}
 
 	conn_free(vfs.conn);

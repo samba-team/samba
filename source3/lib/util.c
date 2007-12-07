@@ -57,9 +57,6 @@ extern unsigned int global_clobber_region_line;
 
 enum protocol_types Protocol = PROTOCOL_COREPLUS;
 
-/* a default finfo structure to ensure all fields are sensible */
-file_info def_finfo;
-
 /* this is used by the chaining code */
 int chain_size = 0;
 
@@ -693,21 +690,6 @@ char *clean_name(TALLOC_CTX *ctx, const char *s)
 }
 
 /*******************************************************************
- Horrible temporary hack until pstring is dead.
-********************************************************************/
-
-char *pstring_clean_name(pstring s)
-{
-	char *str = clean_name(NULL,s);
-	if (!str) {
-		return NULL;
-	}
-	pstrcpy(s, str);
-	TALLOC_FREE(str);
-	return s;
-}
-
-/*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
 
@@ -718,7 +700,7 @@ void close_low_fds(bool stderr_too)
 	int i;
 
 	close(0);
-	close(1); 
+	close(1);
 
 	if (stderr_too)
 		close(2);

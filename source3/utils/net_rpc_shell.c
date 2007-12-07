@@ -237,15 +237,17 @@ int net_rpc_shell(int argc, const char **argv)
 
 	d_printf("Talking to domain %s (%s)\n", ctx->domain_name,
 		 sid_string_static(ctx->domain_sid));
-	
+
 	this_ctx = ctx;
 
 	while(1) {
-		char *prompt;
-		char *line;
+		char *prompt = NULL;
+		char *line = NULL;
 		int ret;
 
-		asprintf(&prompt, "%s> ", this_ctx->whoami);
+		if (asprintf(&prompt, "%s> ", this_ctx->whoami) < 0) {
+			break;
+		}
 
 		line = smb_readline(prompt, NULL, completion_fn);
 		SAFE_FREE(prompt);
@@ -256,18 +258,22 @@ int net_rpc_shell(int argc, const char **argv)
 
 		ret = poptParseArgvString(line, &argc, &argv);
 		if (ret == POPT_ERROR_NOARG) {
+			SAFE_FREE(line);
 			continue;
 		}
 		if (ret != 0) {
 			d_fprintf(stderr, "cmdline invalid: %s\n",
 				  poptStrerror(ret));
+			SAFE_FREE(line);
 			return False;
 		}
 
 		if ((line[0] != '\n') &&
 		    (!net_sh_process(this_ctx, argc, argv))) {
+			SAFE_FREE(line);
 			break;
 		}
+		SAFE_FREE(line);
 	}
 
 	cli_shutdown(ctx->cli);

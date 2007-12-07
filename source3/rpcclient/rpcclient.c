@@ -571,8 +571,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 								cmd_entry->pipe_idx,
 								pipe_default_auth_level,
 								lp_workgroup(),
-								cmdline_auth_info.username,
-								cmdline_auth_info.password,
+								get_cmdline_auth_info_username(),
+								get_cmdline_auth_info_password(),
 								&ntresult);
 				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
@@ -580,8 +580,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 								cmd_entry->pipe_idx,
 								pipe_default_auth_level,
 								lp_workgroup(),
-								cmdline_auth_info.username,
-								cmdline_auth_info.password,
+								get_cmdline_auth_info_username(),
+								get_cmdline_auth_info_password(),
 								&ntresult);
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
@@ -887,7 +887,7 @@ out_free:
 	/* Loop around accepting commands */
 
 	while(1) {
-		char *line;
+		char *line = NULL;
 
 		line = smb_readline("rpcclient $> ", NULL, completion_fn);
 
@@ -896,6 +896,7 @@ out_free:
 
 		if (line[0] != '\n')
 			process_cmd(cli, line);
+		SAFE_FREE(line);
 	}
 
 done:
