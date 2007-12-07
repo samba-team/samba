@@ -796,24 +796,65 @@ enum winbindd_result winbindd_dual_dump_maps(struct winbindd_domain *domain,
 }
 
 static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
-
-	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
-	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
+	{
+		.name		= "DUAL_SID2UID",
+		.struct_cmd	= WINBINDD_DUAL_SID2UID,
+		.struct_fn	= winbindd_dual_sid2uid,
+	},{
+		.name		= "DUAL_SID2GID",
+		.struct_cmd	= WINBINDD_DUAL_SID2GID,
+		.struct_fn	= winbindd_dual_sid2gid,
 #if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
-	{ WINBINDD_DUAL_SIDS2XIDS,       winbindd_dual_sids2xids,             "DUAL_SIDS2XIDS" },
+	},{
+		.name		= "DUAL_SIDS2XIDS",
+		.struct_cmd	= WINBINDD_DUAL_SIDS2XIDS,
+		.struct_fn	= winbindd_dual_sids2xids,
 #endif  /* end DISABLED */
-	{ WINBINDD_DUAL_UID2SID,         winbindd_dual_uid2sid,               "DUAL_UID2SID" },
-	{ WINBINDD_DUAL_GID2SID,         winbindd_dual_gid2sid,               "DUAL_GID2SID" },
-	{ WINBINDD_DUAL_UID2NAME,        winbindd_dual_uid2name,              "DUAL_UID2NAME" },
-	{ WINBINDD_DUAL_NAME2UID,        winbindd_dual_name2uid,              "DUAL_NAME2UID" },
-	{ WINBINDD_DUAL_GID2NAME,        winbindd_dual_gid2name,              "DUAL_GID2NAME" },
-	{ WINBINDD_DUAL_NAME2GID,        winbindd_dual_name2gid,              "DUAL_NAME2GID" },
-	{ WINBINDD_DUAL_SET_MAPPING,     winbindd_dual_set_mapping,           "DUAL_SET_MAPPING" },
-	{ WINBINDD_DUAL_SET_HWM,         winbindd_dual_set_hwm,               "DUAL_SET_HWMS" },
-	{ WINBINDD_DUAL_DUMP_MAPS,       winbindd_dual_dump_maps,             "DUAL_DUMP_MAPS" },
-	{ WINBINDD_ALLOCATE_UID,         winbindd_dual_allocate_uid,          "ALLOCATE_UID" },
-	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
+	},{
+		.name		= "DUAL_UID2SID",
+		.struct_cmd	= WINBINDD_DUAL_UID2SID,
+		.struct_fn	= winbindd_dual_uid2sid,
+	},{
+		.name		= "DUAL_GID2SID",
+		.struct_cmd	= WINBINDD_DUAL_GID2SID,
+		.struct_fn	= winbindd_dual_gid2sid,
+	},{
+		.name		= "DUAL_UID2NAME",
+		.struct_cmd	= WINBINDD_DUAL_UID2NAME,
+		.struct_fn	= winbindd_dual_uid2name,
+	},{
+		.name		= "DUAL_NAME2UID",
+		.struct_cmd	= WINBINDD_DUAL_NAME2UID,
+		.struct_fn	= winbindd_dual_name2uid,
+	},{
+		.name		= "DUAL_GID2NAME",
+		.struct_cmd	= WINBINDD_DUAL_GID2NAME,
+		.struct_fn	= winbindd_dual_gid2name,
+	},{
+		.name		= "DUAL_NAME2GID",
+		.struct_cmd	= WINBINDD_DUAL_NAME2GID,
+		.struct_fn	= winbindd_dual_name2gid,
+	},{
+		.name		= "DUAL_SET_MAPPING",
+		.struct_cmd	= WINBINDD_DUAL_SET_MAPPING,
+		.struct_fn	= winbindd_dual_set_mapping,
+	},{
+		.name		= "DUAL_SET_HWMS",
+		.struct_cmd	= WINBINDD_DUAL_SET_HWM,
+		.struct_fn	= winbindd_dual_set_hwm,
+	},{
+		.name		= "DUAL_DUMP_MAPS",
+		.struct_cmd	= WINBINDD_DUAL_DUMP_MAPS,
+		.struct_fn	= winbindd_dual_dump_maps,
+	},{
+		.name		= "ALLOCATE_UID",
+		.struct_cmd	= WINBINDD_ALLOCATE_UID,
+		.struct_fn	= winbindd_dual_allocate_uid,
+	},{
+		.name		= "ALLOCATE_GID",
+		.struct_cmd	= WINBINDD_ALLOCATE_GID,
+		.struct_fn	= winbindd_dual_allocate_gid,
+	},{
+		.name		= NULL,
+	}
 };
