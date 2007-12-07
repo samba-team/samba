@@ -265,6 +265,7 @@ static bool print_tree(struct user_auth_info *user_info)
  int main(int argc,char *argv[])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct user_auth_info local_user_info;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
@@ -295,19 +296,20 @@ static bool print_tree(struct user_auth_info *user_info)
 
 	/* Parse command line args */
 
-	if (!cmdline_auth_info.got_pass) {
+	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			strlcpy(cmdline_auth_info.password,
-					pass,
-					sizeof(cmdline_auth_info.password));
+			set_cmdline_auth_info_password(pass);
 		}
-		cmdline_auth_info.got_pass = true;
 	}
 
 	/* Now do our stuff */
 
-        if (!print_tree(&cmdline_auth_info)) {
+	if (!get_cmdline_auth_info_copy(&local_user_info)) {
+		return 1;
+	}
+
+        if (!print_tree(&local_auth_info)) {
 		TALLOC_FREE(frame);
                 return 1;
 	}

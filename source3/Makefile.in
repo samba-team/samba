@@ -687,7 +687,7 @@ TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 
 UTIL_REG_OBJ = lib/util_reg.o
 UTIL_REG_API_OBJ = lib/util_reg_api.o
-UTIL_REG_SMBCONF_OBJ = lib/util_reg_smbconf.o 
+UTIL_REG_SMBCONF_OBJ = lib/util_reg_smbconf.o
 
 # objects to be used when not all of the registry code should be
 # loaded but only the portion needed by reg_api, typically for
@@ -731,16 +731,15 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(REG_API_OBJ) $(DISPLAY_DSDCINFO_OBJ) $(NETAPI_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
+	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
 MOUNT_OBJ = client/smbmount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) \
-	     $(POPT_LIB_OBJ)
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(LIBREPLACE_OBJ) $(POPT_LIB_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	     $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+	     $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
 CIFS_MOUNT_OBJ = client/mount.cifs.o
 
