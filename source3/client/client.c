@@ -4745,7 +4745,7 @@ static int do_message_op(void)
 	if(new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
 
-	if (!tar_type && !*query_host && !*service && !message) {
+	if (!tar_type && !query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
