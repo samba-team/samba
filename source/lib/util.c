@@ -187,7 +187,7 @@ void gfree_names(void)
 
 void gfree_all( void )
 {
-	gfree_names();	
+	gfree_names();
 	gfree_loadparm();
 	gfree_case_tables();
 	gfree_debugsyms();
@@ -277,6 +277,113 @@ bool init_names(void)
 	}
 
 	return( True );
+}
+
+/**************************************************************************n
+  Code to cope with username/password auth options from the commandline.
+  Used mainly in client tools.
+****************************************************************************/
+
+static struct user_auth_info cmdline_auth_info = {
+	NULL,	/* username */
+	NULL,	/* password */
+	false,	/* got_pass */
+	false,	/* use_kerberos */
+	Undefined /* signing state */
+};
+
+const char *get_cmdline_auth_info_username(void)
+{
+	if (!cmdline_auth_info.username) {
+		return "";
+	}
+	return cmdline_auth_info.username;
+}
+
+void set_cmdline_auth_info_username(const char *username)
+{
+	SAFE_FREE(cmdline_auth_info.username);
+	cmdline_auth_info.username = SMB_STRDUP(username);
+	if (!cmdline_auth_info.username) {
+		exit(ENOMEM);
+	}
+}
+
+const char *get_cmdline_auth_info_password(void)
+{
+	if (!cmdline_auth_info.password) {
+		return "";
+	}
+	return cmdline_auth_info.password;
+}
+
+void set_cmdline_auth_info_password(const char *password)
+{
+	SAFE_FREE(cmdline_auth_info.password);
+	cmdline_auth_info.password = SMB_STRDUP(password);
+	if (!cmdline_auth_info.password) {
+		exit(ENOMEM);
+	}
+	cmdline_auth_info.got_pass = true;
+}
+
+bool set_cmdline_auth_info_signing_state(const char *arg)
+{
+	cmdline_auth_info.signing_state = -1;
+	if (strequal(arg, "off") || strequal(arg, "no") ||
+			strequal(arg, "false")) {
+		cmdline_auth_info.signing_state = false;
+	} else if (strequal(arg, "on") || strequal(arg, "yes") ||
+			strequal(arg, "true") || strequal(arg, "auto")) {
+		cmdline_auth_info.signing_state = true;
+	} else if (strequal(arg, "force") || strequal(arg, "required") ||
+			strequal(arg, "forced")) {
+		cmdline_auth_info.signing_state = Required;
+	} else {
+		return false;
+	}
+	return true;
+}
+
+int get_cmdline_auth_info_signing_state(void)
+{
+	return cmdline_auth_info.signing_state;
+}
+
+bool get_cmdline_auth_info_use_kerberos(void)
+{
+	return cmdline_auth_info.use_kerberos;
+}
+
+/* This should only be used by lib/popt_common.c JRA */
+void set_cmdline_auth_info_use_krb5_ticket(void)
+{
+	cmdline_auth_info.use_kerberos = true;
+	cmdline_auth_info.got_pass = true;
+}
+
+bool get_cmdline_auth_info_got_pass(void)
+{
+	return cmdline_auth_info.got_pass;
+}
+
+/* This should only be used by lib/popt_common.c JRA */
+void set_cmdline_auth_info_no_password(void)
+{
+	SAFE_FREE(cmdline_auth_info.password);
+	cmdline_auth_info.got_pass = false;
+}
+
+bool get_cmdline_auth_info_copy(struct user_auth_info *info)
+{
+	*info = cmdline_auth_info;
+	/* Now re-alloc the strings. */
+	info->username = SMB_STRDUP(get_cmdline_auth_info_username());
+	info->password = SMB_STRDUP(get_cmdline_auth_info_password());
+	if (!info->username || !info->password) {
+		return false;
+	}
+	return true;
 }
 
 /**************************************************************************n
