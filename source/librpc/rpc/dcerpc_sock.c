@@ -452,7 +452,8 @@ static void continue_ipv4_open_socket(struct composite_context *ctx)
 struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *conn,
 						    const char *server,
 						    const char *target_hostname,
-						    uint32_t port)
+						    uint32_t port,
+						    const char **name_resolve_order)
 {
 	struct composite_context *c;
 	struct pipe_tcp_state *s;
@@ -478,8 +479,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	s->conn            = conn;
 
 	make_nbt_name_server(&name, server);
-	resolve_req = resolve_name_send(&name, c->event_ctx, 
-					lp_name_resolve_order(global_loadparm));
+	resolve_req = resolve_name_send(&name, c->event_ctx, name_resolve_order);
 	composite_continue(c, resolve_req, continue_ip_resolve_name, c);
 	return c;
 }

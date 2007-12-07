@@ -92,7 +92,8 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
 							 s->binding->host,
 							 s->binding->target_hostname,
-							 atoi(s->binding->endpoint));
+							 atoi(s->binding->endpoint),
+							 lp_name_resolve_order(global_loadparm));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;
 

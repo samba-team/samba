@@ -308,7 +308,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CT
 
 	/* send pipe open request on tcp/ip */
 	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->target_hostname, 
-					     s->port);
+					     s->port, io->name_resolve_order);
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_ip_tcp, c);
 	return c;
 }
