@@ -332,7 +332,8 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	talloc_steal(s->sock, s->socket_ctx);
 
-	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, c->event_ctx);
+	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, lp_name_resolve_order(global_loadparm), 
+				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
 }

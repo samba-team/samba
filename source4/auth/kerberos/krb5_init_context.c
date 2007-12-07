@@ -276,7 +276,8 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			continue;
 		}
 
-		status = socket_connect_ev(smb_krb5->sock, NULL, remote_addr, 0, ev); 
+		status = socket_connect_ev(smb_krb5->sock, NULL, remote_addr, 0, 
+					   lp_name_resolve_order(global_loadparm), ev); 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(smb_krb5);
 			continue;

@@ -352,7 +352,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		}
 
 		ctx = socket_connect_send(conn->sock, NULL, unix_addr, 
-					  0, conn->event.event_ctx);
+					  0, lp_name_resolve_order(global_loadparm), conn->event.event_ctx);
 		ctx->async.fn = ldap_connect_recv_unix_conn;
 		ctx->async.private_data = state;
 		return result;
@@ -365,7 +365,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		}
 		
 		ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
-						conn->event.event_ctx);
+						lp_name_resolve_order(global_loadparm), conn->event.event_ctx);
 		if (ctx == NULL) goto failed;
 
 		ctx->async.fn = ldap_connect_recv_tcp_conn;

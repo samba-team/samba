@@ -85,6 +85,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
+					      const char **name_resolve_order,
 					      struct event_context *event_ctx)
 {
 	struct composite_context *result;
@@ -206,10 +207,11 @@ NTSTATUS socket_connect_recv(struct composite_context *result)
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
-			   uint32_t flags, struct event_context *ev)
+			   uint32_t flags, const char **name_resolve_order,
+			   struct event_context *ev)
 {
 	struct composite_context *ctx;
 	ctx = socket_connect_send(sock, my_address, 
-				  server_address, flags, ev);
+				  server_address, flags, name_resolve_order, ev);
 	return socket_connect_recv(ctx);
 }
