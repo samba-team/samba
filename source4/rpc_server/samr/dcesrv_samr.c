@@ -445,6 +445,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	d_state->role = lp_server_role(dce_call->conn->dce_ctx->lp_ctx);
 	d_state->connect_state = talloc_reference(d_state, c_state);
 	d_state->sam_ctx = c_state->sam_ctx;
 	d_state->domain_sid = dom_sid_dup(d_state, r->in.sid);
@@ -499,8 +500,6 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state,
 					  struct ldb_message **dom_msgs,
 					  struct samr_DomInfo2 *info)
 {
-	enum server_role role = lp_server_role(global_loadparm);
-
 	/* This pulls the NetBIOS name from the 
 	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
 	   string */
@@ -514,7 +513,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state,
 
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 						 0);
-	switch (role) {
+	switch (state->role) {
 	case ROLE_DOMAIN_CONTROLLER:
 		/* This pulls the NetBIOS name from the 
 		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
@@ -612,9 +611,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 				   struct samr_DomInfo7 *info)
 {
 
-	enum server_role role = lp_server_role(global_loadparm);
-
-	switch (role) {
+	switch (state->role) {
 	case ROLE_DOMAIN_CONTROLLER:
 		/* This pulls the NetBIOS name from the 
 		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
