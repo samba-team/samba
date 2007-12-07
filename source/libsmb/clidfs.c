@@ -665,7 +665,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 				goto out;
 			}
 			clistr_pull_talloc(ctx, cli, &referrals[i].dfspath,
-				p+node_offset,
+				p+node_offset, -1,
 				STR_TERMINATE|STR_UNICODE );
 
 			if (!referrals[i].dfspath) {
