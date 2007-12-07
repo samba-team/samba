@@ -226,6 +226,7 @@ struct sec_auth_conn_state {
 	const struct ndr_interface_table *table;
 	struct cli_credentials *credentials;
 	struct composite_context *ctx;
+	struct loadparm_context *lp_ctx;
 };
 
 static void dcerpc_secondary_auth_connection_bind(struct composite_context *ctx);
@@ -234,7 +235,8 @@ static void dcerpc_secondary_auth_connection_continue(struct composite_context *
 struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
 								struct dcerpc_binding *binding,
 								const struct ndr_interface_table *table,
-								struct cli_credentials *credentials)
+								struct cli_credentials *credentials,
+								struct loadparm_context *lp_ctx)
 {
 
 	struct composite_context *c, *secondary_conn_ctx;
@@ -252,6 +254,7 @@ struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pi
 	s->binding  = binding;
 	s->table    = table;
 	s->credentials = credentials;
+	s->lp_ctx = lp_ctx;
 	
 	secondary_conn_ctx = dcerpc_secondary_connection_send(p, binding);
 	
@@ -278,7 +281,8 @@ static void dcerpc_secondary_auth_connection_bind(struct composite_context *ctx)
 	s->ctx->status = dcerpc_secondary_connection_recv(ctx, &s->pipe2);
 	if (!composite_is_ok(s->ctx)) return;
 	
-	secondary_auth_ctx = dcerpc_pipe_auth_send(s->pipe2, s->binding, s->table, s->credentials);
+	secondary_auth_ctx = dcerpc_pipe_auth_send(s->pipe2, s->binding, s->table, s->credentials,
+						   s->lp_ctx);
 	composite_continue(s->ctx, secondary_auth_ctx, dcerpc_secondary_auth_connection_continue, s);
 	
 }

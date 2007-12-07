@@ -258,8 +258,8 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
 		 s->path.samdb_ldb));
 
-	s->ldb = ldb_wrap_connect(s, global_loadparm, s->path.samdb_ldb,
-				  system_session(s, global_loadparm),
+	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
+				  system_session(s, s->tctx->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
@@ -758,7 +758,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 		return false;
 	}
 
-	s->ctx = libnet_context_init(torture->ev);
+	s->ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	s->ctx->cred = cmdline_credentials;
 
 	s->ldb = ldb_init(s);

@@ -2523,9 +2523,7 @@ typedef struct cli_credentials cli_credentials;
 SWIGINTERN cli_credentials *new_cli_credentials(){
             return cli_credentials_init(NULL);
         }
-SWIGINTERN void delete_cli_credentials(cli_credentials *self){
-            talloc_free(self);
-        }
+SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -3550,6 +3548,7 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   char *arg4 = (char *) 0 ;
   uint32_t arg5 ;
   struct cli_credentials *arg6 = (struct cli_credentials *) 0 ;
+  struct loadparm_context *arg7 = (struct loadparm_context *) 0 ;
   NTSTATUS result;
   struct dcerpc_pipe *temp_dcerpc_pipe2 ;
   int res3 ;
@@ -3562,12 +3561,15 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   int res5 = 0 ;
   void *argp6 = 0 ;
   int res6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "binding",(char *) "pipe_uuid",(char *) "pipe_version",(char *) "credentials", NULL 
+    (char *) "binding",(char *) "pipe_uuid",(char *) "pipe_version",(char *) "credentials",(char *) "lp_ctx", NULL 
   };
   
   {
@@ -3579,7 +3581,7 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   {
     arg2 = &temp_dcerpc_pipe2;
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:pipe_connect",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|OO:pipe_connect",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res3 = SWIG_AsCharPtrAndSize(obj0, &buf3, NULL, &alloc3);
   if (!SWIG_IsOK(res3)) {
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "pipe_connect" "', argument " "3"" of type '" "char const *""'");
@@ -3608,7 +3610,14 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
     }
     arg6 = (struct cli_credentials *)(argp6);
   }
-  result = dcerpc_pipe_connect(arg1,arg2,(char const *)arg3,(char const *)arg4,arg5,arg6);
+  if (obj4) {
+    res7 = SWIG_ConvertPtr(obj4, &argp7,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res7)) {
+      SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "pipe_connect" "', argument " "7"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg7 = (struct loadparm_context *)(argp7);
+  }
+  result = dcerpc_pipe_connect(arg1,arg2,(char const *)arg3,(char const *)arg4,arg5,arg6,arg7);
   resultobj = SWIG_NewPointerObj((NTSTATUS *)memcpy((NTSTATUS *)malloc(sizeof(NTSTATUS)),&result,sizeof(NTSTATUS)), SWIGTYPE_p_NTSTATUS, SWIG_POINTER_OWN |  0 );
   {
     /* Set REF_ALLOC flag so we don't have to do too much extra

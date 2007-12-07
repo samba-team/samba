@@ -1526,7 +1526,8 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	}
 
 	creq = dcerpc_pipe_connect_b_send(s, drsuapi->binding, &ndr_table_drsuapi,
-					  s->libnet->cred, s->libnet->event_ctx);
+					  s->libnet->cred, s->libnet->event_ctx,
+					  s->libnet->lp_ctx);
 	composite_continue(c, creq, recv_fn, s);
 }
 

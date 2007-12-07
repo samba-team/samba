@@ -50,6 +50,8 @@ struct libnet_context {
 	const char **name_res_methods;
 
 	struct event_context *event_ctx;
+
+	struct loadparm_context *lp_ctx;
 };
 
 

@@ -101,7 +101,8 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 	binding->host = state->domain->dc_address;
 
 	/* This shouldn't make a network call, as the mappings for named pipes are well known */
-	status = dcerpc_epm_map_binding(binding, binding, table, state->service->task->event_ctx);
+	status = dcerpc_epm_map_binding(binding, binding, table, state->service->task->event_ctx,
+					state->service->task->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
@@ -143,7 +144,8 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->dc_name = dom_info->dcs[0].name;
 	state->domain->dc_address = dom_info->dcs[0].address;
 
-	state->domain->libnet_ctx = libnet_context_init(service->task->event_ctx);
+	state->domain->libnet_ctx = libnet_context_init(service->task->event_ctx, 
+							service->task->lp_ctx);
 
 	/* Create a credentials structure */
 	state->domain->libnet_ctx->cred = cli_credentials_init(state->domain);
@@ -182,7 +184,8 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	ctx = dcerpc_pipe_connect_b_send(state, state->domain->netlogon_binding, 
 					 &ndr_table_netlogon,
 					 state->domain->libnet_ctx->cred,
-					 service->task->event_ctx);
+					 service->task->event_ctx,
+					 service->task->lp_ctx);
 	
 	if (composite_nomem(ctx, state->ctx)) {
 		goto failed;
@@ -229,7 +232,8 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	ctx = dcerpc_secondary_auth_connection_send(state->domain->netlogon_pipe,
 						    state->domain->lsa_binding,
 						    &ndr_table_lsarpc,
-						    state->domain->libnet_ctx->cred
+						    state->domain->libnet_ctx->cred,
+						    state->domain->libnet_ctx->lp_ctx
 		);
 	composite_continue(state->ctx, ctx, init_domain_recv_lsa_pipe, state);
 }
@@ -255,7 +259,8 @@ static bool retry_with_schannel(struct init_domain_state *state,
 		ctx = dcerpc_secondary_auth_connection_send(state->domain->netlogon_pipe,
 							    binding,
 							    table, 
-							    state->domain->libnet_ctx->cred);
+							    state->domain->libnet_ctx->cred,
+							    state->domain->libnet_ctx->lp_ctx);
 		composite_continue(state->ctx, ctx, continuation, state);		
 		return true;
 	} else {

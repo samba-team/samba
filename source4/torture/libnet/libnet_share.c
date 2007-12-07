@@ -131,7 +131,7 @@ bool torture_listshares(struct torture_context *torture)
 		goto done;
 	}
 
-	libnetctx = libnet_context_init(NULL);
+	libnetctx = libnet_context_init(NULL, torture->lp_ctx);
 	if (!libnetctx) {
 		printf("Couldn't allocate libnet context\n");
 		ret = false;
@@ -209,7 +209,7 @@ bool torture_delshare(struct torture_context *torture)
 	status = torture_rpc_binding(torture, &bind);
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
-	libnetctx = libnet_context_init(NULL);
+	libnetctx = libnet_context_init(NULL, torture->lp_ctx);
 	libnetctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,

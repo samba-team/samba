@@ -292,7 +292,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	/* Try to connect as the test user */
 	status = dcerpc_pipe_connect(tctx, 
 			     &test_p, binding, &ndr_table_samr,
-			     test_credentials, NULL);
+			     test_credentials, NULL, tctx->lp_ctx);
 	/* connect to SAMR as the user */
 	status = torture_samr_Connect5(tctx, test_p, SEC_FLAG_MAXIMUM_ALLOWED, &uch);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -357,7 +357,7 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect(tctx, 
 			     &test_p, binding, &ndr_table_samr,
-			     test_credentials, NULL);
+			     test_credentials, NULL, tctx->lp_ctx);
 
 	/* connect to SAMR as the user */
 	status = torture_samr_Connect5(tctx, test_p, SAMR_ACCESS_SHUTDOWN_SERVER, &uch);

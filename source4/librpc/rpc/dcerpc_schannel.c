@@ -286,6 +286,7 @@ struct auth_schannel_state {
 	struct dcerpc_pipe *pipe;
 	struct cli_credentials *credentials;
 	const struct ndr_interface_table *table;
+	struct loadparm_context *lp_ctx;
 	uint8_t auth_level;
 };
 
@@ -315,6 +316,7 @@ static void continue_schannel_key(struct composite_context *ctx)
 
 	/* send bind auth request with received creds */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table, s->credentials, 
+					 s->lp_ctx,
 					 DCERPC_AUTH_TYPE_SCHANNEL, s->auth_level,
 					 NULL);
 	if (composite_nomem(auth_req, c)) return;
@@ -346,6 +348,7 @@ struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx,
 							 struct dcerpc_pipe *p,
 							 const struct ndr_interface_table *table,
 							 struct cli_credentials *credentials,
+							 struct loadparm_context *lp_ctx,
 							 uint8_t auth_level)
 {
 	struct composite_context *c;
@@ -365,6 +368,7 @@ struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx,
 	s->credentials = credentials;
 	s->table       = table;
 	s->auth_level  = auth_level;
+	s->lp_ctx      = lp_ctx;
 
 	/* start getting schannel key first */
 	schan_key_req = dcerpc_schannel_key_send(c, p, credentials);
@@ -394,11 +398,12 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct dcerpc_pipe *p,
 				   const struct ndr_interface_table *table,
 				   struct cli_credentials *credentials,
+				   struct loadparm_context *lp_ctx,
 				   uint8_t auth_level)
 {
 	struct composite_context *c;
 
-	c = dcerpc_bind_auth_schannel_send(tmp_ctx, p, table, credentials,
+	c = dcerpc_bind_auth_schannel_send(tmp_ctx, p, table, credentials, lp_ctx,
 					   auth_level);
 	return dcerpc_bind_auth_schannel_recv(c);
 }

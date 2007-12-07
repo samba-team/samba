@@ -42,7 +42,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 		return net_time_usage(ctx, argc, argv);
 	}
 
-	libnetctx = libnet_context_init(NULL);
+	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}

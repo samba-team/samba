@@ -114,7 +114,8 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 
 	/* connect to remote dcerpc pipe */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, b, r->in.dcerpc_iface,
-						      ctx->cred, c->event_ctx);
+						      ctx->cred, c->event_ctx,
+						      ctx->lp_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 
 	composite_continue(c, pipe_connect_req, continue_pipe_connect, c);
@@ -744,7 +745,7 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	if (composite_nomem(talloc_reference(s->final_binding, s->lsa_pipe->binding), c)) return;
 
 	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
-						  s->lsa_pipe->conn->event_ctx);
+						  s->lsa_pipe->conn->event_ctx, s->ctx->lp_ctx);
 	if (composite_nomem(epm_map_req, c)) return;
 
 	composite_continue(c, epm_map_req, continue_epm_map_binding, c);

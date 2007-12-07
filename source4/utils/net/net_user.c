@@ -43,7 +43,7 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	}
 
 	/* libnet context init and its params */
-	lnet_ctx = libnet_context_init(NULL);
+	lnet_ctx = libnet_context_init(NULL, ctx->lp_ctx);
 	if (!lnet_ctx) return -1;
 
 	lnet_ctx->cred = ctx->credentials;
@@ -83,7 +83,7 @@ static int net_user_delete(struct net_context *ctx, int argc, const char **argv)
 	}
 
 	/* libnet context init and its params */
-	lnet_ctx = libnet_context_init(NULL);
+	lnet_ctx = libnet_context_init(NULL, ctx->lp_ctx);
 	if (!lnet_ctx) return -1;
 
 	lnet_ctx->cred = ctx->credentials;

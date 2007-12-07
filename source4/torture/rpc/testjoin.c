@@ -142,7 +142,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 					     &join->p,
 					     dc_binding,
 					     &ndr_table_samr,
-					     cmdline_credentials, NULL);
+					     cmdline_credentials, NULL, torture->lp_ctx);
 					     
 	} else {
 		status = torture_rpc_connection(torture, 
@@ -320,7 +320,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		return NULL;
 	}
 	
-	libnet_ctx = libnet_context_init(NULL);	
+	libnet_ctx = libnet_context_init(NULL, tctx->lp_ctx);	
 	if (!libnet_ctx) {
 		talloc_free(tj);
 		return NULL;

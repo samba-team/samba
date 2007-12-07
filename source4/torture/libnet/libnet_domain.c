@@ -136,7 +136,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 	   of specific server name. */
 	domain_name = lp_workgroup(torture->lp_ctx);
 
-	ctx = libnet_context_init(NULL);
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
 	if (ctx == NULL) {
 		d_printf("failed to create libnet context\n");
 		return false;
@@ -190,7 +190,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 		return false;
 	}
 
-	ctx = libnet_context_init(NULL);
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
 	if (ctx == NULL) {
 		d_printf("failed to create libnet context\n");
 		ret = false;
@@ -201,7 +201,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_domain_close_lsa");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_lsarpc,
-				     cmdline_credentials, NULL);
+				     cmdline_credentials, NULL, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;
@@ -255,7 +255,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_domainopen_lsa");
 
-	ctx = libnet_context_init(evt_ctx);
+	ctx = libnet_context_init(evt_ctx, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	/* we're accessing domain controller so the domain name should be
@@ -320,7 +320,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 		return false;
 	}
 
-	ctx = libnet_context_init(NULL);
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
 	if (ctx == NULL) {
 		d_printf("failed to create libnet context\n");
 		ret = false;
@@ -331,7 +331,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_samr,
-				     ctx->cred, NULL);
+				     ctx->cred, NULL, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;
@@ -388,7 +388,7 @@ bool torture_domain_list(struct torture_context *torture)
 		return false;
 	}
 
-	ctx = libnet_context_init(NULL);
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
 	if (ctx == NULL) {
 		d_printf("failed to create libnet context\n");
 		ret = false;
