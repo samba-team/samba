@@ -107,13 +107,13 @@ find_db_spec(kadm5_server_context *ctx)
     /* If any of the values was unset, pick up the default value */
 
     if (ctx->config.dbname == NULL)
-	ctx->config.dbname = strdup(HDB_DEFAULT_DB);
+	ctx->config.dbname = strdup(hdb_default_db(context));
     if (ctx->config.acl_file == NULL)
-	ctx->config.acl_file = strdup(HDB_DB_DIR "/kadmind.acl");
+	asprintf(&ctx->config.acl_file, "%s/kadmind.acl", hdb_db_dir(context));
     if (ctx->config.stash_file == NULL)
-	ctx->config.stash_file = strdup(HDB_DB_DIR "/m-key");
+	asprintf(&ctx->config.stash_file, "%s/m-key", hdb_db_dir(context));
     if (ctx->log_context.log_file == NULL)
-	ctx->log_context.log_file = strdup(HDB_DB_DIR "/log");
+	asprintf(&ctx->log_context.log_file, "%s/log", hdb_db_dir(context));
 
     set_socket_name(context, &ctx->log_context.socket_name);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,6 +32,7 @@
  */
 
 #include "kadm5_locl.h"
+#include "heim_threads.h"
 
 RCSID("$Id$");
 
@@ -961,12 +962,20 @@ kadm5_log_truncate (kadm5_server_context *server_context)
 
 }
 
+static char *default_signal = NULL;
+static HEIMDAL_MUTEX signal_mutex = HEIMDAL_MUTEX_INITIALIZER;
+
 const char *
 kadm5_log_signal_socket(krb5_context context)
 {
+    HEIMDAL_MUTEX_lock(&signal_mutex);
+    if (!default_signal)
+	asprintf(&default_signal, "%s/signal", hdb_db_dir(context));
+    HEIMDAL_MUTEX_unlock(&signal_mutex);
+
     return krb5_config_get_string_default(context,
 					  NULL,
-					  KADM5_LOG_SIGNAL,
+					  default_signal,
 					  "kdc",
 					  "signal_socket",
 					  NULL);

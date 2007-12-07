@@ -139,8 +139,6 @@ enum kadm_ops {
 #define KADMIN_APPL_VERSION "KADM0.1"
 #define KADMIN_OLD_APPL_VERSION "KADM0.0"
 
-#define KADM5_LOG_SIGNAL HDB_DB_DIR "/signal"
-
 #include "kadm5-private.h"
 
 #endif /* __kadm5_privatex_h__ */

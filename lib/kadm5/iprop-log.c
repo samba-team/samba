@@ -48,8 +48,13 @@ get_kadmin_context(const char *config_file, char *realm)
     void *kadm_handle;
     char **files;
 
-    if (config_file == NULL)
-	config_file = HDB_DB_DIR "/kdc.conf";
+    if (config_file == NULL) {
+	char *file;
+	asprintf(&file, "%s/kdc.conf", hdb_db_dir(context));
+	if (file == NULL)
+	    errx(1, "out of memory");
+	config_file = file;
+    }
 
     ret = krb5_prepend_config_files_default(config_file, &files);
     if (ret)

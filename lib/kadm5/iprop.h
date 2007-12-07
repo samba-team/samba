@@ -49,10 +49,6 @@
 
 #define IPROP_VERSION "iprop-0.0"
 
-#define KADM5_SLAVE_ACL HDB_DB_DIR "/slaves"
-
-#define KADM5_SLAVE_STATS HDB_DB_DIR "/slaves-stats"
-
 #define IPROP_NAME "iprop"
 
 #define IPROP_SERVICE "iprop"

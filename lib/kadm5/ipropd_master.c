@@ -128,16 +128,19 @@ check_acl (krb5_context context, const char *name)
     FILE *fp;
     char buf[256];
     int ret = 1;
+    char *slavefile;
 
+    asprintf(&slavefile, "%s/slaves", hdb_db_dir(context));
 
     fn = krb5_config_get_string_default(context,
 					NULL,
-					KADM5_SLAVE_ACL,
+					slavefile,
 					"kdc",
 					"iprop-acl",
 					NULL);
 
     fp = fopen (fn, "r");
+    free(slavefile);
     if (fp == NULL)
 	return 1;
     while (fgets(buf, sizeof(buf), fp) != NULL) {
@@ -592,19 +595,26 @@ process_msg (krb5_context context, slave *s, int log_fd,
 static FILE *
 open_stats(krb5_context context)
 {
+    char *statfile = NULL;
     const char *fn;
+    FILE *f;
 
     if (slave_stats_file)
 	fn = slave_stats_file;
-    else
+    else {
+	asprintf(&statfile,  "%s/slaves-stats", hdb_db_dir(context));
 	fn = krb5_config_get_string_default(context,
 					    NULL,
-					    KADM5_SLAVE_STATS,
+					    statfile,
 					    "kdc",
 					    "iprop-stats",
 					    NULL);
+    }
+    f = fopen(fn, "w");
+    if (statfile)
+	free(statfile);
 
-    return fopen(fn, "w");
+    return f;
 }
 
 static void
@@ -748,8 +758,11 @@ main(int argc, char **argv)
 
     setup_signal();
 
-    if (config_file == NULL)
-	config_file = HDB_DB_DIR "/kdc.conf";
+    if (config_file == NULL) {
+	asprintf(&config_file, "%s/kdc.conf", hdb_db_dir(context));
+	if (config_file == NULL)
+	    errx(1, "out of memory");
+    }
 
     ret = krb5_prepend_config_files_default(config_file, &files);
     if (ret)

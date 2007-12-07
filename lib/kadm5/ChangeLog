@@ -1,3 +1,7 @@
+2007-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* use hdb_db_dir() and hdb_default_db()
+
 2007-10-18  Love  <lha@stacken.kth.se>
 
 	* init_c.c: We are getting default_client, not client. this way
