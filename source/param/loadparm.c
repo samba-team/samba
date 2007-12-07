@@ -71,7 +71,7 @@ static bool bLoaded = false;
 static bool do_parameter(const char *, const char *, void *);
 static bool defaults_saved = false;
 
-/* 
+/**
  * This structure describes global (ie., server-wide) parameters.
  */
 struct loadparm_global
@@ -180,7 +180,7 @@ struct loadparm_global
 };
 
 
-/* 
+/**
  * This structure describes a single service. 
  */
 struct loadparm_service
