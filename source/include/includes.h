@@ -618,6 +618,24 @@ struct timespec {
 #endif
 
 /* Our own fstrings */
+
+/*
+                  --------------
+                 /              \
+                /      REST      \
+               /        IN        \
+              /       PEACE        \
+             /                      \
+             | The infamous pstring |
+             |                      |
+             |                      |
+             |      7 December      |
+             |                      |
+             |         2007         |
+            *|     *  *  *          | *
+   _________)/\\_//(\/(/\)/\//\/\///|_)_______
+*/
+
 #define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
 
