@@ -95,12 +95,17 @@ static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
 	const char *message_sender_name = cli->cli->desthost;
 	smb_ucs2_t *message_buffer = NULL;
 	size_t message_size = 0;
+	const char *message = "my message";
 	NTSTATUS status;
 	WERROR werr;
 
+	if (argc > 1) {
+		message = argv[1];
+	}
+
 	message_size = push_ucs2_talloc(mem_ctx,
 					&message_buffer,
-					"my message");
+					message);
 	if (message_size == -1) {
 		return WERR_NOMEM;
 	}
