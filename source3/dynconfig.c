@@ -43,27 +43,28 @@ char const *dyn_SBINDIR = SBINDIR,
 	*dyn_BINDIR = BINDIR,
 	*dyn_SWATDIR = SWATDIR;
 
-pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
+/* JRA - FIXME - these should be dynamic char * */
+char dyn_CONFIGFILE[1024] = CONFIGFILE; /**< Location of smb.conf file. **/
 
 /** Log file directory. **/
-pstring dyn_LOGFILEBASE = LOGFILEBASE;
+char dyn_LOGFILEBASE[1024] = LOGFILEBASE;
 
 /** Statically configured LanMan hosts. **/
-pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
+char dyn_LMHOSTSFILE[1024] = LMHOSTSFILE;
 
 /**
  * @brief Samba data directory.
  *
  * @sa data_path() to get the path to a file inside the CODEPAGEDIR.
  **/
-pstring dyn_CODEPAGEDIR = CODEPAGEDIR;
+char dyn_CODEPAGEDIR[1024] = CODEPAGEDIR;
 
 /**
  * @brief Samba library directory.
  *
  * @sa lib_path() to get the path to a file inside the LIBDIR.
  **/
-pstring dyn_LIBDIR = LIBDIR;
+char dyn_LIBDIR[1024] = LIBDIR;
 fstring dyn_SHLIBEXT = SHLIBEXT;
 
 /**
@@ -71,11 +72,11 @@ fstring dyn_SHLIBEXT = SHLIBEXT;
  *
  * Not writable, but used to set a default in the parameter table.
  **/
-pstring dyn_LOCKDIR = LOCKDIR;
-pstring dyn_PIDDIR  = PIDDIR;
+char dyn_LOCKDIR[1024] = LOCKDIR;
+char dyn_PIDDIR[1024]  = PIDDIR;
 
-pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
-pstring dyn_PRIVATE_DIR = PRIVATE_DIR;
+char dyn_SMB_PASSWD_FILE[1024] = SMB_PASSWD_FILE;
+char dyn_PRIVATE_DIR[1024] = PRIVATE_DIR;
 
 
 /* In non-FHS mode, these should be configurable using 'lock dir =';
