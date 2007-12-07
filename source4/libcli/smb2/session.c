@@ -31,6 +31,7 @@
   initialise a smb2_session structure
  */
 struct smb2_session *smb2_session_init(struct smb2_transport *transport,
+				       struct loadparm_context *lp_ctx,
 				       TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smb2_session *session;
@@ -49,7 +50,7 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 	/* prepare a gensec context for later use */
 	status = gensec_client_start(session, &session->gensec, 
 				     session->transport->socket->event.ctx, 
-				     global_loadparm);
+				     lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
 		return NULL;

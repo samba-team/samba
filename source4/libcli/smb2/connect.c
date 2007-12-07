@@ -99,7 +99,7 @@ static void continue_negprot(struct smb2_request *req)
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!composite_is_ok(c)) return;
 
-	state->session = smb2_session_init(transport, state, true);
+	state->session = smb2_session_init(transport, global_loadparm, state, true);
 	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
