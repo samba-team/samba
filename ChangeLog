@@ -1,3 +1,17 @@
+2007-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: revert previous patch, the problem is located
+	in the RAND_file_name() function that will cause recursive nss
+	lookups, can't fix that here.
+
+2007-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (krb5_generate_random_block): try to avoid the
+	dead-lock in by not holding the lock while running
+	RAND_file_name. Prompted by Hai Zaar.
+
+	* lib/krb5/n-fold.c: spelling
+	
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kdigest.c (digest-probe): implement command.
