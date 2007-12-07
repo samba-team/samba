@@ -399,7 +399,7 @@ static void get_password_file(void)
 	}
 }
 
-static void get_credentials_file(const char *file, struct user_auth_info *info)
+static void get_credentials_file(const char *file)
 {
 	XFILE *auth;
 	fstring buf;
@@ -442,18 +442,9 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 			val++;
 
 		if (strwicmp("password", param) == 0) {
-			SAFE_FREE(info->password);
-			info->password = SMB_STRDUP(val);
-			if (!info->password) {
-				exit(ENOMEM);
-			}
-			info->got_pass = True;
+			set_cmdline_auth_info_password(val);
 		} else if (strwicmp("username", param) == 0) {
-			SAFE_FREE(info->username);
-			info->username = SMB_STRDUP(val);
-			if (!info->username) {
-				exit(ENOMEM);
-			}
+			set_cmdline_auth_info_username(val);
 		} else if (strwicmp("domain", param) == 0) {
 			set_global_myworkgroup(val);
 		}
@@ -509,8 +500,7 @@ static void popt_common_credentials_callback(poptContext con,
 		}
 
 		if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
-			get_password_file(&cmdline_auth_info);
-			cmdline_auth_info.got_pass = True;
+			get_password_file();
 		}
 
 		return;

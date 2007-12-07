@@ -49,6 +49,4 @@ struct user_auth_info {
 	int signing_state;
 };
 
-extern struct user_auth_info cmdline_auth_info;
-
 #endif /* _POPT_COMMON_H */
