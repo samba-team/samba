@@ -64,7 +64,7 @@ static bool reload_services_file(void)
 		const char *fname = lp_configfile();
 
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
-			pstrcpy(dyn_CONFIGFILE,fname);
+			strlcpy(dyn_CONFIGFILE,fname,sizeof(dyn_CONFIGFILE));
 		}
 	}
 

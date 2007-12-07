@@ -218,19 +218,29 @@ bool afs_login(connection_struct *conn)
 	bool result;
 	char *ticket_str = NULL;
 	const DOM_SID *user_sid;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	struct ClearToken ct;
 
-	pstrcpy(afs_username, lp_afs_username_map());
-	standard_sub_advanced(SNUM(conn), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      afs_username, sizeof(afs_username));
+	afs_username = talloc_strdup(ctx,
+				lp_afs_username_map());
+	if (!afs_username) {
+		return false;
+	}
+
+	afs_username = talloc_sub_advanced(ctx,
+				SNUM(conn), conn->user,
+				conn->connectpath, conn->gid,
+				get_current_username(),
+				current_user_info.domain,
+				afs_username);
+	if (!afs_username) {
+		return false;
+	}
 
 	user_sid = &current_user.nt_user_token->user_sids[0];
 	afs_username = talloc_string_sub(talloc_tos(),
-					lp_afs_username_map(),
+					afs_username,
 					"%s",
 					sid_string_static(user_sid));
 	if (!afs_username) {

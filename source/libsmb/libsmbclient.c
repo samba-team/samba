@@ -2794,8 +2794,17 @@ smbc_opendir_ctx(SMBCCTX *context,
                                  ? INT_MAX
                                  : context->options.browse_max_lmb_count);
 
-                pstrcpy(u_info.username, user);
-                pstrcpy(u_info.password, password);
+		memset(&u_info, '\0', sizeof(u_info));
+		u_info.username = talloc_strdup(frame,user);
+		u_info.password = talloc_strdup(frame,password);
+		if (!u_info.username || !u_info.password) {
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
+			}
+			TALLOC_FREE(frame);
+			return NULL;
+		}
 
 		/*
                  * We have server and share and path empty but options
@@ -2912,7 +2921,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 				}
 				TALLOC_FREE(frame);
 				return NULL;
-	
+
 			}
 
 			/*
@@ -3181,19 +3190,15 @@ smbc_closedir_ctx(SMBCCTX *context,
 
         if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
-
 	}
 
 	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
-
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
-    
 	}
 
 	smbc_remove_dir(dir); /* Clean it up */

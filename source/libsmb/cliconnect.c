@@ -1776,13 +1776,15 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 
 struct cli_state *get_ipc_connect(char *server,
 				struct sockaddr_storage *server_ss,
-				struct user_auth_info *user_info)
+				const struct user_auth_info *user_info)
 {
         struct cli_state *cli;
 	NTSTATUS nt_status;
 
 	nt_status = cli_full_connection(&cli, NULL, server, server_ss, 0, "IPC$", "IPC", 
-					user_info->username, lp_workgroup(), user_info->password, 
+					user_info->username ? user_info->username : "",
+					lp_workgroup(),
+					user_info->password ? user_info->password : "",
 					CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -1814,7 +1816,7 @@ struct cli_state *get_ipc_connect(char *server,
 
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct ip_service *mb_ip,
-				struct user_auth_info *user_info,
+				const struct user_auth_info *user_info,
 				char **pp_workgroup_out)
 {
 	char addr[INET6_ADDRSTRLEN];
@@ -1868,7 +1870,7 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
  */
 
 struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
-					struct user_auth_info *user_info,
+					const struct user_auth_info *user_info,
 					char **pp_workgroup_out)
 {
 	struct ip_service *ip_list;

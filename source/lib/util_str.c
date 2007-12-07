@@ -1515,33 +1515,6 @@ char *talloc_all_string_sub(TALLOC_CTX *ctx,
 			false, false, false);
 }
 
-#if 0
-/**
- Splits out the front and back at a separator.
-**/
-
-static void split_at_last_component(char *path, char *front, char sep,
-		char *back)
-{
-	char *p = strrchr_m(path, sep);
-
-	if (p != NULL)
-		*p = 0;
-
-	if (front != NULL)
-		pstrcpy(front, path);
-
-	if (p != NULL) {
-		if (back != NULL)
-			pstrcpy(back, p+1);
-		*p = '\\';
-	} else {
-		if (back != NULL)
-			back[0] = 0;
-	}
-}
-#endif
-
 /**
  Write an octal as a string.
 **/

@@ -289,7 +289,7 @@ static bool reload_nmbd_services(bool test)
 	if ( lp_loaded() ) {
 		const char *fname = lp_configfile();
 		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
-			pstrcpy(dyn_CONFIGFILE,fname);
+			strlcpy(dyn_CONFIGFILE,fname,sizeof(dyn_CONFIGFILE));
 			test = False;
 		}
 	}
