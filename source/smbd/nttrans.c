@@ -433,6 +433,7 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 	struct timespec a_timespec;
 	struct timespec m_timespec;
 	NTSTATUS status;
+	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -497,11 +498,16 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 		}
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname, flags,
-			     access_mask, file_attributes, share_access,
-			     create_disposition, create_options,
-			     allocation_size, NULL, NULL,
-			     &fsp, &info, &oplock_granted, &sbuf);
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
+	}
+
+	status = create_file(conn, req, root_dir_fid, fname,
+			     access_mask, share_access, create_disposition,
+			     create_options, file_attributes, oplock_request,
+			     allocation_size, NULL, NULL, &fsp, &info, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -517,6 +523,31 @@ void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
 		}
 		END_PROFILE(SMBntcreateX);
 		return;
+	}
+
+	/*
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+
+	if (oplock_request &&
+	    (lp_fake_oplocks(SNUM(conn))
+	     || EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))) {
+
+		/*
+		 * Exclusive oplock granted
+		 */
+
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			oplock_granted = BATCH_OPLOCK_RETURN;
+		} else {
+			oplock_granted = EXCLUSIVE_OPLOCK_RETURN;
+		}
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
+		oplock_granted = LEVEL_II_OPLOCK_RETURN;
+	} else {
+		oplock_granted = NO_OPLOCK_RETURN;
 	}
 
 	file_len = sbuf.st_size;
@@ -834,6 +865,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	NTSTATUS status;
 	size_t param_len;
 	SMB_BIG_UINT allocation_size;
+	int oplock_request;
 	uint8_t oplock_granted;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -941,11 +973,16 @@ static void call_nt_transact_create(connection_struct *conn,
 		return;
 	}
 
-	status = create_file(conn, req, root_dir_fid, fname, flags,
-			     access_mask, file_attributes, share_access,
-			     create_disposition, create_options,
-			     allocation_size, sd, ea_list,
-			     &fsp, &info, &oplock_granted, &sbuf);
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
+	}
+
+	status = create_file(conn, req, root_dir_fid, fname,
+			     access_mask, share_access, create_disposition,
+			     create_options, file_attributes, oplock_request,
+			     allocation_size, sd, ea_list, &fsp, &info, &sbuf);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -959,6 +996,31 @@ static void call_nt_transact_create(connection_struct *conn,
 			reply_nterror(req, status);
 		}
 		return;
+	}
+
+	/*
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+
+	if (oplock_request &&
+	    (lp_fake_oplocks(SNUM(conn))
+	     || EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))) {
+
+		/*
+		 * Exclusive oplock granted
+		 */
+
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			oplock_granted = BATCH_OPLOCK_RETURN;
+		} else {
+			oplock_granted = EXCLUSIVE_OPLOCK_RETURN;
+		}
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
+		oplock_granted = LEVEL_II_OPLOCK_RETURN;
+	} else {
+		oplock_granted = NO_OPLOCK_RETURN;
 	}
 
 	file_len = sbuf.st_size;
