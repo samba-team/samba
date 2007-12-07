@@ -64,4 +64,8 @@
 #include <hdb.h>
 #include <hdb-private.h>
 
+#define HDB_DB_DIR "/var/heimdal"
+#define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
+#define HDB_DB_FORMAT_ENTRY "hdb/db-format"
+
 #endif /* __HDB_LOCL_H__ */

@@ -135,10 +135,6 @@ struct hdb_so_method {
     krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
 };
 
-#define HDB_DB_DIR "/var/heimdal"
-#define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
-#define HDB_DB_FORMAT_ENTRY "hdb/db-format"
-
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry_ex*, void*);
 extern krb5_kt_ops hdb_kt_ops;
