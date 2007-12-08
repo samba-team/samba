@@ -1187,10 +1187,10 @@ bool lp_add_printer(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-/***************************************************************************
- Map a parameter's string representation to something we can use. 
- Returns False if the parameter string is not recognised, else TRUE.
-***************************************************************************/
+/**
+ * Map a parameter's string representation to something we can use. 
+ * Returns False if the parameter string is not recognised, else TRUE.
+ */
 
 static int map_parameter(const char *pszParmName)
 {
@@ -1213,7 +1213,7 @@ static int map_parameter(const char *pszParmName)
 }
 
 
-/*
+/**
   return the parameter structure for a parameter
 */
 struct parm_struct *lp_parm_struct(const char *name)
@@ -1223,7 +1223,7 @@ struct parm_struct *lp_parm_struct(const char *name)
 	return &parm_table[parmnum];
 }
 
-/*
+/**
   return the parameter pointer for a parameter
 */
 void *lp_parm_ptr(struct loadparm_context *lp_ctx,
@@ -1348,11 +1348,10 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	}
 }
 
-/***************************************************************************
-Check a service for consistency. Return False if the service is in any way
-incomplete or faulty, else True.
-***************************************************************************/
-
+/**
+ * Check a service for consistency. Return False if the service is in any way
+ * incomplete or faulty, else True.
+ */
 static bool service_ok(struct loadparm_service *service)
 {
 	bool bRetval;
@@ -1429,7 +1428,6 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 /*******************************************************************
  Check if a config file has changed date.
 ********************************************************************/
-
 bool lp_file_list_changed(struct loadparm_context *lp_ctx)
 {
 	struct file_lists *f;
