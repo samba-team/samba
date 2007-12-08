@@ -64,8 +64,6 @@
 #include "param/param.h"
 #include "param/loadparm.h"
 
-static bool bLoaded = false;
-
 #define standard_sub_basic talloc_strdup
 
 static bool do_parameter(const char *, const char *, void *);
@@ -2236,7 +2234,7 @@ static void lp_add_auto_services(struct loadparm_context *lp_ctx,
 
 bool lp_loaded(void)
 {
-	return bLoaded;
+	return (global_loadparm != NULL);
 }
 
 /***************************************************************************
@@ -2488,8 +2486,6 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 
 	lp_add_hidden(lp_ctx, "IPC$", "IPC");
 	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
-
-	bLoaded = true;
 
 	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
