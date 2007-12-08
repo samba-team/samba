@@ -256,21 +256,6 @@ struct loadparm_service sDefault = {
 	.bCIFileSystem = false,
 };
 
-/* local variables */
-struct loadparm_context {
-	struct loadparm_global *globals;
-	struct loadparm_service **services;
-	int iNumServices;
-	struct loadparm_service *currentService;
-	bool bInGlobalSection;
-	struct file_lists {
-		struct file_lists *next;
-		char *name;
-		char *subfname;
-		time_t modtime;
-	} *file_lists;
-};
-
 struct loadparm_context *global_loadparm = NULL;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
@@ -367,183 +352,189 @@ static const struct enum_list enum_server_role[] = {
 };
 
 
-/* Note: We do not initialise the defaults union - it is not allowed in ANSI C
- *
- * Note: We have a flag called FLAG_DEVELOPER but is not used at this time, it
- * is implied in current control logic. This may change at some later time. A
- * flag value of 0 means - show as development option only.
- *
- * The FLAG_HIDE is explicit. Parameters set this way do NOT appear in any edit
- * screen in SWAT. This is used to exclude parameters as well as to squash all
- * parameters that have been duplicated by pseudonyms.
- */
-
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
-	{"config file", P_STRING, P_GLOBAL, GLOBAL_VAR(szConfigFile), NULL, NULL, FLAG_HIDE},
+	{"config file", P_STRING, P_GLOBAL, GLOBAL_VAR(szConfigFile), NULL, NULL},
 
-	{"server role", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_role), NULL, enum_server_role, FLAG_BASIC},
+	{"server role", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_role), NULL, enum_server_role},
 
-	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix charset", P_STRING, P_GLOBAL, GLOBAL_VAR(unix_charset), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ncalrpc dir", P_STRING, P_GLOBAL, GLOBAL_VAR(ncalrpc_dir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"display charset", P_STRING, P_GLOBAL, GLOBAL_VAR(display_charset), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"comment", P_STRING, P_LOCAL, LOCAL_VAR(comment), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
-	{"path", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
-	{"directory", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL, FLAG_HIDE},
-	{"workgroup", P_USTRING, P_GLOBAL, GLOBAL_VAR(szWorkgroup), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"realm", P_STRING, P_GLOBAL, GLOBAL_VAR(szRealm), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios name", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosName), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios aliases", P_LIST, P_GLOBAL, GLOBAL_VAR(szNetbiosAliases), NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios scope", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosScope), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"server string", P_STRING, P_GLOBAL, GLOBAL_VAR(szServerString), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED  | FLAG_DEVELOPER},
-	{"interfaces", P_LIST, P_GLOBAL, GLOBAL_VAR(szInterfaces), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"bind interfaces only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bBindInterfacesOnly), NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"ntvfs handler", P_LIST, P_LOCAL, LOCAL_VAR(ntvfs_handler), NULL, NULL, FLAG_ADVANCED},
-	{"ntptr providor", P_STRING, P_GLOBAL, GLOBAL_VAR(ntptr_providor), NULL, NULL, FLAG_ADVANCED},
-	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, GLOBAL_VAR(dcerpc_ep_servers), NULL, NULL, FLAG_ADVANCED},
-	{"server services", P_LIST, P_GLOBAL, GLOBAL_VAR(server_services), NULL, NULL, FLAG_ADVANCED},
+	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL},
+	{"unix charset", P_STRING, P_GLOBAL, GLOBAL_VAR(unix_charset), NULL, NULL},
+	{"ncalrpc dir", P_STRING, P_GLOBAL, GLOBAL_VAR(ncalrpc_dir), NULL, NULL},
+	{"display charset", P_STRING, P_GLOBAL, GLOBAL_VAR(display_charset), NULL, NULL},
+	{"comment", P_STRING, P_LOCAL, LOCAL_VAR(comment), NULL, NULL},
+	{"path", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
+	{"directory", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
+	{"workgroup", P_USTRING, P_GLOBAL, GLOBAL_VAR(szWorkgroup), NULL, NULL},
+	{"realm", P_STRING, P_GLOBAL, GLOBAL_VAR(szRealm), NULL, NULL},
+	{"netbios name", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosName), NULL, NULL},
+	{"netbios aliases", P_LIST, P_GLOBAL, GLOBAL_VAR(szNetbiosAliases), NULL, NULL},
+	{"netbios scope", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosScope), NULL, NULL},
+	{"server string", P_STRING, P_GLOBAL, GLOBAL_VAR(szServerString), NULL, NULL},
+	{"interfaces", P_LIST, P_GLOBAL, GLOBAL_VAR(szInterfaces), NULL, NULL},
+	{"bind interfaces only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bBindInterfacesOnly), NULL, NULL},
+	{"ntvfs handler", P_LIST, P_LOCAL, LOCAL_VAR(ntvfs_handler), NULL, NULL},
+	{"ntptr providor", P_STRING, P_GLOBAL, GLOBAL_VAR(ntptr_providor), NULL, NULL},
+	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, GLOBAL_VAR(dcerpc_ep_servers), NULL, NULL},
+	{"server services", P_LIST, P_GLOBAL, GLOBAL_VAR(server_services), NULL, NULL},
 
-	{"security", P_ENUM, P_GLOBAL, GLOBAL_VAR(security), NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"encrypt passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bEncryptPasswords), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"null passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNullPasswords), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"sam database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSAM_URL), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"secrets database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSECRETS_URL), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"wins config database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_CONFIG_URL), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"wins database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_URL), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"private dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szPrivateDir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"passwd chat", P_STRING, P_GLOBAL, GLOBAL_VAR(szPasswdChat), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"password level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(pwordlevel), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLanmanAuth), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ntlm auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTLMAuth), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientNTLMv2Auth), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientLanManAuth), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client plaintext auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientPlaintextAuth), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"client use spnego principal", P_BOOL, P_GLOBAL, GLOBAL_VAR(client_use_spnego_principal), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"security", P_ENUM, P_GLOBAL, GLOBAL_VAR(security), NULL, enum_security},
+	{"encrypt passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bEncryptPasswords), NULL, NULL},
+	{"null passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNullPasswords), NULL, NULL},
+	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL},
+	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL},
+	{"sam database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSAM_URL), NULL, NULL},
+	{"secrets database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSECRETS_URL), NULL, NULL},
+	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL},
+	{"wins config database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_CONFIG_URL), NULL, NULL},
+	{"wins database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_URL), NULL, NULL},
+	{"private dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szPrivateDir), NULL, NULL},
+	{"passwd chat", P_STRING, P_GLOBAL, GLOBAL_VAR(szPasswdChat), NULL, NULL},
+	{"password level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(pwordlevel), NULL, NULL},
+	{"lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLanmanAuth), NULL, NULL},
+	{"ntlm auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTLMAuth), NULL, NULL},
+	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientNTLMv2Auth), NULL, NULL},
+	{"client lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientLanManAuth), NULL, NULL},
+	{"client plaintext auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientPlaintextAuth), NULL, NULL},
+	{"client use spnego principal", P_BOOL, P_GLOBAL, GLOBAL_VAR(client_use_spnego_principal), NULL, NULL},
 	
-	{"read only", P_BOOL, P_LOCAL, LOCAL_VAR(bRead_only), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE},
+	{"read only", P_BOOL, P_LOCAL, LOCAL_VAR(bRead_only), NULL, NULL},
 
-	{"create mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_mask), NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	{"force create mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_force_mode), NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	{"directory mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_mask), NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	{"force directory mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_force_mode), NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	{"create mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_mask), NULL, NULL}, 
+	{"force create mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_force_mode), NULL, NULL}, 
+	{"directory mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_mask), NULL, NULL}, 
+	{"force directory mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_force_mode), NULL, NULL}, 
 
-	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
-	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
+	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL},
+	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL},
 
-	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL, FLAG_HIDE},
-	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
+	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
+	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL},
 	
-	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"dgram port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(dgram_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"cldap port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(cldap_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"krb5 port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(krb5_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"kpasswd port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(kpasswd_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(web_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls enabled", P_BOOL, P_GLOBAL, GLOBAL_VAR(tls_enabled), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls keyfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_keyfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls certfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_certfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls cafile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_cafile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls crlfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_crlfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"tls dh params file", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_dhpfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"swat directory", P_STRING, P_GLOBAL, GLOBAL_VAR(swat_directory), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"large readwrite", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLargeReadwrite), NULL, NULL, FLAG_DEVELOPER},
-	{"server max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_maxprotocol), NULL, enum_protocol, FLAG_DEVELOPER},
-	{"server min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_minprotocol), NULL, enum_protocol, FLAG_DEVELOPER},
-	{"client max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_maxprotocol), NULL, enum_protocol, FLAG_DEVELOPER},
-	{"client min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_minprotocol), NULL, enum_protocol, FLAG_DEVELOPER},
-	{"unicode", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnicode), NULL, NULL, FLAG_DEVELOPER},
-	{"read raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bReadRaw), NULL, NULL, FLAG_DEVELOPER},
-	{"write raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWriteRaw), NULL, NULL, FLAG_DEVELOPER},
-	{"disable netbios", P_BOOL, P_GLOBAL, GLOBAL_VAR(bDisableNetbios), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL},
+	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL},
+	{"dgram port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(dgram_port), NULL, NULL},
+	{"cldap port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(cldap_port), NULL, NULL},
+	{"krb5 port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(krb5_port), NULL, NULL},
+	{"kpasswd port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(kpasswd_port), NULL, NULL},
+	{"web port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(web_port), NULL, NULL},
+	{"tls enabled", P_BOOL, P_GLOBAL, GLOBAL_VAR(tls_enabled), NULL, NULL},
+	{"tls keyfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_keyfile), NULL, NULL},
+	{"tls certfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_certfile), NULL, NULL},
+	{"tls cafile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_cafile), NULL, NULL},
+	{"tls crlfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_crlfile), NULL, NULL},
+	{"tls dh params file", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_dhpfile), NULL, NULL},
+	{"swat directory", P_STRING, P_GLOBAL, GLOBAL_VAR(swat_directory), NULL, NULL},
+	{"large readwrite", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLargeReadwrite), NULL, NULL},
+	{"server max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_maxprotocol), NULL, enum_protocol},
+	{"server min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_minprotocol), NULL, enum_protocol},
+	{"client max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_maxprotocol), NULL, enum_protocol},
+	{"client min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_minprotocol), NULL, enum_protocol},
+	{"unicode", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnicode), NULL, NULL},
+	{"read raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bReadRaw), NULL, NULL},
+	{"write raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWriteRaw), NULL, NULL},
+	{"disable netbios", P_BOOL, P_GLOBAL, GLOBAL_VAR(bDisableNetbios), NULL, NULL},
 	
-	{"nt status support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTStatusSupport), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"nt status support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTStatusSupport), NULL, NULL},
 
-	{"announce version", P_STRING, P_GLOBAL, GLOBAL_VAR(szAnnounceVersion), NULL, NULL, FLAG_DEVELOPER},
-	{"announce as", P_ENUM, P_GLOBAL, GLOBAL_VAR(announce_as), NULL, enum_announce_as, FLAG_DEVELOPER},
-	{"max mux", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_mux), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"max xmit", P_BYTES, P_GLOBAL, GLOBAL_VAR(max_xmit), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"announce version", P_STRING, P_GLOBAL, GLOBAL_VAR(szAnnounceVersion), NULL, NULL},
+	{"announce as", P_ENUM, P_GLOBAL, GLOBAL_VAR(announce_as), NULL, enum_announce_as},
+	{"max mux", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_mux), NULL, NULL},
+	{"max xmit", P_BYTES, P_GLOBAL, GLOBAL_VAR(max_xmit), NULL, NULL},
 
-	{"name resolve order", P_LIST, P_GLOBAL, GLOBAL_VAR(szNameResolveOrder), NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"max wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_wins_ttl), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"min wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(min_wins_ttl), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"time server", P_BOOL, P_GLOBAL, GLOBAL_VAR(bTimeServer), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix extensions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnixExtensions), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"use spnego", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUseSpnego), NULL, NULL, FLAG_DEVELOPER},
-	{"server signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_signing), NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
-	{"client signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(client_signing), NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
-	{"rpc big endian", P_BOOL, P_GLOBAL, GLOBAL_VAR(bRpcBigEndian), NULL, NULL, FLAG_DEVELOPER},
+	{"name resolve order", P_LIST, P_GLOBAL, GLOBAL_VAR(szNameResolveOrder), NULL, NULL},
+	{"max wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_wins_ttl), NULL, NULL},
+	{"min wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(min_wins_ttl), NULL, NULL},
+	{"time server", P_BOOL, P_GLOBAL, GLOBAL_VAR(bTimeServer), NULL, NULL},
+	{"unix extensions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnixExtensions), NULL, NULL},
+	{"use spnego", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUseSpnego), NULL, NULL},
+	{"server signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_signing), NULL, enum_smb_signing_vals}, 
+	{"client signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(client_signing), NULL, enum_smb_signing_vals}, 
+	{"rpc big endian", P_BOOL, P_GLOBAL, GLOBAL_VAR(bRpcBigEndian), NULL, NULL},
 
-	{"max connections", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxConnections), NULL, NULL, FLAG_SHARE},
-	{"paranoid server security", P_BOOL, P_GLOBAL, GLOBAL_VAR(paranoid_server_security), NULL, NULL, FLAG_DEVELOPER},
-	{"socket options", P_STRING, P_GLOBAL, GLOBAL_VAR(socket_options), NULL, NULL, FLAG_DEVELOPER},
+	{"max connections", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxConnections), NULL, NULL},
+	{"paranoid server security", P_BOOL, P_GLOBAL, GLOBAL_VAR(paranoid_server_security), NULL, NULL},
+	{"socket options", P_STRING, P_GLOBAL, GLOBAL_VAR(socket_options), NULL, NULL},
 
-	{"strict sync", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictSync), NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
-	{"case insensitive filesystem", P_BOOL, P_LOCAL, LOCAL_VAR(bCIFileSystem), NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"strict sync", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictSync), NULL, NULL}, 
+	{"case insensitive filesystem", P_BOOL, P_LOCAL, LOCAL_VAR(bCIFileSystem), NULL, NULL}, 
 
-	{"max print jobs", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxPrintJobs), NULL, NULL, FLAG_PRINT},
-	{"printable", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL, FLAG_PRINT},
-	{"print ok", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL, FLAG_HIDE},
+	{"max print jobs", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxPrintJobs), NULL, NULL},
+	{"printable", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
+	{"print ok", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
 	
-	{"printer name", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL, FLAG_PRINT},
-	{"printer", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL, FLAG_HIDE},
+	{"printer name", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
+	{"printer", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
 
-	{"map system", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_system), NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-	{"map hidden", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_hidden), NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-	{"map archive", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_archive), NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"map system", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_system), NULL, NULL},
+	{"map hidden", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_hidden), NULL, NULL},
+	{"map archive", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_archive), NULL, NULL},
 
-	{"preferred master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"prefered master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto, FLAG_HIDE},
-	{"local master", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLocalMaster), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"browseable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
-	{"browsable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL, FLAG_HIDE},
+	{"preferred master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto},
+	{"prefered master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto},
+	{"local master", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLocalMaster), NULL, NULL},
+	{"browseable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL},
+	{"browsable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL},
 
-	{"wins server", P_LIST, P_GLOBAL, GLOBAL_VAR(szWINSservers), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"wins support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSsupport), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"dns proxy", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSdnsProxy), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"wins hook", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINSHook), NULL, NULL, FLAG_ADVANCED}, 
+	{"wins server", P_LIST, P_GLOBAL, GLOBAL_VAR(szWINSservers), NULL, NULL},
+	{"wins support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSsupport), NULL, NULL},
+	{"dns proxy", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSdnsProxy), NULL, NULL},
+	{"wins hook", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINSHook), NULL, NULL}, 
 
-	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy, FLAG_SHARE | FLAG_GLOBAL},
+	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy},
 	
-	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL},
 
-	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"preload", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"auto services", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"lock dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL, FLAG_HIDE}, 
-	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"modules dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szModulesDir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
-	{"js include", P_LIST, P_GLOBAL, GLOBAL_VAR(jsInclude), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"setup directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szSetupDir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL},
+	{"preload", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
+	{"auto services", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
+	{"lock dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL}, 
+	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL},
+	{"modules dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szModulesDir), NULL, NULL},
+	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
+	{"js include", P_LIST, P_GLOBAL, GLOBAL_VAR(jsInclude), NULL, NULL},
+	{"setup directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szSetupDir), NULL, NULL},
 	
-	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL, FLAG_DEVELOPER},
-	{"copy", P_STRING, P_LOCAL, LOCAL_VAR(szCopy), handle_copy, NULL, FLAG_HIDE},
-	{"include", P_STRING, P_LOCAL, LOCAL_VAR(szInclude), handle_include, NULL, FLAG_HIDE},
+	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
+	{"copy", P_STRING, P_LOCAL, LOCAL_VAR(szCopy), handle_copy, NULL},
+	{"include", P_STRING, P_LOCAL, LOCAL_VAR(szInclude), handle_include, NULL},
 	
-	{"available", P_BOOL, P_LOCAL, LOCAL_VAR(bAvailable), NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT},
-	{"volume", P_STRING, P_LOCAL, LOCAL_VAR(volume), NULL, NULL, FLAG_SHARE },
-	{"fstype", P_STRING, P_LOCAL, LOCAL_VAR(fstype), NULL, NULL, FLAG_SHARE},
+	{"available", P_BOOL, P_LOCAL, LOCAL_VAR(bAvailable), NULL, NULL},
+	{"volume", P_STRING, P_LOCAL, LOCAL_VAR(volume), NULL, NULL },
+	{"fstype", P_STRING, P_LOCAL, LOCAL_VAR(fstype), NULL, NULL},
 
-	{"panic action", P_STRING, P_GLOBAL, GLOBAL_VAR(panic_action), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"panic action", P_STRING, P_GLOBAL, GLOBAL_VAR(panic_action), NULL, NULL},
 
-	{"msdfs root", P_BOOL, P_LOCAL, LOCAL_VAR(bMSDfsRoot), NULL, NULL, FLAG_SHARE},
-	{"host msdfs", P_BOOL, P_GLOBAL, GLOBAL_VAR(bHostMSDfs), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind separator", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbindSeparator), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"winbindd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddSocketDirectory), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"winbind sealed pipes", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWinbindSealedPipes), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
-	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"msdfs root", P_BOOL, P_LOCAL, LOCAL_VAR(bMSDfsRoot), NULL, NULL},
+	{"host msdfs", P_BOOL, P_GLOBAL, GLOBAL_VAR(bHostMSDfs), NULL, NULL},
+	{"winbind separator", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbindSeparator), NULL, NULL },
+	{"winbindd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddSocketDirectory), NULL, NULL },
+	{"winbind sealed pipes", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWinbindSealedPipes), NULL, NULL },
+	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL },
+	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL },
 
-	{NULL, P_BOOL, P_NONE, 0, NULL, NULL, 0}
+	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
+
+/* local variables */
+struct loadparm_context {
+	struct loadparm_global *globals;
+	struct loadparm_service **services;
+	int iNumServices;
+	struct loadparm_service *currentService;
+	bool bInGlobalSection;
+	struct file_lists {
+		struct file_lists *next;
+		char *name;
+		char *subfname;
+		time_t modtime;
+	} *file_lists;
+	unsigned int flags[NUMPARAMETERS];
+};
+
 
 
 /*
@@ -554,11 +545,13 @@ struct parm_struct *lp_parm_table(void)
 	return parm_table;
 }
 
-/*******************************************************************
- Convenience routine to grab string parameters into temporary memory
- and run standard_sub_basic on them. The buffers can be written to by
- callers without affecting the source string.
-********************************************************************/
+/**
+ * Convenience routine to grab string parameters into temporary memory
+ * and run standard_sub_basic on them. 
+ *
+ * The buffers can be written to by
+ * callers without affecting the source string.
+ */
 
 static const char *lp_string(const char *s)
 {
@@ -805,9 +798,9 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 }
 
 
-/*******************************************************************
-convenience routine to return int parameters.
-********************************************************************/
+/**
+ * convenience routine to return int parameters.
+ */
 static int lp_int(const char *s)
 {
 
@@ -819,9 +812,9 @@ static int lp_int(const char *s)
 	return strtol(s, NULL, 0); 
 }
 
-/*******************************************************************
-convenience routine to return unsigned long parameters.
-********************************************************************/
+/**
+ * convenience routine to return unsigned long parameters.
+ */
 static int lp_ulong(const char *s)
 {
 
@@ -833,9 +826,9 @@ static int lp_ulong(const char *s)
 	return strtoul(s, NULL, 0);
 }
 
-/*******************************************************************
-convenience routine to return unsigned long parameters.
-********************************************************************/
+/**
+ * convenience routine to return unsigned long parameters.
+ */
 static double lp_double(const char *s)
 {
 
@@ -847,9 +840,9 @@ static double lp_double(const char *s)
 	return strtod(s, NULL);
 }
 
-/*******************************************************************
-convenience routine to return boolean parameters.
-********************************************************************/
+/**
+ * convenience routine to return boolean parameters.
+ */
 static bool lp_bool(const char *s)
 {
 	bool ret = false;
@@ -983,9 +976,9 @@ bool lp_parm_bool(struct loadparm_context *lp_ctx,
 }
 
 
-/***************************************************************************
- Initialise a service to the defaults.
-***************************************************************************/
+/**
+ * Initialise a service to the defaults.
+ */
 
 static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
 {
@@ -1017,10 +1010,10 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 
 
 
-/***************************************************************************
- Add a new service to the services array initialising it with the given 
- service. 
-***************************************************************************/
+/**
+ * Add a new service to the services array initialising it with the given 
+ * service. 
+ */
 
 struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx, 
 				     const struct loadparm_service *pservice, 
@@ -1084,10 +1077,10 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 	return lp_ctx->services[i];
 }
 
-/***************************************************************************
- Add a new home service, with the specified home directory, defaults coming 
- from service ifrom.
-***************************************************************************/
+/**
+ * Add a new home service, with the specified home directory, defaults coming 
+ * from service ifrom.
+ */
 
 bool lp_add_home(struct loadparm_context *lp_ctx, 
 		 const char *pszHomename, 
@@ -1120,9 +1113,9 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-/***************************************************************************
- Add the IPC service.
-***************************************************************************/
+/**
+ * Add the IPC service.
+ */
 
 static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name, 
 			  const char *fstype)
@@ -1153,9 +1146,9 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	return true;
 }
 
-/***************************************************************************
- Add a new printer service, with defaults coming from service iFrom.
-***************************************************************************/
+/**
+ * Add a new printer service, with defaults coming from service iFrom.
+ */
 
 bool lp_add_printer(struct loadparm_context *lp_ctx,
 		    const char *pszPrintername, 
@@ -1240,9 +1233,9 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
 	}
 }
 
-/***************************************************************************
-Find a service by name. Otherwise works like get_service.
-***************************************************************************/
+/**
+ * Find a service by name. Otherwise works like get_service.
+ */
 
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
 					const char *pszServiceName)
@@ -1258,10 +1251,10 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 	return NULL;
 }
 
-/***************************************************************************
- Copy a service structure to another.
- If pcopymapDest is NULL then copy all fields
-***************************************************************************/
+/**
+ * Copy a service structure to another.
+ * If pcopymapDest is NULL then copy all fields
+ */
 
 static void copy_service(struct loadparm_service *pserviceDest, 
 			 struct loadparm_service *pserviceSource, 
@@ -1545,9 +1538,9 @@ static void init_copymap(struct loadparm_service *pservice)
 		pservice->copymap[i] = true;
 }
 
-/***************************************************************************
- Process a parametric option
-***************************************************************************/
+/**
+ * Process a parametric option
+ */
 static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx, 
 				       struct loadparm_service *service, 
 				       const char *pszParmName, 
@@ -1690,14 +1683,14 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 	}
 
-	if (parm_table[parmnum].flags & FLAG_DEFAULT) {
-		parm_table[parmnum].flags &= ~FLAG_DEFAULT;
+	if (lp_ctx->flags[parmnum] & FLAG_DEFAULT) {
+		lp_ctx->flags[parmnum] &= ~FLAG_DEFAULT;
 		/* we have to also unset FLAG_DEFAULT on aliases */
 		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
-			parm_table[i].flags &= ~FLAG_DEFAULT;
+			lp_ctx->flags[i] &= ~FLAG_DEFAULT;
 		}
 		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
-			parm_table[i].flags &= ~FLAG_DEFAULT;
+			lp_ctx->flags[i] &= ~FLAG_DEFAULT;
 		}
 	}
 	return true;
@@ -1718,14 +1711,9 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
-	}
-
 	/* if the flag has been set on the command line, then don't allow override,
 	   but don't report an error */
-	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+	if (lp_ctx->flags[parmnum] & FLAG_CMDLINE) {
 		return true;
 	}
 
@@ -1751,14 +1739,9 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
-	}
-
 	/* if the flag has been set on the command line, then don't allow override,
 	   but don't report an error */
-	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+	if (lp_ctx->flags[parmnum] & FLAG_CMDLINE) {
 		return true;
 	}
 
@@ -1784,9 +1767,9 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 			    pszParmValue, lp_ctx);
 }
 
-/***************************************************************************
- Process a parameter.
-***************************************************************************/
+/**
+ * Process a parameter.
+ */
 
 static bool do_parameter(const char *pszParmName, const char *pszParmValue, 
 			 void *userdata)
@@ -1847,20 +1830,20 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	}
 
 	/* reset the CMDLINE flag in case this has been called before */
-	parm_table[parmnum].flags &= ~FLAG_CMDLINE;
+	lp_ctx->flags[parmnum] &= ~FLAG_CMDLINE;
 
 	if (!lp_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
 		return false;
 	}
 
-	parm_table[parmnum].flags |= FLAG_CMDLINE;
+	lp_ctx->flags[parmnum] |= FLAG_CMDLINE;
 
 	/* we have to also set FLAG_CMDLINE on aliases */
 	for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
-		parm_table[i].flags |= FLAG_CMDLINE;
+		lp_ctx->flags[i] |= FLAG_CMDLINE;
 	}
 	for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
-		parm_table[i].flags |= FLAG_CMDLINE;
+		lp_ctx->flags[i] |= FLAG_CMDLINE;
 	}
 
 	return true;
@@ -1895,9 +1878,9 @@ bool lp_set_option(struct loadparm_context *lp_ctx, const char *option)
 
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 
-/***************************************************************************
- Print a parameter of the specified type.
-***************************************************************************/
+/**
+ * Print a parameter of the specified type.
+ */
 
 static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
@@ -1946,9 +1929,9 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 	}
 }
 
-/***************************************************************************
- Check if two parameters are equal.
-***************************************************************************/
+/**
+ * Check if two parameters are equal.
+ */
 
 static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
@@ -1980,11 +1963,13 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 	return false;
 }
 
-/***************************************************************************
- Process a new section (service). At this stage all sections are services.
- Later we'll have special sections that permit server parameters to be set.
- Returns True on success, False on failure. 
-***************************************************************************/
+/**
+ * Process a new section (service). 
+ *
+ * At this stage all sections are services.
+ * Later we'll have special sections that permit server parameters to be set.
+ * Returns True on success, False on failure. 
+ */
 
 static bool do_section(const char *pszSectionName, void *userdata)
 {
@@ -2027,9 +2012,9 @@ static bool do_section(const char *pszSectionName, void *userdata)
 }
 
 
-/***************************************************************************
- Determine if a partcular base parameter is currentl set to the default value.
-***************************************************************************/
+/**
+ * Determine if a partcular base parameter is currentl set to the default value.
+ */
 
 static bool is_default(int i)
 {
@@ -2057,9 +2042,9 @@ static bool is_default(int i)
 	return false;
 }
 
-/***************************************************************************
-Display the contents of the global structure.
-***************************************************************************/
+/**
+ *Display the contents of the global structure.
+ */
 
 static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, 
 			 bool show_defaults)
@@ -2073,7 +2058,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 		if (parm_table[i].class == P_GLOBAL &&
 		    parm_table[i].offset != -1 &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (!show_defaults && (parm_table[i].flags & FLAG_DEFAULT)) 
+			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT)) 
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i], lp_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
@@ -2088,9 +2073,9 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 
 }
 
-/***************************************************************************
- Display the contents of a single services record.
-***************************************************************************/
+/**
+ * Display the contents of a single services record.
+ */
 
 static void dump_a_service(struct loadparm_service * pService, FILE * f)
 {
@@ -2148,10 +2133,10 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-/***************************************************************************
- Return info about the next service  in a service. snum==-1 gives the globals.
- Return NULL when out of parameters.
-***************************************************************************/
+/**
+ * Return info about the next service  in a service. snum==-1 gives the globals.
+ * Return NULL when out of parameters.
+ */
 
 struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i, 
 				      int allparameters)
@@ -2208,9 +2193,9 @@ static void lp_add_auto_services(struct loadparm_context *lp_ctx,
 }
 
 
-/***************************************************************************
- Unload unused services.
-***************************************************************************/
+/**
+ * Unload unused services.
+ */
 
 void lp_killunused(struct loadparm_context *lp_ctx, 
 		   struct smbsrv_connection *smb, 
@@ -2269,7 +2254,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].offset != -1 &&
-		    !(parm_table[i].flags & FLAG_CMDLINE)) {
+		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			char **r = ((char *)(parm_table[i].class == P_LOCAL)?&sDefault:lp_ctx->globals) + parm_table[i].offset;
 			*r = talloc_strdup(lp_ctx, "");
 		}
@@ -2406,8 +2391,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				   dyn_SETUPDIR);
 
 	for (i = 0; parm_table[i].label; i++) {
-		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
-			parm_table[i].flags |= FLAG_DEFAULT;
+		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
+			lp_ctx->flags[i] |= FLAG_DEFAULT;
 		}
 	}
 
