@@ -238,7 +238,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 		strlower_m(t->prompt);
 		trim_char(t->prompt, ' ', ' ');
 
-		if (!next_token_talloc(frame, &p, reply, NULL)) {
+		if (!next_token_talloc(frame, &p, &reply, NULL)) {
 			break;
 		}
 

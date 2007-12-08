@@ -655,7 +655,7 @@ bool initialise_wins(void)
 			continue;
 		}
 
-		if (!next_token_talloc(frame,&ptr,ttl_str,NULL)) {
+		if (!next_token_talloc(frame,&ptr,&ttl_str,NULL)) {
 			DEBUG(0,("initialise_wins: Failed to parse time to live when parsing line %s\n", line ));
 			TALLOC_FREE(frame);
 			continue;
