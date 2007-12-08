@@ -76,7 +76,7 @@ SCRIPT_TESTS = \
 
 noinst_PROGRAMS = test_rand
 
-check_PROGRAMS = $(PROGRAM_TESTS) test_rsa 
+check_PROGRAMS = $(PROGRAM_TESTS) test_rsa
 check_SCRIPTS = $(SCRIPT_TESTS)
 
 TESTS = $(PROGRAM_TESTS) $(SCRIPT_TESTS)
@@ -101,6 +101,7 @@ libhcrypto_la_SOURCES =	\
 	dh-imath.c	\
 	dsa.c		\
 	dsa.h		\
+	doxygen.c	\
 	evp.c		\
 	evp.h		\
 	engine.c	\
