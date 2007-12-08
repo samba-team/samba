@@ -239,7 +239,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 
 	fprintf(stderr, "Loaded smb config files from %s\n", lp_configfile(global_loadparm));
 
-	if (!lp_load(lp_configfile(global_loadparm), &lp_ctx)) {
+	if (!lp_load(talloc_autofree_context(), lp_configfile(global_loadparm), &lp_ctx)) {
 		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}

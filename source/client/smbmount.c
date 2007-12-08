@@ -897,7 +897,7 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(dyn_CONFIGFILE, &lp_ctx)) {
+	if (!lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			lp_config_file());
 	}

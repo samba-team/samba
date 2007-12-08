@@ -54,9 +54,9 @@ int main(int argc, const char **argv)
 	fault_setup(argv[0]);
 
 	if (getenv("SMB_CONF_PATH")) {
-		lp_load(getenv("SMB_CONF_PATH"), &lp_ctx);
+		lp_load(talloc_autofree_context(), getenv("SMB_CONF_PATH"), &lp_ctx);
 	} else {
-		lp_load(dyn_CONFIGFILE, &lp_ctx);
+		lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
 	}
 
 	ldb_global_init();

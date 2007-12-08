@@ -259,7 +259,7 @@ struct loadparm_service sDefault = {
 };
 
 /* local variables */
-static struct loadparm_context {
+struct loadparm_context {
 	struct loadparm_global Globals;
 	struct loadparm_service **ServicePtrs;
 	int iNumServices;
@@ -271,9 +271,9 @@ static struct loadparm_context {
 		char *subfname;
 		time_t modtime;
 	} *file_lists;
-} loadparm;
+};
 
-struct loadparm_context *global_loadparm = &loadparm;
+struct loadparm_context *global_loadparm = NULL;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -1087,7 +1087,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 		lp_ctx->iNumServices++;
 	} 
 
-	lp_ctx->ServicePtrs[i] = init_service(talloc_autofree_context());
+	lp_ctx->ServicePtrs[i] = init_service(lp_ctx);
 	if (lp_ctx->ServicePtrs[i] == NULL) {
 		DEBUG(0,("lp_add_service: out of memory!\n"));
 		return NULL;
@@ -1246,11 +1246,12 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
 	if (service == NULL) {
 		if (parm->class == P_LOCAL)
 			return ((char *)&sDefault)+parm->offset;
-		else
-			return ((char *)&lp_ctx->Globals)+parm->offset;
+		else if (parm->class == P_GLOBAL)
+			return ((char *)&(lp_ctx->Globals))+parm->offset;
+		else return NULL;
+	} else {
+		return ((char *)service) + parm->offset;
 	}
-
-	return ((char *)service) + parm->offset;
 }
 
 /***************************************************************************
@@ -1317,7 +1318,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					*(const char ***)dest_ptr = str_list_copy(talloc_autofree_context(), 
+					*(const char ***)dest_ptr = str_list_copy(pserviceDest, 
 										  *(const char ***)src_ptr);
 					break;
 				default:
@@ -1416,7 +1417,7 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 	}
 
 	if (!f) {
-		f = talloc(talloc_autofree_context(), struct file_lists);
+		f = talloc(lp_ctx, struct file_lists);
 		if (!f)
 			return;
 		f->next = lp_ctx->file_lists;
@@ -1452,7 +1453,7 @@ bool lp_file_list_changed(struct loadparm_context *lp_ctx)
 		char *n2;
 		time_t mod_time;
 
-		n2 = standard_sub_basic(talloc_autofree_context(), f->name);
+		n2 = standard_sub_basic(lp_ctx, f->name);
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -1478,12 +1479,11 @@ bool lp_file_list_changed(struct loadparm_context *lp_ctx)
 static bool handle_include(struct loadparm_context *lp_ctx, 
 			   const char *pszParmValue, char **ptr)
 {
-	char *fname = standard_sub_basic(talloc_autofree_context(), 
-					 pszParmValue);
+	char *fname = standard_sub_basic(lp_ctx, pszParmValue);
 
 	add_to_file_list(lp_ctx, pszParmValue, fname);
 
-	string_set(talloc_autofree_context(), ptr, fname);
+	string_set(lp_ctx, ptr, fname);
 
 	if (file_exist(fname))
 		return pm_process(fname, do_section, do_parameter, lp_ctx);
@@ -1503,7 +1503,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 	bool bRetval;
 	struct loadparm_service *serviceTemp;
 
-	string_set(talloc_autofree_context(), ptr, pszParmValue);
+	string_set(lp_ctx, ptr, pszParmValue);
 
 	bRetval = false;
 
@@ -1569,7 +1569,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 
 	if (service == NULL) {
 		data = lp_ctx->Globals.param_opt;
-		mem_ctx = talloc_autofree_context();
+		mem_ctx = lp_ctx;
 	} else {
 		data = service->param_opt;
 		mem_ctx = service;
@@ -1732,7 +1732,7 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lp_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(talloc_autofree_context(), parmnum, parm_ptr, 
+	return set_variable(lp_ctx, parmnum, parm_ptr, 
 			    pszParmName, pszParmValue, lp_ctx);
 }
 
@@ -2240,14 +2240,38 @@ void lp_killunused(struct loadparm_context *lp_ctx,
 	}
 }
 
+
+static int lp_destructor(struct loadparm_context *lp_ctx)
+{
+	struct param_opt *data;
+
+	if (lp_ctx->Globals.param_opt != NULL) {
+		struct param_opt *next;
+		for (data = lp_ctx->Globals.param_opt; data; data=next) {
+			next = data->next;
+			if (data->flags & FLAG_CMDLINE) continue;
+			DLIST_REMOVE(lp_ctx->Globals.param_opt, data);
+			talloc_free(data);
+		}
+	}
+
+	return 0;
+}
+
 /***************************************************************************
  Initialise the global parameter structure.
 ***************************************************************************/
-bool loadparm_init(struct loadparm_context *lp_ctx)
+struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 {
 	int i;
 	char *myname;
+	struct loadparm_context *lp_ctx;
 
+	lp_ctx = talloc(mem_ctx, struct loadparm_context);
+	if (lp_ctx == NULL)
+		return NULL;
+
+	talloc_set_destructor(lp_ctx, lp_destructor);
 	lp_ctx->bInGlobalSection = true;
 
 	DEBUG(3, ("Initialising global parameters\n"));
@@ -2257,7 +2281,7 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].offset != -1 &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
-			string_set(talloc_autofree_context(), 
+			string_set(lp_ctx, 
 				   (char **)(
 				   (char *)((parm_table[i].class == P_LOCAL)?&sDefault:&(lp_ctx->Globals)) +
 				   parm_table[i].offset), "");
@@ -2400,50 +2424,34 @@ bool loadparm_init(struct loadparm_context *lp_ctx)
 		}
 	}
 
-	return true;
-}
-
-_PUBLIC_ _DEPRECATED_ bool lp_load_default(void)
-{
-	return lp_load(dyn_CONFIGFILE, NULL);
+	return lp_ctx;
 }
 
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
 ***************************************************************************/
-
-bool lp_load(const char *filename, struct loadparm_context **ret_lp)
+bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context **ret_lp)
 {
 	char *n2;
 	bool bRetval;
-	struct param_opt *data;
-	struct loadparm_context *lp_ctx = &loadparm;
+	struct loadparm_context *lp_ctx;
 
 	if (ret_lp != NULL)
 		*ret_lp = NULL;
 
-	filename = talloc_strdup(talloc_autofree_context(), filename);
+	lp_ctx = loadparm_init(mem_ctx);
+	if (lp_ctx == NULL)
+		return false;
 
 	global_loadparm = lp_ctx;
 
-	if (lp_ctx->Globals.param_opt != NULL) {
-		struct param_opt *next;
-		for (data = lp_ctx->Globals.param_opt; data; data=next) {
-			next = data->next;
-			if (data->flags & FLAG_CMDLINE) continue;
-			DLIST_REMOVE(lp_ctx->Globals.param_opt, data);
-			talloc_free(data);
-		}
-	}
-
-	if (!loadparm_init(lp_ctx))
-		return false;
+	filename = talloc_strdup(lp_ctx, filename);
 
 	lp_ctx->Globals.szConfigFile = filename;
 	
 	lp_ctx->bInGlobalSection = true;
-	n2 = standard_sub_basic(talloc_autofree_context(), lp_ctx->Globals.szConfigFile);
+	n2 = standard_sub_basic(lp_ctx, lp_ctx->Globals.szConfigFile);
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
 	add_to_file_list(lp_ctx, lp_ctx->Globals.szConfigFile, n2);
