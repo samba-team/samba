@@ -39,7 +39,7 @@ static int inetd_flag = -1;
 static int help_flag;
 static int version_flag;
 static int print_dump;
-static const char *database = HDB_DEFAULT_DB;
+static const char *database;
 static int from_stdin;
 static char *local_realm;
 static char *ktname = NULL;
@@ -110,6 +110,9 @@ main(int argc, char **argv)
 
     if (argc != 0)
 	usage(1);
+
+    if (database == NULL)
+	database = hdb_default_db(context);
 
     if(from_stdin)
 	fd = STDIN_FILENO;
