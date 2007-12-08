@@ -549,6 +549,18 @@ krb5_rd_req_in_set_keytab(krb5_context context,
     return 0;
 }
 
+/**
+ * Set if krb5_rq_red() is going to check the Windows PAC or not
+ * 
+ * @param context Keberos 5 context.
+ * @param in krb5_rd_req_in_ctx to check the option on.
+ * @param flag flag to select if to check the pac (TRUE) or not (FALSE).
+ *
+ * @return Kerberos 5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_in_set_pac_check(krb5_context context, 
 			     krb5_rd_req_in_ctx in,
