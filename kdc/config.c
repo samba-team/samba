@@ -45,7 +45,7 @@ struct dbinfo {
     struct dbinfo *next;
 };
 
-static const char *config_file;	/* location of kdc config file */
+static char *config_file;	/* location of kdc config file */
 
 static int require_preauth = -1; /* 1 == require preauth for all principals */
 static char *max_request_str;	/* `max_request' as a string */
@@ -183,8 +183,11 @@ configure(krb5_context context, int argc, char **argv)
     {
 	char **files;
 
-	if(config_file == NULL)
-	    config_file = _PATH_KDC_CONF;
+	if (config_file == NULL) {
+	    asprintf(&config_file, "%s/kdc.conf", hdb_db_dir(context));
+	    if (config_file == NULL)
+		errx(1, "out of memory");
+	}
 
 	ret = krb5_prepend_config_files_default(config_file, &files);
 	if (ret)
