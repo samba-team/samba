@@ -1,3 +1,19 @@
+2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* name.c: spelling.
+
+	* cert.c: make work the doxygen.
+
+	* name.c: fix doxygen compiling.
+
+	* Makefile.am: add doxygen.c
+
+	* doxygen.c: Add doxygen main page.
+
+	* cert.c: Add doxygen.
+
+	* revoke.c (_hx509_revoke_ref): new function.
+
 2007-11-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_keychain.c: Check if SecKeyGetCSPHandle needs prototype.
