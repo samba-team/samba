@@ -841,20 +841,6 @@ static void call_trans2open(connection_struct *conn,
 		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
 		(unsigned int)open_ofun, open_size));
 
-	/* XXXX we need to handle passed times, sattr and flags */
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
-	}
-
 	if (open_ofun == 0) {
 		reply_nterror(req, NT_STATUS_OBJECT_NAME_COLLISION);
 		return;
@@ -899,14 +885,22 @@ static void call_trans2open(connection_struct *conn,
 		return;
 	}
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-		access_mask,
-		share_mode,
-		create_disposition,
-		create_options,
-		open_attr,
-		oplock_request,
-		&smb_action, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     open_attr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     open_size,			/* allocation_size */
+			     NULL,			/* sd */
+			     ea_list,			/* ea_list */
+			     &fsp,			/* result */
+			     &smb_action,		/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -925,41 +919,6 @@ static void call_trans2open(connection_struct *conn,
 		close_file(fsp,ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		return;
-	}
-
-	/* Save the requested allocation size. */
-	/* Allocate space for the file if a size hint is supplied */
-	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
-		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)open_size;
-		if (allocation_size && (allocation_size > (SMB_BIG_UINT)size)) {
-                        fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-                        if (fsp->is_directory) {
-                                close_file(fsp,ERROR_CLOSE);
-                                /* Can't set allocation size on a directory. */
-				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-				return;
-                        }
-                        if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-                                close_file(fsp,ERROR_CLOSE);
-				reply_nterror(req, NT_STATUS_DISK_FULL);
-				return;
-                        }
-
-			/* Adjust size here to return the right size in the reply.
-			   Windows does it this way. */
-			size = fsp->initial_allocation_size;
-                } else {
-                        fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)size);
-                }
-	}
-
-	if (ea_list && smb_action == FILE_WAS_CREATED) {
-		status = set_ea(conn, fsp, fname, ea_list);
-		if (!NT_STATUS_IS_OK(status)) {
-			close_file(fsp,ERROR_CLOSE);
-			reply_nterror(req, status);
-			return;
-		}
 	}
 
 	/* Realloc the size of parameters and data we will return */
