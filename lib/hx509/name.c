@@ -153,6 +153,18 @@ stringtooid(const char *name, size_t len, heim_oid *oid)
     return ret;
 }
 
+/**
+ * Convert the hx509 name object into a printable string.
+ * The resulting string should be freed with free().
+ *
+ * @param name name to print
+ * @param str the string to return
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_to_string(const hx509_name name, char **str)
 {
@@ -339,6 +351,18 @@ _hx509_name_cmp(const Name *n1, const Name *n2)
     return 0;
 }
 
+/**
+ * Compare to hx509 name object, useful for sorting.
+ *
+ * @param n1 a hx509 name object.
+ * @param n2 a hx509 name object.
+ *
+ * @return 0 the objects are the same, returns > 0 is n2 is "larger"
+ * then n2, < 0 if n1 is "smaller" then n2.
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_cmp(hx509_name n1, hx509_name n2)
 {
@@ -419,6 +443,18 @@ _hx509_name_modify(hx509_context context,
 
     return 0;
 }
+
+/**
+ * Parse a string into a hx509 name object.
+ *
+ * @param context A hx509 context.
+ * @param str a string to parse.
+ * @param name the resulting object, NULL in case of error.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
@@ -511,6 +547,18 @@ out:
     hx509_name_free(&n);
     return HX509_NAME_MALFORMED;
 }
+
+/**
+ * Copy a hx509 name object.
+ *
+ * @param context A hx509 cotext.
+ * @param from the name to copy from
+ * @param to the name to copy to
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
@@ -635,6 +683,13 @@ hx509_name_expand(hx509_context context,
     return 0;
 }
 
+/**
+ * Free a hx509 name object, upond return *name will be NULL.
+ *
+ * @param name a hx509 name object to be freed.
+ *
+ * @ingroup hx509_name
+ */
 
 void
 hx509_name_free(hx509_name *name)
@@ -644,6 +699,19 @@ hx509_name_free(hx509_name *name)
     free(*name);
     *name = NULL;
 }
+
+/**
+ * Convert a DER encoded name info a string.
+ *
+ * @param data data to a DER/BER encoded name
+ * @param length length of data
+ * @param str the resulting string, is NULL on failure.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 
 int
 hx509_unparse_der_name(const void *data, size_t length, char **str)
@@ -696,6 +764,17 @@ hx509_name_is_null_p(const hx509_name name)
 {
     return name->der_name.u.rdnSequence.len == 0;
 }
+
+/**
+ * Unparse the hx509 name in name into a string.
+ *
+ * @param name the name to print
+ * @param str an allocated string returns the name in string form
+ *
+ * @return An hx509 error code, see krb5_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_general_name_unparse(GeneralName *name, char **str)
