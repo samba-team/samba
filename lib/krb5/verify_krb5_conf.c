@@ -366,6 +366,7 @@ struct entry v4_name_convert_entries[] = {
 struct entry libdefaults_entries[] = {
     { "accept_null_addresses", krb5_config_string, check_boolean },
     { "capath", krb5_config_list, all_strings },
+    { "check_pac", krb5_config_string, check_boolean },
     { "clockskew", krb5_config_string, check_time },
     { "date_format", krb5_config_string, NULL },
     { "default_cc_name", krb5_config_string, NULL },
