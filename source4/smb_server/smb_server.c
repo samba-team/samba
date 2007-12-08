@@ -94,9 +94,6 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 	DEBUG(10,("smbsrv_recv\n"));
 
 	packet_recv(smb_conn->packet);
-
-	/* free up temporary memory */
-	lp_talloc_free();
 }
 
 /*

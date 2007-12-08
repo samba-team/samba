@@ -554,20 +554,6 @@ struct parm_struct *lp_parm_table(void)
 	return parm_table;
 }
 
-static TALLOC_CTX *lp_talloc;
-
-/******************************************************************* a
- Free up temporary memory - called from the main loop.
-********************************************************************/
-
-void lp_talloc_free(void)
-{
-	if (!lp_talloc)
-		return;
-	talloc_free(lp_talloc);
-	lp_talloc = NULL;
-}
-
 /*******************************************************************
  Convenience routine to grab string parameters into temporary memory
  and run standard_sub_basic on them. The buffers can be written to by
@@ -975,7 +961,7 @@ double lp_parm_double(struct loadparm_context *lp_ctx,
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
-	if (value)
+	if (value != NULL)
 		return lp_double(value);
 
 	return default_v;
@@ -990,7 +976,7 @@ bool lp_parm_bool(struct loadparm_context *lp_ctx,
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
-	if (value)
+	if (value != NULL)
 		return lp_bool(value);
 
 	return default_v;
