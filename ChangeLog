@@ -1,5 +1,13 @@
 2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/hpropd.c: Use hdb_default_db().
+
+	* kdc/kstash.c: Use hdb_db_dir().
+
+	* kdc/pkinit.c: Adapt to hx509 changes, use hdb_db_dir().
+
+	* lib/krb5/rd_req.c: Document krb5_rd_req_in_set_pac_check.
+
 	* lib/krb5/verify_krb5_conf.c: Check check_pac.
 
 	* lib/krb5/rd_req.c: use KRB5_CTX_F_CHECK_PAC to init check_pac
