@@ -29,6 +29,11 @@ hx509.dxy: hx509.din Makefile
 	chmod +x hx509.dxy.tmp
 	mv hx509.dxy.tmp hx509.dxy
 
+hcrypto.dxy: hcrypto.din Makefile
+	$(dxy_subst) < $(srcdir)/hcrypto.din > hcrypto.dxy.tmp
+	chmod +x hcrypto.dxy.tmp
+	mv hcrypto.dxy.tmp hcrypto.dxy
+
 
 texi_subst = sed -e 's,[@]dbdir[@],$(localstatedir),g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
@@ -38,10 +43,11 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
-doxygen: krb5.dxy ntlm.dxy hx509.dxy
+doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy
 	doxygen krb5.dxy
 	doxygen ntlm.dxy
 	doxygen hx509.dxy
+	doxygen hcrypto.dxy
 
 heimdal_TEXINFOS = \
 	ack.texi \
@@ -62,6 +68,7 @@ EXTRA_DIST = \
 	krb5.din \
 	ntlm.din \
 	hx509.din \
+	hcrypto.din \
 	doxytmpl.dxy \
 	vars.tin
 
@@ -69,5 +76,6 @@ CLEANFILES = \
 	krb5.dxy* \
 	ntlm.dxy* \
 	hx509.dxy* \
+	hcrypto.dxy* \
 	vars.texi*
 
