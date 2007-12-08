@@ -484,7 +484,7 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	lp_load(dyn_CONFIGFILE, &lp_ctx);
+	lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
 
 	if (getenv("USER")) {
 		fstrcpy(username,getenv("USER"));

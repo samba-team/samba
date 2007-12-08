@@ -189,7 +189,7 @@ static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
 	bool ret;
 	
-	ret = lp_load(lp_configfile(global_loadparm), NULL);
+	ret = lp_load(talloc_autofree_context(), lp_configfile(global_loadparm), NULL);
 	if (ret) {
 		unload_interfaces();
 	}
