@@ -55,7 +55,7 @@ if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
     exit 77
 fi
 
-echo "nist tests"
+echo "nist tests, version 2"
 
 if [ ! -d "$nistdir" ] ; then
     ( mkdir "$nistdir" && unzip -d "${nistdir}" "${nistzip}" ) >/dev/null || \
