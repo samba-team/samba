@@ -127,7 +127,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 			fflush(stdout);
 			getc(stdin);
 		}
-		if (section_name || parameter_name) {
+		if (section_name != NULL || parameter_name != NULL) {
 			struct loadparm_service *service = NULL;
 			if (!section_name) {
 				section_name = GLOBAL_NAME;
@@ -141,7 +141,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 			if (!parameter_name) {
 				lp_dump_one(stdout, show_defaults, service);
 			} else {
-				ret = !lp_dump_a_parameter(lp_ctx, s, parameter_name, stdout, (service == NULL));
+				ret = !lp_dump_a_parameter(lp_ctx, service, parameter_name, stdout, (service == NULL));
 			}
 		} else {
 			lp_dump(lp_ctx, stdout, show_defaults, lp_numservices(lp_ctx));
