@@ -52,6 +52,7 @@ struct revoke_ocsp {
 
 
 struct hx509_revoke_ctx_data {
+    unsigned ref;
     struct {
 	struct revoke_crl *val;
 	size_t len;
@@ -69,12 +70,24 @@ hx509_revoke_init(hx509_context context, hx509_revoke_ctx *ctx)
     if (*ctx == NULL)
 	return ENOMEM;
 
+    (*ctx)->ref = 1;
     (*ctx)->crls.len = 0;
     (*ctx)->crls.val = NULL;
     (*ctx)->ocsps.len = 0;
     (*ctx)->ocsps.val = NULL;
 
     return 0;
+}
+
+hx509_revoke_ctx
+_hx509_revoke_ref(hx509_revoke_ctx ctx)
+{
+    if (ctx->ref <= 0)
+	_hx509_abort("revoke ctx refcount <= 0");
+    ctx->ref++;
+    if (ctx->ref == 0)
+	_hx509_abort("revoke ctx refcount == 0");
+    return ctx;
 }
 
 static void
@@ -92,6 +105,11 @@ hx509_revoke_free(hx509_revoke_ctx *ctx)
     size_t i ;
 
     if (ctx == NULL || *ctx == NULL)
+	return;
+
+    if ((*ctx)->ref <= 0)
+	_hx509_abort("revoke ctx refcount <= 0 on free");
+    if (--(*ctx)->ref > 0)
 	return;
 
     for (i = 0; i < (*ctx)->crls.len; i++) {
