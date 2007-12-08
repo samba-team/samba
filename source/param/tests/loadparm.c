@@ -97,6 +97,17 @@ static bool test_lp_parm_bytes(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_lp_do_service_parameter(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, "foo");
+	torture_assert(tctx, lp_do_service_parameter(lp_ctx, service, 
+						     "some:thing", "foo"), "lp_set_option failed");
+	torture_assert_str_equal(tctx, lp_parm_string(lp_ctx, service, "some", "thing"), "foo",
+				 "invalid parametric option");
+	return true;
+}
+
 struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOADPARM");
@@ -109,6 +120,7 @@ struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "set_lp_parm_bool", test_lp_parm_bool);
 	torture_suite_add_simple_test(suite, "set_lp_parm_int", test_lp_parm_int);
 	torture_suite_add_simple_test(suite, "set_lp_parm_bytes", test_lp_parm_bytes);
+	torture_suite_add_simple_test(suite, "service_parameter", test_lp_do_service_parameter);
 
 	return suite;
 }
