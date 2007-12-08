@@ -386,7 +386,7 @@ function provision_default_paths(subobj)
 	var dnsdomain = strlower(subobj.REALM);
 	var lp = loadparm_init();
 	var paths = new Object();
-	paths.smbconf = lp.get("config file");
+	paths.smbconf = lp.filename()
 	paths.shareconf = lp.get("private dir") + "/" + "share.ldb";
 	paths.samdb = lp.get("sam database");
 	paths.secrets = lp.get("secrets database");

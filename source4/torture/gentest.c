@@ -2197,7 +2197,8 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
+	global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
+	lp_load(lp_ctx, dyn_CONFIGFILE);
 
 	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
 	servers[1].credentials = cli_credentials_init(talloc_autofree_context());

@@ -897,7 +897,9 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx)) {
+	lp_ctx = global_loadparm = loadparm_init(talloc_autofree_context());
+
+	if (!lp_load(lp_ctx, dyn_CONFIGFILE)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			lp_config_file());
 	}
@@ -923,6 +925,6 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 	strupper(my_netbios_name);
 
-	init_mount(global_loadparm);
+	init_mount(lp_ctx);
 	return 0;
 }

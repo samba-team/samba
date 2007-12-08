@@ -161,6 +161,14 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+/*
+    v = lp.filename();         obtain filename
+*/
+static int ejs_lpFilename(MprVarHandle eid, int argc, char **argv)
+{
+	mpr_ReturnString(eid, lp_configfile(global_loadparm));
+	return 0;
+}
 
 /*
   set a smb.conf parameter. Only sets in memory, not permanent
@@ -188,8 +196,9 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
 	bool ret;
-	
-	ret = lp_load(talloc_autofree_context(), lp_configfile(global_loadparm), NULL);
+	const char *filename = lp_configfile(global_loadparm);
+
+	ret = lp_load(global_loadparm, filename);
 	if (ret) {
 		unload_interfaces();
 	}
@@ -208,6 +217,7 @@ static int ejs_loadparm_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "set", ejs_lpSet);
 	mprSetStringCFunction(obj, "reload", ejs_lpReload);
 	mprSetStringCFunction(obj, "services", ejs_lpServices);
+	mprSetStringCFunction(obj, "filename", ejs_lpFilename);
 	return 0;
 }
 

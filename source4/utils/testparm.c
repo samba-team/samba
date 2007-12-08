@@ -141,7 +141,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 			if (!parameter_name) {
 				lp_dump_one(stdout, show_defaults, service);
 			} else {
-				ret = !lp_dump_a_parameter(lp_ctx, service, parameter_name, stdout, (service == NULL));
+				ret = !lp_dump_a_parameter(lp_ctx, service, parameter_name, stdout);
 			}
 		} else {
 			lp_dump(lp_ctx, stdout, show_defaults, lp_numservices(lp_ctx));
@@ -233,13 +233,15 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 		set_local_machine_name(new_local_machine, True);
 	}
 */
+
+	lp_ctx = global_loadparm;
 	
 	/* We need this to force the output */
-	lp_set_cmdline(global_loadparm, "log level", "2");
+	lp_set_cmdline(lp_ctx, "log level", "2");
 
-	fprintf(stderr, "Loaded smb config files from %s\n", lp_configfile(global_loadparm));
+	fprintf(stderr, "Loaded smb config files from %s\n", lp_configfile(lp_ctx));
 
-	if (!lp_load(talloc_autofree_context(), lp_configfile(global_loadparm), &lp_ctx)) {
+	if (!lp_load(lp_ctx, lp_configfile(lp_ctx))) {
 		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}
