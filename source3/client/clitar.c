@@ -619,7 +619,7 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 
 	GetTimeOfDay(&tp_start);
 
-	data = SMB_MALLOC(read_size);
+	data = SMB_MALLOC_ARRAY(char, read_size);
 	if (!data) {
 		DEBUG(0,("do_atar: out of memory.\n"));
 		goto cleanup;
