@@ -240,7 +240,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string_list(global_loadparm, s, parm, val, ",;");
+		ret = lp_parm_string_list(mem_ctx, global_loadparm, s, parm, val, ",;");
 		talloc_free(parm);
 		return ret;
 	}
