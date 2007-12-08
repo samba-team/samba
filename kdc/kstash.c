@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 krb5_context context;
 
-static const char *keyfile = HDB_DB_DIR "/m-key";
+static char *keyfile;
 static int convert_flag;
 static int help_flag;
 static int version_flag;
@@ -83,6 +83,9 @@ main(int argc, char **argv)
     if (master_key_fd != -1 && random_key_flag)
 	krb5_errx(context, 1, "random-key and master-key-fd "
 		  "is mutual exclusive");
+
+    if (keyfile == NULL)
+	asprintf(&keyfile, "%s/m-key", hdb_db_dir(context));
 
     ret = krb5_string_to_enctype(context, enctype_str, &enctype);
     if(ret)
