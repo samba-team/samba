@@ -303,7 +303,8 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
+	lp_ctx = global_loadparm = loadparm_init(talloc_autofree_context());
+	lp_load(lp_ctx, dyn_CONFIGFILE);
 
 	credentials = cli_credentials_init(talloc_autofree_context());
 	cli_credentials_guess(credentials, lp_ctx);

@@ -53,10 +53,12 @@ int main(int argc, const char **argv)
 
 	fault_setup(argv[0]);
 
+	global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
+
 	if (getenv("SMB_CONF_PATH")) {
-		lp_load(talloc_autofree_context(), getenv("SMB_CONF_PATH"), &lp_ctx);
+		lp_load(lp_ctx, getenv("SMB_CONF_PATH"));
 	} else {
-		lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
+		lp_load(lp_ctx, dyn_CONFIGFILE);
 	}
 
 	ldb_global_init();

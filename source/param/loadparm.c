@@ -88,7 +88,6 @@ struct loadparm_global
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdChat;
-	const char *szConfigFile;
 	char *szShareBackend;
 	char *szSAM_URL;
 	char *szSECRETS_URL;
@@ -356,8 +355,6 @@ static const struct enum_list enum_server_role[] = {
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
-	{"config file", P_STRING, P_GLOBAL, GLOBAL_VAR(szConfigFile), NULL, NULL},
-
 	{"server role", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_role), NULL, enum_server_role},
 
 	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL},
@@ -521,6 +518,7 @@ static struct parm_struct parm_table[] = {
 
 /* local variables */
 struct loadparm_context {
+	const char *szConfigFile;
 	struct loadparm_global *globals;
 	struct loadparm_service **services;
 	int iNumServices;
@@ -682,7 +680,6 @@ _PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, bDisableNetbios)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, bWINSsupport)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, bWINSdnsProxy)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, szWINSHook)
-_PUBLIC_ FN_GLOBAL_STRING(lp_configfile, szConfigFile)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, bLocalMaster)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, bReadRaw)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, bLargeReadwrite)
@@ -2399,35 +2396,30 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	return lp_ctx;
 }
 
+const char *lp_configfile(struct loadparm_context *lp_ctx)
+{
+	return lp_ctx->szConfigFile;
+}
+
 /**
  * Load the services array from the services file. 
  *
  * Return True on success, False on failure.
  */
-bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context **ret_lp)
+bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 {
 	char *n2;
 	bool bRetval;
-	struct loadparm_context *lp_ctx;
-
-	if (ret_lp != NULL)
-		*ret_lp = NULL;
-
-	lp_ctx = loadparm_init(mem_ctx);
-	if (lp_ctx == NULL)
-		return false;
-
-	global_loadparm = lp_ctx;
 
 	filename = talloc_strdup(lp_ctx, filename);
 
-	lp_ctx->globals->szConfigFile = filename;
+	lp_ctx->szConfigFile = filename;
 	
 	lp_ctx->bInGlobalSection = true;
-	n2 = standard_sub_basic(lp_ctx, lp_ctx->globals->szConfigFile);
+	n2 = standard_sub_basic(lp_ctx, lp_ctx->szConfigFile);
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
-	add_to_file_list(lp_ctx, lp_ctx->globals->szConfigFile, n2);
+	add_to_file_list(lp_ctx, lp_ctx->szConfigFile, n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	lp_ctx->currentService = NULL;
@@ -2451,9 +2443,6 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv();
-
-	if (ret_lp != NULL)
-		*ret_lp = lp_ctx;
 
 	return bRetval;
 }

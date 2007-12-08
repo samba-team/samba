@@ -40,6 +40,7 @@
 enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
+struct loadparm_context *cmdline_lp_ctx = NULL;
 
 static void popt_version_callback(poptContext con,
 			   enum poptCallbackReason reason,
@@ -59,14 +60,13 @@ static void popt_samba_callback(poptContext con,
 			   const char *arg, const void *data)
 {
 	const char *pname;
-	struct loadparm_context *lp_ctx = global_loadparm; /* FIXME: allow overriding */
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
-		if (lp_ctx == NULL) {
+		if (lp_configfile(cmdline_lp_ctx) == NULL) {
 			if (getenv("SMB_CONF_PATH"))
-				lp_load(talloc_autofree_context(), getenv("SMB_CONF_PATH"), &lp_ctx);
+				lp_load(cmdline_lp_ctx, getenv("SMB_CONF_PATH"));
 			else
-				lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
+				lp_load(cmdline_lp_ctx, dyn_CONFIGFILE);
 		}
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
@@ -82,6 +82,11 @@ static void popt_samba_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
+		if (global_loadparm != NULL) {
+			cmdline_lp_ctx = global_loadparm;
+		} else {
+			cmdline_lp_ctx = global_loadparm = loadparm_init(talloc_autofree_context());
+		}
 
 		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */
@@ -104,14 +109,14 @@ static void popt_samba_callback(poptContext con,
 		break;
 
 	case OPT_OPTION:
-		if (!lp_set_option(lp_ctx, arg)) {
+		if (!lp_set_option(cmdline_lp_ctx, arg)) {
 			fprintf(stderr, "Error setting option '%s'\n", arg);
 			exit(1);
 		}
 		break;
 
 	case 'd':
-		lp_set_cmdline(lp_ctx, "log level", arg);
+		lp_set_cmdline(cmdline_lp_ctx, "log level", arg);
 		break;
 
 	case OPT_DEBUG_STDERR:
@@ -120,14 +125,14 @@ static void popt_samba_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			lp_load(talloc_autofree_context(), arg, NULL);
+			lp_load(cmdline_lp_ctx, arg);
 		}
 		break;
 
 	case 'l':
 		if (arg) {
 			char *new_logfile = talloc_asprintf(NULL, "%s/log.%s", arg, pname);
-			lp_set_cmdline(lp_ctx, "log file", new_logfile);
+			lp_set_cmdline(cmdline_lp_ctx, "log file", new_logfile);
 			talloc_free(new_logfile);
 		}
 		break;
@@ -143,7 +148,7 @@ static void popt_common_callback(poptContext con,
 			   const struct poptOption *opt,
 			   const char *arg, const void *data)
 {
-	struct loadparm_context *lp_ctx = global_loadparm; /* FIXME: allow overriding */
+	struct loadparm_context *lp_ctx = cmdline_lp_ctx;
 
 	switch(opt->val) {
 	case 'O':

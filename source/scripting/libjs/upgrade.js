@@ -468,7 +468,6 @@ smbconf_keep = new Array(
 	"wins support",
 	"csc policy",
 	"strict locking",
-	"config file",
 	"preload",
 	"auto services",
 	"lock dir",
