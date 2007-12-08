@@ -471,7 +471,7 @@ bool cli_qpathinfo(struct cli_state *cli,
 	char *p;
 	size_t nlen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -560,7 +560,7 @@ bool cli_setpathinfo(struct cli_state *cli, const char *fname,
 	char *p;
 	size_t nlen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -660,7 +660,7 @@ bool cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	char *p;
 	size_t nlen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -989,7 +989,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	unsigned int len;
 	size_t nlen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return NT_STATUS_NO_MEMORY;
 	}

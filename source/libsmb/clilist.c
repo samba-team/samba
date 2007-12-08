@@ -255,7 +255,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			break;
 		}
 
-		param = SMB_MALLOC(12+nlen+last_name_raw.length+2);
+		param = SMB_MALLOC_ARRAY(char, 12+nlen+last_name_raw.length+2);
 		if (!param) {
 			break;
 		}
