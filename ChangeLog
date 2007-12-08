@@ -1,5 +1,7 @@
 2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/verify_krb5_conf.c: Check check_pac.
+
 	* lib/krb5/rd_req.c: use KRB5_CTX_F_CHECK_PAC to init check_pac
 	field in the krb5_rd_req_in_ctx
 
