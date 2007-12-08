@@ -234,7 +234,9 @@ typedef struct krb5_context_data {
     int default_cc_name_set;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
-    int dns_canonicalize_hostname;
+    int flags;
+#define KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME	1
+#define KRB5_CTX_F_CHECK_PAC			2
     struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
