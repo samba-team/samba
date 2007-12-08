@@ -56,6 +56,7 @@ dist_libhx509_la_SOURCES = \
 	cms.c \
 	collector.c \
 	crypto.c \
+	doxygen.c \
 	error.c \
 	env.c \
 	file.c \
