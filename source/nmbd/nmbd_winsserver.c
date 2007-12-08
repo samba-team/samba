@@ -601,30 +601,33 @@ bool initialise_wins(void)
 	}
 
 	while (!x_feof(fp)) {
-		fstring name_str;
-		char ip_str[1024];
-		fstring ttl_str, nb_flags_str;
+		char *name_str = NULL;
+		char *ip_str = NULL;
+		char *ttl_str = NULL, *nb_flags_str = NULL;
 		unsigned int num_ips;
-		char *name;
-		struct in_addr *ip_list;
+		char *name = NULL;
+		struct in_addr *ip_list = NULL;
 		int type = 0;
 		int nb_flags;
 		int ttl;
 		const char *ptr;
-		char *p;
+		char *p = NULL;
 		bool got_token;
 		bool was_ip;
 		int i;
 		unsigned int hash;
 		int version;
+		TALLOC_CTX *frame = NULL;
 
 		/* Read a line from the wins.dat file. Strips whitespace
 			from the beginning and end of the line.  */
-		if (!fgets_slash(line,sizeof(line),fp))
+		if (!fgets_slash(line,sizeof(line),fp)) {
 			continue;
+		}
 
-		if (*line == '#')
+		if (*line == '#') {
 			continue;
+		}
 
 		if (strncmp(line,"VERSION ", 8) == 0) {
 			if (sscanf(line,"VERSION %d %u", &version, &hash) != 2 ||
@@ -645,13 +648,16 @@ bool initialise_wins(void)
 		 * time to actually parse them into the ip_list array.
 		 */
 
-		if (!next_token(&ptr,name_str,NULL,sizeof(name_str))) {
+		frame = talloc_stackframe();
+		if (!next_token_talloc(frame,&ptr,&name_str,NULL)) {
 			DEBUG(0,("initialise_wins: Failed to parse name when parsing line %s\n", line ));
+			TALLOC_FREE(frame);
 			continue;
 		}
 
-		if (!next_token(&ptr,ttl_str,NULL,sizeof(ttl_str))) {
+		if (!next_token_talloc(frame,&ptr,ttl_str,NULL)) {
 			DEBUG(0,("initialise_wins: Failed to parse time to live when parsing line %s\n", line ));
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -660,22 +666,24 @@ bool initialise_wins(void)
 		 */
 		num_ips = 0;
 		do {
-			got_token = next_token(&ptr,ip_str,NULL,sizeof(ip_str));
+			got_token = next_token_talloc(frame,&ptr,&ip_str,NULL);
 			was_ip = False;
 
 			if(got_token && strchr(ip_str, '.')) {
 				num_ips++;
 				was_ip = True;
 			}
-		} while( got_token && was_ip);
+		} while(got_token && was_ip);
 
 		if(num_ips == 0) {
 			DEBUG(0,("initialise_wins: Missing IP address when parsing line %s\n", line ));
+			TALLOC_FREE(frame);
 			continue;
 		}
 
 		if(!got_token) {
 			DEBUG(0,("initialise_wins: Missing nb_flags when parsing line %s\n", line ));
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -683,20 +691,21 @@ bool initialise_wins(void)
 		if((ip_list = SMB_MALLOC_ARRAY( struct in_addr, num_ips)) == NULL) {
 			DEBUG(0,("initialise_wins: Malloc fail !\n"));
 			x_fclose(fp);
+			TALLOC_FREE(frame);
 			return False;
 		}
 
 		/* Reset and re-parse the line. */
 		ptr = line;
-		next_token(&ptr,name_str,NULL,sizeof(name_str));
-		next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
+		next_token_talloc(frame,&ptr,&name_str,NULL);
+		next_token_talloc(frame,&ptr,&ttl_str,NULL);
 		for(i = 0; i < num_ips; i++) {
-			next_token(&ptr, ip_str, NULL, sizeof(ip_str));
+			next_token_talloc(frame,&ptr, &ip_str, NULL);
 			(void)interpret_addr2(&ip_list[i], ip_str);
 		}
-		next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
+		next_token_talloc(frame,&ptr,&nb_flags_str,NULL);
 
-		/* 
+		/*
 		 * Deal with SELF or REGISTER name encoding. Default is REGISTER
 		 * for compatibility with old nmbds.
 		 */
@@ -704,6 +713,7 @@ bool initialise_wins(void)
 		if(nb_flags_str[strlen(nb_flags_str)-1] == 'S') {
 			DEBUG(5,("initialise_wins: Ignoring SELF name %s\n", line));
 			SAFE_FREE(ip_list);
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -740,9 +750,10 @@ bool initialise_wins(void)
 				name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
 		}
 
+		TALLOC_FREE(frame);
 		SAFE_FREE(ip_list);
-	} 
-    
+	}
+
 	x_fclose(fp);
 	return True;
 }

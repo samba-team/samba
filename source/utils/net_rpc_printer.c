@@ -514,17 +514,17 @@ static NTSTATUS net_copy_driverfile(TALLOC_CTX *mem_ctx,
 	const char *p;
 	char *src_name;
 	char *dst_name;
-	fstring version;
-	fstring filename;
-	fstring tok;
+	char *version;
+	char *filename;
+	char *tok;
 
 	/* scroll through the file until we have the part 
 	   beyond archi_table.short_archi */
 	p = file;
-	while (next_token(&p, tok, "\\", sizeof(tok))) {
+	while (next_token_talloc(mem_ctx, &p, &tok, "\\")) {
 		if (strequal(tok, short_archi)) {
-			next_token(&p, version, "\\", sizeof(version));
-			next_token(&p, filename, "\\", sizeof(filename));
+			next_token_talloc(mem_ctx, &p, &version, "\\");
+			next_token_talloc(mem_ctx, &p, &filename, "\\");
 		}
 	}
 

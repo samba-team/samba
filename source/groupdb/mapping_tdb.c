@@ -388,9 +388,11 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 static NTSTATUS one_alias_membership(const DOM_SID *member,
 			       DOM_SID **sids, size_t *num)
 {
-	fstring key, string_sid;
+	fstring key;
+	char *string_sid;
 	TDB_DATA dbuf;
 	const char *p;
+	TALLOC_CTX *frame;
 
 	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
@@ -402,19 +404,20 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	}
 
 	p = (const char *)dbuf.dptr;
-
-	while (next_token(&p, string_sid, " ", sizeof(string_sid))) {
-
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &p, &string_sid, " ")) {
 		DOM_SID alias;
 
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
 		if (!add_sid_to_array_unique(NULL, &alias, sids, num)) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
+	TALLOC_FREE(frame);
 	SAFE_FREE(dbuf.dptr);
 	return NT_STATUS_OK;
 }
@@ -518,7 +521,8 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 {
 	struct aliasmem_closure *closure = (struct aliasmem_closure *)state;
 	const char *p;
-	fstring alias_string;
+	char *alias_string;
+	TALLOC_CTX *frame;
 
 	if (strncmp((const char *)key.dptr, MEMBEROF_PREFIX,
 		    strlen(MEMBEROF_PREFIX)) != 0)
@@ -526,11 +530,10 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 
 	p = (const char *)data.dptr;
 
-	while (next_token(&p, alias_string, " ", sizeof(alias_string))) {
-
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &p, &alias_string, " ")) {
 		DOM_SID alias, member;
 		const char *member_string;
-		
 
 		if (!string_to_sid(&alias, alias_string))
 			continue;
@@ -552,13 +555,14 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 
 		if (!string_to_sid(&member, member_string))
 			continue;
-		
+
 		if (!add_sid_to_array(NULL, &member, closure->sids, closure->num)) {
 			/* talloc fail. */
 			break;
 		}
 	}
 
+	TALLOC_FREE(frame);
 	return 0;
 }
 

@@ -374,20 +374,23 @@ static bool wbinfo_list_domains(bool list_all_domains)
 
 	if (response.extra_data.data) {
 		const char *extra_data = (char *)response.extra_data.data;
-		fstring name;
+		char *name;
 		char *p;
+		TALLOC_CTX *frame = talloc_stackframe();
 
-		while(next_token(&extra_data, name, "\n", sizeof(fstring))) {
+		while(next_token_talloc(frame,&extra_data,&name,"\n")) {
 			p = strchr(name, '\\');
 			if (p == 0) {
 				d_fprintf(stderr, "Got invalid response: %s\n",
 					 extra_data);
+				TALLOC_FREE(frame);
+				SAFE_FREE(response.extra_data.data);
 				return False;
 			}
 			*p = 0;
 			d_printf("%s\n", name);
 		}
-
+		TALLOC_FREE(frame);
 		SAFE_FREE(response.extra_data.data);
 	}
 
@@ -713,7 +716,7 @@ static bool wbinfo_lookuprids(char *domain, char *arg)
 	int num_rids;
 	uint32 *rids;
 	const char *p;
-	char ridstr[32];
+	char *ridstr;
 	const char **names;
 	enum lsa_SidType *types;
 	const char *domain_name;
@@ -752,7 +755,7 @@ static bool wbinfo_lookuprids(char *domain, char *arg)
 	rids = NULL;
 	p = arg;
 
-	while (next_token(&p, ridstr, " ,\n", sizeof(ridstr))) {
+	while (next_token_talloc(mem_ctx, &p, &ridstr, " ,\n")) {
 		uint32 rid = strtoul(ridstr, NULL, 10);
 		ADD_TO_ARRAY(mem_ctx, uint32, rid, &rids, &num_rids);
 	}
@@ -1072,13 +1075,14 @@ static bool print_domain_users(const char *domain)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	const char *extra_data;
-	fstring name;
+	char *name;
+	TALLOC_CTX *frame = NULL;
 
 	/* Send request to winbind daemon */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-	
+
 	if (domain) {
 		/* '.' is the special sign for our own domain */
 		if ( strequal(domain, ".") )
@@ -1098,9 +1102,11 @@ static bool print_domain_users(const char *domain)
 
 	extra_data = (const char *)response.extra_data.data;
 
-	while(next_token(&extra_data, name, ",", sizeof(fstring)))
+	frame = talloc_stackframe();
+	while(next_token_talloc(frame,&extra_data,&name, ","))
 		d_printf("%s\n", name);
-	
+	TALLOC_FREE(frame);
+
 	SAFE_FREE(response.extra_data.data);
 
 	return True;
@@ -1113,7 +1119,8 @@ static bool print_domain_groups(const char *domain)
 	struct winbindd_request  request;
 	struct winbindd_response response;
 	const char *extra_data;
-	fstring name;
+	TALLOC_CTX *frame = NULL;
+	char *name;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -1136,11 +1143,13 @@ static bool print_domain_groups(const char *domain)
 
 	extra_data = (const char *)response.extra_data.data;
 
-	while(next_token(&extra_data, name, ",", sizeof(fstring)))
+	frame = talloc_stackframe();
+	while(next_token_talloc(frame,&extra_data,&name, ","))
 		d_printf("%s\n", name);
+	TALLOC_FREE(frame);
 
 	SAFE_FREE(response.extra_data.data);
-	
+
 	return True;
 }
 

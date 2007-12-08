@@ -290,10 +290,10 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 		uint32 g_access;
 		uint32 s_access;
 		DOM_SID sid;
-		fstring sidstr;
+		char *sidstr;
 		uint8 type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
-		if (!next_token(&pacl, sidstr, ":", sizeof(sidstr))) {
+		if (!next_token_talloc(ctx, &pacl, &sidstr, ":")) {
 			DEBUG(0,("parse_usershare_acl: malformed usershare acl looking "
 				"for ':' in string '%s'\n", pacl));
 			return False;

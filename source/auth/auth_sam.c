@@ -188,15 +188,14 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	if (*workstation_list) {
 		bool invalid_ws = True;
-		fstring tok;
+		char *tok;
 		const char *s = workstation_list;
 
 		const char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->wksta_name);
 		if (machine_name == NULL)
 			return NT_STATUS_NO_MEMORY;
-			
-			
-		while (next_token(&s, tok, ",", sizeof(tok))) {
+
+		while (next_token_talloc(mem_ctx, &s, &tok, ",")) {
 			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s\n",
 				  tok, user_info->wksta_name));
 			if(strequal(tok, user_info->wksta_name)) {
@@ -211,9 +210,11 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 					break;
 				}
 			}
+			TALLOC_FREE(tok);
 		}
-		
-		if (invalid_ws) 
+		TALLOC_FREE(tok);
+
+		if (invalid_ws)
 			return NT_STATUS_INVALID_WORKSTATION;
 	}
 
@@ -221,7 +222,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", pdb_get_username(sampass)));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
-	
+
 	if (acct_ctrl & ACB_SVRTRUST) {
 		if (!(user_info->logon_parameters & MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT)) {
 			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", pdb_get_username(sampass)));

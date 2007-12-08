@@ -89,7 +89,8 @@ static bool init_registry_data( void )
 	char *base = NULL;
 	char *remaining = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
-	fstring keyname, subkeyname;
+	char *keyname;
+	char *subkeyname;
 	REGSUBKEY_CTR *subkeys;
 	REGVAL_CTR *values;
 	int i;
@@ -125,7 +126,7 @@ static bool init_registry_data( void )
 		}
 		p = path;
 
-		while (next_token(&p, keyname, "\\", sizeof(keyname))) {
+		while (next_token_talloc(ctx, &p, &keyname, "\\")) {
 
 			/* build up the registry path from the components */
 
@@ -142,7 +143,10 @@ static bool init_registry_data( void )
 
 			/* get the immediate subkeyname (if we have one ) */
 
-			*subkeyname = '\0';
+			subkeyname = talloc_strdup(ctx, "");
+			if (!subkeyname) {
+				goto fail;
+			}
 			if (*p) {
 				TALLOC_FREE(remaining);
 				remaining = talloc_strdup(ctx, p);
@@ -151,9 +155,12 @@ static bool init_registry_data( void )
 				}
 				p2 = remaining;
 
-				if (!next_token(&p2, subkeyname, "\\",
-							sizeof(subkeyname))) {
-					fstrcpy( subkeyname, p2 );
+				if (!next_token_talloc(ctx, &p2,
+							&subkeyname, "\\")) {
+					subkeyname = talloc_strdup(ctx,p2);
+					if (!subkeyname) {
+						goto fail;
+					}
 				}
 			}
 

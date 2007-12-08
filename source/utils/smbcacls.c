@@ -272,7 +272,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 {
 	char *p;
 	const char *cp;
-	fstring tok;
+	char *tok;
 	unsigned int atype = 0;
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
@@ -280,8 +280,10 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 	SEC_ACCESS mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!str) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -290,6 +292,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 	if (!p) {
 		printf("ACE '%s': missing ':'.\n", orig_str);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 	*p = '\0';
@@ -307,14 +310,16 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 		printf("ACE '%s': failed to convert '%s' to SID\n",
 			orig_str, str);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 
 	cp = p;
-	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
+	if (!next_token_talloc(frame, &cp, &tok, "/")) {
 		printf("ACE '%s': failed to find '/' character.\n",
 			orig_str);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -326,23 +331,26 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 		printf("ACE '%s': missing 'ALLOWED' or 'DENIED' entry at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(&cp, tok, "/", sizeof(fstring)) &&
+	if (!(next_token_talloc(frame, &cp, &tok, "/") &&
 	      sscanf(tok, "%i", &aflags))) {
 		printf("ACE '%s': bad integer flags entry at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 
-	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
+	if (!next_token_talloc(frame, &cp, &tok, "/")) {
 		printf("ACE '%s': missing / at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -351,6 +359,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 			printf("ACE '%s': bad hex number at '%s'\n",
 				orig_str, tok);
 			SAFE_FREE(str);
+			TALLOC_FREE(frame);
 			return False;
 		}
 		goto done;
@@ -379,12 +388,14 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
 			printf("ACE '%s': bad permission value at '%s'\n",
 				orig_str, p);
 			SAFE_FREE(str);
+			TALLOC_FREE(frame);
 		 	return False;
 		}
 		p++;
 	}
 
 	if (*p) {
+		TALLOC_FREE(frame);
 		SAFE_FREE(str);
 		return False;
 	}
@@ -392,6 +403,7 @@ static bool parse_ace(struct cli_state *cli, SEC_ACE *ace,
  done:
 	mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
+	TALLOC_FREE(frame);
 	SAFE_FREE(str);
 	return True;
 }
@@ -418,18 +430,17 @@ static bool add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 }
 
 /* parse a ascii version of a security descriptor */
-static SEC_DESC *sec_desc_parse(struct cli_state *cli, char *str)
+static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx, struct cli_state *cli, char *str)
 {
 	const char *p = str;
-	fstring tok;
+	char *tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
-	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
-
+	while (next_token_talloc(ctx, &p, &tok, "\t,\r\n")) {
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
 			continue;
@@ -479,7 +490,7 @@ static SEC_DESC *sec_desc_parse(struct cli_state *cli, char *str)
 		goto done;
 	}
 
-	ret = make_sec_desc(talloc_tos(),revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid,
+	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid,
 			    NULL, dacl, &sd_size);
 
   done:
@@ -677,7 +688,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	size_t sd_size;
 	int result = EXIT_OK;
 
-	sd = sec_desc_parse(cli, the_acl);
+	sd = sec_desc_parse(talloc_tos(), cli, the_acl);
 
 	if (!sd) return EXIT_PARSE_ERROR;
 	if (test_args) return EXIT_OK;

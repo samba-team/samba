@@ -4219,7 +4219,7 @@ parse_ace(struct cli_state *ipc_cli,
 {
 	char *p;
 	const char *cp;
-	fstring tok;
+	char *tok;
 	unsigned int atype;
         unsigned int aflags;
         unsigned int amask;
@@ -4230,6 +4230,7 @@ parse_ace(struct cli_state *ipc_cli,
                 const char *perm;
                 uint32 mask;
         };
+	TALLOC_CTX *frame = talloc_stackframe();
 
         /* These values discovered by inspection */
         static const struct perm_value special_values[] = {
@@ -4252,7 +4253,10 @@ parse_ace(struct cli_state *ipc_cli,
 
 	ZERO_STRUCTP(ace);
 	p = strchr_m(str,':');
-	if (!p) return False;
+	if (!p) {
+		TALLOC_FREE(frame);
+		return False;
+	}
 	*p = '\0';
 	p++;
 	/* Try to parse numeric form */
@@ -4265,12 +4269,14 @@ parse_ace(struct cli_state *ipc_cli,
 	/* Try to parse text form */
 
 	if (!convert_string_to_sid(ipc_cli, pol, numeric, &sid, str)) {
-		return False;
+		TALLOC_FREE(frame);
+		return false;
 	}
 
 	cp = p;
-	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
-		return False;
+	if (!next_token_talloc(frame, &cp, &tok, "/")) {
+		TALLOC_FREE(frame);
+		return false;
 	}
 
 	if (StrnCaseCmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
@@ -4278,23 +4284,27 @@ parse_ace(struct cli_state *ipc_cli,
 	} else if (StrnCaseCmp(tok, "DENIED", strlen("DENIED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
 	} else {
-		return False;
+		TALLOC_FREE(frame);
+		return false;
 	}
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(&cp, tok, "/", sizeof(fstring)) &&
+	if (!(next_token_talloc(frame, &cp, &tok, "/") &&
 	      sscanf(tok, "%i", &aflags))) {
-		return False;
+		TALLOC_FREE(frame);
+		return false;
 	}
 
-	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
-		return False;
+	if (!next_token_talloc(frame, &cp, &tok, "/")) {
+		TALLOC_FREE(frame);
+		return false;
 	}
 
 	if (strncmp(tok, "0x", 2) == 0) {
 		if (sscanf(tok, "%i", &amask) != 1) {
-			return False;
+			TALLOC_FREE(frame);
+			return false;
 		}
 		goto done;
 	}
@@ -4318,18 +4328,23 @@ parse_ace(struct cli_state *ipc_cli,
 			}
 		}
 
-		if (!found) return False;
+		if (!found) {
+			TALLOC_FREE(frame);
+		 	return false;
+		}
 		p++;
 	}
 
 	if (*p) {
-		return False;
+		TALLOC_FREE(frame);
+		return false;
 	}
 
  done:
 	mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
-	return True;
+	TALLOC_FREE(frame);
+	return true;
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
@@ -4368,7 +4383,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
                char *str)
 {
 	const char *p = str;
-	fstring tok;
+	char *tok;
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *group_sid=NULL;
@@ -4376,7 +4391,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
-	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
+	while (next_token_talloc(ctx, &p, &tok, "\t,\r\n")) {
 
 		if (StrnCaseCmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
@@ -4544,7 +4559,8 @@ dos_attr_parse(SMBCCTX *context,
 {
         int n;
         const char *p = str;
-	fstring tok;
+	char *tok = NULL;
+	TALLOC_CTX *frame = NULL;
         struct {
                 const char * create_time_attr;
                 const char * access_time_attr;
@@ -4577,8 +4593,8 @@ dos_attr_parse(SMBCCTX *context,
                 }
         }
 
-	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
-
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &p, &tok, "\t,\r\n")) {
 		if (StrnCaseCmp(tok, "MODE:", 5) == 0) {
 			dad->mode = strtol(tok+5, NULL, 16);
 			continue;
@@ -4622,6 +4638,7 @@ dos_attr_parse(SMBCCTX *context,
 			continue;
 		}
 	}
+	TALLOC_FREE(frame);
 }
 
 /*****************************************************

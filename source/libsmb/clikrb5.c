@@ -1592,6 +1592,7 @@ done:
 	krb5_error_code ret = 0;
 	TALLOC_CTX *mem_ctx;
 	char keytab_string[MAX_KEYTAB_NAME_LEN];
+	char *kt_str = NULL;
 	bool found_valid_name = False;
 	const char *pragma = "FILE";
 	const char *tmp = NULL;
@@ -1654,29 +1655,27 @@ done:
 		ret = ENOMEM;
 		goto out;
 	}
-		
+
 	if (strncmp(tmp, "ANY:", 4) == 0) {
 		tmp += 4;
 	}
 
 	memset(&keytab_string, '\0', sizeof(keytab_string));
 
-	while (next_token(&tmp, keytab_string, ",", sizeof(keytab_string))) {
-
-		if (strncmp(keytab_string, "WRFILE:", 7) == 0) {
+	while (next_token_talloc(mem_ctx, &tmp, &kt_str, ",")) {
+		if (strncmp(kt_str, "WRFILE:", 7) == 0) {
 			found_valid_name = True;
-			tmp = keytab_string;
+			tmp = kt_str;
 			tmp += 7;
 		}
 
-		if (strncmp(keytab_string, "FILE:", 5) == 0) {
+		if (strncmp(kt_str, "FILE:", 5) == 0) {
 			found_valid_name = True;
-			tmp = keytab_string;
+			tmp = kt_str;
 			tmp += 5;
 		}
 
 		if (found_valid_name) {
-
 			if (tmp[0] != '/') {
 				ret = KRB5_KT_BADNAME;
 				goto out;
@@ -1690,7 +1689,7 @@ done:
 			break;
 		}
 	}
-		
+
 	if (!found_valid_name) {
 		ret = KRB5_KT_UNKNOWN_TYPE;
 		goto out;
