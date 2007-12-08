@@ -1938,35 +1938,6 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-			req->flags2 & FLAGS2_DFS_PATHNAMES,
-			fname,
-			&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBcreate);
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			return;
-		}
-		reply_nterror(req, status);
-		return;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBcreate);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBcreate);
-		return;
-	}
-
 	if (fattr & aVOLID) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			"please report this\n", fname));
@@ -1980,15 +1951,22 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 		create_disposition = FILE_OVERWRITE_IF;
 	}
 
-	/* Open file using ntcreate. */
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				access_mask,
-				share_mode,
-				create_disposition,
-				create_options,
-				fattr,
-				oplock_request,
-				NULL, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     fattr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     0,				/* allocation_size */
+			     NULL,			/* sd */
+			     NULL,			/* ea_list */
+			     &fsp,			/* result */
+			     NULL,			/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
