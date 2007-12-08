@@ -39,6 +39,12 @@ RCSID("$Id$");
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
+#define INIT_FLAG(C, O, V, D, F)					\
+    do {								\
+	if (krb5_config_get_bool_default((C), NULL, (D),"libdefaults", F, NULL)) { \
+	    (C)->O |= V;						\
+    }									\
+    } while(0)
 
 /*
  * Set the list of etypes `ret_etypes' from the configuration variable
@@ -181,7 +187,8 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 1400, "large_message_size");
-    INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonicalize_hostname");
+    INIT_FLAG(context, flags, KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME, TRUE, "dns_canonicalize_hostname");
+    INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check-pac");
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
     return 0;
@@ -949,7 +956,10 @@ krb5_is_thread_safe(void)
 void KRB5_LIB_FUNCTION
 krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 {
-    context->dns_canonicalize_hostname = flag;
+    if (flag)
+	context->flags |= KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME;
+    else
+	context->flags &= ~KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME;
 }
 
 /**
@@ -965,7 +975,7 @@ krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_dns_canonicalize_hostname (krb5_context context)
 {
-    return context->dns_canonicalize_hostname;
+    return (context->flags & KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME) ? 1 : 0;
 }
 
 /**
