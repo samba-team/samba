@@ -260,7 +260,7 @@ struct loadparm_service sDefault = {
 
 /* local variables */
 struct loadparm_context {
-	struct loadparm_global Globals;
+	struct loadparm_global *globals;
 	struct loadparm_service **ServicePtrs;
 	int iNumServices;
 	struct loadparm_service *currentService;
@@ -623,19 +623,19 @@ static const char *lp_string(const char *s)
 */
 
 #define FN_GLOBAL_STRING(fn_name,var_name) \
- const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name ? lp_string(lp_ctx->Globals.var_name) : "";}
+ const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : "";}
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name) \
- const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name ? lp_ctx->Globals.var_name : "";}
+ const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_ctx->globals->var_name : "";}
 #define FN_GLOBAL_LIST(fn_name,var_name) \
- const char **fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->Globals.var_name;}
+ const char **fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name;}
 #define FN_GLOBAL_BOOL(fn_name,var_name) \
- bool fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->Globals.var_name;}
+ bool fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->globals->var_name;}
 #if 0 /* unused */
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
 #endif
 #define FN_GLOBAL_INTEGER(fn_name,var_name) \
- int fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return 0; return lp_ctx->Globals.var_name;}
+ int fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return 0; return lp_ctx->globals->var_name;}
 
 #define FN_LOCAL_STRING(fn_name,val) \
  const char *fn_name(struct loadparm_service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
@@ -790,7 +790,7 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 	char *vfskey;
         struct param_opt *data;
 	
-	data = (service == NULL ? lp_ctx->Globals.param_opt : service->param_opt);
+	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
     
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
@@ -805,8 +805,8 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 
 	if (service != NULL) {
 		/* Try to fetch the same option but from globals */
-		/* but only if we are not already working with Globals */
-		for (data = lp_ctx->Globals.param_opt; data; 
+		/* but only if we are not already working with globals */
+		for (data = lp_ctx->globals->param_opt; data; 
 		     data = data->next) {
 			if (strcmp(data->key, vfskey) == 0) {
 				free(vfskey);
@@ -1153,7 +1153,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	string_set(service, &service->szPath, tmpdir());
 
 	service->comment = talloc_asprintf(service, "%s Service (%s)", 
-				fstype, lp_ctx->Globals.szServerString);
+				fstype, lp_ctx->globals->szServerString);
 	string_set(service, &service->fstype, fstype);
 	service->iMaxConnections = -1;
 	service->bAvailable = true;
@@ -1251,7 +1251,7 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
 		if (parm->class == P_LOCAL)
 			return ((char *)&sDefault)+parm->offset;
 		else if (parm->class == P_GLOBAL)
-			return ((char *)&(lp_ctx->Globals))+parm->offset;
+			return ((char *)lp_ctx->globals)+parm->offset;
 		else return NULL;
 	} else {
 		return ((char *)service) + parm->offset;
@@ -1587,8 +1587,8 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	strlower(name);
 
 	if (service == NULL) {
-		data = lp_ctx->Globals.param_opt;
-		mem_ctx = lp_ctx;
+		data = lp_ctx->globals->param_opt;
+		mem_ctx = lp_ctx->globals;
 	} else {
 		data = service->param_opt;
 		mem_ctx = service;
@@ -1619,7 +1619,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	paramo->value = talloc_strdup(paramo, pszParmValue);
 	paramo->flags = flags;
 	if (service == NULL) {
-		DLIST_ADD(lp_ctx->Globals.param_opt, paramo);
+		DLIST_ADD(lp_ctx->globals->param_opt, paramo);
 	} else {
 		DLIST_ADD(service->param_opt, paramo);
 	}
@@ -2098,8 +2098,8 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, bool show_def
 			print_parameter(&parm_table[i], lp_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
 			fprintf(f, "\n");
 	}
-	if (lp_ctx->Globals.param_opt != NULL) {
-		for (data = lp_ctx->Globals.param_opt; data; 
+	if (lp_ctx->globals->param_opt != NULL) {
+		for (data = lp_ctx->globals->param_opt; data; 
 		     data = data->next) {
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 		}
@@ -2264,12 +2264,12 @@ static int lp_destructor(struct loadparm_context *lp_ctx)
 {
 	struct param_opt *data;
 
-	if (lp_ctx->Globals.param_opt != NULL) {
+	if (lp_ctx->globals->param_opt != NULL) {
 		struct param_opt *next;
-		for (data = lp_ctx->Globals.param_opt; data; data=next) {
+		for (data = lp_ctx->globals->param_opt; data; data=next) {
 			next = data->next;
 			if (data->flags & FLAG_CMDLINE) continue;
-			DLIST_REMOVE(lp_ctx->Globals.param_opt, data);
+			DLIST_REMOVE(lp_ctx->globals->param_opt, data);
 			talloc_free(data);
 		}
 	}
@@ -2286,12 +2286,13 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	char *myname;
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = talloc(mem_ctx, struct loadparm_context);
+	lp_ctx = talloc_zero(mem_ctx, struct loadparm_context);
 	if (lp_ctx == NULL)
 		return NULL;
 
 	talloc_set_destructor(lp_ctx, lp_destructor);
 	lp_ctx->bInGlobalSection = true;
+	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
@@ -2300,7 +2301,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].offset != -1 &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
-			char **r = ((char *)(parm_table[i].class == P_LOCAL)?&sDefault:&(lp_ctx->Globals)) + parm_table[i].offset;
+			char **r = ((char *)(parm_table[i].class == P_LOCAL)?&sDefault:lp_ctx->globals) + parm_table[i].offset;
 			*r = talloc_strdup(lp_ctx, "");
 		}
 	}
@@ -2465,13 +2466,13 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 
 	filename = talloc_strdup(lp_ctx, filename);
 
-	lp_ctx->Globals.szConfigFile = filename;
+	lp_ctx->globals->szConfigFile = filename;
 	
 	lp_ctx->bInGlobalSection = true;
-	n2 = standard_sub_basic(lp_ctx, lp_ctx->Globals.szConfigFile);
+	n2 = standard_sub_basic(lp_ctx, lp_ctx->globals->szConfigFile);
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
 	
-	add_to_file_list(lp_ctx, lp_ctx->Globals.szConfigFile, n2);
+	add_to_file_list(lp_ctx, lp_ctx->globals->szConfigFile, n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	lp_ctx->currentService = NULL;
@@ -2490,11 +2491,11 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 
 	bLoaded = true;
 
-	if (!lp_ctx->Globals.szWINSservers && lp_ctx->Globals.bWINSsupport) {
+	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
-	panic_action = lp_ctx->Globals.panic_action;
+	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv();
 
