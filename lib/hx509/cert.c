@@ -78,8 +78,16 @@ typedef struct hx509_name_constraints {
 #define GeneralSubtrees_SET(g,var) \
 	(g)->len = (var)->len, (g)->val = (var)->val;
 
-/*
+/**
+ * Creates a hx509 context that most functions in the library
+ * uses. The context is only allowed to be used by one thread at each
+ * moment. Free the context with hx509_context_free().
  *
+ * @param context Returns a pointer to new hx509 context.
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509
  */
 
 int
@@ -113,6 +121,19 @@ hx509_context_init(hx509_context *context)
     return 0;
 }
 
+/**
+ * Selects if the hx509_revoke_verify() function is going to require
+ * the existans of a revokation method (OSCP, CRL) or not. Note that
+ * hx509_verify_path(), hx509_cms_verify_signed(), and other function
+ * call hx509_revoke_verify().
+ * 
+ * @param context hx509 context to change the flag for.
+ * @param flag zero, revokation method required, non zero missing
+ * revokation method ok
+ *
+ * @ingroup hx509_verify
+ */
+
 void
 hx509_context_set_missing_revoke(hx509_context context, int flag)
 {
@@ -121,6 +142,14 @@ hx509_context_set_missing_revoke(hx509_context context, int flag)
     else
 	context->flags &= ~HX509_CTX_VERIFY_MISSING_OK;
 }
+
+/**
+ * Free the context allocated by hx509_context_init().
+ * 
+ * @param context context to be freed.
+ *
+ * @ingroup hx509
+ */
 
 void
 hx509_context_free(hx509_context *context)
@@ -138,7 +167,6 @@ hx509_context_free(hx509_context *context)
     free(*context);
     *context = NULL;
 }
-
 
 /*
  *
@@ -187,6 +215,19 @@ _hx509_cert_get_version(const Certificate *t)
     return t->tbsCertificate.version ? *t->tbsCertificate.version + 1 : 1;
 }
 
+/**
+ * Allocate and init an hx509 certificate object from the decoded
+ * certificate `c´.
+ *
+ * @param context A hx509 context.
+ * @param c
+ * @param cert
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
 {
@@ -218,9 +259,29 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     return ret;
 }
 
+/**
+ * Just like hx509_cert_init(), but instead of a decode certificate
+ * takes an pointer and length to a memory region that contains a
+ * DER/BER encoded certificate.
+ *
+ * If the memory region doesn't contain just the certificate and
+ * nothing more the function will fail with
+ * HX509_EXTRA_DATA_AFTER_STRUCTURE.
+ *
+ * @param context A hx509 context.
+ * @param ptr pointer to memory region containing encoded certificate.
+ * @param len length of memory region.
+ * @param cert a return pointer to a hx509 certificate object, will
+ * contain NULL on error.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_init_data(hx509_context context, 
-	     const void *ptr,
+		     const void *ptr,
 		     size_t len,
 		     hx509_cert *cert)
 {
@@ -265,6 +326,15 @@ _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
     return 0;
 }
 
+/**
+ * Free reference to the hx509 certificate object, if the refcounter
+ * reaches 0, the object if freed. Its allowed to pass in NULL.
+ *
+ * @param certificate
+ *
+ * @ingroup hx509_cert
+ */
+
 void
 hx509_cert_free(hx509_cert cert)
 {
@@ -274,7 +344,7 @@ hx509_cert_free(hx509_cert cert)
 	return;
 
     if (cert->ref <= 0)
-	_hx509_abort("refcount <= 0");
+	_hx509_abort("cert refcount <= 0 on free");
     if (--cert->ref > 0)
 	return;
 
@@ -300,6 +370,16 @@ hx509_cert_free(hx509_cert cert)
     free(cert);
 }
 
+/**
+ * Add a reference to a hx509 certificate object.
+ *
+ * @param cert a pointer to an hx509 certificate object.
+ *
+ * @return the same object as is passed in.
+ *
+ * @ingroup hx509_cert
+ */
+
 hx509_cert
 hx509_cert_ref(hx509_cert cert)
 {
@@ -310,6 +390,18 @@ hx509_cert_ref(hx509_cert cert)
 	_hx509_abort("cert refcount == 0");
     return cert;
 }
+
+/**
+ * Allocate an verification context that is used fo control the
+ * verification process. 
+ *
+ * @param context A hx509 context.
+ * @param ctx returns a pointer to a hx509_verify_ctx object.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
 
 int
 hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
@@ -327,25 +419,72 @@ hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
     return 0;
 }
 
+/**
+ * Free an hx509 verification context.
+ *
+ * @param ctx the context to be freed.
+ *
+ * @ingroup hx509_verify
+ */
+
 void
 hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 {
-    if (ctx)
+    if (ctx) {
+	hx509_certs_free(&ctx->trust_anchors);
+	hx509_revoke_free(&ctx->revoke_ctx);
 	memset(ctx, 0, sizeof(*ctx));
+    }
     free(ctx);
 }
+
+/**
+ * Set the trust anchors in the verification context, makes an
+ * reference to the keyset, so the consumer can free the keyset
+ * independent of the destruction of the verification context (ctx).
+ *
+ * @param ctx a verification context
+ * @param set a keyset containing the trust anchors.
+ *
+ * @ingroup hx509_verify
+ */
 
 void
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
-    ctx->trust_anchors = set;
+    ctx->trust_anchors = _hx509_certs_ref(set);
 }
+
+/**
+ * Attach an revocation context to the verfication context, , makes an
+ * reference to the revoke context, so the consumer can free the
+ * revoke context independent of the destruction of the verification
+ * context. If there is no revoke context, the verification process is
+ * NOT going to check any verification status.
+ *
+ * @param ctx a verification context.
+ * @param revoke_ctx a revoke context.
+ *
+ * @ingroup hx509_verify
+ */
 
 void
 hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke_ctx)
 {
-    ctx->revoke_ctx = revoke_ctx;
+    ctx->revoke_ctx = _hx509_revoke_ref(revoke_ctx);
 }
+
+/**
+ * Set the clock time the the verification process is going to
+ * use. Used to check certificate in the past and future time. If not
+ * set the current time will be used.
+ *
+ * @param ctx a verification context.
+ * @param t the time the verifiation is using.
+ *
+ *
+ * @ingroup hx509_verify
+ */
 
 void
 hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
@@ -354,11 +493,31 @@ hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
     ctx->time_now = t;
 }
 
+/**
+ * Set the maximum depth of the certificate chain that the path
+ * builder is going to try.
+ *
+ * @param ctx a verification context
+ * @param max_depth maxium depth of the certificate chain, include
+ * trust anchor.
+ *
+ * @ingroup hx509_verify
+ */
+
 void
 hx509_verify_set_max_depth(hx509_verify_ctx ctx, unsigned int max_depth)
 {
     ctx->max_depth = max_depth;
 }
+
+/**
+ * Allow or deny the use of proxy certificates
+ *
+ * @param ctx a verification context
+ * @param boolean if non zero, allow proxy certificates.
+ *
+ * @ingroup hx509_verify
+ */
 
 void
 hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
@@ -369,6 +528,17 @@ hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
 	ctx->flags &= ~HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE;
 }
 
+/**
+ * Select strict RFC3280 verification of certificiates. This means
+ * checking key usage on CA certificates, this will make version 1
+ * certificiates unuseable.
+ *
+ * @param ctx a verification context
+ * @param boolean if non zero, use strict verification.
+ *
+ * @ingroup hx509_verify
+ */
+
 void
 hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
 {
@@ -377,6 +547,20 @@ hx509_verify_set_strict_rfc3280_verification(hx509_verify_ctx ctx, int boolean)
     else
 	ctx->flags &= ~HX509_VERIFY_CTX_F_REQUIRE_RFC3280;
 }
+
+/**
+ * Allow using the operating system builtin trust anchors if no other
+ * trust anchors are configured.
+ *
+ * @param ctx a verification context
+ * @param boolean if non zero, useing the operating systems builtin
+ * trust anchors.
+ *
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 void
 hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
@@ -512,6 +696,15 @@ add_to_list(hx509_octet_string_list *list, const heim_octet_string *entry)
     return 0;
 }
 
+/**
+ * Free a list of octet strings returned by another hx509 library
+ * function.
+ *
+ * @param list list to be freed.
+ *
+ * @ingroup hx509_misc
+ */
+
 void
 hx509_free_octet_string_list(hx509_octet_string_list *list)
 {
@@ -523,8 +716,26 @@ hx509_free_octet_string_list(hx509_octet_string_list *list)
     list->len = 0;
 }
 
+/**
+ * Return a list of subjectAltNames specified by oid in the
+ * certificate. On error the 
+ *
+ * The returned list of octet string should be freed with
+ * hx509_free_octet_string_list().
+ *
+ * @param context A hx509 context.
+ * @param cert a hx509 certificate object.
+ * @param oid an oid to for SubjectAltName.
+ * @param list list of matching SubjectAltName.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
-hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
+hx509_cert_find_subjectAltName_otherName(hx509_context context,
+					 hx509_cert cert,
 					 const heim_oid *oid,
 					 hx509_octet_string_list *list)
 {
@@ -541,9 +752,11 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 	if (ret == HX509_EXTENSION_NOT_FOUND) {
 	    ret = 0;
 	    break;
-	} else if (ret != 0)
-	    break;
-
+	} else if (ret != 0) {
+	    hx509_set_error_string(context, 0, ret, "Error searching for SAN");
+	    hx509_free_octet_string_list(list);
+	    return ret;
+	}
 
 	for (j = 0; j < sa.len; j++) {
 	    if (sa.val[j].element == choice_GeneralName_otherName &&
@@ -551,6 +764,10 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 	    {
 		ret = add_to_list(list, &sa.val[j].u.otherName.value);
 		if (ret) {
+		    hx509_set_error_string(context, 0, ret, 
+					   "Error adding an exra SAN to "
+					   "return list");
+		    hx509_free_octet_string_list(list);
 		    free_GeneralNames(&sa);
 		    return ret;
 		}
@@ -558,7 +775,7 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 	}
 	free_GeneralNames(&sa);
     }
-    return ret;
+    return 0;
 }
 
 
@@ -1077,11 +1294,35 @@ _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
     return diff;
 }
 
+/**
+ * Compare to hx509 certificate object, useful for sorting.
+ *
+ * @param p a hx509 certificate object.
+ * @param q a hx509 certificate object.
+ *
+ * @return 0 the objects are the same, returns > 0 is p is "larger"
+ * then q, < 0 if p is "smaller" then q.
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_cmp(hx509_cert p, hx509_cert q)
 {
     return _hx509_Certificate_cmp(p->data, q->data);
 }
+
+/**
+ * Return the name of the issuer of the hx509 certificate.
+ *
+ * @param p a hx509 certificate object.
+ * @param name a pointer to a hx509 name, should be freed by
+ * hx509_name_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_cert_get_issuer(hx509_cert p, hx509_name *name)
@@ -1089,11 +1330,39 @@ hx509_cert_get_issuer(hx509_cert p, hx509_name *name)
     return _hx509_name_from_Name(&p->data->tbsCertificate.issuer, name);
 }
 
+/**
+ * Return the name of the subject of the hx509 certificate.
+ *
+ * @param p a hx509 certificate object.
+ * @param name a pointer to a hx509 name, should be freed by
+ * hx509_name_free(). See also hx509_cert_get_base_subject().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_get_subject(hx509_cert p, hx509_name *name)
 {
     return _hx509_name_from_Name(&p->data->tbsCertificate.subject, name);
 }
+
+/**
+ * Return the name of the base subject of the hx509 certificate. If
+ * the certiicate is a verified proxy certificate, the this function
+ * return the base certificate (root of the proxy chain). If the proxy
+ * certificate is not verified with the base certificate
+ * HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED is returned.
+ *
+ * @param p a hx509 certificate object.
+ * @param name a pointer to a hx509 name, should be freed by
+ * hx509_name_free(). See also hx509_cert_get_subject().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
@@ -1111,11 +1380,32 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
 }
 
+/**
+ * Get serial number of the certificate.
+ *
+ * @param p a hx509 certificate object.
+ * @param p serial number, should be freed ith der_free_heim_integer().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
     return der_copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
 }
+
+/**
+ * Get notBefore time of the certificate.
+ *
+ * @param p a hx509 certificate object.
+ *
+ * @return return not before time
+ *
+ * @ingroup hx509_cert
+ */
 
 time_t
 hx509_cert_get_notBefore(hx509_cert p)
@@ -1123,11 +1413,33 @@ hx509_cert_get_notBefore(hx509_cert p)
     return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notBefore);
 }
 
+/**
+ * Get notAfter time of the certificate.
+ *
+ * @param p a hx509 certificate object.
+ *
+ * @return return not after time.
+ *
+ * @ingroup hx509_cert
+ */
+
 time_t
 hx509_cert_get_notAfter(hx509_cert p)
 {
     return _hx509_Time2time_t(&p->data->tbsCertificate.validity.notAfter);
 }
+
+/**
+ * Get the SubjectPublicKeyInfo structure from the hx509 certificate.
+ *
+ * @param p a hx509 certificate object.
+ * @param spki SubjectPublicKeyInfo, should be freed with
+ * free_SubjectPublicKeyInfo().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_cert_get_SPKI(hx509_cert p, SubjectPublicKeyInfo *spki)
@@ -1498,6 +1810,21 @@ free_name_constraints(hx509_name_constraints *nc)
 	free_NameConstraints(&nc->val[i]);
     free(nc->val);
 }
+
+/**
+ * Build and verify the path for the certificate to the trust anchor
+ * specified in the verify context. The path is constructed from the
+ * certificate, the pool and the trust anchors.
+ *
+ * @param context A hx509 context.
+ * @param ctx A hx509 verification context.
+ * @param cert the certificate to build the path from.
+ * @param pool A keyset of certificates to build the chain from.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
 
 int
 hx509_verify_path(hx509_context context,
@@ -1870,6 +2197,20 @@ out:
     return ret;
 }
 
+/**
+ * Verify a signature made using the private key of an certificate.
+ *
+ * @param context A hx509 context.
+ * @param signer the certificate that made the signature.
+ * @param alg algorthm that was used to sign the data.
+ * @param data the data that was signed.
+ * @param sig the sigature to verify.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_crypto
+ */
+
 int
 hx509_verify_signature(hx509_context context,
 		       const hx509_cert signer,
@@ -1879,6 +2220,26 @@ hx509_verify_signature(hx509_context context,
 {
     return _hx509_verify_signature(context, signer->data, alg, data, sig);
 }
+
+
+/**
+ * Verify that the certificate is allowed to be used for the hostname
+ * and address.
+ *
+ * @param context A hx509 context.
+ * @param cert the certificate to match with
+ * @param flags undocumented flags, use 0
+ *
+ * @param type type of hostname: HX509_HN_HOSTNAME for plain hostname,
+ * HX509_HN_DNSSRV for DNS SRV names.
+ * @param hostname the hostname to check
+ * @param sa address of the host
+ * @param sa_size length of address
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 #define HX509_VHN_F_ALLOW_NO_MATCH 1
 
@@ -1991,6 +2352,19 @@ _hx509_set_cert_attribute(hx509_context context,
     return 0;
 }
 
+/**
+ * Get an external attribute for the certificate, examples are
+ * friendly name and id.
+ *
+ * @param cert hx509 certificate object to search
+ * @param oid an oid to search for.
+ *
+ * @return an hx509_cert_attribute, only valid as long as the
+ * certificate is referenced.
+ *
+ * @ingroup hx509_cert
+ */
+
 hx509_cert_attribute
 hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
 {
@@ -2000,6 +2374,17 @@ hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
 	    return cert->attrs.val[i];
     return NULL;
 }
+
+/**
+ * Set the friendly name on the certificate.
+ *
+ * @param cert The certificate to set the friendly name on
+ * @param name Friendly name.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_cert_set_friendly_name(hx509_cert cert, const char *name)
@@ -2012,6 +2397,16 @@ hx509_cert_set_friendly_name(hx509_cert cert, const char *name)
     return 0;
 }
 
+/**
+ * Get friendly name of the certificate.
+ *
+ * @param cert cert to get the friendly name from.
+ *
+ * @return an friendly name or NULL if there is. The friendly name is
+ * only valid as long as the certificate is referenced.
+ *
+ * @ingroup hx509_cert
+ */
 
 const char *
 hx509_cert_get_friendly_name(hx509_cert cert)
@@ -2063,6 +2458,17 @@ _hx509_query_clear(hx509_query *q)
     memset(q, 0, sizeof(*q));
 }
 
+/**
+ * Allocate an query controller. Free using hx509_query_free().
+ *
+ * @param context A hx509 context.
+ * @param context return pointer to a hx509_query.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_query_alloc(hx509_context context, hx509_query **q)
 {
@@ -2071,6 +2477,17 @@ hx509_query_alloc(hx509_context context, hx509_query **q)
 	return ENOMEM;
     return 0;
 }
+
+/**
+ * Set match options for the hx509 query controller.
+ *
+ * @param q query controller.
+ * @param options options to control te query controller.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 void
 hx509_query_match_option(hx509_query *q, hx509_query_option option)
@@ -2093,6 +2510,19 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
 	break;
     }
 }
+
+/**
+ * Set the issuer and serial number of match in the query
+ * controller. The function make copies of the isser and serial number.
+ *
+ * @param q a hx509 query controller
+ * @param issuer issuer to search for
+ * @param serialNumber the serialNumber of the issuer.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_query_match_issuer_serial(hx509_query *q,
@@ -2130,6 +2560,16 @@ hx509_query_match_issuer_serial(hx509_query *q,
     return 0;
 }
 
+/**
+ * Set the query controller to match on a friendly name
+ *
+ * @param q a hx509 query controller.
+ * @param name a friendly name to match on
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_query_match_friendly_name(hx509_query *q, const char *name)
@@ -2142,6 +2582,19 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
     q->match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
     return 0;
 }
+
+/**
+ * Set the query controller to match using a specific match function.
+ *
+ * @param q a hx509 query controller.
+ * @param func function to use for matching, if the argument is NULL,
+ * the match function is removed.
+ * @param ctx context passed to the function.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_query_match_cmp_func(hx509_query *q,
@@ -2157,6 +2610,14 @@ hx509_query_match_cmp_func(hx509_query *q,
     return 0;
 }
 
+/**
+ * Free the query controller.
+ *
+ * @param context A hx509 context.
+ * @param q a pointer to the query controller.
+ *
+ * @ingroup hx509_cert
+ */
 
 void
 hx509_query_free(hx509_context context, hx509_query *q)
@@ -2309,6 +2770,15 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
     return 1;
 }
 
+/**
+ * Set a statistic file for the query statistics.
+ *
+ * @param context A hx509 context.
+ * @param fn statistics file name
+ *
+ * @ingroup hx509_cert
+ */
+
 void
 hx509_query_statistic_file(hx509_context context, const char *fn)
 {
@@ -2368,6 +2838,16 @@ stat_sort(const void *a, const void *b)
     const struct stat_el *be = b;
     return be->stats - ae->stats;
 }
+
+/**
+ * Unparse the statistics file and print the result on a FILE descriptor.
+ *
+ * @param context A hx509 context.
+ * @param printtype tyep to print
+ * @param out the FILE to write the data on.
+ *
+ * @ingroup hx509_cert
+ */
 
 void
 hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
@@ -2441,6 +2921,20 @@ hx509_query_unparse_stats(hx509_context context, int printtype, FILE *out)
     fprintf(out, "\nQueries: multi %lu total %lu\n", 
 	    multiqueries, totalqueries);
 }
+
+/**
+ * Check the extended key usage on the hx509 certificate.
+ *
+ * @param context A hx509 context.
+ * @param cert A hx509 context.
+ * @param eku the EKU to check for
+ * @param allow_any_eku if the any EKU is set, allow that to be a
+ * substitute.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
 
 int
 hx509_cert_check_eku(hx509_context context, hx509_cert cert,
@@ -2518,6 +3012,18 @@ _hx509_cert_get_eku(hx509_context context,
     return 0;
 }
 
+/**
+ * Encodes the hx509 certificate as a DER encode binary.
+ *
+ * @param context A hx509 context.
+ * @param c the certificate to encode.
+ * @param os the encode certificate, set to NULL, 0 on case of error.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
 int
 hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 {
@@ -2529,8 +3035,11 @@ hx509_cert_binary(hx509_context context, hx509_cert c, heim_octet_string *os)
 
     ASN1_MALLOC_ENCODE(Certificate, os->data, os->length, 
 		       _hx509_get_cert(c), &size, ret);
-    if (ret)
+    if (ret) {
+	os->data = NULL;
+	os->length = 0;
 	return ret;
+    }
     if (os->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
