@@ -515,7 +515,7 @@ krb5_verify_ap_req2(krb5_context context,
 struct krb5_rd_req_in_ctx_data {
     krb5_keytab keytab;
     krb5_keyblock *keyblock;
-    krb5_boolean no_pac_check;
+    krb5_boolean check_pac;
 };
 
 struct krb5_rd_req_out_ctx_data {
@@ -536,6 +536,7 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
     }
+    (*ctx)->check_pac = (context->flags & KRB5_CTX_F_CHECK_PAC) ? 1 : 0;
     return 0;
 }
 
@@ -553,7 +554,7 @@ krb5_rd_req_in_set_pac_check(krb5_context context,
 			     krb5_rd_req_in_ctx in,
 			     krb5_boolean flag)
 {
-    in->no_pac_check = !flag;
+    in->check_pac = flag;
     return 0;
 }
 
@@ -840,7 +841,7 @@ krb5_rd_req_ctx(krb5_context context,
 	goto out;
 
     /* If there is a PAC, verify its server signature */
-    if (inctx->no_pac_check == FALSE) {
+    if (inctx->check_pac) {
 	krb5_pac pac;
 	krb5_data data;
 
