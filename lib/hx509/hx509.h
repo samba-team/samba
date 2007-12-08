@@ -56,6 +56,10 @@ typedef struct hx509_crl *hx509_crl;
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
 enum {
+    HX509_VHN_F_ALLOW_NO_MATCH = 1
+};
+
+enum {
     HX509_VALIDATE_F_VALIDATE = 1,
     HX509_VALIDATE_F_VERBOSE = 2
 };
