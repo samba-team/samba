@@ -888,16 +888,16 @@ const char *lp_parm_string(struct loadparm_context *lp_ctx,
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-const char **lp_parm_string_list(struct loadparm_context *lp_ctx, 
+const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
+				 struct loadparm_context *lp_ctx, 
 				 struct loadparm_service *service, 
 				 const char *type, 
 				 const char *option, const char *separator)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
 	
-	if (value)
-		return str_list_make(talloc_autofree_context(), value, 
-				     separator);
+	if (value != NULL)
+		return str_list_make(mem_ctx, value, separator);
 
 	return NULL;
 }
