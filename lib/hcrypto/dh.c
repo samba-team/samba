@@ -149,12 +149,17 @@ DH_generate_parameters_ex(DH *dh, int prime_len, int generator, BN_GENCB *cb)
     return 0;
 }
 
-/*
- * Check that
+/**
+ * Check that the public key is sane.
  *
- * 	pub_key > 1    and    pub_key < p - 1
+ * @param dh the local peer DH parameters.
+ * @param pub_key the remote peer public key parameters.
+ * @param codes return that the failures of the pub_key are.
  *
- * to avoid small subgroups attack.
+ * @return 1 on success, 0 on failure and *codes is set the the
+ * combined fail check for the public key
+ *
+ * @ingroup hcrypto_dh
  */
 
 int
@@ -164,6 +169,19 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
     int ret = 0;
 
     *codes = 0;
+
+    /**
+     * Checks that the function performs are:
+     * - pub_key is not negative 
+     */
+
+    if (BN_is_negative(pub_key))
+	goto out;
+
+    /**
+     * - pub_key > 1    and    pub_key < p - 1,
+     *    to avoid small subgroups attack.
+     */
 
     bn = BN_new();
     if (bn == NULL)
@@ -183,6 +201,28 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 
     if (BN_cmp(sum, dh->p) >= 0)
 	*codes |= DH_CHECK_PUBKEY_TOO_LARGE;
+
+    /**
+     * - if g == 2, pub_key have more then one bit set,
+     *   if bits set is 1, log_2(pub_key) is trival
+     */
+
+    if (!BN_set_word(bn, 2))
+	goto out;
+
+    if (BN_cmp(bn, pub_key) == 0) {
+	unsigned i, n = BN_num_bits(pub_key);
+	unsigned bits = 0;
+
+	for (i = 0; i <= n; i++)
+	    if (BN_is_bit_set(pub_key, i))
+		bits++;
+
+	if (bits > 1) {
+	    *codes |= DH_CHECK_PUBKEY_TOO_SMALL;
+	    goto out;
+	}
+    }
 
     ret = 1;
 out:
