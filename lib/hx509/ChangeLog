@@ -1,5 +1,11 @@
 2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_nist2.in: Print that this is version 2 of the tests
+
+	* test_nist.in: Drop printing of $id.
+
+	* hx509.h: Add HX509_VHN_F_ALLOW_NO_MATCH.
+
 	* name.c: spelling.
 
 	* cert.c: make work the doxygen.
