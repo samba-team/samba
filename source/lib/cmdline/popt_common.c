@@ -62,11 +62,11 @@ static void popt_samba_callback(poptContext con,
 	struct loadparm_context *lp_ctx = global_loadparm; /* FIXME: allow overriding */
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
-		if (!lp_loaded()) {
+		if (lp_ctx == NULL) {
 			if (getenv("SMB_CONF_PATH"))
-				lp_load(talloc_autofree_context(), getenv("SMB_CONF_PATH"), NULL);
+				lp_load(talloc_autofree_context(), getenv("SMB_CONF_PATH"), &lp_ctx);
 			else
-				lp_load(talloc_autofree_context(), dyn_CONFIGFILE, NULL);
+				lp_load(talloc_autofree_context(), dyn_CONFIGFILE, &lp_ctx);
 		}
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */

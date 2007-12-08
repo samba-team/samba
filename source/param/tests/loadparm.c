@@ -37,6 +37,35 @@ static bool test_set_option(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_set_cmdline(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_set_cmdline(lp_ctx, "workgroup", "werkgroep"), "lp_set_cmdline failed");
+	torture_assert(tctx, lp_do_global_parameter(lp_ctx, "workgroup", "barbla"), "lp_set_option failed");
+	torture_assert_str_equal(tctx, "WERKGROEP", lp_workgroup(lp_ctx), "workgroup");
+	return true;
+}
+
+static bool test_do_global_parameter(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_do_global_parameter(lp_ctx, "workgroup", "werkgroep42"), 
+		       "lp_set_cmdline failed");
+	torture_assert_str_equal(tctx, lp_workgroup(lp_ctx), "WERKGROEP42", "workgroup");
+	return true;
+}
+
+
+static bool test_do_global_parameter_var(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_do_global_parameter_var(lp_ctx, "workgroup", "werk%s%d", "groep", 42), 
+		       "lp_set_cmdline failed");
+	torture_assert_str_equal(tctx, lp_workgroup(lp_ctx), "WERKGROEP42", "workgroup");
+	return true;
+}
+
+
 static bool test_set_option_invalid(struct torture_context *tctx)
 {
 	struct loadparm_context *lp_ctx = loadparm_init(tctx);
@@ -108,12 +137,21 @@ static bool test_lp_do_service_parameter(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_lp_service(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, "foo");
+	torture_assert(tctx, service == lp_service(lp_ctx, "foo"), "invalid service");
+	return true;
+}
+
 struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOADPARM");
 
 	torture_suite_add_simple_test(suite, "create", test_create);
 	torture_suite_add_simple_test(suite, "set_option", test_set_option);
+	torture_suite_add_simple_test(suite, "set_cmdline", test_set_cmdline);
 	torture_suite_add_simple_test(suite, "set_option_invalid", test_set_option_invalid);
 	torture_suite_add_simple_test(suite, "set_option_parametric", test_set_option_parametric);
 	torture_suite_add_simple_test(suite, "set_lp_parm_double", test_lp_parm_double);
@@ -121,6 +159,9 @@ struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "set_lp_parm_int", test_lp_parm_int);
 	torture_suite_add_simple_test(suite, "set_lp_parm_bytes", test_lp_parm_bytes);
 	torture_suite_add_simple_test(suite, "service_parameter", test_lp_do_service_parameter);
+	torture_suite_add_simple_test(suite, "lp_service", test_lp_service);
+	torture_suite_add_simple_test(suite, "do_global_parameter_var", test_do_global_parameter_var);
+	torture_suite_add_simple_test(suite, "do_global_parameter", test_do_global_parameter);
 
 	return suite;
 }
