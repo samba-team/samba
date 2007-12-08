@@ -1,4 +1,18 @@
+2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc: add doxygen documentation to hcrypto
+
+	* doc/doxytmpl.dxy: generate links
+	
 2007-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: build_HEADERZ += heim_threads.h
+
+	* lib/hdb/dbinfo.c (hdb_db_dir): Return the directory where the
+	hdb database resides.
+
+	* configure.in: Add --with-hdbdir to specify where the database is
+	stored.
 
 	* lib/krb5/crypto.c: revert previous patch, the problem is located
 	in the RAND_file_name() function that will cause recursive nss
