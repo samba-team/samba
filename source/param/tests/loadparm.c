@@ -53,6 +53,50 @@ static bool test_set_option_parametric(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_lp_parm_double(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_set_option(lp_ctx, "some:thing=3.4"), "lp_set_option failed");
+	torture_assert(tctx, lp_parm_double(lp_ctx, NULL, "some", "thing", 2.0) == 3.4, 
+				 "invalid parametric option");
+	torture_assert(tctx, lp_parm_double(lp_ctx, NULL, "some", "bla", 2.0) == 2.0, 
+				 "invalid parametric option");
+	return true;
+}
+
+static bool test_lp_parm_bool(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_set_option(lp_ctx, "some:thing=true"), "lp_set_option failed");
+	torture_assert(tctx, lp_parm_bool(lp_ctx, NULL, "some", "thing", false) == true, 
+				 "invalid parametric option");
+	torture_assert(tctx, lp_parm_bool(lp_ctx, NULL, "some", "bla", true) == true, 
+				 "invalid parametric option");
+	return true;
+}
+
+static bool test_lp_parm_int(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_set_option(lp_ctx, "some:thing=34"), "lp_set_option failed");
+	torture_assert_int_equal(tctx, lp_parm_int(lp_ctx, NULL, "some", "thing", 20), 34, 
+				 "invalid parametric option");
+	torture_assert_int_equal(tctx, lp_parm_int(lp_ctx, NULL, "some", "bla", 42), 42, 
+				 "invalid parametric option");
+	return true;
+}
+
+static bool test_lp_parm_bytes(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lp_set_option(lp_ctx, "some:thing=16K"), "lp_set_option failed");
+	torture_assert_int_equal(tctx, lp_parm_bytes(lp_ctx, NULL, "some", "thing", 20), 16 * 1024, 
+				 "invalid parametric option");
+	torture_assert_int_equal(tctx, lp_parm_bytes(lp_ctx, NULL, "some", "bla", 42), 42, 
+				 "invalid parametric option");
+	return true;
+}
+
 struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOADPARM");
@@ -61,6 +105,10 @@ struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "set_option", test_set_option);
 	torture_suite_add_simple_test(suite, "set_option_invalid", test_set_option_invalid);
 	torture_suite_add_simple_test(suite, "set_option_parametric", test_set_option_parametric);
+	torture_suite_add_simple_test(suite, "set_lp_parm_double", test_lp_parm_double);
+	torture_suite_add_simple_test(suite, "set_lp_parm_bool", test_lp_parm_bool);
+	torture_suite_add_simple_test(suite, "set_lp_parm_int", test_lp_parm_int);
+	torture_suite_add_simple_test(suite, "set_lp_parm_bytes", test_lp_parm_bytes);
 
 	return suite;
 }
