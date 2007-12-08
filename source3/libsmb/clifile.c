@@ -37,8 +37,8 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 	size_t oldlen = 2*(strlen(oldname)+1);
 	size_t newlen = 2*(strlen(newname)+1);
 
-	param = SMB_MALLOC(6+newlen+2);
-	data = SMB_MALLOC(oldlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+newlen+2);
+	data = SMB_MALLOC_ARRAY(char, oldlen+2);
 	if (!param || !data) {
 		return false;
 	}
@@ -191,7 +191,7 @@ bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size,
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -251,7 +251,7 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 
 	ZERO_STRUCTP(sbuf);
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -352,7 +352,7 @@ static bool cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 
-	param = SMB_MALLOC(6+nlen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
 	if (!param) {
 		return false;
 	}
@@ -1662,7 +1662,7 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 	char *p;
 	bool ret;
 
-	param = SMB_MALLOC(6+srclen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
 	if (!param) {
 		return false;
 	}
@@ -1835,7 +1835,7 @@ bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
 	size_t srclen = 2*(strlen(path)+1);
 	bool ret;
 
-	param = SMB_MALLOC(6+srclen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
 	if (!param) {
 		return false;
 	}
@@ -1940,7 +1940,7 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 	uint32 wire_flags = open_flags_to_wire(flags);
 	size_t srclen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+srclen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
 	if (!param) {
 		return false;
 	}
@@ -2025,7 +2025,7 @@ static bool cli_posix_unlink_internal(struct cli_state *cli, const char *fname, 
 	char *p;
 	size_t srclen = 2*(strlen(fname)+1);
 
-	param = SMB_MALLOC(6+srclen+2);
+	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
 	if (!param) {
 		return false;
 	}

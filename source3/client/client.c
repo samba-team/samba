@@ -4060,7 +4060,7 @@ static char **remote_completion(const char *text, int len)
 	info.samelen = info.len = len-i-1;
 
 	if (i > 0) {
-		info.dirmask = SMB_MALLOC(i+2);
+		info.dirmask = SMB_MALLOC_ARRAY(char, i+2);
 		if (!info.dirmask) {
 			goto cleanup;
 		}

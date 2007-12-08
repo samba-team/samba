@@ -592,7 +592,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 	*num_refs = 0;
 	*refs = NULL;
 
-	param = SMB_MALLOC(2+pathlen+2);
+	param = SMB_MALLOC_ARRAY(char, 2+pathlen+2);
 	if (!param) {
 		return false;
 	}
