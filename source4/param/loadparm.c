@@ -2198,24 +2198,15 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 }
 
 
-/***************************************************************************
- Auto-load some home services.
-***************************************************************************/
-
+/**
+ * Auto-load some home services.
+ */
 static void lp_add_auto_services(struct loadparm_context *lp_ctx, 
 				 const char *str)
 {
 	return;
 }
 
-/***************************************************************************
- Have we loaded a services file yet?
-***************************************************************************/
-
-bool lp_loaded(void)
-{
-	return (global_loadparm != NULL);
-}
 
 /***************************************************************************
  Unload unused services.
@@ -2255,9 +2246,9 @@ static int lp_destructor(struct loadparm_context *lp_ctx)
 	return 0;
 }
 
-/***************************************************************************
- Initialise the global parameter structure.
-***************************************************************************/
+/**
+ * Initialise the global parameter structure.
+ */
 struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 {
 	int i;
@@ -2423,10 +2414,11 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	return lp_ctx;
 }
 
-/***************************************************************************
- Load the services array from the services file. Return True on success, 
- False on failure.
-***************************************************************************/
+/**
+ * Load the services array from the services file. 
+ *
+ * Return True on success, False on failure.
+ */
 bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context **ret_lp)
 {
 	char *n2;
@@ -2481,18 +2473,18 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 	return bRetval;
 }
 
-/***************************************************************************
- Return the max number of services.
-***************************************************************************/
+/**
+ * Return the max number of services.
+ */
 
 int lp_numservices(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->iNumServices;
 }
 
-/***************************************************************************
-Display the contents of the services array in human-readable form.
-***************************************************************************/
+/**
+ * Display the contents of the services array in human-readable form.
+ */
 
 void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults, 
 	     int maxtoprint)
@@ -2510,10 +2502,9 @@ void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 		lp_dump_one(f, show_defaults, lp_ctx->services[iService]);
 }
 
-/***************************************************************************
-Display the contents of one service in human-readable form.
-***************************************************************************/
-
+/**
+ * Display the contents of one service in human-readable form.
+ */
 void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service)
 {
 	if (service != NULL) {
@@ -2555,9 +2546,9 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 }
 
 
-/*******************************************************************
- A useful volume label function. 
-********************************************************************/
+/**
+ * A useful volume label function. 
+ */
 const char *volume_label(struct loadparm_service *service)
 {
 	const char *ret = lp_volume(service);
@@ -2567,15 +2558,9 @@ const char *volume_label(struct loadparm_service *service)
 }
 
 
-/***********************************************************
- If we are PDC then prefer us as DMB
-************************************************************/
-
-bool lp_domain_logons(struct loadparm_context *lp_ctx)
-{
-	return (lp_server_role(lp_ctx) == ROLE_DOMAIN_CONTROLLER);
-}
-
+/**
+ * If we are PDC then prefer us as DMB
+ */
 const char *lp_printername(struct loadparm_service *service)
 {
 	const char *ret = _lp_printername(service);
@@ -2586,10 +2571,9 @@ const char *lp_printername(struct loadparm_service *service)
 }
 
 
-/*******************************************************************
- Return the max print jobs per queue.
-********************************************************************/
-
+/**
+ * Return the max print jobs per queue.
+ */
 int lp_maxprintjobs(struct loadparm_service *service)
 {
 	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault.iMaxPrintJobs;

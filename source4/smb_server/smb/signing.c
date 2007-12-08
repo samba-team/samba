@@ -114,7 +114,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		smb_conn->signing.mandatory_signing = true;
 		break;
 	case SMB_SIGNING_AUTO:
-		if (lp_domain_logons(smb_conn->lp_ctx)) {
+		if (lp_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
 			smb_conn->signing.allow_smb_signing = true;
 		} else {
 			smb_conn->signing.allow_smb_signing = false;
