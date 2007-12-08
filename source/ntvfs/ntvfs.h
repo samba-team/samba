@@ -187,6 +187,7 @@ struct ntvfs_context {
 	struct share_config *config;
 
 	struct server_id server_id;
+	struct loadparm_context *lp_ctx;
 	struct event_context *event_ctx;
 	struct messaging_context *msg_ctx;
 

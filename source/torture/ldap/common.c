@@ -39,11 +39,12 @@ NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, con
 }
 
 _PUBLIC_ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
-				struct cli_credentials *creds)
+				struct cli_credentials *creds, 
+				struct loadparm_context *lp_ctx)
 {
         NTSTATUS status;
 
-	status = ldap_bind_sasl(conn, creds);
+	status = ldap_bind_sasl(conn, creds, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed sasl bind with provided credentials - %s\n", 
 		       nt_errstr(status));

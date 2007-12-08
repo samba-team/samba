@@ -429,7 +429,8 @@ static void init_domain_recv_ldapconn(struct composite_context *ctx)
 				      state->domain->dc_name);
 		state->ctx->status =
 			ldap_bind_sasl(state->domain->ldap_conn,
-				       state->domain->libnet_ctx->cred);
+				       state->domain->libnet_ctx->cred,
+				       state->domain->libnet_ctx->lp_ctx);
 		DEBUG(0, ("ldap_bind returned %s\n",
 			  nt_errstr(state->ctx->status)));
 	}

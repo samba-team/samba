@@ -236,7 +236,7 @@ static bool test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *creden
 
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
 
-	status = torture_ldap_bind_sasl(l->conn, credentials);
+	status = torture_ldap_bind_sasl(l->conn, credentials, global_loadparm);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to bind to LDAP:\n");
 		return false;

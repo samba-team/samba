@@ -220,6 +220,7 @@ struct ntptr_ops {
 struct ntptr_context {
 	const struct ntptr_ops *ops;
 	void *private_data;
+	struct loadparm_context *lp_ctx;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

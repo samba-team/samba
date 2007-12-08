@@ -83,7 +83,7 @@ static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
 
 		p = (char *)io->ioctl.out.blob.data;
 		SSVAL(p,0, 1 /* REWRITE: fsp->rap_print_jobid */);
-		push_string(global_smb_iconv_convenience, p+2, lp_netbios_name(global_loadparm), 15, STR_TERMINATE|STR_ASCII);
+		push_string(global_smb_iconv_convenience, p+2, lp_netbios_name(ntvfs->ctx->lp_ctx), 15, STR_TERMINATE|STR_ASCII);
 		push_string(global_smb_iconv_convenience, p+18, ntvfs->ctx->config->name, 13, STR_TERMINATE|STR_ASCII);
 		return NT_STATUS_OK;
 	}

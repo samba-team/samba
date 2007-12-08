@@ -43,7 +43,8 @@ NTSTATUS ldap_rebind(struct ldap_connection *conn)
 
 	switch (conn->bind.type) {
 	case LDAP_BIND_SASL:
-		status = ldap_bind_sasl(conn, (struct cli_credentials *)conn->bind.creds);
+		status = ldap_bind_sasl(conn, (struct cli_credentials *)conn->bind.creds,
+					global_loadparm);
 		break;
 		
 	case LDAP_BIND_SIMPLE:
@@ -200,7 +201,8 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
   perform a sasl bind using the given credentials
 */
 NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
-			struct cli_credentials *creds)
+			struct cli_credentials *creds,
+			struct loadparm_context *lp_ctx)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -219,7 +221,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		NULL 
 	};
 
-	status = gensec_client_start(conn, &conn->gensec, NULL, global_loadparm);
+	status = gensec_client_start(conn, &conn->gensec, NULL, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		goto failed;

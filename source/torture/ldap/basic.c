@@ -27,6 +27,8 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
+#include "param/param.h"
+
 static bool test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	NTSTATUS status;
@@ -47,7 +49,7 @@ static bool test_bind_sasl(struct ldap_connection *conn, struct cli_credentials 
 
 	printf("Testing sasl bind as user\n");
 
-	status = torture_ldap_bind_sasl(conn, creds);
+	status = torture_ldap_bind_sasl(conn, creds, global_loadparm);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
 	}
