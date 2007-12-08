@@ -330,7 +330,7 @@ _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
  * Free reference to the hx509 certificate object, if the refcounter
  * reaches 0, the object if freed. Its allowed to pass in NULL.
  *
- * @param certificate
+ * @param cert the cert to free.
  *
  * @ingroup hx509_cert
  */
@@ -1355,7 +1355,8 @@ hx509_cert_get_subject(hx509_cert p, hx509_name *name)
  * certificate is not verified with the base certificate
  * HX509_PROXY_CERTIFICATE_NOT_CANONICALIZED is returned.
  *
- * @param p a hx509 certificate object.
+ * @param context a hx509 context.
+ * @param c a hx509 certificate object.
  * @param name a pointer to a hx509 name, should be freed by
  * hx509_name_free(). See also hx509_cert_get_subject().
  *
@@ -1384,7 +1385,7 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c,
  * Get serial number of the certificate.
  *
  * @param p a hx509 certificate object.
- * @param p serial number, should be freed ith der_free_heim_integer().
+ * @param i serial number, should be freed ith der_free_heim_integer().
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
@@ -2462,7 +2463,7 @@ _hx509_query_clear(hx509_query *q)
  * Allocate an query controller. Free using hx509_query_free().
  *
  * @param context A hx509 context.
- * @param context return pointer to a hx509_query.
+ * @param q return pointer to a hx509_query.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
@@ -2482,7 +2483,7 @@ hx509_query_alloc(hx509_context context, hx509_query **q)
  * Set match options for the hx509 query controller.
  *
  * @param q query controller.
- * @param options options to control te query controller.
+ * @param option options to control the query controller.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
