@@ -24,6 +24,12 @@ ntlm.dxy: ntlm.din Makefile
 	chmod +x ntlm.dxy.tmp
 	mv ntlm.dxy.tmp ntlm.dxy
 
+hx509.dxy: hx509.din Makefile
+	$(dxy_subst) < $(srcdir)/hx509.din > hx509.dxy.tmp
+	chmod +x hx509.dxy.tmp
+	mv hx509.dxy.tmp hx509.dxy
+
+
 texi_subst = sed -e 's,[@]dbdir[@],$(localstatedir),g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
 
@@ -32,9 +38,10 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
-doxygen: krb5.dxy ntlm.dxy
+doxygen: krb5.dxy ntlm.dxy hx509.dxy
 	doxygen krb5.dxy
 	doxygen ntlm.dxy
+	doxygen hx509.dxy
 
 heimdal_TEXINFOS = \
 	ack.texi \
@@ -54,11 +61,13 @@ heimdal_TEXINFOS = \
 EXTRA_DIST = \
 	krb5.din \
 	ntlm.din \
+	hx509.din \
 	doxytmpl.dxy \
 	vars.tin
 
 CLEANFILES = \
 	krb5.dxy* \
 	ntlm.dxy* \
+	hx509.dxy* \
 	vars.texi*
 
