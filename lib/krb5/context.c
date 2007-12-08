@@ -188,7 +188,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 1400, "large_message_size");
     INIT_FLAG(context, flags, KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME, TRUE, "dns_canonicalize_hostname");
-    INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check-pac");
+    INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check_pac");
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
     return 0;
