@@ -259,7 +259,7 @@ struct loadparm_service sDefault = {
 /* local variables */
 struct loadparm_context {
 	struct loadparm_global *globals;
-	struct loadparm_service **ServicePtrs;
+	struct loadparm_service **services;
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
@@ -1067,37 +1067,35 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 
 	/* find an invalid one */
 	for (i = 0; i < lp_ctx->iNumServices; i++)
-		if (lp_ctx->ServicePtrs[i] == NULL)
+		if (lp_ctx->services[i] == NULL)
 			break;
 
 	/* if not, then create one */
 	if (i == lp_ctx->iNumServices) {
 		struct loadparm_service **tsp;
 		
-		tsp = talloc_realloc(lp_ctx, lp_ctx->ServicePtrs, struct loadparm_service *, 
-				num_to_alloc);
+		tsp = talloc_realloc(lp_ctx, lp_ctx->services, struct loadparm_service *, num_to_alloc);
 					   
 		if (!tsp) {
-			DEBUG(0,("lp_add_service: failed to enlarge ServicePtrs!\n"));
+			DEBUG(0,("lp_add_service: failed to enlarge services!\n"));
 			return NULL;
-		}
-		else {
-			lp_ctx->ServicePtrs = tsp;
-			lp_ctx->ServicePtrs[lp_ctx->iNumServices] = NULL;
+		} else {
+			lp_ctx->services = tsp;
+			lp_ctx->services[lp_ctx->iNumServices] = NULL;
 		}
 
 		lp_ctx->iNumServices++;
 	} 
 
-	lp_ctx->ServicePtrs[i] = init_service(lp_ctx);
-	if (lp_ctx->ServicePtrs[i] == NULL) {
+	lp_ctx->services[i] = init_service(lp_ctx->services);
+	if (lp_ctx->services[i] == NULL) {
 		DEBUG(0,("lp_add_service: out of memory!\n"));
 		return NULL;
 	}
-	copy_service(lp_ctx->ServicePtrs[i], &tservice, NULL);
+	copy_service(lp_ctx->services[i], &tservice, NULL);
 	if (name != NULL)
-		string_set(lp_ctx->ServicePtrs[i], &lp_ctx->ServicePtrs[i]->szService, name);
-	return lp_ctx->ServicePtrs[i];
+		string_set(lp_ctx->services[i], &lp_ctx->services[i]->szService, name);
+	return lp_ctx->services[i];
 }
 
 /***************************************************************************
@@ -1192,7 +1190,7 @@ bool lp_add_printer(struct loadparm_context *lp_ctx,
 	/* the printer name is set to the service name. */
 	string_set(service, &service->szPrintername, pszPrintername);
 	string_set(service, &service->comment, comment);
-	service->bBrowseable = sDefault.bBrowseable;
+	service->bBrowseable = default_service->bBrowseable;
 	/* Printers cannot be read_only. */
 	service->bRead_only = false;
 	/* Printer services must be printable. */
@@ -1266,9 +1264,9 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 	int iService;
 
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--)
-		if (lp_ctx->ServicePtrs[iService] != NULL &&
-		    strwicmp(lp_ctx->ServicePtrs[iService]->szService, pszServiceName) == 0) {
-			return lp_ctx->ServicePtrs[iService];
+		if (lp_ctx->services[iService] != NULL &&
+		    strwicmp(lp_ctx->services[iService]->szService, pszServiceName) == 0) {
+			return lp_ctx->services[iService];
 		}
 
 	return NULL;
@@ -2079,7 +2077,8 @@ static bool is_default(int i)
 Display the contents of the global structure.
 ***************************************************************************/
 
-static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults)
+static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, 
+			 bool show_defaults)
 {
 	int i;
 	struct param_opt *data;
@@ -2146,10 +2145,10 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
         }
 }
 
-bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, const char *parm_name, FILE * f, 
-			 bool isGlobal)
+bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, 
+			 struct loadparm_service *service, 
+			 const char *parm_name, FILE * f, bool isGlobal)
 {
-	struct loadparm_service * pService = lp_ctx->ServicePtrs[snum];
 	struct parm_struct *parm;
 	void *ptr;
 	
@@ -2161,7 +2160,7 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, int snum, const char *
 	if (isGlobal)
 		ptr = ((char *)&sDefault) + parm->offset;
 	else
-		ptr = ((char *)pService) + parm->offset;
+		ptr = ((char *)service) + parm->offset;
 	
 	print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
@@ -2191,7 +2190,7 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 			return &parm_table[(*i)++];
 		}
 	} else {
-		struct loadparm_service *pService = lp_ctx->ServicePtrs[snum];
+		struct loadparm_service *pService = lp_ctx->services[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_LOCAL &&
@@ -2247,12 +2246,12 @@ void lp_killunused(struct loadparm_context *lp_ctx,
 {
 	int i;
 	for (i = 0; i < lp_ctx->iNumServices; i++) {
-		if (lp_ctx->ServicePtrs[i] == NULL)
+		if (lp_ctx->services[i] == NULL)
 			continue;
 
 		if (!snumused || !snumused(smb, i)) {
-			talloc_free(lp_ctx->ServicePtrs[i]);
-			lp_ctx->ServicePtrs[i] = NULL;
+			talloc_free(lp_ctx->services[i]);
+			lp_ctx->services[i] = NULL;
 		}
 	}
 }
@@ -2527,7 +2526,7 @@ void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 	dump_a_service(&sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, lp_ctx->ServicePtrs[iService]);
+		lp_dump_one(f, show_defaults, lp_ctx->services[iService]);
 }
 
 /***************************************************************************
@@ -2546,7 +2545,7 @@ void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service)
 struct loadparm_service *lp_servicebynum(struct loadparm_context *lp_ctx,
 					 int snum)
 {
-	return lp_ctx->ServicePtrs[snum];
+	return lp_ctx->services[snum];
 }
 
 struct loadparm_service *lp_service(struct loadparm_context *lp_ctx, 
@@ -2556,17 +2555,17 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
         char *serviceName;
  
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--) {
-		if (lp_ctx->ServicePtrs[iService] && 
-		    lp_ctx->ServicePtrs[iService]->szService) {
+		if (lp_ctx->services[iService] && 
+		    lp_ctx->services[iService]->szService) {
 			/*
 			 * The substitution here is used to support %U is
 			 * service names
 			 */
 			serviceName = standard_sub_basic(
-					lp_ctx->ServicePtrs[iService],
-					lp_ctx->ServicePtrs[iService]->szService);
+					lp_ctx->services[iService],
+					lp_ctx->services[iService]->szService);
 			if (strequal(serviceName, service_name))
-				return lp_ctx->ServicePtrs[iService];
+				return lp_ctx->services[iService];
 		}
 	}
 
