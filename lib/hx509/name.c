@@ -704,7 +704,7 @@ hx509_name_free(hx509_name *name)
  * Convert a DER encoded name info a string.
  *
  * @param data data to a DER/BER encoded name
- * @param length length of data
+? * @param length length of data
  * @param str the resulting string, is NULL on failure.
  *
  * @return An hx509 error code, see hx509_get_error_string().
