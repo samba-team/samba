@@ -878,7 +878,8 @@ pk_verify_host(krb5_context context,
 	hx509_octet_string_list list;
 	int i;
 
-	ret = hx509_cert_find_subjectAltName_otherName(host->cert,
+	ret = hx509_cert_find_subjectAltName_otherName(ctx->id->hx509ctx,
+						       host->cert,
 						       oid_id_pkinit_san(),
 						       &list);
 	if (ret) {
