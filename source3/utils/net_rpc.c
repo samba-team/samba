@@ -4359,9 +4359,10 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	const char *extra_data;
-	fstring name;
+	char *name;
 	int i;
 	struct user_token *result;
+	TALLOC_CTX *frame = NULL;
 
 	if (lp_winbind_use_default_domain() &&
 	    (opt_target_workgroup == NULL)) {
@@ -4374,7 +4375,7 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-	
+
 	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
@@ -4387,7 +4388,8 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	extra_data = (const char *)response.extra_data.data;
 	*num_tokens = 0;
 
-	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
+	frame = talloc_stackframe();
+	while(next_token_talloc(frame, &extra_data, &name, ",")) {
 		*num_tokens += 1;
 	}
 
@@ -4395,14 +4397,14 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 	if (result == NULL) {
 		DEBUG(1, ("Could not malloc sid array\n"));
+		TALLOC_FREE(frame);
 		return False;
 	}
 
 	extra_data = (const char *)response.extra_data.data;
 	i=0;
 
-	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
-
+	while(next_token_talloc(frame, &extra_data, &name, ",")) {
 		fstring domain, user;
 		char *p;
 
@@ -4425,7 +4427,7 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		get_user_sids(domain, user, &(result[i].token));
 		i+=1;
 	}
-	
+	TALLOC_FREE(frame);
 	SAFE_FREE(response.extra_data.data);
 
 	*user_tokens = result;

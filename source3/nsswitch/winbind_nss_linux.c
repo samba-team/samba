@@ -85,7 +85,7 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
 
 	/* Error check.  We return false if things aren't set up right, or
 	   there isn't enough buffer space left. */
-	
+
 	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
 		return NULL;
 	}
@@ -99,45 +99,78 @@ static char *get_static(char **buffer, size_t *buflen, size_t len)
 	return result;
 }
 
-/* I've copied the strtok() replacement function next_token() from
+/* I've copied the strtok() replacement function next_token_Xalloc() from
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-static bool next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
+static bool next_token_alloc(const char **ptr,
+                                char **pp_buff,
+                                const char *sep)
 {
 	char *s;
+	char *saved_s;
+	char *pbuf;
 	bool quoted;
 	size_t len=1;
 
-	if (!ptr) return false;
+	*pp_buff = NULL;
+	if (!ptr) {
+		return(false);
+	}
 
-	s = *ptr;
+	s = (char *)*ptr;
 
 	/* default to simple separators */
-	if (!sep) sep = " \t\n\r";
+	if (!sep) {
+		sep = " \t\n\r";
+	}
 
 	/* find the first non sep char */
-	while (*s && strchr(sep,*s)) s++;
-	
+	while (*s && strchr(sep,*s)) {
+		s++;
+	}
+
 	/* nothing left? */
-	if (! *s) return false;
-	
-	/* copy over the token */
-	for (quoted = false; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+	if (!*s) {
+		return false;
+	}
+
+	/* When restarting we need to go from here. */
+	saved_s = s;
+
+	/* Work out the length needed. */
+	for (quoted = false; *s &&
+			(quoted || !strchr(sep,*s)); s++) {
 		if (*s == '\"') {
 			quoted = !quoted;
 		} else {
 			len++;
-			*buff++ = *s;
 		}
 	}
-	
-	*ptr = (*s) ? s+1 : s;  
-	*buff = 0;
-	
+
+	/* We started with len = 1 so we have space for the nul. */
+	*pp_buff = malloc(len);
+	if (!*pp_buff) {
+		return false;
+	}
+
+	/* copy over the token */
+	pbuf = *pp_buff;
+	s = saved_s;
+	for (quoted = false; *s &&
+			(quoted || !strchr(sep,*s)); s++) {
+		if ( *s == '\"' ) {
+			quoted = !quoted;
+		} else {
+			*pbuf++ = *s;
+		}
+	}
+
+	*ptr = (*s) ? s+1 : s;
+	*pbuf = 0;
+
 	return true;
 }
-
 
 /* Fill a pwent structure from a winbindd_response structure.  We use
    the static data passed to us by libc to put strings and stuff in.
@@ -233,7 +266,7 @@ static NSS_STATUS fill_pwent(struct passwd *result,
 static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 		      char *gr_mem, char **buffer, size_t *buflen)
 {
-	fstring name;
+	char *name;
 	int i;
 	char *tst;
 
@@ -255,7 +288,6 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 	     get_static(buffer, buflen, strlen(gr->gr_passwd) + 1)) == NULL) {
 
 		/* Out of memory */
-		
 		return NSS_STATUS_TRYAGAIN;
 	}
 
@@ -276,8 +308,8 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 	/* Calculate number of extra bytes needed to align on pointer size boundry */
 	if ((i = (unsigned long)(*buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
-	
-	if ((tst = get_static(buffer, buflen, ((gr->num_gr_mem + 1) * 
+
+	if ((tst = get_static(buffer, buflen, ((gr->num_gr_mem + 1) *
 				 sizeof(char *)+i))) == NULL) {
 
 		/* Out of memory */
@@ -298,19 +330,16 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	i = 0;
 
-	while(next_token((char **)&gr_mem, name, ",", sizeof(fstring))) {
-        
+	while(next_token_alloc((const char **)&gr_mem, &name, ",")) {
 		/* Allocate space for member */
-        
-		if (((result->gr_mem)[i] = 
+		if (((result->gr_mem)[i] =
 		     get_static(buffer, buflen, strlen(name) + 1)) == NULL) {
-            
+			free(name);
 			/* Out of memory */
-            
 			return NSS_STATUS_TRYAGAIN;
-		}        
-        
+		}
 		strcpy((result->gr_mem)[i], name);
+		free(name);
 		i++;
 	}
 

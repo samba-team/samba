@@ -1177,11 +1177,13 @@ static int get_server_info(uint32 servertype,
 		struct srv_info_struct *s;
 		const char *ptr = lines[i];
 		bool ok = True;
+		TALLOC_CTX *frame = NULL;
+		char *p;
 
 		if (!*ptr) {
 			continue;
 		}
-    
+
 		if (count == alloced) {
 			alloced += 10;
 			*servers = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
@@ -1193,26 +1195,43 @@ static int get_server_info(uint32 servertype,
 			memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
 		}
 		s = &(*servers)[count];
-    
-		if (!next_token(&ptr,s->name, NULL, sizeof(s->name))) {
+
+		frame = talloc_stackframe();
+		s->name[0] = '\0';
+		if (!next_token_talloc(frame,&ptr,&p, NULL)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
-		if (!next_token(&ptr,stype, NULL, sizeof(stype))) {
+		fstrcpy(s->name, p);
+
+		stype[0] = '\0';
+		if (!next_token_talloc(frame,&ptr, &p, NULL)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
-		if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) {
+		fstrcpy(stype, p);
+
+		s->comment[0] = '\0';
+		if (!next_token_talloc(frame,&ptr, &p, NULL)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
-		if (!next_token(&ptr,s->domain, NULL, sizeof(s->domain))) {
+		fstrcpy(s->comment, p);
+
+		s->domain[0] = '\0';
+		if (!next_token_talloc(frame,&ptr,&p, NULL)) {
 			/* this allows us to cope with an old nmbd */
-			fstrcpy(s->domain,lp_workgroup()); 
+			fstrcpy(s->domain,lp_workgroup());
+		} else {
+			fstrcpy(s->domain, p);
 		}
-    
-		if (sscanf(stype,"%X",&s->type) != 1) { 
-			DEBUG(4,("r:host file ")); 
-			ok = False; 
+		TALLOC_FREE(frame);
+
+		if (sscanf(stype,"%X",&s->type) != 1) {
+			DEBUG(4,("r:host file "));
+			ok = False;
 		}
-    
+
 		/* Filter the servers/domains we return based on what was asked for. */
 
 		/* Check to see if we are being asked for a local list only. */
@@ -1222,11 +1241,11 @@ static int get_server_info(uint32 servertype,
 		}
 
 		/* doesn't match up: don't want it */
-		if (!(servertype & s->type)) { 
-			DEBUG(4,("r:serv type ")); 
-			ok = False; 
+		if (!(servertype & s->type)) {
+			DEBUG(4,("r:serv type "));
+			ok = False;
 		}
-    
+
 		if ((servertype & SV_TYPE_DOMAIN_ENUM) != 
 				(s->type & SV_TYPE_DOMAIN_ENUM)) {
 			DEBUG(4,("s: dom mismatch "));

@@ -32,10 +32,10 @@ extern userdom_struct current_user_info;
 static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 {
 	struct cli_state *cli = NULL;
-	fstring desthost;
+	char *desthost = NULL;
 	struct sockaddr_storage dest_ss;
 	const char *p;
-	char *pserver;
+	char *pserver = NULL;
 	bool connected_ok = False;
 
 	if (!(cli = cli_initialise()))
@@ -47,11 +47,16 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
         pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
 
-        while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
+        while(next_token_talloc(mem_ctx, &p, &desthost, LIST_SEP)) {
 		NTSTATUS status;
 
-		standard_sub_basic(current_user_info.smb_name, current_user_info.domain,
-				   desthost, sizeof(desthost));
+		desthost = talloc_sub_basic(mem_ctx,
+				current_user_info.smb_name,
+				current_user_info.domain,
+				desthost);
+		if (!desthost) {
+			return NULL;
+		}
 		strupper_m(desthost);
 
 		if(!resolve_name( desthost, &dest_ss, 0x20)) {
@@ -64,9 +69,9 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		/* we use a mutex to prevent two connections at once - when a 
-		   Win2k PDC get two connections where one hasn't completed a 
-		   session setup yet it will send a TCP reset to the first 
+		/* we use a mutex to prevent two connections at once - when a
+		   Win2k PDC get two connections where one hasn't completed a
+		   session setup yet it will send a TCP reset to the first
 		   connection (tridge) */
 
 		if (!grab_server_mutex(desthost)) {
@@ -81,27 +86,27 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 		DEBUG(10,("server_cryptkey: failed to connect to server %s. Error %s\n",
 			desthost, nt_errstr(status) ));
+		release_server_mutex();
 	}
 
 	if (!connected_ok) {
-		release_server_mutex();
 		DEBUG(0,("password server not available\n"));
 		cli_shutdown(cli);
 		return NULL;
 	}
-	
-	if (!attempt_netbios_session_request(&cli, global_myname(), 
+
+	if (!attempt_netbios_session_request(&cli, global_myname(),
 					     desthost, &dest_ss)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
 		cli_shutdown(cli);
 		return NULL;
 	}
-	
+
 	if (strequal(desthost,myhostname())) {
 		exit_server_cleanly("Password server loop!");
 	}
-	
+
 	DEBUG(3,("got session\n"));
 
 	if (!cli_negprot(cli)) {
@@ -119,9 +124,9 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	/* Get the first session setup done quickly, to avoid silly 
+	/* Get the first session setup done quickly, to avoid silly
 	   Win2k bugs.  (The next connection to the server will kill
-	   this one... 
+	   this one...
 	*/
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "", 0, "", 0,
@@ -132,11 +137,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		cli_shutdown(cli);
 		return NULL;
 	}
-	
+
 	release_server_mutex();
 
 	DEBUG(3,("password server OK\n"));
-	
+
 	return cli;
 }
 

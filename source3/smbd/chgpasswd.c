@@ -304,34 +304,50 @@ static void pwd_sub(char *buf)
 
 static int talktochild(int master, const char *seq)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int count = 0;
-	fstring issue, expected;
+	char *issue;
+	char *expected;
 
-	fstrcpy(issue, ".");
+	issue = talloc_strdup(frame, ".");
+	if (!issue) {
+		TALLOC_FREE(frame);
+		return false;
+	}
 
-	while (next_token(&seq, expected, NULL, sizeof(expected)))
-	{
+	while (next_token_talloc(frame, &seq, &expected, NULL)) {
 		pwd_sub(expected);
 		count++;
 
-		if (!expect(master, issue, expected))
-		{
+		if (!expect(master, issue, expected)) {
 			DEBUG(3, ("Response %d incorrect\n", count));
-			return False;
+			TALLOC_FREE(frame);
+			return false;
 		}
 
-		if (!next_token(&seq, issue, NULL, sizeof(issue)))
-			fstrcpy(issue, ".");
-
+		if (!next_token_talloc(frame, &seq, &issue, NULL)) {
+			issue = talloc_strdup(frame, ".");
+			if (!issue) {
+				TALLOC_FREE(frame);
+				return false;
+			}
+		}
 		pwd_sub(issue);
 	}
+
 	if (!strequal(issue, ".")) {
 		/* we have one final issue to send */
-		fstrcpy(expected, ".");
-		if (!expect(master, issue, expected))
+		expected = talloc_strdup(frame, ".");
+		if (!expected) {
+			TALLOC_FREE(frame);
+			return false;
+		}
+		if (!expect(master, issue, expected)) {
+			TALLOC_FREE(frame);
 			return False;
+		}
 	}
-
+	TALLOC_FREE(frame);
 	return (count > 0);
 }
 

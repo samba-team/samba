@@ -194,7 +194,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	char **values = NULL;
 	int rc, num_result, num_values, rid;
 	char *suffix = NULL;
-	fstring tok;
+	char *tok;
 	const char *p;
 	const char **attrs;
 
@@ -292,7 +292,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	}
 
 	p = values[0];
-	if (!next_token(&p, tok, "#", sizeof(tok))) {
+	if (!next_token_talloc(mem_ctx, &p, &tok, "#")) {
 		DEBUG(0,("ldapsam_get_seq_num: failed to parse sequence number\n"));
 		goto done;
 	}

@@ -578,8 +578,9 @@ static int upgrade_alias_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 				TDB_DATA data, void *state)
 {
 	const char *p = (const char *)data.dptr;
-	fstring string_sid;
+	char *string_sid;
 	DOM_SID member;
+	TALLOC_CTX *frame;
 
 	if (strncmp((char *)key.dptr, MEMBEROF_PREFIX, 
 		    MIN(key.dsize, strlen(MEMBEROF_PREFIX))) != 0) {
@@ -592,7 +593,8 @@ static int upgrade_alias_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 		*(int *)state = -1;
 	}
 
-	while (next_token(&p, string_sid, " ", sizeof(string_sid))) {
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame,&p, &string_sid, " ")) {
 		DOM_SID alias;
 		NTSTATUS status;
 		string_to_sid(&alias, string_sid);
@@ -604,10 +606,11 @@ static int upgrade_alias_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 			DEBUG(0,("Failed to add alias member during upgrade - %s\n",
 				 nt_errstr(status)));
 			*(int *)state = -1;
+			TALLOC_FREE(frame);
 			return -1;
 		}
 	}
-
+	TALLOC_FREE(frame);
 	return 0;
 }
 

@@ -207,15 +207,17 @@ struct chat_struct {
 
 static struct chat_struct *make_pw_chat(const char *p) 
 {
-	fstring prompt;
-	fstring reply;
+	char *prompt;
+	char *reply;
 	struct chat_struct *list = NULL;
 	struct chat_struct *t;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	while (1) {
 		t = SMB_MALLOC_P(struct chat_struct);
 		if (!t) {
 			DEBUG(0,("make_pw_chat: malloc failed!\n"));
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 
@@ -223,22 +225,26 @@ static struct chat_struct *make_pw_chat(const char *p)
 
 		DLIST_ADD_END(list, t, struct chat_struct*);
 
-		if (!next_token(&p, prompt, NULL, sizeof(fstring)))
+		if (!next_token_talloc(frame, &p, &prompt, NULL)) {
 			break;
+		}
 
-		if (strequal(prompt,"."))
+		if (strequal(prompt,".")) {
 			fstrcpy(prompt,"*");
+		}
 
 		special_char_sub(prompt);
 		fstrcpy(t->prompt, prompt);
 		strlower_m(t->prompt);
 		trim_char(t->prompt, ' ', ' ');
 
-		if (!next_token(&p, reply, NULL, sizeof(fstring)))
+		if (!next_token_talloc(frame, &p, reply, NULL)) {
 			break;
+		}
 
-		if (strequal(reply,"."))
-				fstrcpy(reply,"");
+		if (strequal(reply,".")) {
+			fstrcpy(reply,"");
+		}
 
 		special_char_sub(reply);
 		fstrcpy(t->reply, reply);
@@ -246,6 +252,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 		trim_char(t->reply, ' ', ' ');
 
 	}
+	TALLOC_FREE(frame);
 	return list;
 }
 

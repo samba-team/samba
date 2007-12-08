@@ -457,10 +457,11 @@ void announce_remote(time_t t)
 	char *s;
 	const char *ptr;
 	static time_t last_time = 0;
-	fstring s2;
+	char *s2;
 	struct in_addr addr;
 	char *comment;
 	int stype = lp_default_server_announce();
+	TALLOC_CTX *frame = NULL;
 
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
@@ -473,7 +474,8 @@ void announce_remote(time_t t)
 
 	comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
 
-	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
+	frame = talloc_stackframe();
+	for (ptr=s; next_token_talloc(frame,&ptr,&s2,NULL); ) {
 		/* The entries are of the form a.b.c.d/WORKGROUP with
 				WORKGROUP being optional */
 		const char *wgroup;
@@ -510,6 +512,7 @@ void announce_remote(time_t t)
 						comment);
 		}
 	}
+	TALLOC_FREE(frame);
 }
 
 /****************************************************************************
@@ -522,12 +525,13 @@ void browse_sync_remote(time_t t)
 	char *s;
 	const char *ptr;
 	static time_t last_time = 0;
-	fstring s2;
+	char *s2;
 	struct in_addr addr;
 	struct work_record *work;
 	char outbuf[1024];
 	char *p;
 	unstring myname;
+	TALLOC_CTX *frame = NULL;
 
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
@@ -567,7 +571,8 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 
 	p = skip_string(outbuf,sizeof(outbuf),p);
 
-	for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) {
+	frame = talloc_stackframe();
+	for (ptr=s; next_token_talloc(frame,&ptr,&s2,NULL); ) {
 		/* The entries are of the form a.b.c.d */
 		(void)interpret_addr2(&addr,s2);
 
@@ -577,4 +582,5 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 		send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
 			global_myname(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
 	}
+	TALLOC_FREE(frame);
 }

@@ -222,9 +222,9 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx, 
+static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 				     NET_USER_INFO_3 *info3,
-				     const char *group_sid) 
+				     const char *group_sid)
 /**
  * Check whether a user belongs to a group or list of groups.
  *
@@ -239,15 +239,16 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 {
 	DOM_SID *require_membership_of_sid;
 	size_t num_require_membership_of_sid;
-	fstring req_sid;
+	char *req_sid;
 	const char *p;
 	DOM_SID sid;
 	size_t i;
 	struct nt_user_token *token;
+	TALLOC_CTX *frame = NULL;
 	NTSTATUS status;
 
 	/* Parse the 'required group' SID */
-	
+
 	if (!group_sid || !group_sid[0]) {
 		/* NO sid supplied, all users may access */
 		return NT_STATUS_OK;
@@ -263,10 +264,12 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 
 	p = group_sid;
 
-	while (next_token(&p, req_sid, ",", sizeof(req_sid))) {
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &p, &req_sid, ",")) {
 		if (!string_to_sid(&sid, req_sid)) {
 			DEBUG(0, ("check_info3_in_group: could not parse %s "
 				  "as a SID!", req_sid));
+			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -274,9 +277,12 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 				      &require_membership_of_sid,
 				      &num_require_membership_of_sid)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	TALLOC_FREE(frame);
 
 	status = sid_array_from_info3(mem_ctx, info3, 
 				      &token->user_sids, 

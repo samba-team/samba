@@ -791,10 +791,10 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 	*pp_name = NULL;
 
 	while(!x_feof(fp) && !x_ferror(fp)) {
-		char ip[INET6_ADDRSTRLEN];
-		fstring flags;
-		fstring extra;
-		fstring name;
+		char *ip;
+		char *flags;
+		char *extra;
+		char *name;
 		const char *ptr;
 		char *ptr1;
 		int count = 0;
@@ -815,13 +815,13 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 
 		ptr = line;
 
-		if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
+		if (next_token_talloc(ctx, &ptr, &ip, NULL))
 			++count;
-		if (next_token(&ptr,name ,NULL, sizeof(name)))
+		if (next_token_talloc(ctx, &ptr, &name, NULL))
 			++count;
-		if (next_token(&ptr,flags,NULL, sizeof(flags)))
+		if (next_token_talloc(ctx, &ptr, &flags, NULL))
 			++count;
-		if (next_token(&ptr,extra,NULL, sizeof(extra)))
+		if (next_token_talloc(ctx, &ptr, &extra, NULL))
 			++count;
 
 		if (count <= 0)
@@ -1422,10 +1422,11 @@ NTSTATUS internal_resolve_name(const char *name,
 				const char *resolve_order)
 {
 	const char *name_resolve_list;
-	fstring tok;
+	char *tok;
 	const char *ptr;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
+	TALLOC_CTX *frame = NULL;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -1488,7 +1489,8 @@ NTSTATUS internal_resolve_name(const char *name,
 
 	/* iterate through the name resolution backends */
 
-	while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &ptr, &tok, LIST_SEP)) {
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			status = resolve_hosts(name, name_type, return_iplist,
 					       return_count);
@@ -1545,6 +1547,7 @@ NTSTATUS internal_resolve_name(const char *name,
 
 	/* All of the resolve_* functions above have returned false. */
 
+	TALLOC_FREE(frame);
 	SAFE_FREE(*return_iplist);
 	*return_count = 0;
 
@@ -1595,6 +1598,7 @@ NTSTATUS internal_resolve_name(const char *name,
 		DEBUG(10, ("\n"));
 	}
 
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -1738,7 +1742,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	const char *p;
 	char *port_str = NULL;
 	int port;
-	fstring name;
+	char *name;
 	int num_addresses = 0;
 	int  local_count, i, j;
 	struct ip_service *return_iplist = NULL;
@@ -1826,7 +1830,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	 */
 
 	p = pserver;
-	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+	while (next_token_talloc(ctx, &p, &name, LIST_SEP)) {
 		if (strequal(name, "*")) {
 			status = internal_resolve_name(domain, 0x1C, sitename,
 						       &auto_ip_list,
@@ -1870,7 +1874,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* fill in the return list now with real IP's */
 
 	while ((local_count<num_addresses) &&
-			next_token(&p,name,LIST_SEP,sizeof(name))) {
+			next_token_talloc(ctx, &p, &name, LIST_SEP)) {
 		struct sockaddr_storage name_ss;
 
 		/* copy any addersses from the auto lookup */

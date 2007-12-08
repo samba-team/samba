@@ -201,7 +201,7 @@ done:
  Handle one line from a completed sync file.
  **********************************************************************/
 
-static void complete_one(struct sync_record *s, 
+static void complete_one(struct sync_record *s,
 			 char *sname, uint32 stype, char *comment)
 {
 	struct work_record *work;
@@ -258,9 +258,10 @@ static void complete_one(struct sync_record *s,
 static void complete_sync(struct sync_record *s)
 {
 	XFILE *f;
-	unstring server, type_str;
+	char *server;
+	char *type_str;
 	unsigned type;
-	fstring comment;
+	char *comment;
 	char line[1024];
 	const char *ptr;
 	int count=0;
@@ -271,15 +272,18 @@ static void complete_sync(struct sync_record *s)
 		return;
 
 	while (!x_feof(f)) {
+		TALLOC_CTX *frame = NULL;
 
 		if (!fgets_slash(line,sizeof(line),f))
 			continue;
 
 		ptr = line;
 
-		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
-		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||
-		    !next_token(&ptr,comment,NULL, sizeof(comment))) {
+		frame = talloc_stackframe();
+		if (!next_token_talloc(frame,&ptr,&server,NULL) ||
+		    !next_token_talloc(frame,&ptr,&type_str,NULL) ||
+		    !next_token_talloc(frame,&ptr,&comment,NULL)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -288,8 +292,8 @@ static void complete_sync(struct sync_record *s)
 		complete_one(s, server, type, comment);
 
 		count++;
+		TALLOC_FREE(frame);
 	}
-
 	x_fclose(f);
 
 	unlink(s->fname);

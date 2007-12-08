@@ -29,62 +29,6 @@
  * @brief String utilities.
  **/
 
-/**
- * Internal function to get the next token from a string, return false if none
- * found.  Handles double-quotes.  This is the work horse function called by
- * next_token() and next_token_no_ltrim().
- *
- * Based on a routine by GJC@VILLAGE.COM.
- * Extensively modified by Andrew.Tridgell@anu.edu.au
- */
-static bool next_token_internal(const char **ptr,
-                                char *buff,
-                                const char *sep,
-                                size_t bufsize,
-                                bool ltrim)
-{
-	char *s;
-	char *pbuf;
-	bool quoted;
-	size_t len=1;
-
-	if (!ptr)
-		return(false);
-
-	s = (char *)*ptr;
-
-	/* default to simple separators */
-	if (!sep)
-		sep = " \t\n\r";
-
-	/* find the first non sep char, if left-trimming is requested */
-	if (ltrim) {
-		while (*s && strchr_m(sep,*s))
-			s++;
-	}
-
-	/* nothing left? */
-	if (! *s)
-		return(false);
-
-	/* copy over the token */
-	pbuf = buff;
-	for (quoted = false; len < bufsize && *s &&
-			(quoted || !strchr_m(sep,*s)); s++) {
-		if ( *s == '\"' ) {
-			quoted = !quoted;
-		} else {
-			len++;
-			*pbuf++ = *s;
-		}
-	}
-
-	*ptr = (*s) ? s+1 : s;
-	*pbuf = 0;
-
-	return(true);
-}
-
 static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 				const char **ptr,
                                 char **pp_buff,
@@ -111,8 +55,9 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 
 	/* find the first non sep char, if left-trimming is requested */
 	if (ltrim) {
-		while (*s && strchr_m(sep,*s))
+		while (*s && strchr_m(sep,*s)) {
 			s++;
+		}
 	}
 
 	/* nothing left? */
@@ -157,6 +102,7 @@ static bool next_token_internal_talloc(TALLOC_CTX *ctx,
 	return true;
 }
 
+#if 0
 /*
  * Get the next token from a string, return false if none found.  Handles
  * double-quotes.  This version trims leading separator characters before
@@ -166,6 +112,7 @@ bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize)
 {
 	return next_token_internal(ptr, buff, sep, bufsize, true);
 }
+#endif
 
 bool next_token_talloc(TALLOC_CTX *ctx,
 			const char **ptr,
@@ -180,13 +127,6 @@ bool next_token_talloc(TALLOC_CTX *ctx,
  * double-quotes.  This version does not trim leading separator characters
  * before looking for a token.
  */
-bool next_token_no_ltrim(const char **ptr,
-                         char *buff,
-                         const char *sep,
-                         size_t bufsize)
-{
-	return next_token_internal(ptr, buff, sep, bufsize, false);
-}
 
 bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 			const char **ptr,
@@ -203,18 +143,6 @@ but beware the fact that it is not re-entrant!
 **/
 
 static const char *last_ptr=NULL;
-
-bool next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
-{
-	bool ret;
-	if (!ptr) {
-		ptr = &last_ptr;
-	}
-
-	ret = next_token(ptr, buff, sep, bufsize);
-	last_ptr = *ptr;
-	return ret;
-}
 
 bool next_token_nr_talloc(TALLOC_CTX *ctx,
 				const char **ptr,
@@ -1097,23 +1025,16 @@ char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 
 bool in_list(const char *s, const char *list, bool casesensitive)
 {
-	char *tok;
-	const char *p=list;
-	size_t bufsize = strlen(list);
+	char *tok = NULL;
 	bool ret = false;
+	TALLOC_CTX *frame;
 
-	if (!list)
-		return(false);
-
-	/* We know a token can't be larger
-	 * than the entire list. */
-
-	tok = SMB_MALLOC_ARRAY(char, bufsize+1);
-	if (!tok) {
+	if (!list) {
 		return false;
 	}
 
-	while (next_token(&p,tok,LIST_SEP,bufsize+1)) {
+	frame = talloc_stackframe();
+	while (next_token_talloc(frame, &list, &tok,LIST_SEP)) {
 		if (casesensitive) {
 			if (strcmp(tok,s) == 0) {
 				ret = true;
@@ -1126,8 +1047,7 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 			}
 		}
 	}
-
-	SAFE_FREE(tok);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -2409,7 +2329,8 @@ char *ipstr_list_make(char **ipstr_list,
 
 int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 {
-	fstring token_str;
+	TALLOC_CTX *frame;
+	char *token_str = NULL;
 	size_t count;
 	int i;
 
@@ -2423,8 +2344,9 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 		return 0;
 	}
 
-	for ( i=0; next_token(&ipstr_list, token_str,
-				IPSTR_LIST_SEP, FSTRING_LEN) && i<count; i++ ) {
+	frame = talloc_stackframe();
+	for ( i=0; next_token_talloc(frame, &ipstr_list, &token_str,
+				IPSTR_LIST_SEP) && i<count; i++ ) {
 		char *s = token_str;
 		char *p = strrchr(token_str, ':');
 
@@ -2449,7 +2371,7 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 			continue;
 		}
 	}
-
+	TALLOC_FREE(frame);
 	return count;
 }
 

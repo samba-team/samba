@@ -30,7 +30,6 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 				 char **nt_path,
 				 char **unix_path)
 {
-	fstring tok;
 	char *path = NULL;
 
 	*server = NULL;
@@ -42,20 +41,12 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!next_token(&file_sys_path, tok, "\\", sizeof(tok))) {
+	if (!next_token_talloc(mem_ctx, &file_sys_path, server, "\\")) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((*server = talloc_strdup(mem_ctx, tok)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!next_token(&file_sys_path, tok, "\\", sizeof(tok))) {
+	if (!next_token_talloc(mem_ctx, &file_sys_path, service, "\\")) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if ((*service = talloc_strdup(mem_ctx, tok)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ((*nt_path = talloc_asprintf(mem_ctx, "\\%s", file_sys_path))
@@ -91,7 +82,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 {
 	const char *top_dir = lock_path(GPO_CACHE_DIR);
 	char *current_dir;
-	fstring tok;
+	char *tok;
 
 	current_dir = talloc_strdup(mem_ctx, top_dir);
 	NT_STATUS_HAVE_NO_MEMORY(current_dir);
@@ -100,15 +91,13 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	while (next_token(&unix_path, tok, "/", sizeof(tok))) {
-
+	while (next_token_talloc(mem_ctx, &unix_path, &tok, "/")) {
 		if (strequal(tok, GPO_CACHE_DIR)) {
 			break;
 		}
 	}
 
-	while (next_token(&unix_path, tok, "/", sizeof(tok))) {
-
+	while (next_token_talloc(mem_ctx, &unix_path, &tok, "/")) {
 		current_dir = talloc_asprintf_append_buffer(current_dir, "/%s", tok);
 		NT_STATUS_HAVE_NO_MEMORY(current_dir);
 

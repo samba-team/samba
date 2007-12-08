@@ -785,9 +785,10 @@ static void print_socket_options(int s)
 
 void set_socket_options(int fd, const char *options)
 {
-	fstring tok;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	char *tok;
 
-	while (next_token(&options,tok," \t,", sizeof(tok))) {
+	while (next_token_talloc(ctx, &options, &tok," \t,")) {
 		int ret=0,i;
 		int value = 1;
 		char *p;
@@ -836,6 +837,7 @@ void set_socket_options(int fd, const char *options)
 		}
 	}
 
+	TALLOC_FREE(ctx);
 	print_socket_options(fd);
 }
 

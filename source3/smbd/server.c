@@ -352,9 +352,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
+			TALLOC_CTX *frame = NULL;
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			fstring tok;
+			char *tok;
 			const char *ptr;
 
 			if (ifss == NULL) {
@@ -364,8 +365,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				continue;
 			}
 
-			for (ptr=ports; next_token(&ptr, tok, " \t,",
-						sizeof(tok)); ) {
+			frame = talloc_stackframe();
+			for (ptr=ports;
+					next_token_talloc(frame,&ptr, &tok, " \t,");) {
 				unsigned port = atoi(tok);
 				if (port == 0 || port > 0xffff) {
 					continue;
@@ -389,6 +391,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					DEBUG(0,("open_sockets_smbd: listen: "
 						"%s\n", strerror(errno)));
 					close(s);
+					TALLOC_FREE(frame);
 					return False;
 				}
 				FD_SET(s,&listen_set);
@@ -398,18 +401,21 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				if (num_sockets >= FD_SETSIZE) {
 					DEBUG(0,("open_sockets_smbd: Too "
 						"many sockets to bind to\n"));
+					TALLOC_FREE(frame);
 					return False;
 				}
 			}
+			TALLOC_FREE(frame);
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
 
-		fstring tok;
+		TALLOC_CTX *frame = talloc_stackframe();
+		char *tok;
 		const char *ptr;
 		const char *sock_addr = lp_socket_address();
-		fstring sock_tok;
+		char *sock_tok;
 		const char *sock_ptr;
 
 		if (strequal(sock_addr, "0.0.0.0") ||
@@ -421,10 +427,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 #endif
 		}
 
-		for (sock_ptr=sock_addr; next_token(&sock_ptr, sock_tok, " \t,",
-					sizeof(sock_tok)); ) {
-			for (ptr=ports; next_token(&ptr, tok, " \t,",
-						sizeof(tok)); ) {
+		for (sock_ptr=sock_addr;
+				next_token_talloc(frame, &sock_ptr, &sock_tok, " \t,"); ) {
+			for (ptr=ports; next_token_talloc(frame, &ptr, &tok, " \t,"); ) {
 				struct sockaddr_storage ss;
 
 				unsigned port = atoi(tok);
@@ -456,6 +461,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 						"listen: %s\n",
 						 strerror(errno)));
 					close(s);
+					TALLOC_FREE(frame);
 					return False;
 				}
 
@@ -468,10 +474,12 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				if (num_sockets >= FD_SETSIZE) {
 					DEBUG(0,("open_sockets_smbd: Too "
 						"many sockets to bind to\n"));
+					TALLOC_FREE(frame);
 					return False;
 				}
 			}
 		}
+		TALLOC_FREE(frame);
 	}
 
 	SAFE_FREE(ports);

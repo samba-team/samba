@@ -1086,7 +1086,7 @@ bool net_io_r_srv_pwset(const char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, 
 static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsids)
 {
 	const char *ptr;
-	fstring s2;
+	char *s2;
 	int count = 0;
 
 	DEBUG(4,("init_dom_sid2s: %s\n", sids_str ? sids_str:""));
@@ -1096,9 +1096,11 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 	if(sids_str) {
 		int number;
 		DOM_SID2 *sids;
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		/* Count the number of valid SIDs. */
-		for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
+		for (count = 0, ptr = sids_str;
+				next_token_talloc(frame,&ptr, &s2, NULL); ) {
 			DOM_SID tmpsid;
 			if (string_to_sid(&tmpsid, s2))
 				count++;
@@ -1107,15 +1109,18 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 		/* Now allocate space for them. */
 		if (count) {
 			*ppsids = TALLOC_ZERO_ARRAY(ctx, DOM_SID2, count);
-			if (*ppsids == NULL)
+			if (*ppsids == NULL) {
+				TALLOC_FREE(frame);
 				return 0;
+			}
 		} else {
 			*ppsids = NULL;
 		}
 
 		sids = *ppsids;
 
-		for (number = 0, ptr = sids_str; next_token(&ptr, s2, NULL, sizeof(s2)); ) {
+		for (number = 0, ptr = sids_str;
+				next_token_talloc(frame, &ptr, &s2, NULL); ) {
 			DOM_SID tmpsid;
 			if (string_to_sid(&tmpsid, s2)) {
 				/* count only valid sids */
@@ -1123,6 +1128,7 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, const char *sids_str, DOM_SID2 **ppsi
 				number++;
 			}
 		}
+		TALLOC_FREE(frame);
 	}
 
 	return count;
