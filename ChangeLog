@@ -1,5 +1,16 @@
 2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/rd_req.c: use KRB5_CTX_F_CHECK_PAC to init check_pac
+	field in the krb5_rd_req_in_ctx
+
+	* lib/krb5/expand_hostname.c: Adapt to changing
+	dns_canonicalize_hostname into flags field.
+
+	* lib/krb5/context.c: Adapt to changing dns_canonicalize_hostname
+	into flags field, add check-pac as an libdefaults option.
+
+	* lib/krb5/pkinit.c: Adapt to changes in hx509 interface.
+
 	* doc: add doxygen documentation to hcrypto
 
 	* doc/doxytmpl.dxy: generate links
