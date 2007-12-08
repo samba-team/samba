@@ -2229,10 +2229,11 @@ hx509_verify_signature(hx509_context context,
  *
  * @param context A hx509 context.
  * @param cert the certificate to match with
- * @param flags undocumented flags, use 0
- *
- * @param type type of hostname: HX509_HN_HOSTNAME for plain hostname,
- * HX509_HN_DNSSRV for DNS SRV names.
+ * @param flags Flags to modify the behavior:
+ * - HX509_VHN_F_ALLOW_NO_MATCH no match is ok
+ * @param type type of hostname:
+ * - HX509_HN_HOSTNAME for plain hostname.
+ * - HX509_HN_DNSSRV for DNS SRV names.
  * @param hostname the hostname to check
  * @param sa address of the host
  * @param sa_size length of address
