@@ -282,6 +282,10 @@ static bool handle_include(struct loadparm_context *lp_ctx,
 			   const char *pszParmValue, char **ptr);
 static bool handle_copy(struct loadparm_context *lp_ctx, 
 			const char *pszParmValue, char **ptr);
+static bool handle_debuglevel(struct loadparm_context *lp_ctx,
+			      const char *pszParmValue, char **ptr);
+static bool handle_logfile(struct loadparm_context *lp_ctx,
+			   const char *pszParmValue, char **ptr);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2, "SMB2"},
@@ -434,9 +438,9 @@ static struct parm_struct parm_table[] = {
 	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 
-	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), NULL, NULL, FLAG_HIDE},
-	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL, FLAG_HIDE},
+	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1072,7 +1076,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 	if (i == lp_ctx->iNumServices) {
 		struct loadparm_service **tsp;
 		
-		tsp = realloc_p(lp_ctx->ServicePtrs, struct loadparm_service *, 
+		tsp = talloc_realloc(lp_ctx, lp_ctx->ServicePtrs, struct loadparm_service *, 
 				num_to_alloc);
 					   
 		if (!tsp) {
@@ -1525,6 +1529,21 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 	}
 
 	return bRetval;
+}
+
+static bool handle_debuglevel(struct loadparm_context *lp_ctx, 
+			const char *pszParmValue, char **ptr)
+{
+	DEBUGLEVEL = atoi(pszParmValue);
+
+	return true;
+}
+
+static bool handle_logfile(struct loadparm_context *lp_ctx, 
+			const char *pszParmValue, char **ptr)
+{
+	logfile = pszParmValue;
+	return true;
 }
 
 /***************************************************************************
@@ -2281,10 +2300,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].offset != -1 &&
 		    !(parm_table[i].flags & FLAG_CMDLINE)) {
-			string_set(lp_ctx, 
-				   (char **)(
-				   (char *)((parm_table[i].class == P_LOCAL)?&sDefault:&(lp_ctx->Globals)) +
-				   parm_table[i].offset), "");
+			char **r = ((char *)(parm_table[i].class == P_LOCAL)?&sDefault:&(lp_ctx->Globals)) + parm_table[i].offset;
+			*r = talloc_strdup(lp_ctx, "");
 		}
 	}
 
@@ -2477,8 +2494,6 @@ bool lp_load(TALLOC_CTX *mem_ctx, const char *filename, struct loadparm_context 
 		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
-	DEBUGLEVEL = lp_ctx->Globals.debuglevel;
-	logfile = lp_ctx->Globals.logfile;
 	panic_action = lp_ctx->Globals.panic_action;
 
 	reload_charcnv();
