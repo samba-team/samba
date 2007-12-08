@@ -2242,8 +2242,6 @@ hx509_verify_signature(hx509_context context,
  * @ingroup hx509_cert
  */
 
-#define HX509_VHN_F_ALLOW_NO_MATCH 1
-
 int
 hx509_verify_hostname(hx509_context context,
 		      const hx509_cert cert,
