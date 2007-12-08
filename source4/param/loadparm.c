@@ -2147,7 +2147,7 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
 
 bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, 
 			 struct loadparm_service *service, 
-			 const char *parm_name, FILE * f, bool isGlobal)
+			 const char *parm_name, FILE * f)
 {
 	struct parm_struct *parm;
 	void *ptr;
@@ -2157,10 +2157,7 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
 		return false;
 	}
 
-	if (isGlobal)
-		ptr = ((char *)&sDefault) + parm->offset;
-	else
-		ptr = ((char *)service) + parm->offset;
+	ptr = lp_parm_ptr(lp_ctx, service,parm);
 	
 	print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
