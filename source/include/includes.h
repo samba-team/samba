@@ -636,8 +636,10 @@ struct timespec {
    _________)/\\_//(\/(/\)/\//\/\///|_)_______
 */
 
+#ifndef FSTRING_LEN
 #define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
+#endif
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
