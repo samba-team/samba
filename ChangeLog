@@ -1,5 +1,9 @@
 2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/config.c: Use hdb_db_dir().
+
+	* kdc/kdc_locl.h: add KDC_LOG_FILE
+
 	* kdc/hpropd.c: Use hdb_default_db().
 
 	* kdc/kstash.c: Use hdb_db_dir().
