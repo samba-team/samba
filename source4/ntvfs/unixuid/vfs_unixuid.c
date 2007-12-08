@@ -216,7 +216,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	private->sidmap = sidmap_open(private, global_loadparm);
+	private->sidmap = sidmap_open(private, ntvfs->ctx->lp_ctx);
 	if (private->sidmap == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

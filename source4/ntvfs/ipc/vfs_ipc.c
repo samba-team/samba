@@ -109,7 +109,7 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	private->pipe_list = NULL;
 
 	/* setup the DCERPC server subsystem */
-	status = dcesrv_init_ipc_context(private, global_loadparm, &private->dcesrv);
+	status = dcesrv_init_ipc_context(private, ntvfs->ctx->lp_ctx, &private->dcesrv);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;

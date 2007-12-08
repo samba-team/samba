@@ -49,6 +49,7 @@
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 struct ildb_private {
 	struct ldap_connection *ldap;
@@ -792,7 +793,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 				goto failed;
 			}
 		} else {
-			status = ldap_bind_sasl(ildb->ldap, creds);
+			status = ldap_bind_sasl(ildb->ldap, creds, global_loadparm);
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
 					  ldap_errstr(ildb->ldap, module, status));

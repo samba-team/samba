@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 /*
   send an oplock break request to a client
@@ -293,6 +294,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 				       req->smb_conn->negotiate.protocol,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
+				       global_loadparm,
 				       req->smb_conn->connection->server_id,
 				       &tcon->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {

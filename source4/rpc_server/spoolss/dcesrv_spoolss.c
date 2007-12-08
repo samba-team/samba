@@ -216,7 +216,8 @@ static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const st
 	NTSTATUS status;
 	struct ntptr_context *ntptr;
 
-	status = ntptr_init_context(dce_call->context, lp_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
+	status = ntptr_init_context(dce_call->context, dce_call->conn->dce_ctx->lp_ctx,
+				    lp_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	dce_call->context->private = ntptr;

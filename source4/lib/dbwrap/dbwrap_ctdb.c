@@ -159,7 +159,8 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return -1;
 }
 
-struct db_context *db_tmp_open_ctdb(TALLOC_CTX *mem_ctx, const char *name, int tdb_flags)
+struct db_context *db_tmp_open_ctdb(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+				    const char *name, int tdb_flags)
 {
 	struct db_context *db;
 	struct ctdb_context *ctdb = talloc_get_type(cluster_backend_handle(), 

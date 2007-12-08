@@ -99,6 +99,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 				       PROTOCOL_NT1,
 				       dce_call->event_ctx,
 				       dce_call->conn->msg_ctx,
+				       dce_call->conn->dce_ctx->lp_ctx,
 				       dce_call->conn->server_id,
 				       &c->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {

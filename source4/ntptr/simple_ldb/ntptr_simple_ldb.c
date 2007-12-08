@@ -87,7 +87,7 @@ static int sptr_db_search(struct ldb_context *ldb,
 
 static NTSTATUS sptr_init_context(struct ntptr_context *ntptr)
 {
-	struct ldb_context *sptr_db = sptr_db_connect(ntptr, global_loadparm);
+	struct ldb_context *sptr_db = sptr_db_connect(ntptr, ntptr->lp_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(sptr_db);
 
 	ntptr->private_data = sptr_db;
@@ -170,9 +170,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
-		os.major		= dcesrv_common_get_version_major(mem_ctx, global_loadparm);
-		os.minor		= dcesrv_common_get_version_minor(mem_ctx, global_loadparm);
-		os.build		= dcesrv_common_get_version_build(mem_ctx, global_loadparm);
+		os.major		= dcesrv_common_get_version_major(mem_ctx, server->ntptr->lp_ctx);
+		os.minor		= dcesrv_common_get_version_minor(mem_ctx, server->ntptr->lp_ctx);
+		os.build		= dcesrv_common_get_version_build(mem_ctx, server->ntptr->lp_ctx);
 		os.extra_string		= "";
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
@@ -188,9 +188,9 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersionEx os_ex;
 
-		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, global_loadparm);
-		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, global_loadparm);
-		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, global_loadparm);
+		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, server->ntptr->lp_ctx);
+		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, server->ntptr->lp_ctx);
+		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, server->ntptr->lp_ctx);
 		os_ex.extra_string		= "";
 		os_ex.unknown2		= 0;
 		os_ex.unknown3		= 0;
@@ -204,12 +204,12 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		r->out.data.binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
-		if (!lp_realm(global_loadparm)) return WERR_INVALID_PARAM;
+		if (!lp_realm(server->ntptr->lp_ctx)) return WERR_INVALID_PARAM;
 
 		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
 		r->out.data.string	= talloc_asprintf(mem_ctx, "%s.%s",
-								   lp_netbios_name(global_loadparm),
-								   lp_realm(global_loadparm));
+								   lp_netbios_name(server->ntptr->lp_ctx),
+								   lp_realm(server->ntptr->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(r->out.data.string);
 		return WERR_OK;
 	}

@@ -119,7 +119,8 @@ const struct ntptr_critical_sizes *ntptr_interface_version(void)
 /*
   create a ntptr_context with a specified NTPTR backend
 */
-NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, const char *providor, struct ntptr_context **_ntptr)
+NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+			    const char *providor, struct ntptr_context **_ntptr)
 {
 	NTSTATUS status;
 	struct ntptr_context *ntptr;
@@ -132,6 +133,7 @@ NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, const char *providor, struct nt
 	NT_STATUS_HAVE_NO_MEMORY(ntptr);
 	ntptr->private_data	= NULL;
 	ntptr->ops		= ntptr_backend_byname(providor);
+	ntptr->lp_ctx		= lp_ctx;
 
 	if (!ntptr->ops) {
 		DEBUG(1,("ntptr_init_context: failed to find NTPTR providor='%s'\n",

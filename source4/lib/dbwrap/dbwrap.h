@@ -51,4 +51,4 @@ struct db_context *db_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_
 
 /* backends */
 struct db_context *db_tmp_open_tdb(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *name, int tdb_flags);
-struct db_context *db_tmp_open_ctdb(TALLOC_CTX *mem_ctx, const char *name, int tdb_flags);
+struct db_context *db_tmp_open_ctdb(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *name, int tdb_flags);
