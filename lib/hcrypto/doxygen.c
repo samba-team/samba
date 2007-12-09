@@ -41,6 +41,10 @@
  *
  * Heimdal libhcrypto library is a implementation many crypto algorithms
  * 
+ * Sections of this manual:
+ *
+ * \subpage DH
+ *
  * The project web page:
  * http://www.h5l.org/
  *
