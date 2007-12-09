@@ -383,6 +383,8 @@ hx509_cert_free(hx509_cert cert)
 hx509_cert
 hx509_cert_ref(hx509_cert cert)
 {
+    if (cert == NULL)
+	return NULL;
     if (cert->ref <= 0)
 	_hx509_abort("cert refcount <= 0");
     cert->ref++;
@@ -471,6 +473,8 @@ hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 void
 hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke_ctx)
 {
+    if (ctx->revoke_ctx)
+	hx509_revoke_free(&ctx->revoke_ctx);
     ctx->revoke_ctx = _hx509_revoke_ref(revoke_ctx);
 }
 

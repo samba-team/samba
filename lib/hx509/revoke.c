@@ -82,6 +82,8 @@ hx509_revoke_init(hx509_context context, hx509_revoke_ctx *ctx)
 hx509_revoke_ctx
 _hx509_revoke_ref(hx509_revoke_ctx ctx)
 {
+    if (ctx == NULL)
+	return NULL;
     if (ctx->ref <= 0)
 	_hx509_abort("revoke ctx refcount <= 0");
     ctx->ref++;
