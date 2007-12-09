@@ -4522,7 +4522,6 @@ static int do_message_op(void)
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
 	}
-	load_case_tables();
 
 #ifdef KANJI
 	term_code = talloc_strdup(frame,KANJI);
@@ -4545,6 +4544,8 @@ static int do_message_op(void)
 	if ((dbf = x_fdup(x_stderr))) {
 		x_setbuf( dbf, NULL );
 	}
+
+	load_case_tables();
 
 	/* skip argv(0) */
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
