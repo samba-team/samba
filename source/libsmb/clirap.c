@@ -3,6 +3,7 @@
    client RAP calls
    Copyright (C) Andrew Tridgell         1994-1998
    Copyright (C) Gerald (Jerry) Carter   2004
+   Copyright (C) James Peach		 2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -244,57 +245,118 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
+	char *rdata_end = NULL;
 	unsigned int rdrcnt,rprcnt;
 	char *p;
 	char param[1024];
 	int uLevel = 1;
-	int count = -1;
 	size_t len;
+	uint32 func = RAP_NetServerEnum2;
+	char *last_entry = NULL;
+	int total_cnt = 0;
+	int return_cnt = 0;
+	int res;
 
 	errno = 0; /* reset */
 
-	/* send a SMBtrans command with api NetServerEnum */
-	p = param;
-	SSVAL(p,0,0x68); /* api number */
-	p += 2;
-	strlcpy(p,"WrLehDz", sizeof(param)-PTR_DIFF(p,param));
-	p = skip_string(param,sizeof(param),p);
+	/*
+	 * This may take more than one transaction, so we should loop until
+	 * we no longer get a more data to process or we have all of the
+	 * items.
+	 */
+	do {
+		/* send a SMBtrans command with api NetServerEnum */
+	        p = param;
+		SIVAL(p,0,func); /* api number */
+	        p += 2;
+	        /* Next time through we need to use the continue api */
+	        func = RAP_NetServerEnum3;
 
-	strlcpy(p,"B16BBDz", sizeof(param)-PTR_DIFF(p,param));
+		if (last_entry) {
+			strlcpy(p,"WrLehDOz", sizeof(param)-PTR_DIFF(p,param));
+		} else {
+			strlcpy(p,"WrLehDz", sizeof(param)-PTR_DIFF(p,param));
+		}
 
-	p = skip_string(param,sizeof(param),p);
-	SSVAL(p,0,uLevel);
-	SSVAL(p,2,CLI_BUFFER_SIZE);
-	p += 4;
-	SIVAL(p,0,stype);
-	p += 4;
+		p = skip_string(param, sizeof(param), p);
+		strlcpy(p,"B16BBDz", sizeof(param)-PTR_DIFF(p,param));
 
-	len = push_ascii(p, workgroup, sizeof(param)-PTR_DIFF(p,param)-1,
-			STR_TERMINATE|STR_UPPER);
-	if (len == (size_t)-1) {
-		return false;
-	}
-	p += len;
+		p = skip_string(param, sizeof(param), p);
+		SSVAL(p,0,uLevel);
+		SSVAL(p,2,CLI_BUFFER_SIZE);
+		p += 4;
+		SIVAL(p,0,stype);
+		p += 4;
 
-	if (cli_api(cli,
-                    param, PTR_DIFF(p,param), 8,        /* params, length, max */
-                    NULL, 0, CLI_BUFFER_SIZE,               /* data, length, max */
-                    &rparam, &rprcnt,                   /* return params, return size */
-                    &rdata, &rdrcnt                     /* return data, return size */
-                   )) {
-		int res = rparam? SVAL(rparam,0) : -1;
-		char *rdata_end = rdata + rdrcnt;
+		/* If we have more data, tell the server where
+		 * to continue from.
+		 */
+		len = push_ascii(p,
+				last_entry ? last_entry : workgroup,
+				sizeof(param) - PTR_DIFF(p,param) - 1,
+				STR_TERMINATE|STR_UPPER);
+
+		if (len == (size_t)-1) {
+			return false;
+		}
+		p += len;
+
+		if (!cli_api(cli,
+			param, PTR_DIFF(p,param), 8, /* params, length, max */
+			NULL, 0, CLI_BUFFER_SIZE, /* data, length, max */
+		            &rparam, &rprcnt, /* return params, return size */
+		            &rdata, &rdrcnt)) { /* return data, return size */
+
+			/* break out of the loop on error */
+		        res = -1;
+		        break;
+		}
+
+		rdata_end = rdata + rdrcnt;
+		res = rparam ? SVAL(rparam,0) : -1;
 
 		if (res == 0 || res == ERRmoredata ||
                     (res != -1 && cli_errno(cli) == 0)) {
-			int i;
+			char *sname = NULL;
+			int i, count;
 			int converter=SVAL(rparam,2);
 
-			count=SVAL(rparam,4);
+			/* Get the number of items returned in this buffer */
+			count = SVAL(rparam, 4);
+
+			/* The next field contains the number of items left,
+			 * including those returned in this buffer. So the
+			 * first time through this should contain all of the
+			 * entries.
+			 */
+			if (total_cnt == 0) {
+			        total_cnt = SVAL(rparam, 6);
+			}
+
+			/* Keep track of how many we have read */
+			return_cnt += count;
 			p = rdata;
 
-			for (i = 0;i < count;i++, p += 26) {
-				char *sname;
+			/* The last name in the previous NetServerEnum reply is
+			 * sent back to server in the NetServerEnum3 request
+			 * (last_entry). The next reply should repeat this entry
+			 * as the first element. We have no proof that this is
+			 * always true, but from traces that seems to be the
+			 * behavior from Window Servers. So first lets do a lot
+			 * of checking, just being paranoid. If the string
+			 * matches then we already saw this entry so skip it.
+			 *
+			 * NOTE: sv1_name field must be null terminated and has
+			 * a max size of 16 (NetBIOS Name).
+			 */
+			if (last_entry && count && p &&
+				(strncmp(last_entry, p, 16) == 0)) {
+			    count -= 1; /* Skip this entry */
+			    return_cnt = -1; /* Not part of total, so don't count. */
+			    p = rdata + 26; /* Skip the whole record */
+			}
+
+			for (i = 0; i < count; i++, p += 26) {
 				int comment_offset;
 				const char *cmnt;
 				const char *p1;
@@ -338,24 +400,45 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				fn(s1, stype, s2, state);
 				TALLOC_FREE(frame);
 			}
+
+			/* We are done with the old last entry, so now we can free it */
+			if (last_entry) {
+			        SAFE_FREE(last_entry); /* This will set it to null */
+			}
+
+			/* We always make a copy of  the last entry if we have one */
+			if (sname) {
+			        last_entry = smb_xstrdup(sname);
+			}
+
+			/* If we have more data, but no last entry then error out */
+			if (!last_entry && (res == ERRmoredata)) {
+			        errno = EINVAL;
+			        res = 0;
+			}
+
 		}
-	}
+
+		SAFE_FREE(rparam);
+		SAFE_FREE(rdata);
+	} while ((res == ERRmoredata) && (total_cnt > return_cnt));
 
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
+	SAFE_FREE(last_entry);
 
-	if (count < 0) {
-	    errno = cli_errno(cli);
+	if (res == -1) {
+		errno = cli_errno(cli);
 	} else {
-	    if (!count) {
-		/* this is a very special case, when the domain master for the
-		   work group isn't part of the work group itself, there is something
-		   wild going on */
-		errno = ENOENT;
+		if (!return_cnt) {
+			/* this is a very special case, when the domain master for the
+			   work group isn't part of the work group itself, there is something
+			   wild going on */
+			errno = ENOENT;
+		}
 	    }
-	}
 
-	return(count > 0);
+	return(return_cnt > 0);
 }
 
 /****************************************************************************
