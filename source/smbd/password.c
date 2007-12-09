@@ -22,7 +22,6 @@
 
 /* users from session setup */
 static char *session_userlist = NULL;
-static int len_session_userlist = 0;
 /* workgroup from session setup. */
 static char *session_workgroup = NULL;
 
@@ -383,46 +382,39 @@ int register_existing_vuid(uint16 vuid,
 
 void add_session_user(const char *user)
 {
-	fstring suser;
-	struct passwd *passwd;
+	struct passwd *pw;
+	char *tmp;
 
-	if (!(passwd = Get_Pwnam(user)))
+	pw = Get_Pwnam_alloc(talloc_tos(), user);
+
+	if (pw == NULL) {
 		return;
-
-	fstrcpy(suser,passwd->pw_name);
-
-	if(!*suser)
-		return;
-
-	if( session_userlist && in_list(suser,session_userlist,False) )
-		return;
-
-	if( !session_userlist ||
-	    (strlen(suser) + strlen(session_userlist) + 2 >=
-	     len_session_userlist) ) {
-		char *newlist;
-
-		if (len_session_userlist > 128 * 1024) {
-			DEBUG(3,("add_session_user: session userlist already "
-				 "too large.\n"));
-			return;
-		}
-		newlist = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(
-			session_userlist,
-			len_session_userlist + 1024 );
-		if( newlist == NULL ) {
-			DEBUG(1,("Unable to resize session_userlist\n"));
-			return;
-		}
-		if (!session_userlist) {
-			*newlist = '\0';
-		}
-		session_userlist = newlist;
-		len_session_userlist += 1024;
 	}
 
-	safe_strcat(session_userlist," ",len_session_userlist-1);
-	safe_strcat(session_userlist,suser,len_session_userlist-1);
+	if (session_userlist == NULL) {
+		session_userlist = SMB_STRDUP(pw->pw_name);
+		goto done;
+	}
+
+	if (in_list(pw->pw_name,session_userlist,False) ) {
+		goto done;
+	}
+
+	if (strlen(session_userlist) > 128 * 1024) {
+		DEBUG(3,("add_session_user: session userlist already "
+			 "too large.\n"));
+		goto done;
+	}
+
+	if (asprintf(&tmp, "%s %s", session_userlist, pw->pw_name) == -1) {
+		DEBUG(3, ("asprintf failed\n"));
+		goto done;
+	}
+
+	SAFE_FREE(session_userlist);
+	session_userlist = tmp;
+ done:
+	TALLOC_FREE(pw);
 }
 
 /****************************************************************************
