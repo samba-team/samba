@@ -63,8 +63,6 @@ echo "nist pkcs12 tests"
 
 for a in $nistdir/pkcs12/*.p12 ; do
 
-    echo -n .
-
     if ${hxtool} validate $pass PKCS12:$a > /dev/null; then
 	:
     else
