@@ -97,7 +97,7 @@ int	BN_num_bytes(const BIGNUM *);
 int	BN_cmp(const BIGNUM *, const BIGNUM *);
 
 void	BN_set_negative(BIGNUM *, int);
-int	BN_is_negative(BIGNUM *);
+int	BN_is_negative(const BIGNUM *);
 
 int	BN_is_bit_set(const BIGNUM *, int);
 int	BN_set_bit(BIGNUM *, int);
