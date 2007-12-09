@@ -1,5 +1,11 @@
-2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/log.c: Use hdb_db_dir().
+
+	* kpasswd/kpasswdd.c: Use hdb_db_dir().
+
+2007-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/config.c: Use hdb_db_dir().
 
 	* kdc/kdc_locl.h: add KDC_LOG_FILE
