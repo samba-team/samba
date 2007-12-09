@@ -26,116 +26,110 @@
 
 extern userdom_struct current_user_info;
 
-/* look in server.c for some explanation of these variables */
-static char msgbuf[1600];
-static int msgpos;
-static fstring msgfrom;
-static fstring msgto;
+struct msg_state {
+	char *from;
+	char *to;
+	char *msg;
+};
+
+static struct msg_state *smbd_msg_state;
 
 /****************************************************************************
  Deliver the message.
 ****************************************************************************/
 
-static void msg_deliver(void)
+static void msg_deliver(struct msg_state *state)
 {
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *name = NULL;
 	int i;
 	int fd;
 	char *msg;
 	int len;
 	ssize_t sz;
+	fstring alpha_buf;
+	char *s;
 
 	if (! (*lp_msg_command())) {
 		DEBUG(1,("no messaging command specified\n"));
-		msgpos = 0;
-		return;
+		goto done;
 	}
 
 	/* put it in a temporary file */
-	name = talloc_asprintf(ctx, "%s/msg.XXXXXX",tmpdir());
+	name = talloc_asprintf(talloc_tos(), "%s/msg.XXXXXX", tmpdir());
 	if (!name) {
-		return;
+		goto done;
 	}
 	fd = smb_mkstemp(name);
 
 	if (fd == -1) {
-		DEBUG(1,("can't open message file %s\n",name));
-		return;
+		DEBUG(1, ("can't open message file %s: %s\n", name,
+			  strerror(errno)));
+		goto done;
 	}
 
 	/*
 	 * Incoming message is in DOS codepage format. Convert to UNIX.
 	 */
 
-	if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **)(void *)&msg, True)) < 0 || !msg) {
-		DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
-		for (i = 0; i < msgpos;) {
-			if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
-				i++;
-				continue;
-			}
-			sz = write(fd, &msgbuf[i++], 1);
-			if ( sz != 1 ) {
-				DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
-			}
-		}
-	} else {
-		for (i = 0; i < len;) {
-			if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
-				i++;
-				continue;
-			}
-			sz = write(fd, &msg[i++],1);
-			if ( sz != 1 ) {
-				DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
-			}
-		}
-		SAFE_FREE(msg);
+	len = convert_string_talloc(
+		talloc_tos(), CH_DOS, CH_UNIX, state->msg,
+		talloc_get_size(state->msg), (void *)&msg, true);
+
+	if (len == -1) {
+		DEBUG(3, ("Conversion failed, delivering message in DOS "
+			  "codepage format\n"));
+		msg = state->msg;
 	}
+
+	for (i = 0; i < len; i++) {
+		if ((msg[i] == '\r') && (i < (len-1)) && (msg[i+1] == '\n')) {
+			continue;
+		}
+		sz = write(fd, &msg[i], 1);
+		if ( sz != 1 ) {
+			DEBUG(0, ("Write error to fd %d: %ld(%s)\n", fd,
+				  (long)sz, strerror(errno)));
+		}
+	}
+
 	close(fd);
 
 	/* run the command */
-	if (*lp_msg_command()) {
-		fstring alpha_msgfrom;
-		fstring alpha_msgto;
-		char *s = talloc_strdup(ctx,
-					lp_msg_command());
-
-		if (!s) {
-			return;
-		}
-		s = talloc_string_sub(ctx, s, "%f",
-					alpha_strcpy(alpha_msgfrom,
-						msgfrom,
-						NULL,
-						sizeof(alpha_msgfrom)));
-		if (!s) {
-			return;
-		}
-		s = talloc_string_sub(ctx, s, "%t",
-					alpha_strcpy(alpha_msgto,
-						msgto,
-						NULL,
-						sizeof(alpha_msgto)));
-		if (!s) {
-			return;
-		}
-		s = talloc_sub_basic(ctx,
-				current_user_info.smb_name,
-				current_user_info.domain,
-				s);
-		if (!s) {
-			return;
-		}
-		s = talloc_string_sub(ctx, s, "%s",name);
-		if (!s) {
-			return;
-		}
-		smbrun(s,NULL);
+	s = talloc_strdup(talloc_tos(), lp_msg_command());
+	if (s == NULL) {
+		goto done;
 	}
 
-	msgpos = 0;
+	alpha_strcpy(alpha_buf, state->from, NULL, sizeof(alpha_buf));
+
+	s = talloc_string_sub(talloc_tos(), s, "%f", alpha_buf);
+	if (s == NULL) {
+		goto done;
+	}
+
+	alpha_strcpy(alpha_buf, state->to, NULL, sizeof(alpha_buf));
+
+	s = talloc_string_sub(talloc_tos(), s, "%t", alpha_buf);
+	if (s == NULL) {
+		goto done;
+	}
+
+	s = talloc_sub_basic(talloc_tos(), current_user_info.smb_name,
+			     current_user_info.domain, s);
+	if (s == NULL) {
+		goto done;
+	}
+
+	s = talloc_string_sub(talloc_tos(), s, "%s", name);
+	if (s == NULL) {
+		goto done;
+	}
+	smbrun(s,NULL);
+
+ done:
+	TALLOC_FREE(frame);
+	return;
 }
 
 /****************************************************************************
@@ -145,37 +139,45 @@ static void msg_deliver(void)
 
 void reply_sends(connection_struct *conn, struct smb_request *req)
 {
+	struct msg_state *state;
 	int len;
 	char *msg;
 	char *p;
 
 	START_PROFILE(SMBsends);
 
-	msgpos = 0;
-
-	if (! (*lp_msg_command())) {
+	if (!(*lp_msg_command())) {
 		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsends);
 		return;
 	}
 
+	state = talloc(talloc_tos(), struct msg_state);
+
 	p = smb_buf(req->inbuf)+1;
-	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgfrom, p,
-			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgto, p,
-			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(
+		state, (char *)req->inbuf, req->flags2, &state->from, p,
+		STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(
+		state, (char *)req->inbuf, req->flags2, &state->to, p,
+		STR_ASCII|STR_TERMINATE) + 1;
 
 	msg = p;
 
 	len = SVAL(msg,0);
-	len = MIN(len,sizeof(msgbuf)-msgpos);
+	len = MIN(len, smb_bufrem(req->inbuf, msg+2));
 
-	memset(msgbuf,'\0',sizeof(msgbuf));
+	state->msg = talloc_array(state, char, len);
 
-	memcpy(&msgbuf[msgpos],msg+2,len);
-	msgpos += len;
+	if (state->msg == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBsends);
+		return;
+	}
 
-	msg_deliver();
+	memcpy(state->msg, msg+2, len);
+
+	msg_deliver(state);
 
 	reply_outbuf(req, 0, 0);
 
@@ -194,22 +196,32 @@ void reply_sendstrt(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBsendstrt);
 
-	if (! (*lp_msg_command())) {
+	if (!(*lp_msg_command())) {
 		reply_doserror(req, ERRSRV, ERRmsgoff);
 		END_PROFILE(SMBsendstrt);
 		return;
 	}
 
-	memset(msgbuf,'\0',sizeof(msgbuf));
-	msgpos = 0;
+	TALLOC_FREE(smbd_msg_state);
+
+	smbd_msg_state = TALLOC_ZERO_P(NULL, struct msg_state);
+
+	if (smbd_msg_state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBsendstrt);
+		return;
+	}
 
 	p = smb_buf(req->inbuf)+1;
-	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgfrom, p,
-			     sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf((char *)req->inbuf, req->flags2, msgto, p,
-			     sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(
+		smbd_msg_state, (char *)req->inbuf, req->flags2,
+		&smbd_msg_state->from, p, STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf_talloc(
+		smbd_msg_state, (char *)req->inbuf, req->flags2,
+		&smbd_msg_state->to, p, STR_ASCII|STR_TERMINATE) + 1;
 
-	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
+	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", smbd_msg_state->from,
+		    smbd_msg_state->to ) );
 
 	reply_outbuf(req, 0, 0);
 
@@ -226,6 +238,9 @@ void reply_sendtxt(connection_struct *conn, struct smb_request *req)
 {
 	int len;
 	char *msg;
+	char *tmp;
+	size_t old_len;
+
 	START_PROFILE(SMBsendtxt);
 
 	if (! (*lp_msg_command())) {
@@ -234,13 +249,30 @@ void reply_sendtxt(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
+	if (smbd_msg_state == NULL) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsendtxt);
+		return;
+	}
+
 	msg = smb_buf(req->inbuf) + 1;
 
-	len = SVAL(msg,0);
-	len = MIN(len,sizeof(msgbuf)-msgpos);
+	old_len = talloc_get_size(smbd_msg_state->msg);
 
-	memcpy(&msgbuf[msgpos],msg+2,len);
-	msgpos += len;
+	len = MIN(SVAL(msg, 0), smb_bufrem(req->inbuf, msg+2));
+
+	tmp = TALLOC_REALLOC_ARRAY(smbd_msg_state, smbd_msg_state->msg,
+				   char, old_len + len);
+
+	if (tmp == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBsendtxt);
+		return;
+	}
+
+	smbd_msg_state->msg = tmp;
+
+	memcpy(&smbd_msg_state->msg[old_len], msg+2, len);
 
 	DEBUG( 3, ( "SMBsendtxt\n" ) );
 
@@ -267,7 +299,9 @@ void reply_sendend(connection_struct *conn, struct smb_request *req)
 
 	DEBUG(3,("SMBsendend\n"));
 
-	msg_deliver();
+	msg_deliver(smbd_msg_state);
+
+	TALLOC_FREE(smbd_msg_state);
 
 	reply_outbuf(req, 0, 0);
 
