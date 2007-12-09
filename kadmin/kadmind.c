@@ -116,9 +116,12 @@ main(int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
-    if (config_file == NULL)
-	config_file = HDB_DB_DIR "/kdc.conf";
-
+    if (config_file == NULL) {
+	asprintf(&config_file, "%s/kdc.conf", hdb_db_dir(context));
+	if (config_file == NULL)
+	    errx(1, "out of memory");
+    }
+    
     ret = krb5_prepend_config_files_default(config_file, &files);
     if (ret)
 	krb5_err(context, 1, ret, "getting configuration files");
