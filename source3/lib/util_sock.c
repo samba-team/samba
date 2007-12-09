@@ -1459,7 +1459,7 @@ int open_socket_out(int type,
 	/* and connect it to the destination */
   connect_again:
 
-	ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
+	ret = sys_connect(res, (struct sockaddr *)&sock_out);
 
 	/* Some systems return EAGAIN when they mean EINPROGRESS */
 	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
@@ -1547,12 +1547,13 @@ bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 	good_connect = false;
 
 	for (i=0; i<num_addrs; i++) {
+		const struct sockaddr * a = 
+		    (const struct sockaddr *)&(addrs[i]);
 
 		if (sockets[i] == -1)
 			continue;
 
-		if (connect(sockets[i], (struct sockaddr *)&(addrs[i]),
-			    sizeof(*addrs)) == 0) {
+		if (sys_connect(sockets[i], a) == 0) {
 			/* Rather unlikely as we are non-blocking, but it
 			 * might actually happen. */
 			resulting_index = i;
@@ -1681,7 +1682,7 @@ int open_udp_socket(const char *host, int port)
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
 
-	if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))) {
+	if (sys_connect(res,(struct sockaddr *)&sock_out)) {
 		close(res);
 		return -1;
 	}
