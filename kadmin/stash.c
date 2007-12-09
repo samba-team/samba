@@ -57,8 +57,11 @@ stash(struct stash_options *opt, int argc, char **argv)
 	return 0;
     }
 
-    if(opt->key_file_string == NULL)
-	opt->key_file_string = HDB_DB_DIR "/m-key";
+    if(opt->key_file_string == NULL) {
+	asprintf(&opt->key_file_string, "%s/m-key", hdb_db_dir(context));
+	if (opt->key_file_string == NULL)
+	    errx(1, "out of memory");
+    }
 
     ret = hdb_read_master_key(context, opt->key_file_string, &mkey);
     if(ret && ret != ENOENT) {
