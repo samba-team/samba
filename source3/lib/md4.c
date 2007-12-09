@@ -24,7 +24,14 @@
    It assumes that a int is at least 32 bits long
 */
 
+#if 0
 static uint32 A, B, C, D;
+#else
+#define A (state[0])
+#define B (state[1])
+#define C (state[2])
+#define D (state[3])
+#endif
 
 static uint32 F(uint32 X, uint32 Y, uint32 Z)
 {
@@ -52,7 +59,7 @@ static uint32 lshift(uint32 x, int s)
 #define ROUND3(a,b,c,d,k,s) a = lshift(a + H(b,c,d) + X[k] + (uint32)0x6ED9EBA1,s)
 
 /* this applies md4 to 64 byte chunks */
-static void mdfour64(uint32 *M)
+static void mdfour64(uint32_t *state, uint32 *M)
 {
 	int j;
 	uint32 AA, BB, CC, DD;
@@ -121,6 +128,7 @@ void mdfour(unsigned char *out, const unsigned char *in, int n)
 {
 	unsigned char buf[128];
 	uint32 M[16];
+	uint32 state[4];
 	uint32 b = n * 8;
 	int i;
 
@@ -131,7 +139,7 @@ void mdfour(unsigned char *out, const unsigned char *in, int n)
 
 	while (n > 64) {
 		copy64(M, in);
-		mdfour64(M);
+		mdfour64(state, M);
 		in += 64;
 		n -= 64;
 	}
@@ -144,13 +152,13 @@ void mdfour(unsigned char *out, const unsigned char *in, int n)
 	if (n <= 55) {
 		copy4(buf+56, b);
 		copy64(M, buf);
-		mdfour64(M);
+		mdfour64(state, M);
 	} else {
 		copy4(buf+120, b); 
 		copy64(M, buf);
-		mdfour64(M);
+		mdfour64(state, M);
 		copy64(M, buf+64);
-		mdfour64(M);
+		mdfour64(state, M);
 	}
 
 	for (i=0;i<128;i++)
@@ -161,8 +169,6 @@ void mdfour(unsigned char *out, const unsigned char *in, int n)
 	copy4(out+4, B);
 	copy4(out+8, C);
 	copy4(out+12, D);
-
-	A = B = C = D = 0;
 }
 
 
