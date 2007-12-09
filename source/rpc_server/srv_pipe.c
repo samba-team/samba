@@ -714,7 +714,7 @@ struct rpc_table {
 		const char *clnt;
 		const char *srv;
 	} pipe;
-	struct api_struct *cmds;
+	const struct api_struct *cmds;
 	int n_cmds;
 };
 
@@ -1075,12 +1075,8 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         ZERO_STRUCTP(rpc_entry);
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
-        rpc_entry->cmds = SMB_REALLOC_ARRAY(rpc_entry->cmds, struct api_struct, rpc_entry->n_cmds + size);
-	if (!rpc_entry->cmds) {
-		return NT_STATUS_NO_MEMORY;
-	}
-        memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds, size * sizeof(struct api_struct));
-        rpc_entry->n_cmds += size;
+        rpc_entry->cmds = cmds;
+        rpc_entry->n_cmds = size;
         
         return NT_STATUS_OK;
 }
