@@ -711,15 +711,15 @@ sigterm(int sig)
     exit_flag = 1;
 }
 
-const char *check_library  = NULL;
-const char *check_function = NULL;
+static const char *check_library  = NULL;
+static const char *check_function = NULL;
 static getarg_strings policy_libraries = { 0, NULL };
-char *keytab_str = "HDB:";
-char *realm_str;
-int version_flag;
-int help_flag;
-char *port_str;
-char *config_file;
+static char *keytab_str = "HDB:";
+static char *realm_str;
+static int version_flag;
+static int help_flag;
+static char *port_str;
+static char *config_file;
 
 struct getargs args[] = {
 #ifdef HAVE_DLOPEN
@@ -760,8 +760,11 @@ main (int argc, char **argv)
 	exit(0);
     }
 
-    if (config_file == NULL)
-	config_file = HDB_DB_DIR "/kdc.conf";
+    if (config_file == NULL) {
+	asprintf(&config_file, "%s/kdc.conf", hdb_db_dir(context));
+	if (config_file == NULL)
+	    errx(1, "out of memory");
+    }
 
     ret = krb5_prepend_config_files_default(config_file, &files);
     if (ret)
