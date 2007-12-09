@@ -232,9 +232,9 @@ BN_set_negative(BIGNUM *bn, int flag)
 }
 
 int
-BN_is_negative(BIGNUM *bn)
+BN_is_negative(const BIGNUM *bn)
 {
-    return ((heim_integer *)bn)->negative ? 1 : 0;
+    return ((const heim_integer *)bn)->negative ? 1 : 0;
 }
 
 static const unsigned char is_set[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
