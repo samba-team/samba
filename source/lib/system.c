@@ -2475,7 +2475,7 @@ int sys_getnameinfo(const struct sockaddr *psa,
 
 int sys_connect(int fd, const struct sockaddr * addr)
 {
-	socklen_t salen = addr->sa_len;
+	socklen_t salen = -1;
 
 	if (addr->sa_family == AF_INET) {
 	    salen = sizeof(struct sockaddr_in);
