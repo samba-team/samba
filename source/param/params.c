@@ -99,9 +99,6 @@ extern bool in_client;
  *  bSize       - The size of the global buffer <bufr>.
  */
 
-static char *bufr  = NULL;
-static int   bSize = 0;
-
 /* we can't use FILE* due to the 256 fd limit - use this cheap hack
    instead */
 typedef struct {
@@ -212,7 +209,7 @@ static int EatComment( myFILE *InFile )
  *
  *****************************************************************************/
 
-static int Continuation(char *line, int pos )
+static int Continuation(uint8_t *line, int pos )
 {
 	pos--;
 	while( (pos >= 0) && isspace((int)line[pos]))
@@ -235,7 +232,7 @@ static int Continuation(char *line, int pos )
  * ------------------------------------------------------------------------ **
  */
 
-static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
+static bool Section( DATA_BLOB *buf, myFILE *InFile, bool (*sfunc)(const char *) )
 {
 	int   c;
 	int   i;
@@ -260,37 +257,37 @@ static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
 
 	while( (EOF != c) && (c > 0) ) {
 		/* Check that the buffer is big enough for the next character. */
-		if( i > (bSize - 2) ) {
-			char *tb = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR( bufr, bSize +BUFR_INC );
+		if( i > (buf->length - 2) ) {
+			uint8_t *tb = (uint8_t *)SMB_REALLOC_KEEP_OLD_ON_ERROR(buf->data, buf->length+BUFR_INC );
 			if(!tb) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func) );
 				return False;
 			}
-			bufr = tb;
-			bSize += BUFR_INC;
+			buf->data = tb;
+			buf->length += BUFR_INC;
 		}
 
 		/* Handle a single character other than section end. */
 		switch( c ) {
 			case '\n': /* Got newline before closing ']'.    */
-				i = Continuation( bufr, i );    /* Check for line continuation.     */
+				i = Continuation( buf->data, i );    /* Check for line continuation.     */
 				if( i < 0 ) {
-					bufr[end] = '\0';
-					DEBUG(0, ("%s Badly formed line in configuration file: %s\n", func, bufr ));
+					buf->data[end] = '\0';
+					DEBUG(0, ("%s Badly formed line in configuration file: %s\n", func, buf->data ));
 					return False;
 				}
-				end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
+				end = ( (i > 0) && (' ' == buf->data[i - 1]) ) ? (i - 1) : (i);
 					c = mygetc( InFile );             /* Continue with next line.         */
 				break;
 
 			default: /* All else are a valid name chars.   */
 				if(isspace( c )) {
 					/* One space per whitespace region. */
-					bufr[end] = ' ';
+					buf->data[end] = ' ';
 					i = end + 1;
 					c = EatWhitespace( InFile );
 				} else {
-					bufr[i++] = c;
+					buf->data[i++] = c;
 					end = i;
 					c = mygetc( InFile );
 				}
@@ -298,13 +295,13 @@ static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
 
 		if (AtSectionEnd(InFile)) {
 			/* Got to the closing bracket. */
-			bufr[end] = '\0';
+			buf->data[end] = '\0';
 			if( 0 == end ) {
 				/* Don't allow an empty name.       */
 				DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
 				return False;
 			}
-			if( !sfunc(bufr) )            /* Got a valid name.  Deal with it. */
+			if( !sfunc((char *)buf->data) )            /* Got a valid name.  Deal with it. */
 				return False;
 			EatComment( InFile );     /* Finish off the line.             */
 			return True;
@@ -313,7 +310,7 @@ static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
 	}
 
 	/* We arrive here if we've met the EOF before the closing bracket. */
-	DEBUG(0, ("%s Unexpected EOF in the configuration file: %s\n", func, bufr ));
+	DEBUG(0, ("%s Unexpected EOF in the configuration file: %s\n", func, buf->data ));
 	return False;
 }
 
@@ -341,7 +338,7 @@ static bool Section( myFILE *InFile, bool (*sfunc)(const char *) )
  * ------------------------------------------------------------------------ **
  */
 
-static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *), int c )
+static bool Parameter( DATA_BLOB *buf, myFILE *InFile, bool (*pfunc)(const char *, const char *), int c )
 {
 	int   i       = 0;    /* Position within bufr. */
 	int   end     = 0;    /* bufr[end] is current end-of-string. */
@@ -351,15 +348,15 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *)
 	/* Read the parameter name. */
 	while( 0 == vstart ) {
 		/* Loop until we've found the start of the value. */
-		if( i > (bSize - 2) ) {
+		if( i > (buf->length - 2) ) {
 			/* Ensure there's space for next char.    */
-			char *tb = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR( bufr, bSize + BUFR_INC );
+			uint8_t *tb = (uint8_t *)SMB_REALLOC_KEEP_OLD_ON_ERROR( buf->data, buf->length + BUFR_INC );
 			if (!tb) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func) );
 				return False;
 			}
-			bufr = tb;
-			bSize += BUFR_INC;
+			buf->data = tb;
+			buf->length += BUFR_INC;
 		}
 
 		switch(c) {
@@ -369,37 +366,37 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *)
 					DEBUG(0, ("%s Invalid parameter name in config. file.\n", func ));
 					return False;
 				}
-				bufr[end++] = '\0';         /* Mark end of string & advance.   */
+				buf->data[end++] = '\0';         /* Mark end of string & advance.   */
 				i       = end;              /* New string starts here.         */
 				vstart  = end;              /* New string is parameter value.  */
-				bufr[i] = '\0';             /* New string is nul, for now.     */
+				buf->data[i] = '\0';             /* New string is nul, for now.     */
 				break;
 
 			case '\n': /* Find continuation char, else error. */
-				i = Continuation( bufr, i );
+				i = Continuation( buf->data, i );
 				if( i < 0 ) {
-					bufr[end] = '\0';
-					DEBUG(1,("%s Ignoring badly formed line in configuration file: %s\n", func, bufr ));
+					buf->data[end] = '\0';
+					DEBUG(1,("%s Ignoring badly formed line in configuration file: %s\n", func, buf->data ));
 					return True;
 				}
-				end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
+				end = ( (i > 0) && (' ' == buf->data[i - 1]) ) ? (i - 1) : (i);
 				c = mygetc( InFile );       /* Read past eoln.                   */
 				break;
 
 			case '\0': /* Shouldn't have EOF within param name. */
 			case EOF:
-				bufr[i] = '\0';
-				DEBUG(1,("%s Unexpected end-of-file at: %s\n", func, bufr ));
+				buf->data[i] = '\0';
+				DEBUG(1,("%s Unexpected end-of-file at: %s\n", func, buf->data ));
 				return True;
 
 			default:
 				if(isspace( c )) {
 					/* One ' ' per whitespace region.       */
-					bufr[end] = ' ';
+					buf->data[end] = ' ';
 					i = end + 1;
 					c = EatWhitespace( InFile );
 				} else {
-					bufr[i++] = c;
+					buf->data[i++] = c;
 					end = i;
 					c = mygetc( InFile );
 				}
@@ -409,15 +406,15 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *)
 	/* Now parse the value. */
 	c = EatWhitespace( InFile );  /* Again, trim leading whitespace. */
 	while( (EOF !=c) && (c > 0) ) {
-		if( i > (bSize - 2) ) {
+		if( i > (buf->length - 2) ) {
 			/* Make sure there's enough room. */
-			char *tb = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR( bufr, bSize + BUFR_INC );
+			uint8_t *tb = (uint8_t *)SMB_REALLOC_KEEP_OLD_ON_ERROR( buf->data, buf->length + BUFR_INC );
 			if (!tb) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func));
 				return False;
 			}
-			bufr = tb;
-			bSize += BUFR_INC;
+			buf->data = tb;
+			buf->length += BUFR_INC;
 		}
 
 		switch(c) {
@@ -426,27 +423,27 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *)
 				break;                /* removes them.                            */
 
 			case '\n': /* Marks end of value unless there's a '\'. */
-				i = Continuation( bufr, i );
+				i = Continuation( buf->data, i );
 				if( i < 0 ) {
 					c = 0;
 				} else {
-					for( end = i; (end >= 0) && isspace((int)bufr[end]); end-- )
+					for( end = i; (end >= 0) && isspace((int)buf->data[end]); end-- )
 						;
 					c = mygetc( InFile );
 				}
 				break;
 
 			default: /* All others verbatim.  Note that spaces do not advance <end>.  This allows trimming  */
-				bufr[i++] = c;
+				buf->data[i++] = c;
 				if( !isspace( c ) )  /* of whitespace at the end of the line.     */
 					end = i;
 				c = mygetc( InFile );
 				break;
 		}
 	}
-	bufr[end] = '\0';          /* End of value. */
+	buf->data[end] = '\0';          /* End of value. */
 
-	return( pfunc( bufr, &bufr[vstart] ) );   /* Pass name & value to pfunc().  */
+	return( pfunc( (char *)buf->data, (char *)&buf->data[vstart] ) );   /* Pass name & value to pfunc().  */
 }
 
 /* ------------------------------------------------------------------------ **
@@ -471,7 +468,7 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *)
  * ------------------------------------------------------------------------ **
  */
 
-static bool Parse( myFILE *InFile,
+static bool Parse( DATA_BLOB *buf, myFILE *InFile,
                    bool (*sfunc)(const char *),
                    bool (*pfunc)(const char *, const char *) )
 {
@@ -490,7 +487,7 @@ static bool Parse( myFILE *InFile,
 				break;
 
 			case '[': /* Section Header. */
-				if( !Section( InFile, sfunc ) )
+				if( !Section( buf, InFile, sfunc ) )
 					return False;
 				c = EatWhitespace( InFile );
 				break;
@@ -500,7 +497,7 @@ static bool Parse( myFILE *InFile,
 				break;
 
 			default: /* Parameter line. */
-				if( !Parameter( InFile, pfunc, c ) )
+				if( !Parameter( buf, InFile, pfunc, c ) )
 					return False;
 				c = EatWhitespace( InFile );
 				break;
@@ -563,6 +560,7 @@ bool pm_process( const char *FileName,
 	int   result;
 	myFILE *InFile;
 	const char *func = "params.c:pm_process() -";
+	DATA_BLOB buf;
 
 	InFile = OpenConfFile( FileName );          /* Open the config file. */
 	if( NULL == InFile )
@@ -570,24 +568,16 @@ bool pm_process( const char *FileName,
 
 	DEBUG( 3, ("%s Processing configuration file \"%s\"\n", func, FileName) );
 
-	if( NULL != bufr ) {
-		/* If we already have a buffer */
-		/* (recursive call), then just */
-		/* use it.                     */
-		result = Parse( InFile, sfunc, pfunc );
-	} else {
-		bSize = BUFR_INC;
-		bufr = (char *)SMB_MALLOC( bSize );
-		if( NULL == bufr ) {
-			DEBUG(0,("%s memory allocation failure.\n", func));
-			myfile_close(InFile);
-			return False;
-		}
+	buf = data_blob(NULL, 256);
 
-		result = Parse( InFile, sfunc, pfunc );
-		SAFE_FREE( bufr );
-		bSize = 0;
+	if (buf.data == NULL) {
+		DEBUG(0,("%s memory allocation failure.\n", func));
+		myfile_close(InFile);
+		return False;
 	}
+
+	result = Parse( &buf, InFile, sfunc, pfunc );
+	data_blob_free(&buf);
 
 	myfile_close(InFile);
 
