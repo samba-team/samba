@@ -31,13 +31,6 @@
  * SUCH DAMAGE. 
  */
 
-#include "krb5_locl.h"
-RCSID("$Id$");
-
-/**
- * 
- */
-
 /*! \mainpage Heimdal X.509 library
  *
  * \section intro Introduction
