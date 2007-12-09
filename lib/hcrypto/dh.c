@@ -43,8 +43,21 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-/*
+/**
+ * \page DH DH - Diffie-Hellman key exchange
  *
+ * Diffie-Hellman key exchange is a protocol that allows two parties
+ * to establish a shared secret key.
+ *
+ * Include and example how to use DH_new() and friends here.
+ */
+
+/**
+ * Create a new DH object using DH_new_method(NULL), see DH_new_method().
+ *
+ * @return a newly allocated DH object.
+ *
+ * @ingroup hcrypto_dh
  */
 
 DH *
@@ -52,6 +65,17 @@ DH_new(void)
 {
     return DH_new_method(NULL);
 }
+
+/**
+ * Create a new DH object from the given engine, if the NULL is used,
+ * the default engine is used. Free the DH object with DH_free().
+ *
+ * @param engine The engine to use to allocate the DH object. 
+ *
+ * @return a newly allocated DH object.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 DH *
 DH_new_method(ENGINE *engine)
@@ -88,6 +112,15 @@ DH_new_method(ENGINE *engine)
     return dh;
 }
 
+/**
+ * Free a DH object and release related resources, like ENGINE, that
+ * the object was using.
+ *
+ * @param dh object to be freed.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 void
 DH_free(DH *dh)
 {
@@ -116,11 +149,31 @@ DH_free(DH *dh)
     free(dh);
 }    
 
+/**
+ * Add a reference to the DH object.
+ *
+ * @param dh the object to increase the reference count too.
+ *
+ * @return the updated reference count
+ * 
+ * @ingroup hcrypto_dh
+ */
+
 int
 DH_up_ref(DH *dh)
 {
     return ++dh->references;
 }
+
+/**
+ * The maximum output size of the DH_compute_key() function.
+ *
+ * @param dh The DH object to get the size from.
+ *
+ * @return the maximum size in bytes of the out data.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 int
 DH_size(const DH *dh)
@@ -140,6 +193,19 @@ DH_get_ex_data(DH *dh, int idx)
 {
     return dh->ex_data.sk;
 }
+
+/**
+ * Generate DH parameters for the DH object give parameters.
+ *
+ * @param dh The DH object to generate parameters for.
+ * @param prime_len length of the prime
+ * @param generator generator, g
+ * @param cb Callback parameters to show progress, can be NULL.
+ *
+ * @return the maximum size in bytes of the out data.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 int
 DH_generate_parameters_ex(DH *dh, int prime_len, int generator, BN_GENCB *cb)
