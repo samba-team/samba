@@ -26,6 +26,7 @@
 #include "lib/socket/netif.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
+#include "param/param.h"
 
 #define CHECK_VALUE(tctx, v, correct) \
 	torture_assert_int_equal(tctx, v, correct, "Incorrect value")
@@ -132,6 +133,7 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
+	io.in.dest_port = lp_nbt_port(tctx->lp_ctx);
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
 	io.in.broadcast = false;
