@@ -10,6 +10,6 @@ OBJ_FILES = kerberos.o \
 			gssapi_parse.o \
 			krb5_init_context.o
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 NDR_KRB5PAC samba-socket LIBCLI_RESOLVE
-PRIVATE_DEPENDENCIES = ASN1_UTIL auth_sam CREDENTIALS_KRB5
+PRIVATE_DEPENDENCIES = ASN1_UTIL auth_sam_reply CREDENTIALS_KRB5
 # End SUBSYSTEM KERBEROS
 #################################

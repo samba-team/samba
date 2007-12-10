@@ -15,9 +15,13 @@ PRIVATE_DEPENDENCIES = auth_session
 
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
-OBJ_FILES = sam.o auth_sam_reply.o ntlm_check.o 
-PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB
+OBJ_FILES = sam.o ntlm_check.o 
+PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB LIBSECURITY
 PRIVATE_DEPENDENCIES = LDAP_ENCODE
+
+[SUBSYSTEM::auth_sam_reply]
+PRIVATE_PROTO_HEADER = auth_sam_reply.h
+OBJ_FILES = auth_sam_reply.o
 
 #######################
 # Start MODULE auth_sam
@@ -81,6 +85,7 @@ OBJ_FILES = \
 		auth_util.o \
 		auth_simple.o
 PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM auth
 #######################
 
