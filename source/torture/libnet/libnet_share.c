@@ -183,6 +183,7 @@ static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 	add.in.server_unc = host;
 	add.in.level      = 2;
 	add.in.info.info2 = &i;
+	add.in.parm_error = NULL;
 
 	status = dcerpc_srvsvc_NetShareAdd(svc_pipe, mem_ctx, &add);
 	if (!NT_STATUS_IS_OK(status)) {
