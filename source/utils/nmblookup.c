@@ -104,7 +104,7 @@ static char *node_status_flags(TALLOC_CTX *mem_ctx, uint16_t flags)
 
 /* do a single node status */
 static bool do_node_status(struct nbt_name_socket *nbtsock,
-			   const char *addr)
+			   const char *addr, uint16_t port)
 {
 	struct nbt_name_status io;
 	NTSTATUS status;
@@ -113,6 +113,7 @@ static bool do_node_status(struct nbt_name_socket *nbtsock,
 	io.in.name.type = NBT_NAME_CLIENT;
 	io.in.name.scope = NULL;
 	io.in.dest_addr = addr;
+	io.in.dest_port = port;
 	io.in.timeout = 1;
 	io.in.retries = 2;
 
@@ -172,7 +173,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 		       io.out.name.type);
 	}
 	if (options.node_status && io.out.num_addrs > 0) {
-		do_node_status(nbtsock, io.out.reply_addrs[0]);
+		do_node_status(nbtsock, io.out.reply_addrs[0], port);
 	}
 
 	return status;
@@ -229,7 +230,7 @@ static bool process_one(struct loadparm_context *lp_ctx, const char *name, int n
 	}
 
 	if (options.lookup_by_ip) {
-		ret = do_node_status(nbtsock, name);
+		ret = do_node_status(nbtsock, name, nbt_port);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
