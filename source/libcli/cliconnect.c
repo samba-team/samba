@@ -66,7 +66,8 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 
 /* wrapper around smb_raw_sesssetup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
-			      struct cli_credentials *credentials)
+			      struct cli_credentials *credentials,
+			      const char *workgroup)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
@@ -77,7 +78,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.credentials = credentials;
-	setup.in.workgroup = lp_workgroup(global_loadparm);
+	setup.in.workgroup = workgroup;
 
 	status = smb_composite_sesssetup(cli->session, &setup);
 
