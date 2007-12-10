@@ -199,7 +199,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
  int main(int argc, const char *argv[])
 {
-	const char *config_file = dyn_CONFIGFILE;
+	const char *config_file = get_dyn_CONFIGFILE();
 	int s;
 	static int silent_mode = False;
 	static int show_all_parameters = False;

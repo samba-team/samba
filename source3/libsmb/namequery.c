@@ -1157,7 +1157,7 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 		"Attempting lmhosts lookup for name %s<0x%x>\n",
 		name, name_type));
 
-	fp = startlmhosts(dyn_LMHOSTSFILE);
+	fp = startlmhosts(get_dyn_LMHOSTSFILE());
 
 	if ( fp == NULL )
 		return NT_STATUS_NO_SUCH_FILE;

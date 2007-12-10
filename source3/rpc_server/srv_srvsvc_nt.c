@@ -1692,7 +1692,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		command = talloc_asprintf(p->mem_ctx,
 				"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
 				lp_change_share_cmd(),
-				dyn_CONFIGFILE,
+				get_dyn_CONFIGFILE(),
 				share_name,
 				path,
 				comment ? comment : "",
@@ -1877,7 +1877,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
 			lp_add_share_cmd(),
-			dyn_CONFIGFILE,
+			get_dyn_CONFIGFILE(),
 			share_name,
 			path,
 			comment ? comment : "",
@@ -1984,7 +1984,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(),
-			dyn_CONFIGFILE,
+			get_dyn_CONFIGFILE(),
 			lp_servicename(snum));
 	if (!command) {
 		return WERR_NOMEM;

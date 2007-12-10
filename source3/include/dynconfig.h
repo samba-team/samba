@@ -23,9 +23,10 @@
  * @brief Exported global configurations.
  **/
 
-extern char const *dyn_SBINDIR,
-	*dyn_BINDIR,
-	*dyn_SWATDIR;
+#if 0
+const char *get_dyn_SBINDIR(void);
+const char *get_dyn_BINDIR(void);
+const char *get_dyn_SWATDIR(void);
 
 extern char dyn_CONFIGFILE[1024];
 extern char dyn_LOGFILEBASE[1024], dyn_LMHOSTSFILE[1024];
@@ -36,6 +37,46 @@ extern char dyn_LOCKDIR[1024];
 extern char dyn_PIDDIR[1024];
 extern char dyn_SMB_PASSWD_FILE[1024];
 extern char dyn_PRIVATE_DIR[1024];
+#endif
 
-char *dyn_STATEDIR(void);
-char *dyn_CACHEDIR(void);
+const char *get_dyn_SBINDIR(void);
+const char *set_dyn_SBINDIR(const char *newpath);
+
+const char *get_dyn_BINDIR(void);
+const char *set_dyn_BINDIR(const char *newpath);
+
+const char *get_dyn_SWATDIR(void);
+const char *set_dyn_SWATDIR(const char *newpath);
+
+const char *get_dyn_CONFIGFILE(void);
+const char *set_dyn_CONFIGFILE(const char *newpath);
+
+const char *get_dyn_dyn_LOGFILEBASE(void);
+const char *set_dyn_dyn_LOGFILEBASE(const char *newpath);
+
+const char *get_dyn_LMHOSTSFILE(void);
+const char *set_dyn_LMHOSTSFILE(const char *newpath);
+
+const char *get_dyn_CODEPAGEDIR(void);
+const char *set_dyn_CODEPAGEDIR(const char *newpath);
+
+const char *get_dyn_LIBDIR(void);
+const char *set_dyn_LIBDIR(const char *newpath);
+
+const char *get_dyn_SHLIBEXT(void);
+const char *set_dyn_SHLIBEXT(const char *newpath);
+
+const char *get_dyn_LOCKDIR(void);
+const char *set_dyn_LOCKDIR(const char *newpath);
+
+const char *get_dyn_PIDDIR(void);
+const char *set_dyn_PIDDIR(const char *newpath);
+
+const char *get_dyn_SMB_PASSWD_FILE(void);
+const char *set_dyn_SMB_PASSWD_FILE(const char *newpath);
+
+const char *get_dyn_PRIVATE_DIR(void);
+const char *set_dyn_PRIVATE_DIR(const char *newpath);
+
+const char *get_dyn_STATEDIR(void);
+const char *get_dyn_CACHEDIR(void);

@@ -1067,7 +1067,7 @@ static struct functable net_func[] = {
 	 * set by cmdline arg or remain default (0)
 	 */
 	AllowDebugChange = False;
-	lp_load(dyn_CONFIGFILE,True,False,False,True);
+	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	
  	argv_new = (const char **)poptGetArgs(pc);
 

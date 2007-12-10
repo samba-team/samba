@@ -434,8 +434,8 @@ bool reload_services(bool test)
 	if (lp_loaded()) {
 		const char *fname = lp_configfile();
 		if (file_exist(fname, NULL) &&
-		    !strcsequal(fname, dyn_CONFIGFILE)) {
-			strlcpy(dyn_CONFIGFILE, fname, sizeof(dyn_CONFIGFILE));
+		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
+			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
 	}
@@ -447,7 +447,7 @@ bool reload_services(bool test)
 
 	lp_killunused(conn_snum_used);
 
-	ret = lp_load(dyn_CONFIGFILE, False, False, True, True);
+	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
 	/* perhaps the config filename is now set */
 	if (!test)

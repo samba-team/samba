@@ -230,9 +230,9 @@ static char *		uri_unescape_alloc(const char *);
 
   load_case_tables();
 
-  if (!lp_load(dyn_CONFIGFILE, True, False, False, True))
+  if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True))
   {
-    fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+    fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
     goto done;
   }
 

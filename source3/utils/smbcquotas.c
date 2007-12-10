@@ -448,7 +448,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	fault_setup(NULL);
 
-	lp_load(dyn_CONFIGFILE,True,False,False,True);
+	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 
 	pc = poptGetContext("smbcquotas", argc, argv, long_options, 0);

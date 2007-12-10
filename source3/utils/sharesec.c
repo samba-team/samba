@@ -573,7 +573,7 @@ int main(int argc, const char *argv[])
 
 	load_case_tables();
 
-	lp_load( dyn_CONFIGFILE, False, False, False, True );
+	lp_load( get_dyn_CONFIGFILE(), False, False, False, True );
 
 	/* check for initializing secrets.tdb first */
 	

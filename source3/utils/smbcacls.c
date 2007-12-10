@@ -895,7 +895,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 
 	setlinebuf(stdout);
 
-	lp_load(dyn_CONFIGFILE,True,False,False,True);
+	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);

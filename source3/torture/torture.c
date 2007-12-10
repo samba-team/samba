@@ -5309,7 +5309,7 @@ static void usage(void)
 
 	load_case_tables();
 
-	lp_load(dyn_CONFIGFILE,True,False,False,True);
+	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 
 	if (argc < 2) {

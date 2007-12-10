@@ -288,8 +288,8 @@ static bool reload_nmbd_services(bool test)
 
 	if ( lp_loaded() ) {
 		const char *fname = lp_configfile();
-		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
-			strlcpy(dyn_CONFIGFILE,fname,sizeof(dyn_CONFIGFILE));
+		if (file_exist(fname,NULL) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
+			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
 	}
@@ -297,7 +297,7 @@ static bool reload_nmbd_services(bool test)
 	if ( test && !lp_file_list_changed() )
 		return(True);
 
-	ret = lp_load( dyn_CONFIGFILE, True , False, False, True);
+	ret = lp_load(get_dyn_CONFIGFILE(), True , False, False, True);
 
 	/* perhaps the config filename is now set */
 	if ( !test ) {
@@ -710,7 +710,7 @@ static bool open_sockets(bool isdaemon, int port)
 	static bool no_process_group;
 	static bool log_stdout;
 	poptContext pc;
-	static char *p_lmhosts = dyn_LMHOSTSFILE;
+	char *p_lmhosts = NULL;
 	int opt;
 	enum {
 		OPT_DAEMON = 1000,
@@ -772,7 +772,7 @@ static bool open_sockets(bool isdaemon, int port)
 	
 	if (!override_logfile) {
 		char *logfile = NULL;
-		if (asprintf(&logfile, "%s/log.nmbd", dyn_LOGFILEBASE) < 0) {
+		if (asprintf(&logfile, "%s/log.nmbd", get_dyn_LOGFILEBASE()) < 0) {
 			exit(1);
 		}
 		lp_set_logfile(logfile);
@@ -903,8 +903,11 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	/* Load in any static local names. */ 
-	load_lmhosts_file(p_lmhosts);
-	DEBUG(3,("Loaded hosts file %s\n", p_lmhosts));
+	if (p_lmhosts) {
+		set_dyn_LMHOSTSFILE(p_lmhosts);
+	}
+	load_lmhosts_file(get_dyn_LMHOSTSFILE());
+	DEBUG(3,("Loaded hosts file %s\n", get_dyn_LMHOSTSFILE()));
 
 	/* If we are acting as a WINS server, initialise data structures. */
 	if( !initialise_wins() ) {

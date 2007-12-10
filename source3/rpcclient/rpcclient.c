@@ -812,8 +812,8 @@ out_free:
 
 	/* Load smb.conf file */
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False,True))
-		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
+	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True))
+		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
 
 	if ( strlen(new_workgroup) != 0 )
 		set_global_myworkgroup( new_workgroup );

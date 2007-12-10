@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
 
 	setup_logging(argv[0],True);
 
-	configfile = dyn_CONFIGFILE;
+	configfile = get_dyn_CONFIGFILE();
 
 	if (argc < 2) {
 		fprintf(stderr,"smbfilter <desthost> <netbiosname>\n");

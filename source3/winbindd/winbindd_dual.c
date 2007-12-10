@@ -472,12 +472,12 @@ void setup_domain_child(struct winbindd_domain *domain,
 {
 	if (explicit_logfile != NULL) {
 		if (asprintf(&child->logfilename, "%s/log.winbindd-%s",
-			     dyn_LOGFILEBASE, explicit_logfile) < 0) {
+			     get_dyn_LOGFILEBASE(), explicit_logfile) < 0) {
 			smb_panic("Internal error: asprintf failed");
 		}
 	} else if (domain != NULL) {
 		if (asprintf(&child->logfilename, "%s/log.wb-%s",
-			     dyn_LOGFILEBASE, domain->name) < 0) {
+			     get_dyn_LOGFILEBASE(), domain->name) < 0) {
 			smb_panic("Internal error: asprintf failed");
 		}
 	} else {

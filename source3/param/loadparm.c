@@ -1456,8 +1456,8 @@ static void init_globals(bool first_time_only)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
-	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
+	string_set(&Globals.szSMBPasswdFile, get_dyn_SMB_PASSWD_FILE());
+	string_set(&Globals.szPrivateDir, get_dyn_PRIVATE_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -1491,8 +1491,8 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szWorkgroup, lp_workgroup());
 
 	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szPidDir, dyn_PIDDIR);
-	string_set(&Globals.szLockDir, dyn_LOCKDIR);
+	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
+	string_set(&Globals.szLockDir, get_dyn_LOCKDIR());
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 
 	if (asprintf(&s, "Samba %s", SAMBA_VERSION_STRING) < 0) {
@@ -1701,7 +1701,7 @@ static void init_globals(bool first_time_only)
 	Globals.bASUSupport       = False;
 
 	/* User defined shares. */
-	if (asprintf(&s, "%s/usershares", dyn_STATEDIR()) < 0) {
+	if (asprintf(&s, "%s/usershares", get_dyn_STATEDIR()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	string_set(&Globals.szUsersharePath, s);

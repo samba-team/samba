@@ -86,20 +86,20 @@ void pidfile_create(const char *program_name)
 {
 	int     fd;
 	char    buf[20];
-	char    *short_configfile;
+	const char    *short_configfile;
 	char *name;
 	char *pidFile;
 	pid_t pid;
 
 	/* Add a suffix to the program name if this is a process with a
 	 * none default configuration file name. */
-	if (strcmp( CONFIGFILE, dyn_CONFIGFILE) == 0) {
+	if (strcmp( CONFIGFILE, get_dyn_CONFIGFILE()) == 0) {
 		name = SMB_STRDUP(program_name);
 	} else {
-		short_configfile = strrchr( dyn_CONFIGFILE, '/');
+		short_configfile = strrchr( get_dyn_CONFIGFILE(), '/');
 		if (short_configfile == NULL) {
 			/* conf file in current directory */
-			short_configfile = dyn_CONFIGFILE;
+			short_configfile = get_dyn_CONFIGFILE();
 		} else {
 			/* full/relative path provided */
 			short_configfile++;

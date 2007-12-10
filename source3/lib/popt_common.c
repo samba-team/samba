@@ -66,7 +66,7 @@ static void popt_common_callback(poptContext con,
 {
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		set_logfile(con, dyn_LOGFILEBASE);
+		set_logfile(con, get_dyn_LOGFILEBASE());
 		return;
 	}
 
@@ -98,7 +98,7 @@ static void popt_common_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			strlcpy(dyn_CONFIGFILE, arg,sizeof(dyn_CONFIGFILE));
+			set_dyn_CONFIGFILE(arg);
 		}
 		break;
 
@@ -112,7 +112,7 @@ static void popt_common_callback(poptContext con,
 		if (arg) {
 			set_logfile(con, arg);
 			override_logfile = True;
-			snprintf(dyn_LOGFILEBASE, sizeof(dyn_LOGFILEBASE), "%s", arg);
+			set_dyn_LOGFILEBASE(arg);
 		}
 		break;
 
@@ -193,61 +193,61 @@ static void popt_dynconfig_callback(poptContext con,
 	switch (opt->val) {
 	case DYN_SBINDIR:
 		if (arg) {
-			dyn_SBINDIR = SMB_STRDUP(arg);
+			set_dyn_SBINDIR(arg);
 		}
 		break;
 
 	case DYN_BINDIR:
 		if (arg) {
-			dyn_BINDIR = SMB_STRDUP(arg);
+			set_dyn_BINDIR(arg);
 		}
 		break;
 
 	case DYN_SWATDIR:
 		if (arg) {
-			dyn_SWATDIR = SMB_STRDUP(arg);
+			set_dyn_SWATDIR(arg);
 		}
 		break;
 
 	case DYN_LMHOSTSFILE:
 		if (arg) {
-			strlcpy(dyn_LMHOSTSFILE, arg,sizeof(dyn_LMHOSTSFILE));
+			set_dyn_LMHOSTSFILE(arg);
 		}
 		break;
 
 	case DYN_LIBDIR:
 		if (arg) {
-			strlcpy(dyn_LIBDIR, arg,sizeof(dyn_LIBDIR));
+			set_dyn_LIBDIR(arg);
 		}
 		break;
 
 	case DYN_SHLIBEXT:
 		if (arg) {
-			fstrcpy(dyn_SHLIBEXT, arg);
+			set_dyn_SHLIBEXT(arg);
 		}
 		break;
 
 	case DYN_LOCKDIR:
 		if (arg) {
-			strlcpy(dyn_LOCKDIR, arg,sizeof(dyn_LOCKDIR));
+			set_dyn_LOCKDIR(arg);
 		}
 		break;
 
 	case DYN_PIDDIR:
 		if (arg) {
-			strlcpy(dyn_PIDDIR, arg,sizeof(dyn_PIDDIR));
+			set_dyn_PIDDIR(arg);
 		}
 		break;
 
 	case DYN_SMB_PASSWD_FILE:
 		if (arg) {
-			strlcpy(dyn_SMB_PASSWD_FILE, arg,sizeof(dyn_SMB_PASSWD_FILE));
+			set_dyn_SMB_PASSWD_FILE(arg);
 		}
 		break;
 
 	case DYN_PRIVATE_DIR:
 		if (arg) {
-			strlcpy(dyn_PRIVATE_DIR, arg, sizeof(dyn_PRIVATE_DIR));
+			set_dyn_PRIVATE_DIR(arg);
 		}
 		break;
 
