@@ -15,8 +15,8 @@
 <h1>Import from Samba3</h1>
 
 <%
-if (session.authinfo.user_class == "ADMINISTRATOR"
-    || session.authinfo.user_class == "SYSTEM") {
+if ((session.authinfo.user_class == "ADMINISTRATOR")
+	 || (session.authinfo.user_class == "SYSTEM")) {
 
 	if (form['submit'] == "Cancel") {
 		redirect("/");
