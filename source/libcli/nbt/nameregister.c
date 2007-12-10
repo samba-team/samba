@@ -77,7 +77,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 	if (packet->additional[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
 
 	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name, 
-					   io->in.dest_addr, lp_nbt_port(global_loadparm));
+					   io->in.dest_addr, io->in.dest_port);
 	if (dest == NULL) goto failed;
 	req = nbt_name_request_send(nbtsock, dest, packet,
 				    io->in.timeout, io->in.retries, false);
@@ -224,6 +224,7 @@ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *n
 
 	state->io->in.name            = io->in.name;
 	state->io->in.dest_addr       = io->in.dest_addr;
+	state->io->in.dest_port       = lp_nbt_port(global_loadparm);
 	state->io->in.address         = io->in.address;
 	state->io->in.nb_flags        = io->in.nb_flags;
 	state->io->in.register_demand = false;
@@ -311,6 +312,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 			goto done;
 		}
 		state->io->in.dest_addr = state->wins_servers[0];
+		state->io->in.dest_port = lp_nbt_port(global_loadparm);
 		state->io->in.address   = state->addresses[0];
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
@@ -377,6 +379,7 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 
 	state->io->in.name            = io->in.name;
 	state->io->in.dest_addr       = state->wins_servers[0];
+	state->io->in.dest_port       = lp_nbt_port(global_loadparm);
 	state->io->in.address         = io->in.addresses[0];
 	state->io->in.nb_flags        = io->in.nb_flags;
 	state->io->in.broadcast       = false;

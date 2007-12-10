@@ -6530,6 +6530,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 		 */
 		name_register->in.name		= records[i].name;
 		name_register->in.dest_addr	= ctx->address;
+		name_register->in.dest_port	= lp_nbt_port(tctx->lp_ctx);
 		name_register->in.address	= records[i].wins.ips[0].ip;
 		name_register->in.nb_flags	= records[i].wins.nb_flags;
 		name_register->in.register_demand= false;
@@ -9218,6 +9219,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 			name_register->in.name		= records[i].name;
 			name_register->in.dest_addr	= ctx->address;
+			name_register->in.dest_port     = lp_nbt_port(tctx->lp_ctx);
 			name_register->in.address	= records[i].wins.ips[j].ip;
 			name_register->in.nb_flags	= records[i].wins.nb_flags;
 			name_register->in.register_demand= false;

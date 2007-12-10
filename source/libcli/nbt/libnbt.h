@@ -163,6 +163,7 @@ struct nbt_name_register {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
+		uint16_t dest_port;
 		const char *address;
 		uint16_t nb_flags;
 		bool register_demand;

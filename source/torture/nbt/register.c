@@ -67,6 +67,7 @@ static bool nbt_register_own(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
+	io.in.dest_port = lp_nbt_port(tctx->lp_ctx);
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
 	io.in.register_demand = false;
