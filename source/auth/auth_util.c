@@ -956,6 +956,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		status = add_aliases(get_global_sam_sid(), result);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			unbecome_root();
 			TALLOC_FREE(result);
 			return NULL;
 		}
@@ -965,6 +966,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		status = add_aliases(&global_sid_Builtin, result);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			unbecome_root();
 			TALLOC_FREE(result);
 			return NULL;
 		}
