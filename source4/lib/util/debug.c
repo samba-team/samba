@@ -137,7 +137,7 @@ _PUBLIC_ void reopen_logs(void)
 		break;
 
 	case DEBUG_FILE:
-		if ((*logfile) == '/') {
+		if (logfile && (*logfile) == '/') {
 			fname = strdup(logfile);
 		} else {
 			asprintf(&fname, "%s/%s.log", dyn_LOGFILEBASE, state.prog_name);
