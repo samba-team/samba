@@ -75,22 +75,22 @@ BEGIN {
 	print "       /* Output various paths to files and directories */";
 	print "       output(screen,\"\\nPaths:\\n\");";
 
-	print "       output(screen,\"   SBINDIR: %s\\n\", dyn_SBINDIR);";
-	print "       output(screen,\"   BINDIR: %s\\n\", dyn_BINDIR);";
-	print "       output(screen,\"   SWATDIR: %s\\n\", dyn_SWATDIR);";
+	print "       output(screen,\"   SBINDIR: %s\\n\", get_dyn_SBINDIR());";
+	print "       output(screen,\"   BINDIR: %s\\n\", get_dyn_BINDIR());";
+	print "       output(screen,\"   SWATDIR: %s\\n\", get_dyn_SWATDIR());";
 
-	print "       output(screen,\"   CONFIGFILE: %s\\n\", dyn_CONFIGFILE);";
-	print "       output(screen,\"   LOGFILEBASE: %s\\n\", dyn_LOGFILEBASE);";
-	print "       output(screen,\"   LMHOSTSFILE: %s\\n\",dyn_LMHOSTSFILE);";
+	print "       output(screen,\"   CONFIGFILE: %s\\n\", get_dyn_CONFIGFILE());";
+	print "       output(screen,\"   LOGFILEBASE: %s\\n\", get_dyn_LOGFILEBASE());";
+	print "       output(screen,\"   LMHOSTSFILE: %s\\n\",get_dyn_LMHOSTSFILE());";
 
-	print "       output(screen,\"   LIBDIR: %s\\n\",dyn_LIBDIR);";
-	print "       output(screen,\"   SHLIBEXT: %s\\n\",dyn_SHLIBEXT);";
+	print "       output(screen,\"   LIBDIR: %s\\n\",get_dyn_LIBDIR());";
+	print "       output(screen,\"   SHLIBEXT: %s\\n\",get_dyn_SHLIBEXT());";
 
-	print "       output(screen,\"   LOCKDIR: %s\\n\",dyn_LOCKDIR);";
-	print "       output(screen,\"   PIDDIR: %s\\n\", dyn_PIDDIR);";
+	print "       output(screen,\"   LOCKDIR: %s\\n\",get_dyn_LOCKDIR());";
+	print "       output(screen,\"   PIDDIR: %s\\n\", get_dyn_PIDDIR());";
 
-	print "       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",dyn_SMB_PASSWD_FILE);";
-	print "       output(screen,\"   PRIVATE_DIR: %s\\n\",dyn_PRIVATE_DIR);";
+	print "       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());";
+	print "       output(screen,\"   PRIVATE_DIR: %s\\n\",get_dyn_PRIVATE_DIR());";
 	print "";
 
 
