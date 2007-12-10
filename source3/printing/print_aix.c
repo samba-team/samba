@@ -32,14 +32,12 @@ bool aix_cache_reload(void)
 	int iEtat;
 	XFILE *pfile;
 	char *line = NULL, *p;
-	char *name;
+	char *name = NULL;
 	TALLOC_CTX *ctx = talloc_init("aix_cache_reload");
 
 	if (!ctx) {
 		return false;
 	}
-
-	*name = 0;
 
 	DEBUG(5, ("reloading aix printcap cache\n"));
 
