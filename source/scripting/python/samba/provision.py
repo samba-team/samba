@@ -14,7 +14,7 @@ import uuid, sid, misc
 from socket import gethostname, gethostbyname
 import param
 import registry
-from samba import Ldb, substitute_var
+from samba import Ldb, substitute_var, valid_netbios_name
 from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring
 
@@ -191,13 +191,16 @@ unixName: %s
 """ % (res[0].dn, unixname)
     ldb.modify(ldb.parse_ldif(mod).next()[1])
 
+
 def hostip():
     """return first host IP."""
     return gethostbyname(hostname())
 
+
 def hostname():
     """return first part of hostname."""
     return gethostname().split(".")[0]
+
 
 def ldb_delete(ldb):
     """Delete a LDB file.
@@ -803,15 +806,6 @@ member: %s
     #  modify the userAccountControl to remove the disabled bit
     enable_account(ldb, user_dn)
     ldb.transaction_commit()
-
-
-def valid_netbios_name(name):
-    """Check whether a name is valid as a NetBIOS name. """
-    # FIXME: There are probably more constraints here. 
-    # crh has a paragraph on this in his book (1.4.1.1)
-    if len(name) > 13:
-        return False
-    return True
 
 
 def join_domain(domain, netbios_name, join_type, creds, message):
