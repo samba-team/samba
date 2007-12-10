@@ -93,6 +93,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	   registration packets */
 	io.in.name            = iname->name;
 	io.in.dest_addr       = iface->bcast_address;
+	io.in.dest_port       = lp_nbt_port(iface->nbtsrv->task->lp_ctx);
 	io.in.address         = iface->ip_address;
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
