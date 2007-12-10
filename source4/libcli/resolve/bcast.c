@@ -33,7 +33,8 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 						  void *userdata,
 						  struct nbt_name *name)
 {
-	int num_interfaces = iface_count(global_loadparm);
+	struct loadparm_context *lp_ctx = userdata;
+	int num_interfaces = iface_count(lp_ctx);
 	const char **address_list;
 	struct composite_context *c;
 	int i, count=0;
@@ -42,7 +43,7 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_n_bcast(global_loadparm, i);
+		const char *bcast = iface_n_bcast(lp_ctx, i);
 		if (bcast == NULL) continue;
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {
@@ -79,8 +80,8 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
-bool resolve_context_add_bcast_method(struct resolve_context *ctx)
+bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv,
-					  NULL);
+					  lp_ctx);
 }
