@@ -791,12 +791,12 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 	*pp_name = NULL;
 
 	while(!x_feof(fp) && !x_ferror(fp)) {
-		char *ip;
-		char *flags;
-		char *extra;
-		char *name;
+		char *ip = NULL;
+		char *flags = NULL;
+		char *extra = NULL;
+		char *name = NULL;
 		const char *ptr;
-		char *ptr1;
+		char *ptr1 = NULL;
 		int count = 0;
 
 		*name_type = -1;
@@ -808,10 +808,6 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 		if (*line == '#') {
 			continue;
 		}
-
-		ip[0] = '\0';
-		name[0] = '\0';
-		flags[0] = '\0';
 
 		ptr = line;
 
