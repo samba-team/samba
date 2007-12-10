@@ -835,6 +835,13 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 			continue;
 		}
 
+		if (!flags) {
+			flags = talloc_strdup(ctx, "");
+			if (!flags) {
+				continue;
+			}
+		}
+
 		DEBUG(4, ("getlmhostsent: lmhost entry: %s %s %s\n",
 					ip, name, flags));
 
