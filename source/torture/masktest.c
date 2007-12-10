@@ -287,8 +287,6 @@ static void usage(void)
 
 	setup_logging("masktest", DEBUG_STDOUT);
 
-	lp_set_cmdline(global_loadparm, "log level", "0");
-
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);

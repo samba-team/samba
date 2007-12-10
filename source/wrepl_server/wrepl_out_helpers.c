@@ -29,6 +29,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
+#include "libcli/resolve/resolve.h"
 
 enum wreplsrv_out_connect_stage {
 	WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET,
@@ -191,6 +192,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	state->stage	= WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET;
 	state->wreplconn= wreplconn;
 	state->c_req	= wrepl_connect_send(wreplconn->sock,
+					     lp_resolve_context(service->task->lp_ctx),
 					     partner->our_address,
 					     partner->address);
 	if (!state->c_req) goto failed;
@@ -379,8 +381,7 @@ static NTSTATUS wreplsrv_pull_table_recv(struct composite_context *c, TALLOC_CTX
 		struct wreplsrv_pull_table_state *state = talloc_get_type(c->private_data,
 							  struct wreplsrv_pull_table_state);
 		io->out.num_owners	= state->table_io.out.num_partners;
-		io->out.owners		= state->table_io.out.partners;
-		talloc_reference(mem_ctx, state->table_io.out.partners);
+		io->out.owners		= talloc_reference(mem_ctx, state->table_io.out.partners);
 	}
 
 	talloc_free(c);
@@ -535,8 +536,7 @@ static NTSTATUS wreplsrv_pull_names_recv(struct composite_context *c, TALLOC_CTX
 		struct wreplsrv_pull_names_state *state = talloc_get_type(c->private_data,
 							  struct wreplsrv_pull_names_state);
 		io->out.num_names	= state->pull_io.out.num_names;
-		io->out.names		= state->pull_io.out.names;
-		talloc_reference(mem_ctx, state->pull_io.out.names);
+		io->out.names		= talloc_reference(mem_ctx, state->pull_io.out.names);
 	}
 
 	talloc_free(c);

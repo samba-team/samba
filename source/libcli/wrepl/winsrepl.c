@@ -313,6 +313,7 @@ static void wrepl_connect_handler(struct composite_context *creq)
   connect a wrepl_socket to a WINS server
 */
 struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
+					     struct resolve_context *resolve_ctx,
 					     const char *our_ip, const char *peer_ip)
 {
 	struct composite_context *result;
@@ -344,7 +345,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	if (composite_nomem(peer, result)) return result;
 
 	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
-					  0, lp_resolve_context(global_loadparm), 
+					  0, resolve_ctx,
 					  wrepl_socket->event.ctx);
 	composite_continue(result, state->creq, wrepl_connect_handler, state);
 	return result;
@@ -371,9 +372,10 @@ NTSTATUS wrepl_connect_recv(struct composite_context *result)
 /*
   connect a wrepl_socket to a WINS server - sync API
 */
-NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, const char *our_ip, const char *peer_ip)
+NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, struct resolve_context *resolve_ctx,
+		       const char *our_ip, const char *peer_ip)
 {
-	struct composite_context *c_req = wrepl_connect_send(wrepl_socket, our_ip, peer_ip);
+	struct composite_context *c_req = wrepl_connect_send(wrepl_socket, resolve_ctx, our_ip, peer_ip);
 	return wrepl_connect_recv(c_req);
 }
 

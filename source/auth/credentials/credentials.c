@@ -82,7 +82,6 @@ struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx)
 	struct cli_credentials *anon_credentials;
 
 	anon_credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(anon_credentials, global_loadparm);
 	cli_credentials_set_anonymous(anon_credentials);
 
 	return anon_credentials;
@@ -720,6 +719,7 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
+	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
 }
 
 /**
