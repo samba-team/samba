@@ -22,6 +22,7 @@
 #define __REGISTRY_HIVE_H__
 
 #include <talloc.h>
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/util/ntstatus.h"
 
