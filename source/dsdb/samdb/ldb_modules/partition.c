@@ -711,7 +711,7 @@ static int partition_init(struct ldb_module *module)
 {
 	int ret, i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
-	static const char *attrs[] = { "partition", "replicateEntries", "modules", NULL };
+	const char *attrs[] = { "partition", "replicateEntries", "modules", NULL };
 	struct ldb_result *res;
 	struct ldb_message *msg;
 	struct ldb_message_element *partition_attributes;
