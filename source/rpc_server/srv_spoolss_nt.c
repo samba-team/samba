@@ -1530,6 +1530,13 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 
 	memcpy(r_u, &r_u_ex, sizeof(*r_u));
 
+	if (W_ERROR_EQUAL(r_u->status, WERR_INVALID_PARAM)) {
+		/* OpenPrinterEx returns this for a bad
+		 * printer name. We must return WERR_INVALID_PRINTER_NAME
+		 * instead.
+		 */
+		r_u->status = WERR_INVALID_PRINTER_NAME;
+	}
 	return r_u->status;
 }
 
@@ -1545,8 +1552,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	int snum;
 	Printer_entry *Printer=NULL;
 
-	if ( !q_u->printername )
-		return WERR_INVALID_PRINTER_NAME;
+	if (!q_u->printername) {
+		return WERR_INVALID_PARAM;
+	}
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
@@ -1555,15 +1563,16 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(p, handle, name, 0))
-		return WERR_INVALID_PRINTER_NAME;
+	if (!open_printer_hnd(p, handle, name, 0)) {
+		return WERR_INVALID_PARAM;
+	}
 
 	Printer=find_printer_index_by_hnd(p, handle);
 	if ( !Printer ) {
 		DEBUG(0,(" _spoolss_open_printer_ex: logic error.  Can't find printer "
 			"handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
-		return WERR_INVALID_PRINTER_NAME;
+		return WERR_INVALID_PARAM;
 	}
 
 	/*
