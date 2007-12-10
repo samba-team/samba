@@ -26,7 +26,6 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/socket.h"
 #include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"
 #include "param/param.h"
@@ -220,6 +219,8 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		"supportedSASLMechanisms", 
 		NULL 
 	};
+
+	gensec_init(lp_ctx);
 
 	status = gensec_client_start(conn, &conn->gensec, NULL, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

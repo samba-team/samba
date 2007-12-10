@@ -14,6 +14,7 @@ OBJ_FILES = \
 PRIVATE_DEPENDENCIES = CREDENTIALS \
 		LIBCLI_LDAP SAMDB \
 		process_model \
-		GENSEC_SOCKET
+		gensec \
+		LIBSAMBA-CONFIG
 # End SUBSYSTEM SMB
 #######################

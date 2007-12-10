@@ -6,9 +6,9 @@ SO_VERSION = 0
 DESCRIPTION = Generic Security Library
 PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
-OBJ_FILES = gensec.o
+OBJ_FILES = gensec.o socket.o
 PUBLIC_DEPENDENCIES = \
-		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL 
+		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET
 # End SUBSYSTEM gensec
 #################################
 
@@ -48,7 +48,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS SASL
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_spnego_init
 PRIVATE_PROTO_HEADER = spnego_proto.h
-PRIVATE_DEPENDENCIES = ASN1_UTIL GENSEC_SOCKET CREDENTIALS
+PRIVATE_DEPENDENCIES = ASN1_UTIL CREDENTIALS
 OBJ_FILES = spnego.o spnego_parse.o
 # End MODULE gensec_spnego
 ################################################
@@ -61,7 +61,7 @@ PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
-PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS
+PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR
 OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_schannel
 ################################################
@@ -72,19 +72,8 @@ OUTPUT_TYPE = INTEGRATED
 PRIVATE_PROTO_HEADER = schannel_state.h
 OBJ_FILES = \
 		schannel_state.o
-PRIVATE_DEPENDENCIES = LDB_WRAP
+PRIVATE_DEPENDENCIES = LDB_WRAP SAMDB
 #
 # End SUBSYSTEM SCHANNELDB
-################################################
-
-################################################
-# Start SUBSYSTEM GENSEC_SOCKET
-[SUBSYSTEM::GENSEC_SOCKET]
-OBJ_FILES = \
-		socket.o
-PUBLIC_DEPENDENCIES = samba-socket LIBPACKET
-#PUBLIC_DEPENDENCIES =  gensec
-#
-# End SUBSYSTEM GENSEC_SOCKET
 ################################################
 

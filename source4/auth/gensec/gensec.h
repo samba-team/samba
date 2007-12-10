@@ -166,6 +166,37 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security;
 };
 
+/* Socket wrapper */
+
+struct gensec_security;
+struct socket_context;
+
+NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
+			    struct socket_context *current_socket,
+			    struct event_context *ev,
+			    void (*recv_handler)(void *, uint16_t),
+			    void *recv_private,
+			    struct socket_context **new_socket);
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *mem_ctx, 
+			     const DATA_BLOB *in, 
+			     DATA_BLOB *out,
+			     size_t *len_processed);
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_unwrap_packets(struct gensec_security *gensec_security, 
+			       TALLOC_CTX *mem_ctx, 
+			       const DATA_BLOB *in, 
+			       DATA_BLOB *out,
+			       size_t *len_processed);
+
+/* These functions are for use here only (public because SPNEGO must
+ * use them for recursion) */
+NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
+				    DATA_BLOB blob, size_t *size);
+
 struct loadparm_context;
 
 #include "auth/gensec/gensec_proto.h"

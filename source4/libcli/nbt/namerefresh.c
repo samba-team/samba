@@ -137,7 +137,7 @@ NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock,
 
 
 
-/*
+/**
   a wins name refresh with multiple WINS servers and multiple
   addresses to refresh. Try each WINS server in turn, until we get a
   reply for each address
@@ -152,7 +152,7 @@ struct refresh_wins_state {
 };
 
 
-/*
+/**
   state handler for WINS multi-homed multi-server name refresh
 */
 static void name_refresh_wins_handler(struct nbt_name_request *req)
