@@ -85,7 +85,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-					      const char **name_resolve_order,
+					      struct resolve_context *resolve_ctx,
 					      struct event_context *event_ctx)
 {
 	struct composite_context *result;
@@ -127,8 +127,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 		struct nbt_name name;
 		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address->addr);
-		creq = resolve_name_send(&name, result->event_ctx,
-					 lp_name_resolve_order(global_loadparm));
+		creq = resolve_name_send(resolve_ctx, &name, result->event_ctx);
 		if (composite_nomem(creq, result)) return result;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;
@@ -207,11 +206,11 @@ NTSTATUS socket_connect_recv(struct composite_context *result)
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
-			   uint32_t flags, const char **name_resolve_order,
+			   uint32_t flags, struct resolve_context *resolve_ctx,
 			   struct event_context *ev)
 {
 	struct composite_context *ctx;
 	ctx = socket_connect_send(sock, my_address, 
-				  server_address, flags, name_resolve_order, ev);
+				  server_address, flags, resolve_ctx, ev);
 	return socket_connect_recv(ctx);
 }

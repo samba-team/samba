@@ -332,7 +332,8 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	talloc_steal(s->sock, s->socket_ctx);
 
-	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, lp_name_resolve_order(global_loadparm), 
+	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
+				       lp_resolve_context(global_loadparm), 
 				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
@@ -454,7 +455,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 						    const char *server,
 						    const char *target_hostname,
 						    uint32_t port,
-						    const char **name_resolve_order)
+						    struct resolve_context *resolve_ctx)
 {
 	struct composite_context *c;
 	struct pipe_tcp_state *s;
@@ -480,7 +481,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	s->conn            = conn;
 
 	make_nbt_name_server(&name, server);
-	resolve_req = resolve_name_send(&name, c->event_ctx, name_resolve_order);
+	resolve_req = resolve_name_send(resolve_ctx, &name, c->event_ctx);
 	composite_continue(c, resolve_req, continue_ip_resolve_name, c);
 	return c;
 }

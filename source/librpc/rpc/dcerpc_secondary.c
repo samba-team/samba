@@ -29,6 +29,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 
 struct sec_conn_state {
@@ -93,7 +94,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 							 s->binding->host,
 							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint),
-							 lp_name_resolve_order(global_loadparm));
+							 lp_resolve_context(global_loadparm));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;
 

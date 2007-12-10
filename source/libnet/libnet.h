@@ -47,7 +47,7 @@ struct libnet_context {
 	} lsa;
 
 	/* name resolution methods */
-	const char **name_res_methods;
+	struct resolve_context *resolve_ctx;
 
 	struct event_context *event_ctx;
 

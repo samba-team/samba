@@ -30,6 +30,7 @@
  */
 struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
 						  struct event_context *event_ctx,
+						  void *userdata,
 						  struct nbt_name *name)
 {
 	int num_interfaces = iface_count(global_loadparm);
@@ -74,7 +75,12 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, name);
+	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, NULL, name);
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
+bool resolve_context_add_bcast_method(struct resolve_context *ctx)
+{
+	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv,
+					  NULL);
+}

@@ -70,7 +70,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	ctx = finddcs_send(mem_ctx, lp_netbios_name(service->task->lp_ctx),
 			   domain_name, NBT_NAME_LOGON, 
 			   dom_sid, 
-			   lp_name_resolve_order(service->task->lp_ctx), 
+			   lp_resolve_context(service->task->lp_ctx), 
 			   service->task->event_ctx, 
 			   service->task->msg_ctx);
 	if (ctx == NULL) goto failed;

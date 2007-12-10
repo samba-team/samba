@@ -21,6 +21,7 @@
 #include "libnet/libnet.h"
 #include "lib/events/events.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 struct libnet_context *libnet_context_init(struct event_context *ev,
 					   struct loadparm_context *lp_ctx)
@@ -45,7 +46,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev,
 	ctx->lp_ctx = lp_ctx;
 
 	/* name resolution methods */
-	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order(lp_ctx));
+	ctx->resolve_ctx = lp_resolve_context(lp_ctx);
 
 	/* connected services' params */
 	ZERO_STRUCT(ctx->samr);

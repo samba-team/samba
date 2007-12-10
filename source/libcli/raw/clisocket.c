@@ -96,7 +96,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 
 	ctx = socket_connect_multi_send(state, host_addr,
 					state->num_ports, state->ports,
-					lp_name_resolve_order(global_loadparm),
+					lp_resolve_context(global_loadparm),
 					state->ctx->event_ctx);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = smbcli_sock_connect_recv_conn;
@@ -200,7 +200,7 @@ resolve a hostname and connect
 ****************************************************************************/
 struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 						 TALLOC_CTX *mem_ctx,
-						 const char **name_resolve_order,
+						 struct resolve_context *resolve_ctx,
 						 struct event_context *event_ctx)
 {
 	int name_type = NBT_NAME_SERVER;
@@ -241,7 +241,7 @@ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 
 	make_nbt_name(&nbt_name, host, name_type);
 	
-	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx, name_resolve_order);
+	status = resolve_name(resolve_ctx, &nbt_name, tmp_ctx, &address, event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return NULL;

@@ -23,6 +23,8 @@
 #define __RESOLVE_H__
 
 #include "libcli/nbt/libnbt.h"
+typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx, struct event_context *, void *privdata, struct nbt_name *);
+typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
 #include "libcli/resolve/proto.h"
 
 #endif /* __RESOLVE_H__ */

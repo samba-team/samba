@@ -34,6 +34,7 @@
 #include "system/filesys.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/resolve/resolve.h"
 
 struct host_state {
 	struct nbt_name name;
@@ -123,6 +124,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
  */
 struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 						 struct event_context *event_ctx,
+						 void *privdata,
 						 struct nbt_name *name)
 {
 	struct composite_context *c;
@@ -213,7 +215,12 @@ NTSTATUS resolve_name_host(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_host_send(mem_ctx, NULL, name);
+	struct composite_context *c = resolve_name_host_send(mem_ctx, NULL, NULL, name);
 	return resolve_name_host_recv(c, mem_ctx, reply_addr);
 }
 
+bool resolve_context_add_host_method(struct resolve_context *ctx)
+{
+	return resolve_context_add_method(ctx, resolve_name_host_send, resolve_name_host_recv,
+					  NULL);
+}

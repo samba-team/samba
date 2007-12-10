@@ -30,6 +30,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
 
@@ -343,7 +344,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	if (composite_nomem(peer, result)) return result;
 
 	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
-					  0, lp_name_resolve_order(global_loadparm), 
+					  0, lp_resolve_context(global_loadparm), 
 					  wrepl_socket->event.ctx);
 	composite_continue(result, state->creq, wrepl_connect_handler, state);
 	return result;

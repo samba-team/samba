@@ -126,6 +126,7 @@ struct socket_context {
 	int family;
 };
 
+struct resolve_context;
 
 /* prototypes */
 NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
@@ -178,21 +179,21 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-			                      const char **name_resolve_order,
+				              struct resolve_context *resolve_ctx,
 					      struct event_context *event_ctx);
 NTSTATUS socket_connect_recv(struct composite_context *ctx);
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
 			   uint32_t flags, 
-			   const char **name_resolve_order,
+			   struct resolve_context *resolve_ctx,
 			   struct event_context *ev);
 
 struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 						    const char *server_address,
 						    int num_server_ports,
 						    uint16_t *server_ports,
-						    const char **name_resolve_order,
+						    struct resolve_context *resolve_ctx,
 						    struct event_context *event_ctx);
 NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 				   TALLOC_CTX *mem_ctx,
@@ -200,7 +201,7 @@ NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 				   uint16_t *port);
 NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      int num_server_ports, uint16_t *server_ports,
-			      const char **name_resolve_order,
+			      struct resolve_context *resolve_ctx,
 			      struct event_context *event_ctx,
 			      struct socket_context **result,
 			      uint16_t *port);

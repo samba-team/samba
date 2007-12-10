@@ -52,7 +52,7 @@ bool torture_lookup(struct torture_context *torture)
 	}
 
 	lookup.in.type     = NBT_NAME_CLIENT;
-	lookup.in.methods  = NULL;
+	lookup.in.resolve_ctx = NULL;
 	lookup.out.address = NULL;
 
 	status = libnet_Lookup(ctx, mem_ctx, &lookup);
@@ -95,7 +95,7 @@ bool torture_lookup_host(struct torture_context *torture)
 		}
 	}
 
-	lookup.in.methods  = NULL;
+	lookup.in.resolve_ctx = NULL;
 	lookup.out.address = NULL;
 
 	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
