@@ -216,6 +216,8 @@ bool torture_delshare(struct torture_context *torture)
 					&p,
 					&ndr_table_srvsvc);
 
+	torture_assert_ntstatus_ok(torture, status, "Failed to get rpc connection");
+
 	if (!test_addshare(p, torture, host, TEST_SHARENAME)) {
 		return false;
 	}
