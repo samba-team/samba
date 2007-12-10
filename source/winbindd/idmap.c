@@ -1490,7 +1490,7 @@ done:
  Dump backend status.
 **************************************************************************/
 
-void idmap_dump_maps(char *logfile)
+void idmap_dump_maps(const char *logfile)
 {
 	NTSTATUS ret;
 	struct unixid allid;
