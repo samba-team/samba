@@ -26,7 +26,6 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/socket.h"
 #include "param/param.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)

@@ -720,6 +720,7 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
+	cli_credentials_set_workstation(cred, "", CRED_UNINITIALISED);
 }
 
 /**
