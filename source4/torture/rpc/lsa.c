@@ -29,6 +29,8 @@
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 
+#define TEST_MACHINENAME "lsatestmach"
+
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
 	name->string = s;
@@ -125,9 +127,27 @@ bool test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+
+static const char *sid_type_lookup(enum lsa_SidType r)
+{
+	switch (r) {
+		case SID_NAME_USE_NONE: return "SID_NAME_USE_NONE"; break;
+		case SID_NAME_USER: return "SID_NAME_USER"; break;
+		case SID_NAME_DOM_GRP: return "SID_NAME_DOM_GRP"; break;
+		case SID_NAME_DOMAIN: return "SID_NAME_DOMAIN"; break;
+		case SID_NAME_ALIAS: return "SID_NAME_ALIAS"; break;
+		case SID_NAME_WKN_GRP: return "SID_NAME_WKN_GRP"; break;
+		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
+		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
+		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
+		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
+	}
+	return "Invalid sid type\n";
+}
+
 static bool test_LookupNames(struct dcerpc_pipe *p, 
-			    TALLOC_CTX *mem_ctx, 
-			    struct policy_handle *handle,
+			     TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle,
 			     struct lsa_TransNameArray *tnames)
 {
 	struct lsa_LookupNames r;
@@ -157,11 +177,34 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+
+	if (NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED) || 
+	    NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		for (i=0;i< tnames->count;i++) {
+			if (i < count && sids.sids[i].sid_type == SID_NAME_UNKNOWN) {
+				printf("LookupName of %s was unmapped\n", 
+				       tnames->names[i].name.string);	
+			} else if (i >=count) {
+				printf("LookupName of %s failed to return a result\n",
+				       tnames->names[i].name.string);
+			}
+		}
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		return false;
+	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
-
+	
+	for (i=0;i< tnames->count;i++) {
+		if (i < count && sids.sids[i].sid_type != tnames->names[i].sid_type) {
+			printf("LookupName of %s got unexpected name type: %s\n", 
+			       tnames->names[i].name.string, sid_type_lookup(sids.sids[i].sid_type));
+		} else if (i >=count) {
+			printf("LookupName of %s failed to return a result\n",
+			       tnames->names[i].name.string);
+		}
+	}
 	printf("\n");
 
 	return true;
@@ -228,30 +271,39 @@ static bool test_LookupNames_wellknown(struct dcerpc_pipe *p,
 	tnames.names = &name;
 	tnames.count = 1;
 	name.name.string = "NT AUTHORITY\\SYSTEM";
+	name.sid_type = SID_NAME_WKN_GRP;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "NT AUTHORITY\\ANONYMOUS LOGON";
+	name.sid_type = SID_NAME_WKN_GRP;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "NT AUTHORITY\\Authenticated Users";
+	name.sid_type = SID_NAME_WKN_GRP;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
+#if 0
 	name.name.string = "NT AUTHORITY";
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "NT AUTHORITY\\";
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+#endif
 
 	name.name.string = "BUILTIN\\";
+	name.sid_type = SID_NAME_DOMAIN;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "BUILTIN\\Administrators";
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
+	name.sid_type = SID_NAME_ALIAS;
 
 	name.name.string = "SYSTEM";
+	name.sid_type = SID_NAME_WKN_GRP;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "Everyone";
+	name.sid_type = SID_NAME_WKN_GRP;
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 	return ret;
 }
@@ -1954,11 +2006,6 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	bool ret = true;
 	printf("\nTesting QueryInfoPolicy\n");
 
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping QueryInfoPolicy against Samba4\n");
-		return true;
-	}
-
 	for (i=1;i<13;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
@@ -2002,19 +2049,38 @@ static bool test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			/* Let's look up some of these names */
 
 			struct lsa_TransNameArray tnames;
-			tnames.count = 10;
-			tnames.names = talloc_array(tctx, struct lsa_TranslatedName, tnames.count);
+			tnames.count = 14;
+			tnames.names = talloc_zero_array(tctx, struct lsa_TranslatedName, tnames.count);
 			tnames.names[0].name.string = r.out.info->dns.name.string;
+			tnames.names[0].sid_type = SID_NAME_DOMAIN;
 			tnames.names[1].name.string = r.out.info->dns.dns_domain.string;
+			tnames.names[1].sid_type = SID_NAME_DOMAIN;
 			tnames.names[2].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.name.string);
+			tnames.names[2].sid_type = SID_NAME_DOMAIN;
 			tnames.names[3].name.string = talloc_asprintf(tctx, "%s\\", r.out.info->dns.dns_domain.string);
+			tnames.names[3].sid_type = SID_NAME_DOMAIN;
 			tnames.names[4].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.name.string);
+			tnames.names[4].sid_type = SID_NAME_USER;
 			tnames.names[5].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.name.string);
+			tnames.names[5].sid_type = SID_NAME_USER;
 			tnames.names[6].name.string = talloc_asprintf(tctx, "%s\\guest", r.out.info->dns.dns_domain.string);
+			tnames.names[6].sid_type = SID_NAME_USER;
 			tnames.names[7].name.string = talloc_asprintf(tctx, "%s\\krbtgt", r.out.info->dns.dns_domain.string);
+			tnames.names[7].sid_type = SID_NAME_USER;
 			tnames.names[8].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.name.string);
+			tnames.names[8].sid_type = SID_NAME_USER;
 			tnames.names[9].name.string = talloc_asprintf(tctx, "krbtgt@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[9].sid_type = SID_NAME_USER;
+			tnames.names[10].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.name.string);
+			tnames.names[10].sid_type = SID_NAME_USER;
+			tnames.names[11].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", r.out.info->dns.dns_domain.string);
+			tnames.names[11].sid_type = SID_NAME_USER;
+			tnames.names[12].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.name.string);
+			tnames.names[12].sid_type = SID_NAME_USER;
+			tnames.names[13].name.string = talloc_asprintf(tctx, TEST_MACHINENAME "$@%s", r.out.info->dns.dns_domain.string);
+			tnames.names[13].sid_type = SID_NAME_USER;
 			ret &= test_LookupNames(p, tctx, handle, &tnames);
+
 		}
 	}
 
@@ -2134,6 +2200,8 @@ bool torture_rpc_lsa(struct torture_context *tctx)
         struct dcerpc_pipe *p;
 	bool ret = true;
 	struct policy_handle *handle;
+	struct test_join *join = NULL;
+	struct cli_credentials *machine_creds;
 
 	status = torture_rpc_connection(tctx, &p, &ndr_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2149,6 +2217,11 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 	}
 
 	if (handle) {
+		join = torture_join_domain(tctx, TEST_MACHINENAME, ACB_WSTRUST, &machine_creds);
+		if (!join) {
+			ret = false;
+		}
+
 		if (!test_LookupNames_wellknown(p, tctx, handle)) {
 			ret = false;
 		}		
@@ -2206,6 +2279,9 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!test_lsa_Close(p, tctx, handle)) {
 			ret = false;
 		}
+		
+		torture_leave_domain(join);
+
 	} else {
 		if (!test_many_LookupSids(p, tctx, handle)) {
 			ret = false;
