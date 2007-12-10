@@ -199,6 +199,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	pvfs->brl_context = brl_init(pvfs, 
 				     pvfs->ntvfs->ctx->server_id,
+				     pvfs->ntvfs->ctx->lp_ctx,
 				     pvfs->ntvfs->ctx->msg_ctx);
 	if (pvfs->brl_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

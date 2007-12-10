@@ -177,7 +177,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
 
   setup_logging(argv[0], DEBUG_STDOUT);
 
-  global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
+  lp_ctx = loadparm_init(talloc_autofree_context());
 
   if (!lp_load(lp_ctx, dyn_CONFIGFILE)) {
 	  fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", lp_config_file());

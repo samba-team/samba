@@ -574,7 +574,7 @@ int main(int argc, const char ** argv)
 		}
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(cmdline_lp_ctx);
 	dump_args();
 
 	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("ibs") == 0) {
@@ -595,7 +595,7 @@ int main(int argc, const char ** argv)
 
 	CatchSignal(SIGINT, dd_handle_signal);
 	CatchSignal(SIGUSR1, dd_handle_signal);
-	return(copy_files(global_loadparm));
+	return(copy_files(cmdline_lp_ctx));
 }
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */

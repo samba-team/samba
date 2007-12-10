@@ -405,7 +405,7 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	state->domain->libnet_ctx->samr.sid = state->domain->info->sid;
 
 	state->domain->ldap_conn =
-		ldap4_new_connection(state->domain, state->ctx->event_ctx);
+		ldap4_new_connection(state->domain, state->domain->libnet_ctx->lp_ctx, state->ctx->event_ctx);
 	composite_nomem(state->domain->ldap_conn, state->ctx);
 
 	ldap_url = talloc_asprintf(state, "ldap://%s/",

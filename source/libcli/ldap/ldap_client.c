@@ -37,11 +37,12 @@
 #include "param/param.h"
 
 
-/*
+/**
   create a new ldap_connection stucture. The event context is optional
 */
 struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
-					    struct event_context *ev)
+					     struct loadparm_context *lp_ctx,
+					     struct event_context *ev)
 {
 	struct ldap_connection *conn;
 
@@ -60,6 +61,8 @@ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx,
 
 	conn->next_messageid  = 1;
 	conn->event.event_ctx = ev;
+
+	conn->lp_ctx = lp_ctx;
 
 	/* set a reasonable request timeout */
 	conn->timeout = 60;
@@ -352,7 +355,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		}
 
 		ctx = socket_connect_send(conn->sock, NULL, unix_addr, 
-					  0, lp_name_resolve_order(global_loadparm), conn->event.event_ctx);
+					  0, lp_name_resolve_order(conn->lp_ctx), conn->event.event_ctx);
 		ctx->async.fn = ldap_connect_recv_unix_conn;
 		ctx->async.private_data = state;
 		return result;
@@ -365,7 +368,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		}
 		
 		ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
-						lp_name_resolve_order(global_loadparm), conn->event.event_ctx);
+						lp_name_resolve_order(conn->lp_ctx), conn->event.event_ctx);
 		if (ctx == NULL) goto failed;
 
 		ctx->async.fn = ldap_connect_recv_tcp_conn;
@@ -394,7 +397,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	talloc_steal(conn, conn->sock);
 	if (conn->ldaps) {
 		struct socket_context *tls_socket;
-		char *cafile = private_path(conn->sock, global_loadparm, lp_tls_cafile(global_loadparm));
+		char *cafile = private_path(conn->sock, conn->lp_ctx, lp_tls_cafile(conn->lp_ctx));
 
 		if (!cafile || !*cafile) {
 			talloc_free(conn->sock);

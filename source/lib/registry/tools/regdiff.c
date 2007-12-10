@@ -116,11 +116,11 @@ int main(int argc, const char **argv)
 
 	}
 
-	h1 = open_backend(pc, global_loadparm, backend1, remote1);
+	h1 = open_backend(pc, cmdline_lp_ctx, backend1, remote1);
 	if (h1 == NULL)
 		return 1;
 
-	h2 = open_backend(pc, global_loadparm, backend2, remote2);
+	h2 = open_backend(pc, cmdline_lp_ctx, backend2, remote2);
 	if (h2 == NULL)
 		return 1;
 

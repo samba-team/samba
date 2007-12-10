@@ -51,6 +51,8 @@ struct ldap_request {
 /* main context for a ldap client connection */
 struct ldap_connection {
 	struct socket_context *sock;
+	struct loadparm_context *lp_ctx;
+
 	char *host;
 	uint16_t port;
 	bool ldaps;

@@ -234,7 +234,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 	}
 */
 
-	lp_ctx = global_loadparm;
+	lp_ctx = cmdline_lp_ctx;
 	
 	/* We need this to force the output */
 	lp_set_cmdline(lp_ctx, "log level", "2");

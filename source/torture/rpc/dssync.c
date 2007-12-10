@@ -173,7 +173,8 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	return ctx;
 }
 
-static bool _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncBindInfo *b)
+static bool _test_DsBind(struct torture_context *tctx,
+			 struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncBindInfo *b)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -182,7 +183,7 @@ static bool _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
 				       &ndr_table_drsuapi,
-				       credentials, event, global_loadparm);
+				       credentials, event, tctx->lp_ctx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -223,12 +224,13 @@ static bool _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	return ret;
 }
 
-static bool test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
+static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx, 
+			  struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
 {
 	NTSTATUS status;
 	bool ret = true;
 
-	status = torture_ldap_connection(ctx, &l->conn, ctx->ldap_url);
+	status = torture_ldap_connection(tctx, &l->conn, ctx->ldap_url);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to LDAP: %s\n", ctx->ldap_url);
 		return false;
@@ -236,7 +238,7 @@ static bool test_LDAPBind(struct DsSyncTest *ctx, struct cli_credentials *creden
 
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
 
-	status = torture_ldap_bind_sasl(l->conn, credentials, global_loadparm);
+	status = torture_ldap_bind_sasl(l->conn, credentials, tctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to bind to LDAP:\n");
 		return false;
@@ -811,16 +813,16 @@ bool torture_rpc_dssync(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_dssync");
 	ctx = test_create_context(torture);
 	
-	ret &= _test_DsBind(ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
+	ret &= _test_DsBind(torture, ctx, ctx->admin.credentials, &ctx->admin.drsuapi);
 	if (!ret) {
 		return ret;
 	}
-	ret &= test_LDAPBind(ctx, ctx->admin.credentials, &ctx->admin.ldap);
+	ret &= test_LDAPBind(torture, ctx, ctx->admin.credentials, &ctx->admin.ldap);
 	if (!ret) {
 		return ret;
 	}
 	ret &= test_GetInfo(torture, ctx);
-	ret &= _test_DsBind(ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
+	ret &= _test_DsBind(torture, ctx, ctx->new_dc.credentials, &ctx->new_dc.drsuapi);
 	if (!ret) {
 		return ret;
 	}

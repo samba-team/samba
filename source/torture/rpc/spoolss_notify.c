@@ -289,7 +289,7 @@ struct torture_suite *torture_rpc_spoolss_notify(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
 							"notify", &ndr_table_spoolss);
 
-	ntvfs_init();
+	ntvfs_init(global_loadparm);
 	torture_rpc_tcase_add_test(tcase, "testRFFPCNEx", test_RFFPCNEx);
 	
 	return suite;

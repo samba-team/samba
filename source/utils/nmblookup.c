@@ -179,7 +179,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static bool process_one(const char *name, int nbt_port)
+static bool process_one(struct loadparm_context *lp_ctx, const char *name, int nbt_port)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
@@ -241,9 +241,9 @@ static bool process_one(const char *name, int nbt_port)
 		status = do_node_query(nbtsock, options.unicast_address, 
 				       nbt_port, node_name, node_type, false);
 	} else {
-		int i, num_interfaces = iface_count(global_loadparm);
+		int i, num_interfaces = iface_count(lp_ctx);
 		for (i=0;i<num_interfaces;i++) {
-			const char *bcast = iface_n_bcast(global_loadparm, i);
+			const char *bcast = iface_n_bcast(lp_ctx, i);
 			if (bcast == NULL) continue;
 			status = do_node_query(nbtsock, bcast, nbt_port, 
 					       node_name, node_type, true);
@@ -353,7 +353,7 @@ int main(int argc, const char *argv[])
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(name, lp_nbt_port(global_loadparm));
+		ret &= process_one(cmdline_lp_ctx, name, lp_nbt_port(cmdline_lp_ctx));
 	}
 
 	poptFreeContext(pc);

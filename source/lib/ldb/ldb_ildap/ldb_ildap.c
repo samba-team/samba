@@ -756,7 +756,8 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 	module->private_data	= ildb;
 	ildb->module		= module;
-	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
+	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"), 
+					  ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
 		goto failed;
@@ -793,7 +794,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 				goto failed;
 			}
 		} else {
-			status = ldap_bind_sasl(ildb->ldap, creds, global_loadparm);
+			status = ldap_bind_sasl(ildb->ldap, creds, ldb_get_opaque(ldb, "loadparm"));
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
 					  ldap_errstr(ildb->ldap, module, status));

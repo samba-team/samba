@@ -267,36 +267,36 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		become_daemon(true);
 	}
 
-	cleanup_tmp_files(global_loadparm);
+	cleanup_tmp_files(cmdline_lp_ctx);
 
-	if (!directory_exist(lp_lockdir(global_loadparm))) {
-		mkdir(lp_lockdir(global_loadparm), 0755);
+	if (!directory_exist(lp_lockdir(cmdline_lp_ctx))) {
+		mkdir(lp_lockdir(cmdline_lp_ctx), 0755);
 	}
 
-	pidfile_create(lp_piddir(global_loadparm), binary_name);
+	pidfile_create(lp_piddir(cmdline_lp_ctx), binary_name);
 
 	/* Do *not* remove this, until you have removed
 	 * passdb/secrets.c, and proved that Samba still builds... */
 	/* Setup the SECRETS subsystem */
-	if (!secrets_init(global_loadparm)) {
+	if (!secrets_init(cmdline_lp_ctx)) {
 		exit(1);
 	}
 
 	ldb_global_init(); /* FIXME: */
 
-	share_init(global_loadparm);
+	share_init();
 
-	gensec_init(global_loadparm); /* FIXME: */
+	gensec_init(cmdline_lp_ctx); /* FIXME: */
 
-	ntptr_init(global_loadparm);	/* FIXME: maybe run this in the initialization function 
+	ntptr_init(cmdline_lp_ctx);	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */
 
-	ntvfs_init(); 	/* FIXME: maybe run this in the initialization functions 
+	ntvfs_init(cmdline_lp_ctx); 	/* FIXME: maybe run this in the initialization functions 
 						of the SMB[,2] server instead? */
 
-	process_model_init(global_loadparm); 
+	process_model_init(cmdline_lp_ctx); 
 
-	shared_init = load_samba_modules(NULL, global_loadparm, "service");
+	shared_init = load_samba_modules(NULL, cmdline_lp_ctx, "service");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
@@ -313,7 +313,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	/* initialise clustering if needed */
-	cluster_ctdb_init(global_loadparm, event_ctx, model);
+	cluster_ctdb_init(cmdline_lp_ctx, event_ctx, model);
 
 	if (opt_interactive) {
 		/* catch EOF on stdin */
@@ -334,8 +334,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
-	status = server_service_startup(event_ctx, global_loadparm, model, 
-					lp_server_services(global_loadparm));
+	status = server_service_startup(event_ctx, cmdline_lp_ctx, model, 
+					lp_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;

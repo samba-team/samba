@@ -54,8 +54,9 @@ _PUBLIC_ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn,
 }
 
 /* open a ldap connection to a server */
-_PUBLIC_ NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
-				const char *url)
+_PUBLIC_ NTSTATUS torture_ldap_connection(struct torture_context *tctx, 
+					  struct ldap_connection **conn, 
+					  const char *url)
 {
 	NTSTATUS status;
 
@@ -64,7 +65,7 @@ _PUBLIC_ NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_conne
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*conn = ldap4_new_connection(mem_ctx, NULL);
+	*conn = ldap4_new_connection(tctx, tctx->lp_ctx, NULL);
 
 	status = ldap_connect(*conn, url);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -76,17 +77,17 @@ _PUBLIC_ NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_conne
 }
 
 /* open a ldap connection to a server */
-NTSTATUS torture_ldap_connection2(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
+NTSTATUS torture_ldap_connection2(struct torture_context *tctx, struct ldap_connection **conn, 
 				const char *url, const char *userdn, const char *password)
 {
         NTSTATUS status;
 
-	status = torture_ldap_connection(mem_ctx, conn, url);
+	status = torture_ldap_connection(tctx, conn, url);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = ldap_bind_simple(*conn, userdn, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed a simple ldap bind - %s\n", ldap_errstr(*conn, mem_ctx, status));
+		printf("Failed a simple ldap bind - %s\n", ldap_errstr(*conn, tctx, status));
 	}
  
 	return status;

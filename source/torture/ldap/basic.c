@@ -42,14 +42,15 @@ static bool test_bind_simple(struct ldap_connection *conn, const char *userdn, c
 	return ret;
 }
 
-static bool test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
+static bool test_bind_sasl(struct torture_context *tctx,
+			   struct ldap_connection *conn, struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	bool ret = true;
 
 	printf("Testing sasl bind as user\n");
 
-	status = torture_ldap_bind_sasl(conn, creds, global_loadparm);
+	status = torture_ldap_bind_sasl(conn, creds, tctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
 	}
@@ -205,7 +206,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 
 	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
 
-	status = torture_ldap_connection(mem_ctx, &conn, url);
+	status = torture_ldap_connection(torture, &conn, url);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -220,7 +221,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
-	if (!test_bind_sasl(conn, cmdline_credentials)) {
+	if (!test_bind_sasl(torture, conn, cmdline_credentials)) {
 		ret = false;
 	}
 
