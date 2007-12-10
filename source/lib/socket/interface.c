@@ -47,12 +47,13 @@ static struct interface *local_interfaces;
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip, bool CheckMask)
+static struct interface *iface_find(struct interface *interfaces, 
+				    struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(ip)) return interfaces;
 
-	for (i=local_interfaces;i;i=i->next)
+	for (i=interfaces;i;i=i->next)
 		if (CheckMask) {
 			if (same_net(i->ip,ip,i->nmask)) return i;
 		} else if (i->ip.s_addr == ip.s_addr) return i;
@@ -64,18 +65,19 @@ static struct interface *iface_find(struct in_addr ip, bool CheckMask)
 /****************************************************************************
 add an interface to the linked list of interfaces
 ****************************************************************************/
-static void add_interface(struct in_addr ip, struct in_addr nmask)
+static void add_interface(struct in_addr ip, struct in_addr nmask, struct interface **interfaces)
 {
 	struct interface *iface;
 	struct in_addr bcast;
 
-	if (iface_find(ip, false)) {
+	if (iface_find(*interfaces, ip, false)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
 
-	iface = talloc(local_interfaces == NULL ? talloc_autofree_context() : local_interfaces, struct interface);
-	if (!iface) return;
+	iface = talloc(*interfaces == NULL ? talloc_autofree_context() : *interfaces, struct interface);
+	if (iface == NULL) 
+		return;
 	
 	ZERO_STRUCTPN(iface);
 
@@ -92,7 +94,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		iface->bcast_s = talloc_strdup(iface, inet_ntoa(bcast));
 	}
 
-	DLIST_ADD_END(local_interfaces, iface, struct interface *);
+	DLIST_ADD_END(*interfaces, iface, struct interface *);
 
 	DEBUG(2,("added interface ip=%s nmask=%s\n", iface->ip_s, iface->nmask_s));
 }
@@ -125,7 +127,8 @@ static void interpret_interface(const char *token,
 	for (i=0;i<total_probed;i++) {
 		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
 			add_interface(probed_ifaces[i].ip,
-				      probed_ifaces[i].netmask);
+				      probed_ifaces[i].netmask,
+				      &local_interfaces);
 			added = 1;
 		}
 	}
@@ -142,7 +145,8 @@ static void interpret_interface(const char *token,
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
 				add_interface(probed_ifaces[i].ip,
-					      probed_ifaces[i].netmask);
+					      probed_ifaces[i].netmask,
+					      &local_interfaces);
 				return;
 			}
 		}
@@ -166,7 +170,8 @@ static void interpret_interface(const char *token,
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
-				add_interface(probed_ifaces[i].ip, nmask);
+				add_interface(probed_ifaces[i].ip, nmask,
+					      &local_interfaces);
 				return;
 			}
 		}
@@ -174,7 +179,7 @@ static void interpret_interface(const char *token,
 		return;
 	}
 
-	add_interface(ip, nmask);
+	add_interface(ip, nmask, &local_interfaces);
 }
 
 
@@ -207,7 +212,7 @@ static void load_interfaces(const char **interfaces)
 		for (i=0;i<total_probed;i++) {
 			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
 				add_interface(ifaces[i].ip, 
-					      ifaces[i].netmask);
+					      ifaces[i].netmask, &local_interfaces);
 			}
 		}
 	}
@@ -313,7 +318,7 @@ const char *iface_best_ip(struct loadparm_context *lp_ctx, const char *dest)
 	load_interfaces(lp_interfaces(lp_ctx));
 
 	ip.s_addr = interpret_addr(dest);
-	iface = iface_find(ip, true);
+	iface = iface_find(local_interfaces, ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
@@ -330,7 +335,7 @@ bool iface_is_local(struct loadparm_context *lp_ctx, const char *dest)
 	load_interfaces(lp_interfaces(lp_ctx));
 
 	ip.s_addr = interpret_addr(dest);
-	if (iface_find(ip, true)) {
+	if (iface_find(local_interfaces, ip, true)) {
 		return true;
 	}
 	return false;
