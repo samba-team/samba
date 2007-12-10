@@ -1217,7 +1217,7 @@ char *ldb_casefold(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *s);
 
 /**
    Check the attribute name is valid according to rfc2251
-   \param s tthe string to check
+   \param s the string to check
 
    \return 1 if the name is ok
 */
