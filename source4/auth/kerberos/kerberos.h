@@ -88,15 +88,6 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_ccache ccache, 
 				krb5_data *outbuf);
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
- NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
-			    struct smb_krb5_context *smb_krb5_context,
-			    krb5_auth_context *auth_context,
-			    struct cli_credentials *machine_account,
-			    const char *service, 
-			    const DATA_BLOB *enc_ticket, 
-			    krb5_ticket **tkt,
-			    DATA_BLOB *ap_rep,
-			    krb5_keyblock **keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 			       krb5_principal principal, const char *password, 
 			       time_t *expire_time, time_t *kdc_time);
