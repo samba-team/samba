@@ -23,6 +23,7 @@
 #include "libcli/rap/rap.h"
 #include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/common/common.h"
+#include "param/param.h"
 
 /* At this moment these are just dummy functions, but you might get the
  * idea. */
@@ -40,7 +41,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 	r->out.available = 0;
 	r->out.info = NULL;
 
-	nterr = share_get_context(mem_ctx, &sctx);
+	nterr = share_get_context_by_name(mem_ctx, lp_share_backend(global_loadparm), &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return nterr;
 	}

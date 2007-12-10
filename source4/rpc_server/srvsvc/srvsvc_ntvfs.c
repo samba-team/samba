@@ -25,6 +25,7 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/srvsvc/proto.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 
 struct socket_address *srvsvc_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
 {
@@ -61,7 +62,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	struct share_config *scfg;
 	const char *sharetype;
 
-	status = share_get_context(mem_ctx, &sctx);
+	status = share_get_context_by_name(mem_ctx, lp_share_backend(dce_call->conn->dce_ctx->lp_ctx), &sctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

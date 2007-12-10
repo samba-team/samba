@@ -154,4 +154,6 @@ struct wrepl_pull_names {
 	} out;
 };
 
+struct resolve_context;
+
 #include "libcli/wrepl/winsrepl_proto.h"
