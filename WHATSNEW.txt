@@ -1,3 +1,38 @@
+                   ==============================
+                   Release Notes for Samba 3.0.28
+                            Dec 10, 2007
+                   ==============================
+
+Samba 3.0.28 is a security release in order to address the following
+defect:
+
+  o CVS-2007-6015
+    Boundary failure in GETDC mailslot processing can result in 
+    a buffer overrun
+
+The original security announcement for this and past advisories can 
+be found http://www.samba.org/samba/security/
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.27a
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix for CVS-2007-0615.
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix for CVS-2007-0615.
+    * Add missing unbecome_root() calls in error path processing
+      when failing to add local groups in create_local_nt_token().
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+
                    ===============================
                    Release Notes for Samba 3.0.27a
                              Nov 20, 2007
@@ -86,8 +121,6 @@ o   Martin Zielinski <mz@seh.de>
 
 
 
-Release notes for older releases follow:
-
       --------------------------------------------------
 
                    ==============================
@@ -123,8 +156,6 @@ o   Jeremy Allison <jra@samba.org>
 o   Simo Sorce <idra@samba.org>
     * Additional fixes for CVS-2007-4572.
 
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================
