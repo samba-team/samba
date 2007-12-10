@@ -210,15 +210,15 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 #if (_SAMBA_BUILD_ >= 4)
 	/* Must be after we have processed command line options */
-	gensec_init(global_loadparm); 
+	gensec_init(cmdline_lp_ctx); 
 	
-	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb, global_loadparm))) {
+	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb, cmdline_lp_ctx))) {
 		goto failed;
 	}
 	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
 		goto failed;
 	}
-	if (ldb_set_opaque(ldb, "loadparm", global_loadparm)) {
+	if (ldb_set_opaque(ldb, "loadparm", cmdline_lp_ctx)) {
 		goto failed;
 	}
 

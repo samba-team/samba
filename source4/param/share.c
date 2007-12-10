@@ -149,15 +149,11 @@ NTSTATUS share_get_context(TALLOC_CTX *mem_ctx, struct share_context **ctx)
 /*
   initialise the SHARE subsystem
 */
-NTSTATUS share_init(struct loadparm_context *lp_ctx)
+NTSTATUS share_init(void)
 {
 	init_module_fn static_init[] = STATIC_share_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, lp_ctx, "share");
 
 	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
 
 	return NT_STATUS_OK;
 }

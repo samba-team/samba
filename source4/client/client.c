@@ -3181,7 +3181,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 		}
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(cmdline_lp_ctx);
 
 	if(poptPeekArg(pc)) {
 		char *s = strdup(poptGetArg(pc)); 
@@ -3220,11 +3220,11 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 	}
   
 	if (query_host) {
-		return do_host_query(global_loadparm, query_host, lp_workgroup(global_loadparm));
+		return do_host_query(cmdline_lp_ctx, query_host, lp_workgroup(cmdline_lp_ctx));
 	}
 
 	if (message) {
-		return do_message_op(lp_netbios_name(global_loadparm), desthost, dest_ip, name_type, lp_name_resolve_order(global_loadparm), lp_max_xmit(global_loadparm), lp_maxmux(global_loadparm));
+		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, dest_ip, name_type, lp_name_resolve_order(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx));
 	}
 	
 

@@ -23,6 +23,7 @@
 
 struct brlock_ops {
 	struct brl_context *(*brl_init)(TALLOC_CTX *, struct server_id , 
+					struct loadparm_context *lp_ctx,
 					struct messaging_context *);
 	struct brl_handle *(*brl_create_handle)(TALLOC_CTX *, struct ntvfs_handle *, DATA_BLOB *);
 	NTSTATUS (*brl_lock)(struct brl_context *,

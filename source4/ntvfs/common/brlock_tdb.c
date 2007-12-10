@@ -86,6 +86,7 @@ struct brl_handle {
   pending lock notifications.
 */
 static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
+					struct loadparm_context *lp_ctx,
 				    struct messaging_context *messaging_ctx)
 {
 	struct brl_context *brl;
@@ -95,7 +96,7 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 		return NULL;
 	}
 
-	brl->db = db_tmp_open(brl, global_loadparm, "brlock.tdb", TDB_DEFAULT);
+	brl->db = db_tmp_open(brl, lp_ctx, "brlock.tdb", TDB_DEFAULT);
 	if (brl->db == NULL) {
 		talloc_free(brl);
 		return NULL;

@@ -565,7 +565,7 @@ static void usage(void)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
+	lp_ctx = loadparm_init(talloc_autofree_context());
 	lp_load(lp_ctx, dyn_CONFIGFILE);
 
 	servers[0] = cli_credentials_init(talloc_autofree_context());

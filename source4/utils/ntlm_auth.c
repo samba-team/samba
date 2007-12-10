@@ -77,7 +77,8 @@ static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mo
 					  char *buf, int length, void **private,
 					  unsigned int mux_id, void **private2);
 
-static void manage_squid_request(enum stdio_helper_mode helper_mode, 
+static void manage_squid_request(struct loadparm_context *lp_ctx,
+				 enum stdio_helper_mode helper_mode, 
 				 stdio_helper_function fn, void **private2);
 
 static const struct {
@@ -329,7 +330,7 @@ static const char *get_password(struct cli_credentials *credentials)
 	mux_printf((unsigned int)credentials->priv_data, "PW\n");
 	credentials->priv_data = NULL;
 
-	manage_squid_request(NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, (void **)&password);
+	manage_squid_request(cmdline_lp_ctx, NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, (void **)&password);
 	return password;
 }
 
@@ -897,7 +898,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 }
 
-static void manage_squid_request(enum stdio_helper_mode helper_mode, 
+static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_helper_mode helper_mode, 
 				 stdio_helper_function fn, void **private2) 
 {
 	char *buf;
@@ -1000,17 +1001,18 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		private = &normal_private;
 	}
 
-	fn(helper_mode, global_loadparm, c, length, private, mux_id, private2);
+	fn(helper_mode, lp_ctx, c, length, private, mux_id, private2);
 	talloc_free(buf);
 }
 
-static void squid_stream(enum stdio_helper_mode stdio_mode, 
+static void squid_stream(struct loadparm_context *lp_ctx, 
+			 enum stdio_helper_mode stdio_mode, 
 			 stdio_helper_function fn) {
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
 	while(1) {
-		manage_squid_request(stdio_mode, fn, NULL);
+		manage_squid_request(lp_ctx, stdio_mode, fn, NULL);
 	}
 }
 
@@ -1093,17 +1095,17 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	gensec_init(global_loadparm);
+	gensec_init(cmdline_lp_ctx);
 
 	if (opt_domain == NULL) {
-		opt_domain = lp_workgroup(global_loadparm);
+		opt_domain = lp_workgroup(cmdline_lp_ctx);
 	}
 
 	if (helper_protocol) {
 		int i;
 		for (i=0; i<NUM_HELPER_MODES; i++) {
 			if (strcmp(helper_protocol, stdio_helper_protocols[i].name) == 0) {
-				squid_stream(stdio_helper_protocols[i].mode, stdio_helper_protocols[i].fn);
+				squid_stream(cmdline_lp_ctx, stdio_helper_protocols[i].mode, stdio_helper_protocols[i].fn);
 				exit(0);
 			}
 		}
@@ -1123,7 +1125,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (opt_workstation == NULL) {
-		opt_workstation = lp_netbios_name(global_loadparm);
+		opt_workstation = lp_netbios_name(cmdline_lp_ctx);
 	}
 
 	if (!opt_password) {
@@ -1133,7 +1135,7 @@ int main(int argc, const char **argv)
 	{
 		char *user;
 
-		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(global_loadparm), opt_username);
+		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(cmdline_lp_ctx), opt_username);
 		if (!check_plaintext_auth(user, opt_password, true)) {
 			return 1;
 		}

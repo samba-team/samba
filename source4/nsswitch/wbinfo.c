@@ -52,7 +52,7 @@ static char winbind_separator_int(bool strict)
 			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
-		return *lp_winbind_separator(global_loadparm);
+		return *lp_winbind_separator(cmdline_lp_ctx);
 	}
 
 	sep = response.data.info.winbind_separator;
@@ -64,7 +64,7 @@ static char winbind_separator_int(bool strict)
 			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
-		sep = *lp_winbind_separator(global_loadparm);
+		sep = *lp_winbind_separator(cmdline_lp_ctx);
 	}
 	
 	return sep;
@@ -89,7 +89,7 @@ static const char *get_winbind_domain(void)
 		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
-		return lp_workgroup(global_loadparm);
+		return lp_workgroup(cmdline_lp_ctx);
 	}
 
 	fstrcpy(winbind_domain, response.data.domain_name);
@@ -1218,7 +1218,7 @@ int main(int argc, char **argv, char **envp)
 					got_error = true;
 				}
 
-				if (!wbinfo_auth_crap(global_loadparm, string_arg)) {
+				if (!wbinfo_auth_crap(cmdline_lp_ctx, string_arg)) {
 					d_fprintf(stderr, "Could not authenticate user %s with "
 						"challenge/response\n", string_arg);
 					got_error = true;

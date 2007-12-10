@@ -484,7 +484,7 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
+	lp_ctx = loadparm_init(talloc_autofree_context());
 	lp_load(lp_ctx, dyn_CONFIGFILE);
 
 	if (getenv("USER")) {

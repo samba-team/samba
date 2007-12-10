@@ -45,6 +45,8 @@ static const char *sclassic_string_option(struct share_config *scfg,
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+							  struct loadparm_context);
 	char *parm, *val;
 	const char *ret;
 
@@ -57,7 +59,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string(global_loadparm, s, parm, val);
+		ret = lp_parm_string(lp_ctx, s, parm, val);
 		if (!ret) {
 			ret = defval;
 		}
@@ -105,6 +107,8 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+							  struct loadparm_context);
 	char *parm, *val;
 	int ret;
 
@@ -117,7 +121,7 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_int(global_loadparm, s, parm, val, defval);
+		ret = lp_parm_int(lp_ctx, s, parm, val, defval);
 		if (!ret) {
 			ret = defval;
 		}
@@ -161,6 +165,8 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+							  struct loadparm_context);
 	char *parm, *val;
 	bool ret;
 
@@ -173,7 +179,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_bool(global_loadparm, s, parm, val, defval);
+		ret = lp_parm_bool(lp_ctx, s, parm, val, defval);
 		talloc_free(parm);
 		return ret;
 	}
@@ -228,6 +234,8 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+							  struct loadparm_context);
 	char *parm, *val;
 	const char **ret;
 
@@ -240,7 +248,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string_list(mem_ctx, global_loadparm, s, parm, val, ",;");
+		ret = lp_parm_string_list(mem_ctx, lp_ctx, s, parm, val, ",;");
 		talloc_free(parm);
 		return ret;
 	}

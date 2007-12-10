@@ -497,7 +497,7 @@ int main(int argc, char **argv)
 	ctx = talloc_zero(NULL, struct regshell_context);
 
 	if (remote != NULL) {
-		ctx->registry = reg_common_open_remote(remote, global_loadparm, 
+		ctx->registry = reg_common_open_remote(remote, cmdline_lp_ctx, 
 						       cmdline_credentials);
 	} else if (file != NULL) {
 		ctx->current = reg_common_open_file(file, cmdline_credentials);
@@ -506,7 +506,7 @@ int main(int argc, char **argv)
 		ctx->registry = ctx->current->context;
 		ctx->path = talloc_strdup(ctx, "");
 	} else {
-		ctx->registry = reg_common_open_local(cmdline_credentials, global_loadparm);
+		ctx->registry = reg_common_open_local(cmdline_credentials, cmdline_lp_ctx);
 	}
 
 	if (ctx->registry == NULL)

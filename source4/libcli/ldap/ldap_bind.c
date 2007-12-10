@@ -44,7 +44,7 @@ NTSTATUS ldap_rebind(struct ldap_connection *conn)
 	switch (conn->bind.type) {
 	case LDAP_BIND_SASL:
 		status = ldap_bind_sasl(conn, (struct cli_credentials *)conn->bind.creds,
-					global_loadparm);
+					conn->lp_ctx);
 		break;
 		
 	case LDAP_BIND_SIMPLE:

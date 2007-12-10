@@ -49,7 +49,7 @@ static NTSTATUS make_connection_scfg(struct smbsrv_request *req,
 				       req->smb_conn->negotiate.protocol,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
-				       global_loadparm,
+				       req->smb_conn->lp_ctx,
 				       req->smb_conn->connection->server_id,
 				       &tcon->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {

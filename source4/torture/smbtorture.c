@@ -572,36 +572,36 @@ int main(int argc,char *argv[])
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_LOADFILE:
-			lp_set_cmdline(global_loadparm, "torture:loadfile", poptGetOptArg(pc));
+			lp_set_cmdline(cmdline_lp_ctx, "torture:loadfile", poptGetOptArg(pc));
 			break;
 		case OPT_UNCLIST:
-			lp_set_cmdline(global_loadparm, "torture:unclist", poptGetOptArg(pc));
+			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case OPT_TIMELIMIT:
-			lp_set_cmdline(global_loadparm, "torture:timelimit", poptGetOptArg(pc));
+			lp_set_cmdline(cmdline_lp_ctx, "torture:timelimit", poptGetOptArg(pc));
 			break;
 		case OPT_NUMPROGS:
-			lp_set_cmdline(global_loadparm, "torture:nprocs", poptGetOptArg(pc));
+			lp_set_cmdline(cmdline_lp_ctx, "torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
-			parse_dns(global_loadparm, poptGetOptArg(pc));
+			parse_dns(cmdline_lp_ctx, poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
-			lp_set_cmdline(global_loadparm, "torture:dangerous", "Yes");
+			lp_set_cmdline(cmdline_lp_ctx, "torture:dangerous", "Yes");
 			break;
 		case OPT_ASYNC:
-			lp_set_cmdline(global_loadparm, "torture:async", "Yes");
+			lp_set_cmdline(cmdline_lp_ctx, "torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
-			lp_set_cmdline(global_loadparm, "smb ports", poptGetOptArg(pc));
+			lp_set_cmdline(cmdline_lp_ctx, "smb ports", poptGetOptArg(pc));
 			break;
 		}
 	}
 
 	if (strcmp(target, "samba3") == 0) {
-		lp_set_cmdline(global_loadparm, "torture:samba3", "true");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
 	} else if (strcmp(target, "samba4") == 0) {
-		lp_set_cmdline(global_loadparm, "torture:samba4", "true");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
 	}
 
 	if (max_runtime) {
@@ -658,7 +658,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	if (!parse_target(global_loadparm, argv_new[1])) {
+	if (!parse_target(cmdline_lp_ctx, argv_new[1])) {
 		usage(pc);
 		exit(1);
 	}
@@ -690,7 +690,7 @@ int main(int argc,char *argv[])
 		torture->outputdir = pwd;
 	}
 
-	torture->lp_ctx = global_loadparm;
+	torture->lp_ctx = cmdline_lp_ctx;
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
