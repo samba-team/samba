@@ -15,6 +15,7 @@ from uuid import uuid4
 from param import default_configuration
 
 def regkey_to_dn(name):
+    """Convert a registry key to a DN."""
 	dn = "hive=NONE"
 
     for el in name.split("/")[1:]:
@@ -191,6 +192,7 @@ unixID: %d""" % (m.sid, domaindn, m.sid, m.type, m.unix_id)
 	return ldif
 
 def upgrade_wins(samba3):
+    """Upgrade the WINS database."""
 	ldif = ""
 	version_id = 0
 
