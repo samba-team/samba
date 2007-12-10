@@ -147,6 +147,7 @@ struct nbt_name_status {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
+		uint16_t dest_port;
 		int timeout; /* in seconds */
 		int retries;
 	} in;

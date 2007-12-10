@@ -189,6 +189,7 @@ static void fallback_node_status(struct finddcs_state *state)
 	state->node_status.in.name.type = NBT_NAME_CLIENT;
 	state->node_status.in.name.scope = NULL;
 	state->node_status.in.dest_addr = state->dcs[0].address;
+	state->node_status.in.dest_port = lp_nbt_port(global_loadparm);
 	state->node_status.in.timeout = 1;
 	state->node_status.in.retries = 2;
 
