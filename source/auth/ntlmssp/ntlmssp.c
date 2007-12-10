@@ -428,7 +428,7 @@ NTSTATUS gensec_ntlmssp_init(void)
 {
 	NTSTATUS ret;
 
-	auth_init(global_loadparm);
+	auth_init();
 
 	ret = gensec_register(&gensec_ntlmssp_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {

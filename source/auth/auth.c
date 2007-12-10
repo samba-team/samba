@@ -512,27 +512,21 @@ const struct auth_critical_sizes *auth_interface_version(void)
 	return &critical_sizes;
 }
 
-NTSTATUS auth_init(struct loadparm_context *lp_ctx)
+NTSTATUS auth_init(void)
 {
 	static bool initialized = false;
 
 	init_module_fn static_init[] = STATIC_auth_MODULES;
-	init_module_fn *shared_init;
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, lp_ctx, "auth");
-
 	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
 	
 	return NT_STATUS_OK;	
 }
 
 NTSTATUS server_service_auth_init(void)
 {
-	return auth_init(global_loadparm);
+	return auth_init();
 }
