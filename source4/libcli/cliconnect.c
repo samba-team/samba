@@ -31,12 +31,12 @@
   wrapper around smbcli_sock_connect()
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
-			   const char **name_resolve_order,
+			   struct resolve_context *resolve_ctx,
 			   int max_xmit, int max_mux)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_connect_byname(server, 0, NULL, name_resolve_order, 
+	sock = smbcli_sock_connect_byname(server, 0, NULL, resolve_ctx, 
 					  NULL);
 
 	if (sock == NULL) return false;

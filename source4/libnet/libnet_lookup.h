@@ -22,7 +22,7 @@ struct libnet_Lookup {
 	struct {
 		const char *hostname;
 		int type;
-		const char **methods;
+		struct resolve_context *resolve_ctx;
 	} in;
 	struct {
 		const char **address;

@@ -30,6 +30,7 @@ struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */
 struct smbcli_transport;  /* forward declare */
 
+struct resolve_context;
 struct cli_credentials;
 
 /* default timeout for all smb requests */

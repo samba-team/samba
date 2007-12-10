@@ -24,7 +24,7 @@
  Support for server level security.
 ****************************************************************************/
 
-static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, bool unicode, int maxprotocol, const char **name_resolve_order)
+static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, bool unicode, int maxprotocol, struct resolve_context *resolve_ctx)
 {
 	struct smbcli_state *cli = NULL;
 	fstring desthost;
@@ -45,7 +45,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, bool unicode, i
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		strupper(desthost);
 
-		if(!resolve_name( desthost, &dest_ip, 0x20, name_resolve_order)) {
+		if(!resolve_name(resolve_ctx, desthost, &dest_ip, 0x20)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
 		}
@@ -215,7 +215,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	
 	if (cli) {
 	} else {
-		cli = server_cryptkey(mem_ctx, lp_unicode(auth_context->lp_ctx), lp_cli_maxprotocol(auth_context->lp_ctx), lp_name_resolve_order(auth_context->lp_ctx));
+		cli = server_cryptkey(mem_ctx, lp_unicode(auth_context->lp_ctx), lp_cli_maxprotocol(auth_context->lp_ctx), lp_resolve_context(auth_context->lp_ctx));
 		locally_made_cli = true;
 	}
 

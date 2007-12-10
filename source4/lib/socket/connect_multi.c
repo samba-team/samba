@@ -38,7 +38,7 @@ struct connect_multi_state {
 	int num_ports;
 	uint16_t *ports;
 
-	const char **name_resolve_order;
+	struct resolve_context *resolve_ctx;
 
 	struct socket_context *sock;
 	uint16_t result_port;
@@ -70,7 +70,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 						    const char *server_address,
 						    int num_server_ports,
 						    uint16_t *server_ports,
-						    const char **name_resolve_order,
+						    struct resolve_context *resolve_ctx,
 						    struct event_context *event_ctx)
 {
 	struct composite_context *result;
@@ -90,7 +90,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 	if (composite_nomem(multi->server_address, result)) goto failed;
 
 	multi->num_ports = num_server_ports;
-	multi->name_resolve_order = str_list_copy(multi, name_resolve_order);
+	multi->resolve_ctx = talloc_reference(multi, resolve_ctx);
 	multi->ports = talloc_array(multi, uint16_t, multi->num_ports);
 	if (composite_nomem(multi->ports, result)) goto failed;
 
@@ -107,8 +107,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 		struct nbt_name name;
 		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address);
-		creq = resolve_name_send(&name, result->event_ctx,
-					 name_resolve_order);
+		creq = resolve_name_send(resolve_ctx, &name, result->event_ctx);
 		if (composite_nomem(creq, result)) goto failed;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;
@@ -161,7 +160,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 	talloc_steal(state, state->sock);
 
 	creq = socket_connect_send(state->sock, NULL, 
-				   state->addr, 0, multi->name_resolve_order, 
+				   state->addr, 0, multi->resolve_ctx, 
 				   result->event_ctx);
 	if (composite_nomem(creq, result)) return;
 	talloc_steal(state, creq);
@@ -269,7 +268,7 @@ _PUBLIC_ NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx,
 			      const char *server_address,
 			      int num_server_ports, uint16_t *server_ports,
-			      const char **name_resolve_order,
+			      struct resolve_context *resolve_ctx,
 			      struct event_context *event_ctx,
 			      struct socket_context **result,
 			      uint16_t *result_port)
@@ -277,7 +276,7 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx,
 	struct composite_context *ctx =
 		socket_connect_multi_send(mem_ctx, server_address,
 					  num_server_ports, server_ports,
-					  name_resolve_order,
+					  resolve_ctx,
 					  event_ctx);
 	return socket_connect_multi_recv(ctx, mem_ctx, result, result_port);
 }

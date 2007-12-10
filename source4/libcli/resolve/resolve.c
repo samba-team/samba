@@ -4,6 +4,7 @@
    general name resolution interface
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,57 +27,67 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "system/network.h"
+#include "util/dlinklist.h"
 
 struct resolve_state {
+	struct resolve_context *ctx;
+	struct resolve_method *method;
 	struct nbt_name name;
-	const char **methods;
 	struct composite_context *creq;
 	const char *reply_addr;
 };
 
 static struct composite_context *setup_next_method(struct composite_context *c);
 
-/* pointers to the resolver backends */
-static const struct resolve_method {
-	const char *name;
-	struct composite_context *(*send_fn)(TALLOC_CTX *mem_ctx, struct event_context *, struct nbt_name *);
-	NTSTATUS (*recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
 
-} resolve_methods[] = {
-	{ "bcast", resolve_name_bcast_send,  resolve_name_bcast_recv },
-	{ "wins",  resolve_name_wins_send,   resolve_name_wins_recv },
-	{ "host",  resolve_name_host_send,   resolve_name_host_recv }
+struct resolve_context {
+	struct resolve_method {
+		resolve_name_send_fn send_fn;
+		resolve_name_recv_fn recv_fn;
+		void *privdata;
+		struct resolve_method *prev, *next;
+	} *methods;
 };
 
-
-/* 
-   find a matching backend
-*/
-static const struct resolve_method *find_method(const char *name)
+/**
+ * Initialize a resolve context
+ */
+struct resolve_context *resolve_context_init(TALLOC_CTX *mem_ctx)
 {
-	int i;
-	if (name == NULL) return NULL;
-	for (i=0;i<ARRAY_SIZE(resolve_methods);i++) {
-		if (strcasecmp(name, resolve_methods[i].name) == 0) {
-			return &resolve_methods[i];
-		}
-	}
-	return NULL;
+	return talloc_zero(mem_ctx, struct resolve_context);
 }
 
-/*
+/**
+ * Add a resolve method
+ */
+bool resolve_context_add_method(struct resolve_context *ctx, resolve_name_send_fn send_fn, 
+				resolve_name_recv_fn recv_fn, void *userdata)
+{
+	struct resolve_method *method = talloc_zero(ctx, struct resolve_method);
+
+	if (method == NULL)
+		return false;
+
+	method->send_fn = send_fn;
+	method->recv_fn = recv_fn;
+	method->privdata = userdata;
+	DLIST_ADD_END(ctx->methods, method, struct resolve_method *);
+	return true;
+}
+
+/**
   handle completion of one name resolve method
 */
 static void resolve_handler(struct composite_context *creq)
 {
 	struct composite_context *c = (struct composite_context *)creq->async.private_data;
 	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
-	const struct resolve_method *method = find_method(state->methods[0]);
+	const struct resolve_method *method = state->method;
 
 	c->status = method->recv_fn(creq, state, &state->reply_addr);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
-		state->methods++;
+		state->method = state->method->next;
 		state->creq = setup_next_method(c);
 		if (state->creq != NULL) {
 			return;
@@ -100,13 +111,12 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 	struct composite_context *creq = NULL;
 
 	do {
-		const struct resolve_method *method = find_method(state->methods[0]);
-		if (method) {
-			creq = method->send_fn(c, c->event_ctx, &state->name);
+		if (state->method) {
+			creq = state->method->send_fn(c, c->event_ctx, state->method->privdata, &state->name);
 		}
-		if (creq == NULL && state->methods[0]) state->methods++;
+		if (creq == NULL && state->method) state->method = state->method->next;
 
-	} while (!creq && state->methods[0]);
+	} while (!creq && state->method);
 
 	if (creq) {
 		creq->async.fn = resolve_handler;
@@ -119,8 +129,9 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 /*
   general name resolution - async send
  */
-struct composite_context *resolve_name_send(struct nbt_name *name, struct event_context *event_ctx,
-					    const char **methods)
+struct composite_context *resolve_name_send(struct resolve_context *ctx,
+					    struct nbt_name *name, 
+					    struct event_context *event_ctx)
 {
 	struct composite_context *c;
 	struct resolve_state *state;
@@ -128,7 +139,7 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	c = composite_create(event_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	if (methods == NULL) {
+	if (ctx == NULL) {
 		composite_error(c, NT_STATUS_INVALID_PARAMETER);
 		return c;
 	}
@@ -147,8 +158,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
 	
-	state->methods = str_list_copy(state, methods);
-	if (composite_nomem(state->methods, c)) return c;
+	state->ctx = talloc_reference(state, ctx);
+	if (composite_nomem(state->ctx, c)) return c;
 
 	if (is_ipaddress(state->name.name) || 
 	    strcasecmp(state->name.name, "localhost") == 0) {
@@ -159,6 +170,7 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 		return c;
 	}
 
+	state->method = ctx->methods;
 	state->creq = setup_next_method(c);
 	if (composite_nomem(state->creq, c)) return c;
 	
@@ -187,9 +199,9 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 /*
   general name resolution - sync call
  */
-NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr, struct event_context *ev, const char **name_resolve_order)
+NTSTATUS resolve_name(struct resolve_context *ctx, struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr, struct event_context *ev)
 {
-	struct composite_context *c = resolve_name_send(name, ev, name_resolve_order); 
+	struct composite_context *c = resolve_name_send(ctx, name, ev); 
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 
@@ -214,4 +226,28 @@ void make_nbt_name_client(struct nbt_name *nbt, const char *name)
 void make_nbt_name_server(struct nbt_name *nbt, const char *name)
 {
 	make_nbt_name(nbt, name, NBT_NAME_SERVER);
+}
+
+struct resolve_context *lp_resolve_context(struct loadparm_context *lp_ctx)
+{
+	const char **methods = lp_name_resolve_order(lp_ctx);
+	int i;
+	struct resolve_context *ret = resolve_context_init(lp_ctx);
+
+	if (ret == NULL)
+		return NULL;
+
+	for (i = 0; methods != NULL && methods[i] != NULL; i++) {
+		if (!strcmp(methods[i], "wins")) {
+			resolve_context_add_wins_method(ret, lp_wins_server_list(lp_ctx));
+		} else if (!strcmp(methods[i], "bcast")) {
+			resolve_context_add_bcast_method(ret);
+		} else if (!strcmp(methods[i], "host")) {
+			resolve_context_add_host_method(ret);
+		} else {
+			DEBUG(0, ("Unknown resolve method '%s'", methods[i]));
+		}
+	}
+
+	return ret;
 }

@@ -26,8 +26,9 @@
 #include "lib/socket/netif.h"
 #include "torture/torture.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
-/*
+/**
   basic testing of udp routines
 */
 static bool test_udp(struct torture_context *tctx)
@@ -146,7 +147,7 @@ static bool test_tcp(struct torture_context *tctx)
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);
 
-	status = socket_connect_ev(sock2, NULL, srv_addr, 0, lp_name_resolve_order(tctx->lp_ctx), ev);
+	status = socket_connect_ev(sock2, NULL, srv_addr, 0, lp_resolve_context(tctx->lp_ctx), ev);
 	torture_assert_ntstatus_ok(tctx, status, "connect() on socket 2");
 
 	status = socket_accept(sock1, &sock3);

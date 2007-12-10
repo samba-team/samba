@@ -84,7 +84,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(&name, tctx, &address, event_context_find(tctx), lp_name_resolve_order(tctx->lp_ctx)),
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(tctx->lp_ctx, address));
@@ -163,7 +163,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(&name, tctx, &address, event_context_find(tctx), lp_name_resolve_order(tctx->lp_ctx)),
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(tctx->lp_ctx, address));
@@ -272,7 +272,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(&name, tctx, &address, event_context_find(tctx), lp_name_resolve_order(tctx->lp_ctx)), 
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)), 
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	myaddress = talloc_strdup(dgmsock, iface_best_ip(tctx->lp_ctx, address));

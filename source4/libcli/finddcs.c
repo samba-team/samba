@@ -65,7 +65,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 				       const char *domain_name,
 				       int name_type,
 				       struct dom_sid *domain_sid,
-				       const char **methods,
+				       struct resolve_context *resolve_ctx,
 				       struct event_context *event_ctx,
 				       struct messaging_context *msg_ctx)
 {
@@ -96,7 +96,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 	state->msg_ctx = msg_ctx;
 
 	make_nbt_name(&name, state->domain_name, name_type);
-	creq = resolve_name_send(&name, event_ctx, methods);
+	creq = resolve_name_send(resolve_ctx, &name, event_ctx);
 	composite_continue(c, creq, finddcs_name_resolved, state);
 	return c;
 }
@@ -249,7 +249,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 const char *my_netbios_name,
 		 const char *domain_name, int name_type, 
 		 struct dom_sid *domain_sid,
-		 const char **methods,
+		 struct resolve_context *resolve_ctx,
 		 struct event_context *event_ctx,
 		 struct messaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
@@ -257,7 +257,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 	struct composite_context *c = finddcs_send(mem_ctx,
 						   my_netbios_name,
 						   domain_name, name_type,
-						   domain_sid, methods, 
+						   domain_sid, resolve_ctx,
 						   event_ctx, msg_ctx);
 	return finddcs_recv(c, mem_ctx, num_dcs, dcs);
 }

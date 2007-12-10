@@ -192,8 +192,8 @@ static void trusted_dom_info_recv_dcname(struct rpc_request *req)
 	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
 	
 	make_nbt_name(&name, state->info->dcs[0].name, 0x20);
-	ctx = resolve_name_send(&name, state->service->task->event_ctx,
-			lp_name_resolve_order(state->service->task->lp_ctx));
+	ctx = resolve_name_send(lp_resolve_context(state->service->task->lp_ctx), 
+				&name, state->service->task->event_ctx);
 
 	composite_continue(state->ctx, ctx, trusted_dom_info_recv_dcaddr,
 			   state);

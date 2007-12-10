@@ -163,7 +163,7 @@ static void continue_resolve(struct composite_context *creq)
 struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    const char *host,
 					    const char *share,
-					    const char **name_resolve_order,
+					    struct resolve_context *resolve_ctx,
 					    struct cli_credentials *credentials,
 					    struct event_context *ev)
 {
@@ -188,7 +188,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(name);
 	name.name = host;
 
-	creq = resolve_name_send(&name, c->event_ctx, name_resolve_order);
+	creq = resolve_name_send(resolve_ctx, &name, c->event_ctx);
 	composite_continue(c, creq, continue_resolve, c);
 	return c;
 }
@@ -215,13 +215,13 @@ NTSTATUS smb2_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx, 
 		      const char *host, const char *share,
-		      const char **name_resolve_order,
+		      struct resolve_context *resolve_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
 		      struct event_context *ev)
 {
 	struct composite_context *c = smb2_connect_send(mem_ctx, host, share, 
-							name_resolve_order,
+							resolve_ctx,
 							credentials, ev);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }

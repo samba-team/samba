@@ -57,7 +57,7 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct lookup_state *s;
 	struct composite_context *cresolve_req;
-	const char** methods;
+	struct resolve_context *resolve_ctx;
 
 	/* allocate context and state structures */
 	c = composite_create(ctx, ctx->event_ctx);
@@ -81,14 +81,14 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	s->hostname.scope  = NULL;
 
 	/* name resolution methods */
-	if (io->in.methods) {
-		methods = io->in.methods;
+	if (io->in.resolve_ctx) {
+		resolve_ctx = io->in.resolve_ctx;
 	} else {
-		methods = ctx->name_res_methods;
+		resolve_ctx = ctx->resolve_ctx;
 	}
 
 	/* send resolve request */
-	cresolve_req = resolve_name_send(&s->hostname, c->event_ctx, methods);
+	cresolve_req = resolve_name_send(resolve_ctx, &s->hostname, c->event_ctx);
 	if (composite_nomem(cresolve_req, c)) return c;
 
 	composite_continue(c, cresolve_req, continue_name_resolved, c);
@@ -196,7 +196,7 @@ struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
 
 	c = finddcs_send(mem_ctx, lp_netbios_name(ctx->lp_ctx),
 			 io->in.domain_name, io->in.name_type,
-			 NULL, ctx->name_res_methods, ctx->event_ctx, msg_ctx);
+			 NULL, ctx->resolve_ctx, ctx->event_ctx, msg_ctx);
 	return c;
 }
 

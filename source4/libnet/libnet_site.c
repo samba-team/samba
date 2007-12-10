@@ -147,7 +147,7 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(&name, r, &dest_addr, NULL, lp_name_resolve_order(global_loadparm));
+	status = resolve_name(lp_resolve_context(global_loadparm), &name, r, &dest_addr, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

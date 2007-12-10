@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -310,7 +311,7 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 	struct cli_credentials *credentials = cmdline_credentials;
 
 	status = smb2_connect(tctx, host, share, 
-			      lp_name_resolve_order(tctx->lp_ctx),
+			      lp_resolve_context(tctx->lp_ctx),
 			      credentials, tree, 
 			      event_context_find(tctx));
 	if (!NT_STATUS_IS_OK(status)) {
