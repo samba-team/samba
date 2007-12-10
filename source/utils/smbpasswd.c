@@ -83,7 +83,7 @@ static void set_line_buffering(FILE *f)
 static int process_options(int argc, char **argv, int local_flags)
 {
 	int ch;
-	const char *configfile = dyn_CONFIGFILE;
+	const char *configfile = get_dyn_CONFIGFILE();
 
 	local_flags |= LOCAL_SET_PASSWORD;
 

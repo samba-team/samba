@@ -4705,9 +4705,9 @@ static int do_message_op(void)
 	if ( override_logfile )
 		setup_logging( lp_logfile(), false );
 
-	if (!lp_load(dyn_CONFIGFILE,true,false,false,true)) {
+	if (!lp_load(get_dyn_CONFIGFILE(),true,false,false,true)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
+			argv[0], get_dyn_CONFIGFILE());
 	}
 
 	load_interfaces();

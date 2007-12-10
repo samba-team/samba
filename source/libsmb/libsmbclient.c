@@ -6900,15 +6900,15 @@ smbc_init_context(SMBCCTX *context)
 
 		if (!conf_loaded) {
                         /*
-                         * Well, if that failed, try the dyn_CONFIGFILE
+                         * Well, if that failed, try the get_dyn_CONFIGFILE
                          * Which points to the standard locn, and if that
                          * fails, silently ignore it and use the internal
                          * defaults ...
                          */
 
-                        if (!lp_load(dyn_CONFIGFILE, True, False, False, False)) {
+                        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, False)) {
                                 DEBUG(5, ("Could not load config file: %s\n",
-                                          dyn_CONFIGFILE));
+                                          get_dyn_CONFIGFILE()));
                         } else if (home) {
         			char *conf;
                                 /*

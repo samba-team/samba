@@ -28,7 +28,7 @@ static WERROR rcinit_stop( const char *service, SERVICE_STATUS *status )
 	int ret, fd;
 
 	if (asprintf(&command, "%s/%s/%s stop",
-				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+				get_dyn_LIBDIR(), SVCCTL_SCRIPT_DIR, service) < 0) {
 		return WERR_NOMEM;
 	}
 
@@ -60,7 +60,7 @@ static WERROR rcinit_start( const char *service )
 	int ret, fd;
 
 	if (asprintf(&command, "%s/%s/%s start",
-				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+				get_dyn_LIBDIR(), SVCCTL_SCRIPT_DIR, service) < 0) {
 		return WERR_NOMEM;
 	}
 
@@ -87,7 +87,7 @@ static WERROR rcinit_status( const char *service, SERVICE_STATUS *status )
 	int ret, fd;
 
 	if (asprintf(&command, "%s/%s/%s status",
-				dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service) < 0) {
+				get_dyn_LIBDIR(), SVCCTL_SCRIPT_DIR, service) < 0) {
 		return WERR_NOMEM;
 	}
 

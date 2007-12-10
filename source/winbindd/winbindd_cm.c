@@ -209,7 +209,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (!override_logfile) {
 		char *logfile;
-		if (asprintf(&logfile, "%s/log.winbindd-dc-connect", dyn_LOGFILEBASE) > 0) {
+		if (asprintf(&logfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
 			lp_set_logfile(logfile);
 			SAFE_FREE(logfile);
 			reopen_logs();

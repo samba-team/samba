@@ -430,7 +430,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 static bool load_config(bool save_def)
 {
 	lp_resetnumservices();
-	return lp_load(dyn_CONFIGFILE,False,save_def,False,True);
+	return lp_load(get_dyn_CONFIGFILE(),False,save_def,False,True);
 }
 
 /****************************************************************************
@@ -453,9 +453,9 @@ static int save_reload(int snum)
 	FILE *f;
 	struct stat st;
 
-	f = sys_fopen(dyn_CONFIGFILE,"w");
+	f = sys_fopen(get_dyn_CONFIGFILE(),"w");
 	if (!f) {
-		printf(_("failed to open %s for writing"), dyn_CONFIGFILE);
+		printf(_("failed to open %s for writing"), get_dyn_CONFIGFILE());
 		printf("\n");
 		return 0;
 	}
@@ -466,7 +466,7 @@ static int save_reload(int snum)
 #if defined HAVE_FCHMOD
 		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 #else
-		chmod(dyn_CONFIGFILE, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+		chmod(get_dyn_CONFIGFILE(), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 #endif
 	}
 
@@ -478,7 +478,7 @@ static int save_reload(int snum)
 	lp_killunused(NULL);
 
 	if (!load_config(False)) {
-                printf(_("Can't reload %s"), dyn_CONFIGFILE);
+                printf(_("Can't reload %s"), get_dyn_CONFIGFILE());
 		printf("\n");
                 return 0;
         }
@@ -1422,23 +1422,23 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
 
-	cgi_setup(dyn_SWATDIR, !demo_mode);
+	cgi_setup(get_dyn_SWATDIR(), !demo_mode);
 
 	print_header();
 
 	cgi_load_variables();
 
-	if (!file_exist(dyn_CONFIGFILE, NULL)) {
+	if (!file_exist(get_dyn_CONFIGFILE(), NULL)) {
 		have_read_access = True;
 		have_write_access = True;
 	} else {
 		/* check if the authenticated user has write access - if not then
 		   don't show write options */
-		have_write_access = (access(dyn_CONFIGFILE,W_OK) == 0);
+		have_write_access = (access(get_dyn_CONFIGFILE(),W_OK) == 0);
 
 		/* if the user doesn't have read access to smb.conf then
 		   don't let them view it */
-		have_read_access = (access(dyn_CONFIGFILE,R_OK) == 0);
+		have_read_access = (access(get_dyn_CONFIGFILE(),R_OK) == 0);
 	}
 
 	show_main_buttons();

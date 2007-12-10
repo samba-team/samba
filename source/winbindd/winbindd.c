@@ -63,13 +63,13 @@ static bool reload_services_file(void)
 	if (lp_loaded()) {
 		const char *fname = lp_configfile();
 
-		if (file_exist(fname,NULL) && !strcsequal(fname,dyn_CONFIGFILE)) {
-			strlcpy(dyn_CONFIGFILE,fname,sizeof(dyn_CONFIGFILE));
+		if (file_exist(fname,NULL) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
+			set_dyn_CONFIGFILE(fname);
 		}
 	}
 
 	reopen_logs();
-	ret = lp_load(dyn_CONFIGFILE,False,False,True,True);
+	ret = lp_load(get_dyn_CONFIGFILE(),False,False,True,True);
 
 	reopen_logs();
 	load_interfaces();
@@ -1088,7 +1088,7 @@ int main(int argc, char **argv, char **envp)
 	if (!override_logfile) {
 		char *logfile = NULL;
 		if (asprintf(&logfile,"%s/log.winbindd",
-				dyn_LOGFILEBASE) > 0) {
+				get_dyn_LOGFILEBASE()) > 0) {
 			lp_set_logfile(logfile);
 			SAFE_FREE(logfile);
 		}

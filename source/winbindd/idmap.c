@@ -333,7 +333,7 @@ NTSTATUS idmap_init(void)
 				DEBUG(0, ("WARNING: idmap backend uses obsolete"
 					  " and deprecated 'idmap_' prefix.\n"
 					  "Please replace 'idmap_%s' by '%s' in"
-					  " %s\n", q, q, dyn_CONFIGFILE));
+					  " %s\n", q, q, get_dyn_CONFIGFILE()));
 				compat_backend = talloc_strdup(idmap_ctx, q);
 			} else {
 				compat_backend = talloc_strdup(idmap_ctx,

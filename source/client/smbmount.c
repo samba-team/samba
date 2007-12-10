@@ -535,7 +535,7 @@ static void init_mount(void)
 	if (sys_fork() == 0) {
 		char *smbmnt_path;
 
-		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
+		asprintf(&smbmnt_path, "%s/smbmnt", get_dyn_BINDIR());
 
 		if (file_exist(smbmnt_path, NULL)) {
 			execv(smbmnt_path, (char * const *)args);
@@ -586,7 +586,7 @@ static void get_password_file(void)
 	int fd = -1;
 	char *p;
 	bool close_it = False;
-	char *spec;
+	char *spec = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	char pass[128];
 
@@ -1012,9 +1012,9 @@ static void parse_mount_smb(int argc, char **argv)
 		}
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
+	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			dyn_CONFIGFILE);
+			get_dyn_CONFIGFILE());
 	}
 
 	parse_mount_smb(argc, argv);

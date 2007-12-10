@@ -63,7 +63,7 @@
 
 	/* default configuration file location */
 
-	char *servicesf = dyn_CONFIGFILE;
+	const char *servicesf = get_dyn_CONFIGFILE();
 
 	/* syslogging function for errors and other information */
 
@@ -128,7 +128,7 @@
 int set_ctrl( int flags, int argc, const char **argv )
 {
     int i = 0;
-    const char *service_file = dyn_CONFIGFILE;
+    const char *service_file = get_dyn_CONFIGFILE();
     unsigned int ctrl;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */

@@ -32,8 +32,9 @@ int main(int argc, char *argv[])
 	extern char *optarg;
 	extern int optind;
 	char *path;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	lp_load(dyn_CONFIGFILE,1,0,0,1);
+	lp_load(get_dyn_CONFIGFILE(),1,0,0,1);
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {
@@ -90,5 +91,6 @@ int main(int argc, char *argv[])
 		printf("%s\n", dent->d_name);
 	}
 	smbw_closedir(dir);
+	TALLOC_FREE(frame);
 	return 0;
 }

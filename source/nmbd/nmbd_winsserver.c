@@ -2366,7 +2366,7 @@ void wins_write_database(time_t t, bool background)
 		}
 	}
 
-	if (asprintf(&fname, "%s/%s", dyn_STATEDIR(), WINS_LIST) < 0) {
+	if (asprintf(&fname, "%s/%s", get_dyn_STATEDIR(), WINS_LIST) < 0) {
 		goto err_exit;
 	}
 	/* This is safe as the 0 length means "don't expand". */

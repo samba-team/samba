@@ -108,7 +108,7 @@ void dump_core_setup(const char *progname)
 		 * line by the -l option but the "log file" option is not set
 		 * in smb.conf.
 		 */
-		if (asprintf(&logbase, "%s", dyn_LOGFILEBASE) < 0) {
+		if (asprintf(&logbase, "%s", get_dyn_LOGFILEBASE()) < 0) {
 			return;
 		}
 	}

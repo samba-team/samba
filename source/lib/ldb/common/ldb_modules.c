@@ -212,7 +212,7 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 		modulesdir = talloc_strdup(ldb, getenv("LD_LDB_MODULE_PATH"));
 	} else {
 #ifdef _SAMBA_BUILD_
-		modulesdir = talloc_asprintf(ldb, "%s/ldb", dyn_MODULESDIR);
+		modulesdir = talloc_asprintf(ldb, "%s/ldb", get_dyn_LIBDIR());
 #else
 		modulesdir = talloc_strdup(ldb, MODULESDIR);
 #endif

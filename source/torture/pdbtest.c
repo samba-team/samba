@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	poptFreeContext(pc);
 
 	/* Load configuration */
-	lp_load(dyn_CONFIGFILE, False, False, True, True);
+	lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 	setup_logging("pdbtest", True);
 
 	if (backend == NULL) {

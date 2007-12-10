@@ -169,7 +169,7 @@ int main( int argc, char *argv[] )
 
 	opt_debug = 0;		/* todo set this from getopts */
 
-	lp_load( dyn_CONFIGFILE, True, False, False, True);
+	lp_load(get_dyn_CONFIGFILE(), True, False, False, True);
 
 	exename = argv[0];
 

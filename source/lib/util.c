@@ -2569,7 +2569,7 @@ char *pid_path(const char *name)
 
 char *lib_path(const char *name)
 {
-	return talloc_asprintf(talloc_tos(), "%s/%s", dyn_LIBDIR, name);
+	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_LIBDIR(), name);
 }
 
 /**
@@ -2582,7 +2582,7 @@ char *lib_path(const char *name)
 
 char *data_path(const char *name)
 {
-	return talloc_asprintf(talloc_tos(), "%s/%s", dyn_CODEPAGEDIR, name);
+	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_CODEPAGEDIR(), name);
 }
 
 /*****************************************************************
@@ -2591,18 +2591,18 @@ a useful function for returning a path in the Samba state directory
 
 char *state_path(const char *name)
 {
-	return xx_path(name, dyn_STATEDIR());
+	return xx_path(name, get_dyn_STATEDIR());
 }
 
 /**
  * @brief Returns the platform specific shared library extension.
  *
- * @retval Pointer to a static #fstring containing the extension.
+ * @retval Pointer to a const char * containing the extension.
  **/
 
 const char *shlib_ext(void)
 {
-	return dyn_SHLIBEXT;
+	return get_dyn_SHLIBEXT();
 }
 
 /*******************************************************************

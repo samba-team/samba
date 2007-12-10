@@ -356,11 +356,11 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		Ucrit_addUid( nametouid(username) );
 
 	if (verbose) {
-		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
+		d_printf("using configfile = %s\n", get_dyn_CONFIGFILE());
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,False,False,False,True)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
 		ret = -1;
 		goto done;
 	}

@@ -49,7 +49,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 
 	setup_logging(argv[0],True);
 	
-	lp_load(dyn_CONFIGFILE,False,False,False,True);
+	lp_load(get_dyn_CONFIGFILE(),False,False,False,True);
 
 	if (!(evt_ctx = event_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
