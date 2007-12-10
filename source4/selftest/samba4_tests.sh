@@ -26,6 +26,7 @@ $incdir/../bin/smbtorture -V
 samba4srcdir=$incdir/..
 samba4bindir=$samba4srcdir/bin
 SCRIPTDIR=$samba4srcdir/../testprogs/ejs
+smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
 plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
 plantest "js.samr" dc "$SCRIPTDIR/samr.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
@@ -47,7 +48,7 @@ if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
 do
-	plantest "$t" dc $samba4bindir/smbtorture $TORTURE_OPTIONS "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
+	plantest "$t" dc $smb4torture "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
 done
 
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
@@ -72,7 +73,7 @@ slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
 all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-SECRETS RPC-SAMBA3-SHARESEC"
 
 # Make sure all tests get run
-for t in `$samba4bindir/smbtorture --list | grep "^RPC-"`
+for t in `$smb4torture --list | grep "^RPC-"`
 do
 	echo $all_tests | grep $t  > /dev/null
 	if [ $? -ne 0 ]
@@ -89,15 +90,15 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "$t on $transport with $bindoptions" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "$t on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
-   plantest "RPC-SAMBA3-SHARESEC on $transport with $bindoptions" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp $t "$*"
+   plantest "RPC-SAMBA3-SHARESEC on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp $t "$*"
  done
 done
 
 for bindoptions in "" $VALIDATE bigendian; do
  for t in $auto_rpc_tests; do
-  plantest "$t with $bindoptions" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+  plantest "$t with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
  done
 done
 
@@ -109,7 +110,7 @@ for bindoptions in connect $VALIDATE ; do
 	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "$t on $transport with $bindoptions" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "$t on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -117,10 +118,10 @@ done
 
 # Tests for the NET API
 
-net=`$samba4bindir/smbtorture --list | grep ^NET-`
+net=`$smb4torture --list | grep ^NET-`
 
 for t in $net; do
-    plantest "$t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
+    plantest "$t" dc $VALGRIND $smb4torture "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
 done
 
 # Tests for session keys
@@ -141,12 +142,12 @@ for ntlmoptions in \
         "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
         "-k no --option=usespnego=no"; do
 	name="RPC-SECRETS on $transport with $bindoptions with $ntlmoptions"
-   plantest "$name" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-SECRETS "$*"
+   plantest "$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-SECRETS "$*"
 done
-plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
-plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos - use target principal" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
- plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
- plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login, use target principal" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
+plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
+plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos - use target principal" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
+ plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
+ plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login, use target principal" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
 
 # Echo tests
 transports="ncacn_np ncacn_ip_tcp ncalrpc"
@@ -155,7 +156,7 @@ for transport in $transports; do
  for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
         "--option=socket:testnonblock=True --option=torture:quick=yes"; do
-   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
   done
  done
 done
@@ -173,31 +174,31 @@ for transport in $transports; do
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:quick=yes" \
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
     ; do
-   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $samba4bindir/smbtorture $TORTURE_OPTIONS $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
   done
  done
 done
 
-plantest "RPC-ECHO on ncacn_np over smb2" dc $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+plantest "RPC-ECHO on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
 # Tests against the NTVFS POSIX backend
-smb2=`$samba4bindir/smbtorture --list | grep "^SMB2-" | xargs`
-raw=`$samba4bindir/smbtorture --list | grep "^RAW-" | xargs`
-base=`$samba4bindir/smbtorture --list | grep "^BASE-" | xargs`
+smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
+raw=`$smb4torture --list | grep "^RAW-" | xargs`
+base=`$smb4torture --list | grep "^BASE-" | xargs`
 
 for t in $base $raw $smb2; do
-    plantest "$t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "$t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
-    plantest "ntvfs.cifs.$t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs.cifs.$t" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 # Local tests
 
-for t in `$samba4bindir/smbtorture --list | grep "^LOCAL-" | xargs`; do
-	plantest "$t" none $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*"
+for t in `$smb4torture --list | grep "^LOCAL-" | xargs`; do
+	plantest "$t" none $VALGRIND $smb4torture ncalrpc: $t "$*"
 done
 
 if test -f $samba4bindir/tdbtorture
@@ -232,7 +233,7 @@ plantest "blackbox.nmblookup" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\
 # Tests using the "Simple" NTVFS backend
 
 for t in "BASE-RW1"; do
-    plantest "ntvfs/simple $t" dc $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs/simple $t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 DATADIR=$samba4srcdir/../testdata
@@ -246,36 +247,35 @@ mkdir -p $PREFIX/upgrade
 
 # Domain Member Tests
 
-plantest "RPC-ECHO against member server with local creds" member $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
-plantest "RPC-ECHO against member server with domain creds" member $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
-plantest "RPC-SAMR against member server with local creds" member $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
-plantest "RPC-SAMR-USERS against member server with local creds" member $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
-plantest "RPC-SAMR-PASSWORDS against member server with local creds" member $VALGRIND $samba4bindir/smbtorture $TORTURE_OPTIONS ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
+plantest "RPC-ECHO against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
+plantest "RPC-ECHO against member server with domain creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
+plantest "RPC-SAMR against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
+plantest "RPC-SAMR-USERS against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
+plantest "RPC-SAMR-PASSWORDS against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
 plantest "wbinfo -a against member server with domain creds" member $VALGRIND $samba4bindir/wbinfo -a "\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 
-NBT_TESTS=`$samba4bindir/smbtorture --list | grep "^NBT-" | xargs`
+NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
 for f in $NBT_TESTS; do
-	plantest $f dc $samba4bindir/smbtorture $TORTURE_OPTIONS //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
+	plantest $f dc $smb4torture //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
 done
 
-WB_OPTS="${TORTURE_OPTIONS}"
-WB_OPTS="${WB_OPTS} --option=\"torture:strict mode=yes\""
+WB_OPTS="--option=\"torture:strict mode=yes\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=\\\\\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd private pipe dir=\$WINBINDD_PRIV_PIPE_DIR\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios name=\$SERVER\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios domain=\$DOMAIN\""
 
-WINBIND_STRUCT_TESTS=`$samba4bindir/smbtorture --list | grep "^WINBIND-STRUCT" | xargs`
-WINBIND_NDR_TESTS=`$samba4bindir/smbtorture --list | grep "^WINBIND-NDR" | xargs`
+WINBIND_STRUCT_TESTS=`$smb4torture --list | grep "^WINBIND-STRUCT" | xargs`
+WINBIND_NDR_TESTS=`$smb4torture --list | grep "^WINBIND-NDR" | xargs`
 for env in dc member; do
 	for t in $WINBIND_STRUCT_TESTS; do
-		plantest $t $env $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
+		plantest $t $env $smb4torture $WB_OPTS //_none_/_none_ $t
 	done
 
 	for t in $WINBIND_NDR_TESTS; do
-		plantest $t $env $samba4bindir/smbtorture $WB_OPTS //_none_/_none_ $t
+		plantest $t $env $smb4torture $WB_OPTS //_none_/_none_ $t
 	done
 done
 
