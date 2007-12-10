@@ -374,7 +374,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 
 static void named_pipe(connection_struct *conn, uint16 vuid,
 		       struct smb_request *req,
-		       char *name, uint16 *setup,
+		       const char *name, uint16 *setup,
 		       char *data, char *params,
 		       int suwcnt, int tdscnt,int tpscnt,
 		       int msrcnt, int mdrcnt, int mprcnt)
@@ -452,7 +452,7 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return;
 	}
-	
+
 	name_offset += strlen("\\PIPE");
 
 	/* Win9x weirdness.  When talking to a unicode server Win9x
@@ -538,12 +538,11 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
 	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
 
-	memset(state->name, '\0',sizeof(state->name));
-	srvstr_pull_buf(req->inbuf, req->flags2, state->name,
-			smb_buf(req->inbuf), sizeof(state->name),
-			STR_TERMINATE);
-	
-	if ((dscnt > state->total_data) || (pscnt > state->total_param))
+	srvstr_pull_buf_talloc(state, req->inbuf, req->flags2, &state->name,
+			smb_buf(req->inbuf), STR_TERMINATE);
+
+	if ((dscnt > state->total_data) || (pscnt > state->total_param) ||
+			!state->name)
 		goto bad_param;
 
 	if (state->total_data)  {
@@ -557,7 +556,7 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtrans);
 			return;
-		} 
+		}
 		/* null-terminate the slack space */
 		memset(&state->data[state->total_data], 0, 100);
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))

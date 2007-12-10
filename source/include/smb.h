@@ -563,7 +563,7 @@ struct trans_state {
 
 	uint8 cmd;		/* SMBtrans or SMBtrans2 */
 
-	fstring name;		/* for trans requests */
+	char *name;		/* for trans requests */
 	uint16 call;		/* for trans2 and nttrans requests */
 
 	bool close_on_completion;
