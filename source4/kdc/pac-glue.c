@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
+#include "auth/auth_sam_reply.h"
 #include "param/param.h"
 
 struct krb5_dh_moduli;
