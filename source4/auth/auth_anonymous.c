@@ -56,7 +56,7 @@ static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
 	return auth_anonymous_server_info(mem_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx), _server_info);
 }
 
-static struct auth_operations anonymous_auth_ops = {
+static const struct auth_operations anonymous_auth_ops = {
 	.name		= "anonymous",
 	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= anonymous_want_check,

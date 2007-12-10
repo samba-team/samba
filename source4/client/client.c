@@ -51,8 +51,6 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 
-static int io_bufsize = 64512;
-
 struct smbclient_context {
 	char *remote_cur_dir;
 	struct smbcli_state *cli;
@@ -64,6 +62,7 @@ struct smbclient_context {
 	bool lowercase;
 	int printmode;
 	bool translation;
+	int io_bufsize;
 };
 
 /* timing globals */
@@ -680,7 +679,7 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *lname,
 	bool newhandle = false;
 	uint8_t *data;
 	struct timeval tp_start;
-	int read_size = io_bufsize;
+	int read_size = ctx->io_bufsize;
 	uint16_t attr;
 	size_t size;
 	off_t start = 0;
@@ -1074,7 +1073,7 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 	size_t start = 0;
 	off_t nread = 0;
 	uint8_t *buf = NULL;
-	int maxwrite = io_bufsize;
+	int maxwrite = ctx->io_bufsize;
 	int rc = 0;
 	
 	struct timeval tp_start;
@@ -3017,16 +3016,11 @@ static int process_stdin(struct smbclient_context *ctx)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbclient_context *do_connect(TALLOC_CTX *mem_ctx, 
+static bool do_connect(struct smbclient_context *ctx,
 				       const char *specified_server, const char *specified_share, struct cli_credentials *cred)
 {
 	NTSTATUS status;
-	struct smbclient_context *ctx = talloc_zero(mem_ctx, struct smbclient_context);
 	char *server, *share;
-
-	if (!ctx) {
-		return NULL;
-	}
 
 	rl_ctx = ctx; /* Ugly hack */
 
@@ -3148,6 +3142,9 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 		exit(1);
 	}
 
+	ctx = talloc(mem_ctx, struct smbclient_context);
+	ctx->io_bufsize = 64512;
+
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
@@ -3176,7 +3173,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 			base_directory = strdup(poptGetOptArg(pc));
 			break;
 		case 'b':
-			io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
+			ctx->io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
 			break;
 		}
 	}
@@ -3227,9 +3224,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, dest_ip, name_type, lp_name_resolve_order(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx));
 	}
 	
-
-	ctx = do_connect(mem_ctx, desthost, service, cmdline_credentials);
-	if (!ctx)
+	if (!do_connect(ctx, desthost, service, cmdline_credentials))
 		return 1;
 
 	if (base_directory) 

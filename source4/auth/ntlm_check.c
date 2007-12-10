@@ -295,7 +295,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
-	static const uint8_t zeros[8];
+	const static uint8_t zeros[8];
 	DATA_BLOB tmp_sess_key;
 
 	if (stored_nt == NULL) {

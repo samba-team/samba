@@ -129,7 +129,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	return nt_status;
 }
 
-static struct auth_operations name_to_ntstatus_auth_ops = {
+static const struct auth_operations name_to_ntstatus_auth_ops = {
 	.name		= "name_to_ntstatus",
 	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= name_to_ntstatus_want_check,
@@ -179,7 +179,7 @@ static NTSTATUS fixed_challenge_check_password(struct auth_method_context *ctx,
 	return NT_STATUS_NO_SUCH_USER;
 }
 
-static struct auth_operations fixed_challenge_auth_ops = {
+static const struct auth_operations fixed_challenge_auth_ops = {
 	.name		= "fixed_challenge",
 	.get_challenge	= fixed_challenge_get_challenge,
 	.want_check	= fixed_challenge_want_check,
