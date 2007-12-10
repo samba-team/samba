@@ -20,8 +20,31 @@
   linux/lib/rbtree.c
 */
 
-#include <linux/rbtree.h>
-#include <linux/module.h>
+#include "includes.h"
+#include "rbtree.h"
+
+#define	RB_RED		0
+#define	RB_BLACK	1
+
+#define rb_parent(r)   ((struct rb_node *)((r)->rb_parent_color & ~3))
+#define rb_color(r)   ((r)->rb_parent_color & 1)
+#define rb_is_red(r)   (!rb_color(r))
+#define rb_is_black(r) rb_color(r)
+#define rb_set_red(r)  do { (r)->rb_parent_color &= ~1; } while (0)
+#define rb_set_black(r)  do { (r)->rb_parent_color |= 1; } while (0)
+
+static void rb_set_parent(struct rb_node *rb, struct rb_node *p)
+{
+	rb->rb_parent_color = (rb->rb_parent_color & 3) | (unsigned long)p;
+}
+static void rb_set_color(struct rb_node *rb, int color)
+{
+	rb->rb_parent_color = (rb->rb_parent_color & ~1) | color;
+}
+
+#define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
+#define RB_EMPTY_NODE(node)	(rb_parent(node) == node)
+#define RB_CLEAR_NODE(node)	(rb_set_parent(node, node))
 
 static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
 {
@@ -133,7 +156,6 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
 
 	rb_set_black(root->rb_node);
 }
-EXPORT_SYMBOL(rb_insert_color);
 
 static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
 			     struct rb_root *root)
@@ -287,7 +309,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
 	if (color == RB_BLACK)
 		__rb_erase_color(child, parent, root);
 }
-EXPORT_SYMBOL(rb_erase);
 
 /*
  * This function returns the first node (in sort order) of the tree.
@@ -303,7 +324,6 @@ struct rb_node *rb_first(struct rb_root *root)
 		n = n->rb_left;
 	return n;
 }
-EXPORT_SYMBOL(rb_first);
 
 struct rb_node *rb_last(struct rb_root *root)
 {
@@ -316,7 +336,6 @@ struct rb_node *rb_last(struct rb_root *root)
 		n = n->rb_right;
 	return n;
 }
-EXPORT_SYMBOL(rb_last);
 
 struct rb_node *rb_next(struct rb_node *node)
 {
@@ -345,7 +364,6 @@ struct rb_node *rb_next(struct rb_node *node)
 
 	return parent;
 }
-EXPORT_SYMBOL(rb_next);
 
 struct rb_node *rb_prev(struct rb_node *node)
 {
@@ -370,9 +388,8 @@ struct rb_node *rb_prev(struct rb_node *node)
 
 	return parent;
 }
-EXPORT_SYMBOL(rb_prev);
 
-void rb_replace_node(struct rb_node *victim, struct rb_node *new,
+void rb_replace_node(struct rb_node *victim, struct rb_node *new_node,
 		     struct rb_root *root)
 {
 	struct rb_node *parent = rb_parent(victim);
@@ -380,18 +397,26 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
 	/* Set the surrounding nodes to point to the replacement */
 	if (parent) {
 		if (victim == parent->rb_left)
-			parent->rb_left = new;
+			parent->rb_left = new_node;
 		else
-			parent->rb_right = new;
+			parent->rb_right = new_node;
 	} else {
-		root->rb_node = new;
+		root->rb_node = new_node;
 	}
 	if (victim->rb_left)
-		rb_set_parent(victim->rb_left, new);
+		rb_set_parent(victim->rb_left, new_node);
 	if (victim->rb_right)
-		rb_set_parent(victim->rb_right, new);
+		rb_set_parent(victim->rb_right, new_node);
 
 	/* Copy the pointers/colour from the victim to the replacement */
-	*new = *victim;
+	*new_node = *victim;
 }
-EXPORT_SYMBOL(rb_replace_node);
+
+void rb_link_node(struct rb_node * node, struct rb_node * parent,
+		  struct rb_node ** rb_link)
+{
+	node->rb_parent_color = (unsigned long )parent;
+	node->rb_left = node->rb_right = NULL;
+
+	*rb_link = node;
+}
