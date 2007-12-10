@@ -53,7 +53,7 @@ static void get_job_list(char *printer, struct vlp_job **job_list,
 	TDB_DATA data;
 
 	slprintf(keystr, sizeof(keystr) - 1, "LPQ/%s", printer);
-	data = tdb_fetch_by_string(tdb, keystr);
+	data = tdb_fetch_bystring(tdb, keystr);
 
 	*job_list = (struct vlp_job *)data.dptr;
 	*num_jobs = data.dsize / sizeof(struct vlp_job);
@@ -65,11 +65,13 @@ static void set_job_list(char *printer, struct vlp_job *job_list,
 			 int num_jobs)
 {
 	fstring keystr;
+	TDB_DATA data;
 
 	slprintf(keystr, sizeof(keystr) - 1, "LPQ/%s", printer);
 
-	tdb_store_by_string(tdb, keystr, job_list, 
-			    num_jobs * sizeof(struct vlp_job));
+	data.dptr = (unsigned char *)job_list;
+	data.dsize = num_jobs * sizeof(struct vlp_job);
+	tdb_store_bystring(tdb, keystr, data, TDB_REPLACE);
 }
 
 /* Return the next job number for a printer */
@@ -83,7 +85,7 @@ static int next_jobnum(char *printer)
 
 	tdb_lock_bystring(tdb, keystr);
 
-	jobnum = tdb_fetch_int(tdb, keystr);
+	jobnum = tdb_fetch_int32(tdb, keystr);
 
 	/* Create next job index if none exists */
 
@@ -92,7 +94,7 @@ static int next_jobnum(char *printer)
 	}
 
 	jobnum++;
-	tdb_store_int(tdb, keystr, jobnum);
+	tdb_store_int32(tdb, keystr, jobnum);
 
 	tdb_unlock_bystring(tdb, keystr);
 
@@ -105,7 +107,7 @@ static void set_printer_status(char *printer, int status)
 	int result;
 
 	slprintf(keystr, sizeof(keystr) - 1, "STATUS/%s", printer);
-	result = tdb_store_int(tdb, keystr, status);
+	result = tdb_store_int32(tdb, keystr, status);
 }
 
 static int get_printer_status(char *printer)
@@ -115,7 +117,7 @@ static int get_printer_status(char *printer)
 
 	slprintf(keystr, sizeof(keystr) - 1, "STATUS/%s", printer);
 
-	data.dptr = keystr;
+	data.dptr = (unsigned char *)keystr;
 	data.dsize = strlen(keystr) + 1;
 
 	if (!tdb_exists(tdb, data)) {
@@ -123,7 +125,7 @@ static int get_printer_status(char *printer)
 		return LPSTAT_OK;
 	}
 
-	return tdb_fetch_int(tdb, keystr);
+	return tdb_fetch_int32(tdb, keystr);
 }
 
 /* Display printer queue */
@@ -212,7 +214,7 @@ static int print_command(int argc, char **argv)
 	char *printer;
 	fstring keystr;
 	struct passwd *pw;
-	TDB_DATA value;
+	TDB_DATA value, queue;
 	struct vlp_job job;
 	int i;
 
@@ -247,30 +249,33 @@ static int print_command(int argc, char **argv)
 	/* Store job entry in queue */
 
 	slprintf(keystr, sizeof(keystr) - 1, "LPQ/%s", printer);
-	
-	value = tdb_fetch_by_string(tdb, keystr);
+
+	value = tdb_fetch_bystring(tdb, keystr);
 
 	if (value.dptr) {
 
 		/* Add job to end of queue */
 
-		value.dptr = realloc(value.dptr, value.dsize + 
-				     sizeof(struct vlp_job));
-		if (!value.dptr) return 1;
+		queue.dptr = SMB_MALLOC(value.dsize + sizeof(struct vlp_job));
+		if (!queue.dptr) return 1;
 
-		memcpy(value.dptr + value.dsize, &job, sizeof(struct vlp_job));
+		memcpy(queue.dptr, value.dptr, value.dsize);
+		memcpy(queue.dptr + value.dsize, &job, sizeof(struct vlp_job));
 
-		tdb_store_by_string(tdb, keystr, value.dptr, value.dsize +
-				    sizeof(struct vlp_job));
+		queue.dsize = value.dsize + sizeof(struct vlp_job);
 
-		free(value.dptr);
+		tdb_store_bystring(tdb, keystr, queue, TDB_REPLACE);
+
+		free(queue.dptr);
 
 	} else {
-		
-		/* Create new queue */
 
-		tdb_store_by_string(tdb, keystr, &job, sizeof(struct vlp_job));
-	}		
+		/* Create new queue */
+		queue.dptr = (unsigned char *)&job;
+		queue.dsize = sizeof(struct vlp_job);
+
+		tdb_store_bystring(tdb, keystr, queue, TDB_REPLACE);
+	}
 
 	return 0;
 }
