@@ -146,6 +146,7 @@ Static data is evil as it has the following consequences:
  - it makes code much less likely to be recursion-safe
  - it leads to subtle side effects when the same code is called from
    multiple places
+ - doesn't play well with shared libraries or plugins
 
 Static data is particularly evil in library code (such as our internal
 smb and rpc libraries). If you can get rid of all static data in
