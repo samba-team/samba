@@ -32,7 +32,41 @@ static WERROR NetJoinDomainLocal(TALLOC_CTX *mem_ctx,
 				 const char *password,
 				 uint32_t join_flags)
 {
-	return WERR_NOT_SUPPORTED;
+	struct libnet_JoinCtx *r = NULL;
+	WERROR werr;
+
+	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	if (!server_name || !domain_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	r->in.server_name = talloc_strdup(mem_ctx, server_name);
+	W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+
+	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
+	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
+
+	if (account_ou) {
+		r->in.account_ou = talloc_strdup(mem_ctx, account_ou);
+		W_ERROR_HAVE_NO_MEMORY(r->in.account_ou);
+	}
+
+	if (Account) {
+		r->in.admin_account = talloc_strdup(mem_ctx, Account);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_account);
+	}
+
+	if (password) {
+		r->in.password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+	}
+
+	r->in.join_flags = join_flags;
+	r->in.modify_config = true;
+
+	return libnet_Join(mem_ctx, r);
 }
 
 static WERROR NetJoinDomainRemote(TALLOC_CTX *mem_ctx,
