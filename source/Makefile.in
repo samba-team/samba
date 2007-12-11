@@ -707,6 +707,8 @@ REG_API_OBJ = registry/reg_api.o \
 
 NETAPI_OBJ = lib/netapi/joindomain.o
 
+LIBNET_OBJ = libnet/libnet_conf.o
+
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
@@ -726,7 +728,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
-	  $(REG_API_OBJ) $(DISPLAY_DSDCINFO_OBJ) $(NETAPI_OBJ)
+	  $(REG_API_OBJ) $(DISPLAY_DSDCINFO_OBJ) $(NETAPI_OBJ) $(LIBNET_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
@@ -1933,7 +1935,7 @@ delheaders:
 		winbindd/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
 		smbd/build_options.c utils/ntlm_auth_proto.h \
-		utils/passwd_proto.h
+		utils/passwd_proto.h libnet/libnet_proto.h
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
 
@@ -1978,6 +1980,11 @@ utils/ntlm_auth_proto.h:
 	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
 	  $(NTLM_AUTH_OBJ1)
 
+libnet/libnet_proto.h:
+	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
+	  -h _LIBNET_PROTO_H_ $(builddir)/libnet/libnet_proto.h \
+	  $(LIBNET_OBJ)
+
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
@@ -1991,7 +1998,8 @@ headers:
 	$(MAKE) client/client_proto.h; \
 	$(MAKE) utils/ntlm_auth_proto.h; \
 	$(MAKE) utils/net_proto.h; \
-	$(MAKE) utils/passwd_proto.h;
+	$(MAKE) utils/passwd_proto.h; \
+	$(MAKE) libnet/libnet_proto.h;
 
 proto: headers
 
