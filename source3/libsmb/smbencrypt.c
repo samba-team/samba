@@ -731,10 +731,10 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 	data_blob_free(&confounded_session_key);
 }
 
-void decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					struct wkssvc_PasswordBuffer *pwd_buf,
-					DATA_BLOB *session_key,
-					char **pwd)
+WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					  struct wkssvc_PasswordBuffer *pwd_buf,
+					  DATA_BLOB *session_key,
+					  char **pwd)
 {
 	uint8_t buffer[516];
 	struct MD5Context ctx;
@@ -744,6 +744,11 @@ void decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	int confounder_len = 8;
 	uint8_t confounder[8];
+
+	if (session_key->length != 16) {
+		DEBUG(10,("invalid session key\n"));
+		return WERR_BAD_PASSWORD;
+	}
 
 	memcpy(&confounder, &pwd_buf->data[0], confounder_len);
 	memcpy(&buffer, &pwd_buf->data[8], 516);
@@ -755,7 +760,11 @@ void decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	SamOEMhashBlob(buffer, 516, &confounded_session_key);
 
-	decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, STR_UNICODE);
+	if (!decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, STR_UNICODE)) {
+		return WERR_BAD_PASSWORD;
+	}
 
 	data_blob_free(&confounded_session_key);
+
+	return WERR_OK;
 }
