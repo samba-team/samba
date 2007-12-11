@@ -54,8 +54,6 @@ static void popt_common_credentials_callback(poptContext con,
 						const struct poptOption *opt,
 						const char *arg, const void *data)
 {
-	struct cli_credentials *creds = data;
-
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		cmdline_credentials = cli_credentials_init(talloc_autofree_context());
 		return;
