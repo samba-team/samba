@@ -1521,6 +1521,66 @@ bool pdb_increment_bad_password_count(struct samu *sampass)
 	return True;
 }
 
+bool is_trusted_domain_situation(const char *domain_name)
+{
+	return IS_DC &&
+		lp_allow_trusted_domains() &&
+		!strequal(domain_name, lp_workgroup());
+}
+
+/*******************************************************************
+ Wrapper around retrieving the clear text trust account password.
+ appropriate account name is stored in account_name.
+ Caller must free password, but not account_name.
+*******************************************************************/
+
+bool get_trust_pw_clear(const char *domain, char **ret_pwd,
+			const char **account_name, uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+	time_t last_set_time;
+
+	/* if we are a DC and this is not our domain, then lookup an account
+	 * for the domain trust */
+
+	if (is_trusted_domain_situation(domain)) {
+		if (!pdb_get_trusteddom_pw(domain, ret_pwd, &sid,
+					   &last_set_time))
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust "
+				"account password for trusted domain %s\n",
+				domain));
+			return false;
+		}
+
+		*channel = SEC_CHAN_DOMAIN;
+
+		if (account_name != NULL) {
+			*account_name = lp_workgroup();
+		}
+
+		return true;
+	}
+
+	/* Just get the account for the requested domain. In the future this
+	 * might also cover to be member of more than one domain. */
+
+	pwd = secrets_fetch_machine_password(domain, &last_set_time, channel);
+
+	if (pwd != NULL) {
+		*ret_pwd = pwd;
+		if (account_name != NULL) {
+			*account_name = global_myname();
+		}
+
+		return true;
+	}
+
+	DEBUG(5, ("get_trust_pw_clear: could not fetch clear text trust "
+		  "account password for domain %s\n", domain));
+	return false;
+}
 
 /*******************************************************************
  Wrapper around retrieving the trust account password.
@@ -1530,49 +1590,31 @@ bool pdb_increment_bad_password_count(struct samu *sampass)
 bool get_trust_pw(const char *domain, uint8 ret_pwd[16],
 		  const char **account_name, uint32 *channel)
 {
-	DOM_SID sid;
-	char *pwd;
+	char *pwd = NULL;
 	time_t last_set_time;
 
-	/* if we are a DC and this is not our domain, then lookup an account
-		for the domain trust */
-
-	if (IS_DC && !strequal(domain, lp_workgroup()) &&
-	    lp_allow_trusted_domains())
-	{
-		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &last_set_time))
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust "
-				"account password for trusted domain %s\n",
-				domain));
-			return False;
-		}
-
-		*channel = SEC_CHAN_DOMAIN;
+	if (get_trust_pw_clear(domain, &pwd, account_name, channel)) {
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
-
-		if (account_name != NULL) {
-			*account_name = lp_workgroup();
-		}
-
-		return True;
+		return true;
+	} else if (is_trusted_domain_situation(domain)) {
+		return false;
 	}
 
-	/* Just get the account for the requested domain. In the future this
-	 * might also cover to be member of more than one domain. */
+	/* as a fallback, try to get the hashed pwd directly from the tdb... */
 
-	if (secrets_fetch_trust_account_password(domain, ret_pwd,
-						&last_set_time, channel))
+	if (secrets_fetch_trust_account_password_legacy(domain, ret_pwd,
+							&last_set_time,
+							channel))
 	{
 		if (account_name != NULL) {
 			*account_name = global_myname();
 		}
 
-		return True;
+		return true;
 	}
 
-	DEBUG(5, ("get_trust_pw: could not fetch trust account "
+	DEBUG(5, ("get_trust_pw_hash: could not fetch trust account "
 		"password for domain %s\n", domain));
 	return False;
 }
