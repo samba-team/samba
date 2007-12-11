@@ -228,26 +228,4 @@ void make_nbt_name_server(struct nbt_name *nbt, const char *name)
 	make_nbt_name(nbt, name, NBT_NAME_SERVER);
 }
 
-struct resolve_context *lp_resolve_context(struct loadparm_context *lp_ctx)
-{
-	const char **methods = lp_name_resolve_order(lp_ctx);
-	int i;
-	struct resolve_context *ret = resolve_context_init(lp_ctx);
 
-	if (ret == NULL)
-		return NULL;
-
-	for (i = 0; methods != NULL && methods[i] != NULL; i++) {
-		if (!strcmp(methods[i], "wins")) {
-			resolve_context_add_wins_method(ret, lp_wins_server_list(lp_ctx));
-		} else if (!strcmp(methods[i], "bcast")) {
-			resolve_context_add_bcast_method(ret, lp_ctx);
-		} else if (!strcmp(methods[i], "host")) {
-			resolve_context_add_host_method(ret);
-		} else {
-			DEBUG(0, ("Unknown resolve method '%s'\n", methods[i]));
-		}
-	}
-
-	return ret;
-}
