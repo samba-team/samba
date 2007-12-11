@@ -35,15 +35,15 @@
  * 
  */
 
-/*! \mainpage Heimdal crypto library
+/*! @mainpage Heimdal crypto library
  *
- * \section intro Introduction
+ * @section intro Introduction
  *
  * Heimdal libhcrypto library is a implementation many crypto algorithms
  * 
  * Sections of this manual:
  *
- * \subpage DH
+ * @subpage page_dh
  *
  * The project web page:
  * http://www.h5l.org/
@@ -51,4 +51,7 @@
  */
 
 /** @defgroup hcrypto Core functions */
-/** @defgroup hcrypto_dh Diffie-Hellman functions */
+
+/** @defgroup hcrypto_dh Diffie-Hellman functions
+ * See the @ref page_dh for description and examples.
+ */
