@@ -635,6 +635,40 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	return True;
 }
 
+/**
+ * Helper function to assemble trust password and account name
+ */
+static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
+				char **machine_password,
+				char **machine_account,
+				char **machine_krb5_principal)
+{
+	const char *account_name;
+
+	if (!get_trust_pw_clear(domain->name, machine_password,
+				&account_name, NULL))
+	{
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	if ((machine_account != NULL) &&
+	    (asprintf(machine_account, "%s$", account_name) == -1))
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* this is at least correct when domain is our domain,
+	 * which is the only case, when this is currently used: */
+	if ((machine_krb5_principal != NULL) &&
+	    (asprintf(machine_krb5_principal, "%s$@%s", account_name,
+		      domain->alt_name) == -1))
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /************************************************************************
  Given a fd with a just-connected TCP connection to a DC, open a connection
  to the pipe.
@@ -649,7 +683,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	char *machine_password = NULL;
 	char *machine_krb5_principal = NULL;
 	char *machine_account = NULL;
-	const char *account_name = NULL;
 	char *ipc_username = NULL;
 	char *ipc_domain = NULL;
 	char *ipc_password = NULL;
@@ -729,22 +762,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	{
 		ADS_STATUS ads_status;
 
-		if (!get_trust_pw_clear(domain->name, &machine_password,
-					&account_name, NULL))
-		{
-			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-			goto done;
-		}
-
-		if (asprintf(&machine_account, "%s$", account_name) == -1) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		if (asprintf(&machine_krb5_principal, "%s$@%s", account_name,
-			     lp_realm()) == -1)
-		{
-			result = NT_STATUS_NO_MEMORY;
+		result = get_trust_creds(domain, &machine_password,
+					 &machine_account,
+					 &machine_krb5_principal);
+		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 
