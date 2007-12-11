@@ -707,7 +707,7 @@ REG_API_OBJ = registry/reg_api.o \
 
 NETAPI_OBJ = lib/netapi/joindomain.o
 
-LIBNET_OBJ = libnet/libnet_conf.o
+LIBNET_OBJ = libnet/libnet_conf.o libnet/libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
