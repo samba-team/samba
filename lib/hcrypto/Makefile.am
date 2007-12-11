@@ -76,7 +76,7 @@ SCRIPT_TESTS = \
 
 noinst_PROGRAMS = test_rand
 
-check_PROGRAMS = $(PROGRAM_TESTS) test_rsa
+check_PROGRAMS = $(PROGRAM_TESTS) test_rsa test_dh
 check_SCRIPTS = $(SCRIPT_TESTS)
 
 TESTS = $(PROGRAM_TESTS) $(SCRIPT_TESTS)
@@ -132,6 +132,7 @@ libhcrypto_la_SOURCES =	\
 	rijndael-alg-fst.h \
 	rnd_keys.c	\
 	rsa.c		\
+	rsa-gmp.c	\
 	rsa-imath.c	\
 	rsa.h		\
 	sha.c		\
