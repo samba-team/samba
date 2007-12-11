@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _ldb
 import new
@@ -48,6 +47,16 @@ except AttributeError:
 del types
 
 
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
+
+
 SCOPE_DEFAULT = _ldb.SCOPE_DEFAULT
 SCOPE_BASE = _ldb.SCOPE_BASE
 SCOPE_ONELEVEL = _ldb.SCOPE_ONELEVEL
@@ -56,51 +65,41 @@ CHANGETYPE_NONE = _ldb.CHANGETYPE_NONE
 CHANGETYPE_ADD = _ldb.CHANGETYPE_ADD
 CHANGETYPE_DELETE = _ldb.CHANGETYPE_DELETE
 CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
-class Dn(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Dn, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Dn, name)
+class Dn(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        this = _ldb.new_Dn(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
-    __del__ = lambda self : None;
-    def validate(*args, **kwargs): return _ldb.Dn_validate(*args, **kwargs)
-    def get_casefold(*args, **kwargs): return _ldb.Dn_get_casefold(*args, **kwargs)
-    def __str__(*args, **kwargs): return _ldb.Dn___str__(*args, **kwargs)
-    def parent(*args, **kwargs): return _ldb.Dn_parent(*args, **kwargs)
-    def __cmp__(*args, **kwargs): return _ldb.Dn___cmp__(*args, **kwargs)
-    def is_valid(*args, **kwargs): return _ldb.Dn_is_valid(*args, **kwargs)
-    def is_special(*args, **kwargs): return _ldb.Dn_is_special(*args, **kwargs)
-    def is_null(*args, **kwargs): return _ldb.Dn_is_null(*args, **kwargs)
-    def check_special(*args, **kwargs): return _ldb.Dn_check_special(*args, **kwargs)
-    def __len__(*args, **kwargs): return _ldb.Dn___len__(*args, **kwargs)
-    def add_child(*args, **kwargs): return _ldb.Dn_add_child(*args, **kwargs)
-    def add_base(*args, **kwargs): return _ldb.Dn_add_base(*args, **kwargs)
-    def canonical_str(*args, **kwargs): return _ldb.Dn_canonical_str(*args, **kwargs)
-    def canonical_ex_str(*args, **kwargs): return _ldb.Dn_canonical_ex_str(*args, **kwargs)
-    def __add__(*args, **kwargs): return _ldb.Dn___add__(*args, **kwargs)
+Dn.validate = new_instancemethod(_ldb.Dn_validate,None,Dn)
+Dn.get_casefold = new_instancemethod(_ldb.Dn_get_casefold,None,Dn)
+Dn.__str__ = new_instancemethod(_ldb.Dn___str__,None,Dn)
+Dn.parent = new_instancemethod(_ldb.Dn_parent,None,Dn)
+Dn.__cmp__ = new_instancemethod(_ldb.Dn___cmp__,None,Dn)
+Dn.is_valid = new_instancemethod(_ldb.Dn_is_valid,None,Dn)
+Dn.is_special = new_instancemethod(_ldb.Dn_is_special,None,Dn)
+Dn.is_null = new_instancemethod(_ldb.Dn_is_null,None,Dn)
+Dn.check_special = new_instancemethod(_ldb.Dn_check_special,None,Dn)
+Dn.__len__ = new_instancemethod(_ldb.Dn___len__,None,Dn)
+Dn.add_child = new_instancemethod(_ldb.Dn_add_child,None,Dn)
+Dn.add_base = new_instancemethod(_ldb.Dn_add_base,None,Dn)
+Dn.canonical_str = new_instancemethod(_ldb.Dn_canonical_str,None,Dn)
+Dn.canonical_ex_str = new_instancemethod(_ldb.Dn_canonical_ex_str,None,Dn)
+Dn.__add__ = new_instancemethod(_ldb.Dn___add__,None,Dn)
 Dn_swigregister = _ldb.Dn_swigregister
 Dn_swigregister(Dn)
 
 ldb_dn_from_pyobject = _ldb.ldb_dn_from_pyobject
 ldb_msg_element_from_pyobject = _ldb.ldb_msg_element_from_pyobject
 ldb_msg_element_to_set = _ldb.ldb_msg_element_to_set
-class ldb_msg_element(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, ldb_msg_element, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, ldb_msg_element, name)
+class ldb_msg_element(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
-    def __iter__(*args, **kwargs): return _ldb.ldb_msg_element___iter__(*args, **kwargs)
-    def __set__(*args, **kwargs): return _ldb.ldb_msg_element___set__(*args, **kwargs)
     __swig_destroy__ = _ldb.delete_ldb_msg_element
-    __del__ = lambda self : None;
-    def __cmp__(*args, **kwargs): return _ldb.ldb_msg_element___cmp__(*args, **kwargs)
+ldb_msg_element.__iter__ = new_instancemethod(_ldb.ldb_msg_element___iter__,None,ldb_msg_element)
+ldb_msg_element.__set__ = new_instancemethod(_ldb.ldb_msg_element___set__,None,ldb_msg_element)
+ldb_msg_element.__cmp__ = new_instancemethod(_ldb.ldb_msg_element___cmp__,None,ldb_msg_element)
 ldb_msg_element_swigregister = _ldb.ldb_msg_element_swigregister
 ldb_msg_element_swigregister(ldb_msg_element)
 
@@ -109,27 +108,19 @@ def MessageElement(*args, **kwargs):
     return val
 
 ldb_msg_list_elements = _ldb.ldb_msg_list_elements
-class Message(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Message, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Message, name)
+class Message(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_setmethods__["dn"] = _ldb.Message_dn_set
-    __swig_getmethods__["dn"] = _ldb.Message_dn_get
-    if _newclass:dn = _swig_property(_ldb.Message_dn_get, _ldb.Message_dn_set)
+    dn = _swig_property(_ldb.Message_dn_get, _ldb.Message_dn_set)
     def __init__(self, *args, **kwargs): 
-        this = _ldb.new_Message(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _ldb.Message_swiginit(self,_ldb.new_Message(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Message
-    __del__ = lambda self : None;
-    def __getitem__(*args, **kwargs): return _ldb.Message___getitem__(*args, **kwargs)
-    def __setitem__(*args): return _ldb.Message___setitem__(*args)
-    def __len__(*args, **kwargs): return _ldb.Message___len__(*args, **kwargs)
-    def keys(*args, **kwargs): return _ldb.Message_keys(*args, **kwargs)
-    def __iter__(*args, **kwargs): return _ldb.Message___iter__(*args, **kwargs)
-    def __delitem__(*args, **kwargs): return _ldb.Message___delitem__(*args, **kwargs)
+Message.__getitem__ = new_instancemethod(_ldb.Message___getitem__,None,Message)
+Message.__setitem__ = new_instancemethod(_ldb.Message___setitem__,None,Message)
+Message.__len__ = new_instancemethod(_ldb.Message___len__,None,Message)
+Message.keys = new_instancemethod(_ldb.Message_keys,None,Message)
+Message.__iter__ = new_instancemethod(_ldb.Message___iter__,None,Message)
+Message.__delitem__ = new_instancemethod(_ldb.Message___delitem__,None,Message)
 Message_swigregister = _ldb.Message_swigregister
 Message_swigregister(Message)
 
@@ -174,36 +165,32 @@ LDB_ERR_ENTRY_ALREADY_EXISTS = _ldb.LDB_ERR_ENTRY_ALREADY_EXISTS
 LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED = _ldb.LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED
 LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
-class ldb(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, ldb, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, ldb, name)
+class ldb(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
-    def connect(*args, **kwargs): return _ldb.ldb_connect(*args, **kwargs)
     __swig_destroy__ = _ldb.delete_ldb
-    __del__ = lambda self : None;
-    def search(*args, **kwargs): return _ldb.ldb_search(*args, **kwargs)
-    def delete(*args, **kwargs): return _ldb.ldb_delete(*args, **kwargs)
-    def rename(*args, **kwargs): return _ldb.ldb_rename(*args, **kwargs)
-    def add(*args, **kwargs): return _ldb.ldb_add(*args, **kwargs)
-    def modify(*args, **kwargs): return _ldb.ldb_modify(*args, **kwargs)
-    def get_config_basedn(*args, **kwargs): return _ldb.ldb_get_config_basedn(*args, **kwargs)
-    def get_root_basedn(*args, **kwargs): return _ldb.ldb_get_root_basedn(*args, **kwargs)
-    def get_schema_basedn(*args, **kwargs): return _ldb.ldb_get_schema_basedn(*args, **kwargs)
-    def get_default_basedn(*args, **kwargs): return _ldb.ldb_get_default_basedn(*args, **kwargs)
-    def errstring(*args, **kwargs): return _ldb.ldb_errstring(*args, **kwargs)
-    def set_create_perms(*args, **kwargs): return _ldb.ldb_set_create_perms(*args, **kwargs)
-    def set_modules_dir(*args, **kwargs): return _ldb.ldb_set_modules_dir(*args, **kwargs)
-    def set_debug(*args, **kwargs): return _ldb.ldb_set_debug(*args, **kwargs)
-    def set_opaque(*args, **kwargs): return _ldb.ldb_set_opaque(*args, **kwargs)
-    def get_opaque(*args, **kwargs): return _ldb.ldb_get_opaque(*args, **kwargs)
-    def transaction_start(*args, **kwargs): return _ldb.ldb_transaction_start(*args, **kwargs)
-    def transaction_commit(*args, **kwargs): return _ldb.ldb_transaction_commit(*args, **kwargs)
-    def transaction_cancel(*args, **kwargs): return _ldb.ldb_transaction_cancel(*args, **kwargs)
-    def __contains__(*args, **kwargs): return _ldb.ldb___contains__(*args, **kwargs)
-    def parse_ldif(*args, **kwargs): return _ldb.ldb_parse_ldif(*args, **kwargs)
+ldb.connect = new_instancemethod(_ldb.ldb_connect,None,ldb)
+ldb.search = new_instancemethod(_ldb.ldb_search,None,ldb)
+ldb.delete = new_instancemethod(_ldb.ldb_delete,None,ldb)
+ldb.rename = new_instancemethod(_ldb.ldb_rename,None,ldb)
+ldb.add = new_instancemethod(_ldb.ldb_add,None,ldb)
+ldb.modify = new_instancemethod(_ldb.ldb_modify,None,ldb)
+ldb.get_config_basedn = new_instancemethod(_ldb.ldb_get_config_basedn,None,ldb)
+ldb.get_root_basedn = new_instancemethod(_ldb.ldb_get_root_basedn,None,ldb)
+ldb.get_schema_basedn = new_instancemethod(_ldb.ldb_get_schema_basedn,None,ldb)
+ldb.get_default_basedn = new_instancemethod(_ldb.ldb_get_default_basedn,None,ldb)
+ldb.errstring = new_instancemethod(_ldb.ldb_errstring,None,ldb)
+ldb.set_create_perms = new_instancemethod(_ldb.ldb_set_create_perms,None,ldb)
+ldb.set_modules_dir = new_instancemethod(_ldb.ldb_set_modules_dir,None,ldb)
+ldb.set_debug = new_instancemethod(_ldb.ldb_set_debug,None,ldb)
+ldb.set_opaque = new_instancemethod(_ldb.ldb_set_opaque,None,ldb)
+ldb.get_opaque = new_instancemethod(_ldb.ldb_get_opaque,None,ldb)
+ldb.transaction_start = new_instancemethod(_ldb.ldb_transaction_start,None,ldb)
+ldb.transaction_commit = new_instancemethod(_ldb.ldb_transaction_commit,None,ldb)
+ldb.transaction_cancel = new_instancemethod(_ldb.ldb_transaction_cancel,None,ldb)
+ldb.__contains__ = new_instancemethod(_ldb.ldb___contains__,None,ldb)
+ldb.parse_ldif = new_instancemethod(_ldb.ldb_parse_ldif,None,ldb)
 ldb_swigregister = _ldb.ldb_swigregister
 ldb_swigregister(ldb)
 

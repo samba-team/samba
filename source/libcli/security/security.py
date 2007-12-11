@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _security
 import new
@@ -48,6 +47,16 @@ except AttributeError:
 del types
 
 
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
+
+
 SEC_PRIV_SECURITY = _security.SEC_PRIV_SECURITY
 SEC_PRIV_BACKUP = _security.SEC_PRIV_BACKUP
 SEC_PRIV_RESTORE = _security.SEC_PRIV_RESTORE
@@ -72,63 +81,45 @@ SEC_PRIV_ENABLE_DELEGATION = _security.SEC_PRIV_ENABLE_DELEGATION
 SEC_PRIV_INTERACTIVE_LOGON = _security.SEC_PRIV_INTERACTIVE_LOGON
 SEC_PRIV_NETWORK_LOGON = _security.SEC_PRIV_NETWORK_LOGON
 SEC_PRIV_REMOTE_INTERACTIVE_LOGON = _security.SEC_PRIV_REMOTE_INTERACTIVE_LOGON
-class SecurityToken(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, SecurityToken, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, SecurityToken, name)
+class SecurityToken(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        this = _security.new_SecurityToken(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _security.SecurityToken_swiginit(self,_security.new_SecurityToken(*args, **kwargs))
     __swig_destroy__ = _security.delete_SecurityToken
-    __del__ = lambda self : None;
-    def is_sid(*args, **kwargs): return _security.SecurityToken_is_sid(*args, **kwargs)
-    def is_system(*args, **kwargs): return _security.SecurityToken_is_system(*args, **kwargs)
-    def is_anonymous(*args, **kwargs): return _security.SecurityToken_is_anonymous(*args, **kwargs)
-    def has_sid(*args, **kwargs): return _security.SecurityToken_has_sid(*args, **kwargs)
-    def has_builtin_administrators(*args, **kwargs): return _security.SecurityToken_has_builtin_administrators(*args, **kwargs)
-    def has_nt_authenticated_users(*args, **kwargs): return _security.SecurityToken_has_nt_authenticated_users(*args, **kwargs)
-    def has_privilege(*args, **kwargs): return _security.SecurityToken_has_privilege(*args, **kwargs)
-    def set_privilege(*args, **kwargs): return _security.SecurityToken_set_privilege(*args, **kwargs)
+SecurityToken.is_sid = new_instancemethod(_security.SecurityToken_is_sid,None,SecurityToken)
+SecurityToken.is_system = new_instancemethod(_security.SecurityToken_is_system,None,SecurityToken)
+SecurityToken.is_anonymous = new_instancemethod(_security.SecurityToken_is_anonymous,None,SecurityToken)
+SecurityToken.has_sid = new_instancemethod(_security.SecurityToken_has_sid,None,SecurityToken)
+SecurityToken.has_builtin_administrators = new_instancemethod(_security.SecurityToken_has_builtin_administrators,None,SecurityToken)
+SecurityToken.has_nt_authenticated_users = new_instancemethod(_security.SecurityToken_has_nt_authenticated_users,None,SecurityToken)
+SecurityToken.has_privilege = new_instancemethod(_security.SecurityToken_has_privilege,None,SecurityToken)
+SecurityToken.set_privilege = new_instancemethod(_security.SecurityToken_set_privilege,None,SecurityToken)
 SecurityToken_swigregister = _security.SecurityToken_swigregister
 SecurityToken_swigregister(SecurityToken)
 
-class security_descriptor(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, security_descriptor, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, security_descriptor, name)
+class security_descriptor(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        this = _security.new_security_descriptor(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _security.security_descriptor_swiginit(self,_security.new_security_descriptor(*args, **kwargs))
     __swig_destroy__ = _security.delete_security_descriptor
-    __del__ = lambda self : None;
-    def sacl_add(*args, **kwargs): return _security.security_descriptor_sacl_add(*args, **kwargs)
-    def dacl_add(*args, **kwargs): return _security.security_descriptor_dacl_add(*args, **kwargs)
-    def dacl_del(*args, **kwargs): return _security.security_descriptor_dacl_del(*args, **kwargs)
-    def sacl_del(*args, **kwargs): return _security.security_descriptor_sacl_del(*args, **kwargs)
-    def __eq__(*args, **kwargs): return _security.security_descriptor___eq__(*args, **kwargs)
+security_descriptor.sacl_add = new_instancemethod(_security.security_descriptor_sacl_add,None,security_descriptor)
+security_descriptor.dacl_add = new_instancemethod(_security.security_descriptor_dacl_add,None,security_descriptor)
+security_descriptor.dacl_del = new_instancemethod(_security.security_descriptor_dacl_del,None,security_descriptor)
+security_descriptor.sacl_del = new_instancemethod(_security.security_descriptor_sacl_del,None,security_descriptor)
+security_descriptor.__eq__ = new_instancemethod(_security.security_descriptor___eq__,None,security_descriptor)
 security_descriptor_swigregister = _security.security_descriptor_swigregister
 security_descriptor_swigregister(security_descriptor)
 
-class Sid(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Sid, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Sid, name)
+class Sid(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        this = _security.new_Sid(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _security.Sid_swiginit(self,_security.new_Sid(*args, **kwargs))
     __swig_destroy__ = _security.delete_Sid
-    __del__ = lambda self : None;
-    def __str__(*args, **kwargs): return _security.Sid___str__(*args, **kwargs)
-    def __eq__(*args, **kwargs): return _security.Sid___eq__(*args, **kwargs)
+Sid.__str__ = new_instancemethod(_security.Sid___str__,None,Sid)
+Sid.__eq__ = new_instancemethod(_security.Sid___eq__,None,Sid)
 Sid_swigregister = _security.Sid_swigregister
 Sid_swigregister(Sid)
 

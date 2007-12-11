@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2472,6 +2472,19 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _credentials.so
@@ -2755,7 +2768,7 @@ SWIGINTERN PyObject *_wrap_new_Credentials(PyObject *SWIGUNUSEDPARM(self), PyObj
   PyObject *resultobj = 0;
   cli_credentials *result = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)":new_Credentials")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"new_Credentials",0,0,0)) SWIG_fail;
   result = (cli_credentials *)new_cli_credentials();
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_cli_credentials, SWIG_POINTER_NEW |  0 );
   return resultobj;
@@ -3522,13 +3535,17 @@ fail:
 
 SWIGINTERN PyObject *Credentials_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_cli_credentials, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
 }
 
+SWIGINTERN PyObject *Credentials_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
+}
+
 static PyMethodDef SwigMethods[] = {
-	 { (char *)"new_Credentials", _wrap_new_Credentials, METH_VARARGS, NULL},
+	 { (char *)"new_Credentials", (PyCFunction)_wrap_new_Credentials, METH_NOARGS, NULL},
 	 { (char *)"delete_Credentials", (PyCFunction) _wrap_delete_Credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_get_username", (PyCFunction) _wrap_Credentials_get_username, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_set_username", (PyCFunction) _wrap_Credentials_set_username, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3549,6 +3566,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Credentials_authentication_requested", (PyCFunction) _wrap_Credentials_authentication_requested, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_wrong_password", (PyCFunction) _wrap_Credentials_wrong_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_swigregister", Credentials_swigregister, METH_VARARGS, NULL},
+	 { (char *)"Credentials_swiginit", Credentials_swiginit, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2472,6 +2472,19 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _events.so
@@ -2569,7 +2582,7 @@ SWIGINTERN PyObject *_wrap_event_context_init(PyObject *SWIGUNUSEDPARM(self), Py
   {
     arg1 = NULL;
   }
-  if (!PyArg_ParseTuple(args,(char *)":event_context_init")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"event_context_init",0,0,0)) SWIG_fail;
   result = (struct event_context *)event_context_init(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_event_context, 0 |  0 );
   return resultobj;
@@ -2618,7 +2631,7 @@ SWIGINTERN PyObject *_wrap_event_backend_list(PyObject *SWIGUNUSEDPARM(self), Py
   {
     arg1 = NULL;
   }
-  if (!PyArg_ParseTuple(args,(char *)":event_backend_list")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"event_backend_list",0,0,0)) SWIG_fail;
   result = (char **)event_backend_list(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_p_char, 0 |  0 );
   return resultobj;
@@ -2628,9 +2641,9 @@ fail:
 
 
 static PyMethodDef SwigMethods[] = {
-	 { (char *)"event_context_init", _wrap_event_context_init, METH_VARARGS, NULL},
+	 { (char *)"event_context_init", (PyCFunction)_wrap_event_context_init, METH_NOARGS, NULL},
 	 { (char *)"event_context_init_byname", (PyCFunction) _wrap_event_context_init_byname, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"event_backend_list", _wrap_event_backend_list, METH_VARARGS, NULL},
+	 { (char *)"event_backend_list", (PyCFunction)_wrap_event_backend_list, METH_NOARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
