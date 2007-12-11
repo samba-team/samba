@@ -3629,6 +3629,11 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 }
 
+bool lp_include_registry_globals(void)
+{
+	return include_registry_globals;
+}
+
 /*******************************************************************
  Check if a config file has changed date.
 ********************************************************************/
