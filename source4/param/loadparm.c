@@ -2270,7 +2270,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	myname = get_myname();
 	lp_do_global_parameter(lp_ctx, "netbios name", myname);
 	SAFE_FREE(myname);
-	lp_do_global_parameter(lp_ctx, "name resolve order", "lmhosts wins host bcast");
+	lp_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
 
 	lp_do_global_parameter(lp_ctx, "fstype", FSTYPE_STRING);
 	lp_do_global_parameter(lp_ctx, "ntvfs handler", "unixuid default");
