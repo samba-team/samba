@@ -1521,10 +1521,10 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 */
 const char *dcerpc_server_name(struct dcerpc_pipe *p)
 {
-	if (!p->conn->transport.peer_name) {
+	if (!p->conn->transport.target_hostname) {
 		return "";
 	}
-	return p->conn->transport.peer_name(p->conn);
+	return p->conn->transport.target_hostname(p->conn);
 }
 
 
