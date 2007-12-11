@@ -33,11 +33,12 @@ krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context
 	int i;
 	struct interface *ifaces;
 
-	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
 
 	res->len = iface_count(ifaces);
 	res->val = malloc_array_p(HostAddress, res->len);
 	if (res->val == NULL) {
+		talloc_free(ifaces);
 		return ENOMEM;
 	}
 	for (i=0;i<res->len;i++) {
@@ -46,10 +47,13 @@ krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context
 		res->val[i].address.length = 4;
 		res->val[i].address.data = malloc(4);
 		if (res->val[i].address.data == NULL) {
+			talloc_free(ifaces);
 			return ENOMEM;
 		}
 		((struct in_addr *)res->val[i].address.data)->s_addr = inet_addr(ip);
 	}
+
+	talloc_free(ifaces);
 
 	return 0;
 }

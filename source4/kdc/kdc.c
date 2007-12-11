@@ -574,7 +574,7 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+	load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
 
 	if (iface_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured");

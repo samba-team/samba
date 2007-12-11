@@ -613,7 +613,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->nbtsock = nbt_name_socket_init(ctx, NULL);
 	if (!ctx->nbtsock) return NULL;
 
-	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 
 	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_best_ip(ifaces, address), 0);
 	if (!ctx->myaddr) return NULL;

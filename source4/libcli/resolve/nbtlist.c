@@ -76,7 +76,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	}
 
 	/* favor a local address if possible */
-	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
 	state->reply_addr = NULL;
 	for (i=0;i<q->out.num_addrs;i++) {
 		if (iface_is_local(ifaces, q->out.reply_addrs[i])) {
@@ -85,6 +85,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 			break;
 		}
 	}
+	talloc_free(ifaces);
 
 	if (state->reply_addr == NULL) {
 		state->reply_addr = talloc_steal(state, 

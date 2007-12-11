@@ -280,7 +280,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+		load_interfaces(task, lp_interfaces(lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 

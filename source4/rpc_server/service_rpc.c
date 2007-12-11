@@ -374,14 +374,16 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 				  struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
-	struct interface *ifaces;
-
-	load_interfaces(lp_interfaces(lp_ctx), &ifaces);
 
 	/* Add TCP/IP sockets */
 	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
-		int num_interfaces = iface_count(ifaces);
+		int num_interfaces;
 		int i;
+		struct interface *ifaces;
+
+		load_interfaces(dce_ctx, lp_interfaces(lp_ctx), &ifaces);
+
+		num_interfaces = iface_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
 			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);

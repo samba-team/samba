@@ -222,7 +222,7 @@ static void smbsrv_task_init(struct task_server *task)
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 
