@@ -29,6 +29,7 @@
 
 */
 
+#define SOCKET_WRAPPER_NOT_REPLACE
 #ifndef AUTOCONF_TEST
 #include "includes.h"
 #endif
