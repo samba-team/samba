@@ -118,6 +118,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 {
 	struct in_addr ip, nmask;
 	char *p;
+	char *address;
 	int i, added=0;
 
 	ip.s_addr = 0;
@@ -154,10 +155,13 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 		return;
 	}
 
+	address = talloc_strdup(mem_ctx, token);
+	p = strchr_m(address,'/');
+
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip.s_addr = interpret_addr2(token).s_addr;
+	ip.s_addr = interpret_addr2(address).s_addr;
 
 	if (strlen(p) > 2) {
 		nmask.s_addr = interpret_addr2(p).s_addr;
@@ -172,14 +176,17 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
 				add_interface(mem_ctx, probed_ifaces[i].ip, nmask,
 					      local_interfaces);
+				talloc_free(address);
 				return;
 			}
 		}
-		DEBUG(2,("Can't determine ip for broadcast address %s\n", token));
+		DEBUG(2,("Can't determine ip for broadcast address %s\n", address));
+		talloc_free(address);
 		return;
 	}
 
 	add_interface(mem_ctx, ip, nmask, local_interfaces);
+	talloc_free(address);
 }
 
 

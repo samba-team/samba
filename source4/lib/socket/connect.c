@@ -123,7 +123,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 
 	set_blocking(socket_get_fd(sock), false);
 
-	if (resolve_ctx && server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
+	if (resolve_ctx != NULL && server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
 		struct nbt_name name;
 		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address->addr);
