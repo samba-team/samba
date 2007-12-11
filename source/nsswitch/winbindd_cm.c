@@ -1975,10 +1975,6 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	if ((IS_DC || domain->primary) && !get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
 	netlogon_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_NETLOGON,
 						 &result);
 	if (netlogon_pipe == NULL) {
@@ -1990,9 +1986,14 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		neg_flags &= ~NETLOGON_NEG_SCHANNEL;		
 		goto no_schannel;
 	}
-	
+
 	if (lp_client_schannel() != False) {
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
+	}
+
+	if (!get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
+		cli_rpc_pipe_close(netlogon_pipe);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	/* if we are a DC and this is a trusted domain, then we need to use our
