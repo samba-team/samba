@@ -1,5 +1,9 @@
 2007-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: export RSA_gmp_method.
+
+	* doxygen.c: More documentation.
+
 	* rsa.h: add RSA_gmp_method
 
 	* rsa-gmp.c: RSA implementation written using GMP.
