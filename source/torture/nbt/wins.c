@@ -58,7 +58,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct socket_address *socket_address;
 	struct interface *ifaces;
 
-	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 
 	myaddress = talloc_strdup(tctx, iface_best_ip(ifaces, address));
 

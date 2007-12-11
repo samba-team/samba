@@ -255,7 +255,7 @@ static void websrv_task_init(struct task_server *task)
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(NULL, lp_interfaces(task->lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
@@ -267,6 +267,8 @@ static void websrv_task_init(struct task_server *task)
 						     task);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
+
+		talloc_free(ifaces);
 	} else {
 		status = stream_setup_socket(task->event_ctx, model_ops, 
 					     &web_stream_ops, 

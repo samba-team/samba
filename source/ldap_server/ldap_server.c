@@ -550,7 +550,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		int num_interfaces;
 		int i;
 
-		load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
 		num_interfaces = iface_count(ifaces);
 
 		/* We have been given an interfaces line, and been 

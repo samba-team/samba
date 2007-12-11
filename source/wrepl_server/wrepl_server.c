@@ -79,7 +79,7 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service,
 
 	if (owner == NULL) {
 		struct interface *ifaces;
-		load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+		load_interfaces(service, lp_interfaces(lp_ctx), &ifaces);
 		owner = iface_n_ip(ifaces, 0);
 	}
 

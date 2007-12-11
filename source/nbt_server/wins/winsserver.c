@@ -980,7 +980,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 
 	if (owner == NULL) {
 		struct interface *ifaces;
-		load_interfaces(lp_interfaces(nbtsrv->task->lp_ctx), &ifaces);
+		load_interfaces(nbtsrv->task, lp_interfaces(nbtsrv->task->lp_ctx), &ifaces);
 		owner = iface_n_ip(ifaces, 0);
 	}
 

@@ -245,7 +245,7 @@ static bool bench_wins(struct torture_context *tctx)
 	state->registered = talloc_zero_array(state, bool, state->num_names);
 	state->wins_server = address;
 	state->wins_port = lp_nbt_port(tctx->lp_ctx);
-	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 	state->my_ip = talloc_strdup(tctx, iface_best_ip(ifaces, address));
 	state->ttl = timelimit;
 

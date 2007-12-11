@@ -355,13 +355,15 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	load_interfaces(lp_interfaces(cmdline_lp_ctx), &ifaces);
+	load_interfaces(NULL, lp_interfaces(cmdline_lp_ctx), &ifaces);
 	
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
 		ret &= process_one(cmdline_lp_ctx, ifaces, name, lp_nbt_port(cmdline_lp_ctx));
 	}
+
+	talloc_free(ifaces);
 
 	poptFreeContext(pc);
 

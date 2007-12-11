@@ -36,12 +36,14 @@ static int ejs_sys_interfaces(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar ret = mprArray("interfaces");
 	struct interface *ifaces;
 
-	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
 
 	count = iface_count(ifaces);
 	for (i=0;i<count;i++) {
 		mprAddArray(&ret, i, mprString(iface_n_ip(ifaces, i)));
 	}
+
+	talloc_free(ifaces);
 	mpr_Return(eid, ret);
 	return 0;	
 }

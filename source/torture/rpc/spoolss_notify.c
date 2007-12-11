@@ -227,7 +227,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 
 	lp_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
 
-	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 	address = iface_n_ip(ifaces, 0);
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);
 	status = smbsrv_add_socket(p->conn->event_ctx, tctx->lp_ctx, &single_ops, address);

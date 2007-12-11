@@ -63,7 +63,7 @@ static struct interface *iface_find(struct interface *interfaces,
 /****************************************************************************
 add an interface to the linked list of interfaces
 ****************************************************************************/
-static void add_interface(struct in_addr ip, struct in_addr nmask, struct interface **interfaces)
+static void add_interface(TALLOC_CTX *mem_ctx, struct in_addr ip, struct in_addr nmask, struct interface **interfaces)
 {
 	struct interface *iface;
 	struct in_addr bcast;
@@ -73,7 +73,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask, struct interf
 		return;
 	}
 
-	iface = talloc(*interfaces == NULL ? talloc_autofree_context() : *interfaces, struct interface);
+	iface = talloc(*interfaces == NULL ? mem_ctx : *interfaces, struct interface);
 	if (iface == NULL) 
 		return;
 	
@@ -110,7 +110,8 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 **/
-static void interpret_interface(const char *token, 
+static void interpret_interface(TALLOC_CTX *mem_ctx, 
+				const char *token, 
 				struct iface_struct *probed_ifaces, 
 				int total_probed,
 				struct interface **local_interfaces)
@@ -125,7 +126,7 @@ static void interpret_interface(const char *token,
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
 		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
-			add_interface(probed_ifaces[i].ip,
+			add_interface(mem_ctx, probed_ifaces[i].ip,
 				      probed_ifaces[i].netmask,
 				      local_interfaces);
 			added = 1;
@@ -143,7 +144,7 @@ static void interpret_interface(const char *token,
 		ip.s_addr = interpret_addr2(token).s_addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
-				add_interface(probed_ifaces[i].ip,
+				add_interface(mem_ctx, probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask,
 					      local_interfaces);
 				return;
@@ -169,7 +170,7 @@ static void interpret_interface(const char *token,
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
-				add_interface(probed_ifaces[i].ip, nmask,
+				add_interface(mem_ctx, probed_ifaces[i].ip, nmask,
 					      local_interfaces);
 				return;
 			}
@@ -178,14 +179,14 @@ static void interpret_interface(const char *token,
 		return;
 	}
 
-	add_interface(ip, nmask, local_interfaces);
+	add_interface(mem_ctx, ip, nmask, local_interfaces);
 }
 
 
 /**
 load the list of network interfaces
 **/
-void load_interfaces(const char **interfaces, struct interface **local_interfaces)
+void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
 {
 	const char **ptr = interfaces;
 	int i;
@@ -208,14 +209,14 @@ void load_interfaces(const char **interfaces, struct interface **local_interface
 		}
 		for (i=0;i<total_probed;i++) {
 			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
-				add_interface(ifaces[i].ip, 
+				add_interface(mem_ctx, ifaces[i].ip, 
 					      ifaces[i].netmask, local_interfaces);
 			}
 		}
 	}
 
 	while (ptr && *ptr) {
-		interpret_interface(*ptr, ifaces, total_probed, local_interfaces);
+		interpret_interface(mem_ctx, *ptr, ifaces, total_probed, local_interfaces);
 		ptr++;
 	}
 

@@ -86,7 +86,7 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	struct interface *ifaces;
-	load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
 	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv,
 					  ifaces);
 }

@@ -334,7 +334,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 
 	if (!our_ip) {
 		struct interface *ifaces;
-		load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+		load_interfaces(state, lp_interfaces(global_loadparm), &ifaces);
 		our_ip = iface_best_ip(ifaces, peer_ip);
 	}
 
