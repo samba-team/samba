@@ -245,7 +245,7 @@ struct resolve_context *lp_resolve_context(struct loadparm_context *lp_ctx)
 		} else if (!strcmp(methods[i], "host")) {
 			resolve_context_add_host_method(ret);
 		} else {
-			DEBUG(0, ("Unknown resolve method '%s'", methods[i]));
+			DEBUG(0, ("Unknown resolve method '%s'\n", methods[i]));
 		}
 	}
 
