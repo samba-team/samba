@@ -96,13 +96,18 @@ PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBCLI_RESOLVE LIBEVENTS LIBPACK
 [SUBSYSTEM::LIBCLI_RESOLVE]
 PRIVATE_PROTO_HEADER = resolve/proto.h
 OBJ_FILES = \
-	resolve/resolve.o \
+	resolve/resolve.o
+PUBLIC_DEPENDENCIES = NDR_NBT
+
+[SUBSYSTEM::LP_RESOLVE]
+PRIVATE_PROTO_HEADER = resolve/lp_proto.h
+OBJ_FILES = \
 	resolve/bcast.o \
 	resolve/nbtlist.o \
 	resolve/wins.o \
-	resolve/host.o
-PUBLIC_DEPENDENCIES = LIBNETIF
-PRIVATE_DEPENDENCIES = LIBCLI_NBT 
+	resolve/host.o \
+	resolve/resolve_lp.o
+PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-CONFIG LIBNETIF 
 
 [SUBSYSTEM::LIBCLI_FINDDCS]
 PRIVATE_PROTO_HEADER = finddcs.h
