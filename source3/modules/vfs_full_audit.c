@@ -1372,7 +1372,7 @@ static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, in
 
 	result = SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 
-	do_log(SMB_VFS_OP_LOCK, (result >= 0), handle, "%s", fsp->fsp_name);
+	do_log(SMB_VFS_OP_LOCK, result, handle, "%s", fsp->fsp_name);
 
 	return result;
 }
@@ -1411,7 +1411,7 @@ static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 
 	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
 
-	do_log(SMB_VFS_OP_GETLOCK, (result >= 0), handle, "%s", fsp->fsp_name);
+	do_log(SMB_VFS_OP_GETLOCK, result, handle, "%s", fsp->fsp_name);
 
 	return result;
 }
