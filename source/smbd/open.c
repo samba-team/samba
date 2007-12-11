@@ -2484,13 +2484,6 @@ NTSTATUS create_file(connection_struct *conn,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, fname));
 
-	SET_STAT_INVALID(sbuf);
-
-	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		status = NT_STATUS_NOT_SUPPORTED;
-		goto fail;
-	}
-
 	/*
 	 * Get the file name.
 	 */
@@ -2641,6 +2634,8 @@ NTSTATUS create_file(connection_struct *conn,
 	{
 		char *converted_fname;
 
+		SET_STAT_INVALID(sbuf);
+
 		status = unix_convert(talloc_tos(), conn, fname, False,
 				      &converted_fname, NULL, &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2653,6 +2648,11 @@ NTSTATUS create_file(connection_struct *conn,
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		status = NT_STATUS_NOT_SUPPORTED;
 		goto fail;
 	}
 
