@@ -1537,7 +1537,6 @@ bool is_trusted_domain_situation(const char *domain_name)
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 			const char **account_name, uint32 *channel)
 {
-	DOM_SID sid;
 	char *pwd;
 	time_t last_set_time;
 
@@ -1545,7 +1544,7 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 	 * for the domain trust */
 
 	if (is_trusted_domain_situation(domain)) {
-		if (!pdb_get_trusteddom_pw(domain, ret_pwd, &sid,
+		if (!pdb_get_trusteddom_pw(domain, ret_pwd, NULL,
 					   &last_set_time))
 		{
 			DEBUG(0, ("get_trust_pw: could not fetch trust "
