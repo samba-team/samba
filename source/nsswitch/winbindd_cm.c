@@ -597,7 +597,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      BOOL *retry)
 {
 	char *machine_password, *machine_krb5_principal, *machine_account;
-	char *ipc_username, *ipc_domain, *ipc_password;
+	char *ipc_username = NULL;
+	char *ipc_domain = NULL;
+	char *ipc_password = NULL;
 
 	BOOL got_mutex;
 
@@ -625,8 +627,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	*retry = True;
 
@@ -742,6 +742,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	/* Fall back to non-kerberos session setup */
 
 	(*cli)->use_kerberos = False;
+
+	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	if ((((*cli)->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
 	    (strlen(ipc_username) > 0)) {
