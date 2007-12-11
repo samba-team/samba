@@ -772,15 +772,15 @@ static void winbindd_dump_id_maps_recv(TALLOC_CTX *mem_ctx, bool success,
 	cont(private_data, True);
 }
 
-void winbindd_dump_maps_async(TALLOC_CTX *mem_ctx, void *data, int size,
+void winbindd_dump_maps_async(TALLOC_CTX *mem_ctx, const char *logfile,
 			 void (*cont)(void *private_data, bool success),
 			 void *private_data)
 {
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_DUMP_MAPS;
-	request.extra_data.data = (char *)data;
-	request.extra_len = size;
+	request.extra_data.data = discard_const(logfile);
+	request.extra_len = strlen(logfile)+1;
 	do_async(mem_ctx, idmap_child(), &request, winbindd_dump_id_maps_recv,
 		 (void *)cont, private_data);
 }
