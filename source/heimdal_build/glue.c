@@ -31,13 +31,17 @@
 krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context, krb5_addresses *res)
 {
 	int i;
-	res->len = iface_count(global_loadparm);
+	struct interface *ifaces;
+
+	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+
+	res->len = iface_count(ifaces);
 	res->val = malloc_array_p(HostAddress, res->len);
 	if (res->val == NULL) {
 		return ENOMEM;
 	}
 	for (i=0;i<res->len;i++) {
-		const char *ip = iface_n_ip(global_loadparm, i);
+		const char *ip = iface_n_ip(ifaces, i);
 		res->val[i].addr_type = AF_INET;
 		res->val[i].address.length = 4;
 		res->val[i].address.data = malloc(4);

@@ -33,17 +33,19 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 						  void *userdata,
 						  struct nbt_name *name)
 {
-	struct loadparm_context *lp_ctx = userdata;
-	int num_interfaces = iface_count(lp_ctx);
+	int num_interfaces;
 	const char **address_list;
 	struct composite_context *c;
 	int i, count=0;
+	struct interface *ifaces = userdata;
+
+	num_interfaces = iface_count(ifaces);
 
 	address_list = talloc_array(mem_ctx, const char *, num_interfaces+1);
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_n_bcast(lp_ctx, i);
+		const char *bcast = iface_n_bcast(ifaces, i);
 		if (bcast == NULL) continue;
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {
@@ -74,14 +76,17 @@ NTSTATUS resolve_name_bcast_recv(struct composite_context *c,
  */
 NTSTATUS resolve_name_bcast(struct nbt_name *name, 
 			    TALLOC_CTX *mem_ctx,
+			    struct interface *ifaces,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, NULL, name);
+	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, ifaces, name);
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
 bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
+	struct interface *ifaces;
+	load_interfaces(lp_interfaces(lp_ctx), &ifaces);
 	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv,
-					  lp_ctx);
+					  ifaces);
 }

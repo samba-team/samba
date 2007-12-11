@@ -276,15 +276,20 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 	}
 
 	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
-		int num_interfaces = iface_count(lp_ctx);
+		int num_interfaces;
 		int i;
+		struct interface *ifaces;
+
+		load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+
+		num_interfaces = iface_count(ifaces);
 
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			address = iface_n_ip(lp_ctx, i);
+			address = iface_n_ip(ifaces, i);
 			status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
 						     "ipv4", address, &port, 
 				     	              lp_socket_options(task->lp_ctx), 

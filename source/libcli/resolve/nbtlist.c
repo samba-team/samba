@@ -49,6 +49,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 						      struct composite_context);
 	struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 	struct nbt_name_query *q;
+	struct interface *ifaces;
 	int i;
 
 	for (i=0;i<state->num_queries;i++) {
@@ -75,9 +76,10 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	}
 
 	/* favor a local address if possible */
+	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
 	state->reply_addr = NULL;
 	for (i=0;i<q->out.num_addrs;i++) {
-		if (iface_is_local(global_loadparm, q->out.reply_addrs[i])) {
+		if (iface_is_local(ifaces, q->out.reply_addrs[i])) {
 			state->reply_addr = talloc_steal(state, 
 							 q->out.reply_addrs[i]);
 			break;

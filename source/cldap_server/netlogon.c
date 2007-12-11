@@ -64,6 +64,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *client_site;
 	const char *pdc_ip;
 	struct ldb_dn *partitions_basedn;
+	struct interface *ifaces;
 
 	partitions_basedn = samdb_partitions_dn(cldapd->samctx, mem_ctx);
 
@@ -187,7 +188,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 					       lp_workgroup(lp_ctx));
 	server_site      = "Default-First-Site-Name";
 	client_site      = "Default-First-Site-Name";
-	pdc_ip           = iface_best_ip(lp_ctx, src_address);
+	load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+	pdc_ip           = iface_best_ip(ifaces, src_address);
 
 	ZERO_STRUCTP(netlogon);
 

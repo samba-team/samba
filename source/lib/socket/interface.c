@@ -35,8 +35,6 @@ struct interface {
 	const char *nmask_s;
 };
 
-static struct interface *local_interfaces;
-
 #define ALLONES  ((uint32_t)0xFFFFFFFF)
 /*
   address construction based on a patch from fred@datalync.com
@@ -114,7 +112,8 @@ This handles the following different forms:
 **/
 static void interpret_interface(const char *token, 
 				struct iface_struct *probed_ifaces, 
-				int total_probed)
+				int total_probed,
+				struct interface **local_interfaces)
 {
 	struct in_addr ip, nmask;
 	char *p;
@@ -128,7 +127,7 @@ static void interpret_interface(const char *token,
 		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
 			add_interface(probed_ifaces[i].ip,
 				      probed_ifaces[i].netmask,
-				      &local_interfaces);
+				      local_interfaces);
 			added = 1;
 		}
 	}
@@ -146,7 +145,7 @@ static void interpret_interface(const char *token,
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
 				add_interface(probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask,
-					      &local_interfaces);
+					      local_interfaces);
 				return;
 			}
 		}
@@ -171,7 +170,7 @@ static void interpret_interface(const char *token,
 		for (i=0;i<total_probed;i++) {
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
 				add_interface(probed_ifaces[i].ip, nmask,
-					      &local_interfaces);
+					      local_interfaces);
 				return;
 			}
 		}
@@ -179,14 +178,14 @@ static void interpret_interface(const char *token,
 		return;
 	}
 
-	add_interface(ip, nmask, &local_interfaces);
+	add_interface(ip, nmask, local_interfaces);
 }
 
 
 /**
 load the list of network interfaces
 **/
-static void load_interfaces(const char **interfaces)
+void load_interfaces(const char **interfaces, struct interface **local_interfaces)
 {
 	const char **ptr = interfaces;
 	int i;
@@ -194,9 +193,7 @@ static void load_interfaces(const char **interfaces)
 	struct in_addr loopback_ip;
 	int total_probed;
 
-	if (local_interfaces != NULL) {
-		return;
-	}
+	*local_interfaces = NULL;
 
 	loopback_ip = interpret_addr2("127.0.0.1");
 
@@ -212,42 +209,30 @@ static void load_interfaces(const char **interfaces)
 		for (i=0;i<total_probed;i++) {
 			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
 				add_interface(ifaces[i].ip, 
-					      ifaces[i].netmask, &local_interfaces);
+					      ifaces[i].netmask, local_interfaces);
 			}
 		}
 	}
 
 	while (ptr && *ptr) {
-		interpret_interface(*ptr, ifaces, total_probed);
+		interpret_interface(*ptr, ifaces, total_probed, local_interfaces);
 		ptr++;
 	}
 
-	if (!local_interfaces) {
+	if (!*local_interfaces) {
 		DEBUG(0,("WARNING: no network interfaces found\n"));
 	}
-}
-
-
-/**
-  unload the interfaces list, so it can be reloaded when needed
-*/
-void unload_interfaces(void)
-{
-	talloc_free(local_interfaces);
-	local_interfaces = NULL;
 }
 
 /**
   how many interfaces do we have
   **/
-int iface_count(struct loadparm_context *lp_ctx)
+int iface_count(struct interface *ifaces)
 {
 	int ret = 0;
 	struct interface *i;
 
-	load_interfaces(lp_interfaces(lp_ctx));
-
-	for (i=local_interfaces;i;i=i->next)
+	for (i=ifaces;i;i=i->next)
 		ret++;
 	return ret;
 }
@@ -255,13 +240,11 @@ int iface_count(struct loadparm_context *lp_ctx)
 /**
   return IP of the Nth interface
   **/
-const char *iface_n_ip(struct loadparm_context *lp_ctx, int n)
+const char *iface_n_ip(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(lp_ctx));
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -273,13 +256,11 @@ const char *iface_n_ip(struct loadparm_context *lp_ctx, int n)
 /**
   return bcast of the Nth interface
   **/
-const char *iface_n_bcast(struct loadparm_context *lp_ctx, int n)
+const char *iface_n_bcast(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(lp_ctx));
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -291,13 +272,11 @@ const char *iface_n_bcast(struct loadparm_context *lp_ctx, int n)
 /**
   return netmask of the Nth interface
   **/
-const char *iface_n_netmask(struct loadparm_context *lp_ctx, int n)
+const char *iface_n_netmask(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces(lp_interfaces(lp_ctx));
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -310,32 +289,28 @@ const char *iface_n_netmask(struct loadparm_context *lp_ctx, int n)
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-const char *iface_best_ip(struct loadparm_context *lp_ctx, const char *dest)
+const char *iface_best_ip(struct interface *ifaces, const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
 
-	load_interfaces(lp_interfaces(lp_ctx));
-
 	ip.s_addr = interpret_addr(dest);
-	iface = iface_find(local_interfaces, ip, true);
+	iface = iface_find(ifaces, ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
-	return iface_n_ip(lp_ctx, 0);
+	return iface_n_ip(ifaces, 0);
 }
 
 /**
   return true if an IP is one one of our local networks
 */
-bool iface_is_local(struct loadparm_context *lp_ctx, const char *dest)
+bool iface_is_local(struct interface *ifaces, const char *dest)
 {
 	struct in_addr ip;
 
-	load_interfaces(lp_interfaces(lp_ctx));
-
 	ip.s_addr = interpret_addr(dest);
-	if (iface_find(local_interfaces, ip, true)) {
+	if (iface_find(ifaces, ip, true)) {
 		return true;
 	}
 	return false;

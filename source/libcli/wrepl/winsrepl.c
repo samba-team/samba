@@ -333,7 +333,9 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	state->wrepl_socket	= wrepl_socket;
 
 	if (!our_ip) {
-		our_ip = iface_best_ip(global_loadparm, peer_ip);
+		struct interface *ifaces;
+		load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+		our_ip = iface_best_ip(ifaces, peer_ip);
 	}
 
 	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 

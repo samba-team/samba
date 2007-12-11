@@ -88,4 +88,5 @@ struct nbtd_server {
 	} \
 } while (0)
 
+struct interface;
 #include "nbt_server/nbt_server_proto.h"

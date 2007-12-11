@@ -27,6 +27,8 @@ struct iface_struct {
 	struct in_addr netmask;
 };
 
+struct interface;
+
 #define MAX_INTERFACES 128
 
 #ifndef AUTOCONF_TEST

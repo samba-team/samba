@@ -37,8 +37,11 @@ static void nbtd_task_init(struct task_server *task)
 {
 	struct nbtd_server *nbtsrv;
 	NTSTATUS status;
+	struct interface *ifaces;
 
-	if (iface_count(task->lp_ctx) == 0) {
+	load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+
+	if (iface_count(ifaces) == 0) {
 		task_server_terminate(task, "nbtd: no network interfaces configured");
 		return;
 	}
@@ -57,7 +60,7 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv->wins_interface  = NULL;
 
 	/* start listening on the configured network interfaces */
-	status = nbtd_startup_interfaces(nbtsrv, task->lp_ctx);
+	status = nbtd_startup_interfaces(nbtsrv, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "nbtd failed to setup interfaces");
 		return;
@@ -82,8 +85,6 @@ static void nbtd_task_init(struct task_server *task)
 	nbtd_register_names(nbtsrv);
 
 	irpc_add_name(task->msg_ctx, "nbt_server");
-
-
 }
 
 

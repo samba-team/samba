@@ -199,9 +199,6 @@ static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 	const char *filename = lp_configfile(global_loadparm);
 
 	ret = lp_load(global_loadparm, filename);
-	if (ret) {
-		unload_interfaces();
-	}
 	mpr_Return(eid, mprCreateBoolVar(ret));
 	return 0;
 }
