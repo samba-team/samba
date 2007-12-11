@@ -1449,7 +1449,7 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
 	uint32 acb_info;
-	uint32 unknown, user_rid;
+	uint32 user_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 
 	if ((argc < 2) || (argc > 3)) {
@@ -1482,10 +1482,10 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 	/* Create domain user */
 
 	acb_info = ACB_NORMAL;
-	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
+	access_mask = 0xe005000b;
 
 	result = rpccli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
-					  acct_name, acb_info, unknown,
+					  acct_name, acb_info, access_mask,
 					  &user_pol, &user_rid);
 
 	if (!NT_STATUS_IS_OK(result))
