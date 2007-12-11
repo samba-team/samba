@@ -14,8 +14,8 @@ var f = FormObj("Provisioning", 0, 2);
 var i;
 var lp = loadparm_init();
 
-if (session.authinfo.user_class == "ADMINISTRATOR"
-	 || session.authinfo.user_class == "SYSTEM") {
+if ((session.authinfo.user_class == "ADMINISTRATOR")
+	 || (session.authinfo.user_class == "SYSTEM")) {
 
 	if (lp.get("realm") == "") {
 		lp.set("realm", lp.get("workgroup") + ".example.com");
@@ -76,7 +76,8 @@ if (session.authinfo.user_class == "ADMINISTRATOR"
 			var session_info = session.authinfo.session_info;
 			var credentials = session.authinfo.credentials;
 
-			info.credentials = credentials;
+			provision_fix_subobj(subobj, paths);
+		
 			info.session_info = session_info;
 			info.message = writefln;
 			info.subobj = subobj;
