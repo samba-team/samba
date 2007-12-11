@@ -2444,6 +2444,243 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
  * Wrapper around open_file_ntcreate and open_directory
  */
 
+NTSTATUS create_file_unixpath(connection_struct *conn,
+			      struct smb_request *req,
+			      const char *fname,
+			      uint32_t access_mask,
+			      uint32_t share_access,
+			      uint32_t create_disposition,
+			      uint32_t create_options,
+			      uint32_t file_attributes,
+			      uint32_t oplock_request,
+			      SMB_BIG_UINT allocation_size,
+			      struct security_descriptor *sd,
+			      struct ea_list *ea_list,
+
+			      files_struct **result,
+			      int *pinfo,
+			      SMB_STRUCT_STAT *psbuf)
+{
+	SMB_STRUCT_STAT sbuf;
+	int info = FILE_WAS_OPENED;
+	files_struct *fsp = NULL;
+	NTSTATUS status;
+
+	DEBUG(10,("create_file_unixpath: access_mask = 0x%x "
+		  "file_attributes = 0x%x, share_access = 0x%x, "
+		  "create_disposition = 0x%x create_options = 0x%x "
+		  "oplock_request = 0x%x ea_list = 0x%p, sd = 0x%p, "
+		  "fname = %s\n",
+		  (unsigned int)access_mask,
+		  (unsigned int)file_attributes,
+		  (unsigned int)share_access,
+		  (unsigned int)create_disposition,
+		  (unsigned int)create_options,
+		  (unsigned int)oplock_request,
+		  ea_list, sd, fname));
+
+	if (create_options & FILE_OPEN_BY_FILE_ID) {
+		status = NT_STATUS_NOT_SUPPORTED;
+		goto fail;
+	}
+
+	if (req == NULL) {
+		oplock_request |= INTERNAL_OPEN_ONLY;
+	}
+
+	if (psbuf != NULL) {
+		sbuf = *psbuf;
+	}
+	else {
+		SET_STAT_INVALID(sbuf);
+	}
+
+	/* This is the correct thing to do (check every time) but can_delete
+	 * is expensive (it may have to read the parent directory
+	 * permissions). So for now we're not doing it unless we have a strong
+	 * hint the client is really going to delete this file. If the client
+	 * is forcing FILE_CREATE let the filesystem take care of the
+	 * permissions. */
+
+	/* Setting FILE_SHARE_DELETE is the hint. */
+
+	if (lp_acl_check_permissions(SNUM(conn))
+	    && (create_disposition != FILE_CREATE)
+	    && (share_access & FILE_SHARE_DELETE)
+	    && (access_mask & DELETE_ACCESS)
+	    && (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
+		 && !lp_delete_readonly(SNUM(conn)))
+		|| !can_delete_file_in_directory(conn, fname))) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto fail;
+	}
+
+#if 0
+	/* We need to support SeSecurityPrivilege for this. */
+	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
+	    !user_has_privileges(current_user.nt_user_token,
+				 &se_security)) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+#endif
+
+	/*
+	 * If it's a request for a directory open, deal with it separately.
+	 */
+
+	if (create_options & FILE_DIRECTORY_FILE) {
+
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+
+		/*
+		 * We will get a create directory here if the Win32
+		 * app specified a security descriptor in the
+		 * CreateDirectory() call.
+		 */
+
+		oplock_request = 0;
+		status = open_directory(
+			conn, req, fname, &sbuf, access_mask, share_access,
+			create_disposition, create_options, file_attributes,
+			&info, &fsp);
+	} else {
+
+		/*
+		 * Ordinary file case.
+		 */
+
+		status = open_file_ntcreate(
+			conn, req, fname, &sbuf, access_mask, share_access,
+			create_disposition, create_options, file_attributes,
+			oplock_request, &info, &fsp);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+
+			/*
+			 * Fail the open if it was explicitly a non-directory
+			 * file.
+			 */
+
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				status = NT_STATUS_FILE_IS_A_DIRECTORY;
+				goto fail;
+			}
+
+			oplock_request = 0;
+			status = open_directory(
+				conn, req, fname, &sbuf, access_mask,
+				share_access, create_disposition,
+				create_options,	file_attributes,
+				&info, &fsp);
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/*
+	 * According to the MS documentation, the only time the security
+	 * descriptor is applied to the opened file is iff we *created* the
+	 * file; an existing file stays the same.
+	 *
+	 * Also, it seems (from observation) that you can open the file with
+	 * any access mask but you can still write the sd. We need to override
+	 * the granted access before we call set_sd
+	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
+	 */
+
+	if ((sd != NULL) && (info == FILE_WAS_CREATED)
+	    && lp_nt_acl_support(SNUM(conn))) {
+
+		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
+		uint32_t saved_access_mask = fsp->access_mask;
+
+		if (sd->owner_sid==0) {
+			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
+		}
+		if (sd->group_sid==0) {
+			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
+		}
+		if (sd->sacl==0) {
+			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
+		}
+		if (sd->dacl==0) {
+			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
+		}
+
+		fsp->access_mask = FILE_GENERIC_ALL;
+
+		status = SMB_VFS_FSET_NT_ACL(
+			fsp, fsp->fh->fd, sec_info_sent, sd);
+
+		fsp->access_mask = saved_access_mask;
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	if ((ea_list != NULL) && (info == FILE_WAS_CREATED)) {
+		status = set_ea(conn, fsp, fname, ea_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	if (!fsp->is_directory && S_ISDIR(sbuf.st_mode)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto fail;
+	}
+
+	/* Save the requested allocation size. */
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
+		if (allocation_size
+		    && (allocation_size > sbuf.st_size)) {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				/* Can't set allocation size on a directory. */
+				status = NT_STATUS_ACCESS_DENIED;
+				goto fail;
+			}
+			if (vfs_allocate_file_space(
+				    fsp, fsp->initial_allocation_size) == -1) {
+				status = NT_STATUS_DISK_FULL;
+				goto fail;
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, (SMB_BIG_UINT)sbuf.st_size);
+		}
+	}
+
+	DEBUG(10, ("create_file: info=%d\n", info));
+
+	*result = fsp;
+	if (pinfo != NULL) {
+		*pinfo = info;
+	}
+	if (psbuf != NULL) {
+		*psbuf = sbuf;
+	}
+	return NT_STATUS_OK;
+
+ fail:
+	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+
+	if (fsp != NULL) {
+		close_file(fsp, ERROR_CLOSE);
+		fsp = NULL;
+	}
+	return status;
+}
+
 NTSTATUS create_file(connection_struct *conn,
 		     struct smb_request *req,
 		     uint16_t root_dir_fid,
@@ -2651,180 +2888,14 @@ NTSTATUS create_file(connection_struct *conn,
 		goto fail;
 	}
 
-	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		status = NT_STATUS_NOT_SUPPORTED;
-		goto fail;
-	}
-
-	if (req == NULL) {
-		oplock_request |= INTERNAL_OPEN_ONLY;
-	}
-
-	/* This is the correct thing to do (check every time) but can_delete
-	 * is expensive (it may have to read the parent directory
-	 * permissions). So for now we're not doing it unless we have a strong
-	 * hint the client is really going to delete this file. If the client
-	 * is forcing FILE_CREATE let the filesystem take care of the
-	 * permissions. */
-
-	/* Setting FILE_SHARE_DELETE is the hint. */
-
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
-	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)
-	    && (((dos_mode(conn, fname, &sbuf) & FILE_ATTRIBUTE_READONLY)
-		 && !lp_delete_readonly(SNUM(conn)))
-		|| !can_delete_file_in_directory(conn, fname))) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto fail;
-	}
-
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
-	    !user_has_privileges(current_user.nt_user_token,
-				 &se_security)) {
-		status = NT_STATUS_PRIVILEGE_NOT_HELD;
-		goto fail;
-	}
-#endif
-
-	/*
-	 * If it's a request for a directory open, deal with it separately.
-	 */
-
-	if (create_options & FILE_DIRECTORY_FILE) {
-
-		/* Can't open a temp directory. IFS kit test. */
-		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-
-		/*
-		 * We will get a create directory here if the Win32
-		 * app specified a security descriptor in the
-		 * CreateDirectory() call.
-		 */
-
-		oplock_request = 0;
-		status = open_directory(
-			conn, req, fname, &sbuf, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			&info, &fsp);
-	} else {
-
-		/*
-		 * Ordinary file case.
-		 */
-
-		status = open_file_ntcreate(
-			conn, req, fname, &sbuf, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			oplock_request, &info, &fsp);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
-
-			/*
-			 * Fail the open if it was explicitly a non-directory
-			 * file.
-			 */
-
-			if (create_options & FILE_NON_DIRECTORY_FILE) {
-				status = NT_STATUS_FILE_IS_A_DIRECTORY;
-				goto fail;
-			}
-
-			oplock_request = 0;
-			status = open_directory(
-				conn, req, fname, &sbuf, access_mask,
-				share_access, create_disposition,
-				create_options,	file_attributes,
-				&info, &fsp);
-		}
-	}
-
-	TALLOC_FREE(case_state);
+	status = create_file_unixpath(
+		conn, req, fname, access_mask, share_access,
+		create_disposition, create_options, file_attributes,
+		oplock_request, allocation_size, sd, ea_list,
+		&fsp, &info, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
-	}
-
-	/*
-	 * According to the MS documentation, the only time the security
-	 * descriptor is applied to the opened file is iff we *created* the
-	 * file; an existing file stays the same.
-	 *
-	 * Also, it seems (from observation) that you can open the file with
-	 * any access mask but you can still write the sd. We need to override
-	 * the granted access before we call set_sd
-	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
-	 */
-
-	if ((sd != NULL) && (info == FILE_WAS_CREATED)
-	    && lp_nt_acl_support(SNUM(conn))) {
-
-		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
-		uint32_t saved_access_mask = fsp->access_mask;
-
-		if (sd->owner_sid==0) {
-			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
-		}
-		if (sd->group_sid==0) {
-			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
-		}
-		if (sd->sacl==0) {
-			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
-		}
-		if (sd->dacl==0) {
-			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
-		}
-
-		fsp->access_mask = FILE_GENERIC_ALL;
-
-		status = SMB_VFS_FSET_NT_ACL(
-			fsp, fsp->fh->fd, sec_info_sent, sd);
-
-		fsp->access_mask = saved_access_mask;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
-
-	if ((ea_list != NULL) && (info == FILE_WAS_CREATED)) {
-		status = set_ea(conn, fsp, fname, ea_list);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
-
-	if (!fsp->is_directory && S_ISDIR(sbuf.st_mode)) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto fail;
-	}
-
-	/* Save the requested allocation size. */
-	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size
-		    && (allocation_size > sbuf.st_size)) {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, allocation_size);
-			if (fsp->is_directory) {
-				/* Can't set allocation size on a directory. */
-				status = NT_STATUS_ACCESS_DENIED;
-				goto fail;
-			}
-			if (vfs_allocate_file_space(
-				    fsp, fsp->initial_allocation_size) == -1) {
-				status = NT_STATUS_DISK_FULL;
-				goto fail;
-			}
-		} else {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (SMB_BIG_UINT)sbuf.st_size);
-		}
 	}
 
  done:
