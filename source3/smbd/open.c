@@ -2611,10 +2611,6 @@ NTSTATUS create_file(connection_struct *conn,
 		}
 	}
 
-	if (req == NULL) {
-		oplock_request |= INTERNAL_OPEN_ONLY;
-	}
-
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
 		char *resolved_fname;
 
@@ -2658,6 +2654,10 @@ NTSTATUS create_file(connection_struct *conn,
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
+	}
+
+	if (req == NULL) {
+		oplock_request |= INTERNAL_OPEN_ONLY;
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete
