@@ -2235,8 +2235,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
 	}
 
-	if (!get_trust_pw(domain->name, mach_pwd, &account_name,
-			  &sec_chan_type))
+	if (!get_trust_pw_hash(domain->name, mach_pwd, &account_name,
+			       &sec_chan_type))
 	{
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

@@ -1587,8 +1587,8 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
  appropriate account name is stored in account_name.
 *******************************************************************/
 
-bool get_trust_pw(const char *domain, uint8 ret_pwd[16],
-		  const char **account_name, uint32 *channel)
+bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
+		       const char **account_name, uint32 *channel)
 {
 	char *pwd = NULL;
 	time_t last_set_time;

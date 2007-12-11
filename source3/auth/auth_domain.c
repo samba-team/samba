@@ -129,8 +129,8 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		unsigned char machine_pwd[16];
 		const char *account_name;
 
-		if (!get_trust_pw(domain, machine_pwd, &account_name,
-				  &sec_chan_type))
+		if (!get_trust_pw_hash(domain, machine_pwd, &account_name,
+				       &sec_chan_type))
 		{
 			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
 			"trust account password for domain '%s'\n",
