@@ -532,6 +532,8 @@ static void dump_maps_recv(void *private_data, bool success)
 
 void winbindd_dump_maps(struct winbindd_cli_state *state)
 {
+	const char *logfile;
+
 	if ( ! state->privileged) {
 		DEBUG(0, ("Only root is allowed to ask for an idmap dump!\n"));
 		request_error(state);
@@ -540,9 +542,15 @@ void winbindd_dump_maps(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: dump maps\n", (unsigned long)state->pid));
 
-	winbindd_dump_maps_async(state->mem_ctx,
-			state->request.extra_data.data,
-			state->request.extra_len,
-			dump_maps_recv, state);
+	logfile = talloc_strndup(state->mem_ctx,
+				 (const char *)state->request.extra_data.data,
+				 state->request.extra_len);
+	if (!logfile) {
+		request_error(state);
+		return;
+	}
+
+	winbindd_dump_maps_async(state->mem_ctx, logfile,
+				 dump_maps_recv, state);
 }
 
