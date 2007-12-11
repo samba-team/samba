@@ -2,6 +2,8 @@
    Unix SMB/CIFS implementation.
    return a list of network interfaces
    Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Jeremy Allison 2007
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +42,6 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <netdb.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -76,12 +77,72 @@
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
 
 #include "netif.h"
 
+/****************************************************************************
+ Try the "standard" getifaddrs/freeifaddrs interfaces.
+ Also gets IPv6 interfaces.
+****************************************************************************/
+
+#if HAVE_IFACE_GETIFADDRS
+/****************************************************************************
+ Get the netmask address for a local interface.
+****************************************************************************/
+
+static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
+{
+	struct ifaddrs *iflist = NULL;
+	struct ifaddrs *ifptr = NULL;
+	int total = 0;
+
+	if (getifaddrs(&iflist) < 0) {
+		return -1;
+	}
+
+	/* Loop through interfaces, looking for given IP address */
+	for (ifptr = iflist, total = 0;
+			ifptr != NULL && total < max_interfaces;
+			ifptr = ifptr->ifa_next) {
+
+		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
+
+		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
+			continue;
+		}
+
+		/* Check the interface is up. */
+		if (!(ifptr->ifa_flags & IFF_UP)) {
+			continue;
+		}
+
+		/* We don't support IPv6 *yet* */
+		if (ifptr->ifa_addr->sa_family != AF_INET) {
+			continue;
+		}
+
+		ifaces[total].ip = ((struct sockaddr_in *)ifptr->ifa_addr)->sin_addr;
+		ifaces[total].netmask = ((struct sockaddr_in *)ifptr->ifa_netmask)->sin_addr;
+
+		strlcpy(ifaces[total].name, ifptr->ifa_name,
+			sizeof(ifaces[total].name));
+		total++;
+	}
+
+	freeifaddrs(iflist);
+
+	return total;
+}
+
+#define _FOUND_IFACE_ANY
+#endif /* HAVE_IFACE_GETIFADDRS */
 #if HAVE_IFACE_IFCONF
 
 /* this works for Linux 2.2, Solaris 2.5, SunOS4, HPUX 10.20, OSF1

@@ -96,6 +96,29 @@ fi
 dnl don't build ipv6 by default, unless the above test enables it, or
 dnl the configure uses --with-static-modules=socket_ipv6
 
+AC_CHECK_HEADERS([ifaddrs.h])
+
+dnl test for getifaddrs and freeifaddrs
+AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
+AC_TRY_COMPILE([
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>],
+[
+struct ifaddrs *ifp = NULL;
+int ret = getifaddrs (&ifp);
+freeifaddrs(ifp);
+],
+samba_cv_HAVE_GETIFADDRS=yes,samba_cv_HAVE_GETIFADDRS=no)])
+if test x"$samba_cv_HAVE_GETIFADDRS" = x"yes"; then
+    AC_DEFINE(HAVE_GETIFADDRS,1,[Whether the system has getifaddrs])
+    AC_DEFINE(HAVE_FREEIFADDRS,1,[Whether the system has freeifaddrs])
+fi
+
+
 
 ##################
 # look for a method of finding the list of network interfaces
@@ -107,6 +130,26 @@ old_LIBS=$LIBS
 LIBS="$NSL_LIBS $SOCKET_LIBS"
 CFLAGS="$CFLAGS -Ilib/replace"
 iface=no;
+##################
+# look for a method of finding the list of network interfaces
+iface=no;
+AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+AC_TRY_RUN([
+#define NO_CONFIG_H 1
+#define HAVE_IFACE_GETIFADDRS 1
+#define AUTOCONF_TEST 1
+#include "${srcdir-.}/lib/replace/replace.c"
+#include "${srcdir-.}/lib/socket/netif.c"],
+           samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
+CPPFLAGS="$SAVE_CPPFLAGS"
+if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
+fi
+
+
+if test $iface = no; then
 AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
@@ -117,6 +160,8 @@ AC_TRY_RUN([
 if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
 fi
+fi
+
 
 if test $iface = no; then
 AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
