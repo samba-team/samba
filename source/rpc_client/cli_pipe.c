@@ -2444,7 +2444,8 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 	}
 
 	/* Get the machine account credentials from secrets.tdb. */
-	if (!get_trust_pw(domain, machine_pwd, &machine_account, &sec_chan_type))
+	if (!get_trust_pw_hash(domain, machine_pwd, &machine_account,
+			       &sec_chan_type))
 	{
 		DEBUG(0, ("get_schannel_session_key: could not fetch "
 			"trust account password for domain '%s'\n",
@@ -2557,7 +2558,8 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 	}
 
 	/* Get the machine account credentials from secrets.tdb. */
-	if (!get_trust_pw(domain, machine_pwd, &machine_account, &sec_chan_type))
+	if (!get_trust_pw_hash(domain, machine_pwd, &machine_account,
+			       &sec_chan_type))
 	{
 		DEBUG(0, ("get_schannel_session_key_auth_ntlmssp: could not fetch "
 			"trust account password for domain '%s'\n",
