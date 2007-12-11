@@ -81,9 +81,7 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	sam->user_flags = 0; /* TODO: w2k3 uses 0x120.  We know 0x20
-			      * as extra sids (PAC doc) but what is
-			      * 0x100? */
+	sam->user_flags = 0; /* w2k3 uses NETLOGON_EXTRA_SIDS | NETLOGON_NTLMV2_ENABLED */
 	sam->acct_flags = server_info->acct_flags;
 	sam->logon_server.string = server_info->logon_server;
 	sam->domain.string = server_info->domain_name;
