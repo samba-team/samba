@@ -226,7 +226,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 			model = poptGetOptArg(pc);
 			break;
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
 			poptPrintUsage(pc, stderr, 0);
 			exit(1);
@@ -234,7 +234,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	if (opt_daemon && opt_interactive) {
-		d_fprintf(stderr,"\nERROR: "
+		fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
