@@ -3197,6 +3197,30 @@ int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
 	return IVAL(ptr,off);
 }
 
+/****************************************************************
+ Split DOM\user into DOM and user. Do not mix with winbind variants of that
+ call (they take care of winbind separator and other winbind specific settings).
+****************************************************************/
+
+void split_domain_user(TALLOC_CTX *mem_ctx,
+		       const char *full_name,
+		       char **domain,
+		       char **user)
+{
+	const char *p = NULL;
+
+	p = strchr_m(full_name, '\\');
+
+	if (p != NULL) {
+		*domain = talloc_strndup(mem_ctx, full_name,
+					 PTR_DIFF(p, full_name));
+		*user = talloc_strdup(mem_ctx, p+1);
+	} else {
+		*domain = talloc_strdup(mem_ctx, "");
+		*user = talloc_strdup(mem_ctx, full_name);
+	}
+}
+
 #if 0
 
 Disable these now we have checked all code paths and ensured
