@@ -59,7 +59,9 @@ static int net_dom_unjoin(int argc, const char **argv)
 		return net_dom_usage(argc, argv);
 	}
 
-	server_name = opt_host;
+	if (opt_host) {
+		server_name = opt_host;
+	}
 
 	for (i=0; i<argc; i++) {
 		if (strnequal(argv[i], "account", strlen("account"))) {
@@ -142,7 +144,9 @@ static int net_dom_join(int argc, const char **argv)
 		return net_dom_usage(argc, argv);
 	}
 
-	server_name = opt_host;
+	if (opt_host) {
+		server_name = opt_host;
+	}
 
 	if (opt_force) {
 		join_flags |= WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
@@ -191,8 +195,9 @@ static int net_dom_join(int argc, const char **argv)
 	werr = NetJoinDomain(server_name, domain_name, account_ou,
 			     Account, password, join_flags);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("Failed to join domain: %s\n",
-			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
+		printf("Failed to join domain: %s (WERROR: %s)\n",
+			get_friendly_nt_error_msg(werror_to_ntstatus(werr)),
+			dos_errstr(werr));
 		goto done;
 	}
 
