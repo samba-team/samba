@@ -44,7 +44,7 @@ RCSID("$Id$");
 #include <roken.h>
 
 /**
- * \page DH DH - Diffie-Hellman key exchange
+ * @page page_dh DH - Diffie-Hellman key exchange
  *
  * Diffie-Hellman key exchange is a protocol that allows two parties
  * to establish a shared secret key.
