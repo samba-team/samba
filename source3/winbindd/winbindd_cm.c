@@ -676,8 +676,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
-
 	*retry = True;
 
 	got_mutex = secrets_named_mutex(controller,
@@ -794,6 +792,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	/* Fall back to non-kerberos session setup */
 
 	(*cli)->use_kerberos = False;
+
+	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	if ((((*cli)->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
 	    (strlen(ipc_username) > 0)) {
