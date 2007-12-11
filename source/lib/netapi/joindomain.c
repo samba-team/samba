@@ -24,14 +24,25 @@ extern const char *opt_user_name;
 extern const char *opt_workgroup;
 extern const char *opt_password;
 
-WERROR NetJoinDomain(const char *server_name,
-		     const char *domain_name,
-		     const char *account_ou,
-		     const char *Account,
-		     const char *password,
-		     uint32_t join_flags)
+static WERROR NetJoinDomainLocal(TALLOC_CTX *mem_ctx,
+				 const char *server_name,
+				 const char *domain_name,
+				 const char *account_ou,
+				 const char *Account,
+				 const char *password,
+				 uint32_t join_flags)
 {
-	TALLOC_CTX *mem_ctx = NULL;
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR NetJoinDomainRemote(TALLOC_CTX *mem_ctx,
+				  const char *server_name,
+				  const char *domain_name,
+				  const char *account_ou,
+				  const char *Account,
+				  const char *password,
+				  uint32_t join_flags)
+{
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer encrypted_password;
@@ -40,22 +51,6 @@ WERROR NetJoinDomain(const char *server_name,
 	unsigned int old_timeout = 0;
 
 	ZERO_STRUCT(encrypted_password);
-
-	mem_ctx = talloc_init("NetJoinDomain");
-	if (!mem_ctx) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		werr = WERR_NOT_SUPPORTED;
-		goto done;
-	}
-
-	if (!domain_name) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -101,6 +96,61 @@ WERROR NetJoinDomain(const char *server_name,
 		cli_set_timeout(cli, old_timeout);
 		cli_shutdown(cli);
 	}
+
+	return werr;
+}
+
+WERROR NetJoinDomain(const char *server_name,
+		     const char *domain_name,
+		     const char *account_ou,
+		     const char *Account,
+		     const char *password,
+		     uint32_t join_flags)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	WERROR werr;
+
+	mem_ctx = talloc_init("NetJoinDomain");
+	if (!mem_ctx) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	if (!domain_name) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+
+		const char *dc = NULL;
+
+		/* FIXME: DsGetDcName */
+		if (server_name == NULL) {
+			dc = domain_name;
+		} else {
+			dc = domain_name;
+		}
+
+		werr = NetJoinDomainLocal(mem_ctx,
+					  dc,
+					  domain_name,
+					  account_ou,
+					  Account,
+					  password,
+					  join_flags);
+
+		goto done;
+	}
+
+	werr = NetJoinDomainRemote(mem_ctx,
+				   server_name,
+				   domain_name,
+				   account_ou,
+				   Account,
+				   password,
+				   join_flags);
+done:
 	TALLOC_FREE(mem_ctx);
 
 	return werr;
