@@ -70,23 +70,23 @@ directories.
 CHANGES SINCE TP5
 =================
 
-In the time since TP5 was released in June 2007, Samba has
+In the time since Sama4 Alpha1 was released in September 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  Group Policy Support:  Basic group policies may be defined, and are
-  enforced by Windows clients
-
   MMC Support:  The Active Directory Users and Computers console now
-  works, supporting most operations.  
+  handles group membership correctly.  
 
-  Winbind:  Kai Blin has been working hard on his Google Summer of
-  Code project, creating a winbind implementation for Samba4.
+  member/memberOf:  These and other linked attributes are now kept in
+  sync
 
-  Heimdal update:  A Heimdal 1.0 snapshot is now included as the
-  internal Kerberos library in Samba4.
+  subtree renames: Renaming a subtree of LDAP objects is now possible,
+  with all linked attributes being kept consistant.
 
-  In the past few weeks, many small but significant bugs have been
-  fixed, particularly thanks to Matthias Dieter Wallnöfer <mwallnoefer@yahoo.de>
+  Python Bindings:  Bindings for a future move to python as the
+  internal scripting language have been created. 
+
+  Shared library use:  In support of projects such as OpenChange,
+  which depend on Samba4, more of Samba4 is built as shared libraries.
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our SVN history.
@@ -105,12 +105,6 @@ KNOWN ISSUES
   the support found in Samba3.
 
 - There is no printing support in the current release.
-
-- Support for managing groups is currently poor (as the
-  memberOf/member linked attributes are not kept in sync). 
-
-- Renaming and deleting subtrees (containers) in the the LDB tree will
-  have unexpected results.
 
 - The Samba4 port of the CTDB clustering support is not yet complete
 
