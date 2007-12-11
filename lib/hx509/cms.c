@@ -34,8 +34,41 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+/**
+ * @page page_cms CMS/PKCS7 message functions.
+ *
+ * CMS is defined in RFC 3369 and is an continuation of the RSA Labs
+ * standard PKCS7. The basic messages in CMS is 
+ *
+ * - SignedData
+ *   Data signed with private key (RSA, DSA, ECDSA) or secret
+ *   (symmetric) key
+ * - EnvelopedData
+ *   Data encrypted with private key (RSA)
+ * - EncryptedData
+ *   Data encrypted with secret (symmetric) key.
+ * - ContentInfo
+ *   Wrapper structure including type and data.
+ *
+ */
+
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
+
+/**
+ * Wrap data and oid in a ContentInfo and encode it.
+ *
+ * @param oid type of the content.
+ * @param buf data to be wrapped. If a NULL pointer is passed in, the
+ * optional content field in the ContentInfo is not going be filled
+ * in.
+ * @param res the encoded buffer, the result should be freed with
+ * der_free_octet_string().
+ *
+ * @return Returns an hx509 error code.
+ * 
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_wrap_ContentInfo(const heim_oid *oid,
@@ -52,18 +85,20 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
     ret = der_copy_oid(oid, &ci.contentType);
     if (ret)
 	return ret;
-    ALLOC(ci.content, 1);
-    if (ci.content == NULL) {
-	free_ContentInfo(&ci);
-	return ENOMEM;
+    if (buf) {
+	ALLOC(ci.content, 1);
+	if (ci.content == NULL) {
+	    free_ContentInfo(&ci);
+	    return ENOMEM;
+	}
+	ci.content->data = malloc(buf->length);
+	if (ci.content->data == NULL) {
+	    free_ContentInfo(&ci);
+	    return ENOMEM;
+	}
+	memcpy(ci.content->data, buf->data, buf->length);
+	ci.content->length = buf->length;
     }
-    ci.content->data = malloc(buf->length);
-    if (ci.content->data == NULL) {
-	free_ContentInfo(&ci);
-	return ENOMEM;
-    }
-    memcpy(ci.content->data, buf->data, buf->length);
-    ci.content->length = buf->length;
 
     ASN1_MALLOC_ENCODE(ContentInfo, res->data, res->length, &ci, &size, ret);
     free_ContentInfo(&ci);
@@ -74,6 +109,20 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
 
     return 0;
 }
+
+/**
+ * Decode an ContentInfo and unwrap data and oid it.
+ *
+ * @param in the encoded buffer.
+ * @param oid type of the content.
+ * @param buf data to be wrapped.
+ * @param have_data since the data is optional, this flags show dthe
+ * diffrence between no data and the zero length data.
+ *
+ * @return Returns an hx509 error code.
+ * 
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
@@ -108,7 +157,7 @@ hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
 	memset(out, 0, sizeof(*out));
 
     if (have_data)
-	*have_data = (ci.content != NULL) ? 1 : 0;
+	*have_data = (ci.vcontent != NULL) ? 1 : 0;
 
     free_ContentInfo(&ci);
 
@@ -266,6 +315,23 @@ find_CMSIdentifier(hx509_context context,
 
     return 0;
 }
+
+/**
+ * Decode and unencrypt EnvelopedData.
+ *
+ * Separate data from the EnvelopedData.
+ *
+ * @param context
+ * @param certs
+ * @param flags
+ * @param data
+ * @param length
+ * @param encryptedContent
+ * @param contentType
+ * @param content
+ *
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_unenvelope(hx509_context context,

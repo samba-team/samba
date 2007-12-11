@@ -1,3 +1,7 @@
+2007-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* *.[ch]: More documentation
+
 2007-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* handle refcount on NULL.

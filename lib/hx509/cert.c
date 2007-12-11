@@ -36,6 +36,19 @@ RCSID("$Id$");
 #include "crypto-headers.h"
 #include <rtbl.h>
 
+/**
+ * @page page_cert The basic certificate
+ *
+ * The basic hx509 cerificate object in hx509 is hx509_cert. The
+ * hx509_cert object is representing one X509/PKIX certificate and
+ * associated attributes; like private key, friendly name, etc.
+ *
+ * A hx509_cert object is usully found via the keyset interfaces (@ref
+ * page_keyset), but its also possible to create a certificate
+ * directly from a parsed object with hx509_cert_init() and
+ * hx509_cert_init_data().
+ */
+
 struct hx509_verify_ctx_data {
     hx509_certs trust_anchors;
     int flags;

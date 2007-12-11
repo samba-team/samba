@@ -34,6 +34,11 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+/**
+ * @page page_keyset Keyset operations
+ *
+ */
+
 struct hx509_certs_data {
     int ref;
     struct hx509_keyset_ops *ops;

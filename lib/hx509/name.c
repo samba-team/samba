@@ -34,10 +34,28 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
-/* 
- * name parsing from rfc2253
- * fix so parsing rfc1779 works too 
- * rfc3280
+/**
+ * @page page_name PKIX/X.509 Names
+ *
+ * There are several names in PKIX/X.509, GeneralName and Name.
+ *
+ * A Name consists of an ordered list of Relative Distinguished Names
+ * (RDN). Each RDN consists of an unordered list of typed strings. The
+ * types are defined by OID and have long and short description. For
+ * example id-at-commonName (2.5.4.3) have the long name CommonName
+ * and short name CN. The string itself can be of serveral encoding,
+ * UTF8, UTF16, Teltex string, etc. The type limit what encoding
+ * should be used.
+ *
+ * GeneralName is a broader nametype that can contains al kind of
+ * stuff like Name, IP addresses, partial Name, etc.
+ *
+ * Name is mapped into a hx509_name object.
+ *
+ * Parse and string name into a hx509_name object with hx509_parse_name(),
+ * make it back into string representation with hx509_name_to_string().
+ *
+ * Name string are defined rfc2253, rfc1779 and X.501.
  */
 
 static const struct {
@@ -385,19 +403,6 @@ _hx509_name_from_Name(const Name *n, hx509_name *name)
     return ret;
 }
 
-static int
-hx509_der_parse_name(const void *data, size_t length, hx509_name *name)
-{
-    int ret;
-    Name n;
-
-    *name = NULL;
-    ret = decode_Name(data, length, &n, NULL);
-    if (ret)
-	return ret;
-    return _hx509_name_from_Name(&n, name);
-}
-
 int
 _hx509_name_modify(hx509_context context,
 		   Name *name, 
@@ -577,6 +582,17 @@ hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
     return 0;
 }
 
+/**
+ * Convert a hx509_name into a Name.
+ *
+ * @param from the name to copy from
+ * @param to the name to copy to
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_to_Name(const hx509_name from, Name *to)
 {
@@ -588,6 +604,19 @@ hx509_name_normalize(hx509_context context, hx509_name name)
 {
     return 0;
 }
+
+/**
+ * Expands variables in the name using env. Variables are on the form
+ * ${name}. Useful when dealing with certificate templates.
+ *
+ * @param context A hx509 cotext.
+ * @param name the name to expand.
+ * @param env environment variable to expand.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_name_expand(hx509_context context,
@@ -607,6 +636,7 @@ hx509_name_expand(hx509_context context,
 
     for (i = 0 ; i < n->u.rdnSequence.len; i++) {
 	for (j = 0; j < n->u.rdnSequence.val[i].len; j++) {
+	    /** Only UTF8String rdnSequence names are allowed */
 	    /*
 	      THIS SHOULD REALLY BE:
 	      COMP = n->u.rdnSequence.val[i].val[j];
@@ -704,7 +734,7 @@ hx509_name_free(hx509_name *name)
  * Convert a DER encoded name info a string.
  *
  * @param data data to a DER/BER encoded name
-? * @param length length of data
+ * @param length length of data
  * @param str the resulting string, is NULL on failure.
  *
  * @return An hx509 error code, see hx509_get_error_string().
@@ -712,21 +742,33 @@ hx509_name_free(hx509_name *name)
  * @ingroup hx509_name
  */
 
-
 int
 hx509_unparse_der_name(const void *data, size_t length, char **str)
 {
-    hx509_name name;
+    Name name;
     int ret;
 
-    ret = hx509_der_parse_name(data, length, &name);
+    *str = NULL;
+
+    ret = decode_Name(data, length, &name, NULL);
     if (ret)
 	return ret;
-    
-    ret = hx509_name_to_string(name, str);
-    hx509_name_free(&name);
+    ret = _hx509_Name_to_string(&name, str);
+    free_Name(&name);
     return ret;
 }
+
+/**
+ * Convert a hx509_name object to DER encoded name.
+ *
+ * @param name name to concert
+ * @param data data to a DER encoded name
+ * @param length length of data
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_name_to_der_name(const hx509_name name, void **data, size_t *length)
@@ -743,7 +785,6 @@ hx509_name_to_der_name(const hx509_name name, void **data, size_t *length)
     return 0;
 }
 
-
 int
 _hx509_unparse_Name(const Name *aname, char **str)
 {
@@ -758,6 +799,16 @@ _hx509_unparse_Name(const Name *aname, char **str)
     hx509_name_free(&name);
     return ret;
 }
+
+/**
+ * Unparse the hx509 name in name into a string.
+ *
+ * @param name the name to check if its empty/null.
+ *
+ * @return non zero if the name is empty/null.
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_name_is_null_p(const hx509_name name)
