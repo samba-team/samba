@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2479,6 +2479,19 @@ static swig_module_info swig_module = {swig_types, 11, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _tdb.so
@@ -2880,10 +2893,11 @@ SWIGINTERN PyObject *_wrap_tdb_error(PyObject *SWIGUNUSEDPARM(self), PyObject *a
   enum TDB_ERROR result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_error",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_error" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -2901,10 +2915,11 @@ SWIGINTERN PyObject *_wrap_delete_tdb(PyObject *SWIGUNUSEDPARM(self), PyObject *
   tdb *arg1 = (tdb *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_tdb",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, SWIG_POINTER_DISOWN |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_tdb" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -2924,10 +2939,11 @@ SWIGINTERN PyObject *_wrap_tdb_close(PyObject *SWIGUNUSEDPARM(self), PyObject *a
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_close",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_close" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -2991,10 +3007,11 @@ SWIGINTERN PyObject *_wrap_tdb_errorstr(PyObject *SWIGUNUSEDPARM(self), PyObject
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_errorstr",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_errorstr" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3184,10 +3201,11 @@ SWIGINTERN PyObject *_wrap_tdb_firstkey(PyObject *SWIGUNUSEDPARM(self), PyObject
   TDB_DATA result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_firstkey",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_firstkey" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3255,10 +3273,11 @@ SWIGINTERN PyObject *_wrap_tdb_lock_all(PyObject *SWIGUNUSEDPARM(self), PyObject
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_lock_all",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_lock_all" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3277,10 +3296,11 @@ SWIGINTERN PyObject *_wrap_tdb_unlock_all(PyObject *SWIGUNUSEDPARM(self), PyObje
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_unlock_all",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_unlock_all" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3299,10 +3319,11 @@ SWIGINTERN PyObject *_wrap_tdb_read_lock_all(PyObject *SWIGUNUSEDPARM(self), PyO
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_read_lock_all",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_read_lock_all" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3321,10 +3342,11 @@ SWIGINTERN PyObject *_wrap_tdb_read_unlock_all(PyObject *SWIGUNUSEDPARM(self), P
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_read_unlock_all",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_read_unlock_all" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3343,10 +3365,11 @@ SWIGINTERN PyObject *_wrap_tdb_reopen(PyObject *SWIGUNUSEDPARM(self), PyObject *
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_reopen",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_reopen" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3365,10 +3388,11 @@ SWIGINTERN PyObject *_wrap_tdb_transaction_start(PyObject *SWIGUNUSEDPARM(self),
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_transaction_start",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_transaction_start" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3387,10 +3411,11 @@ SWIGINTERN PyObject *_wrap_tdb_transaction_commit(PyObject *SWIGUNUSEDPARM(self)
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_transaction_commit",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_transaction_commit" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3409,10 +3434,11 @@ SWIGINTERN PyObject *_wrap_tdb_transaction_cancel(PyObject *SWIGUNUSEDPARM(self)
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_transaction_cancel",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_transaction_cancel" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3431,10 +3457,11 @@ SWIGINTERN PyObject *_wrap_tdb_transaction_recover(PyObject *SWIGUNUSEDPARM(self
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_transaction_recover",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_transaction_recover" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3453,10 +3480,11 @@ SWIGINTERN PyObject *_wrap_tdb_hash_size(PyObject *SWIGUNUSEDPARM(self), PyObjec
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_hash_size",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_hash_size" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3475,10 +3503,11 @@ SWIGINTERN PyObject *_wrap_tdb_map_size(PyObject *SWIGUNUSEDPARM(self), PyObject
   size_t result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_map_size",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_map_size" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3497,10 +3526,11 @@ SWIGINTERN PyObject *_wrap_tdb_get_flags(PyObject *SWIGUNUSEDPARM(self), PyObjec
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_get_flags",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_get_flags" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3552,10 +3582,11 @@ SWIGINTERN PyObject *_wrap_tdb_name(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:tdb_name",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_name" "', argument " "1"" of type '" "tdb *""'"); 
   }
@@ -3570,38 +3601,38 @@ fail:
 
 SWIGINTERN PyObject *tdb_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_tdb_context, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
 }
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_Tdb", (PyCFunction) _wrap_new_Tdb, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"tdb_error", _wrap_tdb_error, METH_VARARGS, NULL},
-	 { (char *)"delete_tdb", _wrap_delete_tdb, METH_VARARGS, NULL},
-	 { (char *)"tdb_close", _wrap_tdb_close, METH_VARARGS, NULL},
+	 { (char *)"tdb_error", (PyCFunction)_wrap_tdb_error, METH_O, NULL},
+	 { (char *)"delete_tdb", (PyCFunction)_wrap_delete_tdb, METH_O, NULL},
+	 { (char *)"tdb_close", (PyCFunction)_wrap_tdb_close, METH_O, NULL},
 	 { (char *)"tdb_append", (PyCFunction) _wrap_tdb_append, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"tdb_errorstr", _wrap_tdb_errorstr, METH_VARARGS, NULL},
+	 { (char *)"tdb_errorstr", (PyCFunction)_wrap_tdb_errorstr, METH_O, NULL},
 	 { (char *)"tdb_fetch", (PyCFunction) _wrap_tdb_fetch, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_delete", (PyCFunction) _wrap_tdb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_store", (PyCFunction) _wrap_tdb_store, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_exists", (PyCFunction) _wrap_tdb_exists, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"tdb_firstkey", _wrap_tdb_firstkey, METH_VARARGS, NULL},
+	 { (char *)"tdb_firstkey", (PyCFunction)_wrap_tdb_firstkey, METH_O, NULL},
 	 { (char *)"tdb_nextkey", (PyCFunction) _wrap_tdb_nextkey, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"tdb_lock_all", _wrap_tdb_lock_all, METH_VARARGS, NULL},
-	 { (char *)"tdb_unlock_all", _wrap_tdb_unlock_all, METH_VARARGS, NULL},
-	 { (char *)"tdb_read_lock_all", _wrap_tdb_read_lock_all, METH_VARARGS, NULL},
-	 { (char *)"tdb_read_unlock_all", _wrap_tdb_read_unlock_all, METH_VARARGS, NULL},
-	 { (char *)"tdb_reopen", _wrap_tdb_reopen, METH_VARARGS, NULL},
-	 { (char *)"tdb_transaction_start", _wrap_tdb_transaction_start, METH_VARARGS, NULL},
-	 { (char *)"tdb_transaction_commit", _wrap_tdb_transaction_commit, METH_VARARGS, NULL},
-	 { (char *)"tdb_transaction_cancel", _wrap_tdb_transaction_cancel, METH_VARARGS, NULL},
-	 { (char *)"tdb_transaction_recover", _wrap_tdb_transaction_recover, METH_VARARGS, NULL},
-	 { (char *)"tdb_hash_size", _wrap_tdb_hash_size, METH_VARARGS, NULL},
-	 { (char *)"tdb_map_size", _wrap_tdb_map_size, METH_VARARGS, NULL},
-	 { (char *)"tdb_get_flags", _wrap_tdb_get_flags, METH_VARARGS, NULL},
+	 { (char *)"tdb_lock_all", (PyCFunction)_wrap_tdb_lock_all, METH_O, NULL},
+	 { (char *)"tdb_unlock_all", (PyCFunction)_wrap_tdb_unlock_all, METH_O, NULL},
+	 { (char *)"tdb_read_lock_all", (PyCFunction)_wrap_tdb_read_lock_all, METH_O, NULL},
+	 { (char *)"tdb_read_unlock_all", (PyCFunction)_wrap_tdb_read_unlock_all, METH_O, NULL},
+	 { (char *)"tdb_reopen", (PyCFunction)_wrap_tdb_reopen, METH_O, NULL},
+	 { (char *)"tdb_transaction_start", (PyCFunction)_wrap_tdb_transaction_start, METH_O, NULL},
+	 { (char *)"tdb_transaction_commit", (PyCFunction)_wrap_tdb_transaction_commit, METH_O, NULL},
+	 { (char *)"tdb_transaction_cancel", (PyCFunction)_wrap_tdb_transaction_cancel, METH_O, NULL},
+	 { (char *)"tdb_transaction_recover", (PyCFunction)_wrap_tdb_transaction_recover, METH_O, NULL},
+	 { (char *)"tdb_hash_size", (PyCFunction)_wrap_tdb_hash_size, METH_O, NULL},
+	 { (char *)"tdb_map_size", (PyCFunction)_wrap_tdb_map_size, METH_O, NULL},
+	 { (char *)"tdb_get_flags", (PyCFunction)_wrap_tdb_get_flags, METH_O, NULL},
 	 { (char *)"tdb_set_max_dead", (PyCFunction) _wrap_tdb_set_max_dead, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"tdb_name", _wrap_tdb_name, METH_VARARGS, NULL},
+	 { (char *)"tdb_name", (PyCFunction)_wrap_tdb_name, METH_O, NULL},
 	 { (char *)"tdb_swigregister", tdb_swigregister, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };

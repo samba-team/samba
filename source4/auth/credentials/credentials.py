@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _credentials
 import new
@@ -48,36 +47,40 @@ except AttributeError:
 del types
 
 
-class Credentials(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Credentials, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Credentials, name)
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
+
+
+class Credentials(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        this = _credentials.new_Credentials(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _credentials.Credentials_swiginit(self,_credentials.new_Credentials(*args, **kwargs))
     __swig_destroy__ = _credentials.delete_Credentials
-    __del__ = lambda self : None;
-    def get_username(*args, **kwargs): return _credentials.Credentials_get_username(*args, **kwargs)
-    def set_username(*args, **kwargs): return _credentials.Credentials_set_username(*args, **kwargs)
-    def get_password(*args, **kwargs): return _credentials.Credentials_get_password(*args, **kwargs)
-    def set_password(*args, **kwargs): return _credentials.Credentials_set_password(*args, **kwargs)
-    def get_domain(*args, **kwargs): return _credentials.Credentials_get_domain(*args, **kwargs)
-    def set_domain(*args, **kwargs): return _credentials.Credentials_set_domain(*args, **kwargs)
-    def get_realm(*args, **kwargs): return _credentials.Credentials_get_realm(*args, **kwargs)
-    def set_realm(*args, **kwargs): return _credentials.Credentials_set_realm(*args, **kwargs)
-    def parse_string(*args, **kwargs): return _credentials.Credentials_parse_string(*args, **kwargs)
-    def get_bind_dn(*args, **kwargs): return _credentials.Credentials_get_bind_dn(*args, **kwargs)
-    def set_bind_dn(*args, **kwargs): return _credentials.Credentials_set_bind_dn(*args, **kwargs)
-    def get_workstation(*args, **kwargs): return _credentials.Credentials_get_workstation(*args, **kwargs)
-    def set_workstation(*args, **kwargs): return _credentials.Credentials_set_workstation(*args, **kwargs)
-    def guess(*args, **kwargs): return _credentials.Credentials_guess(*args, **kwargs)
-    def is_anonymous(*args, **kwargs): return _credentials.Credentials_is_anonymous(*args, **kwargs)
-    def get_nt_hash(*args, **kwargs): return _credentials.Credentials_get_nt_hash(*args, **kwargs)
-    def authentication_requested(*args, **kwargs): return _credentials.Credentials_authentication_requested(*args, **kwargs)
-    def wrong_password(*args, **kwargs): return _credentials.Credentials_wrong_password(*args, **kwargs)
+Credentials.get_username = new_instancemethod(_credentials.Credentials_get_username,None,Credentials)
+Credentials.set_username = new_instancemethod(_credentials.Credentials_set_username,None,Credentials)
+Credentials.get_password = new_instancemethod(_credentials.Credentials_get_password,None,Credentials)
+Credentials.set_password = new_instancemethod(_credentials.Credentials_set_password,None,Credentials)
+Credentials.get_domain = new_instancemethod(_credentials.Credentials_get_domain,None,Credentials)
+Credentials.set_domain = new_instancemethod(_credentials.Credentials_set_domain,None,Credentials)
+Credentials.get_realm = new_instancemethod(_credentials.Credentials_get_realm,None,Credentials)
+Credentials.set_realm = new_instancemethod(_credentials.Credentials_set_realm,None,Credentials)
+Credentials.parse_string = new_instancemethod(_credentials.Credentials_parse_string,None,Credentials)
+Credentials.get_bind_dn = new_instancemethod(_credentials.Credentials_get_bind_dn,None,Credentials)
+Credentials.set_bind_dn = new_instancemethod(_credentials.Credentials_set_bind_dn,None,Credentials)
+Credentials.get_workstation = new_instancemethod(_credentials.Credentials_get_workstation,None,Credentials)
+Credentials.set_workstation = new_instancemethod(_credentials.Credentials_set_workstation,None,Credentials)
+Credentials.guess = new_instancemethod(_credentials.Credentials_guess,None,Credentials)
+Credentials.is_anonymous = new_instancemethod(_credentials.Credentials_is_anonymous,None,Credentials)
+Credentials.get_nt_hash = new_instancemethod(_credentials.Credentials_get_nt_hash,None,Credentials)
+Credentials.authentication_requested = new_instancemethod(_credentials.Credentials_authentication_requested,None,Credentials)
+Credentials.wrong_password = new_instancemethod(_credentials.Credentials_wrong_password,None,Credentials)
 Credentials_swigregister = _credentials.Credentials_swigregister
 Credentials_swigregister(Credentials)
 

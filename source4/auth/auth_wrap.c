@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2480,6 +2480,19 @@ static swig_module_info swig_module = {swig_types, 12, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _auth.so

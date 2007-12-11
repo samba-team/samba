@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _registry
 import new
@@ -48,45 +47,43 @@ except AttributeError:
 del types
 
 
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
+
+
 import credentials
 reg_get_predef_name = _registry.reg_get_predef_name
 str_regtype = _registry.str_regtype
 Registry = _registry.Registry
-class reg(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, reg, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, reg, name)
+class reg(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     __swig_destroy__ = _registry.delete_reg
-    __del__ = lambda self : None;
-    def get_predefined_key_by_name(*args, **kwargs): return _registry.reg_get_predefined_key_by_name(*args, **kwargs)
-    def get_predefined_key(*args, **kwargs): return _registry.reg_get_predefined_key(*args, **kwargs)
-    def apply_patchfile(*args, **kwargs): return _registry.reg_apply_patchfile(*args, **kwargs)
-    def mount_hive(*args, **kwargs): return _registry.reg_mount_hive(*args, **kwargs)
     def mount(self, path, hkey_id, elements=[]):
         self.mount_hive(Hive(path), hkey_id, elements)
 
     def __init__(self, *args, **kwargs): 
-        this = _registry.new_reg(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _registry.reg_swiginit(self,_registry.new_reg(*args, **kwargs))
+reg.get_predefined_key_by_name = new_instancemethod(_registry.reg_get_predefined_key_by_name,None,reg)
+reg.get_predefined_key = new_instancemethod(_registry.reg_get_predefined_key,None,reg)
+reg.apply_patchfile = new_instancemethod(_registry.reg_apply_patchfile,None,reg)
+reg.mount_hive = new_instancemethod(_registry.reg_mount_hive,None,reg)
 reg_swigregister = _registry.reg_swigregister
 reg_swigregister(reg)
 
 Hive = _registry.Hive
-class hive(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, hive, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, hive, name)
+class hive(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     __swig_destroy__ = _registry.delete_hive
-    __del__ = lambda self : None;
     def __init__(self, *args, **kwargs): 
-        this = _registry.new_hive(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _registry.hive_swiginit(self,_registry.new_hive(*args, **kwargs))
 hive_swigregister = _registry.hive_swigregister
 hive_swigregister(hive)
 
