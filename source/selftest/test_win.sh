@@ -35,7 +35,7 @@ testit "$name" smb $WINTEST_DIR/wintest_net.sh $SMBTORTURE_REMOTE_HOST \
 name="Windows 2003 against smbd"
 testit "$name" smb $WINTEST_DIR/wintest_client.sh $SMBTORTURE_REMOTE_HOST
 
-dc_tests="RPC-DRSUAPI RPC-SPOOLSS ncacn_np ncacn_ip_tcp"
+dc_tests="RPC-DRSUAPI ncacn_np ncacn_ip_tcp"
 for name in $dc_tests; do
 	testit "$name against Windows 2003 DC" rpc $WINTEST_DIR/wintest_2k3_dc.sh \
 		"$name"
