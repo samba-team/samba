@@ -1313,6 +1313,67 @@ import "security.idl", "winreg.idl";
 		[case(1)]  spoolss_UserLevel1 *level1;
 	} spoolss_UserLevel;
 
+	typedef bitmap {
+		SERVER_ACCESS_ADMINISTER	= 0x00000001,
+		SERVER_ACCESS_ENUMERATE		= 0x00000002,
+		PRINTER_ACCESS_ADMINISTER	= 0x00000004,
+		PRINTER_ACCESS_USE		= 0x00000008,
+		JOB_ACCESS_ADMINISTER		= 0x00000010
+	} spoolss_AccessRights;
+
+	/* Access rights for print servers */
+	const int SERVER_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  SERVER_ACCESS_ADMINISTER |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_READ		= SEC_STD_READ_CONTROL |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  SERVER_ACCESS_ADMINISTER |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_EXECUTE	= SEC_STD_READ_CONTROL |
+					  SERVER_ACCESS_ENUMERATE;
+
+	/* Access rights for printers */
+	const int PRINTER_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  PRINTER_ACCESS_ADMINISTER |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_READ		= SEC_STD_READ_CONTROL |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_EXECUTE	= SEC_STD_READ_CONTROL |
+					  PRINTER_ACCESS_USE;
+
+	/* Access rights for jobs */
+	const int JOB_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_READ		= SEC_STD_READ_CONTROL |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_EXECUTE		= SEC_STD_READ_CONTROL |
+					  JOB_ACCESS_ADMINISTER;
+
+	/* ACE masks for various print permissions */
+	const int PRINTER_ACE_FULL_CONTROL = SEC_GENERIC_ALL |
+						PRINTER_ALL_ACCESS;
+
+	const int PRINTER_ACE_MANAGE_DOCUMENTS = SEC_GENERIC_ALL |
+						READ_CONTROL_ACCESS;
+
+	const int PRINTER_ACE_PRINT	= GENERIC_EXECUTE_ACCESS |
+					  READ_CONTROL_ACCESS |
+					  PRINTER_ACCESS_USE;
+
 	/******************/
 	/* Function: 0x45 */
 	[public] WERROR spoolss_OpenPrinterEx(
@@ -1416,9 +1477,9 @@ import "security.idl", "winreg.idl";
 	[public] WERROR spoolss_EnumPrinterKey(
 		[in, ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 key_name[],
-		[out, ref] uint32 *key_buffer_size,
-		[out] uint8 key_buffer[*key_buffer_size],
-		[in,out,ref] uint32 *needed
+		[out] uint32 key_buffer_size,
+		[out] uint16 key_buffer[key_buffer_size],
+		[in,out] uint32 needed
 	);
 
 	/******************/

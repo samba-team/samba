@@ -130,6 +130,7 @@ OBJ_FILES = \
 		rpc/dssync.o \
 		rpc/spoolss.o \
 		rpc/spoolss_notify.o \
+		rpc/spoolss_win.o \
 		rpc/unixinfo.o \
 		rpc/samr.o \
 		rpc/samr_accessmask.o \
