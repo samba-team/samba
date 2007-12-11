@@ -49,11 +49,14 @@ static bool nbt_register_own(struct torture_context *tctx)
 	struct nbt_name name;
 	const char *address;
 	const char *myaddress;
+	struct interface *ifaces;
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 
-	myaddress = iface_best_ip(tctx->lp_ctx, address);
+	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+
+	myaddress = iface_best_ip(ifaces, address);
 
 	socket_address = socket_address_from_strings(tctx, nbtsock->sock->backend_name,
 						     myaddress, 0);
@@ -115,11 +118,14 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 	struct socket_address *socket_address;
 	struct nbt_name name;
 	const char *address;
+	struct interface *ifaces;
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 	
-	myaddress = iface_best_ip(tctx->lp_ctx, address);
+	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+
+	myaddress = iface_best_ip(ifaces, address);
 
 	socket_address = socket_address_from_strings(tctx, nbtsock->sock->backend_name,
 						     myaddress, 0);

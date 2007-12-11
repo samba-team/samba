@@ -32,6 +32,7 @@
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
+#include "lib/socket/netif.h"
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx, 
 						  struct loadparm_context *lp_ctx)
@@ -74,7 +75,15 @@ failed:
 static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service, 
 				     struct loadparm_context *lp_ctx)
 {
-	service->wins_db     = winsdb_connect(service, lp_ctx, WINSDB_HANDLE_CALLER_WREPL);
+	const char *owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
+
+	if (owner == NULL) {
+		struct interface *ifaces;
+		load_interfaces(lp_interfaces(lp_ctx), &ifaces);
+		owner = iface_n_ip(ifaces, 0);
+	}
+
+	service->wins_db     = winsdb_connect(service, lp_ctx, owner, WINSDB_HANDLE_CALLER_WREPL);
 	if (!service->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

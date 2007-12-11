@@ -1011,10 +1011,10 @@ failed:
 }
 
 struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+				     const char *owner,
 				     enum winsdb_handle_caller caller)
 {
 	struct winsdb_handle *h = NULL;
-	const char *owner;
 	unsigned int flags = 0;
 	bool ret;
 	int ldb_err;
@@ -1032,11 +1032,6 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, struct loadparm_contex
 
 	h->caller = caller;
 	h->hook_script = lp_wins_hook(lp_ctx);
-
-	owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
-	if (!owner) {
-		owner = iface_n_ip(lp_ctx, 0);
-	}
 
 	h->local_owner = talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;

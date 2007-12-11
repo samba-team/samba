@@ -54,8 +54,13 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct nbt_name_release release;
 	NTSTATUS status;
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
-	const char *myaddress = talloc_strdup(tctx, iface_best_ip(tctx->lp_ctx, address));
+	const char *myaddress;
 	struct socket_address *socket_address;
+	struct interface *ifaces;
+
+	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+
+	myaddress = talloc_strdup(tctx, iface_best_ip(ifaces, address));
 
 	socket_address = socket_address_from_strings(tctx, 
 						     nbtsock->sock->backend_name,

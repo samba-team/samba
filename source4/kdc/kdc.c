@@ -520,16 +520,18 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 /*
   setup our listening sockets on the configured network interfaces
 */
-static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_context *lp_ctx)
+static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_context *lp_ctx,
+				       struct interface *ifaces)
 {
-	int num_interfaces = iface_count(lp_ctx);
+	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);
 	NTSTATUS status;
-	
 	int i;
+
+	num_interfaces = iface_count(ifaces);
 	
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(lp_ctx, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
 		status = kdc_add_socket(kdc, address, lp_krb5_port(lp_ctx), 
 					lp_kpasswd_port(lp_ctx));
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -558,6 +560,7 @@ static void kdc_task_init(struct task_server *task)
 	struct kdc_server *kdc;
 	NTSTATUS status;
 	krb5_error_code ret;
+	struct interface *ifaces;
 
 	switch (lp_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -571,7 +574,9 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	if (iface_count(task->lp_ctx) == 0) {
+	load_interfaces(lp_interfaces(task->lp_ctx), &ifaces);
+
+	if (iface_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured");
 		return;
 	}
@@ -641,7 +646,7 @@ static void kdc_task_init(struct task_server *task)
 	kdc_mem_ctx = kdc->smb_krb5_context;
 
 	/* start listening on the configured network interfaces */
-	status = kdc_startup_interfaces(kdc, task->lp_ctx);
+	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc failed to setup interfaces");
 		return;

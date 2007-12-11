@@ -234,6 +234,7 @@ static bool bench_wins(struct torture_context *tctx)
 	struct socket_address *my_ip;
 	struct nbt_name name;
 	const char *address;
+	struct interface *ifaces;
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
@@ -244,7 +245,8 @@ static bool bench_wins(struct torture_context *tctx)
 	state->registered = talloc_zero_array(state, bool, state->num_names);
 	state->wins_server = address;
 	state->wins_port = lp_nbt_port(tctx->lp_ctx);
-	state->my_ip = talloc_strdup(tctx, iface_best_ip(tctx->lp_ctx, address));
+	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+	state->my_ip = talloc_strdup(tctx, iface_best_ip(ifaces, address));
 	state->ttl = timelimit;
 
 	my_ip = socket_address_from_strings(nbtsock, nbtsock->sock->backend_name, 

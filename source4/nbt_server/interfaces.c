@@ -216,9 +216,10 @@ static NTSTATUS nbtd_add_wins_socket(struct nbtd_server *nbtsrv)
 /*
   setup our listening sockets on the configured network interfaces
 */
-NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_context *lp_ctx)
+NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_context *lp_ctx,
+				 struct interface *ifaces)
 {
-	int num_interfaces = iface_count(lp_ctx);
+	int num_interfaces = iface_count(ifaces);
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(nbtsrv);
 	NTSTATUS status;
@@ -232,7 +233,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 		   for non-WINS queries not made on a specific
 		   interface */
 		if (num_interfaces > 0) {
-			primary_address = iface_n_ip(lp_ctx, 0);
+			primary_address = iface_n_ip(ifaces, 0);
 		} else {
 			primary_address = inet_ntoa(interpret_addr2(
 							lp_netbios_name(lp_ctx)));
@@ -250,15 +251,15 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *bcast = iface_n_bcast(lp_ctx, i);
+		const char *bcast = iface_n_bcast(ifaces, i);
 		const char *address, *netmask;
 
 		/* we can't assume every interface is broadcast capable */
 		if (bcast == NULL) continue;
 
-		address = talloc_strdup(tmp_ctx, iface_n_ip(lp_ctx, i));
+		address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
 		bcast   = talloc_strdup(tmp_ctx, bcast);
-		netmask = talloc_strdup(tmp_ctx, iface_n_netmask(lp_ctx, i));
+		netmask = talloc_strdup(tmp_ctx, iface_n_netmask(ifaces, i));
 
 		status = nbtd_add_socket(nbtsrv, lp_ctx, 
 					 address, address, bcast, netmask);

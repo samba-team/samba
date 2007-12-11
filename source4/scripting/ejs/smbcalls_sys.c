@@ -32,10 +32,15 @@
 */
 static int ejs_sys_interfaces(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	int i, count = iface_count(global_loadparm);
+	int i, count;
 	struct MprVar ret = mprArray("interfaces");
+	struct interface *ifaces;
+
+	load_interfaces(lp_interfaces(global_loadparm), &ifaces);
+
+	count = iface_count(ifaces);
 	for (i=0;i<count;i++) {
-		mprAddArray(&ret, i, mprString(iface_n_ip(global_loadparm, i)));
+		mprAddArray(&ret, i, mprString(iface_n_ip(ifaces, i)));
 	}
 	mpr_Return(eid, ret);
 	return 0;	

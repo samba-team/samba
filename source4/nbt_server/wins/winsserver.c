@@ -33,6 +33,7 @@
 #include "lib/socket/netif.h"
 #include "lib/ldb/include/ldb.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 /*
   work out the ttl we will use given a client requested ttl
@@ -958,6 +959,7 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
 	uint32_t tmp;
+	const char *owner;
 
 	if (!lp_wins_support(nbtsrv->task->lp_ctx)) {
 		nbtsrv->winssrv = NULL;
@@ -974,8 +976,16 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	tmp = lp_parm_int(nbtsrv->task->lp_ctx, NULL, "wreplsrv"," tombstone_timeout", 1*24*60*60);
 	nbtsrv->winssrv->config.tombstone_timeout = tmp;
 
+	owner = lp_parm_string(nbtsrv->task->lp_ctx, NULL, "winsdb", "local_owner");
+
+	if (owner == NULL) {
+		struct interface *ifaces;
+		load_interfaces(lp_interfaces(nbtsrv->task->lp_ctx), &ifaces);
+		owner = iface_n_ip(ifaces, 0);
+	}
+
 	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->lp_ctx,
-						      WINSDB_HANDLE_CALLER_NBTD);
+						      owner, WINSDB_HANDLE_CALLER_NBTD);
 	if (!nbtsrv->winssrv->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

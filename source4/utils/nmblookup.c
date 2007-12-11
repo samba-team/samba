@@ -180,7 +180,8 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static bool process_one(struct loadparm_context *lp_ctx, const char *name, int nbt_port)
+static bool process_one(struct loadparm_context *lp_ctx, 
+			struct interface *ifaces, const char *name, int nbt_port)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
@@ -242,9 +243,11 @@ static bool process_one(struct loadparm_context *lp_ctx, const char *name, int n
 		status = do_node_query(nbtsock, options.unicast_address, 
 				       nbt_port, node_name, node_type, false);
 	} else {
-		int i, num_interfaces = iface_count(lp_ctx);
+		int i, num_interfaces;
+
+		num_interfaces = iface_count(ifaces);
 		for (i=0;i<num_interfaces;i++) {
-			const char *bcast = iface_n_bcast(lp_ctx, i);
+			const char *bcast = iface_n_bcast(ifaces, i);
 			if (bcast == NULL) continue;
 			status = do_node_query(nbtsock, bcast, nbt_port, 
 					       node_name, node_type, true);
@@ -267,6 +270,7 @@ static bool process_one(struct loadparm_context *lp_ctx, const char *name, int n
 int main(int argc, const char *argv[])
 {
 	bool ret = true;
+	struct interface *ifaces;
 	poptContext pc;
 	int opt;
 	enum {
@@ -350,11 +354,13 @@ int main(int argc, const char *argv[])
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
+
+	load_interfaces(lp_interfaces(cmdline_lp_ctx), &ifaces);
 	
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(cmdline_lp_ctx, name, lp_nbt_port(cmdline_lp_ctx));
+		ret &= process_one(cmdline_lp_ctx, ifaces, name, lp_nbt_port(cmdline_lp_ctx));
 	}
 
 	poptFreeContext(pc);

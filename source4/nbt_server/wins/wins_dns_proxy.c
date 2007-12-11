@@ -72,10 +72,7 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 						       struct nbtd_interface);
 	struct wins_dns_proxy_state *s;
 	struct composite_context *creq;
-	const char *methods[] = {
-		"host",
-		NULL
-	};
+	struct resolve_context *resolve_ctx;
 
 	s = talloc(nbtsock, struct wins_dns_proxy_state);
 	if (!s) goto failed;
@@ -86,7 +83,11 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 		goto failed;
 	}
 
-	creq = resolve_name_send(name, iface->nbtsrv->task->event_ctx, methods);
+	resolve_ctx = resolve_context_init(s);
+	if (resolve_ctx == NULL) goto failed;
+	resolve_context_add_host_method(resolve_ctx);
+
+	creq = resolve_name_send(resolve_ctx, name, iface->nbtsrv->task->event_ctx);
 	if (!creq) goto failed;
 
 	creq->async.fn		= nbtd_wins_dns_proxy_handler;

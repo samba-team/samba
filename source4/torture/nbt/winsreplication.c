@@ -547,6 +547,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	struct socket_address *nbt_srv_addr;
 	NTSTATUS status;
 	uint32_t i;
+	struct interface *ifaces;
 
 	ctx = talloc_zero(tctx, struct test_wrepl_conflict_conn);
 	if (!ctx) return NULL;
@@ -612,12 +613,14 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->nbtsock = nbt_name_socket_init(ctx, NULL);
 	if (!ctx->nbtsock) return NULL;
 
-	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_best_ip(tctx->lp_ctx, address), 0);
+	load_interfaces(lp_interfaces(tctx->lp_ctx), &ifaces);
+
+	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_best_ip(ifaces, address), 0);
 	if (!ctx->myaddr) return NULL;
 
-	for (i = 0; i < iface_count(tctx->lp_ctx); i++) {
-		if (strcmp(ctx->myaddr->addr, iface_n_ip(tctx->lp_ctx, i)) == 0) continue;
-		ctx->myaddr2 = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_n_ip(tctx->lp_ctx, i), 0);
+	for (i = 0; i < iface_count(ifaces); i++) {
+		if (strcmp(ctx->myaddr->addr, iface_n_ip(ifaces, i)) == 0) continue;
+		ctx->myaddr2 = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_n_ip(ifaces, i), 0);
 		if (!ctx->myaddr2) return NULL;
 		break;
 	}
@@ -674,12 +677,12 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->addresses_best[0].owner	= ctx->b.address;
 	ctx->addresses_best[0].ip	= ctx->myaddr->addr;
 
-	ctx->addresses_all_num = iface_count(tctx->lp_ctx);
+	ctx->addresses_all_num = iface_count(ifaces);
 	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
 	if (!ctx->addresses_all) return NULL;
 	for (i=0; i < ctx->addresses_all_num; i++) {
 		ctx->addresses_all[i].owner	= ctx->b.address;
-		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_n_ip(tctx->lp_ctx, i));
+		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_n_ip(ifaces, i));
 		if (!ctx->addresses_all[i].ip) return NULL;
 	}
 
