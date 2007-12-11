@@ -1642,7 +1642,7 @@ NTSTATUS rpccli_samr_lookup_names(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 NTSTATUS rpccli_samr_create_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
                                   POLICY_HND *domain_pol, const char *acct_name,
-                                  uint32 acb_info, uint32 unknown, 
+                                  uint32 acb_info, uint32 access_mask,
                                   POLICY_HND *user_pol, uint32 *rid)
 {
 	prs_struct qbuf, rbuf;
@@ -1657,7 +1657,7 @@ NTSTATUS rpccli_samr_create_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 	/* Marshall data and send request */
 
-	init_samr_q_create_user(&q, domain_pol, acct_name, acb_info, unknown);
+	init_samr_q_create_user(&q, domain_pol, acct_name, acb_info, access_mask);
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CREATE_USER,
 		q, r,

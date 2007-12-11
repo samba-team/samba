@@ -587,7 +587,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
 	uint32 acb_info;
-	uint32 unknown, user_rid;
+	uint32 access_mask, user_rid;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -617,10 +617,10 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	/* Create domain user */
 
 	acb_info = ACB_NORMAL;
-	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
+	access_mask = 0xe005000b;
 
 	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, unknown,
+					  acct_name, acb_info, access_mask,
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
