@@ -11,7 +11,6 @@
 var f = FormObj("Provisioning", 0, 2);
 var i;
 var lp = loadparm_init();
-
 if ((session.authinfo.user_class == "ADMINISTRATOR")
 	 || (session.authinfo.user_class == "SYSTEM")) {
 
@@ -56,6 +55,9 @@ if ((session.authinfo.user_class == "ADMINISTRATOR")
 		lp.reload();
 		var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
 
+		var paths = provision_default_paths(subobj);
+		provision_fix_subobj(subobj, paths);
+
 		if (!goodpass) {
 			write("<h3>Passwords don't match.  Please try again.</h3>");
 			f.display();
@@ -65,7 +67,6 @@ if ((session.authinfo.user_class == "ADMINISTRATOR")
 		} else if (!provision_validate(subobj, writefln)) {
 			f.display();
 		} else {
-			var paths = provision_default_paths(subobj);
 			if (!provision(subobj, writefln, false, paths, 
 				       session.authinfo.session_info, session.authinfo.credentials, false)) {
 				writefln("Provision failed!");
