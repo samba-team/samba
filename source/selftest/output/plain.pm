@@ -70,6 +70,7 @@ sub end_testsuite($$$$$$)
 
 	if ($ret != $expected_ret and $self->{immediate} and not $self->{verbose}) {
 		$out .= $self->{test_output}->{$name};
+		push (@{$self->{suitesfailed}}, $name);
 	}
 
 	print $out;
@@ -108,6 +109,13 @@ sub summary($)
 
 	if ($#{$self->{suitesfailed}} > -1) {
 		print SUMMARY "= Failed tests =\n";
+
+		foreach (@{$self->{suitesfailed}}) {
+			print SUMMARY "== $_ ==\n";
+			print SUMMARY $self->{test_output}->{$_}."\n\n";
+		}
+
+		print SUMMARY "\n";
 	}
 
 	if (not $self->{immediate} and not $self->{verbose}) {
@@ -116,9 +124,6 @@ sub summary($)
 			print "FAIL: $_\n";
 			print $self->{test_output}->{$_};
 			print "\n";
-
-			print SUMMARY "= $_ =\n";
-			print SUMMARY $self->{test_output}->{$_}."\n\n";
 		}
 	}
 
