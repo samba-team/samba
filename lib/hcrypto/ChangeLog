@@ -1,3 +1,15 @@
+2007-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.h: add RSA_gmp_method
+
+	* rsa-gmp.c: RSA implementation written using GMP.
+
+	* test_dh.c: Test of DH by Matthias Koenig.
+
+2007-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* bn.h (BN_is_negative): make argument const.
+
 2007-12-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rand.c: Can't call getpwuid(getuid()) at all since that causes
