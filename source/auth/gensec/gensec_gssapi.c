@@ -54,7 +54,7 @@ struct gensec_gssapi_state {
 	gss_name_t server_name;
 	gss_name_t client_name;
 	OM_uint32 want_flags, got_flags;
-	const gss_OID_desc *gss_oid;
+	gss_OID gss_oid;
 
 	DATA_BLOB session_key;
 	DATA_BLOB pac;
@@ -82,7 +82,7 @@ static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_secu
 
 static char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
 				 OM_uint32 maj_stat, OM_uint32 min_stat, 
-				 const gss_OID_desc *mech)
+				 const gss_OID mech)
 {
 	OM_uint32 disp_min_stat, disp_maj_stat;
 	gss_buffer_desc maj_error_message;
@@ -448,7 +448,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							gensec_gssapi_state->client_cred->creds,
 							&gensec_gssapi_state->gssapi_context, 
 							gensec_gssapi_state->server_name, 
-							discard_const_p(gss_OID_desc, gensec_gssapi_state->gss_oid),
+							gensec_gssapi_state->gss_oid,
 							gensec_gssapi_state->want_flags, 
 							0, 
 							gensec_gssapi_state->input_chan_bindings,
