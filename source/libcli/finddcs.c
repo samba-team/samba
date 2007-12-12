@@ -43,6 +43,7 @@ struct finddcs_state {
 
 	int num_dcs;
 	struct nbt_dc_name *dcs;
+	uint16_t nbt_port;
 };
 
 static void finddcs_name_resolved(struct composite_context *ctx);
@@ -82,6 +83,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 
 	state->ctx = c;
 
+	state->nbt_port = lp_nbt_port(global_loadparm);
 	state->my_netbios_name = talloc_strdup(state, my_netbios_name);
 	state->domain_name = talloc_strdup(state, domain_name);
 	if (composite_nomem(state->domain_name, c)) return c;
@@ -177,7 +179,7 @@ static void finddcs_getdc_replied(struct irpc_request *ireq)
 	composite_done(state->ctx);
 }
 
-/* The GetDC request might not be availible (such as occours when the
+/* The GetDC request might not be available (such as occours when the
  * NBT server is down).  Fallback to a node status.  It is the best
  * hope we have... */
 static void fallback_node_status(struct finddcs_state *state) 
@@ -189,7 +191,7 @@ static void fallback_node_status(struct finddcs_state *state)
 	state->node_status.in.name.type = NBT_NAME_CLIENT;
 	state->node_status.in.name.scope = NULL;
 	state->node_status.in.dest_addr = state->dcs[0].address;
-	state->node_status.in.dest_port = lp_nbt_port(global_loadparm);
+	state->node_status.in.dest_port = state->nbt_port;
 	state->node_status.in.timeout = 1;
 	state->node_status.in.retries = 2;
 

@@ -22,6 +22,7 @@ struct libnet_JoinSite {
 		const char *dest_address;
 		const char *netbios_name;
 		const char *domain_dn_str;
+		uint16_t cldap_port;
 	} in;
 
 	struct {

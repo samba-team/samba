@@ -150,7 +150,7 @@ static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event
 
 
 
-/*
+/**
   handle recv events on a nbt name socket
 */
 static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)

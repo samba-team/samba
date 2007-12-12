@@ -378,6 +378,7 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 	if (talloc_reference(s, src) == NULL) goto failed;
 
 	s->io.in.nbtd_server	= iface->nbtsrv;
+	s->io.in.nbtd_port      = lp_nbt_port(iface->nbtsrv->task->lp_ctx);
 	s->io.in.event_ctx	= iface->nbtsrv->task->event_ctx;
 	s->io.in.name		= rec->name;
 	s->io.in.num_addresses	= winsdb_addr_list_length(rec->addresses);

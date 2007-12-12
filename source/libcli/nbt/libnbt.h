@@ -186,6 +186,7 @@ struct nbt_name_register_bcast {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
+		uint16_t dest_port;
 		const char *address;
 		uint16_t nb_flags;
 		uint32_t ttl;
@@ -199,6 +200,7 @@ struct nbt_name_register_wins {
 	struct {
 		struct nbt_name name;
 		const char **wins_servers;
+		uint16_t wins_port;
 		const char **addresses;
 		uint16_t nb_flags;
 		uint32_t ttl;
@@ -238,6 +240,7 @@ struct nbt_name_refresh_wins {
 	struct {
 		struct nbt_name name;
 		const char **wins_servers;
+		uint16_t wins_port;
 		const char **addresses;
 		uint16_t nb_flags;
 		uint32_t ttl;
@@ -254,6 +257,7 @@ struct nbt_name_release {
 	struct {
 		struct nbt_name name;
 		const char *dest_addr;
+		uint16_t dest_port;
 		const char *address;
 		uint16_t nb_flags;
 		bool broadcast;

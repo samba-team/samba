@@ -47,7 +47,7 @@ static void wins_challenge_handler(struct nbt_name_request *req)
 		if (state->current_address < state->io->in.num_addresses) {
 			struct nbtd_interface *iface;
 
-			state->query.in.dest_port = lp_nbt_port(global_loadparm);
+			state->query.in.dest_port = state->io->in.nbt_port;
 			state->query.in.dest_addr = state->io->in.addresses[state->current_address];
 			
 			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, true);
@@ -105,7 +105,7 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 
 	/* setup a name query to the first address */
 	state->query.in.name        = *state->io->in.name;
-	state->query.in.dest_port   = lp_nbt_port(global_loadparm);
+	state->query.in.dest_port   = state->io->in.nbt_port;
 	state->query.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->query.in.broadcast   = false;
 	state->query.in.wins_lookup = true;
@@ -162,6 +162,7 @@ static void wins_release_demand_handler(struct nbt_name_request *req)
 		if (state->current_address < state->io->in.num_addresses) {
 			struct nbtd_interface *iface;
 
+			state->release.in.dest_port = lp_nbt_port(global_loadparm);
 			state->release.in.dest_addr = state->io->in.addresses[state->current_address];
 			state->release.in.address   = state->release.in.dest_addr;
 			state->release.in.timeout   = (state->addresses_left > 1 ? 2 : 1);
@@ -221,6 +222,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	 *   with 2 retries
 	 */
 	state->release.in.name        = *state->io->in.name;
+	state->release.in.dest_port   = lp_nbt_port(global_loadparm);
 	state->release.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->release.in.address     = state->release.in.dest_addr;
 	state->release.in.broadcast   = false;
@@ -303,6 +305,7 @@ NTSTATUS nbtd_proxy_wins_challenge(struct irpc_message *msg,
 	s->req = req;
 
 	s->io.in.nbtd_server	= nbtd_server;
+	s->io.in.nbt_port      = lp_nbt_port(global_loadparm);
 	s->io.in.event_ctx	= msg->ev;
 	s->io.in.name		= &req->in.name;
 	s->io.in.num_addresses	= req->in.num_addrs;

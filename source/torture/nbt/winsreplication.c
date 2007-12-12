@@ -6562,6 +6562,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 
 		/* release the record */
 		release->in.name	= records[i].name;
+		release->in.dest_port   = lp_nbt_port(tctx->lp_ctx);
 		release->in.dest_addr	= ctx->address;
 		release->in.address	= records[i].wins.ips[0].ip;
 		release->in.nb_flags	= records[i].wins.nb_flags;
@@ -6616,6 +6617,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 		} else {
 			release->in.name	= records[i].name;
 			release->in.dest_addr	= ctx->address;
+			release->in.dest_port	= lp_nbt_port(tctx->lp_ctx);
 			release->in.address	= records[i].wins.ips[0].ip;
 			release->in.nb_flags	= records[i].wins.nb_flags;
 			release->in.broadcast	= false;
@@ -9368,6 +9370,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 				release->in.name	= records[i].name;
 				release->in.dest_addr	= ctx->address;
+				release->in.dest_port   = lp_nbt_port(tctx->lp_ctx);
 				release->in.address	= records[i].wins.ips[j].ip;
 				release->in.nb_flags	= records[i].wins.nb_flags;
 				release->in.broadcast	= false;
