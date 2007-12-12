@@ -116,7 +116,8 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
  * 2. Add entry CN=<netbios name>,CN=Servers,CN=<site name>,CN=Sites,CN=Configuration,<domain dn>.
  * TODO: 3.) use DsAddEntry() to create CN=NTDS Settings,CN=<netbios name>,CN=Servers,CN=<site name>,...
  */
-NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
+NTSTATUS libnet_JoinSite(struct libnet_context *ctx, 
+			 struct ldb_context *remote_ldb,
 			 struct libnet_JoinDomain *libnet_r)
 {
 	NTSTATUS status;
@@ -147,7 +148,7 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(lp_resolve_context(global_loadparm), &name, r, &dest_addr, NULL);
+	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

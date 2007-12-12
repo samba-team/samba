@@ -360,7 +360,8 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	status = resolve_name_recv(state->creq, state, &address);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	state->creq = smbcli_sock_connect_send(state, address, io->in.port,
+	state->creq = smbcli_sock_connect_send(state, address, 
+					       io->in.dest_ports,
 					       io->in.dest_host, c->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 

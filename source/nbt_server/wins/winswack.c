@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "libcli/composite/composite.h"
 #include "param/param.h"
+#include "smbd/service_task.h"
 
 struct wins_challenge_state {
 	struct wins_challenge_io *io;
@@ -162,7 +163,7 @@ static void wins_release_demand_handler(struct nbt_name_request *req)
 		if (state->current_address < state->io->in.num_addresses) {
 			struct nbtd_interface *iface;
 
-			state->release.in.dest_port = lp_nbt_port(global_loadparm);
+			state->release.in.dest_port = lp_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
 			state->release.in.dest_addr = state->io->in.addresses[state->current_address];
 			state->release.in.address   = state->release.in.dest_addr;
 			state->release.in.timeout   = (state->addresses_left > 1 ? 2 : 1);

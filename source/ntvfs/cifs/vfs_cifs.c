@@ -194,7 +194,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	/* connect to the server, using the smbd event context */
 	io.in.dest_host = host;
-	io.in.port = 0;
+	io.in.dest_ports = lp_smb_ports(ntvfs->ctx->lp_ctx);
 	io.in.called_name = host;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = false;

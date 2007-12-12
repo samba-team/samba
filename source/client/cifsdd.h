@@ -89,6 +89,7 @@ struct dd_iohandle
 #define DD_OPLOCK		0x00000008
 
 struct dd_iohandle * dd_open_path(const char * path,
+				  const char **ports,
 				uint64_t io_size, int options);
 bool dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);

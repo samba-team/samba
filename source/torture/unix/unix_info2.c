@@ -26,6 +26,7 @@
 #include "torture/basic/proto.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 
 struct unix_info2 {
 	uint64_t end_of_file;
@@ -54,8 +55,9 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
 
-	status = smbcli_full_connection(tctx, &cli,
-					host, share, NULL,
+	status = smbcli_full_connection(tctx, &cli, host, 
+					lp_smb_ports(tctx->lp_ctx),
+					share, NULL,
 					cmdline_credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

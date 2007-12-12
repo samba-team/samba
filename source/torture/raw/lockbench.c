@@ -185,7 +185,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	}
 
 	io->in.dest_host    = state->dest_host;
-	io->in.port         = state->dest_port;
+	io->in.dest_ports   = state->dest_port;
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;

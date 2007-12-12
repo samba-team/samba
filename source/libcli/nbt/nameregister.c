@@ -370,7 +370,7 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 	state->io = talloc(state, struct nbt_name_register);
 	if (state->io == NULL) goto failed;
 
-	state->wins_port = lp_nbt_port(global_loadparm);
+	state->wins_port = io->in.wins_port;
 	state->wins_servers = str_list_copy(state, io->in.wins_servers);
 	if (state->wins_servers == NULL || 
 	    state->wins_servers[0] == NULL) goto failed;
