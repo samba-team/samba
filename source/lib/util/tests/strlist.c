@@ -64,6 +64,29 @@ static bool test_lists_shell(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_list_copy(struct torture_context *tctx)
+{
+	const char **result;
+	const char *list[] = { "foo", "bar", NULL };
+	const char *empty_list[] = { NULL };
+	const char **null_list = NULL;
+
+	result = str_list_copy(tctx, list);
+	torture_assert_int_equal(tctx, str_list_length(result), 2, "list length");
+	torture_assert_str_equal(tctx, result[0], "foo", "element 0");
+	torture_assert_str_equal(tctx, result[1], "bar", "element 1");
+	torture_assert_str_equal(tctx, result[2], NULL, "element 2");
+
+	result = str_list_copy(tctx, empty_list);
+	torture_assert_int_equal(tctx, str_list_length(result), 0, "list length");
+	torture_assert_str_equal(tctx, result[0], NULL, "element 0");
+
+	result = str_list_copy(tctx, null_list);
+	torture_assert(tctx, result == NULL, "result NULL");
+	
+	return true;
+}
+
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "STRLIST");
@@ -74,6 +97,8 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 									   "lists_shell", test_lists_shell,
 									   &test_lists_shell_strings[i]);
 	}
+
+	torture_suite_add_simple_test(suite, "list_copy", test_list_copy);
 
 	return suite;
 }
