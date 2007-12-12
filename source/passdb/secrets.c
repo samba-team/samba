@@ -360,16 +360,16 @@ static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
 	len += tdb_pack(p, remaining_space, "bb", sid->sid_rev_num,
 	                sid->num_auths);
 	if (pack_buf) {
-		p += len;
-		remaining_space -= len;
+		p = pack_buf + len;
+		remaining_space = bufsize - len;
 	}
 
 	for (idx = 0; idx < 6; idx++) {
 		len += tdb_pack(p, remaining_space, "b",
 				sid->id_auth[idx]);
 		if (pack_buf) {
-			p += len;
-			remaining_space -= len;
+			p = pack_buf + len;
+			remaining_space = bufsize - len;
 		}
 	}
 
@@ -377,8 +377,8 @@ static size_t tdb_sid_pack(uint8 *pack_buf, int bufsize, DOM_SID* sid)
 		len += tdb_pack(p, remaining_space, "d",
 				sid->sub_auths[idx]);
 		if (pack_buf) {
-			p += len;
-			remaining_space -= len;
+			p = pack_buf + len;
+			remaining_space = bufsize - len;
 		}
 	}
 
@@ -440,31 +440,31 @@ static size_t tdb_trusted_dom_pass_pack(uint8 *pack_buf, int bufsize,
 	len += tdb_pack(p, remaining_space, "d",
 			pass->uni_name_len);
 	if (pack_buf) {
-		p += len;
-		remaining_space -= len;
+		p = pack_buf + len;
+		remaining_space = bufsize - len;
 	}
 
 	for (idx = 0; idx < 32; idx++) {
 		len += tdb_pack(p, remaining_space, "w",
 				 pass->uni_name[idx]);
 		if (pack_buf) {
-			p += len;
-			remaining_space -= len;
+			p = pack_buf + len;
+			remaining_space = bufsize - len;
 		}
 	}
 
 	len += tdb_pack(p, remaining_space, "dPd", pass->pass_len,
 	                     pass->pass, pass->mod_time);
 	if (pack_buf) {
-		p += len;
-		remaining_space -= len;
+		p = pack_buf + len;
+		remaining_space = bufsize - len;
 	}
 
 	/* packing SID structure */
 	len += tdb_sid_pack(p, remaining_space, &pass->domain_sid);
 	if (pack_buf) {
-		p += len;
-		remaining_space -= len;
+		p = pack_buf + len;
+		remaining_space = bufsize - len;
 	}
 
 	return len;
