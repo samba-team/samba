@@ -567,7 +567,16 @@ sub PkgConfig($$$)
 	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
 			next if ($other->{$_}->{ENABLE} eq "NO");
-			if ($other->{$_}->{TYPE} eq "LIBRARY") {
+			if ($other->{$_}->{TYPE} eq "EXT_LIB") {
+				my $e = $other->{$_};
+
+				my $ldflags = join(" ", @{$e->{LDFLAGS}});
+				$ldflags .= " " unless $ldflags eq "";
+				my $libs = join(" ", @{$e->{LIBS}});
+				$libs .= " " unless $libs eq "";
+
+				$pubs .= $ldflags.$libs;
+			} elsif ($other->{$_}->{TYPE} eq "LIBRARY") {
 				s/^LIB//g;
 				$_ = lc($_);
 
@@ -584,7 +593,16 @@ sub PkgConfig($$$)
 	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
 		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
 			next if ($other->{$_}->{ENABLE} eq "NO");
-			if ($other->{$_}->{TYPE} eq "LIBRARY") {
+			if ($other->{$_}->{TYPE} eq "EXT_LIB") {
+				my $e = $other->{$_};
+
+				my $ldflags = join(" ", @{$e->{LDFLAGS}});
+				$ldflags .= " " unless $ldflags eq "";
+				my $libs = join(" ", @{$e->{LIBS}});
+				$libs .= " " unless $libs eq "";
+
+				$privlibs .= $ldflags.$libs;
+			} elsif ($other->{$_}->{TYPE} eq "LIBRARY") {
 				s/^LIB//g;
 				$_ = lc($_);
 
