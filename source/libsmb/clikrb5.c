@@ -427,9 +427,9 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 			/* check if it is a PAC */
 			got_auth_data_pac = unwrap_pac(mem_ctx, &auth_data_wrapped, auth_data);
 			data_blob_free(&auth_data_wrapped);
-			
-			if (!got_auth_data_pac) {
-				continue;
+
+			if (got_auth_data_pac) {
+				return true;
 			}
 		}
 
