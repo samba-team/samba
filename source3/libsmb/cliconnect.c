@@ -1424,7 +1424,11 @@ NTSTATUS cli_connect(struct cli_state *cli,
 
 {
 	int name_type = 0x20;
-	char *p;
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned int num_addrs = 0;
+	unsigned int i = 0;
+	struct sockaddr_storage *ss_arr = NULL;
+	char *p = NULL;
 
 	/* reasonable default hostname */
 	if (!host) {
@@ -1440,44 +1444,66 @@ NTSTATUS cli_connect(struct cli_state *cli,
 	}
 
 	if (!dest_ss || is_zero_addr(dest_ss)) {
-                if (!resolve_name(cli->desthost, &cli->dest_ss, name_type)) {
+		NTSTATUS status =resolve_name_list(frame,
+					cli->desthost,
+					name_type,
+					&ss_arr,
+					&num_addrs);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_BAD_NETWORK_NAME;
                 }
-		if (dest_ss) {
-			*dest_ss = cli->dest_ss;
-		}
 	} else {
-		cli->dest_ss = *dest_ss;
+		num_addrs = 1;
+		ss_arr = TALLOC_P(frame, struct sockaddr_storage);
+		if (!ss_arr) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*ss_arr = *dest_ss;
 	}
 
-	if (getenv("LIBSMB_PROG")) {
-		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
-	} else {
-		/* try 445 first, then 139 */
-		uint16_t port = cli->port?cli->port:445;
-		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
-					  port, cli->timeout);
-		if (cli->fd == -1 && cli->port == 0) {
-			port = 139;
+	for (i = 0; i < num_addrs; i++) {
+		cli->dest_ss = ss_arr[i];
+		if (getenv("LIBSMB_PROG")) {
+			cli->fd = sock_exec(getenv("LIBSMB_PROG"));
+		} else {
+			/* try 445 first, then 139 */
+			uint16_t port = cli->port?cli->port:445;
 			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
 						  port, cli->timeout);
+			if (cli->fd == -1 && cli->port == 0) {
+				port = 139;
+				cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
+							  port, cli->timeout);
+			}
+			if (cli->fd != -1) {
+				cli->port = port;
+			}
 		}
-		if (cli->fd != -1) {
-			cli->port = port;
+		if (cli->fd == -1) {
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr), &ss_arr[i]);
+			DEBUG(2,("Error connecting to %s (%s)\n",
+				 dest_ss?addr:host,strerror(errno)));
+		} else {
+			/* Exit from loop on first connection. */
+			break;
 		}
 	}
+
 	if (cli->fd == -1) {
-		char addr[INET6_ADDRSTRLEN];
-		if (dest_ss) {
-			print_sockaddr(addr, sizeof(addr), dest_ss);
-		}
-		DEBUG(1,("Error connecting to %s (%s)\n",
-			 dest_ss?addr:host,strerror(errno)));
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
+	}
+
+	if (dest_ss) {
+		*dest_ss = cli->dest_ss;
 	}
 
 	set_socket_options(cli->fd, lp_socket_options());
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 

@@ -1654,6 +1654,87 @@ bool resolve_name(const char *name,
 }
 
 /********************************************************
+ Internal interface to resolve a name into a list of IP addresses.
+ Use this function if the string is either an IP address, DNS
+ or host name or NetBIOS name. This uses the name switch in the
+ smb.conf to determine the order of name resolution.
+*********************************************************/
+
+NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
+		const char *name,
+		int name_type,
+		struct sockaddr_storage **return_ss_arr,
+		unsigned int *p_num_entries)
+{
+	struct ip_service *ss_list = NULL;
+	char *sitename = NULL;
+	int count = 0;
+	int i;
+	unsigned int num_entries;
+	NTSTATUS status;
+
+	*p_num_entries = 0;
+	*return_ss_arr = NULL;
+
+	if (is_ipaddress(name)) {
+		*return_ss_arr = TALLOC_P(ctx, struct sockaddr_storage);
+		if (!*return_ss_arr) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		if (!interpret_string_addr(*return_ss_arr, name, AI_NUMERICHOST)) {
+			TALLOC_FREE(*return_ss_arr);
+			return NT_STATUS_BAD_NETWORK_NAME;
+		}
+		*p_num_entries = 1;
+		return NT_STATUS_OK;
+	}
+
+	sitename = sitename_fetch(lp_realm()); /* wild guess */
+
+	status = internal_resolve_name(name, name_type, sitename,
+						  &ss_list, &count,
+						  lp_name_resolve_order());
+	SAFE_FREE(sitename);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* only return valid addresses for TCP connections */
+	for (i=0, num_entries = 0; i<count; i++) {
+		if (!is_zero_addr(&ss_list[i].ss) &&
+				!is_broadcast_addr(&ss_list[i].ss)) {
+			num_entries++;
+		}
+	}
+	if (num_entries == 0) {
+		SAFE_FREE(ss_list);
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
+
+	*return_ss_arr = TALLOC_ARRAY(ctx,
+				struct sockaddr_storage,
+				num_entries);
+	if (!(*return_ss_arr)) {
+		SAFE_FREE(ss_list);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0, num_entries = 0; i<count; i++) {
+		if (!is_zero_addr(&ss_list[i].ss) &&
+				!is_broadcast_addr(&ss_list[i].ss)) {
+			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
+		}
+	}
+
+	status = NT_STATUS_OK;
+	*p_num_entries = num_entries;
+
+	SAFE_FREE(ss_list);
+	return NT_STATUS_OK;
+}
+
+/********************************************************
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
