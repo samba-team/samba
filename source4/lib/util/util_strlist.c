@@ -199,8 +199,14 @@ _PUBLIC_ size_t str_list_length(const char **list)
 _PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 {
 	int i;
-	const char **ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
-	if (ret == NULL) return NULL;
+	const char **ret;
+
+	if (list == NULL)
+		return NULL;
+	
+	ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
+	if (ret == NULL) 
+		return NULL;
 
 	for (i=0;list && list[i];i++) {
 		ret[i] = talloc_strdup(ret, list[i]);
