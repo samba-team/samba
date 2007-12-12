@@ -22,5 +22,6 @@ struct libnetapi_ctx {
 };
 
 WERROR libnetapi_init(struct libnetapi_ctx **ctx);
+WERROR libnetapi_free(struct libnetapi_ctx *ctx);
 
 #include "joindomain.h"
