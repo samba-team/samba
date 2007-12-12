@@ -211,6 +211,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	/* setup a broadcast name registration request */
 	io.in.name            = iname->name;
 	io.in.dest_addr       = iface->bcast_address;
+	io.in.dest_port       = lp_nbt_port(iface->nbtsrv->task->lp_ctx);
 	io.in.address         = iface->ip_address;
 	io.in.nb_flags        = nb_flags;
 	io.in.ttl             = iname->ttl;

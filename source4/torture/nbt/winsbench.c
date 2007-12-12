@@ -87,7 +87,7 @@ static void generate_register(struct nbt_name_socket *nbtsock, struct wins_state
 
 	io.in.name            = generate_name(tmp_ctx, idx);
 	io.in.dest_addr       = state->wins_server;
-	io.in.dest_port       = lp_nbt_port(global_loadparm);
+	io.in.dest_port       = state->wins_port;
 	io.in.address         = state->my_ip;
 	io.in.nb_flags        = NBT_NODE_H;
 	io.in.register_demand = false;
@@ -139,6 +139,7 @@ static void generate_release(struct nbt_name_socket *nbtsock, struct wins_state 
 	istate->state = state;
 
 	io.in.name            = generate_name(tmp_ctx, idx);
+	io.in.dest_port       = lp_nbt_port(global_loadparm);
 	io.in.dest_addr       = state->wins_server;
 	io.in.address         = state->my_ip;
 	io.in.nb_flags        = NBT_NODE_H;

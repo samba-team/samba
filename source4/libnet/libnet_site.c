@@ -51,7 +51,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	/* Resolve the site name. */
 	ZERO_STRUCT(search);
 	search.in.dest_address = r->in.dest_address;
-	search.in.dest_port = lp_cldap_port(global_loadparm);
+	search.in.dest_port = r->in.cldap_port;
 	search.in.acct_control = -1;
 	search.in.version = 6;
 
@@ -158,6 +158,7 @@ NTSTATUS libnet_JoinSite(struct ldb_context *remote_ldb,
 	r->in.dest_address = dest_addr;
 	r->in.netbios_name = libnet_r->in.netbios_name;
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
+	r->in.cldap_port = lp_cldap_port(global_loadparm);
 
 	status = libnet_FindSite(tmp_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {

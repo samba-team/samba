@@ -224,7 +224,7 @@ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *n
 
 	state->io->in.name            = io->in.name;
 	state->io->in.dest_addr       = io->in.dest_addr;
-	state->io->in.dest_port       = lp_nbt_port(global_loadparm);
+	state->io->in.dest_port       = io->in.dest_port;
 	state->io->in.address         = io->in.address;
 	state->io->in.nb_flags        = io->in.nb_flags;
 	state->io->in.register_demand = false;
@@ -284,6 +284,7 @@ struct register_wins_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_register *io;
 	const char **wins_servers;
+	uint16_t wins_port;
 	const char **addresses;
 	int address_idx;
 	struct nbt_name_request *req;
@@ -312,7 +313,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 			goto done;
 		}
 		state->io->in.dest_addr = state->wins_servers[0];
-		state->io->in.dest_port = lp_nbt_port(global_loadparm);
+		state->io->in.dest_port = state->wins_port;
 		state->io->in.address   = state->addresses[0];
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
@@ -369,6 +370,7 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 	state->io = talloc(state, struct nbt_name_register);
 	if (state->io == NULL) goto failed;
 
+	state->wins_port = lp_nbt_port(global_loadparm);
 	state->wins_servers = str_list_copy(state, io->in.wins_servers);
 	if (state->wins_servers == NULL || 
 	    state->wins_servers[0] == NULL) goto failed;
@@ -379,7 +381,7 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 
 	state->io->in.name            = io->in.name;
 	state->io->in.dest_addr       = state->wins_servers[0];
-	state->io->in.dest_port       = lp_nbt_port(global_loadparm);
+	state->io->in.dest_port       = state->wins_port;
 	state->io->in.address         = io->in.addresses[0];
 	state->io->in.nb_flags        = io->in.nb_flags;
 	state->io->in.broadcast       = false;

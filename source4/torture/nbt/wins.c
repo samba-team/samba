@@ -80,6 +80,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "release the name\n");
 	release.in.name = *name;
+	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
@@ -165,6 +166,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "refresh the name\n");
 	refresh.in.name = *name;
+	refresh.in.wins_port = lp_nbt_port(tctx->lp_ctx);
 	refresh.in.wins_servers = str_list_make(tctx, address, NULL);
 	refresh.in.addresses = str_list_make(tctx, myaddress, NULL);
 	refresh.in.nb_flags = nb_flags;
