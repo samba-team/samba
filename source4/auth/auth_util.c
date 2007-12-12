@@ -81,7 +81,9 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 	if (!*user_info_mapped) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_reference(*user_info_mapped, user_info);
+	if (!talloc_reference(*user_info_mapped, user_info)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	**user_info_mapped = *user_info;
 	(*user_info_mapped)->mapped_state = true;
 	(*user_info_mapped)->mapped.domain_name = talloc_strdup(*user_info_mapped, domain);
@@ -129,7 +131,9 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 			if (!user_info_temp) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			talloc_reference(user_info_temp, user_info_in);
+			if (!talloc_reference(user_info_temp, user_info_in)) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*user_info_temp = *user_info_in;
 			user_info_temp->mapped_state = to_state;
 			
@@ -193,7 +197,9 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 			if (!user_info_temp) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			talloc_reference(user_info_temp, user_info_in);
+			if (!talloc_reference(user_info_temp, user_info_in)) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			*user_info_temp = *user_info_in;
 			user_info_temp->mapped_state = to_state;
 			
