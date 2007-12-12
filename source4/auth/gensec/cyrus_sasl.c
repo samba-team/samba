@@ -101,7 +101,7 @@ static int gensec_sasl_get_password(sasl_conn_t *conn, void *context, int id,
 		return SASL_NOMEM;
 	}
 	secret->len = strlen(password);
-	safe_strcpy(secret->data, password, secret->len+1);
+	safe_strcpy((char*)secret->data, password, secret->len+1);
 	*psecret = secret;
 	return SASL_OK;
 }
@@ -213,8 +213,9 @@ static NTSTATUS gensec_sasl_update(struct gensec_security *gensec_security,
 		sasl_ret = sasl_client_start(gensec_sasl_state->conn, gensec_security->ops->sasl_name, 
 					     NULL, &out_data, &out_len, &mech);
 	} else {
-		sasl_ret = sasl_client_step(gensec_sasl_state->conn, 
-					    in.data, in.length, NULL, &out_data, &out_len);
+		sasl_ret = sasl_client_step(gensec_sasl_state->conn,
+					    (char*)in.data, in.length, NULL,
+					    &out_data, &out_len);
 	}
 	if (sasl_ret == SASL_OK || sasl_ret == SASL_CONTINUE) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
@@ -237,8 +238,9 @@ static NTSTATUS gensec_sasl_unwrap_packets(struct gensec_security *gensec_securi
 	const char *out_data;
 	unsigned int out_len;
 
-	int sasl_ret = sasl_decode(gensec_sasl_state->conn, 
-				   in->data, in->length, &out_data, &out_len);
+	int sasl_ret = sasl_decode(gensec_sasl_state->conn,
+				   (char*)in->data, in->length, &out_data,
+				   &out_len);
 	if (sasl_ret == SASL_OK) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
 		*len_processed = in->length;
@@ -260,8 +262,9 @@ static NTSTATUS gensec_sasl_wrap_packets(struct gensec_security *gensec_security
 	const char *out_data;
 	unsigned int out_len;
 
-	int sasl_ret = sasl_encode(gensec_sasl_state->conn, 
-				   in->data, in->length, &out_data, &out_len);
+	int sasl_ret = sasl_encode(gensec_sasl_state->conn,
+				   (char*)in->data, in->length, &out_data,
+				   &out_len);
 	if (sasl_ret == SASL_OK) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
 		*len_processed = in->length;
@@ -278,7 +281,8 @@ static bool gensec_sasl_have_feature(struct gensec_security *gensec_security,
 	struct gensec_sasl_state *gensec_sasl_state = talloc_get_type(gensec_security->private_data,
 								      struct gensec_sasl_state);
 	sasl_ssf_t ssf;
-	int sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF, &ssf);
+	int sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF,
+			(const void**)&ssf);
 	if (sasl_ret != SASL_OK) {
 		return false;
 	}
