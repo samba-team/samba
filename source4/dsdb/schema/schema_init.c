@@ -3,7 +3,8 @@
    DSDB schema header
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2006
-    
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -1038,6 +1039,11 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 	return WERR_OK;
 }
 
+/**
+ * Attach the schema to an opaque pointer on the ldb, so ldb modules
+ * can find it 
+ */
+
 int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	int ret;
@@ -1052,8 +1058,14 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	return LDB_SUCCESS;
 }
 
+/**
+ * Global variable to hold one copy of the schema, used to avoid memory bloat
+ */
 static struct dsdb_schema *global_schema;
 
+/**
+ * Make this ldb use the 'global' schema, setup to avoid having multiple copies in this process
+ */
 int dsdb_set_global_schema(struct ldb_context *ldb)
 {
 	int ret;
@@ -1067,6 +1079,10 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 
 	return LDB_SUCCESS;
 }
+
+/**
+ * Find the schema object for this ldb
+ */
 
 const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 {
@@ -1087,18 +1103,14 @@ const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 	return schema;
 }
 
+/**
+ * Make the schema found on this ldb the 'global' schema
+ */
+
 void dsdb_make_schema_global(struct ldb_context *ldb)
 {
 	const void *p;
-	const struct dsdb_schema *schema;
-
-	/* see if we have a cached copy */
-	p = ldb_get_opaque(ldb, "dsdb_schema");
-	if (!p) {
-		return;
-	}
-
-	schema = talloc_get_type(p, struct dsdb_schema);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	if (!schema) {
 		return;
 	}
@@ -1108,6 +1120,13 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
 
 	dsdb_set_global_schema(ldb);
 }
+
+
+/**
+ * Rather than read a schema from the LDB itself, read it from an ldif
+ * file.  This allows schema to be loaded and used while adding the
+ * schema itself to the directory.
+ */
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)
 {
