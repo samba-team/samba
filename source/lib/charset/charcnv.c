@@ -115,10 +115,10 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 				   charset_t from, charset_t to)
 {
 	const char *n1, *n2;
-	static int initialised;
+	static bool initialised;
 
-	if (initialised == 0) {
-		initialised = 1;
+	if (initialised == false) {
+		initialised = true;
 		
 #ifdef LC_ALL
 		/* we set back the locale to C to get ASCII-compatible
