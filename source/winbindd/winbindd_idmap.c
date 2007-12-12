@@ -511,51 +511,6 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 	return WINBINDD_ERROR;
 }
 
-static void winbindd_dump_id_maps_recv(TALLOC_CTX *mem_ctx, bool success,
-			       struct winbindd_response *response,
-			       void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ) =
-		(void (*)(void *, bool))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger a map dump\n"));
-		cont(private_data, False);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("idmap dump maps returned an error\n"));
-		cont(private_data, False);
-		return;
-	}
-
-	cont(private_data, True);
-}
-
-void winbindd_dump_maps_async(TALLOC_CTX *mem_ctx, const char *logfile,
-			 void (*cont)(void *private_data, bool success),
-			 void *private_data)
-{
-	struct winbindd_request request;
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_DUMP_MAPS;
-	request.extra_data.data = discard_const(logfile);
-	request.extra_len = strlen(logfile)+1;
-	do_async(mem_ctx, idmap_child(), &request, winbindd_dump_id_maps_recv,
-		 (void *)cont, private_data);
-}
-
-enum winbindd_result winbindd_dual_dump_maps(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state)
-{
-	DEBUG(3, ("[%5lu]: dual dump maps\n", (unsigned long)state->pid));
-
-	idmap_dump_maps((char *)state->request.extra_data.data);
-
-	return WINBINDD_OK;
-}
-
 static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 	{
 		.name		= "DUAL_SID2UID",
@@ -587,10 +542,6 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.name		= "DUAL_SET_HWMS",
 		.struct_cmd	= WINBINDD_DUAL_SET_HWM,
 		.struct_fn	= winbindd_dual_set_hwm,
-	},{
-		.name		= "DUAL_DUMP_MAPS",
-		.struct_cmd	= WINBINDD_DUAL_DUMP_MAPS,
-		.struct_fn	= winbindd_dual_dump_maps,
 	},{
 		.name		= "ALLOCATE_UID",
 		.struct_cmd	= WINBINDD_ALLOCATE_UID,

@@ -405,24 +405,6 @@ bool winbind_sids_to_unixids(struct id_map *ids, int num_ids)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-bool winbind_idmap_dump_maps(TALLOC_CTX *memctx, const char *file)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	request.extra_data.data = SMB_STRDUP(file);
-	request.extra_len = strlen(request.extra_data.data) + 1;
-
-	result = winbindd_request_response(WINBINDD_DUMP_MAPS, &request, &response);
-
-	SAFE_FREE(request.extra_data.data);
-	return (result == NSS_STATUS_SUCCESS);
-}
-
 bool winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;

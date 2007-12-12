@@ -108,8 +108,6 @@ enum winbindd_cmd {
 
 	/* Miscellaneous other stuff */
 
-	WINBINDD_DUMP_MAPS,
-
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
@@ -153,7 +151,6 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_GID2SID,
 	WINBINDD_DUAL_SET_MAPPING,
 	WINBINDD_DUAL_SET_HWM,
-	WINBINDD_DUAL_DUMP_MAPS,
 
 	/* Wrapper around possibly blocking unix nss calls */
 	WINBINDD_DUAL_USERINFO,
