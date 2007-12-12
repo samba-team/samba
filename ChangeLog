@@ -1,3 +1,7 @@
+2007-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kgetcred.c: Fix type of name-type. From Andy Polyakov.
+
 2007-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/log.c: Use hdb_db_dir().
