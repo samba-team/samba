@@ -60,7 +60,7 @@ struct getargs args[] = {
       "encryption type to use", "enctype"},
     { "impersonate",	0,   arg_string, &impersonate_str,
       "client to impersonate", "principal"},
-    { "name-type",		0,   arg_flag, &nametype_str },
+    { "name-type",		0,   arg_string, &nametype_str },
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
