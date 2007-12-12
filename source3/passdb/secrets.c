@@ -622,7 +622,7 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 		return false;
 	}
 	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_len, &pass);
-	ret = secrets_store(trustdom_keystr(domain), (void *)&pass_buf,
+	ret = secrets_store(trustdom_keystr(domain), (void *)pass_buf,
 			pass_len);
 	SAFE_FREE(pass_buf);
 	return ret;
