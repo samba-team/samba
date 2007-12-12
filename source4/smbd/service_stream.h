@@ -48,6 +48,7 @@ struct stream_connection {
 
 	struct socket_context *socket;
 	struct messaging_context *msg_ctx;
+	struct loadparm_context *lp_ctx;
 
 	bool processing;
 	const char *terminate;

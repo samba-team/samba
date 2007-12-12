@@ -26,7 +26,7 @@
  */
 
 static void		list_devices(void);
-static struct smbcli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
+static struct smbcli_state	*smb_connect(const char *, const char *, const char **, const char *, const char *, const char *);
 static int		smb_print(struct smbcli_state *, char *, FILE *);
 
 
@@ -189,7 +189,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
 
   do
   {
-    if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
+    if ((cli = smb_connect(workgroup, server, lp_smb_ports(lp_ctx), printer, username, password)) == NULL)
     {
       if (getenv("CLASS") == NULL)
       {
@@ -255,6 +255,7 @@ list_devices(void)
 static struct smbcli_state *		/* O - SMB connection */
 smb_connect(const char *workgroup,		/* I - Workgroup */
             const char *server,		/* I - Server */
+	    const char **ports,           /* I - Ports */
             const char *share,		/* I - Printer */
             const char *username,		/* I - Username */
             const char *password)		/* I - Password */
@@ -269,7 +270,7 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
 
   myname = get_myname();  
   	
-  nt_status = smbcli_full_connection(NULL, &c, myname, server, 0, share, NULL,
+  nt_status = smbcli_full_connection(NULL, &c, myname, server, ports, share, NULL,
 				     username, workgroup, password, NULL);
   
   free(myname);

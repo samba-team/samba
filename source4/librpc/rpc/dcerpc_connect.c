@@ -111,7 +111,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
-	conn->in.port                   = 0;
+	conn->in.dest_ports                  = lp_smb_ports(global_loadparm);
 	if (s->io.binding->target_hostname == NULL)
 		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
 	else

@@ -5,6 +5,8 @@
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/rpc.h"
 
+#include "param/param.h"
+
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
 
 
@@ -29,6 +31,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(tj, &cli, host,
+					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
 					machine_account,
 					NULL);
@@ -53,6 +56,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	}
 
 	status = smbcli_full_connection(tj, &cli, host,
+					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
 					machine_account,
 					NULL);

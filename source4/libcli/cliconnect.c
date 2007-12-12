@@ -31,12 +31,12 @@
   wrapper around smbcli_sock_connect()
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
-			   struct resolve_context *resolve_ctx,
+			   const char **ports, struct resolve_context *resolve_ctx,
 			   int max_xmit, int max_mux)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_connect_byname(server, 0, NULL, resolve_ctx, 
+	sock = smbcli_sock_connect_byname(server, ports, NULL, resolve_ctx, 
 					  NULL);
 
 	if (sock == NULL) return false;
@@ -136,6 +136,7 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct smbcli_state **ret_cli, 
 				const char *host,
+				const char **ports,
 				const char *sharename,
 				const char *devtype,
 				struct cli_credentials *credentials,
@@ -147,7 +148,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	*ret_cli = NULL;
 
 	status = smbcli_tree_full_connection(parent_ctx,
-					     &tree, host, 0, sharename, devtype,
+					     &tree, host, ports, 
+					     sharename, devtype,
 					     credentials, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;

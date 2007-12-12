@@ -147,11 +147,12 @@ static void continue_resolve(struct composite_context *creq)
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
 	const char *addr;
-	
+	const char *ports[2] = { "445", NULL };
+
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
 
-	creq = smbcli_sock_connect_send(state, addr, 445, state->host, c->event_ctx);
+	creq = smbcli_sock_connect_send(state, addr, ports, state->host, c->event_ctx);
 
 	composite_continue(c, creq, continue_socket, c);
 }

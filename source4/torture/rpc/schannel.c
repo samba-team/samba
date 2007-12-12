@@ -244,7 +244,8 @@ static bool test_schannel(struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
-	join_ctx = torture_join_domain(tctx, talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
+	join_ctx = torture_join_domain(tctx, 
+				       talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
 				       acct_flags, &credentials);
 	torture_assert(tctx, join_ctx != NULL, "Failed to join domain");
 

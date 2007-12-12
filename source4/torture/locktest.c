@@ -153,6 +153,7 @@ static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
 		printf("\\\\%s\\%s\n", server, share);
 		status = smbcli_full_connection(NULL, &c, 
 						server, 
+						lp_smb_ports(lp_ctx),
 						share, NULL,
 						servers[snum], NULL);
 		if (!NT_STATUS_IS_OK(status)) {

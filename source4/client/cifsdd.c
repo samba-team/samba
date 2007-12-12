@@ -351,7 +351,7 @@ static void print_transfer_stats(void)
 	}
 }
 
-static struct dd_iohandle * open_file(const char * which)
+static struct dd_iohandle * open_file(const char * which, const char **ports)
 {
 	int			options = 0;
 	const char *		path = NULL;
@@ -371,12 +371,12 @@ static struct dd_iohandle * open_file(const char * which)
 
 	if (strcmp(which, "if") == 0) {
 		path = check_arg_pathname("if");
-		handle = dd_open_path(path, check_arg_numeric("ibs"),
+		handle = dd_open_path(path, ports, check_arg_numeric("ibs"),
 					options);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
-		handle = dd_open_path(path, check_arg_numeric("obs"),
+		handle = dd_open_path(path, ports, check_arg_numeric("obs"),
 					options);
 	} else {
 		SMB_ASSERT(0);
@@ -431,11 +431,11 @@ static int copy_files(struct loadparm_context *lp_ctx)
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, lp_max_xmit(lp_ctx)));
 
-	if (!(ifile = open_file("if"))) {
+	if (!(ifile = open_file("if", lp_smb_ports(lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
-	if (!(ofile = open_file("of"))) {
+	if (!(ofile = open_file("of", lp_smb_ports(lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 

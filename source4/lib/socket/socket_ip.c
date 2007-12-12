@@ -130,6 +130,8 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 		if (!srv_ip.s_addr) {
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
+
+		SMB_ASSERT(srv_address->port != 0);
 		
 		ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN
@@ -356,6 +358,8 @@ static NTSTATUS ipv4_sendto(struct socket_context *sock,
 	} else {
 		struct sockaddr_in srv_addr;
 		struct in_addr addr;
+
+		SMB_ASSERT(dest_addr->port != 0);
 		
 		ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN

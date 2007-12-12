@@ -69,7 +69,7 @@ static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, 
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(char *share)
+static struct smbcli_state *connect_one(char *share, const char **ports)
 {
 	struct smbcli_state *c;
 	fstring server;
@@ -85,6 +85,7 @@ static struct smbcli_state *connect_one(char *share)
 
 	status = smbcli_full_connection(NULL, &c,
 					server, 
+					ports,
 					share, NULL,
 					credentials, NULL);
 
@@ -363,7 +364,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	cli = connect_one(share);
+	cli = connect_one(share, lp_smb_ports(lp_ctx));
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

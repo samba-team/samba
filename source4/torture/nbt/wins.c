@@ -94,6 +94,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "register the name\n");
 	io.in.name = *name;
+	io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
 	io.in.wins_servers = str_list_make(tctx, address, NULL);
 	io.in.addresses = str_list_make(tctx, myaddress, NULL);
 	io.in.nb_flags = nb_flags;

@@ -171,7 +171,7 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 */
 NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct smbcli_tree **ret_tree, 
-				     const char *dest_host, int port,
+				     const char *dest_host, const char **dest_ports,
 				     const char *service, const char *service_type,
 				     struct cli_credentials *credentials,
 				     struct event_context *ev)
@@ -184,7 +184,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	}
 
 	io.in.dest_host = dest_host;
-	io.in.port = port;
+	io.in.dest_ports = dest_ports;
 	io.in.called_name = strupper_talloc(tmp_ctx, dest_host);
 	io.in.service = service;
 	io.in.service_type = service_type;

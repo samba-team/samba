@@ -437,7 +437,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	/* Do connect */
 
 	io.in.dest_host              = hostname;
-	io.in.port                   = 0;
+	io.in.dest_ports             = lp_smb_ports(global_loadparm);
 	io.in.called_name            = strupper_talloc(mem_ctx, hostname);
 	io.in.service                = sharename;
 	io.in.service_type           = "?????";

@@ -152,7 +152,7 @@ static bool connect_servers_fast(void)
 /***************************************************** 
 connect to the servers
 *******************************************************/
-static bool connect_servers(void)
+static bool connect_servers(struct loadparm_context *lp_ctx)
 {
 	int i, j;
 
@@ -185,6 +185,7 @@ static bool connect_servers(void)
 
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
 							servers[i].server_name, 
+							lp_smb_ports(lp_ctx),
 							servers[i].share_name, NULL, 
 							servers[i].credentials, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1927,11 +1928,11 @@ static struct {
   run the test with the current set of op_parms parameters
   return the number of operations that completed successfully
 */
-static int run_test(void)
+static int run_test(struct loadparm_context *lp_ctx)
 {
 	int op, i;
 
-	if (!connect_servers()) {
+	if (!connect_servers(lp_ctx)) {
 		printf("Failed to connect to servers\n");
 		exit(1);
 	}
@@ -2008,7 +2009,7 @@ static int run_test(void)
    perform a backtracking analysis of the minimal set of operations
    to generate an error
 */
-static void backtrack_analyze(void)
+static void backtrack_analyze(struct loadparm_context *lp_ctx)
 {
 	int chunk, ret;
 
@@ -2029,7 +2030,7 @@ static void backtrack_analyze(void)
 			}
 			printf("Testing %d ops with %d-%d disabled\n", 
 			       options.numops, base, max-1);
-			ret = run_test();
+			ret = run_test(lp_ctx);
 			printf("Completed %d of %d ops\n", ret, options.numops);
 			for (i=base;i<max; i++) {
 				op_parms[i].disabled = false;
@@ -2061,7 +2062,7 @@ static void backtrack_analyze(void)
 	} while (chunk > 0);
 
 	printf("Reduced to %d ops\n", options.numops);
-	ret = run_test();
+	ret = run_test(lp_ctx);
 	if (ret != options.numops - 1) {
 		printf("Inconsistent result? ret=%d numops=%d\n", ret, options.numops);
 	}
@@ -2070,7 +2071,7 @@ static void backtrack_analyze(void)
 /* 
    start the main gentest process
 */
-static bool start_gentest(void)
+static bool start_gentest(struct loadparm_context *lp_ctx)
 {
 	int op;
 	int ret;
@@ -2106,15 +2107,15 @@ static bool start_gentest(void)
 		}
 	}
 
-	ret = run_test();
+	ret = run_test(lp_ctx);
 
 	if (ret != options.numops && options.analyze) {
 		options.numops = ret+1;
-		backtrack_analyze();
+		backtrack_analyze(lp_ctx);
 	} else if (options.analyze_always) {
-		backtrack_analyze();
+		backtrack_analyze(lp_ctx);
 	} else if (options.analyze_continuous) {
-		while (run_test() == options.numops) ;
+		while (run_test(lp_ctx) == options.numops) ;
 	}
 
 	return ret == options.numops;
@@ -2279,7 +2280,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	printf("seed=%u\n", options.seed);
 
-	ret = start_gentest();
+	ret = start_gentest(lp_ctx);
 
 	if (ret) {
 		printf("gentest completed - no errors\n");

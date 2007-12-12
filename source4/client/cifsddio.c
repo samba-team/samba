@@ -221,7 +221,8 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 }
 
 static struct smbcli_state * init_smb_session(const char * host,
-						const char * share)
+					      const char **ports,
+					      const char * share)
 {
 	NTSTATUS		ret;
 	struct smbcli_state *	cli = NULL;
@@ -229,7 +230,7 @@ static struct smbcli_state * init_smb_session(const char * host,
 	/* When we support SMB URLs, we can get different user credentials for
 	 * each connection, but for now, we just use the same one for both.
 	 */
-	ret = smbcli_full_connection(NULL, &cli, host, share,
+	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
 			 NULL /* devtype */, cmdline_credentials, NULL /* events */);
 
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -289,6 +290,7 @@ static int open_smb_file(struct smbcli_state * cli,
 }
 
 static struct dd_iohandle * open_cifs_handle(const char * host,
+					const char **ports,
 					const char * share,
 					const char * path,
 					uint64_t io_size,
@@ -312,7 +314,7 @@ static struct dd_iohandle * open_cifs_handle(const char * host,
 	smbh->h.io_write = smb_write_func;
 	smbh->h.io_seek = smb_seek_func;
 
-	if ((smbh->cli = init_smb_session(host, share)) == NULL) {
+	if ((smbh->cli = init_smb_session(host, ports, share)) == NULL) {
 		return(NULL);
 	}
 
@@ -328,6 +330,7 @@ static struct dd_iohandle * open_cifs_handle(const char * host,
 /* ------------------------------------------------------------------------- */
 
 struct dd_iohandle * dd_open_path(const char * path,
+				  const char **ports,
 				uint64_t io_size,
 				int options)
 {
@@ -344,7 +347,7 @@ struct dd_iohandle * dd_open_path(const char * path,
 			/* Skip over leading directory separators. */
 			while (*remain == '/' || *remain == '\\') { remain++; }
 
-			return(open_cifs_handle(host, share, remain,
+			return(open_cifs_handle(host, ports, share, remain,
 						io_size, options));
 		}
 

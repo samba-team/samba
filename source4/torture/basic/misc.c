@@ -815,7 +815,7 @@ static struct composite_context *torture_connect_async(
 	torture_comment(tctx, "Open Connection to %s/%s\n",host,share);
 	smb->in.dest_host=talloc_strdup(mem_ctx,host);
 	smb->in.service=talloc_strdup(mem_ctx,share);
-	smb->in.port=0;
+	smb->in.dest_ports=lp_smb_ports(tctx->lp_ctx);
 	smb->in.called_name = strupper_talloc(mem_ctx, host);
 	smb->in.service_type=NULL;
 	smb->in.credentials=cmdline_credentials;

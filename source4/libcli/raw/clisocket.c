@@ -45,12 +45,13 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx);
 
 struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char *host_addr,
-						   int port,
+						   const char **ports,
 						   const char *host_name,
 						   struct event_context *event_ctx)
 {
 	struct composite_context *result, *ctx;
 	struct sock_connect_state *state;
+	int i;
 
 	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
@@ -72,26 +73,11 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	state->host_name = talloc_strdup(state, host_name);
 	if (state->host_name == NULL) goto failed;
 
-	if (port == 0) {
-		const char **ports = lp_smb_ports(global_loadparm);
-		int i;
-
-		for (i=0;ports[i];i++) /* noop */ ;
-		if (i == 0) {
-			DEBUG(3, ("no smb ports defined\n"));
-			goto failed;
-		}
-		state->num_ports = i;
-		state->ports = talloc_array(state, uint16_t, i);
-		if (state->ports == NULL) goto failed;
-		for (i=0;ports[i];i++) {
-			state->ports[i] = atoi(ports[i]);
-		}
-	} else {
-		state->ports = talloc_array(state, uint16_t, 1);
-		if (state->ports == NULL) goto failed;
-		state->num_ports = 1;
-		state->ports[0] = port;
+	state->num_ports = str_list_length(ports);
+	state->ports = talloc_array(state, uint16_t, state->num_ports);
+	if (state->ports == NULL) goto failed;
+	for (i=0;ports[i];i++) {
+		state->ports[i] = atoi(ports[i]);
 	}
 
 	ctx = socket_connect_multi_send(state, host_addr,
@@ -164,13 +150,13 @@ NTSTATUS smbcli_sock_connect_recv(struct composite_context *c,
   sync version of the function
 */
 NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
-			     const char *host_addr, int port,
+			     const char *host_addr, const char **ports,
 			     const char *host_name,
 			     struct event_context *event_ctx,
 			     struct smbcli_socket **result)
 {
 	struct composite_context *c =
-		smbcli_sock_connect_send(mem_ctx, host_addr, port, host_name,
+		smbcli_sock_connect_send(mem_ctx, host_addr, ports, host_name,
 					 event_ctx);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
@@ -198,7 +184,7 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 /****************************************************************************
 resolve a hostname and connect 
 ****************************************************************************/
-struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
+struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
 						 struct event_context *event_ctx)
@@ -247,7 +233,7 @@ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
 		return NULL;
 	}
 
-	status = smbcli_sock_connect(mem_ctx, address, port, name, event_ctx,
+	status = smbcli_sock_connect(mem_ctx, address, ports, name, event_ctx,
 				     &result);
 
 	if (!NT_STATUS_IS_OK(status)) {

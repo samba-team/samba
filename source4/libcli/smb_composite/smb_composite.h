@@ -45,7 +45,7 @@ struct smb_composite_loadfile {
 struct smb_composite_fetchfile {
 	struct {
 		const char *dest_host;
-		int port;
+		const char **ports;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
@@ -84,7 +84,7 @@ struct smb_composite_savefile {
 struct smb_composite_connect {
 	struct {
 		const char *dest_host;
-		int port;
+		const char **dest_ports;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
@@ -121,7 +121,7 @@ struct smb_composite_sesssetup {
 struct smb_composite_fsinfo {
 	struct {
 		const char *dest_host;
-		int port;
+		const char **dest_ports;
 		const char *called_name;
 		const char *service;
 		const char *service_type;

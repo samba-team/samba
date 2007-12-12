@@ -390,7 +390,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	r->out.account_guid = samdb_result_guid(res->msgs[0], "objectGUID");
 
 	if (r->in.acct_type == ACB_SVRTRUST) {
-		status = libnet_JoinSite(remote_ldb, r);
+		status = libnet_JoinSite(ctx, remote_ldb, r);
 	}
 	talloc_free(tmp_ctx);
 

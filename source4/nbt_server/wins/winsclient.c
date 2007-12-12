@@ -237,6 +237,7 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 
 	/* setup a wins name register request */
 	io.in.name            = iname->name;
+	io.in.wins_port       = lp_nbt_port(iname->iface->nbtsrv->task->lp_ctx);
 	io.in.wins_servers    = lp_wins_server_list(iname->iface->nbtsrv->task->lp_ctx);
 	io.in.addresses       = nbtd_address_list(iface, iname);
 	io.in.nb_flags        = iname->nb_flags;
