@@ -66,6 +66,7 @@ _PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *
 
 	ndr->data = blob->data;
 	ndr->data_size = blob->length;
+	ndr->iconv_convenience = talloc_reference(ndr, global_smb_iconv_convenience);
 
 	return ndr;
 }
@@ -114,6 +115,7 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	if (!ndr->data) {
 		return NULL;
 	}
+	ndr->iconv_convenience = talloc_reference(ndr, global_smb_iconv_convenience);
 
 	return ndr;
 }
@@ -438,6 +440,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 	subndr->data = ndr->data + ndr->offset;
 	subndr->offset = 0;
 	subndr->data_size = r_content_size;
+	subndr->iconv_convenience = talloc_reference(subndr, ndr->iconv_convenience);
 
 	*_subndr = subndr;
 	return NDR_ERR_SUCCESS;

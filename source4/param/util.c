@@ -285,6 +285,11 @@ _PUBLIC_ const char *lp_messaging_path(TALLOC_CTX *mem_ctx,
 
 struct smb_iconv_convenience *global_smb_iconv_convenience = NULL;
 
+struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx)
+{
+	return global_smb_iconv_convenience;
+}
+
 struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 							 struct loadparm_context *lp_ctx)
 {

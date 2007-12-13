@@ -288,7 +288,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	size_t size, size2;
 	codepoint_t c;
 
-	size = push_codepoint(global_smb_iconv_convenience, (char *)buf, codepoint);
+	size = push_codepoint(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, codepoint);
 	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), 
 		       "Invalid Codepoint range");
 
@@ -299,7 +299,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	buf[size+2] = random();
 	buf[size+3] = random();
 
-	c = next_codepoint(global_smb_iconv_convenience, (char *)buf, &size2);
+	c = next_codepoint(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, &size2);
 
 	torture_assert(tctx, c == codepoint, 
 		       talloc_asprintf(tctx, 
