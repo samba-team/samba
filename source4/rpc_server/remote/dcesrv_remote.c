@@ -89,7 +89,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 		}
-		status = cli_credentials_set_machine_account(credentials);
+		status = cli_credentials_set_machine_account(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

@@ -73,7 +73,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	}
 	
 	cli_credentials_set_conf(server_credentials, call->conn->dce_ctx->lp_ctx);
-	status = cli_credentials_set_machine_account(server_credentials);
+	status = cli_credentials_set_machine_account(server_credentials, call->conn->dce_ctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
 		talloc_free(server_credentials);

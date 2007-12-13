@@ -186,7 +186,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			return NT_STATUS_NO_MEMORY;
 		}
 		cli_credentials_set_conf(machine_account, ctx->lp_ctx);
-		nt_status = cli_credentials_set_machine_account(machine_account);
+		nt_status = cli_credentials_set_machine_account(machine_account, ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
 			talloc_free(samsync_ctx);

@@ -55,7 +55,7 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	}
 
 	cli_credentials_set_conf(server_credentials, req->smb_conn->lp_ctx);
-	nt_status = cli_credentials_set_machine_account(server_credentials);
+	nt_status = cli_credentials_set_machine_account(server_credentials, req->smb_conn->lp_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));
 		talloc_free(server_credentials);

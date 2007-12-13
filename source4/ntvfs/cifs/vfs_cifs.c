@@ -180,7 +180,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 		}
-		status = cli_credentials_set_machine_account(credentials);
+		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

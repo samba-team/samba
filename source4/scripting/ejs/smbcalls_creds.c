@@ -192,7 +192,7 @@ static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, struct MprV
 		return -1;
 	}
 	
-	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds))) {
+	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds, global_loadparm))) {
 		mpr_Return(eid, mprCreateBoolVar(true));
 	} else {
 		mpr_Return(eid, mprCreateBoolVar(false));

@@ -504,7 +504,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			cli_credentials_set_machine_account(creds);
+			cli_credentials_set_machine_account(creds, lp_ctx);
 			break;
 		default:
 			break;

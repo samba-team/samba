@@ -158,7 +158,7 @@ static int update_kt_end_trans(struct ldb_module *module)
 	struct dn_list *p;
 	for (p=data->changed_dns; p; p = p->next) {
 		int kret;
-		kret = cli_credentials_update_keytab(p->creds);
+		kret = cli_credentials_update_keytab(p->creds, ldb_get_opaque(module->ldb, "loadparm"));
 		if (kret != 0) {
 			talloc_free(data->changed_dns);
 			data->changed_dns = NULL;

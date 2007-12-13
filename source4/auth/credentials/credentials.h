@@ -104,8 +104,8 @@ struct cli_credentials {
 
 	/* We are flagged to get machine account details from the
 	 * secrets.ldb when we are asked for a username or password */
-
 	bool machine_account_pending;
+	struct loadparm_context *machine_account_pending_lp_ctx;
 	
 	/* Is this a machine account? */
 	bool machine_account;
