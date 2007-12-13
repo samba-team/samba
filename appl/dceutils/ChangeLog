@@ -1,5 +1,9 @@
-2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add missing files, from Buchan Milne.
+	
+2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* k5dcecon.c: Check for seteuid failure, prompted by MIT advisory.
 	
 2005-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
