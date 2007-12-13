@@ -38,6 +38,7 @@ struct tdr_pull {
 struct tdr_push {
 	DATA_BLOB data;
 	int flags;
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 struct tdr_print {
