@@ -120,6 +120,7 @@ AC_SUBST(PYTHON_EXTRA_LDFLAGS)
 SMB_EXT_LIB(LIBPYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CPPFLAGS])
 
 
+AC_MSG_CHECKING(working python module support)
 if test x$working_python = xyes
 then
 	ac_save_LIBS="$LIBS"
@@ -128,14 +129,21 @@ then
 	CFLAGS="$CFLAGS $PYTHON_CPPFLAGS"
 
 	AC_TRY_LINK([
-#include <Python.h>
-#include <stdlib.h>], 
-[Py_InitModule(NULL, NULL);],
-		[SMB_ENABLE(LIBPYTHON,YES)],
-		[SMB_ENABLE(LIBPYTHON,NO)])
+			#include <Python.h>
+			#include <stdlib.h>
+		],[
+			Py_InitModule(NULL, NULL);
+		],[
+			SMB_ENABLE(LIBPYTHON,YES)
+			AC_MSG_RESULT([yes])
+		],[
+			SMB_ENABLE(LIBPYTHON,NO)
+			AC_MSG_RESULT([no])
+		])
 
 	LIBS="$ac_save_LIBS"
 	CFLAGS="$ac_save_CFLAGS"
 else
 	SMB_ENABLE(LIBPYTHON,NO)
+	AC_MSG_RESULT([no])
 fi
