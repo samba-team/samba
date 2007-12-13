@@ -38,6 +38,7 @@ struct nbtlist_state {
 	struct nbt_name_request **queries;
 	struct nbt_name_query *io_queries;
 	const char *reply_addr;
+	struct interface *ifaces;
 };
 
 /*
@@ -49,7 +50,6 @@ static void nbtlist_handler(struct nbt_name_request *req)
 						      struct composite_context);
 	struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 	struct nbt_name_query *q;
-	struct interface *ifaces;
 	int i;
 
 	for (i=0;i<state->num_queries;i++) {
@@ -76,16 +76,14 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	}
 
 	/* favor a local address if possible */
-	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
 	state->reply_addr = NULL;
 	for (i=0;i<q->out.num_addrs;i++) {
-		if (iface_is_local(ifaces, q->out.reply_addrs[i])) {
+		if (iface_is_local(state->ifaces, q->out.reply_addrs[i])) {
 			state->reply_addr = talloc_steal(state, 
 							 q->out.reply_addrs[i]);
 			break;
 		}
 	}
-	talloc_free(ifaces);
 
 	if (state->reply_addr == NULL) {
 		state->reply_addr = talloc_steal(state, 
@@ -128,6 +126,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 		state->name.scope = strupper_talloc(state, state->name.scope);
 		if (composite_nomem(state->name.scope, c)) return c;
 	}
+
+	load_interfaces(state, lp_interfaces(global_loadparm), &state->ifaces);
 
 	/*
 	 * we can't push long names on the wire,
@@ -200,7 +200,8 @@ NTSTATUS resolve_name_nbtlist(struct nbt_name *name,
 			      bool broadcast, bool wins_lookup,
 			      const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, name, address_list, 
+	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
+								name, address_list, 
 							        broadcast, wins_lookup);
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }
