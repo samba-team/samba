@@ -87,10 +87,10 @@ static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 	call->paramdesc = NULL;
 	call->datadesc = NULL;
 
-	call->ndr_push_param = ndr_push_init_ctx(mem_ctx);
+	call->ndr_push_param = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_push_data = ndr_push_init_ctx(mem_ctx);
+	call->ndr_push_data = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	call->ndr_push_data->flags = RAPNDR_FLAGS;
 
 	return call;
@@ -195,7 +195,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree, struct rap_call *call)
 	struct ndr_push *params;
 	struct smb_trans2 trans;
 
-	params = ndr_push_init_ctx(call);
+	params = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
 
 	if (params == NULL)
 		return NT_STATUS_NO_MEMORY;

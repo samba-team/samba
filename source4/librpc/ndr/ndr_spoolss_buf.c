@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#include "param/param.h"
 
 #define NDR_SPOOLSS_PUSH_ENUM_IN(fn) do { \
 	if (!r->in.buffer && r->in.offered != 0) {\
@@ -55,7 +56,7 @@
 	}\
 	if (r->in.buffer) {\
 		DATA_BLOB _data_blob_info;\
-		_ndr_info = ndr_push_init_ctx(ndr);\
+		_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);\
 		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->out.info) {\
@@ -164,7 +165,7 @@
 #define NDR_SPOOLSS_SIZE_ENUM(fn) do { \
 	struct __##fn __r;\
 	DATA_BLOB _data_blob_info;\
-	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx);\
+	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));\
 	if (!_ndr_info) return 0;\
 	_ndr_info->flags|=0;\
 	__r.in.level	= level;\
@@ -414,7 +415,7 @@ enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flag
 		_r.out.result	= r->out.result;
 		{
 			struct __spoolss_GetPrinterData __r;
-			_ndr_info = ndr_push_init_ctx(ndr);
+			_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
 			__r.in.type	= r->out.type;
@@ -494,7 +495,7 @@ enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flag
 		struct __spoolss_SetPrinterData __r;
 		DATA_BLOB _data_blob_data;
 
-		_ndr_data = ndr_push_init_ctx(ndr);
+		_ndr_data = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 		NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 		_ndr_data->flags= ndr->flags;
 

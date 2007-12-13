@@ -56,7 +56,7 @@ NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	struct ndr_push *ndr;
 	enum ndr_err_code ndr_err;
 
-	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -466,7 +466,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_synta
 
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 

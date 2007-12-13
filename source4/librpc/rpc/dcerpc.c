@@ -350,7 +350,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		return ncacn_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
 	}
 
-	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1194,7 +1194,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1252,7 +1252,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	}
 	memcpy(st, struct_ptr, struct_size);
 
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1283,7 +1283,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1354,7 +1354,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	call = &table->calls[opnum];
 
 	/* setup for a ndr_push_* call */
-	push = ndr_push_init_ctx(mem_ctx);
+	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	if (!push) {
 		return NULL;
 	}
