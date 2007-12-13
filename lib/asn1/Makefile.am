@@ -591,16 +591,19 @@ test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 
 EXTRA_DIST =		\
 	asn1_err.et	\
+	canthandle.asn1	\
 	CMS.asn1	\
 	digest.asn1	\
 	k5.asn1		\
 	kx509.asn1	\
 	test.asn1	\
+	setchgpw2.asn1	\
 	pkcs12.asn1	\
 	pkcs8.asn1	\
 	pkcs9.asn1	\
 	pkinit.asn1	\
-	rfc2459.asn1
+	rfc2459.asn1	\
+	test.gen
 
 $(srcdir)/der-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libasn1_la_SOURCES) || rm -f der-protos.h
