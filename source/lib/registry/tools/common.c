@@ -42,13 +42,14 @@ struct registry_context *reg_common_open_remote(const char *remote,
 }
 
 struct registry_key *reg_common_open_file(const char *path,
+					  struct loadparm_context *lp_ctx,
 					  struct cli_credentials *creds)
 {
 	struct hive_key *hive_root;
 	struct registry_context *h;
 	WERROR error;
 
-	error = reg_open_hive(NULL, path, NULL, creds, &hive_root);
+	error = reg_open_hive(NULL, path, NULL, creds, lp_ctx, &hive_root);
 
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s': %s \n",

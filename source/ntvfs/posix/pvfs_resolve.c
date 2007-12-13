@@ -257,7 +257,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
+		codepoint_t c = next_codepoint(lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, &c_size);
 		switch (c) {
 		case '\\':
 			if (name->has_wildcard) {
