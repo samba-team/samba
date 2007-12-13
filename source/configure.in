@@ -65,10 +65,10 @@ AC_ARG_WITH(fhs,
     mandir="\${prefix}/share/man"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
-    libdir="\${prefix}/lib/samba"
+    test "${libdir}" || libdir="\${prefix}/lib/samba"
     configdir="\${sysconfdir}/samba"
     swatdir="\${DATADIR}/samba/swat"
-    codepagedir="\${prefix}/lib/samba"
+    codepagedir="\${LIBDIR}"
     statedir="\${VARDIR}/lib/samba"
     cachedir="\${VARDIR}/lib/samba"
     AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
