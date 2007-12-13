@@ -41,7 +41,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 	r->out.available = 0;
 	r->out.info = NULL;
 
-	nterr = share_get_context_by_name(mem_ctx, lp_share_backend(global_loadparm), &sctx);
+	nterr = share_get_context_by_name(mem_ctx, lp_share_backend(global_loadparm), global_loadparm, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return nterr;
 	}

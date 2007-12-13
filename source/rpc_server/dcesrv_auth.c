@@ -406,7 +406,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		return NT_STATUS_IS_OK(status);
 	}
 
-	ndr = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	ndr = ndr_push_init_ctx(call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx));
 	if (!ndr) {
 		return false;
 	}

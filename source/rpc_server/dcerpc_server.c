@@ -822,7 +822,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call,
-				  lp_iconv_convenience(global_loadparm));
+				  lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(pull);
 
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -885,7 +885,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	}
 
 	/* form the reply NDR */
-	push = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(push);
 
 	/* carry over the pointer count to the reply in case we are
