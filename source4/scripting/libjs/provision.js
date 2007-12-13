@@ -1018,6 +1018,7 @@ function provision_guess()
 	var modules_list     = new Array("rootdse",
 					 "paged_results",
 					 "ranged_results",
+					 "anr",
 					 "server_sort",
 					 "extended_dn",
 					 "asq",

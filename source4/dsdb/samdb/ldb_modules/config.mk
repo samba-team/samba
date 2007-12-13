@@ -304,3 +304,16 @@ OBJ_FILES = \
 # End MODULE ldb_ranged_results
 ################################################
 
+################################################
+# Start MODULE ldb_anr
+[MODULE::ldb_anr]
+INIT_FUNCTION = ldb_anr_init
+CFLAGS = -Ilib/ldb/include
+OUTPUT_TYPE = SHARED_LIBRARY
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		anr.o
+# End MODULE ldb_anr
+################################################
+
