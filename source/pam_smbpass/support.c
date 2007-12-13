@@ -61,10 +61,6 @@
 	void _cleanup(pam_handle_t *, void *, int);
 	char *_pam_delete(register char *);
 
-	/* default configuration file location */
-
-	const char *servicesf = get_dyn_CONFIGFILE();
-
 	/* syslogging function for errors and other information */
 
 	void _log_err( int err, const char *format, ... )
@@ -128,7 +124,7 @@
 int set_ctrl( int flags, int argc, const char **argv )
 {
     int i = 0;
-    const char *service_file = get_dyn_CONFIGFILE();
+    const char *service_file = NULL;
     unsigned int ctrl;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */
@@ -139,7 +135,7 @@ int set_ctrl( int flags, int argc, const char **argv )
     set( SMB__NONULL, ctrl );
 
     /* initialize service file location */
-    service_file=servicesf;
+    service_file=get_dyn_CONFIGFILE();
 
     if (flags & PAM_SILENT) {
         set( SMB__QUIET, ctrl );
