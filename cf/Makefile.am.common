@@ -254,3 +254,20 @@ distdir-in-tree: $(DISTFILES) $(INFO_DEPS)
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) distdir-in-tree) ; \
 	  fi ; \
 	done
+
+
+EXTRA_DIST = \
+	ChangeLog \
+	c-function.m4 \
+	ChangeLog \
+	have-pragma-weak.m4 \
+	have-types.m4 \
+	krb-func-getcwd-broken.m4 \
+	krb-prog-ranlib.m4 \
+	krb-prog-yacc.m4 \
+	krb-sys-aix.m4 \
+	krb-sys-nextstep.m4 \
+	krb-version.m4 \
+	roken.m4 \
+	valgrind-suppressions \
+	vararray.m4
