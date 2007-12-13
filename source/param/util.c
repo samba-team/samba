@@ -288,7 +288,6 @@ struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 {
 	return smb_iconv_convenience_init(mem_ctx, lp_dos_charset(lp_ctx),
 					  lp_unix_charset(lp_ctx),
-					  lp_display_charset(lp_ctx),
 		lp_parm_bool(lp_ctx, NULL, "iconv", "native", true));
 }
 

@@ -24,9 +24,9 @@
 #include <talloc.h>
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4, CH_UTF16BE=5} charset_t;
+typedef enum {CH_UTF16=0, CH_UNIX, CH_DOS, CH_UTF8, CH_UTF16BE} charset_t;
 
-#define NUM_CHARSETS 6
+#define NUM_CHARSETS 5
 
 /*
  *   for each charset we have a function that pulls from that charset to

@@ -262,6 +262,7 @@ _PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/util/dprintf.c  */
 
+_PUBLIC_ void d_set_iconv(smb_iconv_t);
 _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 _PUBLIC_ int d_printf(const char *format, ...) PRINTF_ATTRIBUTE(1,2);

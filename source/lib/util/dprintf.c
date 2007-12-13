@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    display print functions
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,11 +35,23 @@
 #include "system/locale.h"
 #include "param/param.h"
 
+static smb_iconv_t display_cd = (smb_iconv_t)-1;
+
+void d_set_iconv(smb_iconv_t cd)
+{
+	display_cd = cd;
+}
+
 _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p, *p2;
-	int ret, maxlen, clen;
+	int ret, clen;
 	va_list ap2;
+
+	/* If there's nothing to convert, take a shortcut */
+	if (display_cd == (smb_iconv_t)-1) {
+		return vfprintf(f, format, ap);
+	}
 
 	/* do any message translations */
 	va_copy(ap2, ap);
@@ -47,16 +60,7 @@ _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBU
 
 	if (ret <= 0) return ret;
 
-	/* now we have the string in unix format, convert it to the display
-	   charset, but beware of it growing */
-	maxlen = ret*2;
-again:
-	p2 = (char *)malloc(maxlen);
-	if (!p2) {
-		SAFE_FREE(p);
-		return -1;
-	}
-	clen = convert_string(lp_iconv_convenience(global_loadparm), CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
+	clen = convert_string_talloc_descriptor(NULL, display_cd, p, ret, (void **)&p2);
         if (clen == -1) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */
@@ -69,22 +73,13 @@ again:
 			}
 		}
 		SAFE_FREE(p);
-		SAFE_FREE(p2);
 		return ret;
         }
-
-
-	if (clen >= maxlen) {
-		/* it didn't fit - try a larger buffer */
-		maxlen *= 2;
-		SAFE_FREE(p2);
-		goto again;
-	}
 
 	/* good, its converted OK */
 	SAFE_FREE(p);
 	ret = fwrite(p2, 1, clen, f);
-	SAFE_FREE(p2);
+	talloc_free(p2);
 
 	return ret;
 }
@@ -113,3 +108,4 @@ _PUBLIC_ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 
 	return ret;
 }
+
