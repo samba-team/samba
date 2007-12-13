@@ -6185,7 +6185,7 @@ if test x"$enable_dnssd" != x"no"; then
     fi
 
     if test x"$have_dnssd_support" = x"yes"; then
-	AC_DEFINE(WTH_DNSSD_SUPPORT, 1,
+	AC_DEFINE(WITH_DNSSD_SUPPORT, 1,
 		[Whether to enable DNS service discovery support])
     else
     	if test x"$enable_dnssd" = x"yes"; then
