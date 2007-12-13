@@ -38,14 +38,14 @@ static bool test_pull_uint8(struct torture_context *tctx)
 {
 	uint8_t d = 2;
 	uint8_t l;
-	struct tdr_pull tdr;
-	tdr.data.data = &d;
-	tdr.data.length = 1;
-	tdr.offset = 0;
-	tdr.flags = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_uint8(&tdr, tctx, &l), 
+	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	tdr->data.data = &d;
+	tdr->data.length = 1;
+	tdr->offset = 0;
+	tdr->flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_uint8(tdr, tctx, &l), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 1, tdr.offset, 
+	torture_assert_int_equal(tctx, 1, tdr->offset, 
 							 "offset invalid");
 	return true;
 }
@@ -66,15 +66,14 @@ static bool test_pull_uint16(struct torture_context *tctx)
 {
 	uint8_t d[2] = { 782 & 0xFF, (782 & 0xFF00) / 0x100 };
 	uint16_t l;
-	struct tdr_pull tdr;
-	tdr.data.data = d;
-	tdr.data.length = 2;
-	tdr.offset = 0;
-	tdr.flags = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_uint16(&tdr, tctx, &l), 
+	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	tdr->data.data = d;
+	tdr->data.length = 2;
+	tdr->offset = 0;
+	tdr->flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_uint16(tdr, tctx, &l), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 2, tdr.offset, 
-							 "offset invalid");
+	torture_assert_int_equal(tctx, 2, tdr->offset, "offset invalid");
 	torture_assert_int_equal(tctx, 782, l, "right int read");
 	return true;
 }
@@ -97,35 +96,35 @@ static bool test_pull_uint32(struct torture_context *tctx)
 {
 	uint8_t d[4] = { 782 & 0xFF, (782 & 0xFF00) / 0x100, 0, 0 };
 	uint32_t l;
-	struct tdr_pull tdr;
-	tdr.data.data = d;
-	tdr.data.length = 4;
-	tdr.offset = 0;
-	tdr.flags = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_uint32(&tdr, tctx, &l), 
+	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	tdr->data.data = d;
+	tdr->data.length = 4;
+	tdr->offset = 0;
+	tdr->flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_uint32(tdr, tctx, &l), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 4, tdr.offset, "offset invalid");
+	torture_assert_int_equal(tctx, 4, tdr->offset, "offset invalid");
 	torture_assert_int_equal(tctx, 782, l, "right int read");
 	return true;
 }
 
 static bool test_pull_charset(struct torture_context *tctx)
 {
-	struct tdr_pull tdr;
+	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
 	const char *l = NULL;
-	tdr.data.data = (uint8_t *)talloc_strdup(tctx, "bla");
-	tdr.data.length = 4;
-	tdr.offset = 0;
-	tdr.flags = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, -1, 1, CH_DOS), 
+	tdr->data.data = (uint8_t *)talloc_strdup(tctx, "bla");
+	tdr->data.length = 4;
+	tdr->offset = 0;
+	tdr->flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(tdr, tctx, &l, -1, 1, CH_DOS), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 4, tdr.offset, "offset invalid");
+	torture_assert_int_equal(tctx, 4, tdr->offset, "offset invalid");
 	torture_assert_str_equal(tctx, "bla", l, "right int read");
 
-	tdr.offset = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, 2, 1, CH_UNIX), 
+	tdr->offset = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(tdr, tctx, &l, 2, 1, CH_UNIX), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 2, tdr.offset, "offset invalid");
+	torture_assert_int_equal(tctx, 2, tdr->offset, "offset invalid");
 	torture_assert_str_equal(tctx, "bl", l, "right int read");
 
 	return true;
@@ -133,15 +132,15 @@ static bool test_pull_charset(struct torture_context *tctx)
 
 static bool test_pull_charset_empty(struct torture_context *tctx)
 {
-	struct tdr_pull tdr;
+	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
 	const char *l = NULL;
-	tdr.data.data = (uint8_t *)talloc_strdup(tctx, "bla");
-	tdr.data.length = 4;
-	tdr.offset = 0;
-	tdr.flags = 0;
-	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(&tdr, tctx, &l, 0, 1, CH_DOS), 
+	tdr->data.data = (uint8_t *)talloc_strdup(tctx, "bla");
+	tdr->data.length = 4;
+	tdr->offset = 0;
+	tdr->flags = 0;
+	torture_assert_ntstatus_ok(tctx, tdr_pull_charset(tdr, tctx, &l, 0, 1, CH_DOS), 
 							   "pull failed");
-	torture_assert_int_equal(tctx, 0, tdr.offset, "offset invalid");
+	torture_assert_int_equal(tctx, 0, tdr->offset, "offset invalid");
 	torture_assert_str_equal(tctx, "", l, "right string read");
 
 	return true;

@@ -374,7 +374,7 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, TALLOC_CTX *ctx, DATA_BLOB *bl
 
 struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic)
 {
-	struct tdr_push *push = talloc_zero(NULL, struct tdr_push);
+	struct tdr_push *push = talloc_zero(mem_ctx, struct tdr_push);
 
 	if (push == NULL)
 		return NULL;
@@ -382,6 +382,18 @@ struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience
 	push->iconv_convenience = talloc_reference(push, ic);
 
 	return push;
+}
+
+struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic)
+{
+	struct tdr_pull *pull = talloc_zero(mem_ctx, struct tdr_pull);
+
+	if (pull == NULL)
+		return NULL;
+
+	pull->iconv_convenience = talloc_reference(pull, ic);
+
+	return pull;
 }
 
 NTSTATUS tdr_push_to_fd(int fd, struct smb_iconv_convenience *iconv_convenience, tdr_push_fn_t push_fn, const void *p)
