@@ -4,7 +4,12 @@ include $(top_srcdir)/Makefile.am.common
 
 AM_CPPFLAGS += $(INCLUDE_hcrypto) -I$(srcdir)/../lib/krb5
 
-man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1 kimpersonate.1
+man_MANS = \
+	kinit.1 \
+	klist.1 \
+	kdestroy.1 \
+	kgetcred.1 \
+	kimpersonate.1
 
 SLC = $(top_builddir)/lib/sl/slc
 
@@ -12,7 +17,6 @@ bin_PROGRAMS = kinit klist kdestroy kgetcred
 libexec_PROGRAMS = kdigest kimpersonate
 
 noinst_PROGRAMS = kverify kdecode_ticket generate-requests copy_cred_cache
-noinst_MANS = copy_cred_cache.1
 
 kinit_LDADD = \
 	$(LIB_kafs) \
@@ -56,4 +60,5 @@ LDADD = \
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && rm -f kauth && $(LN_S) kinit kauth)
 
-EXTRA_DIST = $(man_MANS) kuser_locl.h kdigest-commands.in
+EXTRA_DIST = $(man_MANS) kuser_locl.h kdigest-commands.in copy_cred_cache.1
+
