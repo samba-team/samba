@@ -242,6 +242,7 @@ typedef uint64_t NTTIME;
 
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
+#define LOOKUP_NAME_NONE		0x00000000
 #define LOOKUP_NAME_ISOLATED             0x00000001  /* Look up unqualified names */
 #define LOOKUP_NAME_REMOTE               0x00000002  /* Ask others */
 #define LOOKUP_NAME_GROUP                0x00000004  /* (unused) This is a NASTY hack for 
@@ -250,7 +251,14 @@ typedef uint64_t NTTIME;
 #define LOOKUP_NAME_EXPLICIT             0x00000008  /* Only include
 							explicitly mapped names and not 
 							the Unix {User,Group} domain */
-#define LOOKUP_NAME_ALL                  (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
+#define LOOKUP_NAME_BUILTIN		0x00000010 /* builtin names */
+#define LOOKUP_NAME_WKN			0x00000020 /* well known names */
+#define LOOKUP_NAME_DOMAIN		0x00000040 /* only lookup own domain */
+#define LOOKUP_NAME_ALL			(LOOKUP_NAME_ISOLATED\
+					|LOOKUP_NAME_REMOTE\
+					|LOOKUP_NAME_BUILTIN\
+					|LOOKUP_NAME_WKN\
+					|LOOKUP_NAME_DOMAIN)
 
 /**
  * @brief Security Identifier
