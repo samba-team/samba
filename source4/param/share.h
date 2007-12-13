@@ -49,7 +49,8 @@ struct share_info {
 
 struct share_ops {
 	const char *name;
-	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct share_context **);
+	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct loadparm_context *lp_ctx,
+			 struct share_context **);
 	const char *(*string_option)(struct share_config *, const char *, const char *);
 	int (*int_option)(struct share_config *, const char *, int);
 	bool (*bool_option)(struct share_config *, const char *, bool);

@@ -25,6 +25,7 @@
 
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, 
 			      const struct share_ops *ops, 
+			      struct loadparm_context *lp_ctx,
 			      struct share_context **ctx)
 {
 	*ctx = talloc(mem_ctx, struct share_context);
@@ -34,7 +35,7 @@ static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx,
 	}
 
 	(*ctx)->ops = ops;
-	(*ctx)->priv_data = global_loadparm;
+	(*ctx)->priv_data = lp_ctx;
 
 	return NT_STATUS_OK;
 }

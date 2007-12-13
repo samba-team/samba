@@ -127,6 +127,7 @@ NTSTATUS share_register(const struct share_ops *ops)
 }
 
 NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name,
+				   struct loadparm_context *lp_ctx,
 				   struct share_context **ctx)
 {
 	const struct share_ops *ops;
@@ -137,7 +138,7 @@ NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return ops->init(mem_ctx, ops, ctx);
+	return ops->init(mem_ctx, ops, lp_ctx, ctx);
 }
 
 /*

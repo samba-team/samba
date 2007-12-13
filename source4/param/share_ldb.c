@@ -27,7 +27,8 @@
 #include "param/share.h"
 #include "param/param.h"
 
-static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct share_context **ctx)
+static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, struct loadparm_context *lp_ctx,
+			  struct share_context **ctx)
 {
 	struct ldb_context *sdb;
 
@@ -37,9 +38,9 @@ static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	sdb = ldb_wrap_connect(*ctx, global_loadparm, 
-			       private_path(*ctx, global_loadparm, "share.ldb"),
-			       system_session(*ctx, global_loadparm),
+	sdb = ldb_wrap_connect(*ctx, lp_ctx, 
+			       private_path(*ctx, lp_ctx, "share.ldb"),
+			       system_session(*ctx, lp_ctx),
 			       NULL, 0, NULL);
 
 	if (!sdb) {
