@@ -28,7 +28,6 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/finddcs.h"
-#include "param/param.h"
 
 struct finddcs_state {
 	struct composite_context *ctx;
@@ -63,6 +62,7 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req);
 
 struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 				       const char *my_netbios_name,
+				       uint16_t nbt_port,
 				       const char *domain_name,
 				       int name_type,
 				       struct dom_sid *domain_sid,
@@ -83,7 +83,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 
 	state->ctx = c;
 
-	state->nbt_port = lp_nbt_port(global_loadparm);
+	state->nbt_port = nbt_port;
 	state->my_netbios_name = talloc_strdup(state, my_netbios_name);
 	state->domain_name = talloc_strdup(state, domain_name);
 	if (composite_nomem(state->domain_name, c)) return c;
@@ -250,6 +250,7 @@ NTSTATUS finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
 NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 const char *my_netbios_name,
+		 uint16_t nbt_port,
 		 const char *domain_name, int name_type, 
 		 struct dom_sid *domain_sid,
 		 struct resolve_context *resolve_ctx,
@@ -259,6 +260,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c = finddcs_send(mem_ctx,
 						   my_netbios_name,
+						   nbt_port,
 						   domain_name, name_type,
 						   domain_sid, resolve_ctx,
 						   event_ctx, msg_ctx);
