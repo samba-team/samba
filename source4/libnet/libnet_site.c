@@ -159,7 +159,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	r->in.dest_address = dest_addr;
 	r->in.netbios_name = libnet_r->in.netbios_name;
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
-	r->in.cldap_port = lp_cldap_port(global_loadparm);
+	r->in.cldap_port = lp_cldap_port(ctx->lp_ctx);
 
 	status = libnet_FindSite(tmp_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
