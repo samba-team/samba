@@ -32,9 +32,9 @@ struct resolve_context *lp_resolve_context(struct loadparm_context *lp_ctx)
 
 	for (i = 0; methods != NULL && methods[i] != NULL; i++) {
 		if (!strcmp(methods[i], "wins")) {
-			resolve_context_add_wins_method(ret, lp_wins_server_list(lp_ctx));
+			resolve_context_add_wins_method_lp(ret, lp_ctx);
 		} else if (!strcmp(methods[i], "bcast")) {
-			resolve_context_add_bcast_method(ret, lp_ctx);
+			resolve_context_add_bcast_method_lp(ret, lp_ctx);
 		} else if (!strcmp(methods[i], "host")) {
 			resolve_context_add_host_method(ret);
 		} else {

@@ -23,9 +23,12 @@
 #include "libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "lib/socket/netif.h"
 
 struct resolve_wins_data {
 	const char **address_list;
+	struct interface *ifaces;
+	uint16_t nbt_port;
 };
 
 /**
@@ -39,7 +42,7 @@ struct composite_context *resolve_name_wins_send(
 {
 	struct resolve_wins_data *wins_data = talloc_get_type(userdata, struct resolve_wins_data);
 	if (wins_data->address_list == NULL) return NULL;
-	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, wins_data->address_list, false, true);
+	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, wins_data->address_list, wins_data->ifaces, wins_data->nbt_port, false, true);
 }
 
 /*
@@ -57,19 +60,32 @@ NTSTATUS resolve_name_wins_recv(struct composite_context *c,
 NTSTATUS resolve_name_wins(struct nbt_name *name, 
 			    TALLOC_CTX *mem_ctx,
 			    const char **address_list,
+			    struct interface *ifaces,
+			    uint16_t nbt_port,
 			    const char **reply_addr)
 {
 	struct composite_context *c;
 	struct resolve_wins_data *wins_data = talloc(mem_ctx, struct resolve_wins_data);
 	wins_data->address_list = address_list;
+	wins_data->ifaces = ifaces;
+	wins_data->nbt_port = nbt_port;
 	c = resolve_name_wins_send(mem_ctx, NULL, wins_data, name);
 	return resolve_name_wins_recv(c, mem_ctx, reply_addr);
 }
 
-bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list)
+bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list, struct interface *ifaces, uint16_t nbt_port)
 {
 	struct resolve_wins_data *wins_data = talloc(ctx, struct resolve_wins_data);
 	wins_data->address_list = str_list_copy(wins_data, address_list);
+	wins_data->ifaces = talloc_reference(wins_data, ifaces);
+	wins_data->nbt_port = nbt_port;
 	return resolve_context_add_method(ctx, resolve_name_wins_send, resolve_name_wins_recv,
 					  wins_data);
+}
+
+bool resolve_context_add_wins_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
+{
+	struct interface *ifaces;
+	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
+	return resolve_context_add_wins_method(ctx, lp_wins_server_list(lp_ctx), ifaces, lp_nbt_port(lp_ctx));
 }

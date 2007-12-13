@@ -4,6 +4,7 @@
    broadcast name resolution module
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +26,11 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 
+struct resolve_bcast_data {
+	struct interface *ifaces;
+	uint16_t nbt_port;
+};
+
 /**
   broadcast name resolution method - async send
  */
@@ -37,15 +43,15 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	const char **address_list;
 	struct composite_context *c;
 	int i, count=0;
-	struct interface *ifaces = userdata;
+	struct resolve_bcast_data *data = talloc_get_type(userdata, struct resolve_bcast_data);
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_count(data->ifaces);
 
 	address_list = talloc_array(mem_ctx, const char *, num_interfaces+1);
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_n_bcast(ifaces, i);
+		const char *bcast = iface_n_bcast(data->ifaces, i);
 		if (bcast == NULL) continue;
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {
@@ -56,7 +62,7 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, true, false);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, data->ifaces, data->nbt_port, true, false);
 	talloc_free(address_list);
 
 	return c;	
@@ -77,16 +83,29 @@ NTSTATUS resolve_name_bcast_recv(struct composite_context *c,
 NTSTATUS resolve_name_bcast(struct nbt_name *name, 
 			    TALLOC_CTX *mem_ctx,
 			    struct interface *ifaces,
+			    uint16_t nbt_port,
 			    const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_bcast_send(mem_ctx, NULL, ifaces, name);
+	struct resolve_bcast_data *data = talloc(mem_ctx, struct resolve_bcast_data);
+	struct composite_context *c;
+	data->ifaces = talloc_reference(data, ifaces);
+	data->nbt_port = nbt_port;
+	
+	c = resolve_name_bcast_send(mem_ctx, NULL, data, name);
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
-bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
+bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port)
+{
+	struct resolve_bcast_data *data = talloc(ctx, struct resolve_bcast_data);
+	data->ifaces = ifaces;
+	data->nbt_port = nbt_port;
+	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv, data);
+}
+
+bool resolve_context_add_bcast_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	struct interface *ifaces;
 	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
-	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv,
-					  ifaces);
+	return resolve_context_add_bcast_method(ctx, ifaces, lp_nbt_port(lp_ctx));
 }
