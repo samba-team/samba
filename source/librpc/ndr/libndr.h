@@ -52,6 +52,8 @@ struct ndr_pull {
 	uint32_t data_size;
 	uint32_t offset;
 
+	struct smb_iconv_convenience *iconv_convenience;
+
 	uint32_t relative_base_offset;
 	struct ndr_token_list *relative_base_list;
 
@@ -84,6 +86,8 @@ struct ndr_push {
 
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;
+
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 /* structure passed to functions that print IDL structures */
