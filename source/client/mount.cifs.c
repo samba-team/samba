@@ -757,7 +757,7 @@ static char * check_for_domain(char **ppuser)
 	if(domainnm == NULL)
 		return NULL;
 
-	strcpy(domainnm,*ppuser);
+	strlcpy(domainnm,*ppuser,len+1);
 
 /*	move_string(*ppuser, usernm+1) */
 	len = strlen(usernm+1);
