@@ -68,7 +68,9 @@ static void task_server_callback(struct event_context *event_ctx,
 
 	task->msg_ctx = messaging_init(task, 
 				       lp_messaging_path(task, task->lp_ctx),
-				       task->server_id, task->event_ctx);
+				       task->server_id, 
+				       lp_iconv_convenience(task->lp_ctx),
+				       task->event_ctx);
 	if (!task->msg_ctx) {
 		task_server_terminate(task, "messaging_init() failed");
 		return;

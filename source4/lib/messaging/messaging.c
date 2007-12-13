@@ -49,6 +49,7 @@ struct messaging_context {
 	struct idr_context *dispatch_tree;
 	struct messaging_rec *pending;
 	struct messaging_rec *retry_queue;
+	struct smb_iconv_convenience *iconv_convenience;
 	struct irpc_list *irpc;
 	struct idr_context *idr;
 	const char **names;
@@ -532,6 +533,7 @@ static int messaging_destructor(struct messaging_context *msg)
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 const char *dir,
 					 struct server_id server_id, 
+					 struct smb_iconv_convenience *iconv_convenience,
 					 struct event_context *ev)
 {
 	struct messaging_context *msg;
@@ -560,6 +562,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	msg->base_path     = talloc_reference(msg, dir);
 	msg->path          = messaging_path(msg, server_id);
 	msg->server_id     = server_id;
+	msg->iconv_convenience = iconv_convenience;
 	msg->idr           = idr_init(msg);
 	msg->dispatch_tree = idr_init(msg);
 	msg->start_time    = timeval_current();
@@ -609,12 +612,13 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 */
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
 						const char *dir,
+						struct smb_iconv_convenience *iconv_convenience,
 						struct event_context *ev)
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
 	id.id = random() % 0x10000000;
-	return messaging_init(mem_ctx, dir, id, ev);
+	return messaging_init(mem_ctx, dir, id, iconv_convenience, ev);
 }
 /*
   a list of registered irpc server functions
@@ -698,7 +702,7 @@ NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 	m->header.status = status;
 
 	/* setup the reply */
-	push = ndr_push_init_ctx(m->ndr, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(m->ndr, m->msg_ctx->iconv_convenience);
 	if (push == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -798,7 +802,7 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 
 	m->from = src;
 
-	m->ndr = ndr_pull_init_blob(packet, m, lp_iconv_convenience(global_loadparm));
+	m->ndr = ndr_pull_init_blob(packet, m, msg_ctx->iconv_convenience);
 	if (m->ndr == NULL) goto failed;
 
 	m->ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -890,7 +894,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	header.status     = NT_STATUS_OK;
 
 	/* construct the irpc packet */
-	ndr = ndr_push_init_ctx(irpc, lp_iconv_convenience(global_loadparm));
+	ndr = ndr_push_init_ctx(irpc, msg_ctx->iconv_convenience);
 	if (ndr == NULL) goto failed;
 
 	ndr_err = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);

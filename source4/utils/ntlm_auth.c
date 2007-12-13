@@ -471,7 +471,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!ev) {
 				exit(1);
 			}
-			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), ev);
+			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), 
+						    lp_iconv_convenience(lp_ctx), ev);
 			if (!msg) {
 				exit(1);
 			}
