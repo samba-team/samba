@@ -69,6 +69,10 @@ EXTRA_DIST = \
 	ntlm.din \
 	hx509.din \
 	hcrypto.din \
+	heimdal.css \
+	init-creds \
+	latin1.tex \
+	layman.asc \
 	doxytmpl.dxy \
 	vars.tin
 
