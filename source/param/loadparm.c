@@ -2254,9 +2254,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			char **r;
 			if (parm_table[i].class == P_LOCAL) {
-				r = (char **)(&sDefault + parm_table[i].offset);
+				r = (char **)(((char *)&sDefault) + parm_table[i].offset);
 			} else {
-				r = (char **)(lp_ctx->globals + parm_table[i].offset);
+				r = (char **)(((char *)lp_ctx->globals) + parm_table[i].offset);
 			}
 			*r = talloc_strdup(lp_ctx, "");
 		}
