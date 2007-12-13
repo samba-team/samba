@@ -326,9 +326,7 @@ static void trustdom_recv(void *private_data, bool success)
 						    &sid);
 			if (domain) {
 				setup_domain_child(domain,
-						   &domain->child,
-						   domain_dispatch_table,
-						   NULL);
+						   &domain->child);
 			}
 		}
 		p=q;
@@ -698,9 +696,7 @@ bool init_domain_list(void)
 				    &global_sid_Builtin);
 	if (domain) {
 		setup_domain_child(domain,
-				   &domain->child,
-				   domain_dispatch_table,
-				   NULL);
+				   &domain->child);
 	}
 
 	/* Local SAM */
@@ -712,9 +708,7 @@ bool init_domain_list(void)
 			domain->primary = True;
 		}
 		setup_domain_child(domain,
-				   &domain->child,
-				   domain_dispatch_table,
-				   NULL);
+				   &domain->child);
 	}
 
 	/* Add ourselves as the first entry. */
@@ -732,9 +726,7 @@ bool init_domain_list(void)
 		if (domain) {
 			domain->primary = True;
 			setup_domain_child(domain,
-					   &domain->child,
-					   domain_dispatch_table,
-					   NULL);
+					   &domain->child);
 
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can
@@ -781,9 +773,7 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	domain->online = True;	
 
 	setup_domain_child(domain,
-			   &domain->child,
-			   domain_dispatch_table,
-			   NULL);
+			   &domain->child);
 
 	wcache_tdc_add_domain( domain );
 
