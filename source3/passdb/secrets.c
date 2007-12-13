@@ -284,26 +284,18 @@ uint32 get_default_sec_channel(void)
 
 /************************************************************************
  Routine to get the trust account password for a domain.
+ This only tries to get the legacy hashed version of the password.
  The user of this function must have locked the trust password file using
  the above secrets_lock_trust_account_password().
 ************************************************************************/
 
-bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
-					  time_t *pass_last_set_time,
-					  uint32 *channel)
+bool secrets_fetch_trust_account_password_legacy(const char *domain,
+						 uint8 ret_pwd[16],
+						 time_t *pass_last_set_time,
+						 uint32 *channel)
 {
 	struct machine_acct_pass *pass;
-	char *plaintext;
 	size_t size = 0;
-
-	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time,
-						   channel);
-	if (plaintext) {
-		DEBUG(4,("Using cleartext machine password\n"));
-		E_md4hash(plaintext, ret_pwd);
-		SAFE_FREE(plaintext);
-		return True;
-	}
 
 	if (!(pass = (struct machine_acct_pass *)secrets_fetch(
 		      trust_keystr(domain), &size))) {
@@ -335,6 +327,32 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 
 	SAFE_FREE(pass);
 	return True;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain.
+ The user of this function must have locked the trust password file using
+ the above secrets_lock_trust_account_password().
+************************************************************************/
+
+bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
+					  time_t *pass_last_set_time,
+					  uint32 *channel)
+{
+	char *plaintext;
+
+	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time,
+						   channel);
+	if (plaintext) {
+		DEBUG(4,("Using cleartext machine password\n"));
+		E_md4hash(plaintext, ret_pwd);
+		SAFE_FREE(plaintext);
+		return True;
+	}
+
+	return secrets_fetch_trust_account_password_legacy(domain, ret_pwd,
+							   pass_last_set_time,
+							   channel);
 }
 
 /**
@@ -558,20 +576,6 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	return True;
 }
 
-/************************************************************************
- Routine to set the trust account password for a domain.
-************************************************************************/
-
-bool secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
-{
-	struct machine_acct_pass pass;
-
-	pass.mod_time = time(NULL);
-	memcpy(pass.hash, new_pwd, 16);
-
-	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
-}
-
 /**
  * Routine to store the password for trusted domain
  *
@@ -719,15 +723,6 @@ char *secrets_fetch_machine_password(const char *domain,
 	}
 
 	return ret;
-}
-
-/************************************************************************
- Routine to delete the machine trust account password file for a domain.
-************************************************************************/
-
-bool trust_password_delete(const char *domain)
-{
-	return secrets_delete(trust_keystr(domain));
 }
 
 /************************************************************************
