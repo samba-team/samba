@@ -125,6 +125,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", user );
     }
 
+    if (geteuid() != 0) {
+	_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
+	return PAM_AUTHINFO_UNAVAIL;
+    }
+
     /* Getting into places that might use LDAP -- protect the app
        from a SIGPIPE it's not expecting */
     oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);

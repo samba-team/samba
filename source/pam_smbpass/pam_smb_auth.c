@@ -101,6 +101,12 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		_log_err( LOG_DEBUG, "username [%s] obtained", name );
 	}
 
+	if (geteuid() != 0) {
+		_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
+		retval = PAM_AUTHINFO_UNAVAIL;
+		AUTH_RETURN;
+	}
+
 	if (!initialize_password_db(True)) {
 		_log_err( LOG_ALERT, "Cannot access samba password database" );
 		retval = PAM_AUTHINFO_UNAVAIL;
