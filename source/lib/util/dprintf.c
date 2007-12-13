@@ -32,6 +32,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
+#include "param/param.h"
 
 _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
@@ -55,7 +56,7 @@ again:
 		SAFE_FREE(p);
 		return -1;
 	}
-	clen = convert_string(global_smb_iconv_convenience, CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
+	clen = convert_string(lp_iconv_convenience(global_loadparm), CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
         if (clen == -1) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */

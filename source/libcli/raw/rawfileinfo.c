@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "param/param.h"
 
 /* local macros to make the code more readable */
 #define FINFO_CHECK_MIN_SIZE(size) if (blob->length < (size)) { \
@@ -62,7 +63,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
 		size = convert_string_talloc(io->streams, 
-					     global_smb_iconv_convenience,
+					     lp_iconv_convenience(global_loadparm),
 					     CH_UTF16, CH_UNIX,
 					     blob.data+ofs+24, nlen, &vstr);
 		if (size == -1) {

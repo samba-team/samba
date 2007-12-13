@@ -23,6 +23,7 @@
 #include "lib/registry/registry.h"
 #include "lib/registry/patchfile.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 struct preg_data {
 	int fd;
@@ -35,7 +36,7 @@ static WERROR preg_read_utf16(int fd, char *c)
 	if (read(fd, &v, 2) < 2) {
 		return WERR_GENERAL_FAILURE;
 	}
-	push_codepoint(global_smb_iconv_convenience, c, v);
+	push_codepoint(lp_iconv_convenience(global_loadparm), c, v);
 	return WERR_OK;
 }
 

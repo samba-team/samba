@@ -26,6 +26,7 @@
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "param/param.h"
 
 /*
   hold the state of a nttrans op while in progress. Needed to allow for async backend
@@ -372,7 +373,7 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 		ssize_t len;
 
 		SIVAL(p, 4, info->nttrans.out.changes[i].action);
-		len = push_string(global_smb_iconv_convenience, p + 12, info->nttrans.out.changes[i].name.s, 
+		len = push_string(lp_iconv_convenience(global_loadparm), p + 12, info->nttrans.out.changes[i].name.s, 
 				  op->trans->out.params.length - 
 				  (p+12 - op->trans->out.params.data), STR_UNICODE);
 		SIVAL(p, 8, len);

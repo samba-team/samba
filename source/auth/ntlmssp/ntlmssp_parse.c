@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "pstring.h"
+#include "param/param.h"
 
 /*
   this is a tiny msrpc packet generator. I am only using this to
@@ -64,7 +65,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ucs2_talloc(pointers, global_smb_iconv_convenience, (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, lp_iconv_convenience(global_loadparm), (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -75,7 +76,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ascii_talloc(pointers, global_smb_iconv_convenience, (char **)&pointers[i].data, s);
+			n = push_ascii_talloc(pointers, lp_iconv_convenience(global_loadparm), (char **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -87,7 +88,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			n = va_arg(ap, int);
 			intargs[i] = n;
 			s = va_arg(ap, char *);
-			n = push_ucs2_talloc(pointers, global_smb_iconv_convenience, (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, lp_iconv_convenience(global_loadparm), (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -243,7 +244,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				}
 
 				if (0 < len1) {
-					pull_string(global_smb_iconv_convenience, p, blob->data + ptr, p_len, 
+					pull_string(lp_iconv_convenience(global_loadparm), p, blob->data + ptr, p_len, 
 						    len1, STR_UNICODE|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -278,7 +279,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				}
 
 				if (0 < len1) {
-					pull_string(global_smb_iconv_convenience, p, blob->data + ptr, p_len, 
+					pull_string(lp_iconv_convenience(global_loadparm), p, blob->data + ptr, p_len, 
 						    len1, STR_ASCII|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -343,7 +344,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				goto cleanup;
 			}
 
-			head_ofs += pull_string(global_smb_iconv_convenience, p,
+			head_ofs += pull_string(lp_iconv_convenience(global_loadparm), p,
 					blob->data+head_ofs, p_len,
 					blob->length - head_ofs,
 					STR_ASCII|STR_TERMINATE);

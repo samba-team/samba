@@ -29,6 +29,7 @@
  */
 
 #include "includes.h"
+#include "param/param.h"
 
 static int null_match(const char *p)
 {
@@ -64,7 +65,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 	int i;
 	size_t size, size_n;
 
-	while ((c = next_codepoint(global_smb_iconv_convenience, p, &size))) {
+	while ((c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &size))) {
 		p += size;
 
 		switch (c) {
@@ -74,7 +75,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return null_match(p);
 			}
 			for (i=0; n[i]; i += size_n) {
-				next_codepoint(global_smb_iconv_convenience, n+i, &size_n);
+				next_codepoint(lp_iconv_convenience(global_loadparm), n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) {
 					return 0;
 				}
@@ -93,7 +94,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return -1;
 			}
 			for (i=0; n[i]; i += size_n) {
-				next_codepoint(global_smb_iconv_convenience, n+i, &size_n);
+				next_codepoint(lp_iconv_convenience(global_loadparm), n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) return 0;
 				if (n+i == ldot) {
 					if (ms_fnmatch_core(p, n+i+size_n, max_n+1, ldot) == 0) return 0;
@@ -109,7 +110,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 			if (! *n) {
 				return -1;
 			}
-			next_codepoint(global_smb_iconv_convenience, n, &size_n);
+			next_codepoint(lp_iconv_convenience(global_loadparm), n, &size_n);
 			n += size_n;
 			break;
 
@@ -123,7 +124,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				break;
 			}
 			if (! *n) return null_match(p);
-			next_codepoint(global_smb_iconv_convenience, n, &size_n);
+			next_codepoint(lp_iconv_convenience(global_loadparm), n, &size_n);
 			n += size_n;
 			break;
 
@@ -133,12 +134,12 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				return 0;
 			}
 			if (*n != '.') return -1;
-			next_codepoint(global_smb_iconv_convenience, n, &size_n);
+			next_codepoint(lp_iconv_convenience(global_loadparm), n, &size_n);
 			n += size_n;
 			break;
 
 		default:
-			c2 = next_codepoint(global_smb_iconv_convenience, n, &size_n);
+			c2 = next_codepoint(lp_iconv_convenience(global_loadparm), n, &size_n);
 			if (c != c2 && codepoint_cmpi(c, c2) != 0) {
 				return -1;
 			}

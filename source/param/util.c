@@ -283,13 +283,6 @@ _PUBLIC_ const char *lp_messaging_path(TALLOC_CTX *mem_ctx,
 	return smbd_tmp_path(mem_ctx, lp_ctx, "messaging");
 }
 
-struct smb_iconv_convenience *global_smb_iconv_convenience = NULL;
-
-struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx)
-{
-	return global_smb_iconv_convenience;
-}
-
 struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 							 struct loadparm_context *lp_ctx)
 {
@@ -299,8 +292,4 @@ struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 		lp_parm_bool(lp_ctx, NULL, "iconv", "native", true));
 }
 
-_PUBLIC_ void reload_charcnv(void)
-{
-	talloc_free(global_smb_iconv_convenience);
-	global_smb_iconv_convenience = smb_iconv_convenience_init_lp(talloc_autofree_context(), global_loadparm);
-}
+

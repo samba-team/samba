@@ -24,6 +24,7 @@
 #include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 {
@@ -352,7 +353,7 @@ static void smb2srv_notify_send(struct ntvfs_request *ntvfs)
 		ssize_t len;
 
 		SIVAL(p, 4, io->smb2.out.changes[i].action);
-		len = push_string(global_smb_iconv_convenience, p + 12, io->smb2.out.changes[i].name.s, 
+		len = push_string(lp_iconv_convenience(global_loadparm), p + 12, io->smb2.out.changes[i].name.s, 
 				  blob.length - (p+12 - blob.data), STR_UNICODE);
 		SIVAL(p, 8, len);
 

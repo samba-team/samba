@@ -26,6 +26,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "param/param.h"
 
 /*
   initialise a smb2 request
@@ -579,7 +580,7 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 		return NT_STATUS_OK;
 	}
 
-	size = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, 
+	size = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, 
 				     blob.data, blob.length, &vstr);
 	data_blob_free(&blob);
 	(*str) = (char *)vstr;
@@ -604,7 +605,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
 	}
 
-	size = convert_string_talloc(buf->buffer, global_smb_iconv_convenience, CH_UNIX, CH_UTF16, 
+	size = convert_string_talloc(buf->buffer, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16, 
 				     str, strlen(str), (void **)&blob.data);
 	if (size == -1) {
 		return NT_STATUS_ILLEGAL_CHARACTER;

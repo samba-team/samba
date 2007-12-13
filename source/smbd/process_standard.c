@@ -198,7 +198,7 @@ _NORETURN_ static void standard_terminate(struct event_context *ev, const char *
 
 	/* this reload_charcnv() has the effect of freeing the iconv context memory,
 	   which makes leak checking easier */
-	reload_charcnv();
+	reload_charcnv(global_loadparm);
 
 	/* the secrets db should really hang off the connection structure */
 	secrets_shutdown();

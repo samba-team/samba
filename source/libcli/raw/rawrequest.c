@@ -26,6 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
@@ -418,7 +419,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uin
 
 	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
-	len = push_string(global_smb_iconv_convenience, req->out.data + req->out.data_size, str, len, flags);
+	len = push_string(lp_iconv_convenience(global_loadparm), req->out.data + req->out.data_size, str, len, flags);
 
 	smbcli_req_grow_data(req, len + req->out.data_size);
 
@@ -574,7 +575,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest);
+	ret = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, src, src_len2, (void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -616,7 +617,7 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)dest);
+	ret = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_DOS, CH_UNIX, src, src_len2, (void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -769,7 +770,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 
 	src_len2 = utf16_len_n(src, src_len);
 
-	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -815,7 +816,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -965,7 +966,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 		return 0;
 	}
 
-	len = push_string(global_smb_iconv_convenience, blob->data + blob->length, str, max_len, flags);
+	len = push_string(lp_iconv_convenience(global_loadparm), blob->data + blob->length, str, max_len, flags);
 
 	blob->length += len;
 
