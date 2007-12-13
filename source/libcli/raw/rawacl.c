@@ -77,7 +77,8 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 
 	nt.out.data.length = IVAL(nt.out.params.data, 0);
 
-	ndr = ndr_pull_init_blob(&nt.out.data, mem_ctx);
+	ndr = ndr_pull_init_blob(&nt.out.data, mem_ctx, 
+				 lp_iconv_convenience(global_loadparm));
 	if (!ndr) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

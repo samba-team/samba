@@ -76,7 +76,7 @@ NTSTATUS samba3_read_share_info(const char *fn, TALLOC_CTX *ctx, struct samba3 *
 		blob.data = (uint8_t *)vbuf.dptr;
 		blob.length = vbuf.dsize;
 
-		pull = ndr_pull_init_blob(&blob, ctx);
+		pull = ndr_pull_init_blob(&blob, ctx, lp_iconv_convenience(global_loadparm));
 
 		ndr_pull_security_descriptor(pull, NDR_SCALARS|NDR_BUFFERS, &share->secdesc);
 

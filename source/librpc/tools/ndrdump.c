@@ -304,7 +304,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		blob.data = data;
 		blob.length = size;
 
-		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
@@ -341,7 +341,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	blob.data = data;
 	blob.length = size;
 
-	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	ndr_err = f->ndr_pull(ndr_pull, flags, st);
@@ -397,7 +397,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 			ndrdump_data(v_blob.data, v_blob.length, dumpdata);
 		}
 
-		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
+		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);

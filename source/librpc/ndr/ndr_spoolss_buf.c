@@ -121,7 +121,7 @@
 	r->out.count	= _r.out.count;\
 	r->out.result	= _r.out.result;\
 	if (_r.out.info) {\
-		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr);\
+		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr, ndr->iconv_convenience);\
 		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->in.offered != _ndr_info->data_size) {\
@@ -470,7 +470,7 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 		}
 		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
-			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);
+			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 			_ndr_data->flags= ndr->flags;
 			__r.in.type	= r->out.type;
