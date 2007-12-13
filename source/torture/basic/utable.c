@@ -50,7 +50,7 @@ bool torture_utable(struct torture_context *tctx,
 		SSVAL(c2, 0, c);
 		fstrcpy(fname, "\\utable\\x");
 		p = fname+strlen(fname);
-		len = convert_string(lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, 
+		len = convert_string(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
 				     c2, 2, 
 				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;

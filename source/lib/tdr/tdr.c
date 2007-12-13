@@ -176,7 +176,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(lp_iconv_convenience(global_loadparm), CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
+	ret = convert_string(tdr->iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -372,9 +372,21 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, TALLOC_CTX *ctx, DATA_BLOB *bl
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p)
+struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic)
 {
 	struct tdr_push *push = talloc_zero(NULL, struct tdr_push);
+
+	if (push == NULL)
+		return NULL;
+
+	push->iconv_convenience = talloc_reference(push, ic);
+
+	return push;
+}
+
+NTSTATUS tdr_push_to_fd(int fd, struct smb_iconv_convenience *iconv_convenience, tdr_push_fn_t push_fn, const void *p)
+{
+	struct tdr_push *push = tdr_push_init(NULL, iconv_convenience);
 
 	if (push == NULL)
 		return NT_STATUS_NO_MEMORY;

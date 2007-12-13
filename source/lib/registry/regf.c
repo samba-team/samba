@@ -24,6 +24,7 @@
 #include "lib/registry/tdr_regf.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "param/param.h"
 
 static struct hive_operations reg_backend_regf;
 
@@ -47,6 +48,7 @@ struct regf_data {
 	int fd;
 	struct hbin_block **hbins;
 	struct regf_hdr *header;
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 static WERROR regf_save_hbin(struct regf_data *data);
@@ -263,7 +265,7 @@ static uint32_t hbin_store (struct regf_data *data, DATA_BLOB blob)
 static uint32_t hbin_store_tdr(struct regf_data *data,
 			       tdr_push_fn_t push_fn, void *p)
 {
-	struct tdr_push *push = talloc_zero(data, struct tdr_push);
+	struct tdr_push *push = tdr_push_init(data, data->iconv_convenience);
 	uint32_t ret;
 
 	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
@@ -390,7 +392,7 @@ static uint32_t hbin_store_tdr_resize(struct regf_data *regf,
 				      tdr_push_fn_t push_fn,
 				      uint32_t orig_offset, void *p)
 {
-	struct tdr_push *push = talloc_zero(regf, struct tdr_push);
+	struct tdr_push *push = tdr_push_init(regf, regf->iconv_convenience);
 	uint32_t ret;
 
 	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
@@ -1788,7 +1790,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 
 static WERROR regf_save_hbin(struct regf_data *regf)
 {
-	struct tdr_push *push = talloc_zero(regf, struct tdr_push);
+	struct tdr_push *push = tdr_push_init(regf, regf->iconv_convenience);
 	int i;
 
 	W_ERROR_HAVE_NO_MEMORY(push);
@@ -1806,7 +1808,7 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 	regf->header->chksum = regf_hdr_checksum(push->data.data);
 	talloc_free(push);
 
-	if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd,
+	if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, regf->iconv_convenience,
 					    (tdr_push_fn_t)tdr_push_regf_hdr,
 					    regf->header))) {
 		DEBUG(0, ("Error writing registry file header\n"));
@@ -1819,7 +1821,7 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 	}
 
 	for (i = 0; regf->hbins[i]; i++) {
-		if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd,
+		if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, regf->iconv_convenience,
 						    (tdr_push_fn_t)tdr_push_hbin_block,
 						    regf->hbins[i]))) {
 			DEBUG(0, ("Error writing HBIN block\n"));
@@ -1841,6 +1843,8 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	WERROR error;
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
+
+	regf->iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 
@@ -1926,6 +1930,8 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 	int i;
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
+
+	regf->iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 
