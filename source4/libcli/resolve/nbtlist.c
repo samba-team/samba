@@ -100,6 +100,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 						    struct event_context *event_ctx,
 						    struct nbt_name *name, 
 						    const char **address_list,
+						    struct interface *ifaces,
+						    uint16_t nbt_port,
 						    bool broadcast,
 						    bool wins_lookup)
 {
@@ -127,7 +129,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 		if (composite_nomem(state->name.scope, c)) return c;
 	}
 
-	load_interfaces(state, lp_interfaces(global_loadparm), &state->ifaces);
+	state->ifaces = talloc_reference(state, ifaces);
 
 	/*
 	 * we can't push long names on the wire,
@@ -154,7 +156,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	for (i=0;i<state->num_queries;i++) {
 		state->io_queries[i].in.name        = state->name;
 		state->io_queries[i].in.dest_addr   = talloc_strdup(state->io_queries, address_list[i]);
-		state->io_queries[i].in.dest_port   = lp_nbt_port(global_loadparm);
+		state->io_queries[i].in.dest_port   = nbt_port;
 		if (composite_nomem(state->io_queries[i].in.dest_addr, c)) return c;
 
 		state->io_queries[i].in.broadcast   = broadcast;
@@ -197,11 +199,14 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 NTSTATUS resolve_name_nbtlist(struct nbt_name *name, 
 			      TALLOC_CTX *mem_ctx,
 			      const char **address_list,
+			      struct interface *ifaces, 
+			      uint16_t nbt_port,
 			      bool broadcast, bool wins_lookup,
 			      const char **reply_addr)
 {
 	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
 								name, address_list, 
+								ifaces, nbt_port,
 							        broadcast, wins_lookup);
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }
