@@ -289,7 +289,7 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &gpd2);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterDriver2 failed");
 	torture_assert_werr_ok(tctx, gpd2.out.result,
-			"GetPrinterDricer2 failed.");
+			"GetPrinterDriver2 failed.");
 
 	return true;
 }
