@@ -2464,6 +2464,12 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	reload_charcnv(lp_ctx);
 
+	/* FIXME: Check locale in environment for this: */
+	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
+		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx), true));
+	else
+		d_set_iconv((smb_iconv_t)-1);
+
 	return bRetval;
 }
 
@@ -2581,7 +2587,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_c
 {
 	if (lp_ctx == NULL) {
 		return smb_iconv_convenience_init(talloc_autofree_context(), 
-						  "CP850", "UTF8", "UTF8", true);
+						  "CP850", "UTF8", true);
 	}
 	return lp_ctx->iconv_convenience;
 }

@@ -42,7 +42,6 @@
 struct smb_iconv_convenience {
 	const char *unix_charset;
 	const char *dos_charset;
-	const char *display_charset;
 	bool native_iconv;
 	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 };
@@ -57,7 +56,6 @@ static const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
 	case CH_UTF16: return "UTF-16LE";
 	case CH_UNIX: return ic->unix_charset;
 	case CH_DOS: return ic->dos_charset;
-	case CH_DISPLAY: return ic->display_charset;
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
 	default:
@@ -88,7 +86,6 @@ static int close_iconv(struct smb_iconv_convenience *data)
 struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *dos_charset,
 							 const char *unix_charset,
-							 const char *display_charset,
 							 bool native_iconv)
 {
 	struct smb_iconv_convenience *ret = talloc_zero(mem_ctx, 
@@ -102,7 +99,6 @@ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 
 	ret->dos_charset = talloc_strdup(ret, dos_charset);
 	ret->unix_charset = talloc_strdup(ret, unix_charset);
-	ret->display_charset = talloc_strdup(ret, display_charset);
 	ret->native_iconv = native_iconv;
 
 	return ret;
