@@ -337,6 +337,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
+			 struct loadparm_context *lp_ctx,
 			 struct hive_key **k)
 {
 	struct ldb_key_data *kd;

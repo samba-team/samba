@@ -500,7 +500,7 @@ int main(int argc, char **argv)
 		ctx->registry = reg_common_open_remote(remote, cmdline_lp_ctx, 
 						       cmdline_credentials);
 	} else if (file != NULL) {
-		ctx->current = reg_common_open_file(file, cmdline_credentials);
+		ctx->current = reg_common_open_file(file, cmdline_lp_ctx, cmdline_credentials);
 		if (ctx->current == NULL)
 			return 1;
 		ctx->registry = ctx->current->context;

@@ -144,6 +144,7 @@ struct auth_session_info;
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 		     struct auth_session_info *session_info,
 		     struct cli_credentials *credentials,
+		     struct loadparm_context *lp_ctx,
 		     struct hive_key **root);
 WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 			 const char **classname, uint32_t *num_subkeys,
@@ -183,10 +184,12 @@ WERROR hive_key_flush(struct hive_key *key);
 WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 			  const char *location, struct hive_key **key);
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
-			  const char *location, struct hive_key **key);
+			  const char *location, struct loadparm_context *lp_ctx,
+			  struct hive_key **key);
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
+			 struct loadparm_context *lp_ctx,
 			 struct hive_key **k);
 
 

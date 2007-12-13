@@ -40,11 +40,11 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 				   lp_private_dir(lp_ctx),
 				   name);
 
-	error = reg_open_hive(ctx, location, auth_info, creds, &hive);
+	error = reg_open_hive(ctx, location, auth_info, creds, lp_ctx, &hive);
 
 	if (W_ERROR_EQUAL(error, WERR_NOT_FOUND))
 		error = reg_open_ldb_file(ctx, location, auth_info,
-					  creds, &hive);
+					  creds, lp_ctx, &hive);
 
 	if (!W_ERROR_IS_OK(error))
 		return error;
