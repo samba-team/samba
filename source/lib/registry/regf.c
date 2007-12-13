@@ -133,21 +133,22 @@ static DATA_BLOB hbin_get(const struct regf_data *data, uint32_t offset)
 static bool hbin_get_tdr(struct regf_data *regf, uint32_t offset,
 			 TALLOC_CTX *ctx, tdr_pull_fn_t pull_fn, void *p)
 {
-	struct tdr_pull pull;
+	struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 
-	ZERO_STRUCT(pull);
-
-	pull.data = hbin_get(regf, offset);
-	if (!pull.data.data) {
+	pull->data = hbin_get(regf, offset);
+	if (!pull->data.data) {
 		DEBUG(1, ("Unable to get data at 0x%04x\n", offset));
+		talloc_free(pull);
 		return false;
 	}
 
-	if (NT_STATUS_IS_ERR(pull_fn(&pull, ctx, p))) {
+	if (NT_STATUS_IS_ERR(pull_fn(pull, ctx, p))) {
 		DEBUG(1, ("Error parsing record at 0x%04x using tdr\n",
 			offset));
+		talloc_free(pull);
 		return false;
 	}
+	talloc_free(pull);
 
 	return true;
 }
@@ -594,16 +595,17 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 	if (!strncmp((char *)data.data, "li", 2)) {
 		struct li_block li;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
 
 		DEBUG(10, ("Subkeys in LI list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, nk, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(li.header, "li", 2));
 
 		if (li.key_count != nk->num_subkeys) {
@@ -614,16 +616,17 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
 
 		DEBUG(10, ("Subkeys in LF list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(&pull, nk, &lf))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, nk, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
 
 		if (lf.key_count != nk->num_subkeys) {
@@ -634,16 +637,17 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 		key_off = lf.hr[idx].nk_offset;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
 
 		DEBUG(10, ("Subkeys in LH list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, nk, &lh))) {
 			DEBUG(0, ("Error parsing LH list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
 
 		if (lh.key_count != nk->num_subkeys) {
@@ -653,16 +657,16 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 		key_off = lh.hr[idx].nk_offset;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 		uint16_t i;
 		uint16_t sublist_count = 0;
 
 		DEBUG(10, ("Subkeys in RI list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(&pull, nk, &ri))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(pull, nk, &ri))) {
 			DEBUG(0, ("Error parsing RI list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
 		SMB_ASSERT(!strncmp(ri.header, "ri", 2));
@@ -674,21 +678,22 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 			list_data = hbin_get(private_data->hive, ri.offset[i]);
 			if (!list_data.data) {
 				DEBUG(0, ("Error getting RI list."));
+				talloc_free(pull);
 				return WERR_GENERAL_FAILURE;
 			}
 
-			ZERO_STRUCT(pull);
-			pull.data = list_data;
+			pull->data = list_data;
 
 			if (!strncmp((char *)list_data.data, "li", 2)) {
 				struct li_block li;
 
 				DEBUG(10, ("Subkeys in RI->LI list\n"));
 
-				if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull,
+				if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull,
 								       nk,
 								       &li))) {
 					DEBUG(0, ("Error parsing LI list from RI\n"));
+					talloc_free(pull);
 					return WERR_GENERAL_FAILURE;
 				}
 				SMB_ASSERT(!strncmp(li.header, "li", 2));
@@ -706,10 +711,11 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 				DEBUG(10, ("Subkeys in RI->LH list\n"));
 
-				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull,
+				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull,
 								       nk,
 								       &lh))) {
 					DEBUG(0, ("Error parsing LH list from RI\n"));
+					talloc_free(pull);
 					return WERR_GENERAL_FAILURE;
 				}
 				SMB_ASSERT(!strncmp(lh.header, "lh", 2));
@@ -724,11 +730,14 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 				break;
 			} else {
 				DEBUG(0,("Unknown sublist in ri block\n"));
+				talloc_free(pull);
 
 				return WERR_GENERAL_FAILURE;
 			}
 
 		}
+		talloc_free(pull);
+
 
 		if (idx > sublist_count) {
 			return WERR_NO_MORE_ITEMS;
@@ -771,7 +780,7 @@ static WERROR regf_match_subkey_by_name(TALLOC_CTX *ctx,
 {
 	DATA_BLOB subkey_data;
 	struct nk_block subkey;
-	struct tdr_pull pull;
+	struct tdr_pull *pull;
 	const struct regf_key_data *private_data =
 		(const struct regf_key_data *)key;
 
@@ -781,13 +790,16 @@ static WERROR regf_match_subkey_by_name(TALLOC_CTX *ctx,
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ZERO_STRUCT(pull);
-	pull.data = subkey_data;
+	pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 
-	if (NT_STATUS_IS_ERR(tdr_pull_nk_block(&pull, ctx, &subkey))) {
+	pull->data = subkey_data;
+
+	if (NT_STATUS_IS_ERR(tdr_pull_nk_block(pull, ctx, &subkey))) {
 		DEBUG(0, ("Error parsing NK structure.\n"));
+		talloc_free(pull);
 		return WERR_GENERAL_FAILURE;
 	}
+	talloc_free(pull);
 
 	if (strncmp(subkey.header, "nk", 2)) {
 		DEBUG(0, ("Not an NK structure.\n"));
@@ -821,17 +833,18 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 
 	if (!strncmp((char *)data.data, "li", 2)) {
 		struct li_block li;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 		uint16_t i;
 
 		DEBUG(10, ("Subkeys in LI list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, nk, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(li.header, "li", 2));
 
 		if (li.key_count != nk->num_subkeys) {
@@ -851,17 +864,18 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 		uint16_t i;
 
 		DEBUG(10, ("Subkeys in LF list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(&pull, nk, &lf))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, nk, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
 
 		if (lf.key_count != nk->num_subkeys) {
@@ -885,18 +899,19 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 		uint16_t i;
 		uint32_t hash;
 
 		DEBUG(10, ("Subkeys in LH list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, nk, &lh))) {
 			DEBUG(0, ("Error parsing LH list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
 
 		if (lh.key_count != nk->num_subkeys) {
@@ -921,15 +936,15 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
 		uint16_t i, j;
 
 		DEBUG(10, ("Subkeys in RI list\n"));
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(&pull, nk, &ri))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(pull, nk, &ri))) {
 			DEBUG(0, ("Error parsing RI list\n"));
+			talloc_free(pull);
 			return WERR_GENERAL_FAILURE;
 		}
 		SMB_ASSERT(!strncmp(ri.header, "ri", 2));
@@ -941,19 +956,20 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			list_data = hbin_get(private_data->hive, ri.offset[i]);
 			if (list_data.data == NULL) {
 				DEBUG(0, ("Error getting RI list."));
+				talloc_free(pull);
 				return WERR_GENERAL_FAILURE;
 			}
 
-			ZERO_STRUCT(pull);
-			pull.data = list_data;
+			pull->data = list_data;
 
 			if (!strncmp((char *)list_data.data, "li", 2)) {
 				struct li_block li;
 
-				if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull,
+				if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull,
 								       nk,
 								       &li))) {
 					DEBUG(0, ("Error parsing LI list from RI\n"));
+					talloc_free(pull);
 					return WERR_GENERAL_FAILURE;
 				}
 				SMB_ASSERT(!strncmp(li.header, "li", 2));
@@ -970,10 +986,11 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				struct lh_block lh;
 				uint32_t hash;
 
-				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull,
+				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull,
 								       nk,
 								       &lh))) {
 					DEBUG(0, ("Error parsing LH list from RI\n"));
+					talloc_free(pull);
 					return WERR_GENERAL_FAILURE;
 				}
 				SMB_ASSERT(!strncmp(lh.header, "lh", 2));
@@ -994,6 +1011,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			if (key_off)
 				break;
 		}
+		talloc_free(pull);
 		if (!key_off)
 			return WERR_NOT_FOUND;
 	} else {
@@ -1260,16 +1278,17 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	}
 
 	if (!strncmp((char *)data.data, "li", 2)) {
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		struct li_block li;
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, regf, &li))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, regf, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 
 		if (strncmp(li.header, "li", 2) != 0) {
 			abort();
@@ -1288,16 +1307,17 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 
 		talloc_free(li.nk_offset);
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		struct lf_block lf;
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(&pull, regf, &lf))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, regf, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
 
 		lf.hr = talloc_realloc(regf, lf.hr, struct hash_record,
@@ -1313,16 +1333,17 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 
 		talloc_free(lf.hr);
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		struct lh_block lh;
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, regf, &lh))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, regf, &lh))) {
 			DEBUG(0, ("Error parsing LH list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
 
 		lh.hr = talloc_realloc(regf, lh.hr, struct lh_hash,
@@ -1361,19 +1382,20 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 
 	if (strncmp((char *)data.data, "li", 2) == 0) {
 		struct li_block li;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		uint16_t i;
 		bool found_offset = false;
 
 		DEBUG(10, ("Subkeys in LI list\n"));
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, regf, &li))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, regf, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 
 		SMB_ASSERT(!strncmp(li.header, "li", 2));
 
@@ -1404,19 +1426,20 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 					     list_offset, &li);
 	} else if (strncmp((char *)data.data, "lf", 2) == 0) {
 		struct lf_block lf;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		uint16_t i;
 		bool found_offset = false;
 
 		DEBUG(10, ("Subkeys in LF list\n"));
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(&pull, regf, &lf))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, regf, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
 
@@ -1449,19 +1472,20 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 					     list_offset, &lf);
 	} else if (strncmp((char *)data.data, "lh", 2) == 0) {
 		struct lh_block lh;
-		struct tdr_pull pull;
+		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
 		uint16_t i;
 		bool found_offset = false;
 
 		DEBUG(10, ("Subkeys in LH list\n"));
 
-		ZERO_STRUCT(pull);
-		pull.data = data;
+		pull->data = data;
 
-		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, regf, &lh))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, regf, &lh))) {
 			DEBUG(0, ("Error parsing LF list\n"));
+			talloc_free(pull);
 			return WERR_BADFILE;
 		}
+		talloc_free(pull);
 
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
 
@@ -1837,7 +1861,6 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 {
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
-	struct tdr_pull pull;
 	int i;
 	struct nk_block nk;
 	WERROR error;
@@ -1873,8 +1896,6 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	regf_hdr->chksum = 0;
 
 	regf->header = regf_hdr;
-
-	pull.offset = 0x1000;
 
 	i = 0;
 	/* Create all hbin blocks */
@@ -1926,7 +1947,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 {
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
-	struct tdr_pull pull;
+	struct tdr_pull *pull;
 	int i;
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
@@ -1947,10 +1968,11 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ZERO_STRUCT(pull);
-	pull.data.data = (uint8_t*)fd_load(regf->fd, &pull.data.length, regf);
+	pull = tdr_pull_init(regf, regf->iconv_convenience);
 
-	if (pull.data.data == NULL) {
+	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, regf);
+
+	if (pull->data.data == NULL) {
 		DEBUG(0, ("Error reading data\n"));
 		talloc_free(regf);
 		return WERR_GENERAL_FAILURE;
@@ -1959,7 +1981,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 	regf_hdr = talloc(regf, struct regf_hdr);
 	W_ERROR_HAVE_NO_MEMORY(regf_hdr);
 
-	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(&pull, regf_hdr, regf_hdr))) {
+	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(pull, regf_hdr, regf_hdr))) {
 		talloc_free(regf);
 		return WERR_GENERAL_FAILURE;
 	}
@@ -1974,15 +1996,15 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 	}
 
 	/* Validate the header ... */
-	if (regf_hdr_checksum(pull.data.data) != regf_hdr->chksum) {
+	if (regf_hdr_checksum(pull->data.data) != regf_hdr->chksum) {
 		DEBUG(0, ("Registry file checksum error: %s: %d,%d\n",
 			location, regf_hdr->chksum,
-			regf_hdr_checksum(pull.data.data)));
+			regf_hdr_checksum(pull->data.data)));
 		talloc_free(regf);
 		return WERR_GENERAL_FAILURE;
 	}
 
-	pull.offset = 0x1000;
+	pull->offset = 0x1000;
 
 	i = 0;
 	/* Read in all hbin blocks */
@@ -1991,14 +2013,14 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 
 	regf->hbins[0] = NULL;
 
-	while (pull.offset < pull.data.length &&
-	       pull.offset <= regf->header->last_block) {
+	while (pull->offset < pull->data.length &&
+	       pull->offset <= regf->header->last_block) {
 		struct hbin_block *hbin = talloc(regf->hbins,
 						 struct hbin_block);
 
 		W_ERROR_HAVE_NO_MEMORY(hbin);
 
-		if (NT_STATUS_IS_ERR(tdr_pull_hbin_block(&pull, hbin, hbin))) {
+		if (NT_STATUS_IS_ERR(tdr_pull_hbin_block(pull, hbin, hbin))) {
 			DEBUG(0, ("[%d] Error parsing HBIN block\n", i));
 			talloc_free(regf);
 			return WERR_FOOBAR;
@@ -2017,6 +2039,8 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 					     struct hbin_block *, i+2);
 		regf->hbins[i] = NULL;
 	}
+
+	talloc_free(pull);
 
 	DEBUG(1, ("%d HBIN blocks read\n", i));
 
