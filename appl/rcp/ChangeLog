@@ -1,5 +1,9 @@
-2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add missing files, from Buchan Milne.
+
+2006-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: more files
 	
 2006-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
