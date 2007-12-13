@@ -69,10 +69,10 @@ const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
 /*
   open a temporary tdb in a cluster friendly manner
 */
-struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, int flags)
+struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *dbname, int flags)
 {
 	cluster_init();
-	return ops->cluster_tdb_tmp_open(ops, mem_ctx, dbname, flags);
+	return ops->cluster_tdb_tmp_open(ops, mem_ctx, lp_ctx, dbname, flags);
 }
 
 

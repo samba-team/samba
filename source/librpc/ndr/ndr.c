@@ -101,7 +101,7 @@ static enum ndr_err_code ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 }
 
 /* create a ndr_push structure, ready for some marshalling */
-_PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct ndr_push *ndr;
 
@@ -116,7 +116,7 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	if (!ndr->data) {
 		return NULL;
 	}
-	ndr->iconv_convenience = talloc_reference(ndr, lp_iconv_convenience(global_loadparm));
+	ndr->iconv_convenience = talloc_reference(ndr, iconv_convenience);
 
 	return ndr;
 }
@@ -471,7 +471,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 {
 	struct ndr_push *subndr;
 
-	subndr = ndr_push_init_ctx(ndr);
+	subndr = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(subndr);
 	subndr->flags	= ndr->flags;
 
@@ -759,7 +759,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 			      ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
-	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
@@ -778,7 +778,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_
 			     uint32_t level, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
-	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
 	NDR_CHECK(ndr_push_set_switch_value(ndr, p, level));
@@ -803,7 +803,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 	/* avoid recursion */
 	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
 
-	ndr = ndr_push_init_ctx(NULL);
+	ndr = ndr_push_init_ctx(NULL, lp_iconv_convenience(global_loadparm));
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
@@ -828,7 +828,7 @@ _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_pus
 	/* avoid recursion */
 	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
 
-	ndr = ndr_push_init_ctx(NULL);
+	ndr = ndr_push_init_ctx(NULL, lp_iconv_convenience(global_loadparm));
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 

@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "param/param.h"
 
 /****************************************************************************
 fetch file ACL (async send)
@@ -134,7 +135,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
 
-	ndr = ndr_push_init_ctx(NULL);
+	ndr = ndr_push_init_ctx(NULL, lp_iconv_convenience(global_loadparm));
 	if (!ndr) return NULL;
 
 	ndr_err = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);

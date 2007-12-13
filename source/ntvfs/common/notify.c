@@ -35,6 +35,7 @@
 #include "ntvfs/common/ntvfs_common.h"
 #include "ntvfs/sysdep/sys_notify.h"
 #include "cluster/cluster.h"
+#include "param/param.h"
 
 struct notify_context {
 	struct tdb_wrap *w;
@@ -95,7 +96,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->w = cluster_tdb_tmp_open(notify, "notify.tdb", TDB_SEQNUM);
+	notify->w = cluster_tdb_tmp_open(notify, global_loadparm, "notify.tdb", TDB_SEQNUM);
 	if (notify->w == NULL) {
 		talloc_free(notify);
 		return NULL;

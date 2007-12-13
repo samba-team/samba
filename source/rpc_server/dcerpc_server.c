@@ -884,7 +884,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	}
 
 	/* form the reply NDR */
-	push = ndr_push_init_ctx(call);
+	push = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(push);
 
 	/* carry over the pointer count to the reply in case we are

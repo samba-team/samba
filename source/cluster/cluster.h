@@ -38,7 +38,7 @@ typedef void (*cluster_message_fn_t)(struct messaging_context *, DATA_BLOB);
 /* prototypes */
 struct server_id cluster_id(uint32_t id);
 const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
-struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, const char *dbname, int flags);
+struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *dbname, int flags);
 void *cluster_backend_handle(void);
 
 NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,

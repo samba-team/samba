@@ -23,6 +23,7 @@
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
 #include "librpc/ndr/libndr.h"
+#include "param/param.h"
 
 #define NDR_RETURN(call) do { \
 	enum ndr_err_code _ndr_err; \
@@ -444,8 +445,8 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	NDR_RETURN(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->datadesc));
 
-	call->ndr_push_param = ndr_push_init_ctx(call);
-	call->ndr_push_data = ndr_push_init_ctx(call);
+	call->ndr_push_param = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	call->ndr_push_data = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
 
 	if ((call->ndr_push_param == NULL) || (call->ndr_push_data == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -470,8 +471,8 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	result_param = ndr_push_blob(call->ndr_push_param);
 	result_data = ndr_push_blob(call->ndr_push_data);
 
-	final_param = ndr_push_init_ctx(call);
-	final_data = ndr_push_init_ctx(call);
+	final_param = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	final_data = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
 
 	if ((final_param == NULL) || (final_data == NULL))
 		return NT_STATUS_NO_MEMORY;

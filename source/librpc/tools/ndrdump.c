@@ -25,6 +25,7 @@
 #include "system/locale.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
+#include "param/param.h"
 #endif
 
 static const struct ndr_interface_call *find_function(
@@ -379,7 +380,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		uint8_t byte_a, byte_b;
 		bool differ;
 
-		ndr_v_push = ndr_push_init_ctx(mem_ctx);
+		ndr_v_push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
 		
 		ndr_err = f->ndr_push(ndr_v_push, flags, st);
 		status = ndr_map_error2ntstatus(ndr_err);

@@ -698,7 +698,7 @@ NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 	m->header.status = status;
 
 	/* setup the reply */
-	push = ndr_push_init_ctx(m->ndr);
+	push = ndr_push_init_ctx(m->ndr, lp_iconv_convenience(global_loadparm));
 	if (push == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -890,7 +890,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	header.status     = NT_STATUS_OK;
 
 	/* construct the irpc packet */
-	ndr = ndr_push_init_ctx(irpc);
+	ndr = ndr_push_init_ctx(irpc, lp_iconv_convenience(global_loadparm));
 	if (ndr == NULL) goto failed;
 
 	ndr_err = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);

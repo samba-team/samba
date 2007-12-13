@@ -27,7 +27,9 @@ struct cluster_ops {
 	const char *(*cluster_id_string)(struct cluster_ops *ops, 
 					 TALLOC_CTX *, struct server_id );
 	struct tdb_wrap *(*cluster_tdb_tmp_open)(struct cluster_ops *,
-						 TALLOC_CTX *, const char *, int);
+						 TALLOC_CTX *, 
+						 struct loadparm_context *,
+						 const char *, int);
 	void *(*backend_handle)(struct cluster_ops *);
 	NTSTATUS (*message_init)(struct cluster_ops *ops, 
 				 struct messaging_context *msg, struct server_id server,

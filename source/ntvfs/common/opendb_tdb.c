@@ -79,7 +79,7 @@ static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	odb->w = cluster_tdb_tmp_open(odb, "openfiles.tdb", TDB_DEFAULT);
+	odb->w = cluster_tdb_tmp_open(odb, ntvfs_ctx->lp_ctx, "openfiles.tdb", TDB_DEFAULT);
 	if (odb->w == NULL) {
 		talloc_free(odb);
 		return NULL;
