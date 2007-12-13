@@ -88,7 +88,7 @@ static bool init_registry_data( void )
 	char *path = NULL;
 	char *base = NULL;
 	char *remaining = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *frame = NULL;
 	char *keyname;
 	char *subkeyname;
 	REGSUBKEY_CTR *subkeys;
@@ -115,23 +115,23 @@ static bool init_registry_data( void )
 
 	for ( i=0; builtin_registry_paths[i] != NULL; i++ ) {
 
+		frame = talloc_stackframe();
+
 		DEBUG(6,("init_registry_data: Adding [%s]\n", builtin_registry_paths[i]));
 
-		TALLOC_FREE(path);
-		path = talloc_strdup(ctx, builtin_registry_paths[i]);
-		TALLOC_FREE(base);
-		base = talloc_strdup(ctx, "");
+		path = talloc_strdup(talloc_tos(), builtin_registry_paths[i]);
+		base = talloc_strdup(talloc_tos(), "");
 		if (!path || !base) {
 			goto fail;
 		}
 		p = path;
 
-		while (next_token_talloc(ctx, &p, &keyname, "\\")) {
+		while (next_token_talloc(talloc_tos(), &p, &keyname, "\\")) {
 
 			/* build up the registry path from the components */
 
 			if (*base) {
-				base = talloc_asprintf(ctx, "%s\\", base);
+				base = talloc_asprintf(talloc_tos(), "%s\\", base);
 				if (!base) {
 					goto fail;
 				}
@@ -143,21 +143,20 @@ static bool init_registry_data( void )
 
 			/* get the immediate subkeyname (if we have one ) */
 
-			subkeyname = talloc_strdup(ctx, "");
+			subkeyname = talloc_strdup(talloc_tos(), "");
 			if (!subkeyname) {
 				goto fail;
 			}
 			if (*p) {
-				TALLOC_FREE(remaining);
-				remaining = talloc_strdup(ctx, p);
+				remaining = talloc_strdup(talloc_tos(), p);
 				if (!remaining) {
 					goto fail;
 				}
 				p2 = remaining;
 
-				if (!next_token_talloc(ctx, &p2,
+				if (!next_token_talloc(talloc_tos(), &p2,
 							&subkeyname, "\\")) {
-					subkeyname = talloc_strdup(ctx,p2);
+					subkeyname = talloc_strdup(talloc_tos(),p2);
 					if (!subkeyname) {
 						goto fail;
 					}
@@ -171,7 +170,7 @@ static bool init_registry_data( void )
 			   we are about to update the record.  We just want any
 			   subkeys already present */
 
-			if ( !(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR )) ) {
+			if ( !(subkeys = TALLOC_ZERO_P(talloc_tos(), REGSUBKEY_CTR )) ) {
 				DEBUG(0,("talloc() failure!\n"));
 				goto fail;
 			}
@@ -183,15 +182,16 @@ static bool init_registry_data( void )
 			if (!regdb_store_keys( base, subkeys)) {
 				goto fail;
 			}
-
-			TALLOC_FREE(subkeys);
 		}
+
+		TALLOC_FREE(frame);
 	}
 
 	/* loop over all of the predefined values and add each component */
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
-		if (!(values = TALLOC_ZERO_P(ctx, REGVAL_CTR))) {
+
+		if (!(values = TALLOC_ZERO_P(talloc_tos(), REGVAL_CTR))) {
 			goto fail;
 		}
 
@@ -227,6 +227,8 @@ static bool init_registry_data( void )
 		TALLOC_FREE( values );
 	}
 
+	TALLOC_FREE(frame);
+
 	if (tdb_transaction_commit( tdb_reg->tdb ) == -1) {
 		DEBUG(0, ("init_registry_data: Could not commit "
 			  "transaction\n"));
@@ -236,6 +238,8 @@ static bool init_registry_data( void )
 	return true;
 
  fail:
+
+	TALLOC_FREE(frame);
 
 	if (tdb_transaction_cancel( tdb_reg->tdb ) == -1) {
 		smb_panic("init_registry_data: tdb_transaction_cancel "
@@ -597,32 +601,31 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	uint32 buflen, len;
 	int i;
 	fstring subkeyname;
-	TALLOC_CTX *ctx = talloc_tos();
+	int ret = -1;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
-	path = talloc_strdup(ctx, key);
+	path = talloc_strdup(talloc_tos(), key);
 	if (!path) {
-		return -1;
+		goto fail;
 	}
 
 	/* convert to key format */
-	path = talloc_string_sub(ctx, path, "\\", "/");
+	path = talloc_string_sub(talloc_tos(), path, "\\", "/");
 	if (!path) {
-		return -1;
+		goto fail;
 	}
 	strupper_m(path);
 
 	dbuf = tdb_fetch_bystring(tdb_reg->tdb, path);
-
-	TALLOC_FREE(path);
 
 	buf = dbuf.dptr;
 	buflen = dbuf.dsize;
 
 	if ( !buf ) {
 		DEBUG(5,("regdb_fetch_keys: tdb lookup failed to locate key [%s]\n", key));
-		return -1;
+		goto fail;
 	}
 
 	len = tdb_unpack( buf, buflen, "d", &num_items);
@@ -636,7 +639,10 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
 
-	return num_items;
+	ret = num_items;
+ fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 /****************************************************************************

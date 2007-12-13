@@ -51,11 +51,13 @@ REGISTRY_HOOK reg_hooks[] = {
 bool init_registry( void )
 {
 	int i;
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
 	
 	
 	if ( !regdb_init() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
-		return False;
+		goto fail;
 	}
 
 	/* build the cache tree of registry hooks */
@@ -64,7 +66,7 @@ bool init_registry( void )
 	
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
 		if ( !reghook_cache_add(&reg_hooks[i]) )
-			return False;
+			goto fail;
 	}
 
 	if ( DEBUGLEVEL >= 20 )
@@ -80,7 +82,10 @@ bool init_registry( void )
 
 	regdb_close();
 
-	return True;
+	ret = true;
+ fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
