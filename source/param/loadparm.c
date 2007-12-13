@@ -764,6 +764,9 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 {
 	char *vfskey;
         struct param_opt *data;
+
+	if (lp_ctx == NULL)
+		return NULL;
 	
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
     
