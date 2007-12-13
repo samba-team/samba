@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
 #include "pstring.h"
+#include "param/param.h"
 
 #define VERBOSE 0
 #define OP_MIN 0
@@ -207,7 +208,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(global_smb_iconv_convenience, &param[6], fname, sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], fname, sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -218,7 +219,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(global_smb_iconv_convenience, &param[6], "\\newfile.dat", sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], "\\newfile.dat", sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -230,7 +231,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(global_smb_iconv_convenience, &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -439,7 +440,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(global_smb_iconv_convenience, &param[6], fname, sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], fname, sizeof(pstring), STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -450,7 +451,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(global_smb_iconv_convenience, &param[6], "\\newfile.dat", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], "\\newfile.dat", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
@@ -462,7 +463,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(global_smb_iconv_convenience, &param[2], "\\testdir", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[2], "\\testdir", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);

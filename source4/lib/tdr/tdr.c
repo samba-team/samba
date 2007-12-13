@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "system/network.h"
 #include "tdr/tdr.h"
+#include "param/param.h"
 
 #define TDR_BASE_MARSHALL_SIZE 1024
 
@@ -153,7 +154,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(ctx, global_smb_iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
+	ret = convert_string_talloc(ctx, lp_iconv_convenience(global_loadparm), chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -175,7 +176,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(global_smb_iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
+	ret = convert_string(lp_iconv_convenience(global_loadparm), CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -404,9 +405,7 @@ void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...) _PRI
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	for (i=0;i<tdr->level;i++) {
-		DEBUG(0,("    "));
-	}
+	for (i=0;i<tdr->level;i++) { DEBUG(0,("    ")); }
 
 	DEBUG(0,("%s\n", s));
 	free(s);

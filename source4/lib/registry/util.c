@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "param/param.h"
 
 /**
  * @file
@@ -61,7 +62,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UTF16, CH_UNIX,
+			convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
 					      data.data, data.length,
 					      (void **)&ret);
 			return ret;
@@ -117,7 +118,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-      		data->length = convert_string_talloc(mem_ctx, global_smb_iconv_convenience, CH_UNIX, CH_UTF16,
+      		data->length = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16,
 						     data_str, strlen(data_str),
 						     (void **)&data->data);
 			break;

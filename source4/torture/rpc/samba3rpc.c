@@ -2314,7 +2314,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	memcpy(servername, r.out.info.info0.name, 16);
 	servername[16] = '\0';
 
-	if (pull_ascii_talloc(mem_ctx, global_smb_iconv_convenience, 
+	if (pull_ascii_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), 
 			      name, servername) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -531,6 +531,7 @@ struct loadparm_context {
 		time_t modtime;
 	} *file_lists;
 	unsigned int flags[NUMPARAMETERS];
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 
@@ -858,9 +859,11 @@ static bool lp_bool(const char *s)
 }
 
 
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
-/* Returned value is allocated in 'lp_talloc' context */
+/**
+ * Return parametric option from a given service. Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ * Returned value is allocated in 'lp_talloc' context 
+ */
 
 const char *lp_parm_string(struct loadparm_context *lp_ctx, 
 			   struct loadparm_service *service, const char *type, 
@@ -874,9 +877,11 @@ const char *lp_parm_string(struct loadparm_context *lp_ctx,
 	return NULL;
 }
 
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
-/* Returned value is allocated in 'lp_talloc' context */
+/**
+ * Return parametric option from a given service. Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ * Returned value is allocated in 'lp_talloc' context
+ */
 
 const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
 				 struct loadparm_context *lp_ctx, 
@@ -892,8 +897,10 @@ const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
+/**
+ * Return parametric option from a given service. Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ */
 
 int lp_parm_int(struct loadparm_context *lp_ctx, 
 		struct loadparm_service *service, const char *type, 
@@ -907,7 +914,8 @@ int lp_parm_int(struct loadparm_context *lp_ctx,
 	return default_v;
 }
 
-/* Return parametric option from a given service. Type is a part of
+/**
+ * Return parametric option from a given service. Type is a part of
  * option before ':'.
  * Parametric option has following syntax: 'Type: option = value'.
  */
@@ -929,9 +937,11 @@ int lp_parm_bytes(struct loadparm_context *lp_ctx,
 	return default_v;
 }
 
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
-
+/**
+ * Return parametric option from a given service. 
+ * Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ */
 unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx, 
 			    struct loadparm_service *service, const char *type, 
 			    const char *option, unsigned long default_v)
@@ -957,8 +967,10 @@ double lp_parm_double(struct loadparm_context *lp_ctx,
 	return default_v;
 }
 
-/* Return parametric option from a given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
+/**
+ * Return parametric option from a given service. Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ */
 
 bool lp_parm_bool(struct loadparm_context *lp_ctx, 
 		  struct loadparm_service *service, const char *type, 
@@ -986,9 +998,9 @@ static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
 }
 
 /**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
+ * Set a string value, deallocating any existing space, and allocing the space
+ * for the string
+ */
 static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
@@ -2447,7 +2459,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	panic_action = lp_ctx->globals->panic_action;
 
-	reload_charcnv();
+	reload_charcnv(lp_ctx);
 
 	return bRetval;
 }
@@ -2560,4 +2572,19 @@ int lp_maxprintjobs(struct loadparm_service *service)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
 	return maxjobs;
+}
+
+struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx)
+{
+	if (lp_ctx == NULL) {
+		return smb_iconv_convenience_init(talloc_autofree_context(), 
+						  "CP850", "UTF8", "UTF8", true);
+	}
+	return lp_ctx->iconv_convenience;
+}
+
+_PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
+{
+	talloc_free(lp_ctx->iconv_convenience);
+	lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
 }

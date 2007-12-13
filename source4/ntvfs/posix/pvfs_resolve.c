@@ -29,8 +29,9 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/dir.h"
+#include "param/param.h"
 
-/*
+/**
   compare two filename components. This is where the name mangling hook will go
 */
 static int component_compare(struct pvfs_state *pvfs, const char *comp, const char *name)
@@ -256,7 +257,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(global_smb_iconv_convenience, p, &c_size);
+		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
 		switch (c) {
 		case '\\':
 			if (name->has_wildcard) {
@@ -340,7 +341,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 	if (s == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (num_components=1, p=s; *p; p += c_size) {
-		c = next_codepoint(global_smb_iconv_convenience, p, &c_size);
+		c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
 		if (c == '\\') num_components++;
 	}
 
@@ -352,7 +353,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 
 	components[0] = s;
 	for (i=0, p=s; *p; p += c_size) {
-		c = next_codepoint(global_smb_iconv_convenience, p, &c_size);
+		c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
 		if (c == '\\') {
 			*p = 0;
 			components[++i] = p+1;

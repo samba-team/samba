@@ -587,6 +587,7 @@ char *yytext;
 #line 23 "lex.l"
 #include "includes.h"
 #include "lib/policy/parse_adm.h"
+#include "param/param.h"
 void error_message (const char *format, ...);
 int yyparse (void);
 
@@ -600,7 +601,7 @@ static bool utf16 = false;
 		if (fread(&v, 2, 1, yyin) < 1) \
 			result = YY_NULL; \
 		else \
-			result = push_codepoint(global_smb_iconv_convenience, buf, v); \
+			result = push_codepoint(lp_iconv_convenience(global_loadparm), buf, v); \
 	} else { \
 		int c = getc(yyin); \
 		result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \

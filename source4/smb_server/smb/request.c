@@ -27,6 +27,7 @@
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
 #include "ntvfs/ntvfs.h"
+#include "param/param.h"
 
 
 /* we over allocate the data buffer to prevent too many realloc calls */
@@ -408,7 +409,7 @@ size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, 
 		dest = req->out.buffer + PTR_DIFF(dest, buf0);
 	}
 
-	len = push_string(global_smb_iconv_convenience, dest, str, len, flags);
+	len = push_string(lp_iconv_convenience(global_loadparm), dest, str, len, flags);
 
 	grow_size = len + PTR_DIFF(dest, req->out.data);
 
@@ -494,7 +495,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		return src_len2 + alignment;
 	}
 
-	ret = convert_string_talloc(req, global_smb_iconv_convenience, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(req, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -543,7 +544,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(req, global_smb_iconv_convenience, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(req, lp_iconv_convenience(global_loadparm), CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;

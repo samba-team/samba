@@ -30,6 +30,7 @@
 #include "librpc/ndr/libndr.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/dcerpc.h"
+#include "param/param.h"
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
@@ -66,7 +67,7 @@ _PUBLIC_ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *
 
 	ndr->data = blob->data;
 	ndr->data_size = blob->length;
-	ndr->iconv_convenience = talloc_reference(ndr, global_smb_iconv_convenience);
+	ndr->iconv_convenience = talloc_reference(ndr, lp_iconv_convenience(global_loadparm));
 
 	return ndr;
 }
@@ -115,7 +116,7 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	if (!ndr->data) {
 		return NULL;
 	}
-	ndr->iconv_convenience = talloc_reference(ndr, global_smb_iconv_convenience);
+	ndr->iconv_convenience = talloc_reference(ndr, lp_iconv_convenience(global_loadparm));
 
 	return ndr;
 }

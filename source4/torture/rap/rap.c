@@ -26,6 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "librpc/ndr/libndr.h"
+#include "param/param.h"
 
 #define RAP_GOTO(call) do { \
 	NTSTATUS _status; \
@@ -182,7 +183,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 		return NT_STATUS_INVALID_PARAMETER;
 
 	*dest = talloc_zero_array(mem_ctx, char, len+1);
-	pull_string(global_smb_iconv_convenience, *dest, p, len+1, len, STR_ASCII);
+	pull_string(lp_iconv_convenience(global_loadparm), *dest, p, len+1, len, STR_ASCII);
 
 	return NT_STATUS_OK;
 }
