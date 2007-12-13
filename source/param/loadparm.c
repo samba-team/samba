@@ -611,7 +611,7 @@ static const char *lp_string(const char *s)
  char fn_name(void) {return(*(char *)(ptr));}
 #endif
 #define FN_GLOBAL_INTEGER(fn_name,var_name) \
- int fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return 0; return lp_ctx->globals->var_name;}
+ int fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;}
 
 #define FN_LOCAL_STRING(fn_name,val) \
  const char *fn_name(struct loadparm_service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
