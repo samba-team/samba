@@ -2508,6 +2508,7 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 
 #include "includes.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 typedef struct cli_credentials cli_credentials;
 
 
@@ -3363,7 +3364,7 @@ fail:
 SWIGINTERN PyObject *_wrap_Credentials_guess(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   cli_credentials *arg1 = (cli_credentials *) 0 ;
-  struct loadparm_context *arg2 = (struct loadparm_context *) NULL ;
+  struct loadparm_context *arg2 = (struct loadparm_context *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
@@ -3376,6 +3377,9 @@ SWIGINTERN PyObject *_wrap_Credentials_guess(PyObject *SWIGUNUSEDPARM(self), PyO
   
   {
     arg1 = NULL;
+  }
+  {
+    arg2 = loadparm_init(NULL);
   }
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Credentials_guess",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {

@@ -26,11 +26,13 @@
 
 #include "includes.h"
 #include "auth/credentials/credentials.h"
+#include "param/param.h"
 typedef struct cli_credentials cli_credentials;
 %}
 
-%include "carrays.i"
-%include "typemaps.i"
+%import "carrays.i"
+%import "typemaps.i"
+%import "param/param.i"
 
 %typemap(default) struct cli_credentials * {
     $1 = NULL;
@@ -83,7 +85,7 @@ typedef struct cli_credentials {
         bool set_workstation(const char *workstation, 
                              enum credentials_obtained obtained=CRED_SPECIFIED);
 
-        void guess(struct loadparm_context *lp_ctx = NULL);
+        void guess(struct loadparm_context *lp_ctx);
         bool is_anonymous(void);
 
         const struct samr_Password *get_nt_hash(TALLOC_CTX *mem_ctx);
