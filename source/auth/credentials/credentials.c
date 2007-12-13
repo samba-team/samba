@@ -118,7 +118,8 @@ uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds)
 const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred, 
+					cred->machine_account_pending_lp_ctx);
 	}
 
 	if (cred->username_obtained == CRED_CALLBACK && 
@@ -186,7 +187,8 @@ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
 const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+					cred->machine_account_pending_lp_ctx);
 	}
 
 	if (cred->principal_obtained == CRED_CALLBACK && 
@@ -276,7 +278,8 @@ bool cli_credentials_authentication_requested(struct cli_credentials *cred)
 const char *cli_credentials_get_password(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+						    cred->machine_account_pending_lp_ctx);
 	}
 
 	if (cred->password_obtained == CRED_CALLBACK && 
@@ -331,7 +334,8 @@ bool cli_credentials_set_password_callback(struct cli_credentials *cred,
 const char *cli_credentials_get_old_password(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+						    cred->machine_account_pending_lp_ctx);
 	}
 
 	return cred->old_password;
@@ -400,7 +404,8 @@ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+						    cred->machine_account_pending_lp_ctx);
 	}
 
 	if (cred->domain_obtained == CRED_CALLBACK && 
@@ -454,7 +459,8 @@ bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
 const char *cli_credentials_get_realm(struct cli_credentials *cred)
 {	
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+						    cred->machine_account_pending_lp_ctx);
 	}
 
 	if (cred->realm_obtained == CRED_CALLBACK && 
@@ -669,7 +675,7 @@ void cli_credentials_guess(struct cli_credentials *cred,
 	}
 	
 	if (cli_credentials_get_kerberos_state(cred) != CRED_DONT_USE_KERBEROS) {
-		cli_credentials_set_ccache(cred, NULL, CRED_GUESS_FILE);
+		cli_credentials_set_ccache(cred, lp_ctx, NULL, CRED_GUESS_FILE);
 	}
 }
 
@@ -733,7 +739,8 @@ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 	const char *username;
 	
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred,
+						    cred->machine_account_pending_lp_ctx);
 	}
 
 	username = cli_credentials_get_username(cred);

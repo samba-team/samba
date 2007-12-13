@@ -127,6 +127,7 @@ static int free_dccache(struct ccache_container *ccc) {
 }
 
 int cli_credentials_set_ccache(struct cli_credentials *cred, 
+			       struct loadparm_context *lp_ctx,
 			       const char *name, 
 			       enum credentials_obtained obtained)
 {
@@ -142,7 +143,7 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, 
 					       &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
@@ -201,6 +202,7 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 
 
 static int cli_credentials_new_ccache(struct cli_credentials *cred, 
+				      struct loadparm_context *lp_ctx,
 				      struct ccache_container **_ccc)
 {
 	krb5_error_code ret;
@@ -218,7 +220,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, 
 					       &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
@@ -250,12 +252,13 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 }
 
 int cli_credentials_get_ccache(struct cli_credentials *cred, 
+			       struct loadparm_context *lp_ctx,
 			       struct ccache_container **ccc)
 {
 	krb5_error_code ret;
 	
 	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+		cli_credentials_set_machine_account(cred, lp_ctx);
 	}
 
 	if (cred->ccache_obtained >= cred->ccache_threshold && 
@@ -267,7 +270,7 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_new_ccache(cred, ccc);
+	ret = cli_credentials_new_ccache(cred, lp_ctx, ccc);
 	if (ret) {
 		return ret;
 	}
@@ -344,6 +347,7 @@ static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 }
 
 int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
+					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {
 	int ret = 0;
@@ -355,7 +359,7 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		*_gcc = cred->client_gss_creds;
 		return 0;
 	}
-	ret = cli_credentials_get_ccache(cred, 
+	ret = cli_credentials_get_ccache(cred, lp_ctx, 
 					 &ccache);
 	if (ret) {
 		DEBUG(1, ("Failed to get CCACHE for GSSAPI client: %s\n", error_message(ret)));
@@ -397,6 +401,7 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 */
 
 int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					 struct loadparm_context *lp_ctx,
 					 gss_cred_id_t gssapi_cred,
 					 enum credentials_obtained obtained) 
 {
@@ -413,7 +418,7 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_new_ccache(cred, &ccc);
+	ret = cli_credentials_new_ccache(cred, lp_ctx, &ccc);
 	if (ret != 0) {
 		return ret;
 	}
@@ -450,6 +455,7 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
  * it will be generated from the password.
  */
 int cli_credentials_get_keytab(struct cli_credentials *cred, 
+			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc)
 {
 	krb5_error_code ret;
@@ -468,7 +474,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, 
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, 
 					       &smb_krb5_context);
 	if (ret) {
 		return ret;
@@ -503,6 +509,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
  * FILE:/etc/krb5.keytab), open it and attach it */
 
 int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
+				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained) 
 {
@@ -515,7 +522,7 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
@@ -540,7 +547,8 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 	return ret;
 }
 
-int cli_credentials_update_keytab(struct cli_credentials *cred) 
+int cli_credentials_update_keytab(struct cli_credentials *cred, 
+				  struct loadparm_context *lp_ctx) 
 {
 	krb5_error_code ret;
 	struct keytab_container *ktc;
@@ -553,7 +561,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, &smb_krb5_context);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -561,7 +569,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 
 	enctype_strings = cli_credentials_get_enctype_strings(cred);
 	
-	ret = cli_credentials_get_keytab(cred, &ktc);
+	ret = cli_credentials_get_keytab(cred, lp_ctx, &ktc);
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -576,6 +584,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 /* Get server gss credentials (in gsskrb5, this means the keytab) */
 
 int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
+					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {
 	int ret = 0;
@@ -593,13 +602,12 @@ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, global_loadparm, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, lp_ctx, &smb_krb5_context);
 	if (ret) {
 		return ret;
 	}
 
-	ret = cli_credentials_get_keytab(cred, 
-					 &ktc);
+	ret = cli_credentials_get_keytab(cred, lp_ctx, &ktc);
 	if (ret) {
 		DEBUG(1, ("Failed to get keytab for GSSAPI server: %s\n", error_message(ret)));
 		return ret;

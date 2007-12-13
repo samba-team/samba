@@ -96,7 +96,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 	case 'P':
 		/* Later, after this is all over, get the machine account details from the secrets.ldb */
-		cli_credentials_set_machine_account_pending(cmdline_credentials);
+		cli_credentials_set_machine_account_pending(cmdline_credentials, cmdline_lp_ctx);
 		break;
 
 	case OPT_KERBEROS:

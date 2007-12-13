@@ -305,13 +305,13 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	 * (chewing CPU time) from the password */
 	keytab = ldb_msg_find_attr_as_string(msgs[0], "krb5Keytab", NULL);
 	if (keytab) {
-		cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
+		cli_credentials_set_keytab_name(cred, lp_ctx, keytab, CRED_SPECIFIED);
 	} else {
 		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
 			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, lp_ctx, keytab));
 			if (keytab) {
-				cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
+				cli_credentials_set_keytab_name(cred, lp_ctx, keytab, CRED_SPECIFIED);
 			}
 		}
 	}
@@ -326,7 +326,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
+NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
+					     struct loadparm_context *lp_ctx)
 {
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine
@@ -335,7 +336,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
 					   SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
 }
@@ -369,6 +370,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
+					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {
 	char *filter;
@@ -380,7 +382,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, global_loadparm, NULL, 
+	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN, filter);
 }
 
@@ -393,9 +395,11 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
  *       than during, popt processing.
  *
  */
-void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
+void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
+						 struct loadparm_context *lp_ctx)
 {
 	cred->machine_account_pending = true;
+	cred->machine_account_pending_lp_ctx = lp_ctx;
 }
 
 

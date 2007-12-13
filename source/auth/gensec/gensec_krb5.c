@@ -246,7 +246,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 
 	principal = gensec_get_target_principal(gensec_security);
 
-	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), &ccache_container);
+	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), gensec_security->lp_ctx, &ccache_container);
 	switch (ret) {
 	case 0:
 		break;
@@ -444,7 +444,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		}	
 
 		/* Grab the keytab, however generated */
-		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), &keytab);
+		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), gensec_security->lp_ctx, &keytab);
 		if (ret) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}

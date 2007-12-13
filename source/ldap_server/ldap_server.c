@@ -397,7 +397,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	}
 	
 	cli_credentials_set_conf(server_credentials, conn->lp_ctx);
-	status = cli_credentials_set_machine_account(server_credentials);
+	status = cli_credentials_set_machine_account(server_credentials, conn->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
 		return;

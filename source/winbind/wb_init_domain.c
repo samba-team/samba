@@ -157,7 +157,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	/* Connect the machine account to the credentials */
 	state->ctx->status =
-		cli_credentials_set_machine_account(state->domain->libnet_ctx->cred);
+		cli_credentials_set_machine_account(state->domain->libnet_ctx->cred, state->domain->libnet_ctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
 	state->domain->netlogon_binding = init_domain_binding(state, &ndr_table_netlogon);

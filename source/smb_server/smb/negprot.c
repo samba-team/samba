@@ -375,7 +375,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		}
 		
 		cli_credentials_set_conf(server_credentials, req->smb_conn->lp_ctx);
-		nt_status = cli_credentials_set_machine_account(server_credentials);
+		nt_status = cli_credentials_set_machine_account(server_credentials, req->smb_conn->lp_ctx);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));
 			talloc_free(server_credentials);
