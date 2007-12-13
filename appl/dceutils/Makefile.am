@@ -23,6 +23,12 @@ k5dcecon_SOURCES  = k5dcecon.c k5dce.h
 
 dpagaix_SOURCES = dpagaix.c
 
+EXTRA_DIST = \
+	dfspag.exp \
+	README.dcedfs \
+	README.original \
+	testpag.c
+
 if IRIX
 LDADD = $(LIB_dce)
 else
