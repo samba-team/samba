@@ -44,10 +44,9 @@ static struct winbindd_child static_idmap_child;
 
 void init_idmap_child(void)
 {
-	setup_domain_child(NULL,
-			   &static_idmap_child,
-			   idmap_dispatch_table,
-			   "idmap");
+	setup_child(&static_idmap_child,
+		    idmap_dispatch_table,
+		    "log.winbindd", "idmap");
 }
 
 struct winbindd_child *idmap_child(void)

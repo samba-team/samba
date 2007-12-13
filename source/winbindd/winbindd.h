@@ -143,8 +143,6 @@ struct winbindd_child_dispatch_table {
 					  struct winbindd_cli_state *state);
 };
 
-extern const struct winbindd_child_dispatch_table domain_dispatch_table[];
-
 struct winbindd_child {
 	struct winbindd_child *next, *prev;
 

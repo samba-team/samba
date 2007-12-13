@@ -408,80 +408,6 @@ void sendto_domain(struct winbindd_cli_state *state,
 			     recvfrom_child, state);
 }
 
-const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
-	{
-		.name		= "LOOKUPSID",
-		.struct_cmd	= WINBINDD_LOOKUPSID,
-		.struct_fn	= winbindd_dual_lookupsid,
-	},{
-		.name		= "LOOKUPNAME",
-		.struct_cmd	= WINBINDD_LOOKUPNAME,
-		.struct_fn	= winbindd_dual_lookupname,
-	},{
-		.name		= "LOOKUPRIDS",
-		.struct_cmd	= WINBINDD_LOOKUPRIDS,
-		.struct_fn	= winbindd_dual_lookuprids,
-	},{
-		.name		= "LIST_TRUSTDOM",
-		.struct_cmd	= WINBINDD_LIST_TRUSTDOM,
-		.struct_fn	= winbindd_dual_list_trusted_domains,
-	},{
-		.name		= "INIT_CONNECTION",
-		.struct_cmd	= WINBINDD_INIT_CONNECTION,
-		.struct_fn	= winbindd_dual_init_connection,
-	},{
-		.name		= "GETDCNAME",
-		.struct_cmd	= WINBINDD_GETDCNAME,
-		.struct_fn	= winbindd_dual_getdcname,
-	},{
-		.name		= "SHOW_SEQUENCE",
-		.struct_cmd	= WINBINDD_SHOW_SEQUENCE,
-		.struct_fn	= winbindd_dual_show_sequence,
-	},{
-		.name		= "PAM_AUTH",
-		.struct_cmd	= WINBINDD_PAM_AUTH,
-		.struct_fn	= winbindd_dual_pam_auth,
-	},{
-		.name		= "AUTH_CRAP",
-		.struct_cmd	= WINBINDD_PAM_AUTH_CRAP,
-		.struct_fn	= winbindd_dual_pam_auth_crap,
-	},{
-		.name		= "PAM_LOGOFF",
-		.struct_cmd	= WINBINDD_PAM_LOGOFF,
-		.struct_fn	= winbindd_dual_pam_logoff,
-	},{
-		.name		= "CHNG_PSWD_AUTH_CRAP",
-		.struct_cmd	= WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,
-		.struct_fn	= winbindd_dual_pam_chng_pswd_auth_crap,
-	},{
-		.name		= "PAM_CHAUTHTOK",
-		.struct_cmd	= WINBINDD_PAM_CHAUTHTOK,
-		.struct_fn	= winbindd_dual_pam_chauthtok,
-	},{
-		.name		= "CHECK_MACHACC",
-		.struct_cmd	= WINBINDD_CHECK_MACHACC,
-		.struct_fn	= winbindd_dual_check_machine_acct,
-	},{
-		.name		= "DUAL_USERINFO",
-		.struct_cmd	= WINBINDD_DUAL_USERINFO,
-		.struct_fn	= winbindd_dual_userinfo,
-	},{
-		.name		= "GETUSERDOMGROUPS",
-		.struct_cmd	= WINBINDD_GETUSERDOMGROUPS,
-		.struct_fn	= winbindd_dual_getuserdomgroups,
-	},{
-		.name		= "GETSIDALIASES",
-		.struct_cmd	= WINBINDD_DUAL_GETSIDALIASES,
-		.struct_fn	= winbindd_dual_getsidaliases,
-	},{
-		.name		= "CCACHE_NTLM_AUTH",
-		.struct_cmd	= WINBINDD_CCACHE_NTLMAUTH,
-		.struct_fn	= winbindd_dual_ccache_ntlm_auth,
-	},{
-		.name		= NULL,
-	}
-};
-
 static void child_process_request(struct winbindd_child *child,
 				  struct winbindd_cli_state *state)
 {
@@ -513,27 +439,22 @@ static void child_process_request(struct winbindd_child *child,
 	state->response.result = WINBINDD_ERROR;
 }
 
-void setup_domain_child(struct winbindd_domain *domain,
-			struct winbindd_child *child,
-			const struct winbindd_child_dispatch_table *table,
-			const char *explicit_logfile)
+void setup_child(struct winbindd_child *child,
+		 const struct winbindd_child_dispatch_table *table,
+		 const char *logprefix,
+		 const char *logname)
 {
-	if (explicit_logfile != NULL) {
-		if (asprintf(&child->logfilename, "%s/log.winbindd-%s",
-			     get_dyn_LOGFILEBASE(), explicit_logfile) < 0) {
-			smb_panic("Internal error: asprintf failed");
-		}
-	} else if (domain != NULL) {
-		if (asprintf(&child->logfilename, "%s/log.wb-%s",
-			     get_dyn_LOGFILEBASE(), domain->name) < 0) {
+	if (logprefix && logname) {
+		if (asprintf(&child->logfilename, "%s/%s-%s",
+			     get_dyn_LOGFILEBASE(), logprefix, logname) < 0) {
 			smb_panic("Internal error: asprintf failed");
 		}
 	} else {
-		smb_panic("Internal error: domain == NULL && "
-			  "explicit_logfile == NULL");
+		smb_panic("Internal error: logprefix == NULL && "
+			  "logname == NULL");
 	}
 
-	child->domain = domain;
+	child->domain = NULL;
 	child->table = table;
 }
 
