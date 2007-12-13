@@ -223,7 +223,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	 *   with 2 retries
 	 */
 	state->release.in.name        = *state->io->in.name;
-	state->release.in.dest_port   = lp_nbt_port(global_loadparm);
+	state->release.in.dest_port   = lp_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
 	state->release.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->release.in.address     = state->release.in.dest_addr;
 	state->release.in.broadcast   = false;

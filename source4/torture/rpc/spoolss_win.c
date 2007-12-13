@@ -420,6 +420,8 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	char *server_name;
 	char *key_pointer;
 
+	ntvfs_init(tctx->lp_ctx);
+
 	ctx = talloc_zero(tctx, struct test_spoolss_win_context);
 	tmp_ctx = talloc_zero(tctx, struct test_spoolss_win_context);
 
@@ -570,7 +572,6 @@ struct torture_suite *torture_rpc_spoolss_win(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
 							"win", &ndr_table_spoolss);
 
-	ntvfs_init(global_loadparm);
 	torture_rpc_tcase_add_test(tcase, "testWinXP", test_WinXP);
 
 	return suite;

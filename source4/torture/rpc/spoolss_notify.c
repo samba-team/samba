@@ -195,6 +195,8 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	const char *address;
 	struct interface *ifaces;
 
+	ntvfs_init(tctx->lp_ctx);
+
 	ZERO_STRUCT(q);
 
 	q.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
@@ -291,7 +293,6 @@ struct torture_suite *torture_rpc_spoolss_notify(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
 							"notify", &ndr_table_spoolss);
 
-	ntvfs_init(global_loadparm);
 	torture_rpc_tcase_add_test(tcase, "testRFFPCNEx", test_RFFPCNEx);
 	
 	return suite;
