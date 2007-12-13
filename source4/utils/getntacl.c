@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "lib/util/wrap_xattr.h"
+#include "param/param.h"
 
 static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 
@@ -71,7 +72,7 @@ static NTSTATUS get_ntacl(TALLOC_CTX *mem_ctx,
 	}
 	blob.length = size;
 
-	ndr = ndr_pull_init_blob(&blob, NULL);
+	ndr = ndr_pull_init_blob(&blob, NULL, lp_iconv_convenience(global_loadparm));
 
 	ndr_err = ndr_pull_xattr_NTACL(ndr, NDR_SCALARS|NDR_BUFFERS, *ntacl);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

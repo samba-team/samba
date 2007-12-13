@@ -116,10 +116,10 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 
 	call->mem_ctx = mem_ctx;
 
-	call->ndr_pull_param = ndr_pull_init_blob(&trans->in.params, mem_ctx);
+	call->ndr_pull_param = ndr_pull_init_blob(&trans->in.params, mem_ctx, lp_iconv_convenience(global_loadparm));
 	call->ndr_pull_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_pull_data = ndr_pull_init_blob(&trans->in.data, mem_ctx);
+	call->ndr_pull_data = ndr_pull_init_blob(&trans->in.data, mem_ctx, lp_iconv_convenience(global_loadparm));
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 
 	call->heap = talloc(mem_ctx, struct rap_string_heap);

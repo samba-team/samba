@@ -326,7 +326,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	pkt->u.request.stub_and_verifier.length -= auth_blob.length;
 
 	/* pull the auth structure */
-	ndr = ndr_pull_init_blob(&auth_blob, call);
+	ndr = ndr_pull_init_blob(&auth_blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
 	if (!ndr) {
 		return false;
 	}

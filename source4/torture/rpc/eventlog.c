@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_eventlog_c.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -137,7 +138,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		blob.length = *r.out.sent_size;
 		blob.data = talloc_steal(tctx, r.out.data);
 
-		ndr = ndr_pull_init_blob(&blob, tctx);
+		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
 
 		ndr_err = ndr_pull_eventlog_Record(
 			ndr, NDR_SCALARS|NDR_BUFFERS, &rec);

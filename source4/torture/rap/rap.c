@@ -229,10 +229,12 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree, struct rap_call *call)
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	call->ndr_pull_param = ndr_pull_init_blob(&trans.out.params, call);
+	call->ndr_pull_param = ndr_pull_init_blob(&trans.out.params, call,
+						  lp_iconv_convenience(global_loadparm));
 	call->ndr_pull_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_pull_data = ndr_pull_init_blob(&trans.out.data, call);
+	call->ndr_pull_data = ndr_pull_init_blob(&trans.out.data, call,
+						 lp_iconv_convenience(global_loadparm));
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 
 	return result;

@@ -164,13 +164,13 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 }
 
 
-/*
+/**
   setup for a ndr pull, also setting up any flags from the binding string
 */
 static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c, 
 					    DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
-	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);
+	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx, lp_iconv_convenience(global_loadparm));
 
 	if (ndr == NULL) return ndr;
 

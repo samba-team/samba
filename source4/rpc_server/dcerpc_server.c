@@ -821,7 +821,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
 	}
 
-	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
+	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call,
+				  lp_iconv_convenience(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(pull);
 
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -1049,7 +1050,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
 
-	ndr = ndr_pull_init_blob(&blob, call);
+	ndr = ndr_pull_init_blob(&blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
 	if (!ndr) {
 		talloc_free(dce_conn->partial_input.data);
 		talloc_free(call);

@@ -798,7 +798,7 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 
 	m->from = src;
 
-	m->ndr = ndr_pull_init_blob(packet, m);
+	m->ndr = ndr_pull_init_blob(packet, m, lp_iconv_convenience(global_loadparm));
 	if (m->ndr == NULL) goto failed;
 
 	m->ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
