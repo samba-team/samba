@@ -282,6 +282,32 @@ WERROR NetGetJoinInformation(const char *server_name,
 		goto done;
 	}
 
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+		if ((lp_security() == SEC_ADS) && lp_realm()) {
+			*name_buffer = SMB_STRDUP(lp_realm());
+		} else {
+			*name_buffer = SMB_STRDUP(lp_workgroup());
+		}
+		if (!*name_buffer) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+		switch (lp_server_role()) {
+			case ROLE_DOMAIN_MEMBER:
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+				*name_type = NetSetupDomainName;
+				break;
+			case ROLE_STANDALONE:
+			default:
+				*name_type = NetSetupWorkgroupName;
+				break;
+		}
+
+		werr = WERR_OK;
+		goto done;
+	}
+
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
