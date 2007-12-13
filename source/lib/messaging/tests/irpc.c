@@ -221,13 +221,17 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 	torture_assert(tctx, data->msg_ctx1 = 
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx), 
-				      cluster_id(MSG_ID1), data->ev),
+				      cluster_id(MSG_ID1),
+				      lp_iconv_convenience(tctx->lp_ctx),
+				      data->ev),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx),
-				      cluster_id(MSG_ID2), data->ev),
+				      cluster_id(MSG_ID2), 
+				      lp_iconv_convenience(tctx->lp_ctx),
+				      data->ev),
 		       "Failed to init second messaging context");
 
 	/* register the server side function */

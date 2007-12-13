@@ -72,7 +72,7 @@ static NTSTATUS get_ntacl(TALLOC_CTX *mem_ctx,
 	}
 	blob.length = size;
 
-	ndr = ndr_pull_init_blob(&blob, NULL, lp_iconv_convenience(global_loadparm));
+	ndr = ndr_pull_init_blob(&blob, NULL, NULL);
 
 	ndr_err = ndr_pull_xattr_NTACL(ndr, NDR_SCALARS|NDR_BUFFERS, *ntacl);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

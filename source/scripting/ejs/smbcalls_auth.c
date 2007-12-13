@@ -56,7 +56,8 @@ static int ejs_doauth(MprVarHandle eid,
 	} else {
 		/* Hope we can find the event context somewhere up there... */
 		ev = event_context_find(tmp_ctx);
-		msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, global_loadparm), ev);
+		msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, global_loadparm), 
+					    lp_iconv_convenience(global_loadparm), ev);
 	}
 
 	if (auth_types) {
