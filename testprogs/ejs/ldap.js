@@ -51,6 +51,8 @@ dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectclass: user
 objectclass: person
 cN: LDAPtestUSER
+givenname: ldap
+sn: testy
 ");
 	if (ok.error != 0) {
 		ok = ldb.del("cn=ldaptestuser,cn=users," + base_dn);
@@ -63,6 +65,8 @@ dn: cn=ldaptestuser,cn=uSers," + base_dn + "
 objectclass: user
 objectclass: person
 cN: LDAPtestUSER
+givenname: ldap
+sn: testy
 ");
 		if (ok.error != 0) {
 			println(ok.errstr);
@@ -112,6 +116,7 @@ dn: cn=ldaptest2computer,cn=computers," + base_dn + "
 objectClass: computer
 cn: LDAPtest2COMPUTER
 userAccountControl: 4096
+displayname: ldap testy
 ");
 	if (ok.error != 0) {
 		ok = ldb.del("cn=ldaptest2computer,cn=computers," + base_dn);
@@ -124,6 +129,7 @@ dn: cn=ldaptest2computer,cn=computers," + base_dn + "
 objectClass: computer
 cn: LDAPtest2COMPUTER
 userAccountControl: 4096
+displayname: ldap testy
 ");
 		if (ok.error != 0) {
 			println(ok.errstr);
@@ -151,6 +157,8 @@ dn: cn=ldaptestuser2,cn=useRs," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER2
+givenname: testy
+sn: ldap user2
 ");
 	if (ok.error != 0) {
 		ok = ldb.del("cn=ldaptestuser2,cn=users," + base_dn);
@@ -163,11 +171,143 @@ dn: cn=ldaptestuser2,cn=useRs," + base_dn + "
 objectClass: person
 objectClass: user
 cn: LDAPtestUSER2
+givenname: testy
+sn: ldap user2
 ");
 		if (ok.error != 0) {
 			println(ok.errstr);
 			assert(ok.error == 0);
 		}
+	}
+
+
+	println("Testing Ambigious Name Resolution");
+	println("Testing ldb.search for (&(anr=ldap testy)(objectClass=user))");
+	var res = ldb.search("(&(anr=ldap testy)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 3) {
+		println("Could not find (&(anr=ldap testy)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 3);
+	}
+
+	println("Testing ldb.search for (&(anr=testy ldap)(objectClass=user))");
+	var res = ldb.search("(&(anr=testy ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 2) {
+		println("Could not find (&(anr=testy ldap)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 2);
+	}
+
+	println("Testing ldb.search for (&(anr=ldap)(objectClass=user))");
+	var res = ldb.search("(&(anr=ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 4) {
+		println("Found only " + res.msgs.length + " for (&(anr=ldap)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 4);
+	} 
+
+	println("Testing ldb.search for (&(anr==ldap)(objectClass=user))");
+	var res = ldb.search("(&(anr==ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr==ldap)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser");
+	assert(res.msgs[0].name == "ldaptestuser");
+
+	println("Testing ldb.search for (&(anr=testy)(objectClass=user))");
+	var res = ldb.search("(&(anr=testy)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 2) {
+		println("Could not find (&(anr=testy)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 2);
+	}
+
+	println("Testing ldb.search for (&(anr=ldap testy)(objectClass=user))");
+	var res = ldb.search("(&(anr=testy ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 2) {
+		println("Could not find (&(anr=ldap testy)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 2);
+	}
+
+	println("Testing ldb.search for (&(anr==ldap testy)(objectClass=user))");
+	var res = ldb.search("(&(anr==testy ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr==ldap testy)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser");
+	assert(res.msgs[0].name == "ldaptestuser");
+
+	println("Testing ldb.search for (&(anr==testy ldap)(objectClass=user))");
+	var res = ldb.search("(&(anr==testy ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr==testy ldap)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser");
+	assert(res.msgs[0].name == "ldaptestuser");
+
+	println("Testing ldb.search for (&(anr=testy ldap user)(objectClass=user))");
+	var res = ldb.search("(&(anr=testy ldap user)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr=testy ldap user)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser2,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser2");
+	assert(res.msgs[0].name == "ldaptestuser2");
+
+	println("Testing ldb.search for (&(anr==testy ldap user2)(objectClass=user))");
+	var res = ldb.search("(&(anr==testy ldap user2)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr==testy ldap user2)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser2,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser2");
+	assert(res.msgs[0].name == "ldaptestuser2");
+
+	println("Testing ldb.search for (&(anr==ldap user2)(objectClass=user))");
+	var res = ldb.search("(&(anr==ldap user2)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(anr==ldap user2)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestuser2,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestuser2");
+	assert(res.msgs[0].name == "ldaptestuser2");
+
+	println("Testing ldb.search for (&(anr==not ldap user2)(objectClass=user))");
+	var res = ldb.search("(&(anr==not ldap user2)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 0) {
+		println("Must not find (&(anr==not ldap user2)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 0);
+	}
+
+	println("Testing ldb.search for (&(anr=not ldap user2)(objectClass=user))");
+	var res = ldb.search("(&(anr=not ldap user2)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 0) {
+		println("Must not find (&(anr=not ldap user2)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 0);
 	}
 
 	println("Testing Group Modifies");
@@ -877,6 +1017,20 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn + "
 	assert(res.msgs[0].objectClass[3] == "user");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
+
+	ok = ldb.del(res.msgs[0].dn);
+	if (ok.error != 0) {
+		println(ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestutf8user2*)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestutf8user2*)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestutf8user2*)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
 
 	ok = ldb.del(res.msgs[0].dn);
 	if (ok.error != 0) {
