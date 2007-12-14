@@ -4654,6 +4654,11 @@ static int do_message_op(void)
 		case 'g':
 			grepable=true;
 			break;
+		default:
+			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				  poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
 		}
 	}
 
