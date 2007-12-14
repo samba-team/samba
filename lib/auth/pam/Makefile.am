@@ -35,13 +35,12 @@ MOD = pam_krb4.so
 
 endif
 
-EXTRA_DIST = pam.conf.add
-
 foodir = $(libdir)
 foo_DATA = $(MOD)
 
 LDFLAGS = @LDFLAGS@
 
+SRCS = pam.c
 OBJS = pam.o
 
 pam_krb4.so: $(OBJS)
@@ -66,3 +65,5 @@ SUFFIXES += .c .o
 	$(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	-c `test -f '$<' || echo '$(srcdir)/'`$<
+
+EXTRA_DIST = pam.conf.add $(SRCS)
