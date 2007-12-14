@@ -18,7 +18,6 @@
 */
 
 #include <includes.h>
-#include <dns_sd.h>
 
 /* Uses DNS service discovery (libdns_sd) to
  * register the SMB service. SMB service is registered
@@ -31,12 +30,14 @@
 
 #define DNS_REG_RETRY_INTERVAL (5*60)  /* in seconds */
 
+#ifdef WITH_DNSSD_SUPPORT
+
+#include <dns_sd.h>
+
 struct dns_reg_state {
 	DNSServiceRef srv_ref;
 	struct timed_event *retry_handler;
 };
-
-#ifdef WITH_DNSSD_SUPPORT
 
 void dns_register_close(struct dns_reg_state **dns_state_ptr)
 {
