@@ -11,7 +11,7 @@ sh ${srcdir}/slapd-stop > /dev/null
 
 SCHEMA_NEEDED="hdb core nis cosine inetorgperson openldap samba"
 
-SCHEMA_PATHS="${srcdir}/../../lib/hdb ${srcdir} /etc/ldap/schema /etc/openldap/schema /private/etc/openldap/schema"
+SCHEMA_PATHS="${srcdir}/../../lib/hdb ${srcdir} /etc/ldap/schema /etc/openldap/schema /private/etc/openldap/schema /usr/share/openldap/schema"
 
 test -d schema || mkdir schema
 
