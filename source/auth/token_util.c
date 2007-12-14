@@ -85,7 +85,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 		return token;
 
 	if ( !(pw = sys_getpwnam( "root" )) ) {
-		DEBUG(0,("get_root_nt_token: getpwnam\"root\") failed!\n"));
+		DEBUG(0,("get_root_nt_token: getpwnam(\"root\") failed!\n"));
 		return NULL;
 	}
 	
