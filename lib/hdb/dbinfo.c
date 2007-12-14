@@ -239,7 +239,7 @@ hdb_free_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 
 /**
  * Return the directory where the hdb database resides.
-
+ *
  * @param context Kerberos 5 context.
  *
  * @return string pointing to directory.
@@ -249,4 +249,18 @@ const char *
 hdb_db_dir(krb5_context context)
 {
     return HDB_DB_DIR;
+}
+
+/**
+ * Return the default hdb database resides.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return string pointing to directory.
+ */
+
+const char *
+hdb_default_db(krb5_context context)
+{
+    return HDB_DEFAULT_DB;
 }
