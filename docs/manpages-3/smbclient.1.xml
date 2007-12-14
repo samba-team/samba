@@ -49,7 +49,7 @@
 		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
-		<arg choice="opt">-l logdir</arg>
+		<arg choice="opt">-l log-basename</arg>
 		<arg choice="opt">-I destinationIP</arg>
 		<arg choice="opt">-E</arg>
 		<arg choice="opt">-c &lt;command string&gt;</arg>
