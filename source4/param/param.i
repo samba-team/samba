@@ -106,4 +106,4 @@ typedef struct param_section {
 } param_section;
 
 %rename(default_config) global_loadparm;
-//struct loadparm_context *global_loadparm ;
+struct loadparm_context *global_loadparm;
