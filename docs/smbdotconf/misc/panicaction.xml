@@ -6,7 +6,7 @@
 <description>
 	<para>This is a Samba developer option that allows a 
 	system command to be called when either <citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> or <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> or <citerefentry><refentrytitle>nmbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>	crashes. This is usually used to 
 	draw attention to the fact that a problem occurred.
 	</para>
