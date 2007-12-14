@@ -542,7 +542,6 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 						exit(1);
 					}
 					snprintf(user, sizeof(user), "%u", pw->pw_uid);
-					endpwent();
 				} else {
 					strlcpy(user,value,sizeof(user));
 				}
@@ -559,7 +558,6 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 						exit(1);
 					}
 					snprintf(group, sizeof(group), "%u", gr->gr_gid);
-					endpwent();
 				} else {
 					strlcpy(group,value,sizeof(group));
 				}
