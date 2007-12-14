@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "pstring.h"
 #include "system/filesys.h"
 #include "system/select.h"
 #include "system/readline.h"
@@ -78,7 +77,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 				      char **(completion_fn)(const char *text, int start, int end))
 {
 	fd_set fds;
-	static pstring line;
+	static char line[1024];
 	struct timeval timeout;
 	int fd = STDIN_FILENO;
 	char *ret;
@@ -91,7 +90,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 
 		FD_ZERO(&fds);
 		FD_SET(fd,&fds);
-	
+
 		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
 			ret = x_fgets(line, sizeof(line), x_stdin);
 			return ret;
