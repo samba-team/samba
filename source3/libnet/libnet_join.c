@@ -250,6 +250,16 @@ static WERROR do_modify_vals_config(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	bool is_ad = false;
 
+	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
+
+		werr = do_modify_val_config(key, "security", "user");
+		W_ERROR_NOT_OK_RETURN(werr);
+
+		werr = do_modify_val_config(key, "workgroup",
+					    r->in.domain_name);
+		return werr;
+	}
+
 	if (r->out.dns_domain_name) {
 		is_ad = true;
 	}
@@ -273,8 +283,8 @@ static WERROR do_modify_vals_config(TALLOC_CTX *mem_ctx,
 	return werr;
 }
 
-static WERROR do_DomainJoinConfig(TALLOC_CTX *mem_ctx,
-				  struct libnet_JoinCtx *r)
+static WERROR do_JoinConfig(TALLOC_CTX *mem_ctx,
+			    struct libnet_JoinCtx *r)
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
@@ -342,13 +352,18 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	werr = do_DomainJoin(mem_ctx, r);
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
+		werr = do_DomainJoin(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
+
+	werr = do_JoinConfig(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
-
-	werr = do_DomainJoinConfig(mem_ctx, r);
 
 	return werr;
 }
