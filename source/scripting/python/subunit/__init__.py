@@ -20,7 +20,6 @@
 
 import os
 from StringIO import StringIO
-import subprocess
 import sys
 import unittest
 
@@ -315,9 +314,8 @@ class ExecTestCase(unittest.TestCase):
 
     def _run(self, result):
         protocol = TestProtocolServer(result)
-        output = subprocess.Popen([self.script],
-                                  stdout=subprocess.PIPE).communicate()[0]
-        protocol.readFrom(StringIO(output))
+        output = os.popen(self.script, mode='r')
+        protocol.readFrom(output)
 
 
 class IsolatedTestCase(unittest.TestCase):
