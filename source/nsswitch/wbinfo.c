@@ -1340,6 +1340,7 @@ int main(int argc, char **argv, char **envp)
 			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
+		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1347,16 +1348,6 @@ int main(int argc, char **argv, char **envp)
 	/* Samba client initialisation */
 	load_case_tables();
 
-	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
-		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
-			get_dyn_CONFIGFILE(), strerror(errno));
-		exit(1);
-	}
-
-	if (!init_names())
-		return 1;
-
-	load_interfaces();
 
 	/* Parse options */
 
@@ -1374,6 +1365,17 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	poptFreeContext(pc);
+
+	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
+		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
+			get_dyn_CONFIGFILE(), strerror(errno));
+		exit(1);
+	}
+
+	if (!init_names())
+		return 1;
+
+	load_interfaces();
 
 	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
