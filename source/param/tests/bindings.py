@@ -25,7 +25,7 @@ class LoadParmTestCase(unittest.TestCase):
         file = param.LoadParm()
         self.assertTrue(file is not None)
 
-    def test_lenght(self):
+    def test_length(self):
         file = param.LoadParm()
         self.assertEquals(0, len(file))
 
