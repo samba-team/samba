@@ -60,6 +60,8 @@ sub ParseInterface($$)
 	pidl "typedef struct $if->{NAME} { struct dcerpc_pipe *pipe; } $if->{NAME};";
 	pidl "}";
 	pidl "";
+	pidl "%talloctype($if->{NAME});";
+	pidl "";
 	pidl "\%extend $if->{NAME} {";
 	indent();
 	pidl "$if->{NAME} () {";
@@ -73,10 +75,6 @@ sub ParseInterface($$)
 	indent;
 	pidl "return dcerpc_pipe_connect(\$self, &\$self->pipe, binding, &ndr_table_$if->{NAME}, cred, event);";
 	deindent;
-	pidl "}";
-	pidl "";
-	pidl "~$if->{NAME}() {";
-	pidl "\ttalloc_free(\$self);";
 	pidl "}";
 	pidl "";
 
@@ -158,6 +156,7 @@ sub Parse($$$$)
 	pidl "%}";
 	pidl "\%import \"../rpc/dcerpc.i\"";
 	pidl "\%import \"../../libcli/util/errors.i\"";
+	pidl "\%import \"../../lib/talloc/talloc.i\"";
 	pidl "";
 	foreach (@$ndr) {
 		IgnoreInterface($basename, $_) if ($_->{TYPE} eq "INTERFACE");
