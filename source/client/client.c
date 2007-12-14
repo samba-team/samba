@@ -3003,6 +3003,7 @@ static int process_stdin(struct smbclient_context *ctx)
 		/* special case - first char is ! */
 		if (*cline == '!') {
 			system(cline + 1);
+			free(cline);
 			continue;
 		}
 
