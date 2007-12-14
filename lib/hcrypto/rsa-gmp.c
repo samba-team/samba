@@ -37,7 +37,6 @@
 
 RCSID("$Id$");
 
-#ifdef HAVE_GMP
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +46,8 @@ RCSID("$Id$");
 #include <rsa.h>
 
 #include <roken.h>
+
+#ifdef HAVE_GMP
 
 #include <gmp.h>
 
