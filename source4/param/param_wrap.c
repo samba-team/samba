@@ -2524,7 +2524,6 @@ typedef struct loadparm_service loadparm_service;
 typedef struct param_section param_section;
 
 SWIGINTERN loadparm_context *new_loadparm_context(TALLOC_CTX *mem_ctx){ return loadparm_init(mem_ctx); }
-SWIGINTERN void delete_loadparm_context(loadparm_context *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -2640,6 +2639,7 @@ SWIG_FromCharPtr(const char *cptr)
 
 SWIGINTERN bool loadparm_context_is_mydomain(loadparm_context *self,char const *domain){ return lp_is_mydomain(self, domain); }
 SWIGINTERN bool loadparm_context_is_myname(loadparm_context *self,char const *name){ return lp_is_myname(self, name); }
+SWIGINTERN void delete_loadparm_context(loadparm_context *self){ talloc_free(self); }
 SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self){ return volume_label(self); }
 SWIGINTERN char const *loadparm_service_printername(loadparm_service *self){ return lp_printername(self); }
 SWIGINTERN int loadparm_service_maxprintjobs(loadparm_service *self){ return lp_maxprintjobs(self); }
@@ -2659,36 +2659,6 @@ SWIGINTERN PyObject *_wrap_new_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject
   if (!SWIG_Python_UnpackTuple(args,"new_LoadParm",0,0,0)) SWIG_fail;
   result = (loadparm_context *)new_loadparm_context(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_loadparm_context, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
-  loadparm_context *arg1 = (loadparm_context *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  char *  kwnames[] = {
-    (char *) "self", NULL 
-  };
-  
-  {
-    arg1 = loadparm_init(NULL);
-  }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_LoadParm",kwnames,&obj0)) SWIG_fail;
-  if (obj0) {
-    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, SWIG_POINTER_DISOWN |  0 );
-    if (!SWIG_IsOK(res1)) {
-      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_LoadParm" "', argument " "1"" of type '" "loadparm_context *""'"); 
-    }
-    arg1 = (loadparm_context *)(argp1);
-  }
-  delete_loadparm_context(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -2931,6 +2901,36 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self", NULL 
+  };
+  
+  {
+    arg1 = loadparm_init(NULL);
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_LoadParm",kwnames,&obj0)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, SWIG_POINTER_DISOWN |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_LoadParm" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  delete_loadparm_context(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *LoadParm_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3029,29 +3029,6 @@ SWIGINTERN PyObject *_wrap_new_ParamFile(PyObject *SWIGUNUSEDPARM(self), PyObjec
   if (!SWIG_Python_UnpackTuple(args,"new_ParamFile",0,0,0)) SWIG_fail;
   result = (param *)new_param(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_context, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_ParamFile(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  param *arg1 = (param *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_context, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_ParamFile" "', argument " "1"" of type '" "param *""'"); 
-  }
-  arg1 = (param *)(argp1);
-  delete_param(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3313,6 +3290,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_ParamFile(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_context, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_ParamFile" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  delete_param(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *ParamFile_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3410,13 +3410,13 @@ SWIGINTERN PyObject *param_section_swiginit(PyObject *SWIGUNUSEDPARM(self), PyOb
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
-	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_load", (PyCFunction) _wrap_LoadParm_load, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___len__", (PyCFunction) _wrap_LoadParm___len__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___getitem__", (PyCFunction) _wrap_LoadParm___getitem__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_configfile", (PyCFunction) _wrap_LoadParm_configfile, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_is_mydomain", (PyCFunction) _wrap_LoadParm_is_mydomain, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_is_myname", (PyCFunction) _wrap_LoadParm_is_myname, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
 	 { (char *)"LoadParm_swiginit", LoadParm_swiginit, METH_VARARGS, NULL},
 	 { (char *)"loadparm_service_volume_label", (PyCFunction)_wrap_loadparm_service_volume_label, METH_O, NULL},
@@ -3424,13 +3424,13 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"loadparm_service_maxprintjobs", (PyCFunction)_wrap_loadparm_service_maxprintjobs, METH_O, NULL},
 	 { (char *)"loadparm_service_swigregister", loadparm_service_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_ParamFile", (PyCFunction)_wrap_new_ParamFile, METH_NOARGS, NULL},
-	 { (char *)"delete_ParamFile", (PyCFunction)_wrap_delete_ParamFile, METH_O, NULL},
 	 { (char *)"ParamFile_get_section", (PyCFunction) _wrap_ParamFile_get_section, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_get", (PyCFunction) _wrap_ParamFile_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set_string", (PyCFunction) _wrap_ParamFile_set_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_read", (PyCFunction) _wrap_ParamFile_read, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_use", (PyCFunction) _wrap_ParamFile_use, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_write", (PyCFunction) _wrap_ParamFile_write, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_ParamFile", (PyCFunction)_wrap_delete_ParamFile, METH_O, NULL},
 	 { (char *)"ParamFile_swigregister", ParamFile_swigregister, METH_VARARGS, NULL},
 	 { (char *)"ParamFile_swiginit", ParamFile_swiginit, METH_VARARGS, NULL},
 	 { (char *)"param_section_get", (PyCFunction) _wrap_param_section_get, METH_VARARGS | METH_KEYWORDS, NULL},

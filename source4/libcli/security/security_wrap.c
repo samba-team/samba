@@ -2529,7 +2529,6 @@ SWIG_From_int  (int value)
 }
 
 SWIGINTERN security_token *new_security_token(TALLOC_CTX *mem_ctx){ return security_token_initialise(mem_ctx); }
-SWIGINTERN void delete_security_token(security_token *self){ talloc_free(self); }
 
 SWIGINTERNINLINE PyObject*
   SWIG_From_bool  (bool value)
@@ -2682,6 +2681,7 @@ SWIG_AsVal_int (PyObject * obj, int *val)
   return res;
 }
 
+SWIGINTERN void delete_security_token(security_token *self){ talloc_free(self); }
 SWIGINTERN security_descriptor *new_security_descriptor(TALLOC_CTX *mem_ctx){ return security_descriptor_initialise(mem_ctx); }
 SWIGINTERN void delete_security_descriptor(security_descriptor *self){ talloc_free(self); }
 
@@ -2755,7 +2755,6 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 SWIGINTERN dom_sid *new_dom_sid(TALLOC_CTX *mem_ctx,char const *text){
             return dom_sid_parse_talloc(mem_ctx, text);
         }
-SWIGINTERN void delete_dom_sid(dom_sid *self){ talloc_free(self); }
 SWIGINTERN char const *dom_sid___str__(dom_sid *self,TALLOC_CTX *mem_ctx){
             return dom_sid_string(mem_ctx, self);
         }
@@ -2783,6 +2782,7 @@ SWIG_FromCharPtr(const char *cptr)
   return SWIG_FromCharPtrAndSize(cptr, (cptr ? strlen(cptr) : 0));
 }
 
+SWIGINTERN void delete_dom_sid(dom_sid *self){ talloc_free(self); }
 
 static struct dom_sid *random_sid(TALLOC_CTX *mem_ctx)
 {
@@ -2808,29 +2808,6 @@ SWIGINTERN PyObject *_wrap_new_SecurityToken(PyObject *SWIGUNUSEDPARM(self), PyO
   if (!SWIG_Python_UnpackTuple(args,"new_SecurityToken",0,0,0)) SWIG_fail;
   result = (security_token *)new_security_token(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_security_token, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_SecurityToken(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  security_token *arg1 = (security_token *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_security_token, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_SecurityToken" "', argument " "1"" of type '" "security_token *""'"); 
-  }
-  arg1 = (security_token *)(argp1);
-  delete_security_token(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3064,6 +3041,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_SecurityToken(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  security_token *arg1 = (security_token *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_security_token, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_SecurityToken" "', argument " "1"" of type '" "security_token *""'"); 
+  }
+  arg1 = (security_token *)(argp1);
+  delete_security_token(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *SecurityToken_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3086,29 +3086,6 @@ SWIGINTERN PyObject *_wrap_new_security_descriptor(PyObject *SWIGUNUSEDPARM(self
   if (!SWIG_Python_UnpackTuple(args,"new_security_descriptor",0,0,0)) SWIG_fail;
   result = (security_descriptor *)new_security_descriptor(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_security_descriptor, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_security_descriptor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  security_descriptor *arg1 = (security_descriptor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_security_descriptor, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_security_descriptor" "', argument " "1"" of type '" "security_descriptor *""'"); 
-  }
-  arg1 = (security_descriptor *)(argp1);
-  delete_security_descriptor(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3313,6 +3290,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_security_descriptor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  security_descriptor *arg1 = (security_descriptor *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_security_descriptor, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_security_descriptor" "', argument " "1"" of type '" "security_descriptor *""'"); 
+  }
+  arg1 = (security_descriptor *)(argp1);
+  delete_security_descriptor(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *security_descriptor_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3352,29 +3352,6 @@ SWIGINTERN PyObject *_wrap_new_Sid(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_Sid(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  dom_sid *arg1 = (dom_sid *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Sid" "', argument " "1"" of type '" "dom_sid *""'"); 
-  }
-  arg1 = (dom_sid *)(argp1);
-  delete_dom_sid(arg1);
-  
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
   return NULL;
 }
 
@@ -3434,6 +3411,29 @@ SWIGINTERN PyObject *_wrap_Sid___eq__(PyObject *SWIGUNUSEDPARM(self), PyObject *
   arg2 = (struct dom_sid *)(argp2);
   result = (bool)dom_sid_equal(arg1,(struct dom_sid const *)arg2);
   resultobj = SWIG_From_bool((bool)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_Sid(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  dom_sid *arg1 = (dom_sid *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Sid" "', argument " "1"" of type '" "dom_sid *""'"); 
+  }
+  arg1 = (dom_sid *)(argp1);
+  delete_dom_sid(arg1);
+  
+  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3523,7 +3523,6 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_SecurityToken", (PyCFunction)_wrap_new_SecurityToken, METH_NOARGS, NULL},
-	 { (char *)"delete_SecurityToken", (PyCFunction)_wrap_delete_SecurityToken, METH_O, NULL},
 	 { (char *)"SecurityToken_is_sid", (PyCFunction) _wrap_SecurityToken_is_sid, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"SecurityToken_is_system", (PyCFunction)_wrap_SecurityToken_is_system, METH_O, NULL},
 	 { (char *)"SecurityToken_is_anonymous", (PyCFunction)_wrap_SecurityToken_is_anonymous, METH_O, NULL},
@@ -3532,21 +3531,22 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"SecurityToken_has_nt_authenticated_users", (PyCFunction)_wrap_SecurityToken_has_nt_authenticated_users, METH_O, NULL},
 	 { (char *)"SecurityToken_has_privilege", (PyCFunction) _wrap_SecurityToken_has_privilege, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"SecurityToken_set_privilege", (PyCFunction) _wrap_SecurityToken_set_privilege, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_SecurityToken", (PyCFunction)_wrap_delete_SecurityToken, METH_O, NULL},
 	 { (char *)"SecurityToken_swigregister", SecurityToken_swigregister, METH_VARARGS, NULL},
 	 { (char *)"SecurityToken_swiginit", SecurityToken_swiginit, METH_VARARGS, NULL},
 	 { (char *)"new_security_descriptor", (PyCFunction)_wrap_new_security_descriptor, METH_NOARGS, NULL},
-	 { (char *)"delete_security_descriptor", (PyCFunction)_wrap_delete_security_descriptor, METH_O, NULL},
 	 { (char *)"security_descriptor_sacl_add", (PyCFunction) _wrap_security_descriptor_sacl_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor_dacl_add", (PyCFunction) _wrap_security_descriptor_dacl_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor_dacl_del", (PyCFunction) _wrap_security_descriptor_dacl_del, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor_sacl_del", (PyCFunction) _wrap_security_descriptor_sacl_del, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor___eq__", (PyCFunction) _wrap_security_descriptor___eq__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_security_descriptor", (PyCFunction)_wrap_delete_security_descriptor, METH_O, NULL},
 	 { (char *)"security_descriptor_swigregister", security_descriptor_swigregister, METH_VARARGS, NULL},
 	 { (char *)"security_descriptor_swiginit", security_descriptor_swiginit, METH_VARARGS, NULL},
 	 { (char *)"new_Sid", (PyCFunction) _wrap_new_Sid, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"delete_Sid", (PyCFunction)_wrap_delete_Sid, METH_O, NULL},
 	 { (char *)"Sid___str__", (PyCFunction)_wrap_Sid___str__, METH_O, NULL},
 	 { (char *)"Sid___eq__", (PyCFunction) _wrap_Sid___eq__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_Sid", (PyCFunction)_wrap_delete_Sid, METH_O, NULL},
 	 { (char *)"Sid_swigregister", Sid_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Sid_swiginit", Sid_swiginit, METH_VARARGS, NULL},
 	 { (char *)"random_sid", (PyCFunction)_wrap_random_sid, METH_NOARGS, NULL},

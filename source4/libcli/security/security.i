@@ -60,10 +60,11 @@ enum sec_privilege {
 
 %rename(SecurityToken) security_token;
 
+%talloctype(security_token);
+
 typedef struct security_token { 
     %extend {
         security_token(TALLOC_CTX *mem_ctx) { return security_token_initialise(mem_ctx); }
-        ~security_token() { talloc_free($self); }
         bool is_sid(const struct dom_sid *sid);
         bool is_system();
         bool is_anonymous();
@@ -75,10 +76,11 @@ typedef struct security_token {
     }
 } security_token;
 
+%talloctype(security_descriptor);
+
 typedef struct security_descriptor {
     %extend {
         security_descriptor(TALLOC_CTX *mem_ctx) { return security_descriptor_initialise(mem_ctx); }
-        ~security_descriptor() { talloc_free($self); }
         NTSTATUS sacl_add(const struct security_ace *ace);
         NTSTATUS dacl_add(const struct security_ace *ace);
         NTSTATUS dacl_del(const struct security_ace *ace);
@@ -92,12 +94,13 @@ typedef struct security_descriptor {
 
 %rename(Sid) dom_sid;
 
+%talloctype(dom_sid);
+
 typedef struct dom_sid {
     %extend {
         dom_sid(TALLOC_CTX *mem_ctx, const char *text) {
             return dom_sid_parse_talloc(mem_ctx, text);
         }
-        ~dom_sid() { talloc_free($self); }
 #ifdef SWIGPYTHON
         const char *__str__(TALLOC_CTX *mem_ctx) {
             return dom_sid_string(mem_ctx, $self);
