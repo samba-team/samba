@@ -74,7 +74,7 @@ _PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx,
 }
 
 /** Get predefined key by id. */
-_PUBLIC_ WERROR reg_get_predefined_key(const struct registry_context *ctx,
+_PUBLIC_ WERROR reg_get_predefined_key(struct registry_context *ctx,
 				       uint32_t hkey, struct registry_key **key)
 {
 	return ctx->ops->get_predefined_key(ctx, hkey, key);

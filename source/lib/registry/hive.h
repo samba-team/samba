@@ -82,7 +82,7 @@ struct hive_operations {
 	 * Retrieve a registry value with a specific index.
 	 */
 	WERROR (*enum_value) (TALLOC_CTX *mem_ctx,
-			      const struct hive_key *key, int idx,
+			      struct hive_key *key, int idx,
 			      const char **name, uint32_t *type,
 			      DATA_BLOB *data);
 

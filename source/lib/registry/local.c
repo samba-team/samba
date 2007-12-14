@@ -126,7 +126,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-WERROR local_get_predefined_key(const struct registry_context *ctx,
+WERROR local_get_predefined_key(struct registry_context *ctx,
 				uint32_t key_id, struct registry_key **key)
 {
 	struct registry_local *rctx = talloc_get_type(ctx,
@@ -168,7 +168,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 			       struct security_descriptor *security,
 			       struct registry_key **key)
 {
-	const struct local_key *local_parent;
+	struct local_key *local_parent;
 	struct hive_key *hivekey;
 	const char **elements;
 	int i;
@@ -177,11 +177,11 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 	last_part = strrchr(name, '\\');
 	if (last_part == NULL) {
 		last_part = name;
-		local_parent = (const struct local_key *)parent_key;
+		local_parent = (struct local_key *)parent_key;
 	} else {
 		W_ERROR_NOT_OK_RETURN(reg_open_key(mem_ctx, parent_key,
 						   talloc_strndup(mem_ctx, name, last_part-name),
-						   &local_parent));
+						   (struct registry_key **)&local_parent));
 		last_part++;
 	}
 

@@ -91,7 +91,7 @@ static struct {
 
 static WERROR rpc_query_key(const struct registry_key *k);
 
-static WERROR rpc_get_predefined_key(const struct registry_context *ctx,
+static WERROR rpc_get_predefined_key(struct registry_context *ctx,
 				     uint32_t hkey_type,
 				     struct registry_key **k)
 {

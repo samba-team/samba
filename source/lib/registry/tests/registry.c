@@ -535,7 +535,7 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 {
 	struct registry_context *rctx;
 	WERROR error;
-	const char *tempdir;
+	char *tempdir;
 	NTSTATUS status;
 	struct hive_key *hive_key;
 	const char *filename;
