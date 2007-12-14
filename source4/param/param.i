@@ -40,11 +40,10 @@ typedef struct param_section param_section;
     $1 = loadparm_init(NULL);
 }
 
-%typemap(freearg) struct loadparm_context * {
-    talloc_free($1);     
-}
-
 %rename(LoadParm) loadparm_context;
+
+%nodefaultctor loadparm_context;
+%nodefaultdtor loadparm_context;
 
 typedef struct loadparm_context {
     %extend {
@@ -85,13 +84,27 @@ typedef struct param_context {
         int use(struct param_context *);
         int write(const char *fn);
     }
+    %pythoncode {
+        def __getitem__(self, name):
+            ret = self.get_section(name)
+            if ret is None:
+                raise KeyError("No such section %s" % name)
+            return ret
+    }
 } param;
 
 typedef struct param_section {
     %extend {
         struct param_opt *get(const char *name);
     }
+    %pythoncode {
+        def __getitem__(self, name):
+            ret = self.get_section(name)
+            if ret is None:
+                raise KeyError("No such section %s" % name)
+            return ret
+    }
 } param_section;
 
 %rename(default_config) global_loadparm;
-struct loadparm_context *global_loadparm;
+//struct loadparm_context *global_loadparm ;
