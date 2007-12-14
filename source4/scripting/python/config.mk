@@ -1,7 +1,3 @@
-[PYTHON::python_param]
-PRIVATE_DEPENDENCIES = LIBSAMBA-CONFIG 
-OBJ_FILES = parammodule.o
-
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
 OBJ_FILES = uuidmodule.o
