@@ -22,3 +22,10 @@
 %typemap(in, numinputs=0) TALLOC_CTX * {
     $1 = NULL;
 }
+
+%define %talloctype(TYPE)
+%nodefaultctor TYPE;
+%extend TYPE {
+    ~TYPE() { talloc_free($self); }
+}
+%enddef
