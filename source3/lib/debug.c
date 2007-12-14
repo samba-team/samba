@@ -894,6 +894,10 @@ static void format_debug_text( const char *msg )
 	size_t i;
 	bool timestamp = (!stdout_logging && (lp_timestamp_logs() || !(lp_loaded())));
 
+	if (!format_bufr) {
+		debug_init();
+	}
+
 	for( i = 0; msg[i]; i++ ) {
 		/* Indent two spaces at each new line. */
 		if(timestamp && 0 == format_pos) {
