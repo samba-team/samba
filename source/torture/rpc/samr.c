@@ -824,6 +824,7 @@ static bool test_SetAliasInfo(struct dcerpc_pipe *p, struct torture_context *tct
 		    case ALIASINFONAME: init_lsa_String(&r.in.info->name,TEST_ALIASNAME); break;
 		    case ALIASINFODESCRIPTION: init_lsa_String(&r.in.info->description,
 				"Test Description, should test I18N as well"); break;
+		    case ALIASINFOALL: printf("ALIASINFOALL ignored\n"); break;
 		}
 
 		status = dcerpc_samr_SetAliasInfo(p, tctx, &r);

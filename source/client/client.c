@@ -2997,16 +2997,18 @@ static int process_stdin(struct smbclient_context *ctx)
 		char *the_prompt = talloc_asprintf(ctx, "smb: %s> ", ctx->remote_cur_dir);
 		char *cline = smb_readline(the_prompt, readline_callback, completion_fn);
 		talloc_free(the_prompt);
-			
+
 		if (!cline) break;
-		
+
 		/* special case - first char is ! */
 		if (*cline == '!') {
 			system(cline + 1);
 			continue;
 		}
 
-		rc |= process_command_string(ctx, cline); 
+		rc |= process_command_string(ctx, cline);
+		free(cline);
+
 	}
 
 	return rc;

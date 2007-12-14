@@ -77,12 +77,17 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 				      char **(completion_fn)(const char *text, int start, int end))
 {
 	fd_set fds;
-	static char line[1024];
+	char *line;
 	struct timeval timeout;
 	int fd = STDIN_FILENO;
 	char *ret;
 
 	do_debug("%s", prompt);
+
+	line = (char *)malloc(BUFSIZ);
+	if (!line) {
+		return NULL;
+	}
 
 	while (1) {
 		timeout.tv_sec = 5;
@@ -92,7 +97,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 		FD_SET(fd,&fds);
 
 		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
-			ret = x_fgets(line, sizeof(line), x_stdin);
+			ret = x_fgets(line, BUFSIZ, x_stdin);
 			return ret;
 		}
 		if (callback)

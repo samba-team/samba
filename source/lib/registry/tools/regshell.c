@@ -546,12 +546,16 @@ int main(int argc, char **argv)
 							   via readline :-( */
 		line = smb_readline(prompt, NULL, reg_completion);
 
-		if (line == NULL)
+		if (line == NULL) {
+			free(prompt);
 			break;
+		}
 
 		if (line[0] != '\n') {
 			ret = W_ERROR_IS_OK(process_cmd(ctx, line));
 		}
+		free(line);
+		free(prompt);
 	}
 	talloc_free(ctx);
 

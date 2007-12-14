@@ -500,6 +500,7 @@ void run_shell(struct torture_context *tctx)
 				run_test(tctx, argv[1]);
 			}
 		}
+		free(cline);
 	}
 }
 
