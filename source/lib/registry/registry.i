@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "param/param.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive;
@@ -39,6 +40,7 @@ typedef struct hive_key hive;
 %import "../../lib/talloc/talloc.i"
 %import "../../auth/credentials/credentials.i"
 %import "../../libcli/util/errors.i"
+%import "../../param/param.i"
 
 /* Utility functions */
 
@@ -123,6 +125,7 @@ typedef struct registry_context {
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct auth_session_info *session_info,
                      struct cli_credentials *credentials,
+                     struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
 typedef struct hive_key {

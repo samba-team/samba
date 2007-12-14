@@ -2463,20 +2463,23 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_hive_key swig_types[4]
 #define SWIGTYPE_p_int swig_types[5]
 #define SWIGTYPE_p_loadparm_context swig_types[6]
-#define SWIGTYPE_p_long_long swig_types[7]
-#define SWIGTYPE_p_p_char swig_types[8]
-#define SWIGTYPE_p_p_hive_key swig_types[9]
-#define SWIGTYPE_p_p_registry_context swig_types[10]
-#define SWIGTYPE_p_p_registry_key swig_types[11]
-#define SWIGTYPE_p_registry_context swig_types[12]
-#define SWIGTYPE_p_short swig_types[13]
-#define SWIGTYPE_p_signed_char swig_types[14]
-#define SWIGTYPE_p_unsigned_char swig_types[15]
-#define SWIGTYPE_p_unsigned_int swig_types[16]
-#define SWIGTYPE_p_unsigned_long_long swig_types[17]
-#define SWIGTYPE_p_unsigned_short swig_types[18]
-static swig_type_info *swig_types[20];
-static swig_module_info swig_module = {swig_types, 19, 0, 0, 0, 0};
+#define SWIGTYPE_p_loadparm_service swig_types[7]
+#define SWIGTYPE_p_long_long swig_types[8]
+#define SWIGTYPE_p_p_char swig_types[9]
+#define SWIGTYPE_p_p_hive_key swig_types[10]
+#define SWIGTYPE_p_p_registry_context swig_types[11]
+#define SWIGTYPE_p_p_registry_key swig_types[12]
+#define SWIGTYPE_p_param_context swig_types[13]
+#define SWIGTYPE_p_param_section swig_types[14]
+#define SWIGTYPE_p_registry_context swig_types[15]
+#define SWIGTYPE_p_short swig_types[16]
+#define SWIGTYPE_p_signed_char swig_types[17]
+#define SWIGTYPE_p_unsigned_char swig_types[18]
+#define SWIGTYPE_p_unsigned_int swig_types[19]
+#define SWIGTYPE_p_unsigned_long_long swig_types[20]
+#define SWIGTYPE_p_unsigned_short swig_types[21]
+static swig_type_info *swig_types[23];
+static swig_module_info swig_module = {swig_types, 22, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2522,6 +2525,7 @@ static swig_module_info swig_module = {swig_types, 19, 0, 0, 0, 0};
 
 #include "includes.h"
 #include "registry.h"
+#include "param/param.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive;
@@ -3244,7 +3248,8 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
   char *arg2 = (char *) 0 ;
   struct auth_session_info *arg3 = (struct auth_session_info *) 0 ;
   struct cli_credentials *arg4 = (struct cli_credentials *) 0 ;
-  struct hive_key **arg5 = (struct hive_key **) 0 ;
+  struct loadparm_context *arg5 = (struct loadparm_context *) 0 ;
+  struct hive_key **arg6 = (struct hive_key **) 0 ;
   WERROR result;
   int res2 ;
   char *buf2 = 0 ;
@@ -3253,12 +3258,15 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
   int res3 = 0 ;
   void *argp4 = 0 ;
   int res4 = 0 ;
-  struct hive_key *tmp5 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  struct hive_key *tmp6 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "location",(char *) "session_info",(char *) "credentials", NULL 
+    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
   };
   
   {
@@ -3268,12 +3276,15 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
     arg4 = NULL;
   }
   {
+    arg5 = loadparm_init(NULL);
+  }
+  {
     arg1 = NULL;
   }
   {
-    arg5 = &tmp5; 
+    arg6 = &tmp6; 
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OO:Hive",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:Hive",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Hive" "', argument " "2"" of type '" "char const *""'");
@@ -3293,7 +3304,14 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
     }
     arg4 = (struct cli_credentials *)(argp4);
   }
-  result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5);
+  if (obj3) {
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "Hive" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg5 = (struct loadparm_context *)(argp5);
+  }
+  result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
   {
     if (!W_ERROR_IS_OK(result)) {
       PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
@@ -3304,12 +3322,18 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
   }
   {
     Py_XDECREF(resultobj);
-    resultobj = SWIG_NewPointerObj(*arg5, SWIGTYPE_p_hive_key, 0);
+    resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  {
+    talloc_free(arg5);     
+  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  {
+    talloc_free(arg5);     
+  }
   return NULL;
 }
 
@@ -3384,6 +3408,9 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   };
   
   {
+    arg3 = loadparm_init(NULL);
+  }
+  {
     arg4 = NULL; 
   }
   {
@@ -3395,12 +3422,14 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   {
     arg2 = &tmp2; 
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OO:open_samba",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
-  res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_loadparm_context, 0 |  0 );
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "open_samba" "', argument " "3"" of type '" "struct loadparm_context *""'"); 
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:open_samba",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (obj0) {
+    res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "open_samba" "', argument " "3"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg3 = (struct loadparm_context *)(argp3);
   }
-  arg3 = (struct loadparm_context *)(argp3);
   if (obj1) {
     res4 = SWIG_ConvertPtr(obj1, &argp4,SWIGTYPE_p_auth_session_info, 0 |  0 );
     if (!SWIG_IsOK(res4)) {
@@ -3427,8 +3456,14 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   {
     resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
   }
+  {
+    talloc_free(arg3);     
+  }
   return resultobj;
 fail:
+  {
+    talloc_free(arg3);     
+  }
   return NULL;
 }
 
@@ -3463,12 +3498,15 @@ static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_hive_key = {"_p_hive_key", "struct hive_key *|hive *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_hive_key = {"_p_p_hive_key", "struct hive_key **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_registry_context = {"_p_p_registry_context", "struct registry_context **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_registry_key = {"_p_p_registry_key", "struct registry_key **", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_registry_context = {"_p_registry_context", "struct registry_context *|reg *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
@@ -3485,11 +3523,14 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_hive_key,
   &_swigt__p_int,
   &_swigt__p_loadparm_context,
+  &_swigt__p_loadparm_service,
   &_swigt__p_long_long,
   &_swigt__p_p_char,
   &_swigt__p_p_hive_key,
   &_swigt__p_p_registry_context,
   &_swigt__p_p_registry_key,
+  &_swigt__p_param_context,
+  &_swigt__p_param_section,
   &_swigt__p_registry_context,
   &_swigt__p_short,
   &_swigt__p_signed_char,
@@ -3506,11 +3547,14 @@ static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentia
 static swig_cast_info _swigc__p_hive_key[] = {  {&_swigt__p_hive_key, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_char[] = {  {&_swigt__p_p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_hive_key[] = {  {&_swigt__p_p_hive_key, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_registry_context[] = {  {&_swigt__p_p_registry_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_registry_key[] = {  {&_swigt__p_p_registry_key, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_registry_context[] = {  {&_swigt__p_registry_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -3527,11 +3571,14 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_hive_key,
   _swigc__p_int,
   _swigc__p_loadparm_context,
+  _swigc__p_loadparm_service,
   _swigc__p_long_long,
   _swigc__p_p_char,
   _swigc__p_p_hive_key,
   _swigc__p_p_registry_context,
   _swigc__p_p_registry_key,
+  _swigc__p_param_context,
+  _swigc__p_param_section,
   _swigc__p_registry_context,
   _swigc__p_short,
   _swigc__p_signed_char,

@@ -2689,14 +2689,8 @@ SWIGINTERN PyObject *_wrap_delete_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObj
   delete_loadparm_context(arg1);
   
   resultobj = SWIG_Py_Void();
-  {
-    talloc_free(arg1);     
-  }
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   return NULL;
 }
 
@@ -2737,15 +2731,9 @@ SWIGINTERN PyObject *_wrap_LoadParm_load(PyObject *SWIGUNUSEDPARM(self), PyObjec
   }
   result = (bool)loadparm_context_load(arg1,(char const *)arg2);
   resultobj = SWIG_From_bool((bool)(result));
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return NULL;
 }
@@ -2775,14 +2763,8 @@ SWIGINTERN PyObject *_wrap_LoadParm___len__(PyObject *SWIGUNUSEDPARM(self), PyOb
   }
   result = (int)loadparm_context___len__(arg1);
   resultobj = SWIG_From_int((int)(result));
-  {
-    talloc_free(arg1);     
-  }
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   return NULL;
 }
 
@@ -2823,15 +2805,9 @@ SWIGINTERN PyObject *_wrap_LoadParm___getitem__(PyObject *SWIGUNUSEDPARM(self), 
   }
   result = (struct loadparm_service *)loadparm_context___getitem__(arg1,(char const *)arg2);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_loadparm_service, 0 |  0 );
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return NULL;
 }
@@ -2861,14 +2837,8 @@ SWIGINTERN PyObject *_wrap_LoadParm_configfile(PyObject *SWIGUNUSEDPARM(self), P
   }
   result = (char *)loadparm_context_configfile(arg1);
   resultobj = SWIG_FromCharPtr((const char *)result);
-  {
-    talloc_free(arg1);     
-  }
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   return NULL;
 }
 
@@ -2909,15 +2879,9 @@ SWIGINTERN PyObject *_wrap_LoadParm_is_mydomain(PyObject *SWIGUNUSEDPARM(self), 
   }
   result = (bool)loadparm_context_is_mydomain(arg1,(char const *)arg2);
   resultobj = SWIG_From_bool((bool)(result));
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return NULL;
 }
@@ -2959,15 +2923,9 @@ SWIGINTERN PyObject *_wrap_LoadParm_is_myname(PyObject *SWIGUNUSEDPARM(self), Py
   }
   result = (bool)loadparm_context_is_myname(arg1,(char const *)arg2);
   resultobj = SWIG_From_bool((bool)(result));
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
-  {
-    talloc_free(arg1);     
-  }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return NULL;
 }
@@ -3449,29 +3407,6 @@ SWIGINTERN PyObject *param_section_swigregister(PyObject *SWIGUNUSEDPARM(self), 
 SWIGINTERN PyObject *param_section_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   return SWIG_Python_InitShadowInstance(args);
 }
-
-SWIGINTERN int Swig_var_default_config_set(PyObject *_val) {
-  {
-    void *argp = 0;
-    int res = SWIG_ConvertPtr(_val, &argp, SWIGTYPE_p_loadparm_context,  0 );  
-    if (!SWIG_IsOK(res)) {
-      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""global_loadparm""' of type '""struct loadparm_context *""'");
-    }
-    global_loadparm = (struct loadparm_context *)(argp);
-  }
-  return 0;
-fail:
-  return 1;
-}
-
-
-SWIGINTERN PyObject *Swig_var_default_config_get(void) {
-  PyObject *pyobj = 0;
-  
-  pyobj = SWIG_NewPointerObj(SWIG_as_voidptr(global_loadparm), SWIGTYPE_p_loadparm_context,  0 );
-  return pyobj;
-}
-
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
@@ -4095,7 +4030,5 @@ SWIGEXPORT void SWIG_init(void) {
   SWIG_InstallConstants(d,swig_const_table);
   
   
-  PyDict_SetItemString(d,(char*)"cvar", SWIG_globals());
-  SWIG_addvarlink(SWIG_globals(),(char*)"default_config",Swig_var_default_config_get, Swig_var_default_config_set);
 }
 

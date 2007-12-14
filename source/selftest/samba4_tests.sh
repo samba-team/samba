@@ -300,4 +300,5 @@ then
 	plantest "tdb.python" none PYTHONPATH=bin/python:scripting/python:lib/tdb/python/tests scripting/bin/subunitrun simple
 	plantest "auth.python" none PYTHONPATH=bin/python:scripting/python:auth/tests/ scripting/bin/subunitrun bindings
 	plantest "security.python" none PYTHONPATH=bin/python:scripting/python:libcli/security/tests/ scripting/bin/subunitrun bindings
+	plantest "param.python" none PYTHONPATH=bin/python:scripting/python:param/tests scripting/bin/subunitrun bindings
 fi

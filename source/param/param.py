@@ -88,6 +88,12 @@ class ParamFile(object):
     def __init__(self, *args, **kwargs): 
         _param.ParamFile_swiginit(self,_param.new_ParamFile(*args, **kwargs))
     __swig_destroy__ = _param.delete_ParamFile
+    def __getitem__(self, name):
+        ret = self.get_section(name)
+        if ret is None:
+            raise KeyError("No such section %s" % name)
+        return ret
+
 ParamFile.get_section = new_instancemethod(_param.ParamFile_get_section,None,ParamFile)
 ParamFile.get = new_instancemethod(_param.ParamFile_get,None,ParamFile)
 ParamFile.set_string = new_instancemethod(_param.ParamFile_set_string,None,ParamFile)
@@ -100,6 +106,12 @@ ParamFile_swigregister(ParamFile)
 class param_section(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
+    def __getitem__(self, name):
+        ret = self.get_section(name)
+        if ret is None:
+            raise KeyError("No such section %s" % name)
+        return ret
+
     def __init__(self, *args, **kwargs): 
         _param.param_section_swiginit(self,_param.new_param_section(*args, **kwargs))
     __swig_destroy__ = _param.delete_param_section
@@ -108,5 +120,4 @@ param_section_swigregister = _param.param_section_swigregister
 param_section_swigregister(param_section)
 
 
-cvar = _param.cvar
 
