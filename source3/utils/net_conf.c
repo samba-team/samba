@@ -26,7 +26,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "libnet/libnet_proto.h"
+#include "libnet/libnet.h"
 
 /*
  * usage functions

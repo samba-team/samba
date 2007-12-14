@@ -1,6 +1,6 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  NetApi Support
+ *  libnet Support
  *  Copyright (C) Guenther Deschner 2007
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -17,16 +17,10 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIB_NETAPI_H__
-#define __LIB_NETAPI_H__
+#ifndef __LIBNET_H__
+#define __LIBNET_H__
 
-struct libnetapi_ctx {
-	int debuglevel;
-};
-
-WERROR libnetapi_init(struct libnetapi_ctx **ctx);
-WERROR libnetapi_free(struct libnetapi_ctx *ctx);
-
-#include "joindomain.h"
+#include "libnet/libnet_join.h"
+#include "libnet/libnet_proto.h"
 
 #endif
