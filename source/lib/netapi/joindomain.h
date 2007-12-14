@@ -17,6 +17,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __LIB_NETAPI_JOINDOMAIN_H__
+#define __LIB_NETAPI_JOINDOMAIN_H__
+
 WERROR NetJoinDomain(const char *server,
 		     const char *domain,
 		     const char *account_ou,
@@ -30,3 +33,5 @@ WERROR NetUnjoinDomain(const char *server_name,
 WERROR NetGetJoinInformation(const char *server_name,
 			     const char **name_buffer,
 			     uint16_t *name_type);
+
+#endif
