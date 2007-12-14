@@ -1,3 +1,11 @@
+2007-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sia/Makefile.am: One EXTRA_DIST is enought, from dave love.
+
+	* pam/Makefile.am: Add SRCS to EXTRA_DIST
+
+	* afskauthlib/Makefile.am: SRCS
+
 2006-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pam/Makefile.am: use libtool to build binaries
