@@ -47,3 +47,5 @@ L = \
 endif
 
 $(OBJS): $(top_builddir)/include/config.h
+
+EXTRA_DIST = $(SRCS)
