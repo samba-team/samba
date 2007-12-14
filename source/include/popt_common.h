@@ -25,6 +25,7 @@
 /* Common popt structures */
 extern struct poptOption popt_common_samba[];
 extern struct poptOption popt_common_connection[];
+extern struct poptOption popt_common_configfile[];
 extern struct poptOption popt_common_version[];
 extern struct poptOption popt_common_credentials[];
 extern const struct poptOption popt_common_dynconfig[];
@@ -36,6 +37,7 @@ extern const struct poptOption popt_common_dynconfig[];
 #define POPT_COMMON_SAMBA { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_samba, 0, "Common samba options:", NULL },
 #define POPT_COMMON_CONNECTION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_connection, 0, "Connection options:", NULL },
 #define POPT_COMMON_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version, 0, "Common samba options:", NULL },
+#define POPT_COMMON_CONFIGFILE { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile, 0, "Common samba config:", NULL },
 #define POPT_COMMON_CREDENTIALS { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials, 0, "Authentication options:", NULL },
 #define POPT_COMMON_DYNCONFIG { NULL, 0, POPT_ARG_INCLUDE_TABLE, \
     CONST_DISCARD(poptOption *, popt_common_dynconfig), 0, \
