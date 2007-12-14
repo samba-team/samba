@@ -290,7 +290,7 @@ static bool hive_setup_dir(struct torture_context *tctx, void **data)
 {
 	struct hive_key *key;
 	WERROR error;
-	const char *dirname;
+	char *dirname;
 	NTSTATUS status;
 
 	status = torture_temp_dir(tctx, "hive-dir", &dirname);
@@ -314,7 +314,7 @@ static bool hive_setup_ldb(struct torture_context *tctx, void **data)
 {
 	struct hive_key *key;
 	WERROR error;
-	const char *dirname;
+	char *dirname;
 	NTSTATUS status;
 
 	status = torture_temp_dir(tctx, "hive-ldb", &dirname);
@@ -338,7 +338,7 @@ static bool hive_setup_regf(struct torture_context *tctx, void **data)
 {
 	struct hive_key *key;
 	WERROR error;
-	const char *dirname;
+	char *dirname;
 	NTSTATUS status;
 
 	status = torture_temp_dir(tctx, "hive-dir", &dirname);

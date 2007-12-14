@@ -488,7 +488,7 @@ static struct regf_key_data *regf_get_key(TALLOC_CTX *ctx,
 }
 
 
-static WERROR regf_get_value(TALLOC_CTX *ctx, const struct hive_key *key,
+static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 			     int idx, const char **name,
 			     uint32_t *data_type, DATA_BLOB *data)
 {
@@ -1529,8 +1529,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 
 static WERROR regf_del_value (struct hive_key *key, const char *name)
 {
-	const struct regf_key_data *private_data =
-		(const struct regf_key_data *)key;
+	struct regf_key_data *private_data = (struct regf_key_data *)key;
 	struct regf_data *regf = private_data->hive;
 	struct nk_block *nk = private_data->nk;
 	struct vk_block vk;
@@ -1703,8 +1702,7 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 static WERROR regf_set_value(struct hive_key *key, const char *name,
 			     uint32_t type, const DATA_BLOB data)
 {
-	const struct regf_key_data *private_data =
-		(const struct regf_key_data *)key;
+	struct regf_key_data *private_data = (struct regf_key_data *)key;
 	struct regf_data *regf = private_data->hive;
 	struct nk_block *nk = private_data->nk;
 	struct vk_block vk;

@@ -249,7 +249,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct hive_key *k,
+static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
 				  int idx, const char **name,
 				  uint32_t *data_type, DATA_BLOB *data)
 {

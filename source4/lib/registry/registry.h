@@ -94,7 +94,7 @@ struct registry_operations {
 
 	WERROR (*flush_key) (struct registry_key *key);
 
-	WERROR (*get_predefined_key) (const struct registry_context *ctx,
+	WERROR (*get_predefined_key) (struct registry_context *ctx,
 				      uint32_t key_id,
 				      struct registry_key **key);
 
@@ -195,7 +195,7 @@ const char *reg_get_predef_name(uint32_t hkey);
 WERROR reg_get_predefined_key_by_name(struct registry_context *ctx,
 				      const char *name,
 				      struct registry_key **key);
-WERROR reg_get_predefined_key(const struct registry_context *ctx,
+WERROR reg_get_predefined_key(struct registry_context *ctx,
 			      uint32_t hkey,
 			      struct registry_key **key);
 
