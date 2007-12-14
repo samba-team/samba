@@ -39,11 +39,12 @@ RCSID("$Id$");
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
+
 #define INIT_FLAG(C, O, V, D, F)					\
     do {								\
 	if (krb5_config_get_bool_default((C), NULL, (D),"libdefaults", F, NULL)) { \
 	    (C)->O |= V;						\
-    }									\
+        }								\
     } while(0)
 
 /*
