@@ -150,6 +150,12 @@ struct poptOption popt_common_samba[] = {
 	POPT_TABLEEND
 };
 
+struct poptOption popt_common_configfile[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
+	{ "configfile", 0, POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
+	POPT_TABLEEND
+};
+
 struct poptOption popt_common_version[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
