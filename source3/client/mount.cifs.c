@@ -354,6 +354,8 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 	int out_len = 0;
 	int word_len;
 	int rc = 0;
+	char user[32];
+	char group[32];
 
 	if (!optionsp || !*optionsp)
 		return 1;
@@ -363,6 +365,13 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		printf("parsing options: %s\n", data);
 
 	/* BB fixme check for separator override BB */
+
+	if (getuid()) {
+		got_uid = 1;
+		snprintf(user,sizeof(user),"%u",getuid());
+		got_gid = 1;
+		snprintf(group,sizeof(group),"%u",getgid());
+	}
 
 /* while ((data = strsep(&options, ",")) != NULL) { */
 	while(data != NULL) {
@@ -526,33 +535,35 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				got_uid = 1;
 				if (!isdigit(*value)) {
 					struct passwd *pw;
-					static char temp[32];
 
 					if (!(pw = getpwnam(value))) {
 						printf("bad user name \"%s\"\n", value);
 						exit(1);
 					}
-					snprintf(temp, sizeof(temp), "%u", pw->pw_uid);
-					value = temp;
+					snprintf(user, sizeof(user), "%u", pw->pw_uid);
 					endpwent();
+				} else {
+					strlcpy(user,value,sizeof(user));
 				}
 			}
+			goto nocopy;
 		} else if (strncmp(data, "gid", 3) == 0) {
 			if (value && *value) {
 				got_gid = 1;
 				if (!isdigit(*value)) {
 					struct group *gr;
-					static char temp[32];
 
 					if (!(gr = getgrnam(value))) {
 						printf("bad group name \"%s\"\n", value);
 						exit(1);
 					}
-					snprintf(temp, sizeof(temp), "%u", gr->gr_gid);
-					value = temp;
+					snprintf(group, sizeof(group), "%u", gr->gr_gid);
 					endpwent();
+				} else {
+					strlcpy(group,value,sizeof(group));
 				}
 			}
+			goto nocopy;
        /* fmask and dmask synonyms for people used to smbfs syntax */
 		} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
 			if (!value || !*value) {
@@ -643,17 +654,55 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			exit(1);
 		}
 
-		if (out_len)
-			out[out_len++] = ',';
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 2);
+			out_len++;
+		}
+
 		if (value)
-			snprintf(out + out_len, word_len + 2, "%s=%s", data, value);
+			snprintf(out + out_len, word_len + 1, "%s=%s", data, value);
 		else
-			snprintf(out + out_len, word_len + 2, "%s", data);
+			snprintf(out + out_len, word_len + 1, "%s", data);
 		out_len = strlen(out);
 
 nocopy:
 		data = next_keyword;
 	}
+
+	/* special-case the uid and gid */
+	if (got_uid) {
+		word_len = strlen(user);
+
+		out = (char *)realloc(out, out_len + word_len + 6);
+		if (out == NULL) {
+			perror("malloc");
+			exit(1);
+		}
+
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 6);
+			out_len++;
+		}
+		snprintf(out + out_len, word_len + 5, "uid=%s", user);
+		out_len = strlen(out);
+	}
+	if (got_gid) {
+		word_len = strlen(group);
+
+		out = (char *)realloc(out, out_len + 1 + word_len + 6);
+		if (out == NULL) {
+		perror("malloc");
+			exit(1);
+		}
+
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 6);
+			out_len++;
+		}
+		snprintf(out + out_len, word_len + 5, "gid=%s", group);
+		out_len = strlen(out);
+	}
+
 	free(*optionsp);
 	*optionsp = out;
 	return 0;
