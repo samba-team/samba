@@ -157,7 +157,7 @@ hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
 	memset(out, 0, sizeof(*out));
 
     if (have_data)
-	*have_data = (ci.vcontent != NULL) ? 1 : 0;
+	*have_data = (ci.content != NULL) ? 1 : 0;
 
     free_ContentInfo(&ci);
 
