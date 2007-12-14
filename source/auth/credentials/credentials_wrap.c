@@ -2459,9 +2459,20 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_TALLOC_CTX swig_types[0]
 #define SWIGTYPE_p_char swig_types[1]
 #define SWIGTYPE_p_cli_credentials swig_types[2]
-#define SWIGTYPE_p_loadparm_context swig_types[3]
-static swig_type_info *swig_types[5];
-static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
+#define SWIGTYPE_p_int swig_types[3]
+#define SWIGTYPE_p_loadparm_context swig_types[4]
+#define SWIGTYPE_p_loadparm_service swig_types[5]
+#define SWIGTYPE_p_long_long swig_types[6]
+#define SWIGTYPE_p_param_context swig_types[7]
+#define SWIGTYPE_p_param_section swig_types[8]
+#define SWIGTYPE_p_short swig_types[9]
+#define SWIGTYPE_p_signed_char swig_types[10]
+#define SWIGTYPE_p_unsigned_char swig_types[11]
+#define SWIGTYPE_p_unsigned_int swig_types[12]
+#define SWIGTYPE_p_unsigned_long_long swig_types[13]
+#define SWIGTYPE_p_unsigned_short swig_types[14]
+static swig_type_info *swig_types[16];
+static swig_module_info swig_module = {swig_types, 15, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2517,7 +2528,6 @@ typedef struct cli_credentials cli_credentials;
 SWIGINTERN cli_credentials *new_cli_credentials(){
             return cli_credentials_init(NULL);
         }
-SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -2762,6 +2772,7 @@ SWIGINTERNINLINE PyObject*
   return PyBool_FromLong(value ? 1 : 0);
 }
 
+SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2772,36 +2783,6 @@ SWIGINTERN PyObject *_wrap_new_Credentials(PyObject *SWIGUNUSEDPARM(self), PyObj
   if (!SWIG_Python_UnpackTuple(args,"new_Credentials",0,0,0)) SWIG_fail;
   result = (cli_credentials *)new_cli_credentials();
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_cli_credentials, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_Credentials(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
-  cli_credentials *arg1 = (cli_credentials *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  char *  kwnames[] = {
-    (char *) "self", NULL 
-  };
-  
-  {
-    arg1 = NULL;
-  }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_Credentials",kwnames,&obj0)) SWIG_fail;
-  if (obj0) {
-    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, SWIG_POINTER_DISOWN |  0 );
-    if (!SWIG_IsOK(res1)) {
-      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Credentials" "', argument " "1"" of type '" "cli_credentials *""'"); 
-    }
-    arg1 = (cli_credentials *)(argp1);
-  }
-  delete_cli_credentials(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3441,31 +3422,24 @@ SWIGINTERN PyObject *_wrap_Credentials_get_nt_hash(PyObject *SWIGUNUSEDPARM(self
   struct samr_Password *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
   PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "mem_ctx", NULL 
+    (char *) "self", NULL 
   };
   
   {
     arg1 = NULL;
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Credentials_get_nt_hash",kwnames,&obj0,&obj1)) SWIG_fail;
+  {
+    arg2 = NULL;
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_nt_hash",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
     if (!SWIG_IsOK(res1)) {
       SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Credentials_get_nt_hash" "', argument " "1"" of type '" "cli_credentials *""'"); 
     }
     arg1 = (cli_credentials *)(argp1);
-  }
-  if (obj1) {
-    res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_TALLOC_CTX, 0 |  0 );
-    if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Credentials_get_nt_hash" "', argument " "2"" of type '" "TALLOC_CTX *""'"); 
-    }
-    arg2 = (TALLOC_CTX *)(argp2);
   }
   result = (struct samr_Password *)cli_credentials_get_nt_hash(arg1,arg2);
   {
@@ -3537,6 +3511,36 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_Credentials(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  cli_credentials *arg1 = (cli_credentials *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self", NULL 
+  };
+  
+  {
+    arg1 = NULL;
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_Credentials",kwnames,&obj0)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, SWIG_POINTER_DISOWN |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Credentials" "', argument " "1"" of type '" "cli_credentials *""'"); 
+    }
+    arg1 = (cli_credentials *)(argp1);
+  }
+  delete_cli_credentials(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *Credentials_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3550,7 +3554,6 @@ SWIGINTERN PyObject *Credentials_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObje
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_Credentials", (PyCFunction)_wrap_new_Credentials, METH_NOARGS, NULL},
-	 { (char *)"delete_Credentials", (PyCFunction) _wrap_delete_Credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_get_username", (PyCFunction) _wrap_Credentials_get_username, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_set_username", (PyCFunction) _wrap_Credentials_set_username, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_get_password", (PyCFunction) _wrap_Credentials_get_password, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3569,6 +3572,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Credentials_get_nt_hash", (PyCFunction) _wrap_Credentials_get_nt_hash, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_authentication_requested", (PyCFunction) _wrap_Credentials_authentication_requested, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_wrong_password", (PyCFunction) _wrap_Credentials_wrong_password, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_Credentials", (PyCFunction) _wrap_delete_Credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_swigregister", Credentials_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Credentials_swiginit", Credentials_swiginit, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
@@ -3580,25 +3584,69 @@ static PyMethodDef SwigMethods[] = {
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *|uint_least8_t *|uint_fast8_t *|uint8_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_int = {"_p_unsigned_int", "uintptr_t *|uint_least32_t *|uint_fast32_t *|uint32_t *|unsigned int *|uint_fast16_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_long_long = {"_p_unsigned_long_long", "uint_least64_t *|uint_fast64_t *|uint64_t *|unsigned long long *|uintmax_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_unsigned_short = {"_p_unsigned_short", "unsigned short *|uint_least16_t *|uint16_t *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_TALLOC_CTX,
   &_swigt__p_char,
   &_swigt__p_cli_credentials,
+  &_swigt__p_int,
   &_swigt__p_loadparm_context,
+  &_swigt__p_loadparm_service,
+  &_swigt__p_long_long,
+  &_swigt__p_param_context,
+  &_swigt__p_param_section,
+  &_swigt__p_short,
+  &_swigt__p_signed_char,
+  &_swigt__p_unsigned_char,
+  &_swigt__p_unsigned_int,
+  &_swigt__p_unsigned_long_long,
+  &_swigt__p_unsigned_short,
 };
 
 static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentials, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_int[] = {  {&_swigt__p_unsigned_int, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_long_long[] = {  {&_swigt__p_unsigned_long_long, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_unsigned_short[] = {  {&_swigt__p_unsigned_short, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_TALLOC_CTX,
   _swigc__p_char,
   _swigc__p_cli_credentials,
+  _swigc__p_int,
   _swigc__p_loadparm_context,
+  _swigc__p_loadparm_service,
+  _swigc__p_long_long,
+  _swigc__p_param_context,
+  _swigc__p_param_section,
+  _swigc__p_short,
+  _swigc__p_signed_char,
+  _swigc__p_unsigned_char,
+  _swigc__p_unsigned_int,
+  _swigc__p_unsigned_long_long,
+  _swigc__p_unsigned_short,
 };
 
 

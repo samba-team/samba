@@ -65,12 +65,12 @@ Registry = _registry.Registry
 class reg(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_destroy__ = _registry.delete_reg
     def mount(self, path, hkey_id, elements=[]):
         self.mount_hive(Hive(path), hkey_id, elements)
 
     def __init__(self, *args, **kwargs): 
         _registry.reg_swiginit(self,_registry.new_reg(*args, **kwargs))
+    __swig_destroy__ = _registry.delete_reg
 reg.get_predefined_key_by_name = new_instancemethod(_registry.reg_get_predefined_key_by_name,None,reg)
 reg.get_predefined_key = new_instancemethod(_registry.reg_get_predefined_key,None,reg)
 reg.apply_patchfile = new_instancemethod(_registry.reg_apply_patchfile,None,reg)
@@ -82,9 +82,9 @@ Hive = _registry.Hive
 class hive(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_destroy__ = _registry.delete_hive
     def __init__(self, *args, **kwargs): 
         _registry.hive_swiginit(self,_registry.new_hive(*args, **kwargs))
+    __swig_destroy__ = _registry.delete_hive
 hive_swigregister = _registry.hive_swigregister
 hive_swigregister(hive)
 

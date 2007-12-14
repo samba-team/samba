@@ -42,13 +42,11 @@ typedef struct param_section param_section;
 
 %rename(LoadParm) loadparm_context;
 
-%nodefaultctor loadparm_context;
-%nodefaultdtor loadparm_context;
+%talloctype(loadparm_context);
 
 typedef struct loadparm_context {
     %extend {
         loadparm_context(TALLOC_CTX *mem_ctx) { return loadparm_init(mem_ctx); }
-        ~loadparm_context() { talloc_free($self); }
         bool load(const char *filename) { return lp_load($self, filename); }
 #ifdef SWIGPYTHON
         int __len__() { return lp_numservices($self); }
@@ -73,10 +71,10 @@ typedef struct loadparm_service {
 
 %rename(ParamFile) param_context;
 
+%talloctype(param_context);
 typedef struct param_context {
     %extend { 
         param(TALLOC_CTX *mem_ctx) { return param_init(mem_ctx); }
-        ~param() { talloc_free($self); }
         struct param_section *get_section(const char *name);
         struct param_opt *get(const char *section_name, const char *name);
         int set_string(const char *section, const char *param, const char *value);
@@ -93,6 +91,7 @@ typedef struct param_context {
     }
 } param;
 
+%talloctype(param);
 typedef struct param_section {
     %extend {
         struct param_opt *get(const char *name);

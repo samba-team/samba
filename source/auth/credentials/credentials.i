@@ -46,13 +46,13 @@ typedef struct cli_credentials cli_credentials;
     $result = PyString_FromStringAndSize($1->hash, 16);
 }
 
+%talloctype(cli_credentials);
 %rename(Credentials) cli_credentials;
 typedef struct cli_credentials {
     %extend {
         cli_credentials() {
             return cli_credentials_init(NULL);
         }
-        ~cli_credentials() { talloc_free($self); }
         /* username */
         const char *get_username(void);
         bool set_username(const char *value, 

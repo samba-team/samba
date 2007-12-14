@@ -2772,7 +2772,6 @@ SWIG_AsVal_int (PyObject * obj, int *val)
   return res;
 }
 
-SWIGINTERN void delete_reg(reg *self){ talloc_free(self); }
 
 SWIGINTERN int
 SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
@@ -2831,7 +2830,6 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 SWIGINTERN WERROR reg_apply_patchfile(reg *self,char const *filename){
         return reg_diff_apply(filename, self);
     }
-SWIGINTERN void delete_hive(hive *self){ talloc_free(self); }
 
   #define SWIG_From_long   PyInt_FromLong 
 
@@ -2960,29 +2958,6 @@ SWIGINTERN PyObject *_wrap_Registry(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   {
     resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
   }
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_reg(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  reg *arg1 = (reg *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_registry_context, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_reg" "', argument " "1"" of type '" "reg *""'"); 
-  }
-  arg1 = (reg *)(argp1);
-  delete_reg(arg1);
-  
-  resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
   return NULL;
@@ -3231,6 +3206,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_delete_reg(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  reg *arg1 = (reg *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_registry_context, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_reg" "', argument " "1"" of type '" "reg *""'"); 
+  }
+  arg1 = (reg *)(argp1);
+  free((char *) arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *reg_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -3325,15 +3323,22 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
     resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
-  {
-    talloc_free(arg5);     
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
-  {
-    talloc_free(arg5);     
-  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  hive *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args,"new_hive",0,0,0)) SWIG_fail;
+  result = (hive *)(hive *) calloc(1, sizeof(hive));
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_hive_key, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -3352,22 +3357,9 @@ SWIGINTERN PyObject *_wrap_delete_hive(PyObject *SWIGUNUSEDPARM(self), PyObject 
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_hive" "', argument " "1"" of type '" "hive *""'"); 
   }
   arg1 = (hive *)(argp1);
-  delete_hive(arg1);
+  free((char *) arg1);
   
   resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_new_hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  hive *result = 0 ;
-  
-  if (!SWIG_Python_UnpackTuple(args,"new_hive",0,0,0)) SWIG_fail;
-  result = (hive *)(hive *) calloc(1, sizeof(hive));
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_hive_key, SWIG_POINTER_NEW |  0 );
   return resultobj;
 fail:
   return NULL;
@@ -3456,14 +3448,8 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   {
     resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
   }
-  {
-    talloc_free(arg3);     
-  }
   return resultobj;
 fail:
-  {
-    talloc_free(arg3);     
-  }
   return NULL;
 }
 
@@ -3472,17 +3458,17 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"reg_get_predef_name", (PyCFunction) _wrap_reg_get_predef_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"str_regtype", (PyCFunction) _wrap_str_regtype, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Registry", (PyCFunction) _wrap_Registry, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"delete_reg", (PyCFunction)_wrap_delete_reg, METH_O, NULL},
 	 { (char *)"reg_get_predefined_key_by_name", (PyCFunction) _wrap_reg_get_predefined_key_by_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_get_predefined_key", (PyCFunction) _wrap_reg_get_predefined_key, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_apply_patchfile", (PyCFunction) _wrap_reg_apply_patchfile, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_mount_hive", (PyCFunction) _wrap_reg_mount_hive, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"new_reg", (PyCFunction)_wrap_new_reg, METH_NOARGS, NULL},
+	 { (char *)"delete_reg", (PyCFunction)_wrap_delete_reg, METH_O, NULL},
 	 { (char *)"reg_swigregister", reg_swigregister, METH_VARARGS, NULL},
 	 { (char *)"reg_swiginit", reg_swiginit, METH_VARARGS, NULL},
 	 { (char *)"Hive", (PyCFunction) _wrap_Hive, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"delete_hive", (PyCFunction)_wrap_delete_hive, METH_O, NULL},
 	 { (char *)"new_hive", (PyCFunction)_wrap_new_hive, METH_NOARGS, NULL},
+	 { (char *)"delete_hive", (PyCFunction)_wrap_delete_hive, METH_O, NULL},
 	 { (char *)"hive_swigregister", hive_swigregister, METH_VARARGS, NULL},
 	 { (char *)"hive_swiginit", hive_swiginit, METH_VARARGS, NULL},
 	 { (char *)"open_samba", (PyCFunction) _wrap_open_samba, METH_VARARGS | METH_KEYWORDS, NULL},

@@ -88,10 +88,11 @@ WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx,
   free((char **) $1);
 }
 
+%talloctype(reg);
+
 typedef struct registry_context {
     %extend {
 
-    ~reg() { talloc_free($self); }
     WERROR get_predefined_key_by_name(const char *name, 
                                       struct registry_key **key);
 
@@ -128,10 +129,9 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
+%talloctype(hive);
+
 typedef struct hive_key {
-    %extend {
-        ~hive() { talloc_free($self); }
-    }
 } hive;
 
 %rename(open_samba) reg_open_samba;
