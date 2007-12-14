@@ -311,6 +311,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	int maxfd = 0;
 	int i;
 	char *ports;
+	struct dns_reg_state * dns_reg = NULL;
+	unsigned dns_port = 0;
 
 	if (!is_daemon) {
 		return open_sockets_inetd();
@@ -372,6 +374,14 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}
+
+				/* Keep the first port for mDNS service
+				 * registration.
+				 */
+				if (dns_port == 0) {
+					dns_port = port;
+				}
+
 				s = fd_listenset[num_sockets] =
 					open_socket_in(SOCK_STREAM, port, 0,
 							ifss, True);
@@ -436,6 +446,14 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}
+
+				/* Keep the first port for mDNS service
+				 * registration.
+				 */
+				if (dns_port == 0) {
+					dns_port = port;
+				}
+
 				/* open an incoming socket */
 				if (!interpret_string_addr(&ss, sock_tok,
 						AI_NUMERICHOST|AI_PASSIVE)) {
@@ -543,6 +561,12 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		FD_ZERO(&w_fds);
 		GetTimeOfDay(&now);
 
+		/* Kick off our mDNS registration. */
+		if (dns_port != 0) {
+			dns_register_smbd(&dns_reg, dns_port, &maxfd,
+					&r_fds, &idle_timeout);
+		}
+
 		event_add_to_select_args(smbd_event_context(), &now,
 					 &r_fds, &w_fds, &idle_timeout,
 					 &maxfd);
@@ -565,6 +589,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			}
 
 			continue;
+		}
+
+		/* process pending nDNS responses */
+		if (dns_register_smbd_reply(dns_reg, &r_fds, &idle_timeout)) {
+			--num;
 		}
 
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
@@ -623,6 +652,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
 					close(fd_listenset[i]);
+
+				/* close our mDNS daemon handle */
+				dns_register_close(&dns_reg);
 
 				/* close our standard file
 				   descriptors */
@@ -964,8 +996,6 @@ extern void build_options(bool screen);
 	};
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
-	load_case_tables();
-
 	TimeInit();
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
@@ -1002,10 +1032,19 @@ extern void build_options(bool screen);
 	}
 	poptFreeContext(pc);
 
+	if (interactive) {
+		Fork = False;
+		log_stdout = True;
+	}
+
+	setup_logging(argv[0],log_stdout);
+
 	if (print_build_options) {
 		build_options(True); /* Display output to screen as well as debug */
 		exit(0);
 	}
+
+	load_case_tables();
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */
@@ -1016,11 +1055,6 @@ extern void build_options(bool screen);
 
 	set_remote_machine_name("smbd", False);
 
-	if (interactive) {
-		Fork = False;
-		log_stdout = True;
-	}
-
 	if (interactive && (DEBUGLEVEL >= 9)) {
 		talloc_enable_leak_report();
 	}
@@ -1029,8 +1063,6 @@ extern void build_options(bool screen);
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
-
-	setup_logging(argv[0],log_stdout);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
