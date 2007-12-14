@@ -20,6 +20,19 @@ Cambridge, MA 02139, USA.  */
 
 #include "replace.h"
 
+#if defined(REPLACE_GETPASS_BY_GETPASSPHRASE)
+
+#if defined(HAVE_STDIO_H)
+#include <stdio.h>
+#endif
+
+char *getsmbpass(const char *prompt)
+{
+	return getpassphrase(prompt);
+}
+
+#else /* !REPLACE_GETPASS_BY_GETPASSPHRASE */
+
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */
 #include <termios.h>
@@ -210,3 +223,5 @@ char *getsmbpass(const char *prompt)
  void getsmbpasswd_dummy(void);
  void getsmbpasswd_dummy(void) {;}
 #endif
+
+#endif /* REPLACE_GETPASS_BY_GETPASSPHRASE */

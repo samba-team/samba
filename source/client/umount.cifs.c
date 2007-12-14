@@ -131,7 +131,7 @@ static int umount_check_perm(char * dir)
 		printf("user unmounting via %s is an optional feature of",thisprogram);
 		printf(" the cifs filesystem driver (cifs.ko)");
 		printf("\n\tand requires cifs.ko version 1.32 or later\n");
-	} else if (rc > 0)
+	} else if (rc != 0)
 		printf("user unmount of %s failed with %d %s\n",dir,errno,strerror(errno));
 	close(fileid);
 

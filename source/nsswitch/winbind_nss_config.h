@@ -36,9 +36,9 @@
 #include "lib/replace/replace.h"
 #endif
 
-#include "system/passwd.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "system/passwd.h"
 
 #include "nsswitch/winbind_nss.h"
 
