@@ -76,6 +76,7 @@ foo_DATA = $(MOD)
 
 LDFLAGS = @LDFLAGS@ -rpath $(libdir) -Wl,-hidden -Wl,-exported_symbol -Wl,siad_\* 
 
+SRCS = sia.c posix_getpw.c sia_locl.h
 OBJS = sia.o posix_getpw.o
 
 libsia_krb5.so: $(OBJS)
@@ -112,3 +113,5 @@ SUFFIXES += .c .o
 	$(CC) $(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	-c `test -f '$<' || echo '$(srcdir)/'`$<
+
+EXTRA_DIST = make-rpath $(SRCS)
