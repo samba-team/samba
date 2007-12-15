@@ -202,17 +202,6 @@ char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 	return sidstr_out;
 }
 
-/*****************************************************************
- Useful function for debug lines.
-*****************************************************************/  
-
-const char *sid_string_static(const DOM_SID *sid)
-{
-	static fstring sid_str;
-	sid_to_string(sid_str, sid);
-	return sid_str;
-}
-
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 {
 	fstring sid_str;
@@ -223,10 +212,18 @@ char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	return result;
 }
 
+/*****************************************************************
+ Useful function for debug lines.
+*****************************************************************/
+
 char *sid_string_dbg(const DOM_SID *sid)
 {
 	return sid_string_talloc(debug_ctx(), sid);
 }
+
+/*****************************************************************
+ Use with care!
+*****************************************************************/
 
 char *sid_string_tos(const DOM_SID *sid)
 {
