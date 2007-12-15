@@ -247,14 +247,14 @@ void init_valid_table(void)
 	 * It might need to be regenerated if the code page changed.
 	 * We know that we're not using a mapped file, so we can
 	 * free() the old one. */
-	if (valid_table) 
-		SAFE_FREE(valid_table);
+	SAFE_FREE(valid_table);
 
 	/* use free rather than unmap */
 	valid_table_use_unmap = False;
 
 	DEBUG(2,("creating default valid table\n"));
 	valid_table = (uint8 *)SMB_MALLOC(0x10000);
+	SMB_ASSERT(valid_table != NULL);
 	for (i=0;i<128;i++) {
 		valid_table[i] = isalnum(i) || strchr(allowed,i);
 	}
