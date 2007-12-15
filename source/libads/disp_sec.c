@@ -163,7 +163,7 @@ static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_ACE *sec_ace)
 	}
 
 	printf("access SID:  %s\naccess type: %s\n", 
-               sid_string_static(&sec_ace->trustee), access_type);
+               sid_string_talloc(mem_ctx, &sec_ace->trustee), access_type);
 
 	if (sec_ace_object(sec_ace->type)) {
 		ads_disp_sec_ace_object(ads, mem_ctx, &sec_ace->object.object);
@@ -213,9 +213,9 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd)
                sd->type);
 
 	printf("owner SID: %s\n", sd->owner_sid ? 
-		sid_string_static(sd->owner_sid) : "(null)");
+		sid_string_talloc(mem_ctx, sd->owner_sid) : "(null)");
 	printf("group SID: %s\n", sd->group_sid ?
-		sid_string_static(sd->group_sid) : "(null)");
+		sid_string_talloc(mem_ctx, sd->group_sid) : "(null)");
 
 	ads_disp_acl(sd->sacl, "system");
 	if (sd->sacl) {
