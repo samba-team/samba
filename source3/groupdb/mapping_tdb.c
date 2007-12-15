@@ -389,6 +389,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 static NTSTATUS one_alias_membership(const DOM_SID *member,
 			       DOM_SID **sids, size_t *num)
 {
+	fstring tmp;
 	fstring key;
 	char *string_sid;
 	TDB_DATA dbuf;
@@ -396,7 +397,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	TALLOC_CTX *frame;
 
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
-		 sid_string_static(member));
+		 sid_to_string(tmp, member));
 
 	dbuf = tdb_fetch_bystring(tdb, key);
 

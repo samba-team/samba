@@ -40,7 +40,7 @@ typedef struct {
 static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
-	fstring keystr;
+	fstring tmp, keystr;
 	TDB_DATA data;
 
 	/* Fail if the admin has not enable privileges */
@@ -54,7 +54,7 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
-	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_string(tmp, sid));
 
 	data = tdb_fetch_bystring( tdb, keystr );
 	
@@ -79,7 +79,7 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
-	fstring keystr;
+	fstring tmp, keystr;
 	TDB_DATA data;
 	
 	if ( !lp_enable_privileges() )
@@ -95,7 +95,7 @@ static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
-	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_string(tmp, sid));
 	
 	/* no packing.  static size structure, just write it out */
 	

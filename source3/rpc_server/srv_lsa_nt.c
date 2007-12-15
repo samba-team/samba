@@ -861,6 +861,7 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 		struct lsa_name_info *name = &name_infos[i];
 
 		if (name->type == SID_NAME_UNKNOWN) {
+			fstring tmp;
 			name->dom_idx = -1;
 			/* Unknown sids should return the string
 			 * representation of the SID. Windows 2003 behaves
@@ -869,7 +870,8 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 			 * SID. We (Jerry/VL) could not figure out which the
 			 * hard cases are, so leave it with the SID.  */
 			name->name = talloc_asprintf(p->mem_ctx, "%s", 
-			                             sid_string_static(sids[i]));
+			                             sid_to_string(tmp,
+								   sids[i]));
 			if (name->name == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}

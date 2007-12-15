@@ -712,8 +712,10 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
+	fstring tmp;
 
-	if ((keystr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((keystr = talloc_asprintf(ctx, "%s",
+				      sid_to_string(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -864,6 +866,7 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	NTSTATUS ret;
 	TDB_DATA ksid, kid, data;
 	char *ksidstr, *kidstr;
+	fstring tmp;
 
 	/* make sure we initialized */
 	if ( ! dom->initialized) {
@@ -905,7 +908,8 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 		goto done;
 	}
 
-	if ((ksidstr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((ksidstr = talloc_asprintf(
+		     ctx, "%s", sid_to_string(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -977,6 +981,7 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	NTSTATUS ret;
 	TDB_DATA ksid, kid, data;
 	char *ksidstr, *kidstr;
+	fstring tmp;
 
 	/* make sure we initialized */
 	if ( ! dom->initialized) {
@@ -1018,7 +1023,8 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 		goto done;
 	}
 
-	if ((ksidstr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((ksidstr = talloc_asprintf(
+		     ctx, "%s", sid_to_string(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;

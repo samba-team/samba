@@ -458,8 +458,9 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	*len = 0;
 	*result = NULL;
 	for (i=0; i<num_sids; i++) {
+		fstring tmp;
 		sprintf_append(mem_ctx, result, len, &buflen,
-			       "%s\n", sid_string_static(&sids[i]));
+			       "%s\n", sid_to_string(tmp, &sids[i]));
 	}
 
 	if ((num_sids != 0) && (*result == NULL)) {

@@ -1847,8 +1847,9 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 	int i;
 	for (i=0; values[i]; i++) {
 		DOM_SID sid;
+		fstring tmp;
 		sid_parse(values[i]->bv_val, values[i]->bv_len, &sid);
-		printf("%s: %s\n", field, sid_string_static(&sid));
+		printf("%s: %s\n", field, sid_to_string(tmp, &sid));
 	}
 }
 
