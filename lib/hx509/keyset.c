@@ -164,6 +164,20 @@ hx509_certs_init(hx509_context context,
     return 0;
 }
 
+/**
+ * Write the certificate store to stable storage.
+ *
+ * @param context A hx509 context.
+ * @param certs a certificate store to store.
+ * @param flags 
+ * @param lock 
+ *
+ * @return HX509_UNSUPPORTED_OPERATION if the certificate store
+ * doesn't support the store operation.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_certs_store(hx509_context context,
 		  hx509_certs certs,
@@ -171,11 +185,11 @@ hx509_certs_store(hx509_context context,
 		  hx509_lock lock)
 {
     if (certs->ops->store == NULL) {
-	hx509_set_error_string(context, 0, EINVAL,
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
 			       "keystore if type %s doesn't support "
 			       "store operation",
 			       certs->ops->name);
-	return EINVAL;
+	return HX509_UNSUPPORTED_OPERATION;
     }
 
     return (*certs->ops->store)(context, certs, certs->ops_data, flags, lock);
@@ -195,6 +209,14 @@ _hx509_certs_ref(hx509_certs certs)
     return certs;
 }
 
+/**
+ * Free a certificate store.
+ *
+ * @param certs certificate store to free.
+ *
+ * @ingroup hx509_keyset
+ */
+
 void
 hx509_certs_free(hx509_certs *certs)
 {
@@ -210,6 +232,20 @@ hx509_certs_free(hx509_certs *certs)
     }
 }
 
+/**
+ * Start the integration
+ *
+ * @param context a hx509 context.
+ * @param certs certificate store to iterate over
+ * @param cursor cursor that will keep trac of progress.
+ *
+ * @return Returns an hx509 error code. HX509_UNSUPPORTED_OPERATION is
+ * returned f the certifcate store doesn't support the interation
+ * function.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_certs_start_seq(hx509_context context,
 		      hx509_certs certs,
@@ -218,10 +254,10 @@ hx509_certs_start_seq(hx509_context context,
     int ret;
 
     if (certs->ops->iter_start == NULL) {
-	hx509_set_error_string(context, 0, ENOENT, 
+	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION, 
 			       "Keyset type %s doesn't support iteration", 
 			       certs->ops->name);
-	return ENOENT;
+	return HX509_UNSUPPORTED_OPERATION;
     }
 
     ret = (*certs->ops->iter_start)(context, certs, certs->ops_data, cursor);
@@ -230,6 +266,19 @@ hx509_certs_start_seq(hx509_context context,
 
     return 0;
 }
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param cursor
+ * @param cert
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_next_cert(hx509_context context,
@@ -241,6 +290,18 @@ hx509_certs_next_cert(hx509_context context,
     return (*certs->ops->iter)(context, certs, certs->ops_data, cursor, cert);
 }
 
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param cursor
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_certs_end_seq(hx509_context context,
 		    hx509_certs certs,
@@ -250,6 +311,18 @@ hx509_certs_end_seq(hx509_context context,
     return 0;
 }
 
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param fn
+ * @param ctx
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_iter(hx509_context context, 
@@ -284,6 +357,19 @@ hx509_certs_iter(hx509_context context,
     return ret;
 }
 
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param ctx
+ * @param c
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
 {
@@ -305,10 +391,18 @@ hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
     return 0;
 }
 
-/*
+/**
  * The receiving keyset `certs´ will either increase reference counter
  * of the `cert´ or make a deep copy, either way, the caller needs to
  * free the `cert´ itself.
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param cert
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
  */
 
 int
@@ -323,6 +417,19 @@ hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 
     return (*certs->ops->add)(context, certs, certs->ops_data, cert);
 }
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param q
+ * @param r
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_find(hx509_context context,
@@ -376,6 +483,19 @@ certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
     return hx509_certs_add(context, (hx509_certs)ctx, c);
 }
 
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param to
+ * @param from
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 {
@@ -383,6 +503,19 @@ hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 	return 0;
     return hx509_certs_iter(context, from, certs_merge_func, to);
 }
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param to
+ * @param lock
+ * @param name
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_append(hx509_context context,
@@ -400,6 +533,18 @@ hx509_certs_append(hx509_context context,
     hx509_certs_free(&s);
     return ret;
 }
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param c
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_get_one_cert(hx509_context context, hx509_certs certs, hx509_cert *c)
@@ -428,6 +573,19 @@ certs_info_stdio(void *ctx, const char *str)
     fprintf(f, "%s\n", str);
     return 0;
 }
+
+/**
+ *
+ *
+ * @param context a hx509 context.
+ * @param certs
+ * @param func
+ * @param ctx
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_info(hx509_context context, 
