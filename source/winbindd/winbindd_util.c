@@ -193,7 +193,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
         
 	DEBUG(2,("Added domain %s %s %s\n", 
 		 domain->name, domain->alt_name,
-		 &domain->sid?sid_string_static(&domain->sid):""));
+		 &domain->sid?sid_string_dbg(&domain->sid):""));
         
 	return domain;
 }
@@ -922,8 +922,7 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 	 * one to contact the external DC's. On member servers the internal
 	 * domains are different: These are part of the local SAM. */
 
-	DEBUG(10, ("find_lookup_domain_from_sid(%s)\n",
-		   sid_string_static(sid)));
+	DEBUG(10, ("find_lookup_domain_from_sid(%s)\n", sid_string_dbg(sid)));
 
 	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
 		DEBUG(10, ("calling find_domain_from_sid\n"));

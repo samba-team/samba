@@ -538,7 +538,7 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 	if ((map.sid_name_use != SID_NAME_ALIAS) &&
 	    (map.sid_name_use != SID_NAME_WKN_GRP)) {
 		DEBUG(2, ("%s is a %s, expected an alias\n",
-			  sid_string_static(sid),
+			  sid_string_dbg(sid),
 			  sid_type_lookup(map.sid_name_use)));
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}

@@ -1692,8 +1692,9 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 
 	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-		DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n", 
-			sid_string_static(&info->sid), privileges.count));
+		DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n",
+			  sid_string_dbg(&info->sid),
+			  privileges.count));
 
 		r_u->status = init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, privileges.set, privileges.count, 0);
 	}
@@ -1791,7 +1792,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 
 	if ( !grant_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_addprivs: grant_privilege(%s) failed!\n",
-			sid_string_static(&info->sid) ));
+			 sid_string_dbg(&info->sid) ));
 		DEBUG(3,("Privilege mask:\n"));
 		dump_se_priv( DBGC_ALL, 3, &mask );
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
@@ -1830,7 +1831,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 
 	if ( !revoke_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_removeprivs: revoke_privilege(%s) failed!\n",
-			sid_string_static(&info->sid) ));
+			 sid_string_dbg(&info->sid) ));
 		DEBUG(3,("Privilege mask:\n"));
 		dump_se_priv( DBGC_ALL, 3, &mask );
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
@@ -2105,8 +2106,8 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-		DEBUG(10,("_lsa_enum_acct_rights: %s has %d privileges\n", 
-			sid_string_static(&sid), privileges.count));
+		DEBUG(10,("_lsa_enum_acct_rights: %s has %d privileges\n",
+			  sid_string_dbg(&sid), privileges.count));
 
 		r_u->status = init_r_enum_acct_rights( r_u, &privileges );
 	}

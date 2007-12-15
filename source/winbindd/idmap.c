@@ -912,7 +912,7 @@ static NTSTATUS idmap_can_map(const struct id_map *map,
 				   "our primary domain when <trusted domain "
 				   "only> is True\n"));
 			DEBUGADD(10, ("Leave [%s] unmapped\n",
-				      sid_string_static(map->sid)));
+				      sid_string_dbg(map->sid)));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -921,7 +921,7 @@ static NTSTATUS idmap_can_map(const struct id_map *map,
 		/* huh, couldn't find a suitable domain,
 		 *  let's just leave it unmapped */
 		DEBUG(10, ("Could not find idmap backend for SID %s\n",
-			   sid_string_static(map->sid)));
+			   sid_string_dbg(map->sid)));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
@@ -929,7 +929,7 @@ static NTSTATUS idmap_can_map(const struct id_map *map,
 		/* ouch the domain is read only,
 		 *  let's just leave it unmapped */
 		DEBUG(10, ("idmap backend for SID %s is READONLY!\n",
-			   sid_string_static(map->sid)));
+			   sid_string_dbg(map->sid)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -983,7 +983,7 @@ static NTSTATUS idmap_new_mapping(TALLOC_CTX *ctx, struct id_map *map)
 	map->status = ID_MAPPED;
 
 	DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
-		   sid_string_static(map->sid),
+		   sid_string_dbg(map->sid),
 		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
 		   (unsigned long)map->xid.id));
 	ret = dom->methods->set_mapping(dom, map);
@@ -1006,7 +1006,7 @@ static NTSTATUS idmap_backends_set_mapping(const struct id_map *map)
 	NTSTATUS ret;
 
 	DEBUG(10, ("Setting mapping %s <-> %s %lu\n",
-		   sid_string_static(map->sid),
+		   sid_string_dbg(map->sid),
 		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
 		   (unsigned long)map->xid.id));
 
@@ -1150,7 +1150,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 		}
 
 		DEBUG(10,("SID %s is being handled by %s\n",
-			  sid_string_static(ids[i]->sid),
+			  sid_string_dbg(ids[i]->sid),
 			  dom ? dom->name : "none" ));
 
 		idx = find_idmap_domain_index( dom );

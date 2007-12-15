@@ -891,7 +891,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		if (pass.domain_sid.num_auths != 4) {
 			DEBUG(0, ("SID %s is not a domain sid, has %d "
 				  "auths instead of 4\n",
-				  sid_string_static(&pass.domain_sid),
+				  sid_string_dbg(&pass.domain_sid),
 				  pass.domain_sid.num_auths));
 			continue;
 		}

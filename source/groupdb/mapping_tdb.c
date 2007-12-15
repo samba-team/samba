@@ -350,8 +350,9 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 		/* Only check the domain if we were given one */
 
 		if ( domsid && !sid_equal( domsid, &grpsid ) ) {
-			DEBUG(11,("enum_group_mapping: group %s is not in domain %s\n", 
-				string_sid, sid_string_static(domsid)));
+			DEBUG(11,("enum_group_mapping: group %s is not in "
+				  "domain %s\n", string_sid,
+				  sid_string_dbg(domsid)));
 			continue;
 		}
 

@@ -77,7 +77,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 
 	if (domain == NULL) {
 		DEBUG(3, ("Could not find domain for sid %s\n",
-			  sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -86,7 +86,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("sid_to_name failed for sid %s\n",
-			  sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -109,7 +109,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 
 	if (domain == NULL) {
 		DEBUG(3, ("Could not find domain from SID %s\n",
-			  sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -126,7 +126,7 @@ static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_nu
 
 	for (i=0; i<num_names; i++) {
 		DEBUG(10, ("Adding group member SID %s\n",
-			   sid_string_static(&sid_mem[i])));
+			   sid_string_dbg(&sid_mem[i])));
 
 		if (types[i] != SID_NAME_USER) {
 			DEBUG(1, ("Hmmm. Member %s of group %s is no user. "
@@ -234,7 +234,7 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 				pquerying_user_sid = &querying_user_sid;
 				DEBUG(10,("fill_grent_mem_domain_users: querying uid %u -> %s\n",
 					  (unsigned int)ret_uid,
-					  sid_string_static(pquerying_user_sid) ));
+					  sid_string_dbg(pquerying_user_sid)));
 			}
 		}
 	}
@@ -244,7 +244,7 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 	    (sid_compare_domain(pquerying_user_sid, &domain->sid) == 0)) {
 		
 		DEBUG(10,("fill_grent_mem_domain_users: querying user = %s\n",
-			  sid_string_static(pquerying_user_sid) ));
+			  sid_string_dbg(pquerying_user_sid) ));
 		
 		status = domain->methods->lookup_usergroups(domain,
 							    mem_ctx,
@@ -254,7 +254,7 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("fill_grent_mem_domain_users: lookup_usergroups failed "
 				  "for sid %s in domain %s (error: %s)\n", 
-				  sid_string_static(pquerying_user_sid),
+				  sid_string_dbg(pquerying_user_sid),
 				  domain->name,
 				  nt_errstr(status)));
 		        return False;			
@@ -278,7 +278,8 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 		enum lsa_SidType type;
 		
 		DEBUG(10,("fill_grent_mem_domain_users: sid %s in 'Domain Users' in domain %s\n",
-			  sid_string_static(pquerying_user_sid), domain->name ));
+			  sid_string_dbg(pquerying_user_sid),
+			  domain->name ));
 		
 		status = domain->methods->sid_to_name(domain, mem_ctx,
 						      pquerying_user_sid,
@@ -288,7 +289,7 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("could not lookup username for user "
 				  "sid %s in domain %s (error: %s)\n", 
-				  sid_string_static(pquerying_user_sid),
+				  sid_string_dbg(pquerying_user_sid),
 				  domain->name,
 				  nt_errstr(status)));
 			return False;			
@@ -488,7 +489,7 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 	if (!(mem_ctx = talloc_init("fill_grent_mem(%s)", domain->name)))
 		return False;
 
-	DEBUG(10, ("group SID %s\n", sid_string_static(group_sid)));
+	DEBUG(10, ("group SID %s\n", sid_string_dbg(group_sid)));
 
 	/* Initialize with no members */
 
@@ -511,8 +512,8 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 	       ((group_name_type==SID_NAME_ALIAS) && domain->primary)) )
 	{
 		DEBUG(1, ("SID %s in domain %s isn't a domain group (%d)\n", 
-			  sid_string_static(group_sid), domain->name, 
-			  group_name_type));
+			  sid_string_dbg(group_sid),
+			  domain->name, group_name_type));
                 goto done;
 	}
 
@@ -836,7 +837,7 @@ static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID g
 
 	if ( (s->domain = find_domain_from_sid_noinit(&group_sid)) == NULL ) {
 		DEBUG(3, ("Could not find domain for sid %s\n",
-			  sid_string_static(&group_sid)));
+			  sid_string_dbg(&group_sid)));
 		request_error(state);
 		return;
 	}
@@ -1191,7 +1192,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 			enum lsa_SidType type;
 
 			DEBUG(10, ("SID %s not in idmap\n",
-				   sid_string_static(&group_sid)));
+				   sid_string_dbg(&group_sid)));
 
 			if (!pdb_sid_to_id(&group_sid, &id, &type)) {
 				DEBUG(1, ("could not look up gid for group "
@@ -1690,7 +1691,7 @@ void winbindd_getuserdomgroups(struct winbindd_cli_state *state)
 	/* Get info for the domain */	
 	if ((domain = find_domain_from_sid_noinit(&user_sid)) == NULL) {
 		DEBUG(0,("could not find domain entry for sid %s\n", 
-			 sid_string_static(&user_sid)));
+			 sid_string_dbg(&user_sid)));
 		request_error(state);
 		return;
 	}

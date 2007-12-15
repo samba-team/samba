@@ -726,7 +726,7 @@ static bool nt_to_afs_acl(const char *filename,
 
 		if (!mappable_sid(&ace->trustee)) {
 			DEBUG(10, ("Ignoring unmappable SID %s\n",
-				   sid_string_static(&ace->trustee)));
+				   sid_string_dbg(&ace->trustee)));
 			continue;
 		}
 
@@ -756,7 +756,8 @@ static bool nt_to_afs_acl(const char *filename,
 			if (!lookup_sid(talloc_tos(), &ace->trustee,
 					&dom_name, &name, &name_type)) {
 				DEBUG(1, ("AFSACL: Could not lookup SID %s on file %s\n",
-					  sid_string_static(&ace->trustee), filename));
+					  sid_string_dbg(&ace->trustee),
+					  filename));
 				continue;
 			}
 
@@ -778,7 +779,7 @@ static bool nt_to_afs_acl(const char *filename,
 				/* Expect all users/groups in pts as SIDs */
 				name = talloc_strdup(
 					talloc_tos(),
-					sid_string_static(&ace->trustee));
+					sid_string_tos(&ace->trustee));
 				if (name == NULL) {
 					return False;
 				}

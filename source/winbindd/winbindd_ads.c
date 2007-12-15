@@ -435,7 +435,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	{
 				
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
-			sid_string_static(sid)));
+			 sid_string_dbg(sid)));
 
 		sid_compose(&info->user_sid, &domain->sid, user->user_rid);
 		sid_compose(&info->group_sid, &domain->sid, user->group_rid);
@@ -490,14 +490,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	free(sidstr);
 	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
-			 sid_string_static(sid), ads_errstr(rc)));
+			 sid_string_dbg(sid), ads_errstr(rc)));
 		goto done;
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
 		DEBUG(1,("query_user(sid=%s): Not found\n",
-			 sid_string_static(sid)));
+			 sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -513,7 +513,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
 		DEBUG(1,("No primary group for %s !?\n",
-			 sid_string_static(sid)));
+			 sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -756,7 +756,6 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	int i;
 	DOM_SID primary_group;
 	uint32 primary_group_rid;
-	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	size_t num_groups = 0;
 
@@ -790,8 +789,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
-		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", 
-			 sid_to_string(sid_string, sid), ads_errstr(rc)));
+		DEBUG(1, ("lookup_usergroups(sid=%s) ads_search tokenGroups: "
+			  "%s\n", sid_string_dbg(sid), ads_errstr(rc)));
 		goto done;
 	}
 	
@@ -800,13 +799,13 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		status = NT_STATUS_UNSUCCESSFUL;
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: "
 			 "invalid number of results (count=%d)\n", 
-			 sid_to_string(sid_string, sid), count));
+			 sid_string_dbg(sid), count));
 		goto done;
 	}
 
 	if (!msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
-			 sid_to_string(sid_string, sid)));
+			 sid_string_dbg(sid)));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -819,7 +818,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
 		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
-			 domain->name, sid_to_string(sid_string, sid)));
+			 domain->name, sid_string_dbg(sid)));
 		goto done;
 	}
 
@@ -885,7 +884,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
-		 sid_to_string(sid_string, sid)));
+		 sid_string_dbg(sid)));
 done:
 	ads_memfree(ads, user_dn);
 	ads_msgfree(ads, msg);
@@ -920,7 +919,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx = NULL;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, 
-		  sid_string_static(group_sid)));
+		  sid_string_dbg(group_sid)));
 
 	*num_names = 0;
 
@@ -1018,8 +1017,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	                goto done;
 		}
 		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name, &name_type)) {
-			DEBUG(10,("ads: lookup_groupmem: got sid %s from cache\n",
-				 sid_string_static(&sid)));
+			DEBUG(10,("ads: lookup_groupmem: got sid %s from "
+				  "cache\n", sid_string_dbg(&sid)));
 			sid_copy(&(*sid_mem)[*num_names], &sid);
 			(*names)[*num_names] = talloc_asprintf(*names, "%s%c%s",
 							       domain_name,
@@ -1030,8 +1029,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 			(*num_names)++;
 		}
 		else {
-			DEBUG(10, ("ads: lookup_groupmem: sid %s not found in cache\n",
-				  sid_string_static(&sid)));
+			DEBUG(10, ("ads: lookup_groupmem: sid %s not found in "
+				   "cache\n", sid_string_dbg(&sid)));
 			sid_copy(&(sid_mem_nocache)[num_nocache], &sid);
 			num_nocache++;
 		}
@@ -1096,7 +1095,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s succeeded\n",
-		 sid_string_static(group_sid)));
+		 sid_string_dbg(group_sid)));
 
 done:
 

@@ -6302,13 +6302,10 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	user_sid = pdb_get_user_sid(pw);
 	
 	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
-		fstring user_sid_string;
-		fstring domain_sid_string;
 		DEBUG(0, ("init_sam_user_info_21A: User %s has SID %s, \nwhich conflicts with "
 			  "the domain sid %s.  Failing operation.\n", 
-			  user_name, 
-			  sid_to_string(user_sid_string, user_sid),
-			  sid_to_string(domain_sid_string, domain_sid)));
+			  user_name, sid_string_dbg(user_sid),
+			  sid_string_dbg(domain_sid)));
 		data_blob_free(&munged_dial_blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -6318,13 +6315,10 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	unbecome_root();
 
 	if (!sid_peek_check_rid(domain_sid, group_sid, &group_rid)) {
-		fstring group_sid_string;
-		fstring domain_sid_string;
 		DEBUG(0, ("init_sam_user_info_21A: User %s has Primary Group SID %s, \n"
 			  "which conflicts with the domain sid %s.  Failing operation.\n", 
-			  user_name, 
-			  sid_to_string(group_sid_string, group_sid),
-			  sid_to_string(domain_sid_string, domain_sid)));
+			  user_name, sid_string_dbg(group_sid),
+			  sid_string_dbg(domain_sid)));
 		data_blob_free(&munged_dial_blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -658,7 +658,7 @@ static bool check_dom_sid_to_level(const DOM_SID *sid, int level)
 
 	DEBUG(10, ("%s SID %s in level %d\n",
 		   ret ? "Accepting" : "Rejecting",
-		   sid_string_static(sid), level));
+		   sid_string_dbg(sid), level));
 	return ret;
 }
 
@@ -935,12 +935,10 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
  done:
 	if (ret) {
-		DEBUG(10, ("Sid %s -> %s\\%s(%d)\n",
-			   sid_string_static(sid), domain->name,
-			   name->name, name->type));
+		DEBUG(10, ("Sid %s -> %s\\%s(%d)\n", sid_string_dbg(sid),
+			   domain->name, name->name, name->type));
 	} else {
-		DEBUG(10, ("failed to lookup sid %s\n",
-			   sid_string_static(sid)));
+		DEBUG(10, ("failed to lookup sid %s\n", sid_string_dbg(sid)));
 	}
 	TALLOC_FREE(tmp_ctx);
 	return ret;
@@ -988,7 +986,7 @@ static bool fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 		if (pc->uid == uid) {
 			*psid = pc->sid;
 			DEBUG(3,("fetch sid from uid cache %u -> %s\n",
-				 (unsigned int)uid, sid_string_static(psid)));
+				 (unsigned int)uid, sid_string_dbg(psid)));
 			DLIST_PROMOTE(uid_sid_cache_head, pc);
 			return true;
 		}
@@ -1008,7 +1006,7 @@ static bool fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 		if (sid_compare(&pc->sid, psid) == 0) {
 			*puid = pc->uid;
 			DEBUG(3,("fetch uid from cache %u -> %s\n",
-				 (unsigned int)*puid, sid_string_static(psid)));
+				 (unsigned int)*puid, sid_string_dbg(psid)));
 			DLIST_PROMOTE(uid_sid_cache_head, pc);
 			return true;
 		}
@@ -1065,7 +1063,7 @@ static bool fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 		if (pc->gid == gid) {
 			*psid = pc->sid;
 			DEBUG(3,("fetch sid from gid cache %u -> %s\n",
-				 (unsigned int)gid, sid_string_static(psid)));
+				 (unsigned int)gid, sid_string_dbg(psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return true;
 		}
@@ -1085,7 +1083,7 @@ static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 		if (sid_compare(&pc->sid, psid) == 0) {
 			*pgid = pc->gid;
 			DEBUG(3,("fetch gid from cache %u -> %s\n",
-				 (unsigned int)*pgid, sid_string_static(psid)));
+				 (unsigned int)*pgid, sid_string_dbg(psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return true;
 		}
@@ -1128,8 +1126,8 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 	sid_copy(&pc->sid, psid);
 	DLIST_ADD(gid_sid_cache_head, pc);
 
-	DEBUG(3,("store_gid_sid_cache: gid %u in cache -> %s\n", (unsigned int)gid,
-		sid_string_static(psid)));
+	DEBUG(3,("store_gid_sid_cache: gid %u in cache -> %s\n",
+		 (unsigned int)gid, sid_string_dbg(psid)));
 
 	n_gid_sid_cache++;
 }
@@ -1162,7 +1160,7 @@ static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 
  done:
 	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
-		  sid_string_static(psid)));
+		  sid_string_dbg(psid)));
 
 	store_uid_sid_cache(psid, uid);
 	return;
@@ -1193,7 +1191,7 @@ static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 
  done:
 	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
-		  sid_string_static(psid)));
+		  sid_string_dbg(psid)));
 
 	store_gid_sid_cache(psid, gid);
 	return;
@@ -1219,7 +1217,7 @@ static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		if (ret) {
 			if (type != SID_NAME_USER) {
 				DEBUG(5, ("sid %s is a %s, expected a user\n",
-					  sid_string_static(psid),
+					  sid_string_dbg(psid),
 					  sid_type_lookup(type)));
 				return false;
 			}
@@ -1230,12 +1228,13 @@ static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		/* This was ours, but it was not mapped.  Fail */
 	}
 
-	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
+	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
+		  sid_string_dbg(psid)));
 	return false;
 
 done:
-	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_static(psid),
-		(unsigned int)*puid ));
+	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_dbg(psid),
+		  (unsigned int)*puid ));
 
 	store_uid_sid_cache(psid, *puid);
 	return true;
@@ -1265,7 +1264,8 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = map.gid;
 			goto done;
 		}
-		DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
+		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
+			  sid_string_dbg(psid)));
 		return false;
 	}
 
@@ -1279,8 +1279,8 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		if (ret) {
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS)) {
-				DEBUG(5, ("LEGACY: sid %s is a %s, expected a group\n",
-					  sid_string_static(psid),
+				DEBUG(5, ("LEGACY: sid %s is a %s, expected "
+					  "a group\n", sid_string_dbg(psid),
 					  sid_type_lookup(type)));
 				return false;
 			}
@@ -1291,11 +1291,12 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		/* This was ours, but it was not mapped.  Fail */
 	}
 
-	DEBUG(10,("LEGACY: mapping failed for sid %s\n", sid_string_static(psid)));
+	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
+		  sid_string_dbg(psid)));
 	return false;
 	
  done:
-	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_static(psid),
+	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
 
 	store_gid_sid_cache(psid, *pgid);
@@ -1325,8 +1326,8 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		return;
 	}
 
-	DEBUG(10,("uid %u -> sid %s\n",
-		  (unsigned int)uid, sid_string_static(psid)));
+	DEBUG(10,("uid %u -> sid %s\n", (unsigned int)uid,
+		  sid_string_dbg(psid)));
 
 	store_uid_sid_cache(psid, uid);
 	return;
@@ -1354,8 +1355,8 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 		return;
 	}
 
-	DEBUG(10,("gid %u -> sid %s\n",
-		  (unsigned int)gid, sid_string_static(psid)));
+	DEBUG(10,("gid %u -> sid %s\n", (unsigned int)gid,
+		  sid_string_dbg(psid)));
 	
 	store_gid_sid_cache(psid, gid);
 	return;
@@ -1384,7 +1385,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		*puid = uid;
 
 		/* return here, don't cache */
-		DEBUG(10,("sid %s -> uid %u\n", sid_string_static(psid),
+		DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
 			(unsigned int)*puid ));
 		return true;
 	}
@@ -1395,14 +1396,14 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		}
 
 		DEBUG(5, ("winbind failed to find a uid for sid %s\n",
-			  sid_string_static(psid)));
+			  sid_string_dbg(psid)));
 		return false;
 	}
 
 	/* TODO: Here would be the place to allocate both a gid and a uid for
 	 * the SID in question */
 
-	DEBUG(10,("sid %s -> uid %u\n", sid_string_static(psid),
+	DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
 		(unsigned int)*puid ));
 
 	store_uid_sid_cache(psid, *puid);
@@ -1432,7 +1433,7 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		*pgid = gid;
 
 		/* return here, don't cache */
-		DEBUG(10,("sid %s -> gid %u\n", sid_string_static(psid),
+		DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
 			(unsigned int)*pgid ));
 		return true;
 	}
@@ -1446,11 +1447,11 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		}
 
 		DEBUG(10,("winbind failed to find a gid for sid %s\n",
-					sid_string_static(psid)));
+			  sid_string_dbg(psid)));
 		return false;
 	}
 
-	DEBUG(10,("sid %s -> gid %u\n", sid_string_static(psid),
+	DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
 
 	store_gid_sid_cache(psid, *pgid);

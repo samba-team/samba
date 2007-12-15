@@ -69,7 +69,7 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value
 		return False;
 
 	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
-		    sid_string_static(&u_sid),rid));
+		    sid_string_dbg(&u_sid),rid));
 
 	return True;
 }
@@ -96,7 +96,7 @@ bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_val
 		return False;
 
 	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 
-		    sid_string_static(&g_sid), grid));
+		    sid_string_dbg(&g_sid), grid));
 
 	return True;
 }

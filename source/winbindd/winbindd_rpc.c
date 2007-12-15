@@ -313,8 +313,8 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
 
-	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_static(sid),
-			domain->name ));
+	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_dbg(sid),
+		 domain->name ));
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -409,13 +409,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol, user_pol;
 	SAM_USERINFO_CTR *ctr;
-	fstring sid_string;
 	uint32 user_rid;
 	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
 
-	DEBUG(3,("rpc: query_user sid=%s\n",
-		 sid_to_string(sid_string, user_sid)));
+	DEBUG(3,("rpc: query_user sid=%s\n", sid_string_dbg(user_sid)));
 
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
 		return NT_STATUS_UNSUCCESSFUL;
@@ -430,7 +428,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	{
 				
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
-			sid_string_static(user_sid)));
+			sid_string_dbg(user_sid)));
 
 		sid_compose(&user_info->user_sid, &domain->sid, user->user_rid);
 		sid_compose(&user_info->group_sid, &domain->sid,
@@ -506,12 +504,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	DOM_GID *user_groups;
 	unsigned int i;
-	fstring sid_string;
 	uint32 user_rid;
 	struct rpc_pipe_client *cli;
 
-	DEBUG(3,("rpc: lookup_usergroups sid=%s\n",
-		 sid_to_string(sid_string, user_sid)));
+	DEBUG(3,("rpc: lookup_usergroups sid=%s\n", sid_string_dbg(user_sid)));
 
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
 		return NT_STATUS_UNSUCCESSFUL;
@@ -677,12 +673,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	uint32 *rid_mem = NULL;
 	uint32 group_rid;
 	unsigned int j;
-	fstring sid_string;
 	struct rpc_pipe_client *cli;
 	unsigned int orig_timeout;
 
 	DEBUG(10,("rpc: lookup_groupmem %s sid=%s\n", domain->name,
-		  sid_to_string(sid_string, group_sid)));
+		  sid_string_dbg(group_sid)));
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("lookup_groupmem: No incoming trust for domain %s\n",

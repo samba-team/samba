@@ -215,7 +215,6 @@ bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 {
 	size_t i;
 	SEC_ACL *the_acl;
-	fstring sid_str;
 	uint32 tmp_acc_desired = acc_desired;
 
 	if (!status || !acc_granted)
@@ -227,9 +226,10 @@ bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	*status = NT_STATUS_OK;
 	*acc_granted = 0;
 
-	DEBUG(10,("se_access_check: requested access 0x%08x, for NT token with %u entries and first sid %s.\n",
-		 (unsigned int)acc_desired, (unsigned int)token->num_sids,
-		sid_to_string(sid_str, &token->user_sids[0])));
+	DEBUG(10,("se_access_check: requested access 0x%08x, for NT token "
+		  "with %u entries and first sid %s.\n",
+		  (unsigned int)acc_desired, (unsigned int)token->num_sids,
+		  sid_string_dbg(&token->user_sids[0])));
 
 	/*
 	 * No security descriptor or security descriptor with no DACL
@@ -247,11 +247,13 @@ bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 
 	/* The user sid is the first in the token */
 	if (DEBUGLVL(3)) {
-		DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
+		DEBUG(3, ("se_access_check: user sid is %s\n",
+			  sid_string_dbg(
+				  &token->user_sids[PRIMARY_USER_SID_INDEX])));
 		
 		for (i = 1; i < token->num_sids; i++) {
 			DEBUGADD(3, ("se_access_check: also %s\n",
-				  sid_to_string(sid_str, &token->user_sids[i])));
+				     sid_string_dbg(&token->user_sids[i])));
 		}
 	}
 
@@ -282,11 +284,12 @@ bool se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &the_acl->aces[i];
 
-		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
-			  (unsigned int)i, ace->type, ace->flags,
-			  sid_to_string(sid_str, &ace->trustee),
-			  (unsigned int) ace->access_mask, 
-			  (unsigned int)tmp_acc_desired ));
+		DEBUGADD(10,("se_access_check: ACE %u: type %d, flags = "
+			     "0x%02x, SID = %s mask = %x, current desired "
+			     "= %x\n", (unsigned int)i, ace->type, ace->flags,
+			     sid_string_dbg(&ace->trustee),
+			     (unsigned int) ace->access_mask,
+			     (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
 		if (NT_STATUS_V(*status)) {
