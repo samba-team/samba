@@ -586,12 +586,12 @@ static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
 	for (i=1; i<token->num_sids; i++) {
 		group_sidstr = talloc_asprintf(
 			tmp_ctx, "%s %s", group_sidstr,
-			sid_string_static(&token->user_sids[i]));
+			sid_string_talloc(tmp_ctx, &token->user_sids[i]));
 	}
 
 	command = talloc_string_sub(
 		tmp_ctx, lp_log_nt_token_command(),
-		"%s", sid_string_static(&token->user_sids[0]));
+		"%s", sid_string_talloc(tmp_ctx, &token->user_sids[0]));
 	command = talloc_string_sub(tmp_ctx, command, "%t", group_sidstr);
 
 	if (command == NULL) {
