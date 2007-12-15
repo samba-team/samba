@@ -8,6 +8,7 @@ OBJ_FILES = credentials.o \
 		smbencrypt.o \
 		smbdes.o
 PUBLIC_DEPENDENCIES = \
-		SCHANNELDB MSRPC_PARSE
+		MSRPC_PARSE \
+		LIBSAMBA-CONFIG
 # End SUBSYSTEM LIBCLI_AUTH
 #################################
