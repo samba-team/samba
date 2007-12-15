@@ -49,7 +49,6 @@ RPC-FRSAPI							# Not provided by Samba 4
 ^samba4.NET-API-BECOME-DC.*$			# Fails
 WINBIND							# FIXME: This should not be skipped
 NSS-TEST						# Fails
-samba4.ldb.python				# Fails to link properly
 samba4.credentials.python		# Fails to link properly
 samba4.registry.python			# Fails to link properly
 samba4.auth.python				# Fails to link properly
