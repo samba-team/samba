@@ -339,16 +339,25 @@ static const char *get_password(struct cli_credentials *credentials)
 **/
 static bool in_list(const char *s, const char *list, bool casesensitive)
 {
-	pstring tok;
+	char *tok;
+	size_t tok_len = 1024;
 	const char *p=list;
 
 	if (!list)
 		return false;
 
-	while (next_token(&p, tok, LIST_SEP, sizeof(tok))) {
-		if ((casesensitive?strcmp:strcasecmp_m)(tok,s) == 0)
-			return true;
+	tok = (char *)malloc(tok_len);
+	if (!tok) {
+		return false;
 	}
+
+	while (next_token(&p, tok, LIST_SEP, tok_len)) {
+		if ((casesensitive?strcmp:strcasecmp_m)(tok,s) == 0) {
+			free(tok);
+			return true;
+		}
+	}
+	free(tok);
 	return false;
 }
 
