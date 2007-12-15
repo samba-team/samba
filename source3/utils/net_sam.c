@@ -1324,7 +1324,8 @@ static int net_sam_provision(int argc, const char **argv)
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid",
+				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
 		talloc_autofree_ldapmod(tc, mods);
@@ -1378,7 +1379,8 @@ domu_done:
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid",
+				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
 		talloc_autofree_ldapmod(tc, mods);
@@ -1455,7 +1457,8 @@ doma_done:
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", dir);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID",
+				sid_string_talloc(tc, &sid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaAcctFlags",
 				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
 				NEW_PW_FORMAT_SPACE_PADDED_LEN));
@@ -1538,7 +1541,8 @@ doma_done:
 		if ((pwd->pw_shell != NULL) && (pwd->pw_shell[0] != '\0')) {
 			smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", pwd->pw_shell);
 		}
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID",
+				sid_string_talloc(tc, &sid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaAcctFlags",
 				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
 				NEW_PW_FORMAT_SPACE_PADDED_LEN));
@@ -1597,7 +1601,8 @@ doma_done:
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid",
+				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
 		talloc_autofree_ldapmod(tc, mods);

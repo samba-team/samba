@@ -108,16 +108,16 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 
 	for ( d=domain_list(); d; d=d->next ) {
 		if ( !extra_data ) {
-			extra_data = talloc_asprintf(state->mem_ctx, "%s\\%s\\%s",
-						     d->name,
-						     d->alt_name ? d->alt_name : d->name,
-						     sid_string_static(&d->sid));
+			extra_data = talloc_asprintf(
+				state->mem_ctx, "%s\\%s\\%s",
+				d->name, d->alt_name ? d->alt_name : d->name,
+				sid_string_talloc(state->mem_ctx, &d->sid));
 		} else {
-			extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
-						     extra_data,
-						     d->name,
-						     d->alt_name ? d->alt_name : d->name,
-						     sid_string_static(&d->sid));
+			extra_data = talloc_asprintf(
+				state->mem_ctx, "%s\n%s\\%s\\%s",
+				extra_data, d->name,
+				d->alt_name ? d->alt_name : d->name,
+				sid_string_talloc(state->mem_ctx, &d->sid));
 		}
 	}
 	
@@ -163,17 +163,18 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
 	if (num_domains > 0)
-		extra_data = talloc_asprintf(state->mem_ctx, "%s\\%s\\%s",
-					     names[0],
-					     alt_names[0] ? alt_names[0] : names[0],
-					     sid_string_static(&sids[0]));
+		extra_data = talloc_asprintf(
+			state->mem_ctx, "%s\\%s\\%s",
+			names[0], alt_names[0] ? alt_names[0] : names[0],
+			sid_string_talloc(state->mem_ctx, &sids[0]));
 
 	for (i=1; i<num_domains; i++)
-		extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
-					     extra_data,
-					     names[i],
-					     alt_names[i] ? alt_names[i] : names[i],
-					     sid_string_static(&sids[i]));
+		extra_data = talloc_asprintf(
+			state->mem_ctx, "%s\n%s\\%s\\%s",
+			extra_data, names[i],
+			alt_names[i] ? alt_names[i] : names[i],
+			sid_string_talloc(state->mem_ctx, &sids[i]));
+
 	/* add our primary domain */
 	
 	for (i=0; i<num_domains; i++) {
@@ -184,11 +185,11 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	}
 
 	if (state->request.data.list_all_domains && !have_own_domain) {
-		extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
-					     extra_data,
-					     domain->name,
-					     domain->alt_name ? domain->alt_name : domain->name,
-					     sid_string_static(&domain->sid));
+		extra_data = talloc_asprintf(
+			state->mem_ctx, "%s\n%s\\%s\\%s",
+			extra_data, domain->name,
+			domain->alt_name ? domain->alt_name : domain->name,
+			sid_string_talloc(state->mem_ctx, &domain->sid));
 	}
 
 	/* This is a bit excessive, but the extra data sooner or later will be

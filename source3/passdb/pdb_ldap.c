@@ -3084,7 +3084,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass",
 			"sambaGroupMapping");
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaSid",
-			 sid_string_static(&map->sid));
+			 sid_string_talloc(mem_ctx, &map->sid));
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaGroupType",
 			 talloc_asprintf(mem_ctx, "%d", map->sid_name_use));
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "displayName",
@@ -4072,8 +4072,9 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
 		sid_compose(&sid, domain_sid, rids[i]);
-		allsids = talloc_asprintf_append_buffer(allsids, "(sambaSid=%s)",
-						 sid_string_static(&sid));
+		allsids = talloc_asprintf_append_buffer(
+			allsids, "(sambaSid=%s)",
+			sid_string_talloc(mem_ctx, &sid));
 		if (allsids == NULL) {
 			goto done;
 		}
