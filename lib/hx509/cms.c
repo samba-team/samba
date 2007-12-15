@@ -50,6 +50,8 @@ RCSID("$Id$");
  * - ContentInfo
  *   Wrapper structure including type and data.
  *
+ *
+ * See the library functions here: @ref hx509_cms
  */
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))

@@ -56,6 +56,8 @@ RCSID("$Id$");
  * make it back into string representation with hx509_name_to_string().
  *
  * Name string are defined rfc2253, rfc1779 and X.501.
+ *
+ * See the library functions here: @ref hx509_name
  */
 
 static const struct {

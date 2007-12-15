@@ -69,3 +69,5 @@
 /** @defgroup hx509_revoke hx509 revokation checking functions
  * See the @ref page_revoke for description and examples. */
 /** @defgroup hx509_verify hx509 verification functions */
+/** @defgroup hx509_lock hx509 lock functions
+ * See the @ref page_lock for description and examples. */

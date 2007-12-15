@@ -35,7 +35,7 @@
 RCSID("$Id$");
 
 /**
- * @page page_keyset certificates store operations
+ * @page page_keyset Certificate store operations
  *
  * Type of certificates store:
  * - MEMORY
@@ -52,6 +52,10 @@ RCSID("$Id$");
  * - PKCS11
  * - PKCS12
  * - DIR
+ * - KEYCHAIN
+ *   Apple Mac OS X KeyChain backed keychain object.
+ *
+ * See the library functions here: @ref hx509_keyset
  */
 
 struct hx509_certs_data {
@@ -97,8 +101,8 @@ _hx509_ks_register(hx509_context context, struct hx509_keyset_ops *ops)
  * if NULL is used the MEMORY store is used.
  * @param flags list of flags:
  * - HX509_CERTS_CREATE create a new keystore of the specific TYPE.
- * @param lock a @ref page_lock that unlocks the certificates store,
- * use NULL to select no password/certifictes/prompt lock.
+ * @param lock a lock that unlocks the certificates store, use NULL to
+ * select no password/certifictes/prompt lock (see @ref page_lock).
  * @param certs return pointer, free with hx509_certs_free().
  *
  * @ingroup hx509_keyset

@@ -47,6 +47,8 @@ RCSID("$Id$");
  * page_keyset), but its also possible to create a certificate
  * directly from a parsed object with hx509_cert_init() and
  * hx509_cert_init_data().
+ *
+ * See the library functions here: @ref hx509_cert
  */
 
 struct hx509_verify_ctx_data {

@@ -36,6 +36,8 @@ RCSID("$Id$");
 
 /**
  * @page page_lock Locking and unlocking certificates and encrypted data.
+ *
+ * See the library functions here: @ref hx509_lock
  */
 
 struct hx509_lock_data {
