@@ -190,7 +190,7 @@ static int check_dos_char_slowly(smb_ucs2_t c)
  * Fill out doschar table the hard way, by examining each character
  **/
 
-void init_doschar_table(void)
+static void init_doschar_table(void)
 {
 	int i, j, byteval;
 
@@ -227,6 +227,8 @@ void init_valid_table(void)
 	int i;
 	const char *allowed = ".!#$%&'()_-@^`~";
 	uint8 *valid_file;
+
+	init_doschar_table();
 
 	if (mapped_file) {
 		/* Can't unmap files, so stick with what we have */
