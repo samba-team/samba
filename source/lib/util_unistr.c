@@ -35,14 +35,6 @@ static bool lowcase_table_use_unmap;
 static bool valid_table_use_unmap;
 
 /**
- * This table says which Unicode characters are valid dos
- * characters.
- *
- * Each value is just a single bit.
- **/
-static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
-
-/**
  * Destroy global objects allocated by load_case_tables()
  **/
 void gfree_case_tables(void)
@@ -153,21 +145,6 @@ void load_case_tables(void)
 	TALLOC_FREE(frame);
 }
 
-/*
-  see if a ucs2 character can be mapped correctly to a dos character
-  and mapped back to the same character in ucs2
-*/
-
-static int check_dos_char(smb_ucs2_t c)
-{
-	lazy_initialize_conv();
-
-	/* Find the right byte, and right bit within the byte; return
-	 * 1 or 0 */
-	return (doschar_table[(c & 0xffff) / 8] & (1 << (c & 7))) != 0;
-}
-
-
 static int check_dos_char_slowly(smb_ucs2_t c)
 {
 	char buf[10];
@@ -185,33 +162,6 @@ static int check_dos_char_slowly(smb_ucs2_t c)
 	return (c == c2);
 }
 
-
-/**
- * Fill out doschar table the hard way, by examining each character
- **/
-
-static void init_doschar_table(void)
-{
-	int i, j, byteval;
-
-	/* For each byte of packed table */
-	
-	for (i = 0; i <= 0xffff; i += 8) {
-		byteval = 0;
-		for (j = 0; j <= 7; j++) {
-			smb_ucs2_t c;
-
-			c = i + j;
-			
-			if (check_dos_char_slowly(c)) {
-				byteval |= 1 << j;
-			}
-		}
-		doschar_table[i/8] = byteval;
-	}
-}
-
-
 /**
  * Load the valid character map table from <tt>valid.dat</tt> or
  * create from the configured codepage.
@@ -227,8 +177,6 @@ void init_valid_table(void)
 	int i;
 	const char *allowed = ".!#$%&'()_-@^`~";
 	uint8 *valid_file;
-
-	init_doschar_table();
 
 	if (mapped_file) {
 		/* Can't unmap files, so stick with what we have */
@@ -258,11 +206,13 @@ void init_valid_table(void)
 	for (i=0;i<128;i++) {
 		valid_table[i] = isalnum(i) || strchr(allowed,i);
 	}
-	
+
+	lazy_initialize_conv();
+
 	for (;i<0x10000;i++) {
 		smb_ucs2_t c;
 		SSVAL(&c, 0, i);
-		valid_table[i] = check_dos_char(c);
+		valid_table[i] = check_dos_char_slowly(c);
 	}
 }
 
