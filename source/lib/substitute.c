@@ -302,13 +302,14 @@ static char * realloc_expand_env_var(char *str, char *p)
 static char *longvar_domainsid( void )
 {
 	DOM_SID sid;
+	fstring tmp;
 	char *sid_string;
 	
 	if ( !secrets_fetch_domain_sid( lp_workgroup(), &sid ) ) {
 		return NULL;
 	}
 	
-	sid_string = SMB_STRDUP( sid_string_static( &sid ) );
+	sid_string = SMB_STRDUP( sid_to_string( tmp, &sid ) );
 	
 	if ( !sid_string ) {
 		DEBUG(0,("longvar_domainsid: failed to dup SID string!\n"));
