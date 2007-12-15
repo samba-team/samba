@@ -97,7 +97,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	int len;
 	bool ret;
 
-	sid_to_string(string_sid, &map->sid);
+	sid_to_fstring(string_sid, &map->sid);
 
 	len = tdb_pack(NULL, sizeof(buf), "ddff",
 		map->gid, map->sid_name_use, map->nt_name, map->comment);
@@ -139,7 +139,7 @@ static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	/* the key is the SID, retrieving is direct */
 
-	sid_to_string(string_sid, &sid);
+	sid_to_fstring(string_sid, &sid);
 	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
 		return false;
 	}
@@ -271,7 +271,7 @@ static bool group_map_remove(const DOM_SID *sid)
 
 	/* the key is the SID, retrieving is direct */
 
-	sid_to_string(string_sid, sid);
+	sid_to_fstring(string_sid, sid);
 	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
 		return false;
 	}
@@ -397,7 +397,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	TALLOC_CTX *frame;
 
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
-		 sid_to_string(tmp, member));
+		 sid_to_fstring(tmp, member));
 
 	dbuf = tdb_fetch_bystring(tdb, key);
 
@@ -480,14 +480,14 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	if (is_aliasmem(alias, member))
 		return NT_STATUS_MEMBER_IN_ALIAS;
 
-	sid_to_string(string_sid, member);
+	sid_to_fstring(string_sid, member);
 	if (asprintf(&key, "%s%s", MEMBEROF_PREFIX, string_sid) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	dbuf = tdb_fetch_bystring(tdb, key);
 
-	sid_to_string(string_sid, alias);
+	sid_to_fstring(string_sid, alias);
 
 	if (dbuf.dptr != NULL) {
 		asprintf(&new_memberstring, "%s %s", (char *)(dbuf.dptr),
@@ -624,7 +624,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	num -= 1;
 
-	sid_to_string(sid_string, member);
+	sid_to_fstring(sid_string, member);
 	if (asprintf(&key, "%s%s", MEMBEROF_PREFIX, sid_string) < 0) {
 		TALLOC_FREE(sids);
 		return NT_STATUS_NO_MEMORY;
@@ -649,7 +649,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	for (i=0; i<num; i++) {
 		char *s = member_string;
 
-		sid_to_string(sid_string, &sids[i]);
+		sid_to_fstring(sid_string, &sids[i]);
 		asprintf(&member_string, "%s %s", s, sid_string);
 
 		SAFE_FREE(s);

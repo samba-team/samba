@@ -365,7 +365,7 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
                         for (j = 0; j < alias->num_members; j++) {
                                 fstring sid_str;
 
-                                sid_to_string(sid_str, &alias->sids[j].sid);
+                                sid_to_fstring(sid_str, &alias->sids[j].sid);
 
                                 printf("%s\n", sid_str);
                         }

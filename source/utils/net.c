@@ -665,7 +665,7 @@ static int net_getlocalsid(int argc, const char **argv)
 		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));
 		return 1;
 	}
-	sid_to_string(sid_str, &sid);
+	sid_to_fstring(sid_str, &sid);
 	d_printf("SID for domain %s is: %s\n", name, sid_str);
 	return 0;
 }
@@ -743,7 +743,7 @@ static int net_getdomainsid(int argc, const char **argv)
 		d_fprintf(stderr, "Could not fetch local SID\n");
 		return 1;
 	}
-	sid_to_string(sid_str, &domain_sid);
+	sid_to_fstring(sid_str, &domain_sid);
 	d_printf("SID for local machine %s is: %s\n", global_myname(), sid_str);
 
 	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
@@ -751,7 +751,7 @@ static int net_getdomainsid(int argc, const char **argv)
 		return 1;
 	}
 
-	sid_to_string(sid_str, &domain_sid);
+	sid_to_fstring(sid_str, &domain_sid);
 	d_printf("SID for domain %s is: %s\n", opt_workgroup, sid_str);
 
 	return 0;

@@ -251,7 +251,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
-		sid_to_string(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, &sids[i]);
 		printf("%s %s (%s: %d)\n", argv[i + 1], sid_str,
 		       sid_type_lookup(types[i]), types[i]);
 	}
@@ -301,7 +301,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 
 	for (i = 0; i < (argc - 2); i++) {
 		fstring sid_str;
-		sid_to_string(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, &sids[i]);
 		printf("%s %s (%s: %d)\n", argv[i + 2], sid_str,
 		       sid_type_lookup(types[i]), types[i]);
 	}
@@ -369,7 +369,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
 
-		sid_to_string(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, &sids[i]);
 		printf("%s %s\\%s (%d)\n", sid_str, 
 		       domains[i] ? domains[i] : "*unknown*", 
 		       names[i] ? names[i] : "*unknown*", types[i]);
@@ -432,7 +432,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 		for (i = 0; i < num_domains; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &domain_sids[i]);
+			sid_to_fstring(sid_str, &domain_sids[i]);
 			printf("%s %s\n", domain_names[i] ? domain_names[i] : 
 			       "*unknown*", sid_str);
 		}
@@ -581,7 +581,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	for (i = 0; i < count; i++) {
 		fstring sid_str;
 
-		sid_to_string(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, &sids[i]);
 		printf("%s\n", sid_str);
 	}
 

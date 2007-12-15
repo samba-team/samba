@@ -315,7 +315,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	TALLOC_CTX *mem_ctx;
 	
 	if (psid) {
-		sid_to_string(sid_str, psid);
+		sid_to_fstring(sid_str, psid);
 	} else {
 		fstrcpy(sid_str,"(NULL)");
 	}
@@ -4875,7 +4875,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 
 	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, q_u->rid_group);
-	sid_to_string(sid_string, &info_sid);
+	sid_to_fstring(sid_string, &info_sid);
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;

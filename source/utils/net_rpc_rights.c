@@ -231,7 +231,7 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 		   printing the raw SID if necessary */
 		result = sid_to_name( pipe_hnd, ctx, &sids[i], name );
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_string(name, &sids[i]);
+			sid_to_fstring(name, &sids[i]);
 
 		d_printf("  %s\n", name);
 	}
@@ -267,7 +267,7 @@ static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 		   
 		result = sid_to_name(pipe_hnd, ctx, &sids[i], name );
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_string(name, &sids[i]);
+			sid_to_fstring(name, &sids[i]);
 			
 		d_printf("%s\n", name);
 		

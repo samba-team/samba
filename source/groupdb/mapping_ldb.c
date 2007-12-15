@@ -119,7 +119,7 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	if (!sid_split_rid(&domsid, &rid)) {
 		return NULL;
 	}
-      	if (!sid_to_string(string_sid, &domsid)) {
+      	if (!sid_to_fstring(string_sid, &domsid)) {
 		return NULL;
 	}
 	/* we split by domain and rid so we can do a subtree search
@@ -149,7 +149,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 
 	if (ldb_msg_add_string(msg, "objectClass", "groupMap") != LDB_SUCCESS ||
 	    ldb_msg_add_string(msg, "sid", 
-			       sid_to_string(string_sid, &map->sid)) != LDB_SUCCESS ||
+			       sid_to_fstring(string_sid, &map->sid)) != LDB_SUCCESS ||
 	    ldb_msg_add_fmt(msg, "gidNumber", "%u", (unsigned)map->gid) != LDB_SUCCESS ||
 	    ldb_msg_add_fmt(msg, "sidNameUse", "%u", (unsigned)map->sid_name_use) != LDB_SUCCESS ||
 	    ldb_msg_add_string(msg, "comment", map->comment) != LDB_SUCCESS ||
@@ -327,7 +327,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 
 	/* we do a subtree search on the domain */
 	if (domsid != NULL) {
-		sid_to_string(name, domsid);
+		sid_to_fstring(name, domsid);
 		basedn = ldb_dn_string_compose(tmp_ctx, NULL, "domain=%s", name);
 		if (basedn == NULL) goto failed;
 	}
@@ -376,7 +376,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	fstring string_sid;
 	NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-      	if (!sid_to_string(string_sid, member)) {
+      	if (!sid_to_fstring(string_sid, member)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -427,7 +427,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	GROUP_MAP map;
 
 	if (!get_group_map_from_sid(*alias, &map)) {
-		sid_to_string(string_sid, alias);
+		sid_to_fstring(string_sid, alias);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
@@ -452,7 +452,7 @@ static NTSTATUS modify_aliasmem(const DOM_SID *alias, const DOM_SID *member,
 	el.name = talloc_strdup(tmp_ctx, "member");
 	el.num_values = 1;
 	el.values = &val;
-	sid_to_string(string_sid, member);
+	sid_to_fstring(string_sid, member);
 	val.data = (uint8_t *)string_sid;
 	val.length = strlen(string_sid);
 

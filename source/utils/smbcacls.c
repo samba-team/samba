@@ -168,7 +168,7 @@ static void SidToString(struct cli_state *cli, fstring str, const DOM_SID *sid)
 	enum lsa_SidType type;
 	NTSTATUS status;
 
-	sid_to_string(str, sid);
+	sid_to_fstring(str, sid);
 
 	if (numeric) {
 		return;

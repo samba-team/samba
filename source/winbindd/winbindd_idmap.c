@@ -84,7 +84,7 @@ void winbindd_set_mapping_async(TALLOC_CTX *mem_ctx, const struct id_map *map,
 	request.cmd = WINBINDD_DUAL_SET_MAPPING;
 	request.data.dual_idmapset.id = map->xid.id;
 	request.data.dual_idmapset.type = map->xid.type;
-	sid_to_string(request.data.dual_idmapset.sid, map->sid);
+	sid_to_fstring(request.data.dual_idmapset.sid, map->sid);
 
 	do_async(mem_ctx, idmap_child(), &request, winbindd_set_mapping_recv,
 		 (void *)cont, private_data);
@@ -301,7 +301,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2UID;
-	sid_to_string(request.data.dual_sid2id.sid, sid);
+	sid_to_fstring(request.data.dual_sid2id.sid, sid);
 	do_async(mem_ctx, idmap_child(), &request, winbindd_sid2uid_recv,
 		 (void *)cont, private_data);
 }
@@ -357,7 +357,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2GID;
-	sid_to_string(request.data.dual_sid2id.sid, sid);
+	sid_to_fstring(request.data.dual_sid2id.sid, sid);
 
 	DEBUG(7,("winbindd_sid2gid_async: Resolving %s to a gid\n",
 		request.data.dual_sid2id.sid));
@@ -444,7 +444,7 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 	result = idmap_uid_to_sid(&sid, state->request.data.uid);
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_string(state->response.data.sid.sid, &sid);
+		sid_to_fstring(state->response.data.sid.sid, &sid);
 		state->response.data.sid.type = SID_NAME_USER;
 		return WINBINDD_OK;
 	}
@@ -501,7 +501,7 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 	result = idmap_gid_to_sid(&sid, state->request.data.gid);
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_string(state->response.data.sid.sid, &sid);
+		sid_to_fstring(state->response.data.sid.sid, &sid);
 		DEBUG(10, ("[%5lu]: retrieved sid: %s\n",
 			   (unsigned long)state->pid,
 			   state->response.data.sid.sid));

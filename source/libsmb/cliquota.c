@@ -608,7 +608,7 @@ void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_
 				if (_sidtostring) {
 					_sidtostring(username_str,&qt->sid,_numeric);
 				} else {
-					sid_to_string(username_str, &qt->sid);
+					sid_to_fstring(username_str, &qt->sid);
 				}
 
 				if (_verbose) {	

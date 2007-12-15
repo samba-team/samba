@@ -442,7 +442,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 	SAM_UNK_CTR ctr;
 	fstring sid_str;
 
-	sid_to_string(sid_str, domain_sid);
+	sid_to_fstring(sid_str, domain_sid);
 
 	/* Get sam policy handle */	
 	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -519,7 +519,7 @@ static NTSTATUS rpc_getsid_internals(const DOM_SID *domain_sid,
 {
 	fstring sid_str;
 
-	sid_to_string(sid_str, domain_sid);
+	sid_to_fstring(sid_str, domain_sid);
 	d_printf("Storing SID %s for Domain %s in secrets.tdb\n",
 		 sid_str, domain_name);
 
@@ -2661,7 +2661,7 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 	int i;
 
 	fstring sid_str;
-	sid_to_string(sid_str, domain_sid);
+	sid_to_fstring(sid_str, domain_sid);
 
 	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, domain_pol,
 				     MAXIMUM_ALLOWED_ACCESS,
@@ -2773,7 +2773,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 
 	for (i = 0; i < num_members; i++) {
 		fstring sid_str;
-		sid_to_string(sid_str, &alias_sids[i]);
+		sid_to_fstring(sid_str, &alias_sids[i]);
 
 		if (opt_long_list_entries) {
 			printf("%s %s\\%s %d\n", sid_str, 
@@ -5818,7 +5818,7 @@ static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	fstring str_sid;
-	sid_to_string(str_sid, domain_sid);
+	sid_to_fstring(str_sid, domain_sid);
 	d_printf("%s\n", str_sid);
 	return NT_STATUS_OK;
 }
@@ -5829,7 +5829,7 @@ static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
 	int pad_len, col_len = 20;
 
 	/* convert sid into ascii string */
-	sid_to_string(ascii_sid, dom_sid);
+	sid_to_fstring(ascii_sid, dom_sid);
 
 	/* calculate padding space for d_printf to look nicer */
 	pad_len = col_len - strlen(trusted_dom_name);

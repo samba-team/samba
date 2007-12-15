@@ -175,7 +175,7 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, bool success,
 
 		ZERO_STRUCT(request);
 		request.cmd = WINBINDD_LOOKUPSID;
-		sid_to_string(request.data.sid, &s->sid);
+		sid_to_fstring(request.data.sid, &s->sid);
 
 		do_async_domain(mem_ctx, root_domain, &request, lookupsid_recv2,
 				(void *)cont, s);
@@ -209,7 +209,7 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPSID;
-	sid_to_string(request.data.sid, sid);
+	sid_to_fstring(request.data.sid, sid);
 
 	if ( (s = TALLOC_ZERO_P(mem_ctx, struct lookupsid_state)) == NULL ) {
 		DEBUG(0, ("winbindd_lookupsid_async: talloc failed\n"));
@@ -443,7 +443,7 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	sid_to_string(state->response.data.sid.sid, &sid);
+	sid_to_fstring(state->response.data.sid.sid, &sid);
 	state->response.data.sid.type = type;
 
 	return WINBINDD_OK;
@@ -460,7 +460,7 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	for (i=0; i<num_sids; i++) {
 		fstring tmp;
 		sprintf_append(mem_ctx, result, len, &buflen,
-			       "%s\n", sid_to_string(tmp, &sids[i]));
+			       "%s\n", sid_to_fstring(tmp, &sids[i]));
 	}
 
 	if ((num_sids != 0) && (*result == NULL)) {
@@ -796,7 +796,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_GETUSERDOMGROUPS;
-	sid_to_string(request.data.sid, user_sid);
+	sid_to_fstring(request.data.sid, user_sid);
 
 	do_async_domain(mem_ctx, domain, &request, gettoken_recvdomgroups,
 			NULL, state);
@@ -949,7 +949,7 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_USERINFO;
-	sid_to_string(request.data.sid, sid);
+	sid_to_fstring(request.data.sid, sid);
 	do_async_domain(mem_ctx, domain, &request, query_user_recv,
 			(void *)cont, private_data);
 }

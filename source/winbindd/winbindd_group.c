@@ -1649,7 +1649,7 @@ static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 	/* work out the response size */
 	for (i = 0; i < num_sids; i++) {
 		fstring s;
-		sid_to_string(s, &sids[i]);
+		sid_to_fstring(s, &sids[i]);
 		ret_size += strlen(s) + 1;
 	}
 
@@ -1663,7 +1663,7 @@ static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 	ofs = 0;
 	for (i = 0; i < num_sids; i++) {
 		fstring s;
-		sid_to_string(s, &sids[i]);
+		sid_to_fstring(s, &sids[i]);
 		safe_strcpy(ret + ofs, s, ret_size - ofs - 1);
 		ofs += strlen(ret+ofs) + 1;
 	}

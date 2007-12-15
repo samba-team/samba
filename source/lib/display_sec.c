@@ -151,7 +151,7 @@ void display_sec_ace(SEC_ACE *ace)
 	printf(" (%d) flags: 0x%02x ", ace->type, ace->flags);
 	display_sec_ace_flags(ace->flags);
 	display_sec_access(&ace->access_mask);
-	sid_to_string(sid_str, &ace->trustee);
+	sid_to_fstring(sid_str, &ace->trustee);
 	printf("\t\tSID: %s\n\n", sid_str);
 
 	if (sec_ace_object(ace->type)) {
@@ -246,12 +246,12 @@ void display_sec_desc(SEC_DESC *sec)
 	}
 
 	if (sec->owner_sid) {
-		sid_to_string(sid_str, sec->owner_sid);
+		sid_to_fstring(sid_str, sec->owner_sid);
 		printf("\tOwner SID:\t%s\n", sid_str);
 	}
 
 	if (sec->group_sid) {
-		sid_to_string(sid_str, sec->group_sid);
+		sid_to_fstring(sid_str, sec->group_sid);
 		printf("\tGroup SID:\t%s\n", sid_str);
 	}
 }

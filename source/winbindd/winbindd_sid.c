@@ -118,7 +118,7 @@ static void lookupname_recv(void *private_data, bool success,
 		return;
 	}
 
-	sid_to_string(state->response.data.sid.sid, sid);
+	sid_to_fstring(state->response.data.sid.sid, sid);
 	state->response.data.sid.type = type;
 	request_ok(state);
 	return;

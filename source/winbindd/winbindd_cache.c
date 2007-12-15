@@ -756,7 +756,7 @@ static void centry_put_hash16(struct cache_entry *centry, const uint8 val[16])
 static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid) 
 {
 	fstring sid_string;
-	centry_put_string(centry, sid_to_string(sid_string, sid));
+	centry_put_string(centry, sid_to_fstring(sid_string, sid));
 }
 
 
@@ -876,7 +876,7 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 		centry_put_string(centry, name);
 	}
 
-	centry_end(centry, "SN/%s", sid_to_string(sid_string, sid));
+	centry_end(centry, "SN/%s", sid_to_fstring(sid_string, sid));
 	DEBUG(10,("wcache_save_sid_to_name: %s -> %s (%s)\n", sid_string, 
 		  name, nt_errstr(status)));
 	centry_free(centry);
@@ -902,7 +902,8 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 	centry_put_uint32(centry, info->primary_gid);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
-	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
+	centry_end(centry, "U/%s", sid_to_fstring(sid_string,
+						  &info->user_sid));
 	DEBUG(10,("wcache_save_user: %s (acct_name %s)\n", sid_string, info->acct_name));
 	centry_free(centry);
 }
@@ -966,7 +967,7 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 		return NT_STATUS_INVALID_SID;
 	}
 
-	fstr_sprintf(key_str, "CRED/%s", sid_to_string(tmp, sid));
+	fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
 	data = tdb_fetch(cache->tdb, string_tdb_data(key_str));
 	if (!data.dptr) {
@@ -1009,7 +1010,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	   fall back to an unsalted cred. */
 
 	centry = wcache_fetch(cache, domain, "CRED/%s",
-			      sid_to_string(tmp, sid));
+			      sid_to_fstring(tmp, sid));
 	if (!centry) {
 		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
 			  sid_string_dbg(sid)));
@@ -1027,7 +1028,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	if (*cached_nt_pass == NULL) {
 		fstring sidstr;
 
-		sid_to_string(sidstr, sid);
+		sid_to_fstring(sidstr, sid);
 
 		/* Bad (old) cred cache. Delete and pretend we
 		   don't have it. */
@@ -1095,7 +1096,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 
 	centry_put_hash16(centry, salted_hash);
 	centry_put_hash16(centry, cred_salt);
-	centry_end(centry, "CRED/%s", sid_to_string(sid_string, sid));
+	centry_end(centry, "CRED/%s", sid_to_fstring(sid_string, sid));
 
 	DEBUG(10,("wcache_save_creds: %s\n", sid_string));
 
@@ -1470,7 +1471,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (!cache->tdb)
 		goto do_query;
 
-	centry = wcache_fetch(cache, domain, "SN/%s", sid_to_string(sid_string, sid));
+	centry = wcache_fetch(cache, domain, "SN/%s",
+			      sid_to_fstring(sid_string, sid));
 	if (!centry)
 		goto do_query;
 
@@ -1565,7 +1567,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 		}
 
 		centry = wcache_fetch(cache, domain, "SN/%s",
-				      sid_to_string(tmp, &sid));
+				      sid_to_fstring(tmp, &sid));
 		if (!centry) {
 			goto do_query;
 		}
@@ -1687,7 +1689,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto do_query;
 
 	centry = wcache_fetch(cache, domain, "U/%s",
-			      sid_to_string(tmp, user_sid));
+			      sid_to_fstring(tmp, user_sid));
 	
 	/* If we have an access denied cache entry and a cached info3 in the
            samlogon cache then do a query.  This will force the rpc back end
@@ -1759,7 +1761,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (!cache->tdb)
 		goto do_query;
 
-	centry = wcache_fetch(cache, domain, "UG/%s", sid_to_string(sid_string, user_sid));
+	centry = wcache_fetch(cache, domain, "UG/%s",
+			      sid_to_fstring(sid_string, user_sid));
 	
 	/* If we have an access denied cache entry and a cached info3 in the
            samlogon cache then do a query.  This will force the rpc back end
@@ -1826,7 +1829,7 @@ do_query:
 		centry_put_sid(centry, &(*user_gids)[i]);
 	}	
 
-	centry_end(centry, "UG/%s", sid_to_string(sid_string, user_sid));
+	centry_end(centry, "UG/%s", sid_to_fstring(sid_string, user_sid));
 	centry_free(centry);
 
 skip_save:
@@ -1859,7 +1862,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	for (i=0; i<num_sids; i++) {
 		fstring tmp;
 		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
-					  sid_to_string(tmp, &sids[i]));
+					  sid_to_fstring(tmp, &sids[i]));
 		if (sidlist == NULL)
 			return NT_STATUS_NO_MEMORY;
 	}
@@ -1939,7 +1942,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!cache->tdb)
 		goto do_query;
 
-	centry = wcache_fetch(cache, domain, "GM/%s", sid_to_string(sid_string, group_sid));
+	centry = wcache_fetch(cache, domain, "GM/%s",
+			      sid_to_fstring(sid_string, group_sid));
 	if (!centry)
 		goto do_query;
 
@@ -1999,7 +2003,7 @@ do_query:
 		centry_put_string(centry, (*names)[i]);
 		centry_put_uint32(centry, (*name_types)[i]);
 	}	
-	centry_end(centry, "GM/%s", sid_to_string(sid_string, group_sid));
+	centry_end(centry, "GM/%s", sid_to_fstring(sid_string, group_sid));
 	centry_free(centry);
 
 skip_save:
@@ -2480,7 +2484,8 @@ bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		return False;
 	}
 
-	centry = wcache_fetch(cache, domain, "SN/%s", sid_to_string(tmp, sid));
+	centry = wcache_fetch(cache, domain, "SN/%s",
+			      sid_to_fstring(tmp, sid));
 	if (centry == NULL) {
 		return False;
 	}
@@ -2690,7 +2695,7 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 
 		DEBUG(11,("we already have an entry, deleting that\n"));
 
-		fstr_sprintf(key_str, "CRED/%s", sid_to_string(tmp, sid));
+		fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
 		tdb_delete(cache->tdb, string_tdb_data(key_str));
 
@@ -3544,7 +3549,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 		len += tdb_pack( buffer+len, buflen-len, "fffddd",
 				 domains[i].domain_name,
 				 domains[i].dns_name,
-				 sid_to_string(tmp, &domains[i].sid),
+				 sid_to_fstring(tmp, &domains[i].sid),
 				 domains[i].trust_flags,
 				 domains[i].trust_attribs,
 				 domains[i].trust_type );
@@ -3825,7 +3830,7 @@ static void wcache_save_user_pwinfo(struct winbindd_domain *domain,
 	centry_put_string( centry, gecos );
 	centry_put_uint32( centry, gid );
 	
-	centry_end(centry, "NSS/PWINFO/%s", sid_to_string(tmp, user_sid) );
+	centry_end(centry, "NSS/PWINFO/%s", sid_to_fstring(tmp, user_sid) );
 
 	DEBUG(10,("wcache_save_user_pwinfo: %s\n", sid_string_dbg(user_sid) ));
 
@@ -3848,7 +3853,7 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 		goto do_query;
 
 	centry = wcache_fetch(cache, domain, "NSS/PWINFO/%s",
-			      sid_to_string(tmp, user_sid));
+			      sid_to_fstring(tmp, user_sid));
 	
 	if (!centry)
 		goto do_query;

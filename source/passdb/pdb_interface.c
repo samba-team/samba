@@ -606,7 +606,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 
 	sid_compose(&group_sid, get_global_sam_sid(), *rid);
 		
-	return add_initial_entry(grp->gr_gid, sid_to_string(tmp, &group_sid),
+	return add_initial_entry(grp->gr_gid, sid_to_fstring(tmp, &group_sid),
 				 SID_NAME_DOM_GRP, name, NULL);
 }
 

@@ -192,7 +192,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	/* If we don't have an entry, then ask secrets.tdb for what it thinks.
 	   It may choose to make it up */
 
-	sid_to_string(sid_string, get_global_sam_sid());
+	sid_to_fstring(sid_string, get_global_sam_sid());
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			get_attr_key2string(dominfo_attr_list,
 					    LDAP_ATTR_DOM_SID),
