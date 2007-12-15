@@ -35,8 +35,23 @@
 RCSID("$Id$");
 
 /**
- * @page page_keyset Keyset operations
+ * @page page_keyset certificates store operations
  *
+ * Type of certificates store:
+ * - MEMORY
+ *   In memory based format. Doesnt support storing.
+ * - FILE 
+ *   FILE supports raw DER certicates and PEM certicates. When PEM is
+ *   used the file can contain may certificates and match private
+ *   keys. Support storing the certificates. DER format only supports
+ *   on certificate and no private key.
+ * - PEM-FILE
+ *   Same as FILE, defaulting to PEM encoded certificates.
+ * - PEM-FILE
+ *   Same as FILE, defaulting to DER encoded certificates.
+ * - PKCS11
+ * - PKCS12
+ * - DIR
  */
 
 struct hx509_certs_data {
@@ -73,6 +88,21 @@ _hx509_ks_register(hx509_context context, struct hx509_keyset_ops *ops)
     context->ks_ops = val;
     context->ks_num_ops++;
 }
+
+/**
+ * Open or creates a new hx509 certificate store.
+ *
+ * @param context A hx509 context
+ * @param name name of the store, format is TYPE:type-specific-string,
+ * if NULL is used the MEMORY store is used.
+ * @param flags list of flags:
+ * - HX509_CERTS_CREATE create a new keystore of the specific TYPE.
+ * @param lock a @ref page_lock that unlocks the certificates store,
+ * use NULL to select no password/certifictes/prompt lock.
+ * @param certs return pointer, free with hx509_certs_free().
+ *
+ * @ingroup hx509_keyset
+ */
 
 int
 hx509_certs_init(hx509_context context,
