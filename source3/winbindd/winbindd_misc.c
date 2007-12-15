@@ -466,8 +466,7 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 		domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name,
 		domain->alt_name);
-	fstrcpy(state->response.data.domain_info.sid,
-		sid_string_static(&domain->sid));
+	sid_to_string(state->response.data.domain_info.sid, &domain->sid);
 	
 	state->response.data.domain_info.native_mode =
 		domain->native_mode;
@@ -499,8 +498,7 @@ static void domain_info_init_recv(void *private_data, bool success)
 		domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name,
 		domain->alt_name);
-	fstrcpy(state->response.data.domain_info.sid,
-		sid_string_static(&domain->sid));
+	sid_to_string(state->response.data.domain_info.sid, &domain->sid);
 	
 	state->response.data.domain_info.native_mode =
 		domain->native_mode;

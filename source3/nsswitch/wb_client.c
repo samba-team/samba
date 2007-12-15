@@ -75,7 +75,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.sid, sid_string_static(sid));
+	sid_to_string(request.data.sid, sid);
 	
 	/* Make request */
 
@@ -134,7 +134,7 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.sid, sid_string_static(domain_sid));
+	sid_to_string(request.data.sid, domain_sid);
 	
 	len = 0;
 	buflen = 0;

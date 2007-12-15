@@ -175,7 +175,7 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, bool success,
 
 		ZERO_STRUCT(request);
 		request.cmd = WINBINDD_LOOKUPSID;
-		fstrcpy(request.data.sid, sid_string_static(&s->sid));
+		sid_to_string(request.data.sid, &s->sid);
 
 		do_async_domain(mem_ctx, root_domain, &request, lookupsid_recv2,
 				(void *)cont, s);
@@ -209,7 +209,7 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPSID;
-	fstrcpy(request.data.sid, sid_string_static(sid));
+	sid_to_string(request.data.sid, sid);
 
 	if ( (s = TALLOC_ZERO_P(mem_ctx, struct lookupsid_state)) == NULL ) {
 		DEBUG(0, ("winbindd_lookupsid_async: talloc failed\n"));
@@ -795,7 +795,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_GETUSERDOMGROUPS;
-	fstrcpy(request.data.sid, sid_string_static(user_sid));
+	sid_to_string(request.data.sid, user_sid);
 
 	do_async_domain(mem_ctx, domain, &request, gettoken_recvdomgroups,
 			NULL, state);
