@@ -23,12 +23,12 @@
 #include "torture/util.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
-#include "pstring.h"
 #include "param/param.h"
 
 #define VERBOSE 0
 #define OP_MIN 0
 #define OP_MAX 100
+#define PARAM_SIZE 1024
 
 /****************************************************************************
 look for a partial hit
@@ -82,12 +82,12 @@ static NTSTATUS try_trans2(struct smbcli_state *cli,
 	*rdata_len = t2.out.data.length;
 
 	talloc_free(mem_ctx);
-	
+
 	return status;
 }
 
 
-static NTSTATUS try_trans2_len(struct smbcli_state *cli, 
+static NTSTATUS try_trans2_len(struct smbcli_state *cli,
 			     const char *format,
 			     int op, int level,
 			     uint8_t *param, uint8_t *data,
@@ -97,14 +97,14 @@ static NTSTATUS try_trans2_len(struct smbcli_state *cli,
 	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_trans2(cli, op, param, data, param_len,
-			 sizeof(pstring), rparam_len, rdata_len);
-#if VERBOSE 
+			 PARAM_SIZE, rparam_len, rdata_len);
+#if VERBOSE
 	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
-	while (*data_len < sizeof(pstring)) {
+	while (*data_len < PARAM_SIZE) {
 		ret = try_trans2(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
 		if (NT_STATUS_IS_OK(ret)) break;
@@ -125,124 +125,162 @@ check whether a trans2 opnum exists at all
 ****************************************************************************/
 static bool trans2_op_exists(struct smbcli_state *cli, int op)
 {
-	int data_len = 0;
-	int param_len = 0;
+	int data_len = PARAM_SIZE;
+	int param_len = PARAM_SIZE;
 	int rparam_len, rdata_len;
-	uint8_t param[1024], data[1024];
+	uint8_t *param, *data;
 	NTSTATUS status1, status2;
+	TALLOC_CTX *mem_ctx;
 
-	memset(data, 0, sizeof(data));
-	data_len = 4;
+	mem_ctx = talloc_init("trans2_op_exists");
 
 	/* try with a info level only */
-	param_len = sizeof(param);
-	data_len = sizeof(data);
 
-	memset(param, 0xFF, sizeof(param));
-	memset(data, 0xFF, sizeof(data));
-	
-	status1 = try_trans2(cli, 0xFFFF, param, data, param_len, data_len, 
+	param = talloc_array(mem_ctx, uint8_t, param_len);
+	data  = talloc_array(mem_ctx, uint8_t, data_len);
+
+	memset(param, 0xFF, param_len);
+	memset(data, 0xFF, data_len);
+
+	status1 = try_trans2(cli, 0xFFFF, param, data, param_len, data_len,
 			     &rparam_len, &rdata_len);
 
-	status2 = try_trans2(cli, op, param, data, param_len, data_len, 
+	status2 = try_trans2(cli, op, param, data, param_len, data_len,
 			     &rparam_len, &rdata_len);
 
-	if (NT_STATUS_EQUAL(status1, status2)) return false;
+	if (NT_STATUS_EQUAL(status1, status2)) {
+		talloc_free(mem_ctx);
+		return false;
+	}
 
 	printf("Found op %d (status=%s)\n", op, nt_errstr(status2));
 
+	talloc_free(mem_ctx);
 	return true;
 }
 
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static bool scan_trans2(struct smbcli_state *cli, int op, int level, 
+static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, int qfnum, const char *fname)
 {
 	int data_len = 0;
 	int param_len = 0;
 	int rparam_len, rdata_len;
-	uint8_t param[1024], data[1024];
+	uint8_t *param, *data;
 	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
 
-	memset(data, 0, sizeof(data));
+	mem_ctx = talloc_init("scan_trans2");
+
+	data = talloc_array(mem_ctx, uint8_t, PARAM_SIZE);
+	param = talloc_array(mem_ctx, uint8_t, PARAM_SIZE);
+
+	memset(data, 0, PARAM_SIZE);
 	data_len = 4;
 
 	/* try with a info level only */
 	param_len = 2;
 	SSVAL(param, 0, level);
-	status = try_trans2_len(cli, "void", op, level, param, data, param_len, &data_len, 
-			    &rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_trans2_len(cli, "void", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a file descriptor */
 	param_len = 6;
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, level);
 	SSVAL(param, 4, 0);
-	status = try_trans2_len(cli, "fnum", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_trans2_len(cli, "fnum", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a quota file descriptor */
 	param_len = 6;
 	SSVAL(param, 0, qfnum);
 	SSVAL(param, 2, level);
 	SSVAL(param, 4, 0);
-	status = try_trans2_len(cli, "qfnum", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_trans2_len(cli, "qfnum", op, level, param, data, param_len,
+		       	&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a notify style */
 	param_len = 6;
 	SSVAL(param, 0, dnum);
 	SSVAL(param, 2, dnum);
 	SSVAL(param, 4, level);
-	status = try_trans2_len(cli, "notify", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_trans2_len(cli, "notify", op, level, param, data,
+			param_len, &data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a file name */
 	param_len = 6;
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], fname, sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[6], fname, PARAM_SIZE-7,
+			STR_TERMINATE|STR_UNICODE);
 
-	status = try_trans2_len(cli, "fname", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_trans2_len(cli, "fname", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a new file name */
 	param_len = 6;
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], "\\newfile.dat", sizeof(pstring)-7, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[6], "\\newfile.dat", PARAM_SIZE-7,
+			STR_TERMINATE|STR_UNICODE);
 
-	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
+	status = try_trans2_len(cli, "newfile", op, level, param, data,
+			param_len, &data_len, &rparam_len, &rdata_len);
 	smbcli_unlink(cli->tree, "\\newfile.dat");
 	smbcli_rmdir(cli->tree, "\\newfile.dat");
-	if (NT_STATUS_IS_OK(status)) return true;
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try dfs style  */
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[2], "\\testdir", PARAM_SIZE-3,
+			STR_TERMINATE|STR_UNICODE);
 
-	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
+	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
 	smbcli_rmdir(cli->tree, "\\testdir");
-	if (NT_STATUS_IS_OK(status)) return true;
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
+	talloc_free(mem_ctx);
 	return false;
 }
 
-
-bool torture_trans2_scan(struct torture_context *torture, 
+bool torture_trans2_scan(struct torture_context *torture,
 						 struct smbcli_state *cli)
 {
 	int op, level;
@@ -362,7 +400,7 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 }
 
 
-static NTSTATUS try_nttrans_len(struct smbcli_state *cli, 
+static NTSTATUS try_nttrans_len(struct smbcli_state *cli,
 			     const char *format,
 			     int op, int level,
 			     uint8_t *param, uint8_t *data,
@@ -372,14 +410,14 @@ static NTSTATUS try_nttrans_len(struct smbcli_state *cli,
 	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_nttrans(cli, op, param, data, param_len,
-			 sizeof(pstring), rparam_len, rdata_len);
-#if VERBOSE 
+			 PARAM_SIZE, rparam_len, rdata_len);
+#if VERBOSE
 	printf("op=%d level=%d ret=%s\n", op, level, nt_errstr(ret));
 #endif
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
-	while (*data_len < sizeof(pstring)) {
+	while (*data_len < PARAM_SIZE) {
 		ret = try_nttrans(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
 		if (NT_STATUS_IS_OK(ret)) break;
@@ -397,79 +435,108 @@ static NTSTATUS try_nttrans_len(struct smbcli_state *cli,
 /****************************************************************************
 check for existance of a nttrans call
 ****************************************************************************/
-static bool scan_nttrans(struct smbcli_state *cli, int op, int level, 
+static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
 	int param_len = 0;
 	int rparam_len, rdata_len;
-	uint8_t param[1024], data[1024];
+	uint8_t *param, *data;
 	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
 
-	memset(data, 0, sizeof(data));
+	mem_ctx = talloc_init("scan_nttrans");
+
+	param = talloc_array(mem_ctx, uint8_t, PARAM_SIZE);
+	data = talloc_array(mem_ctx, uint8_t, PARAM_SIZE);
+	memset(data, 0, PARAM_SIZE);
 	data_len = 4;
 
 	/* try with a info level only */
 	param_len = 2;
 	SSVAL(param, 0, level);
-	status = try_nttrans_len(cli, "void", op, level, param, data, param_len, &data_len, 
-			    &rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_nttrans_len(cli, "void", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a file descriptor */
 	param_len = 6;
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, level);
 	SSVAL(param, 4, 0);
-	status = try_nttrans_len(cli, "fnum", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
-
+	status = try_nttrans_len(cli, "fnum", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a notify style */
 	param_len = 6;
 	SSVAL(param, 0, dnum);
 	SSVAL(param, 2, dnum);
 	SSVAL(param, 4, level);
-	status = try_nttrans_len(cli, "notify", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_nttrans_len(cli, "notify", op, level, param, data,
+			param_len, &data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a file name */
 	param_len = 6;
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], fname, sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[6], fname, PARAM_SIZE,
+			STR_TERMINATE | STR_UNICODE);
 
-	status = try_nttrans_len(cli, "fname", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
-	if (NT_STATUS_IS_OK(status)) return true;
+	status = try_nttrans_len(cli, "fname", op, level, param, data,
+			param_len, &data_len, &rparam_len, &rdata_len);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try with a new file name */
 	param_len = 6;
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[6], "\\newfile.dat", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[6], "\\newfile.dat", PARAM_SIZE,
+			STR_TERMINATE | STR_UNICODE);
 
-	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
+	status = try_nttrans_len(cli, "newfile", op, level, param, data,
+			param_len, &data_len, &rparam_len, &rdata_len);
 	smbcli_unlink(cli->tree, "\\newfile.dat");
 	smbcli_rmdir(cli->tree, "\\newfile.dat");
-	if (NT_STATUS_IS_OK(status)) return true;
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
 	/* try dfs style  */
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(lp_iconv_convenience(global_loadparm), &param[2], "\\testdir", sizeof(pstring), STR_TERMINATE | STR_UNICODE);
+	param_len += push_string(lp_iconv_convenience(global_loadparm),
+			&param[2], "\\testdir", PARAM_SIZE,
+			STR_TERMINATE | STR_UNICODE);
 
-	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
-				&rparam_len, &rdata_len);
+	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len,
+			&data_len, &rparam_len, &rdata_len);
 	smbcli_rmdir(cli->tree, "\\testdir");
-	if (NT_STATUS_IS_OK(status)) return true;
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 
+	talloc_free(mem_ctx);
 	return false;
 }
 
