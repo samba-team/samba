@@ -429,7 +429,7 @@ PUBLIC_DEPENDENCIES = \
 [SUBSYSTEM::HEIMDAL_GLUE]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err 
 OBJ_FILES = glue.o
-PUBLIC_DEPENDENCIES = LIBNETIF
+PUBLIC_DEPENDENCIES = LIBNETIF LIBSAMBA-CONFIG
 # End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
