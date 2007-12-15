@@ -64,7 +64,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	int do_print = 0;
 	uint32 got_mask;
 
-	fprintf(f, "%s:", sid_string_static(&ace->trustee));
+	fprintf(f, "%s:", sid_string_tos(&ace->trustee));
 
 	/* Ace type */
 
@@ -126,9 +126,9 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	/* Print owner and group sid */
 
-	fprintf(f, "OWNER:%s\n", sid_string_static(sd->owner_sid));
+	fprintf(f, "OWNER:%s\n", sid_string_tos(sd->owner_sid));
 
-	fprintf(f, "GROUP:%s\n", sid_string_static(sd->group_sid));
+	fprintf(f, "GROUP:%s\n", sid_string_tos(sd->group_sid));
 
 	/* Print aces */
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
@@ -459,7 +459,8 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		}
 
 		if (!found) {
-		    printf("ACL for SID %s not found\n", sid_string_static(&sd->dacl->aces[i].trustee));
+		    printf("ACL for SID %s not found\n",
+			   sid_string_tos(&sd->dacl->aces[i].trustee));
 		}
 	    }
 
@@ -585,7 +586,7 @@ int main(int argc, const char *argv[])
 			return 3;
 		}
 		
-		printf ("%s\n", sid_string_static( sid ) );
+		printf ("%s\n", sid_string_tos( sid ) );
 		return 0;
 	}
 

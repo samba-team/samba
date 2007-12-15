@@ -61,33 +61,33 @@ static bool swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 	int i;
 	bool update = False;
 
-	verbose_output("  Owner SID: %s\n", sid_string_static(sd->owner_sid));
+	verbose_output("  Owner SID: %s\n", sid_string_tos(sd->owner_sid));
 	if ( sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
 		update = True;
 		verbose_output("  New Owner SID: %s\n", 
-			sid_string_static(sd->owner_sid));
+			sid_string_tos(sd->owner_sid));
 
 	}
 
-	verbose_output("  Group SID: %s\n", sid_string_static(sd->group_sid));
+	verbose_output("  Group SID: %s\n", sid_string_tos(sd->group_sid));
 	if ( sid_equal( sd->group_sid, s1 ) ) {
 		sid_copy( sd->group_sid, s2 );
 		update = True;
 		verbose_output("  New Group SID: %s\n", 
-			sid_string_static(sd->group_sid));
+			sid_string_tos(sd->group_sid));
 	}
 
 	acl = sd->dacl;
 	verbose_output("  DACL: %d entries:\n", acl->num_aces);
 	for ( i=0; i<acl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n", 
-			sid_string_static(&acl->aces[i].trustee));
+			sid_string_tos(&acl->aces[i].trustee));
 		if ( sid_equal( &acl->aces[i].trustee, s1 ) ) {
 			sid_copy( &acl->aces[i].trustee, s2 );
 			update = True;
 			verbose_output("    New Trustee SID: %s\n", 
-				sid_string_static(&acl->aces[i].trustee));
+				sid_string_tos(&acl->aces[i].trustee));
 		}
 	}
 
@@ -96,12 +96,12 @@ static bool swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 	verbose_output("  SACL: %d entries: \n", acl->num_aces);
 	for ( i=0; i<acl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n", 
-			sid_string_static(&acl->aces[i].trustee));
+			sid_string_tos(&acl->aces[i].trustee));
 		if ( sid_equal( &acl->aces[i].trustee, s1 ) ) {
 			sid_copy( &acl->aces[i].trustee, s2 );
 			update = True;
 			verbose_output("    New Trustee SID: %s\n", 
-				sid_string_static(&acl->aces[i].trustee));
+				sid_string_tos(&acl->aces[i].trustee));
 		}
 	}
 #endif

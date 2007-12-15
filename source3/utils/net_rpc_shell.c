@@ -236,7 +236,7 @@ int net_rpc_shell(int argc, const char **argv)
 	}
 
 	d_printf("Talking to domain %s (%s)\n", ctx->domain_name,
-		 sid_string_static(ctx->domain_sid));
+		 sid_string_tos(ctx->domain_sid));
 
 	this_ctx = ctx;
 

@@ -4224,7 +4224,7 @@ static void dump_user_token(struct user_token *token)
 	d_printf("%s\n", token->name);
 
 	for (i=0; i<token->token.num_sids; i++) {
-		d_printf(" %s\n", sid_string_static(&token->token.user_sids[i]));
+		d_printf(" %s\n", sid_string_tos(&token->token.user_sids[i]));
 	}
 }
 
