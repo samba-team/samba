@@ -1,3 +1,7 @@
+2007-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: Doxygen documentation.
+
 2007-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* *.[ch]: More documentation
