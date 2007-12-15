@@ -721,7 +721,7 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 	}
 
 	d_printf("Mapped unix group %s to SID %s\n", argv[0],
-		 sid_string_static(&map.sid));
+		 sid_string_tos(&map.sid));
 
 	return 0;
 }
@@ -1038,7 +1038,7 @@ static int net_sam_delmem(int argc, const char **argv)
 			 memberdomain, membername, groupdomain, groupname);
 	} else {
 		d_printf("Deleted %s from %s\\%s\n",
-			 sid_string_static(&member), groupdomain, groupname);
+			 sid_string_tos(&member), groupdomain, groupname);
 	}
 
 	return 0;
@@ -1087,8 +1087,7 @@ static int net_sam_listmem(int argc, const char **argv)
 				       &dom, &name, NULL)) {
 				d_printf(" %s\\%s\n", dom, name);
 			} else {
-				d_printf(" %s\n",
-					 sid_string_static(&members[i]));
+				d_printf(" %s\n", sid_string_tos(&members[i]));
 			}
 		}
 
@@ -1217,7 +1216,7 @@ static int net_sam_show(int argc, const char **argv)
 	}
 
 	d_printf("%s\\%s is a %s with SID %s\n", dom, name,
-		 sid_type_lookup(type), sid_string_static(&sid));
+		 sid_type_lookup(type), sid_string_tos(&sid));
 
 	return 0;
 }

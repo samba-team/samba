@@ -57,10 +57,10 @@ static void print_map_entry ( GROUP_MAP map, bool long_list )
 {
 	if (!long_list)
 		d_printf("%s (%s) -> %s\n", map.nt_name,
-			 sid_string_static(&map.sid), gidtoname(map.gid));
+			 sid_string_tos(&map.sid), gidtoname(map.gid));
 	else {
 		d_printf("%s\n", map.nt_name);
-		d_printf("\tSID       : %s\n", sid_string_static(&map.sid));
+		d_printf("\tSID       : %s\n", sid_string_tos(&map.sid));
 		d_printf("\tUnix gid  : %d\n", map.gid);
 		d_printf("\tUnix group: %s\n", gidtoname(map.gid));
 		d_printf("\tGroup type: %s\n",
@@ -249,7 +249,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	{
 		if (pdb_getgrgid(&map, gid)) {
 			d_printf("Unix group %s already mapped to SID %s\n",
-				 unixgrp, sid_string_static(&map.sid));
+				 unixgrp, sid_string_tos(&map.sid));
 			return -1;
 		}
 	}
@@ -619,7 +619,7 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 		if (!sid_check_is_in_our_domain(&map[i].sid)) {
 			printf("Deleting mapping for NT Group %s, sid %s\n",
 			       map[i].nt_name,
-			       sid_string_static(&map[i].sid));
+			       sid_string_tos(&map[i].sid));
 			pdb_delete_group_mapping_entry(map[i].sid);
 		}
 	}
@@ -690,7 +690,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	}
 
 	for (i = 0; i < num; i++) {
-		printf("%s\n", sid_string_static(&(members[i])));
+		printf("%s\n", sid_string_tos(&(members[i])));
 	}
 
 	TALLOC_FREE(members);
@@ -712,7 +712,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				     mem_ctx, domain_sid, member, 1,
 				     &alias_rids, &num_alias_rids))) {
 		d_fprintf(stderr, "Could not list memberships for sid %s\n",
-			 sid_string_static(member));
+			 sid_string_tos(member));
 		return False;
 	}
 
@@ -720,7 +720,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 		DOM_SID alias;
 		sid_copy(&alias, domain_sid);
 		sid_append_rid(&alias, alias_rids[i]);
-		printf("%s\n", sid_string_static(&alias));
+		printf("%s\n", sid_string_tos(&alias));
 	}
 
 	return True;

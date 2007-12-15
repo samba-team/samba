@@ -824,7 +824,8 @@ static int net_usershare_add(int argc, const char **argv)
 				return -1;
 			}
 		}
-		us_acl = talloc_asprintf_append(us_acl, "%s:%c,", sid_string_static(&sid), pcolon[1]);
+		us_acl = talloc_asprintf_append(
+			us_acl, "%s:%c,", sid_string_tos(&sid), pcolon[1]);
 
 		/* Move to the next ACL entry. */
 		if (pcolon[2] == ',') {

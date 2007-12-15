@@ -89,7 +89,7 @@ static void display_query_info_3(DOM_QUERY_3 d)
 	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
 
 	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
 }
 
 static void display_query_info_5(DOM_QUERY_5 d)
@@ -99,7 +99,7 @@ static void display_query_info_5(DOM_QUERY_5 d)
 	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
 
 	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
 }
 
 static void display_query_info_10(DOM_QUERY_10 d)
@@ -125,7 +125,7 @@ static void display_query_info_12(DOM_QUERY_12 d)
 	d_printf("Domain NetBios Name: %s\n", dom_name);
 	d_printf("Domain DNS Name: %s\n", dns_dom_name);
 	d_printf("Domain Forest Name: %s\n", forest_name);
-	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
 	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
 						      d.dom_guid));
 
@@ -725,7 +725,8 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("found %d privileges for SID %s\n", count, sid_string_static(&sid));
+	printf("found %d privileges for SID %s\n", count,
+	       sid_string_tos(&sid));
 
 	for (i = 0; i < count; i++) {
 		printf("\t%s\n", rights[i]);
@@ -929,7 +930,7 @@ static void display_trust_dom_info_6(TRUSTED_DOMAIN_INFO_EX *i)
 {
 	printf("Domain Name:\t\t%s\n", unistr2_static(&i->domain_name.unistring));
 	printf("NetBIOS Name:\t\t%s\n", unistr2_static(&i->netbios_name.unistring));
-	printf("SID:\t\t\t%s\n", sid_string_static(&i->sid.sid));
+	printf("SID:\t\t\t%s\n", sid_string_tos(&i->sid.sid));
 	printf("Trust Direction:\t0x%08x\n", i->trust_direction);
 	printf("Trust Type:\t\t0x%08x\n", i->trust_type);
 	printf("Trust Attributes:\t0x%08x\n", i->trust_attributes);

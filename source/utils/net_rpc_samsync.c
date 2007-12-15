@@ -52,7 +52,7 @@ static void display_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *a)
 	int i;
 	d_printf("Alias rid %u: ", rid);
 	for (i=0;i<a->num_members;i++) {
-		d_printf("%s ", sid_string_static(&a->sids[i].sid));
+		d_printf("%s ", sid_string_tos(&a->sids[i].sid));
 	}
 	d_printf("\n");
 }
@@ -570,7 +570,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		if (map.gid != passwd->pw_gid) {
 			if (!(grp = getgrgid(map.gid))) {
 				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n", 
-					  (unsigned long)map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
+					  (unsigned long)map.gid, pdb_get_username(sam_account), sid_string_tos(&group_sid)));
 			} else {
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 			}
@@ -705,7 +705,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 
 		if (!pdb_getsampwsid(member, &member_sid)) {
 			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
-				  delta->rids[i], sid_string_static(&member_sid), grp->gr_name));
+				  delta->rids[i], sid_string_tos(&member_sid), grp->gr_name));
 			TALLOC_FREE(member);
 			continue;
 		}

@@ -145,7 +145,8 @@ static int net_idmap_restore(int argc, const char **argv)
 		if (!winbind_set_mapping(&map)) {
 			d_fprintf(stderr, "Could not set mapping of %s %lu to sid %s\n",
 				 (map.xid.type == ID_TYPE_GID) ? "GID" : "UID",
-				 (unsigned long)map.xid.id, sid_string_static(map.sid));
+				 (unsigned long)map.xid.id,
+				  sid_string_tos(map.sid));
 			continue;
 		}
 			 

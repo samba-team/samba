@@ -328,7 +328,7 @@ static int net_lookup_name(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("%s %d (%s) %s\\%s\n", sid_string_static(&sid),
+	d_printf("%s %d (%s) %s\\%s\n", sid_string_tos(&sid),
 		 type, sid_type_lookup(type), dom, name);
 	return 0;
 }
@@ -355,7 +355,7 @@ static int net_lookup_sid(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("%s %d (%s) %s\\%s\n", sid_string_static(&sid),
+	d_printf("%s %d (%s) %s\\%s\n", sid_string_tos(&sid),
 		 type, sid_type_lookup(type), dom, name);
 	return 0;
 }
