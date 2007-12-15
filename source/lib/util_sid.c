@@ -223,6 +223,11 @@ char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	return result;
 }
 
+char *sid_string_dbg(const DOM_SID *sid)
+{
+	return sid_string_talloc(debug_ctx(), sid);
+}
+
 char *sid_string_tos(const DOM_SID *sid)
 {
 	return sid_string_talloc(talloc_tos(), sid);
