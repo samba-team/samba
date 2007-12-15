@@ -60,7 +60,7 @@
  * See the @ref page_cert for description and examples. */
 /** @defgroup hx509_keyset hx509 certificate store functions
  * See the @ref page_keyset for description and examples. */
-/** @defgroup hx509_cms hx509 name functions
+/** @defgroup hx509_cms hx509 CMS/pkcs7 functions
  * See the @ref page_cms for description and examples. */
 /** @defgroup hx509_crypto hx509 crypto functions */
 /** @defgroup hx509_misc hx509 misc functions */
