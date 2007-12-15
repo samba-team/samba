@@ -668,8 +668,7 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 
 	fstrcpy(state->response.data.domain_info.name, domain->name);
 	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
-	fstrcpy(state->response.data.domain_info.sid,
-		sid_string_static(&domain->sid));
+	sid_to_string(state->response.data.domain_info.sid, &domain->sid);
 	
 	state->response.data.domain_info.native_mode
 		= domain->native_mode;
