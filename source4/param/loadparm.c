@@ -2586,8 +2586,11 @@ int lp_maxprintjobs(struct loadparm_service *service)
 struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx == NULL) {
-		return smb_iconv_convenience_init(talloc_autofree_context(), 
+		static struct smb_iconv_convenience *fallback_ic = NULL;
+		if (fallback_ic == NULL)
+			fallback_ic = smb_iconv_convenience_init(talloc_autofree_context(), 
 						  "CP850", "UTF8", true);
+		return fallback_ic;
 	}
 	return lp_ctx->iconv_convenience;
 }
