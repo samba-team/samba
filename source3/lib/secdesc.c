@@ -93,24 +93,16 @@ bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 	/* Check owner and group */
 
 	if (!sid_equal(s1->owner_sid, s2->owner_sid)) {
-		fstring str1, str2;
-
-		sid_to_string(str1, s1->owner_sid);
-		sid_to_string(str2, s2->owner_sid);
-
 		DEBUG(10, ("sec_desc_equal(): owner differs (%s != %s)\n",
-			   str1, str2));
+			   sid_string_dbg(s1->owner_sid),
+			   sid_string_dbg(s2->owner_sid)));
 		return False;
 	}
 
 	if (!sid_equal(s1->group_sid, s2->group_sid)) {
-		fstring str1, str2;
-
-		sid_to_string(str1, s1->group_sid);
-		sid_to_string(str2, s2->group_sid);
-
 		DEBUG(10, ("sec_desc_equal(): group differs (%s != %s)\n",
-			   str1, str2));
+			   sid_string_dbg(s1->group_sid),
+			   sid_string_dbg(s2->group_sid)));
 		return False;
 	}
 
@@ -491,7 +483,6 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
 		uint8 new_flags = 0;
 		bool inherit = False;
-		fstring sid_str;
 
 		/* The OBJECT_INHERIT_ACE flag causes the ACE to be
 		   inherited by non-container children objects.  Container
@@ -547,12 +538,12 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 		init_sec_ace(new_ace, &ace->trustee, ace->type,
 			     new_ace->access_mask, new_flags);
 
-		sid_to_string(sid_str, &ace->trustee);
-
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
-			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,
+			  " inherited as %s:%d/0x%02x/0x%08x\n",
+			  sid_string_dbg(&ace->trustee),
 			  ace->type, ace->flags, ace->access_mask,
-			  sid_str, new_ace->type, new_ace->flags,
+			  sid_string_dbg(&ace->trustee),
+			  new_ace->type, new_ace->flags,
 			  new_ace->access_mask));
 
 		new_ace_list_ndx++;

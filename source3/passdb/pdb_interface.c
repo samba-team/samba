@@ -1265,7 +1265,7 @@ static bool pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 
 	if (!ret) {
 		DEBUG(1, ("Could not peek rid out of sid %s\n",
-			  sid_string_static(&sid)));
+			  sid_string_dbg(&sid)));
 	}
 
 	return ret;
@@ -1332,13 +1332,13 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 		GROUP_MAP map;
 		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
 			DEBUG(10, ("Could not find map for sid %s\n",
-				   sid_string_static(sid)));
+				   sid_string_dbg(sid)));
 			goto done;
 		}
 		if ((map.sid_name_use != SID_NAME_ALIAS) &&
 		    (map.sid_name_use != SID_NAME_WKN_GRP)) {
 			DEBUG(10, ("Map for sid %s is a %s, expected an "
-				   "alias\n", sid_string_static(sid),
+				   "alias\n", sid_string_dbg(sid),
 				   sid_type_lookup(map.sid_name_use)));
 			goto done;
 		}
@@ -1350,7 +1350,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	}
 
 	DEBUG(5, ("Sid %s is neither ours, a Unix SID, nor builtin\n",
-		  sid_string_static(sid)));
+		  sid_string_dbg(sid)));
 
  done:
 

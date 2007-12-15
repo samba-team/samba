@@ -958,8 +958,6 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 		int num_gids = 0;
 		const char *my_name;
-		fstring user_sid_string;
-		fstring group_sid_string;
 		unsigned char user_session_key[16];
 		unsigned char lm_session_key[16];
 		unsigned char pipe_session_key[16];
@@ -988,8 +986,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				  "supported for NETLOGON calls\n",
 				  pdb_get_domain(sampw),
 				  pdb_get_username(sampw),
-				  sid_to_string(user_sid_string, user_sid),
-				  sid_to_string(group_sid_string, group_sid)));
+				  sid_string_dbg(user_sid),
+				  sid_string_dbg(group_sid)));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 

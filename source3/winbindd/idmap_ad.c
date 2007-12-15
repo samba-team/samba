@@ -441,8 +441,7 @@ again:
 		/* mapped */
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
-			   sid_string_static(map->sid),
+		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
 			   (unsigned long)map->xid.id,
 			   map->xid.type));
 	}
@@ -628,8 +627,7 @@ again:
 		map->xid.id = id;
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n",
-			   sid_string_static(map->sid),
+		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
 			   (unsigned long)map->xid.id,
 			   map->xid.type));
 	}

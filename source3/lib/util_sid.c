@@ -750,7 +750,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
 				      &sid_array, &num_sids)) {
 			DEBUG(3, ("could not add SID to array: %s\n",
-				  sid_string_static(&info3->other_sids[i].sid)));
+				  sid_string_dbg(&info3->other_sids[i].sid)));
 			return NT_STATUS_NO_MEMORY;
 		}
 	}

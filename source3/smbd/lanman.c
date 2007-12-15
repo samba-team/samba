@@ -2221,7 +2221,7 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 
 	if ( !pdb_getsampwsid(sampw, &user_sid) ) {
 		DEBUG(10, ("pdb_getsampwsid(%s) failed for user %s\n",
-			   sid_string_static(&user_sid), UserName));
+			   sid_string_dbg(&user_sid), UserName));
 		goto done;
 	}
 

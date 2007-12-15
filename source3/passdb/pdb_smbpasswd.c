@@ -1394,10 +1394,10 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	FILE *fp = NULL;
-	fstring sid_str;
 	uint32 rid;
 	
-	DEBUG(10, ("smbpasswd_getsampwrid: search by sid: %s\n", sid_to_string(sid_str, sid)));
+	DEBUG(10, ("smbpasswd_getsampwrid: search by sid: %s\n",
+		   sid_string_dbg(sid)));
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1443,9 +1443,10 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 
 	/* build_sam_account might change the SID on us, if the name was for the guest account */
 	if (NT_STATUS_IS_OK(nt_status) && !sid_equal(pdb_get_user_sid(sam_acct), sid)) {
-		fstring sid_string1, sid_string2;
-		DEBUG(1, ("looking for user with sid %s instead returned %s for account %s!?!\n",
-			  sid_to_string(sid_string1, sid), sid_to_string(sid_string2, pdb_get_user_sid(sam_acct)), pdb_get_username(sam_acct)));
+		DEBUG(1, ("looking for user with sid %s instead returned %s "
+			  "for account %s!?!\n", sid_string_dbg(sid),
+			  sid_string_dbg(pdb_get_user_sid(sam_acct)),
+			  pdb_get_username(sam_acct)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 

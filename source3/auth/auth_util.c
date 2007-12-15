@@ -669,7 +669,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 
 		if (!sid_to_gid(sid, &gid)) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
-				   "ignoring it\n", sid_string_static(sid)));
+				   "ignoring it\n", sid_string_dbg(sid)));
 			continue;
 		}
 		add_gid_to_array_unique(server_info, gid, &server_info->groups,
@@ -740,7 +740,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 	if (!sid_to_uid(&user_sid, uid)) {
 		DEBUG(1, ("sid_to_uid for %s (%s) failed\n",
-			  username, sid_string_static(&user_sid)));
+			  username, sid_string_dbg(&user_sid)));
 		goto done;
 	}
 
@@ -762,7 +762,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		if (!ret) {
 			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
-				  sid_string_static(&user_sid), username));
+				  sid_string_dbg(&user_sid), username));
 			DEBUGADD(1, ("Fall back to unix user %s\n", username));
 			goto unix_user;
 		}
@@ -864,7 +864,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		if (!sid_to_gid(&group_sids[0], gid)) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
-				  sid_string_static(&group_sids[0])));
+				  sid_string_dbg(&group_sids[0])));
 			goto done;
 		}
 

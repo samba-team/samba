@@ -100,7 +100,7 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
 	    nt_token_check_sid(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_denied_object: "
 			"Access denied as of ace for %s\n",
-			sid_string_static(&ace->trustee)));
+			sid_string_dbg(&ace->trustee)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -118,7 +118,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
 	    nt_token_check_sid(&ace->trustee, token)) {
 		DEBUG(10,("gpo_sd_check_ace_allowed_object: "
 			"Access granted as of ace for %s\n",
-			sid_string_static(&ace->trustee)));
+			sid_string_dbg(&ace->trustee)));
 		return NT_STATUS_OK;
 	}
 

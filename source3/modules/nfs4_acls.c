@@ -243,7 +243,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 			}
 		}
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
-			sid_string_static(&sid)));
+			   sid_string_dbg(&sid)));
 
 		init_sec_access(&mask, ace->aceMask);
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
@@ -429,8 +429,7 @@ static int smbacl4_fill_ace4(
 	uid_t uid;
 	gid_t gid;
 
-	DEBUG(10, ("got ace for %s\n",
-		sid_string_static(&ace_nt->trustee)));
+	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
 
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
 	ace_v4->aceType = ace_nt->type; /* only ACCESS|DENY supported right now */
@@ -452,7 +451,7 @@ static int smbacl4_fill_ace4(
 	} else {
 		if (!lookup_sid(mem_ctx, &ace_nt->trustee, &dom, &name, &type)) {
 			DEBUG(8, ("Could not find %s' type\n",
-				sid_string_static(&ace_nt->trustee)));
+				  sid_string_dbg(&ace_nt->trustee)));
 			errno = EINVAL;
 			return -1;
 		}
@@ -460,7 +459,7 @@ static int smbacl4_fill_ace4(
 		if (type == SID_NAME_USER) {
 			if (!sid_to_uid(&ace_nt->trustee, &uid)) {
 				DEBUG(2, ("Could not convert %s to uid\n",
-					sid_string_static(&ace_nt->trustee)));
+					  sid_string_dbg(&ace_nt->trustee)));
 				return -1;
 			}
 
@@ -473,7 +472,7 @@ static int smbacl4_fill_ace4(
 		} else { /* else group? - TODO check it... */
 			if (!sid_to_gid(&ace_nt->trustee, &gid)) {
 				DEBUG(2, ("Could not convert %s to gid\n",
-					sid_string_static(&ace_nt->trustee)));
+					  sid_string_dbg(&ace_nt->trustee)));
 				return -1;
 			}
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;

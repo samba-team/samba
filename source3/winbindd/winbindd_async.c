@@ -202,7 +202,7 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	domain = find_lookup_domain_from_sid(sid);
 	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain for sid %s\n",
-			  sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		cont(private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
@@ -788,7 +788,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	domain = find_domain_from_sid_noinit(user_sid);
 	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain from SID %s\n",
-			  sid_string_static(user_sid)));
+			  sid_string_dbg(user_sid)));
 		cont(private_data, False, NULL, 0);
 		return;
 	}

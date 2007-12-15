@@ -2033,11 +2033,12 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		/*unknown = IVAL(pdata,0);*/
 
 		sid_parse(pdata+4,sid_len,&sid);
-		DEBUGADD(10,("for SID: %s\n",sid_string_static(&sid)));
+		DEBUGADD(10, ("for SID: %s\n", sid_string_dbg(&sid)));
 
 		if (!sid_to_uid(&sid, &uid)) {
 			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
-				sid_string_static(&sid),(unsigned long)sid_len));
+				 sid_string_dbg(&sid),
+				 (unsigned long)sid_len));
 			uid = (-1);
 		}
 
@@ -2466,7 +2467,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 
 	sid_parse(pdata+40,sid_len,&sid);
-	DEBUGADD(8,("SID: %s\n",sid_string_static(&sid)));
+	DEBUGADD(8,("SID: %s\n", sid_string_dbg(&sid)));
 
 	/* 44 unknown bytes left... */
 

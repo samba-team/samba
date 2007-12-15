@@ -145,7 +145,8 @@ NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	SAMR_R_OPEN_DOMAIN r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	DEBUG(10,("cli_samr_open_domain with sid %s\n", sid_string_static(domain_sid) ));
+	DEBUG(10,("cli_samr_open_domain with sid %s\n",
+		  sid_string_dbg(domain_sid) ));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);

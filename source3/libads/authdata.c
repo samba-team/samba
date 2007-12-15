@@ -742,14 +742,16 @@ void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 		DEBUGADD(lvl,("\tUser Flags: LOGON_EXTRA_SIDS 0x%x (%d)\n", LOGON_EXTRA_SIDS, LOGON_EXTRA_SIDS));
 	if (user_flgs & LOGON_RESOURCE_GROUPS)
 		DEBUGADD(lvl,("\tUser Flags: LOGON_RESOURCE_GROUPS 0x%x (%d)\n", LOGON_RESOURCE_GROUPS, LOGON_RESOURCE_GROUPS));
-	DEBUGADD(lvl,("\tUser SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.user_rid));
-	DEBUGADD(lvl,("\tGroup SID: %s-%d\n", sid_string_static(&dom_sid), logon_info->info3.group_rid));
+	DEBUGADD(lvl,("\tUser SID: %s-%d\n", sid_string_dbg(&dom_sid),
+		      logon_info->info3.user_rid));
+	DEBUGADD(lvl,("\tGroup SID: %s-%d\n", sid_string_dbg(&dom_sid),
+		      logon_info->info3.group_rid));
 
 	DEBUGADD(lvl,("\tGroup Membership (Global and Universal Groups of own domain):\n"));
 	for (i = 0; i < logon_info->info3.num_groups; i++) {
 		attr_string = pac_group_attr_string(logon_info->info3.gids[i].attr);
 		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_static(&dom_sid), 
+			i, sid_string_dbg(&dom_sid),
 			logon_info->info3.gids[i].g_rid,
 			logon_info->info3.gids[i].attr,
 			attr_string));
@@ -760,7 +762,8 @@ void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 	for (i = 0; i < logon_info->info3.num_other_sids; i++) {
 		attr_string = pac_group_attr_string(logon_info->info3.other_sids_attrib[i]);
 		DEBUGADD(lvl,("\t\t%d: sid: %s\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_static(&logon_info->info3.other_sids[i].sid), 
+			i, sid_string_dbg(
+				&logon_info->info3.other_sids[i].sid),
 			logon_info->info3.other_sids_attrib[i],
 			attr_string));
 		SAFE_FREE(attr_string);
@@ -770,7 +773,7 @@ void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 	for (i = 0; i < logon_info->info3.res_group_count; i++) {
 		attr_string = pac_group_attr_string(logon_info->res_groups.group_membership[i].attrs);
 		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_static(&res_group_dom_sid),
+			i, sid_string_dbg(&res_group_dom_sid),
 			logon_info->res_groups.group_membership[i].rid,
 			logon_info->res_groups.group_membership[i].attrs,
 			attr_string));

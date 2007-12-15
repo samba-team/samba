@@ -123,7 +123,7 @@ bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 		return False;
 
 	DEBUG(5, ("trustdom_store: storing SID %s of domain %s\n",
-	          sid_string_static(sid), name));
+	          sid_string_dbg(sid), name));
 
 	key = trustdom_cache_key(name);
 	alt_key = alt_name ? trustdom_cache_key(alt_name) : NULL;

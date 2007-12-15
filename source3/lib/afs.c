@@ -242,7 +242,7 @@ bool afs_login(connection_struct *conn)
 	afs_username = talloc_string_sub(talloc_tos(),
 					afs_username,
 					"%s",
-					sid_string_static(user_sid));
+					sid_string_tos(user_sid));
 	if (!afs_username) {
 		return false;
 	}

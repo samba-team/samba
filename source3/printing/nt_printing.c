@@ -5569,11 +5569,8 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 			   sharename, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
-			fstring sid_str;
-
-			sid_to_string(sid_str, &the_acl->aces[i].trustee);
-
-			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
+			DEBUG(10, ("%s %d %d 0x%08x\n",
+				   sid_string_dbg(&the_acl->aces[i].trustee),
 				   the_acl->aces[i].type, the_acl->aces[i].flags, 
 				   the_acl->aces[i].access_mask)); 
 		}

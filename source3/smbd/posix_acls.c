@@ -546,10 +546,8 @@ static canon_ace *dup_canon_ace( canon_ace *src_ace)
 
 static void print_canon_ace(canon_ace *pace, int num)
 {
-	fstring str;
-
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
-	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
+	dbgtext( "SID = %s ", sid_string_dbg(&pace->trustee));
 	if (pace->owner_type == UID_ACE) {
 		const char *u_name = uidtoname(pace->unix_ug.uid);
 		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name );
@@ -962,7 +960,7 @@ NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_i
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
-					 sid_string_static(&owner_sid)));
+					 sid_string_dbg(&owner_sid)));
 				return NT_STATUS_INVALID_OWNER;
 			}
 		}
@@ -1414,23 +1412,23 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			current_ace->owner_type = GID_ACE;
 			current_ace->type = SMB_ACL_GROUP;
 		} else {
-			fstring str;
-
 			/*
 			 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
 			 */
 
 			if (non_mappable_sid(&psa->trustee)) {
-				DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
-					sid_to_string(str, &psa->trustee) ));
+				DEBUG(10, ("create_canon_ace_lists: ignoring "
+					   "non-mappable SID %s\n",
+					   sid_string_dbg(&psa->trustee)));
 				SAFE_FREE(current_ace);
 				continue;
 			}
 
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
-			DEBUG(0,("create_canon_ace_lists: unable to map SID %s to uid or gid.\n",
-				sid_to_string(str, &current_ace->trustee) ));
+			DEBUG(0, ("create_canon_ace_lists: unable to map SID "
+				  "%s to uid or gid.\n",
+				  sid_string_dbg(&current_ace->trustee)));
 			SAFE_FREE(current_ace);
 			return False;
 		}

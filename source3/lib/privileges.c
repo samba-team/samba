@@ -59,8 +59,8 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	data = tdb_fetch_bystring( tdb, keystr );
 	
 	if ( !data.dptr ) {
-		DEBUG(3,("get_privileges: No privileges assigned to SID [%s]\n",
-			sid_string_static(sid)));
+		DEBUG(3, ("get_privileges: No privileges assigned to SID "
+			  "[%s]\n", sid_string_dbg(sid)));
 		return False;
 	}
 	
@@ -123,8 +123,8 @@ bool get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
 		if ( !get_privileges( &slist[i], &mask ) )
 			continue;
 
-		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege set:\n", 
-			sid_string_static(&slist[i])));
+		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege "
+			 "set:\n", sid_string_dbg(&slist[i])));
 		dump_se_priv( DBGC_ALL, 5, &mask );
 			
 		se_priv_add( privileges, &mask );
@@ -266,7 +266,7 @@ bool grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 
 	se_priv_add( &new_mask, priv_mask );
 
-	DEBUG(10,("grant_privilege: %s\n", sid_string_static(sid)));
+	DEBUG(10,("grant_privilege: %s\n", sid_string_dbg(sid)));
 	
 	DEBUGADD( 10, ("original privilege mask:\n"));
 	dump_se_priv( DBGC_ALL, 10, &old_mask );
@@ -307,7 +307,7 @@ bool revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 	if ( !get_privileges( sid, &mask ) )
 		return True;
 	
-	DEBUG(10,("revoke_privilege: %s\n", sid_string_static(sid)));
+	DEBUG(10,("revoke_privilege: %s\n", sid_string_dbg(sid)));
 	
 	DEBUGADD( 10, ("original privilege mask:\n"));
 	dump_se_priv( DBGC_ALL, 10, &mask );

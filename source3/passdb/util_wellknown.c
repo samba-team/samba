@@ -123,8 +123,7 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	}
 
 	if (users == NULL) {
-		DEBUG(10, ("SID %s is no special sid\n",
-			   sid_string_static(sid)));
+		DEBUG(10, ("SID %s is no special sid\n", sid_string_dbg(sid)));
 		return False;
 	}
 
@@ -135,8 +134,7 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		}
 	}
 
-	DEBUG(10, ("RID of special SID %s not found\n",
-		   sid_string_static(sid)));
+	DEBUG(10, ("RID of special SID %s not found\n", sid_string_dbg(sid)));
 
 	return False;
 }

@@ -855,8 +855,8 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	fstrcpy(uname, name);
 	strupper_m(uname);
 	centry_end(centry, "NS/%s/%s", domain_name, uname);
-	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s (%s)\n", domain_name, uname,
-		  sid_string_static(sid), nt_errstr(status)));
+	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s (%s)\n", domain_name,
+		  uname, sid_string_dbg(sid), nt_errstr(status)));
 	centry_free(centry);
 }
 
@@ -1010,7 +1010,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	centry = wcache_fetch(cache, domain, "CRED/%s", sid_string_static(sid));
 	if (!centry) {
 		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
-				sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -1023,7 +1023,9 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 
 	*cached_nt_pass = (const uint8 *)centry_hash16(centry, mem_ctx);
 	if (*cached_nt_pass == NULL) {
-		const char *sidstr = sid_string_static(sid);
+		fstring sidstr;
+
+		sid_to_string(sidstr, sid);
 
 		/* Bad (old) cred cache. Delete and pretend we
 		   don't have it. */
@@ -1049,7 +1051,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	status = centry->status;
 
 	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status: %s\n",
-		sid_string_static(sid), nt_errstr(status) ));
+		  sid_string_dbg(sid), nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -3696,7 +3698,7 @@ bool wcache_tdc_add_domain( struct winbindd_domain *domain )
 	DEBUG(10,("wcache_tdc_add_domain: Adding domain %s (%s), SID %s, "
 		  "flags = 0x%x, attributes = 0x%x, type = 0x%x\n",
 		  domain->name, domain->alt_name, 
-		  sid_string_static(&domain->sid),
+		  sid_string_dbg(&domain->sid),
 		  domain->domain_flags,
 		  domain->domain_trust_attribs,
 		  domain->domain_type));	
@@ -3815,7 +3817,7 @@ static void wcache_save_user_pwinfo(struct winbindd_domain *domain,
 	
 	centry_end(centry, "NSS/PWINFO/%s", sid_string_static(user_sid) );
 
-	DEBUG(10,("wcache_save_user_pwinfo: %s\n", sid_string_static(user_sid) ));
+	DEBUG(10,("wcache_save_user_pwinfo: %s\n", sid_string_dbg(user_sid) ));
 
 	centry_free(centry);
 }
@@ -3847,7 +3849,7 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 	centry_free(centry);
 
 	DEBUG(10,("nss_get_info_cached: [Cached] - user_sid %s\n",
-		  sid_string_static(user_sid)));
+		  sid_string_dbg(user_sid)));
 
 	return NT_STATUS_OK;
 

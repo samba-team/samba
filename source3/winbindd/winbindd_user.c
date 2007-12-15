@@ -73,7 +73,6 @@ static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 				struct winbindd_pw *pw)
 {
 	fstring output_username;
-	fstring sid_string;
 	
 	if (!pw || !dom_name || !user_name)
 		return False;
@@ -81,14 +80,16 @@ static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 	/* Resolve the uid number */
 
 	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &pw->pw_uid))) {
-		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
+		DEBUG(1, ("error getting user id for sid %s\n",
+			  sid_string_dbg(user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
 	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &pw->pw_gid))) {
-		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
+		DEBUG(1, ("error getting group id for sid %s\n",
+			  sid_string_dbg(group_sid)));
 		return False;
 	}
 
@@ -146,7 +147,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					     &sid, &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("error getting user info for sid %s\n",
-			  sid_string_static(&sid)));
+			  sid_string_dbg(&sid)));
 		return WINBINDD_ERROR;
 	}
 
@@ -158,7 +159,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
 				&state->response.data.user_info.group_rid)) {
 		DEBUG(1, ("Could not extract group rid out of %s\n",
-			  sid_string_static(&sid)));
+			  sid_string_dbg(&sid)));
 		return WINBINDD_ERROR;
 	}
 
@@ -203,7 +204,7 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 	s->domain = find_domain_from_sid_noinit(sid);
 	if (s->domain == NULL) {
 		DEBUG(3, ("Could not find domain for sid %s\n",
-			  sid_string_static(sid)));
+			  sid_string_dbg(sid)));
 		goto error;
 	}
 
@@ -230,8 +231,8 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query domain %s SID %s\n", s->domain->name,
-			  sid_string_static(&s->user_sid)));
+		DEBUG(5, ("Could not query domain %s SID %s\n",
+			  s->domain->name, sid_string_dbg(&s->user_sid)));
 		request_error(s->state);
 		return;
 	}
@@ -247,7 +248,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 		domain = find_lookup_domain_from_sid(&s->user_sid);
 		if (domain == NULL) {
 			DEBUG(5, ("find_lookup_domain_from_sid(%s) failed\n",
-				  sid_string_static(&s->user_sid)));
+				  sid_string_dbg(&s->user_sid)));
 			request_error(s->state);
 			return;			
 		}
@@ -258,7 +259,7 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 		/* If this still fails we ar4e done.  Just error out */
 		if ( !user_name ) {
 			DEBUG(5,("Could not obtain a name for SID %s\n",
-				 sid_string_static(&s->user_sid)));			
+				 sid_string_dbg(&s->user_sid)));
 			request_error(s->state);
 			return;			
 		}

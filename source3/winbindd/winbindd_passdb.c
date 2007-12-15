@@ -132,7 +132,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 {
 	const char *dom, *nam;
 
-	DEBUG(10, ("Converting SID %s\n", sid_string_static(sid)));
+	DEBUG(10, ("Converting SID %s\n", sid_string_dbg(sid)));
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
@@ -144,7 +144,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	    !sid_check_is_in_wellknown_domain(sid))
 	{
 		DEBUG(0, ("Possible deadlock: Trying to lookup SID %s with "
-			  "passdb backend\n", sid_string_static(sid)));
+			  "passdb backend\n", sid_string_dbg(sid)));
 		return NT_STATUS_NONE_MAPPED;
 	}
 

@@ -597,7 +597,7 @@ static NTSTATUS find_forced_group(bool force_user,
 
 	if (!sid_to_gid(&group_sid, &gid)) {
 		DEBUG(10, ("sid_to_gid(%s) for %s failed\n",
-			   sid_string_static(&group_sid), groupname));
+			   sid_string_dbg(&group_sid), groupname));
 		goto done;
 	}
 
@@ -885,7 +885,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			if (!sid_to_gid(sid, &gid)) {
 				DEBUG(10, ("Could not convert SID %s to gid, "
 					   "ignoring it\n",
-					   sid_string_static(sid)));
+					   sid_string_dbg(sid)));
 				continue;
 			}
 			if (!add_gid_to_array_unique(conn->mem_ctx, gid, &conn->groups,

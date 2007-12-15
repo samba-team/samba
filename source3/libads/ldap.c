@@ -2367,8 +2367,8 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	for (i=0; values[i]; i++) {
 		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
 		if (ret) {
-			fstring sid;
-			DEBUG(10, ("pulling SID: %s\n", sid_to_string(sid, &(*sids)[count])));
+			DEBUG(10, ("pulling SID: %s\n",
+				   sid_string_dbg(&(*sids)[count])));
 			count++;
 		}
 	}

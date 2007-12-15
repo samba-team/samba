@@ -1135,8 +1135,9 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			case SCHEMAVER_SAMBAACCOUNT:
 				if (!sid_peek_check_rid(&ldap_state->domain_sid, user_sid, &rid)) {
 					DEBUG(1, ("init_ldap_from_sam: User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
-						  sid_string_static(user_sid),
-						  sid_string_static(&ldap_state->domain_sid)));
+						  sid_string_dbg(user_sid),
+						  sid_string_dbg(
+							  &ldap_state->domain_sid)));
 					return False;
 				}
 				if (asprintf(&temp, "%i", rid) < 0) {
@@ -1171,8 +1172,9 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			case SCHEMAVER_SAMBAACCOUNT:
 				if (!sid_peek_check_rid(&ldap_state->domain_sid, group_sid, &rid)) {
 					DEBUG(1, ("init_ldap_from_sam: User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n",
-						  sid_string_static(group_sid),
-						  sid_string_static(&ldap_state->domain_sid)));
+						  sid_string_dbg(group_sid),
+						  sid_string_dbg(
+							  &ldap_state->domain_sid)));
 					return False;
 				}
 
@@ -1696,7 +1698,6 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 	LDAPMessage *entry = NULL;
 	int count;
 	int rc;
-	fstring sid_string;
 
 	rc = ldapsam_get_ldap_user_by_sid(ldap_state, 
 					  sid, &result); 
@@ -1706,13 +1707,14 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 	
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_getsampwsid: Unable to locate SID [%s] count=%d\n", sid_to_string(sid_string, sid),
-		       count));
+		DEBUG(4, ("ldapsam_getsampwsid: Unable to locate SID [%s] "
+			  "count=%d\n", sid_string_dbg(sid), count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}  else if (count > 1) {
-		DEBUG(1, ("ldapsam_getsampwsid: More than one user with SID [%s]. Failing. count=%d\n", sid_to_string(sid_string, sid),
-		       count));
+		DEBUG(1, ("ldapsam_getsampwsid: More than one user with SID "
+			  "[%s]. Failing. count=%d\n", sid_string_dbg(sid),
+			  count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -2148,7 +2150,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	const DOM_SID 	*sid = pdb_get_user_sid(newpwd);
 	char *filter = NULL;
 	char *dn = NULL;
-	fstring         sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *ctx = talloc_init("ldapsam_add_sam_account");
 
@@ -2184,8 +2185,9 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 						  sid, &result);
 		if (rc == LDAP_SUCCESS) {
 			if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) != 0) {
-				DEBUG(0,("ldapsam_add_sam_account: SID '%s' already in the base, with samba attributes\n", 
-					 sid_to_string(sid_string, sid)));
+				DEBUG(0,("ldapsam_add_sam_account: SID '%s' "
+					 "already in the base, with samba "
+					 "attributes\n", sid_string_dbg(sid)));
 				goto fn_exit;
 			}
 			ldap_msgfree(result);
@@ -2659,7 +2661,7 @@ static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 
 	if (sid_compare_domain(&sid, domain_sid) != 0) {
 		DEBUG(10, ("SID %s is not in expected domain %s\n",
-			   str, sid_string_static(domain_sid)));
+			   str, sid_string_dbg(domain_sid)));
 		return False;
 	}
 
@@ -2719,7 +2721,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	if (count > 1) {
 		DEBUG(1, ("Found more than one groupmap entry for %s\n",
-			  sid_string_static(group)));
+			  sid_string_dbg(group)));
 		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
@@ -3138,8 +3140,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	    (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg) > 0)) {
 
 		DEBUG(3, ("SID %s already present in LDAP, refusing to add "
-			  "group mapping entry\n",
-			  sid_string_static(&map->sid)));
+			  "group mapping entry\n", sid_string_dbg(&map->sid)));
 		result = NT_STATUS_GROUP_EXISTS;
 		goto done;
 	}
@@ -3158,7 +3159,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 			&& !sid_check_is_in_builtin(&map->sid) ) 
 		{
 			DEBUG(3, ("Refusing to map sid %s as an alias, not in our domain\n",
-				  sid_string_static(&map->sid)));
+				  sid_string_dbg(&map->sid)));
 			result = NT_STATUS_INVALID_PARAMETER;
 			goto done;
 		}
@@ -3182,7 +3183,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	if (pdb_gid_to_sid(map->gid, &sid)) {
 		DEBUG(3, ("Gid %d is already mapped to SID %s, refusing to "
-			  "add\n", map->gid, sid_string_static(&sid)));
+			  "add\n", map->gid, sid_string_dbg(&sid)));
 		result = NT_STATUS_GROUP_EXISTS;
 		goto done;
 	}
@@ -3557,7 +3558,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 
 	if (type == SID_NAME_USE_NONE) {
 		DEBUG(5, ("SID %s is neither in builtin nor in our domain!\n",
-			  sid_string_static(alias)));
+			  sid_string_dbg(alias)));
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
@@ -3678,7 +3679,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 
 	if (type == SID_NAME_USE_NONE) {
 		DEBUG(5, ("SID %s is neither in builtin nor in our domain!\n",
-			  sid_string_static(alias)));
+			  sid_string_dbg(alias)));
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
@@ -3786,7 +3787,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 
 	if (type == SID_NAME_USE_NONE) {
 		DEBUG(5, ("SID %s is neither builtin nor domain!\n",
-			  sid_string_static(domain_sid)));
+			  sid_string_dbg(domain_sid)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -4548,7 +4549,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
 		DEBUG(0, ("sid %s does not belong to our domain\n",
-			  sid_string_static(&sid)));
+			  sid_string_dbg(&sid)));
 		return False;
 	}
 
@@ -4701,7 +4702,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				&& !sid_peek_check_rid(&global_sid_Builtin, &sid, &result->rid)) 
 			{
 				DEBUG(0, ("%s is not in our domain\n",
-					  sid_string_static(&sid)));
+					  sid_string_dbg(&sid)));
 				return False;
 			}
 			break;
@@ -6367,21 +6368,17 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 						     &secrets_domain_sid);
 		if (!found_sid || !sid_equal(&secrets_domain_sid,
 					     &ldap_domain_sid)) {
-			fstring new_sid_str, old_sid_str;
 			DEBUG(1, ("pdb_init_ldapsam: Resetting SID for domain "
 				  "%s based on pdb_ldap results %s -> %s\n",
 				  ldap_state->domain_name,
-				  sid_to_string(old_sid_str,
-						&secrets_domain_sid),
-				  sid_to_string(new_sid_str,
-						&ldap_domain_sid)));
+				  sid_string_dbg(&secrets_domain_sid),
+				  sid_string_dbg(&ldap_domain_sid)));
 
 			/* reset secrets.tdb sid */
 			secrets_store_domain_sid(ldap_state->domain_name,
 						 &ldap_domain_sid);
 			DEBUG(1, ("New global sam SID: %s\n",
-				  sid_to_string(new_sid_str,
-						get_global_sam_sid())));
+				  sid_string_dbg(get_global_sam_sid())));
 		}
 		sid_copy(&ldap_state->domain_sid, &ldap_domain_sid);
 		TALLOC_FREE(domain_sid_string);

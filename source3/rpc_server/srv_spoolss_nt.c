@@ -6044,11 +6044,8 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 			   PRINTERNAME(snum), the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
-			fstring sid_str;
-
-			sid_to_string(sid_str, &the_acl->aces[i].trustee);
-
-			DEBUG(10, ("%s 0x%08x\n", sid_str,
+			DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
+					   &the_acl->aces[i].trustee),
 				  the_acl->aces[i].access_mask));
 		}
 
@@ -6059,11 +6056,8 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 				   PRINTERNAME(snum), the_acl->num_aces));
 
 			for (i = 0; i < the_acl->num_aces; i++) {
-				fstring sid_str;
-
-				sid_to_string(sid_str, &the_acl->aces[i].trustee);
-
-				DEBUG(10, ("%s 0x%08x\n", sid_str,
+				DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
+						   &the_acl->aces[i].trustee),
 					   the_acl->aces[i].access_mask));
 			}
 		} else {

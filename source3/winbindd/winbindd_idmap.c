@@ -385,7 +385,9 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 
 	result = idmap_sid_to_gid(&sid, &state->response.data.gid);
 
-	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n", NT_STATUS_V(result), sid_string_static(&sid), state->response.data.gid));
+	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n",
+		   NT_STATUS_V(result), sid_string_dbg(&sid),
+		   state->response.data.gid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
