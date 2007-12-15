@@ -19,33 +19,41 @@
 */
 
 #include "includes.h"
+#include <assert.h>
 
 const char *samba_version_string(void)
 {
 #ifndef SAMBA_VERSION_VENDOR_SUFFIX
 	return SAMBA_VERSION_OFFICIAL_STRING;
 #else
-	static fstring samba_version;
-	static bool init_samba_version;
+	static char *samba_version;
+	int res;
 #ifdef SAMBA_VERSION_VENDOR_PATCH
-	fstring tmp_version;
-	size_t remaining;
+	char *tmp_version;
 #endif
 
-	if (init_samba_version)
+	if (samba_version != NULL)
 		return samba_version;
 
-	snprintf(samba_version,sizeof(samba_version),"%s-%s",
-		SAMBA_VERSION_OFFICIAL_STRING,
-		SAMBA_VERSION_VENDOR_SUFFIX);
+	res = asprintf(&samba_version, "%s-%s",
+		       SAMBA_VERSION_OFFICIAL_STRING,
+		       SAMBA_VERSION_VENDOR_SUFFIX);
+	/*
+	 * Can't use smb_panic here due to dependencies
+	 */
+	assert(res != -1);
 
 #ifdef SAMBA_VERSION_VENDOR_PATCH
-	remaining = sizeof(samba_version)-strlen(samba_version);
-	snprintf( tmp_version, sizeof(tmp_version),  "-%d", SAMBA_VERSION_VENDOR_PATCH );
-	strlcat( samba_version, tmp_version, remaining-1 );
+	res = asprintf(&tmp_version, "%s-%d", samba_version,
+		       SAMBA_VERSION_VENDOR_PATCH);
+	/*
+	 * Can't use smb_panic here due to dependencies
+	 */
+	assert(res != -1);
+
+	samba_version = tmp_version;
 #endif
 
-	init_samba_version = True;
 	return samba_version;
 #endif
 }
