@@ -158,7 +158,7 @@ void load_case_tables(void)
   and mapped back to the same character in ucs2
 */
 
-int check_dos_char(smb_ucs2_t c)
+static int check_dos_char(smb_ucs2_t c)
 {
 	lazy_initialize_conv();
 
