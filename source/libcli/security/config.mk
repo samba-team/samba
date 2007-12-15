@@ -6,7 +6,7 @@ OBJ_FILES = security_token.o \
 		access_check.o \
 		privilege.o \
 		sddl.o
-PUBLIC_DEPENDENCIES = NDR_MISC
+PUBLIC_DEPENDENCIES = NDR_MISC LIBNDR
 
 [PYTHON::swig_security]
 SWIG_FILE = security.i

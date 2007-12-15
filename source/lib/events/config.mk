@@ -33,7 +33,7 @@ INIT_FUNCTION = s4_events_standard_init
 [SUBSYSTEM::LIBEVENTS]
 OBJ_FILES = events.o events_timed.o events_signal.o
 PUBLIC_HEADERS = events.h events_internal.h
-PUBLIC_DEPENDENCIES = LIBTALLOC
+PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
 

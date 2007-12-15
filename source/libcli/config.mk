@@ -35,7 +35,7 @@ OBJ_FILES = \
 	smb_composite/fetchfile.o \
 	smb_composite/appendacl.o \
 	smb_composite/fsinfo.o 
-PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE CREDENTIALS gensec
+PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE CREDENTIALS gensec LIBCLI_RESOLVE
 
 [SUBSYSTEM::NDR_NBT_BUF]
 PRIVATE_PROTO_HEADER = nbt/nbtname.h
@@ -74,7 +74,7 @@ OBJ_FILES = \
 	dgram/netlogon.o \
 	dgram/ntlogon.o \
 	dgram/browse.o
-PUBLIC_DEPENDENCIES = LIBCLI_NBT
+PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE
 
 [LIBRARY::LIBCLI_CLDAP]
 VERSION = 0.0.1
