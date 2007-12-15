@@ -45,6 +45,7 @@
  * - @ref page_name
  * - @ref page_cert
  * - @ref page_keyset
+ * - @ref page_lock
  * - @ref page_revoke
  * - @ref page_cms
  *
@@ -57,6 +58,8 @@
 
 /** @defgroup hx509_cert hx509 certificate functions
  * See the @ref page_cert for description and examples. */
+/** @defgroup hx509_keyset hx509 certificate store functions
+ * See the @ref page_keyset for description and examples. */
 /** @defgroup hx509_cms hx509 name functions
  * See the @ref page_cms for description and examples. */
 /** @defgroup hx509_crypto hx509 crypto functions */
