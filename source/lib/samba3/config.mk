@@ -10,7 +10,7 @@ OBJ_FILES = tdbsam.o policy.o \
 		idmap.o winsdb.o samba3.o group.o \
 		registry.o secrets.o share_info.o
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBTDB NDR_SECURITY \
-					   CREDENTIALS SMBPASSWD LIBSECURITY
+					   CREDENTIALS SMBPASSWD LIBSECURITY 
 # End SUBSYSTEM LIBSAMBA3
 ################################################
 
