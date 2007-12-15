@@ -213,11 +213,19 @@ const char *sid_string_static(const DOM_SID *sid)
 	return sid_str;
 }
 
-char *sid_string_tos(const DOM_SID *sid)
+char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 {
 	fstring sid_str;
+	char *result;
 	sid_to_string(sid_str, sid);
-	return talloc_strdup(talloc_tos(), sid_str);
+	result = talloc_strdup(mem_ctx, sid_str);
+	SMB_ASSERT(result != NULL);
+	return result;
+}
+
+char *sid_string_tos(const DOM_SID *sid)
+{
+	return sid_string_talloc(talloc_tos(), sid);
 }
 
 /*****************************************************************
