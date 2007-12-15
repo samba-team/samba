@@ -34,6 +34,10 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+/**
+ * @page page_lock Locking and unlocking certificates and encrypted data.
+ */
+
 struct hx509_lock_data {
     struct _hx509_password password;
     hx509_certs certs;
