@@ -80,7 +80,7 @@ static void SidToString(fstring str, DOM_SID *sid, bool _numeric)
 	char **names = NULL;
 	enum lsa_SidType *types = NULL;
 
-	sid_to_string(str, sid);
+	sid_to_fstring(str, sid);
 
 	if (_numeric) return;
 

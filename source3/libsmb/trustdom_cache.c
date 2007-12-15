@@ -129,7 +129,7 @@ bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 	alt_key = alt_name ? trustdom_cache_key(alt_name) : NULL;
 
 	/* Generate string representation domain SID */
-	sid_to_string(sid_string, sid);
+	sid_to_fstring(sid_string, sid);
 
 	/*
 	 * try to put the names in the cache

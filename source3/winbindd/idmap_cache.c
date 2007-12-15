@@ -80,7 +80,7 @@ NTSTATUS idmap_cache_build_sidkey(TALLOC_CTX *ctx, char **sidkey, const struct i
 	fstring sidstr;
 
 	*sidkey = talloc_asprintf(ctx, "IDMAP/SID/%s",
-				  sid_to_string(sidstr, id->sid));
+				  sid_to_fstring(sidstr, id->sid));
 	if ( ! *sidkey) {
 		DEBUG(1, ("failed to build sidkey, OOM?\n"));
 		return NT_STATUS_NO_MEMORY;

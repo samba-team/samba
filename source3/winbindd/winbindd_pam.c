@@ -51,7 +51,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 
 	state->response.data.auth.info3.user_rid = info3->user_rid;
 	state->response.data.auth.info3.group_rid = info3->group_rid;
-	sid_to_string(str_sid, &(info3->dom_sid.sid));
+	sid_to_fstring(str_sid, &(info3->dom_sid.sid));
 	fstrcpy(state->response.data.auth.info3.dom_sid, str_sid);
 
 	state->response.data.auth.info3.num_groups = info3->num_groups;
@@ -187,7 +187,7 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 
 		sid_copy(&user_sid, &info3->dom_sid.sid);
 		sid_append_rid(&user_sid, info3->user_rid);
-		sid_to_string(sidstr, &user_sid);
+		sid_to_fstring(sidstr, &user_sid);
 		afsname = talloc_string_sub(mem_ctx, afsname,
 					    "%s", sidstr);
 	}

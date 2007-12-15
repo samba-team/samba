@@ -54,7 +54,7 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
-	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_string(tmp, sid));
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
 	data = tdb_fetch_bystring( tdb, keystr );
 	
@@ -95,7 +95,7 @@ static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
-	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_string(tmp, sid));
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 	
 	/* no packing.  static size structure, just write it out */
 	

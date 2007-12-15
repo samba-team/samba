@@ -309,7 +309,7 @@ static char *longvar_domainsid( void )
 		return NULL;
 	}
 	
-	sid_string = SMB_STRDUP( sid_to_string( tmp, &sid ) );
+	sid_string = SMB_STRDUP( sid_to_fstring( tmp, &sid ) );
 	
 	if ( !sid_string ) {
 		DEBUG(0,("longvar_domainsid: failed to dup SID string!\n"));

@@ -75,7 +75,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	sid_to_string(request.data.sid, sid);
+	sid_to_fstring(request.data.sid, sid);
 	
 	/* Make request */
 
@@ -134,7 +134,7 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	sid_to_string(request.data.sid, domain_sid);
+	sid_to_fstring(request.data.sid, domain_sid);
 	
 	len = 0;
 	buflen = 0;
@@ -238,7 +238,7 @@ bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	sid_to_string(sid_str, sid);
+	sid_to_fstring(sid_str, sid);
 	fstrcpy(request.data.sid, sid_str);
 	
 	/* Make request */
@@ -305,7 +305,7 @@ bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	sid_to_string(sid_str, sid);
+	sid_to_fstring(sid_str, sid);
 	fstrcpy(request.data.sid, sid_str);
 	
 	/* Make request */
@@ -470,7 +470,7 @@ bool winbind_set_mapping(const struct id_map *map)
 
 	request.data.dual_idmapset.id = map->xid.id;
 	request.data.dual_idmapset.type = map->xid.type;
-	sid_to_string(request.data.dual_idmapset.sid, map->sid);
+	sid_to_fstring(request.data.dual_idmapset.sid, map->sid);
 
 	result = winbindd_request_response(WINBINDD_SET_MAPPING, &request, &response);
 

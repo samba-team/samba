@@ -535,11 +535,13 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, delta->user_rid);
 
-	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n", sid_to_string(sid_string, &user_sid), account));
+	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n",
+		  sid_to_fstring(sid_string, &user_sid), account));
 	if (!pdb_getsampwsid(sam_account, &user_sid)) {
 		sam_account_from_delta(sam_account, delta);
 		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
-			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
+			  sid_to_fstring(sid_string, &user_sid),
+			  pdb_get_username(sam_account)));
 		if (!NT_STATUS_IS_OK(pdb_add_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
 				  account));
@@ -548,7 +550,8 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	} else {
 		sam_account_from_delta(sam_account, delta);
 		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
-			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
+			  sid_to_fstring(sid_string, &user_sid),
+			  pdb_get_username(sam_account)));
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
@@ -603,7 +606,7 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	/* add the group to the mapping table */
 	sid_copy(&group_sid, get_global_sam_sid());
 	sid_append_rid(&group_sid, rid);
-	sid_to_string(sid_string, &group_sid);
+	sid_to_fstring(sid_string, &group_sid);
 
 	if (pdb_getgrsid(&map, group_sid)) {
 		if ( map.gid != -1 )
@@ -794,7 +797,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	/* Find out whether the group is already mapped */
 	sid_copy(&alias_sid, &dom_sid);
 	sid_append_rid(&alias_sid, rid);
-	sid_to_string(sid_string, &alias_sid);
+	sid_to_fstring(sid_string, &alias_sid);
 
 	if (pdb_getgrsid(&map, alias_sid)) {
 		grp = getgrgid(map.gid);
@@ -1838,7 +1841,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	} 
 
 	/* Get the sid */
-	sid_to_string(sid, &dom_sid);
+	sid_to_fstring(sid, &dom_sid);
 
 	/* Get the ldap suffix */
 	suffix = lp_ldap_suffix();
@@ -2117,10 +2120,10 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 			 "workgroup=%s\n\n in your smb.conf?\n",
 			 domain_name,
 			 get_global_sam_name(),
-			 sid_to_string(my_dom_sid_str, 
-				       get_global_sam_sid()),
-			 domain_name, sid_to_string(rem_dom_sid_str,
-						    domain_sid),
+			 sid_to_fstring(my_dom_sid_str, 
+					get_global_sam_sid()),
+			 domain_name, sid_to_fstring(rem_dom_sid_str,
+						     domain_sid),
 			 domain_name);
 		return NT_STATUS_UNSUCCESSFUL;
 	}

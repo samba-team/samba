@@ -81,7 +81,7 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 
 	/* Clear U/SID cache entry */
 
-	fstr_sprintf(key_str, "U/%s", sid_to_string(sid_string, &sid));
+	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, &sid));
 
 	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
 
@@ -89,7 +89,7 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 
 	/* Clear UG/SID cache entry */
 
-	fstr_sprintf(key_str, "UG/%s", sid_to_string(sid_string, &sid));
+	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, &sid));
 
 	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key_str));
 
@@ -124,7 +124,7 @@ bool netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 	sid_append_rid( &user_sid, user->user_rid );
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	slprintf(keystr, sizeof(keystr), "%s", sid_to_string(tmp, &user_sid));
+	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, &user_sid));
 
 	DEBUG(10,("netsamlogon_cache_store: SID [%s]\n", keystr));
 	
@@ -186,7 +186,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	slprintf(keystr, sizeof(keystr), "%s", sid_to_string(tmp, user_sid));
+	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, user_sid));
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
 	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
 	

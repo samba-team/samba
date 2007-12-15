@@ -423,7 +423,8 @@ static int info_fn(struct file_list *fl, void *priv)
 
 		} else {
 			fstring sidstr;
-			sid_to_string(sidstr, &psd->dacl->aces[num_aces].trustee);
+			sid_to_fstring(sidstr,
+				       &psd->dacl->aces[num_aces].trustee);
 			acl_str = talloc_asprintf_append(acl_str,
 						"%s",
 						sidstr);

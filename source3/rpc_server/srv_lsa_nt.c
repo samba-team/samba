@@ -870,8 +870,8 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 			 * SID. We (Jerry/VL) could not figure out which the
 			 * hard cases are, so leave it with the SID.  */
 			name->name = talloc_asprintf(p->mem_ctx, "%s", 
-			                             sid_to_string(tmp,
-								   sids[i]));
+			                             sid_to_fstring(tmp,
+								    sids[i]));
 			if (name->name == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}

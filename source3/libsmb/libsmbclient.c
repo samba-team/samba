@@ -4136,7 +4136,7 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 	TALLOC_CTX *ctx;
 
-	sid_to_string(str, sid);
+	sid_to_fstring(str, sid);
 
 	if (numeric) {
 		return;     /* no lookup desired */

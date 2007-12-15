@@ -407,7 +407,7 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
 	filter = talloc_asprintf(talloc_tos(), "(&(%s=%s)%s)",
 		get_userattr_key2string(ldap_state->schema_ver,
 			LDAP_ATTR_USER_SID),
-		sid_to_string(sid_string, sid),
+		sid_to_fstring(sid_string, sid),
 		get_objclass_filter(ldap_state->schema_ver));
 	if (!filter) {
 		return LDAP_NO_MEMORY;
@@ -1152,7 +1152,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			case SCHEMAVER_SAMBASAMACCOUNT:
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
-					sid_to_string(sid_string, user_sid));
+					sid_to_fstring(sid_string, user_sid));
 				break;
 
 			default:
@@ -1190,7 +1190,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			case SCHEMAVER_SAMBASAMACCOUNT:
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, 
-					LDAP_ATTR_PRIMARY_GROUP_SID), sid_to_string(sid_string, group_sid));
+					LDAP_ATTR_PRIMARY_GROUP_SID), sid_to_fstring(sid_string, group_sid));
 				break;
 
 			default:
@@ -2582,7 +2582,7 @@ static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 	if (asprintf(&filter, "(&(objectClass=%s)(%s=%s))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID),
-		sid_to_string(tmp, &sid)) < 0) {
+		sid_to_fstring(tmp, &sid)) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3566,7 +3566,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 
 	if (asprintf(&filter,
 		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
-		     LDAP_OBJ_GROUPMAP, sid_to_string(tmp, alias),
+		     LDAP_OBJ_GROUPMAP, sid_to_fstring(tmp, alias),
 		     type) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3614,7 +3614,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	smbldap_set_mod(&mods, modop,
 			get_attr_key2string(groupmap_attr_list,
 					    LDAP_ATTR_SID_LIST),
-			sid_to_string(tmp, member));
+			sid_to_fstring(tmp, member));
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 
@@ -3688,7 +3688,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 
 	if (asprintf(&filter,
 		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
-		     LDAP_OBJ_GROUPMAP, sid_to_string(tmp, alias),
+		     LDAP_OBJ_GROUPMAP, sid_to_fstring(tmp, alias),
 		     type) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4743,7 +4743,7 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->filter =	talloc_asprintf(search->mem_ctx,
 					"(&(objectclass=sambaGroupMapping)"
 					"(sambaGroupType=%d)(sambaSID=%s*))", 
-					type, sid_to_string(tmp, sid));
+					type, sid_to_fstring(tmp, sid));
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);

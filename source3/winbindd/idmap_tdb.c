@@ -86,7 +86,7 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 	sid_copy(&sid, &domain->sid);
 	sid_append_rid(&sid, rid);
 
-	sid_to_string(keystr, &sid);
+	sid_to_fstring(keystr, &sid);
 	key2 = string_term_tdb_data(keystr);
 
 	if (tdb_store(tdb, key2, data, TDB_INSERT) != 0) {
@@ -714,8 +714,8 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	unsigned long rec_id = 0;
 	fstring tmp;
 
-	if ((keystr = talloc_asprintf(ctx, "%s",
-				      sid_to_string(tmp, map->sid))) == NULL) {
+	if ((keystr = talloc_asprintf(
+		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -909,7 +909,7 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	}
 
 	if ((ksidstr = talloc_asprintf(
-		     ctx, "%s", sid_to_string(tmp, map->sid))) == NULL) {
+		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -1024,7 +1024,7 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	}
 
 	if ((ksidstr = talloc_asprintf(
-		     ctx, "%s", sid_to_string(tmp, map->sid))) == NULL) {
+		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;

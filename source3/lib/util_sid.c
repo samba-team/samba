@@ -172,7 +172,7 @@ const char *get_global_sam_name(void)
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
+char *sid_to_fstring(fstring sidstr_out, const DOM_SID *sid)
 {
 	char *str = sid_string_talloc(talloc_tos(), sid);
 	fstrcpy(sidstr_out, str);

@@ -1118,7 +1118,7 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 	for (i = 0; i < num_members; i++) {
 		fstring sid_str;
 
-		sid_to_string(sid_str, &alias_sids[i]);
+		sid_to_fstring(sid_str, &alias_sids[i]);
 		printf("\tsid:[%s]\n", sid_str);
 	}
 
@@ -2114,7 +2114,7 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 	result = rpccli_samr_lookup_domain(
 		cli, mem_ctx, &connect_pol, domain_name, &sid);
 
-	sid_to_string(sid_string,&sid);
+	sid_to_fstring(sid_string,&sid);
  
 	if (NT_STATUS_IS_OK(result)) 
 		printf("SAMR_LOOKUP_DOMAIN: Domain Name: %s Domain SID: %s\n",

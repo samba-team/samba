@@ -270,7 +270,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	if ( !string_sid[0] ) {
 		sid_copy(&sid, get_global_sam_sid());
 		sid_append_rid(&sid, rid);
-		sid_to_string(string_sid, &sid);
+		sid_to_fstring(string_sid, &sid);
 	}
 
 	if (!ntcomment[0]) {
