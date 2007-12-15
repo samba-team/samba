@@ -90,6 +90,7 @@ bool    AllowDebugChange = True;
 */
 bool    override_logfile;
 
+static TALLOC_CTX *tmp_debug_ctx;
 
 /*
  * This is to allow assignment to DEBUGLEVEL before the debug
@@ -856,6 +857,8 @@ void check_log_size( void )
 
 	errno = old_errno;
 
+	TALLOC_FREE(tmp_debug_ctx);
+
 	return( 0 );
 }
 
@@ -1064,4 +1067,15 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 	}
 	SAFE_FREE(msgbuf);
 	return ret;
+}
+
+/*
+ * Get us a temporary talloc context usable just for DEBUG arguments
+ */
+TALLOC_CTX *debug_ctx(void)
+{
+        if (tmp_debug_ctx == NULL) {
+                tmp_debug_ctx = talloc_named_const(NULL, 0, "debug_ctx");
+        }
+        return tmp_debug_ctx;
 }
