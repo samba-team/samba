@@ -75,6 +75,11 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	ret = (char *)talloc_size(mem_ctx, maxlen);
 	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
 
+	/*
+	 * BIG NOTE: this function only does SIDS where the identauth is not
+	 * >= ^32 in a range of 2^48.
+	 */
+
 	ia = (sid->id_auth[5]) +
 		(sid->id_auth[4] << 8 ) +
 		(sid->id_auth[3] << 16) +

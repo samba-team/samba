@@ -174,40 +174,23 @@ const char *get_global_sam_name(void)
 
 char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 {
-	char subauth[16];
-	int i;
-	uint32 ia;
-  
-	if (!sid) {
-		fstrcpy(sidstr_out, "(NULL SID)");
-		return sidstr_out;
-	}
-
-	/*
-	 * BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 
-	 * in a range of 2^48.
-	 */
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
-
-	slprintf(sidstr_out, sizeof(fstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
-
-	for (i = 0; i < sid->num_auths; i++) {
-		slprintf(subauth, sizeof(subauth)-1, "-%lu", (unsigned long)sid->sub_auths[i]);
-		fstrcat(sidstr_out, subauth);
-	}
-
+	char *str = sid_string_talloc(talloc_tos(), sid);
+	fstrcpy(sidstr_out, str);
+	TALLOC_FREE(str);
 	return sidstr_out;
 }
 
+/*****************************************************************
+ Essentially a renamed dom_sid_string from librpc/ndr with a
+ panic if it didn't work
+
+ This introduces a dependency on librpc/ndr/sid.o which can easily
+ be turned around if necessary
+*****************************************************************/
+
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 {
-	fstring sid_str;
-	char *result;
-	sid_to_string(sid_str, sid);
-	result = talloc_strdup(mem_ctx, sid_str);
+	char *result = dom_sid_string(mem_ctx, sid);
 	SMB_ASSERT(result != NULL);
 	return result;
 }
