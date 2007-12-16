@@ -21,20 +21,32 @@
 import os
 
 def _in_source_tree():
+    """Check whether the script is being run from the source dir. """
     return os.path.exists("%s/../../../samba4-skip" % os.path.dirname(__file__))
+
 
 # When running, in-tree, make sure bin/python is in the PYTHONPATH
 if _in_source_tree():
     import sys
-    dir = os.path.dirname(__file__)
-    sys.path.append("%s/../../../bin/python" % os.path.dirname(__file__))
+    srcdir = "%s/../../.." % os.path.dirname(__file__)
+    sys.path.append("%s/bin/python" % srcdir)
+    default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
+
 
 import misc
 import ldb
 ldb.ldb.set_credentials = misc.ldb_set_credentials
+#FIXME: ldb.ldb.set_session_info = misc.ldb_set_session_info
+ldb.ldb.set_loadparm = misc.ldb_set_loadparm
 
-def Ldb(url, session_info=None, credentials=None, modules_dir=None):
+def Ldb(url, session_info=None, credentials=None, modules_dir=None, lp=None):
     """Open a Samba Ldb file. 
+
+    :param url: LDB Url to open
+    :param session_info: Optional session information
+    :param credentials: Optional credentials, defaults to anonymous.
+    :param modules_dir: Modules directory, automatically set if not specified.
+    :param lp: Loadparm object, optional.
 
     This is different from a regular Ldb file in that the Samba-specific
     modules-dir is used by default and that credentials and session_info 
@@ -43,12 +55,17 @@ def Ldb(url, session_info=None, credentials=None, modules_dir=None):
     import ldb
     ret = ldb.Ldb()
     if modules_dir is None:
-        modules_dir = os.path.join(os.getcwd(), "bin", "modules", "ldb")
-    ret.set_modules_dir(modules_dir)
+        modules_dir = default_ldb_modules_dir
+    if modules_dir is not None:
+        ret.set_modules_dir(modules_dir)
     def samba_debug(level,text):
         print "%d %s" % (level, text)
-    ldb_set_opaque("credentials", credentials)
-    ret.set_opaque("sessionInfo", session_info)
+    if credentials is not None:
+        ldb.set_credentials(credentials)
+    if session_info is not None:
+        ldb.set_session_info(session_info)
+    if lp is not None:
+        ldb.set_loadparm(lp)
     #ret.set_debug(samba_debug)
     ret.connect(url)
     return ret

@@ -2524,6 +2524,7 @@ static swig_module_info swig_module = {swig_types, 22, 0, 0, 0, 0};
 
 #include "includes.h"
 #include "ldb.h"
+#include "param/param.h"
 
 
 SWIGINTERN int
@@ -2702,6 +2703,18 @@ void ldb_set_credentials(struct ldb_context *ldb, struct cli_credentials *creds)
     ldb_set_opaque(ldb, "credentials", creds);
 }
 
+#if 0 /* Fails to link.. */
+void ldb_set_session_info(struct ldb_context *ldb, struct auth_session_info *session_info)
+{
+    ldb_set_opaque(ldb, "sessionInfo", session_info);
+}
+#endif
+
+void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
+{
+    ldb_set_opaque(ldb, "loadparm", lp_ctx);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2777,9 +2790,53 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ldb_set_loadparm(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  struct loadparm_context *arg2 = (struct loadparm_context *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "Ldb",(char *) "lp_ctx", NULL 
+  };
+  
+  {
+    arg2 = loadparm_init(NULL);
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|O:ldb_set_loadparm",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_set_loadparm" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  if (obj1) {
+    res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_set_loadparm" "', argument " "2"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg2 = (struct loadparm_context *)(argp2);
+  }
+  {
+    if (arg1 == NULL)
+    SWIG_exception(SWIG_ValueError, 
+      "ldb context must be non-NULL");
+  }
+  ldb_set_loadparm(arg1,arg2);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ldb_set_loadparm", (PyCFunction) _wrap_ldb_set_loadparm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
