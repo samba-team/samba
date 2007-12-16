@@ -360,20 +360,25 @@ int getifaddrs(struct ifaddrs **ifap)
 
  int main()
 {
-	struct ifaddrs *ifs;
-	int total = get_interfaces(ifaces, MAX_INTERFACES);
-	int i;
-
-	int ret = getifaddrs(&ifs);
+	struct ifaddrs *ifs = NULL;
+	int ret;
+	
+	ret = getifaddrs(&ifs);
 	if (ret != 0) {
 		perror("getifaddrs() failed");
 		return 1;
 	}
 
 	while (ifs) {
-		printf("%-10s ", ifs->ifr_name);
-		printf("IP=%s ", inet_ntoa(((struct sockaddr_in *)ifs->ifr_addr)->sin_addr));
-		printf("NETMASK=%s\n", inet_ntoa(((struct sockaddr_in *)ifs->ifr_netmask)->sin_addr));
+		printf("%-10s ", ifs->ifa_name);
+		if (ifs->ifa_addr != NULL && 
+		    ifs->ifa_addr->sa_family == AF_INET) {
+			printf("IP=%s ", inet_ntoa(((struct sockaddr_in *)ifs->ifa_addr)->sin_addr));
+			if (ifs->ifa_netmask != NULL)
+				printf("NETMASK=%s", inet_ntoa(((struct sockaddr_in *)ifs->ifa_netmask)->sin_addr));
+		}
+		printf("\n");
+		ifs = ifs->ifa_next;
 	}
 	return 0;
 }

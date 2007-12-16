@@ -26,10 +26,8 @@ fi
 #
 # This tests need LIBS="$NSL_LIBS $SOCKET_LIBS"
 #
-old_CFLAGS=$CFLAGS
 old_LIBS=$LIBS
 LIBS="$NSL_LIBS $SOCKET_LIBS"
-CFLAGS="$CFLAGS -Ilib/replace"
 iface=no;
 ##################
 # look for a method of finding the list of network interfaces
@@ -41,8 +39,8 @@ AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_GETIFADDRS 1
 #define AUTOCONF_TEST 1
-#include "${srcdir-.}/lib/replace/replace.c"
-#include "${srcdir-.}/lib/replace/getifaddrs.c"],
+#include "$libreplacedir/replace.c"
+#include "$libreplacedir/getifaddrs.c"],
            samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
@@ -58,7 +56,7 @@ AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
-#include "${srcdir-.}/lib/replace/getifaddrs.c"],
+#include "$libreplacedir/getifaddrs.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
 if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
@@ -71,7 +69,7 @@ AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
 AC_TRY_RUN([
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
-#include "${srcdir-.}/lib/replace/getifaddrs.c"],
+#include "$libreplacedir/getifaddrs.c"],
            samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
 if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
@@ -83,12 +81,11 @@ AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
 AC_TRY_RUN([
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
-#include "${srcdir-.}/lib/replace/getifaddrs.c"],
+#include "$libreplacedir/getifaddrs.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
 if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
 fi
 fi
 
-CFLAGS=$old_CFLAGS
 LIBS=$old_LIBS
