@@ -112,7 +112,6 @@ int getifaddrs(struct ifaddrs **ifap)
 		}
 
 		curif->ifa_name = strdup(ifr[i].ifr_name);
-		curif->ifa_flags = ifreq.ifr_flags;
 		curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
 		curif->ifa_dstaddr = NULL;
 		curif->ifa_data = NULL;
@@ -124,10 +123,7 @@ int getifaddrs(struct ifaddrs **ifap)
 			return -1;
 		}  
 
-		if (!(ifr[i].ifr_flags & IFF_UP)) {
-			freeifaddrs(curif);
-			continue;
-		}
+		curif->ifa_flags = ifr[i].ifr_flags;
 
 		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != 0) {
 			freeifaddrs(*ifap);
@@ -201,6 +197,13 @@ int getifaddrs(struct ifaddrs **ifap)
 	for (i = 0; i<n && total < max_interfaces; i++) {
 		ifreq = ifr[i];
   
+		curif = calloc(1, sizeof(struct ifaddrs));
+		if (lastif == NULL) {
+			*ifap = curif;
+		} else {
+			lastif->ifa_next = (*ifap);
+		}
+
 		strioctl.ic_cmd = SIOCGIFFLAGS;
 		strioctl.ic_dp  = (char *)&ifreq;
 		strioctl.ic_len = sizeof(struct ifreq);
@@ -208,11 +211,9 @@ int getifaddrs(struct ifaddrs **ifap)
 			freeifaddrs(*ifap);
 			return -1;
 		}
-		
-		if (!(ifreq.ifr_flags & IFF_UP)) {
-			continue;
-		}
 
+		curif->ifa_flags = ifreq.ifr_flags;
+		
 		strioctl.ic_cmd = SIOCGIFADDR;
 		strioctl.ic_dp  = (char *)&ifreq;
 		strioctl.ic_len = sizeof(struct ifreq);
@@ -221,15 +222,7 @@ int getifaddrs(struct ifaddrs **ifap)
 			return -1;
 		}
 
-		curif = calloc(1, sizeof(struct ifaddrs));
-		if (lastif == NULL) {
-			*ifap = curif;
-		} else {
-			lastif->ifa_next = (*ifap);
-		}
-
 		curif->ifa_name = strdup(ifreq.ifr_name);
-		curif->ifa_flags = ifreq.ifr_flags;
 		curif->ifa_addr = sockaddr_dup(&ifreq.ifr_addr);
 		curif->ifa_dstaddr = NULL;
 		curif->ifa_data = NULL;
@@ -310,7 +303,6 @@ int getifaddrs(struct ifaddrs **ifap)
 		}
 
 		curif->ifa_name = strdup(ifr->ifr_name);
-		curif->ifa_flags = ifr->ifr_flags;
 		curif->ifa_addr = sockaddr_dup(&ifr->ifr_addr);
 		curif->ifa_dstaddr = NULL;
 		curif->ifa_data = NULL;
@@ -322,10 +314,7 @@ int getifaddrs(struct ifaddrs **ifap)
 			return -1;
 		}
 
-		if (!(ifr->ifr_flags & IFF_UP)) {
-			freeaddrinfo(curif);
-			continue;
-		}
+		curif->ifa_flags = ifr->ifr_flags;
 
 		if (ioctl(fd, SIOCGIFNETMASK, ifr) != 0) {
 			freeaddrinfo(*ifap);

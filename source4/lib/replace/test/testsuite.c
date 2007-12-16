@@ -856,6 +856,25 @@ static int test_strptime(void)
 	return libreplace_test_strptime();
 }
 
+static int test_getifaddrs(void)
+{
+	struct ifaddrs *ifa;
+	int ret;
+
+	printf("test: getifaddrs\n");
+
+	ret = getifaddrs(&ifa);
+	if (ret != 0) {
+		printf("failure: getifaddrs\n");
+		return false;
+	}
+
+	freeifaddrs(ifa);
+
+	printf("success: getifaddrs\n");
+	return true;
+}
+
 struct torture_context;
 bool torture_local_replace(struct torture_context *ctx)
 {
@@ -903,6 +922,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_MAX();
 	ret &= test_socketpair();
 	ret &= test_strptime();
+	ret &= test_getifaddrs();
 
 	return ret;
 }
