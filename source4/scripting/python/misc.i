@@ -21,6 +21,7 @@
 %{
 #include "includes.h"
 #include "ldb.h"
+#include "param/param.h"
 %}
 
 %import "stdint.i"
@@ -28,6 +29,7 @@
 %import "../../lib/talloc/talloc.i"
 %import "../../lib/ldb/ldb.i"
 %import "../../auth/credentials/credentials.i"
+%import "../../param/param.i"
 
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
@@ -36,5 +38,17 @@ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 void ldb_set_credentials(struct ldb_context *ldb, struct cli_credentials *creds)
 {
     ldb_set_opaque(ldb, "credentials", creds);
+}
+
+#if 0 /* Fails to link.. */
+void ldb_set_session_info(struct ldb_context *ldb, struct auth_session_info *session_info)
+{
+    ldb_set_opaque(ldb, "sessionInfo", session_info);
+}
+#endif
+
+void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
+{
+    ldb_set_opaque(ldb, "loadparm", lp_ctx);
 }
 %}
