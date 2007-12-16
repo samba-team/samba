@@ -169,11 +169,12 @@ hx509_certs_init(hx509_context context,
  *
  * @param context A hx509 context.
  * @param certs a certificate store to store.
- * @param flags 
- * @param lock 
+ * @param flags currently unused, use 0.
+ * @param lock a lock that unlocks the certificates store, use NULL to
+ * select no password/certifictes/prompt lock (see @ref page_lock).
  *
- * @return HX509_UNSUPPORTED_OPERATION if the certificate store
- * doesn't support the store operation.
+ * @return Returns an hx509 error code. HX509_UNSUPPORTED_OPERATION if
+ * the certificate store doesn't support the store operation.
  *
  * @ingroup hx509_keyset
  */
@@ -237,11 +238,12 @@ hx509_certs_free(hx509_certs *certs)
  *
  * @param context a hx509 context.
  * @param certs certificate store to iterate over
- * @param cursor cursor that will keep trac of progress.
+ * @param cursor cursor that will keep track of progress, free with
+ * hx509_certs_end_seq().
  *
  * @return Returns an hx509 error code. HX509_UNSUPPORTED_OPERATION is
- * returned f the certifcate store doesn't support the interation
- * function.
+ * returned if the certificate store doesn't support the iteration
+ * operation.
  *
  * @ingroup hx509_keyset
  */
@@ -268,12 +270,14 @@ hx509_certs_start_seq(hx509_context context,
 }
 
 /**
- *
+ * Get next ceritificate from the certificate keystore pointed out by
+ * cursor.
  *
  * @param context a hx509 context.
- * @param certs
- * @param cursor
- * @param cert
+ * @param certs certificate store to iterate over.
+ * @param cursor cursor that keeps track of progress.
+ * @param cert return certificate next in store, NULL if the store
+ * contains no more certificates. Free with hx509_cert_free().
  *
  * @return Returns an hx509 error code.
  *
@@ -291,11 +295,11 @@ hx509_certs_next_cert(hx509_context context,
 }
 
 /**
- *
+ * End the iteration over certificates.
  *
  * @param context a hx509 context.
- * @param certs
- * @param cursor
+ * @param certs certificate store to iterate over.
+ * @param cursor cursor that will keep track of progress, freed.
  *
  * @return Returns an hx509 error code.
  *
@@ -312,12 +316,15 @@ hx509_certs_end_seq(hx509_context context,
 }
 
 /**
- *
+ * Iterate over all certificates in a keystore and call an function
+ * for each fo them.
  *
  * @param context a hx509 context.
- * @param certs
- * @param fn
- * @param ctx
+ * @param certs certificate store to iterate over.
+ * @param func function to call for each certificate. The function
+ * should return non-zero to abort the iteration, that value is passed
+ * back to te caller of hx509_certs_iter().
+ * @param ctx context variable that will passed to the function.
  *
  * @return Returns an hx509 error code.
  *
@@ -327,7 +334,7 @@ hx509_certs_end_seq(hx509_context context,
 int
 hx509_certs_iter(hx509_context context, 
 		 hx509_certs certs, 
-		 int (*fn)(hx509_context, void *, hx509_cert),
+		 int (*func)(hx509_context, void *, hx509_cert),
 		 void *ctx)
 {
     hx509_cursor cursor;
@@ -346,7 +353,7 @@ hx509_certs_iter(hx509_context context,
 	    ret = 0;
 	    break;
 	}
-	ret = (*fn)(context, ctx, c);
+	ret = (*func)(context, ctx, c);
 	hx509_cert_free(c);
 	if (ret)
 	    break;
@@ -359,11 +366,12 @@ hx509_certs_iter(hx509_context context,
 
 
 /**
- *
+ * Function to use to hx509_certs_iter() as a function argument, the
+ * ctx variable to hx509_certs_iter() should be a FILE file descriptor.
  *
  * @param context a hx509 context.
- * @param ctx
- * @param c
+ * @param ctx used by hx509_certs_iter().
+ * @param c a certificate
  *
  * @return Returns an hx509 error code.
  *
@@ -392,13 +400,15 @@ hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
 }
 
 /**
- * The receiving keyset `certs´ will either increase reference counter
- * of the `cert´ or make a deep copy, either way, the caller needs to
- * free the `cert´ itself.
+ * Add a certificate to the certificiate store.
+ *
+ * The receiving keyset certs will either increase reference counter
+ * of the cert or make a deep copy, either way, the caller needs to
+ * free the cert itself.
  *
  * @param context a hx509 context.
- * @param certs
- * @param cert
+ * @param certs certificate store to add the certificate to.
+ * @param cert certificate to add.
  *
  * @return Returns an hx509 error code.
  *
@@ -419,12 +429,13 @@ hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 }
 
 /**
- *
+ * Find a certificate matching the query.
  *
  * @param context a hx509 context.
- * @param certs
- * @param q
- * @param r
+ * @param certs certificate store to search.
+ * @param q query allocated with @ref hx509_query functions.
+ * @param r return certificate (or NULL on error), should be freed
+ * with hx509_cert_free().
  *
  * @return Returns an hx509 error code.
  *
@@ -483,13 +494,13 @@ certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
     return hx509_certs_add(context, (hx509_certs)ctx, c);
 }
 
-
 /**
- *
+ * Merge a certificate store into another. The from store is keep
+ * intact.
  *
  * @param context a hx509 context.
- * @param to
- * @param from
+ * @param to the store to merge into.
+ * @param from the store to copy the object from.
  *
  * @return Returns an hx509 error code.
  *
@@ -505,12 +516,14 @@ hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 }
 
 /**
- *
+ * Same a hx509_certs_merge() but use a lock and name to describe the
+ * from source.
  *
  * @param context a hx509 context.
- * @param to
- * @param lock
- * @param name
+ * @param to the store to merge into.
+ * @param lock a lock that unlocks the certificates store, use NULL to
+ * select no password/certifictes/prompt lock (see @ref page_lock).
+ * @param name name of the source store
  *
  * @return Returns an hx509 error code.
  *
@@ -535,11 +548,11 @@ hx509_certs_append(hx509_context context,
 }
 
 /**
- *
+ * Get one random certificate from the certificate store.
  *
  * @param context a hx509 context.
- * @param certs
- * @param c
+ * @param certs a certificate store to get the certificate from.
+ * @param c return certificate, should be freed with hx509_cert_free().
  *
  * @return Returns an hx509 error code.
  *
@@ -575,12 +588,14 @@ certs_info_stdio(void *ctx, const char *str)
 }
 
 /**
- *
+ * Print some info about the certificate store.
  *
  * @param context a hx509 context.
- * @param certs
- * @param func
- * @param ctx
+ * @param certs certificate store to print information about.
+ * @param func function that will get each line of the information, if
+ * NULL is used the data is printed on a FILE descriptor that should
+ * be passed in ctx, if ctx also is NULL, stdout is used.
+ * @param ctx parameter to func.
  *
  * @return Returns an hx509 error code.
  *
