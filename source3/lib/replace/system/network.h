@@ -106,7 +106,7 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 struct ifaddrs {
 	struct ifaddrs   *ifa_next;         /* Pointer to next struct */
 	char             *ifa_name;         /* Interface name */
-	u_int             ifa_flags;        /* Interface flags */
+	unsigned int     ifa_flags;         /* Interface flags */
 	struct sockaddr  *ifa_addr;         /* Interface address */
 	struct sockaddr  *ifa_netmask;      /* Interface netmask */
 	struct sockaddr  *ifa_dstaddr;      /* P2P interface destination */
