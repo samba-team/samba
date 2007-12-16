@@ -306,7 +306,7 @@ typedef struct smb_np_struct {
 	bool open; /* open connection */
 	uint16 device_state;
 	uint16 priority;
-	fstring name;
+	char *name;
 
 	/* When replying to an SMBtrans, this is the maximum amount of
            data that can be sent in the initial reply. */

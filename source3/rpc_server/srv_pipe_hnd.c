@@ -195,13 +195,20 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
 	}
 
-	p = SMB_MALLOC_P(smb_np_struct);
+	p = talloc(NULL, smb_np_struct);
 	if (!p) {
-		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
+		DEBUG(0,("ERROR! no memory for smb_np_struct!\n"));
 		return NULL;
 	}
 
 	ZERO_STRUCTP(p);
+
+	p->name = talloc_strdup(p, pipe_name);
+	if (p->name == NULL) {
+		TALLOC_FREE(p);
+		DEBUG(0,("ERROR! no memory for pipe name!\n"));
+		return NULL;
+	}
 
 	/* add a dso mechanism instead of this, here */
 
@@ -241,9 +248,7 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 	p->vuid  = vuid;
 
 	p->max_trans_reply = 0;
-	
-	fstrcpy(p->name, pipe_name);
-	
+
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
 	
@@ -1163,9 +1168,7 @@ bool close_rpc_pipe_hnd(smb_np_struct *p)
 			"pipe from open db.\n", p->name));
 	}
 
-	ZERO_STRUCTP(p);
-
-	SAFE_FREE(p);
+	TALLOC_FREE(p);
 
 	return True;
 }
