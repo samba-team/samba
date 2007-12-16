@@ -6,7 +6,10 @@
 #
 import getopt
 import optparse
-import samba.options
+import sys
+sys.path.append("scripting/python")
+import samba
+import samba.getopt
 
 parser = optparse.OptionParser("upgrade [options]")
 parser.add_option_group(options.SambaOptions(parser))
@@ -20,10 +23,12 @@ parser.add_option("--blank",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 
+opts = parser.parse_args()[0]
+
 def message(text):
     """Print a message if quiet is not set."""
-	if opts.quiet:
-		print text
+    if opts.quiet:
+        print text
 
 message("Reading Samba3 databases and smb.conf\n")
 samba3 = samba3_read(options.ARGV[0], options.ARGV[1])

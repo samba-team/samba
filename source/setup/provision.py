@@ -24,15 +24,16 @@ import optparse
 import sys
 
 # Add path to the library for in-tree use
-sys.path.append("bin/python")
 sys.path.append("scripting/python")
+
+import samba
 
 from auth import system_session
 import samba.getopt as options
 import param
 from samba.provision import (provision, provision_guess, 
-		                     provision_default_paths, provision_ldapbase, 
-							 provision_dns)
+                             provision_default_paths, provision_ldapbase, 
+                             provision_dns)
 
 parser = optparse.OptionParser("provision [options]")
 parser.add_option_group(options.SambaOptions(parser))

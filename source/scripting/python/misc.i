@@ -21,12 +21,20 @@
 %{
 #include "includes.h"
 #include "ldb.h"
-#include "auth/credentials/credentials.h"
 %}
 
 %import "stdint.i"
+%include "exception.i"
 %import "../../lib/talloc/talloc.i"
+%import "../../lib/ldb/ldb.i"
+%import "../../auth/credentials/credentials.i"
 
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
+%inline %{
+void ldb_set_credentials(struct ldb_context *ldb, struct cli_credentials *creds)
+{
+    ldb_set_opaque(ldb, "credentials", creds);
+}
+%}
