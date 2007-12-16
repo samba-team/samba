@@ -390,7 +390,7 @@ char *kerberos_get_default_realm_from_ccache( void )
 	if (krb5_cc_get_principal(ctx, cc, &princ)) {
 		DEBUG(0,("kerberos_get_default_realm_from_ccache: "
 			"failed to get default principal\n"));
-		goto done;
+		goto out;
 	}
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_REALM)
@@ -410,7 +410,7 @@ char *kerberos_get_default_realm_from_ccache( void )
 	if (ctx) {
 		krb5_free_context(ctx);
 	}
-done:
+
 	return realm;
 }
 
