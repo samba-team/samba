@@ -69,20 +69,6 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 			      connection_struct *conn, uint16 vuid);
 
 /****************************************************************************
- Pipe iterator functions.
-****************************************************************************/
-
-smb_np_struct *get_first_pipe(void)
-{
-	return Pipes;
-}
-
-smb_np_struct *get_next_pipe(smb_np_struct *p)
-{
-	return p->next;
-}
-
-/****************************************************************************
  Internal Pipe iterator functions.
 ****************************************************************************/
 
