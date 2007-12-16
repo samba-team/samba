@@ -17,9 +17,10 @@ PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5
 [SUBSYSTEM::CREDENTIALS_KRB5]
 PUBLIC_PROTO_HEADER = credentials_krb5_proto.h
 PUBLIC_HEADERS = credentials_krb5.h
-OBJ_FILES = credentials_krb5.o
+OBJ_FILES = credentials_krb5.o \
+			../kerberos/kerberos_util.o
 PUBLIC_DEPENDENCIES = \
-		HEIMDAL_GSSAPI 
+		HEIMDAL_GSSAPI KERBEROS
 # End SUBSYSTEM CREDENTIALS
 #################################
 

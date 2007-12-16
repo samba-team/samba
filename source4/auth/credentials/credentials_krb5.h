@@ -21,6 +21,7 @@
 */
 
 #include <gssapi/gssapi.h>
+#include <krb5.h>
 
 struct ccache_container;
 
