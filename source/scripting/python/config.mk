@@ -25,3 +25,7 @@ PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py 
 
 pydoctor:: pythonmods
 	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
+
+clean::
+	@echo "Removing python modules"
+	@rm -f bin/python/*

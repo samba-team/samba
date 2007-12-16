@@ -212,7 +212,7 @@ if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
   for f in $samba4srcdir/pidl/tests/*.pl; do
-     plantest "pidl/`basename $f`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
+     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $samba4srcdir/script/harness2subunit.pl
   done
 else 
    echo "Skipping pidl tests - Test::More not installed"
@@ -278,13 +278,6 @@ for env in dc member; do
 		plantest $t $env $smb4torture $WB_OPTS //_none_/_none_ $t
 	done
 done
-
-# Tests for SWIG
-# export PYTHONPATH=lib/tdb/swig:lib/ldb/swig:scripting/swig:$PYTHONPATH
-# export LD_LIBRARY_PATH=bin:$LD_LIBRARY_PATH
-
-# plantest "tdb wrappers" scripting/swig/torture/torture_tdb.py
-# plantest "ldb wrappers" scripting/swig/torture/torture_ldb.py
 
 if test -f $samba4bindir/nsstest 
 then
