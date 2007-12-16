@@ -695,6 +695,7 @@ def provision_guess(lp):
     subobj.modules_list = ["rootdse",
                     "paged_results",
                     "ranged_results",
+                    "anr",
                     "server_sort",
                     "extended_dn",
                     "asq",
