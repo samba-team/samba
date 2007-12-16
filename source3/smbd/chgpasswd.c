@@ -520,7 +520,7 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 	if (lp_pam_password_change()) {
 		bool ret;
 #ifdef HAVE_SETLOCALE
-		const char *prevlocale = setlocale(LC_MESSAGES, "C");
+		const char *prevlocale = setlocale(LC_ALL, "C");
 #endif
 
 		if (as_root)
@@ -536,7 +536,7 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 			unbecome_root();
 
 #ifdef HAVE_SETLOCALE
-		setlocale(LC_MESSAGES, prevlocale);
+		setlocale(LC_ALL, prevlocale);
 #endif
 
 		return ret;
