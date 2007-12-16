@@ -57,6 +57,10 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
+import ldb
+import credentials
+import param
 random_password = _misc.random_password
+ldb_set_credentials = _misc.ldb_set_credentials
 
 

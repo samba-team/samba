@@ -19,16 +19,19 @@
 #
 
 import os
-from misc import ldb_set_credentials
 
 def _in_source_tree():
-    print os.path.exists("%s/../../../samba4-skip" % os.path.dirname(__file__))
+    return os.path.exists("%s/../../../samba4-skip" % os.path.dirname(__file__))
 
 # When running, in-tree, make sure bin/python is in the PYTHONPATH
 if _in_source_tree():
     import sys
     dir = os.path.dirname(__file__)
     sys.path.append("%s/../../../bin/python" % os.path.dirname(__file__))
+
+import misc
+import ldb
+ldb.ldb.set_credentials = misc.ldb_set_credentials
 
 def Ldb(url, session_info=None, credentials=None, modules_dir=None):
     """Open a Samba Ldb file. 
