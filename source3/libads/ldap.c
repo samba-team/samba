@@ -1858,31 +1858,24 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 */
 static void dump_sd(ADS_STRUCT *ads, const char *filed, struct berval **values)
 {
-	prs_struct ps;
-	
-	SEC_DESC   *psd = 0;
-	TALLOC_CTX *ctx = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct security_descriptor *psd;
+	NTSTATUS status;
 
-	if (!(ctx = talloc_init("sec_io_desc")))
-		return;
-
-	/* prepare data */
-	prs_init(&ps, values[0]->bv_len, ctx, UNMARSHALL);
-	prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
-	prs_set_offset(&ps,0);
-
-	/* parse secdesc */
-	if (!sec_io_desc("sd", &psd, &ps, 1)) {
-		prs_mem_free(&ps);
-		talloc_destroy(ctx);
+	status = unmarshall_sec_desc(talloc_tos(), (uint8 *)values[0]->bv_val,
+				     values[0]->bv_len, &psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return;
 	}
+
 	if (psd) {
-		ads_disp_sd(ads, ctx, psd);
+		ads_disp_sd(ads, talloc_tos(), psd);
 	}
 
-	prs_mem_free(&ps);
-	talloc_destroy(ctx);
+	TALLOC_FREE(frame);
 }
 
 /*
