@@ -32,3 +32,23 @@ struct libnet_GroupInfo {
 		const char *error_string;
 	} out;
 };
+
+
+struct libnet_GroupList {
+	struct {
+		const char *domain_name;
+		int page_size;
+		uint resume_index;
+	} in;
+	struct {
+		int count;
+		uint resume_index;
+		
+		struct grouplist {
+			const char *sid;
+			const char *groupname;
+		} *groups;
+
+		const char *error_string;
+	} out;
+};
