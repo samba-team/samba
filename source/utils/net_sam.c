@@ -42,7 +42,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -139,7 +139,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -223,7 +223,7 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -284,7 +284,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
@@ -639,7 +639,7 @@ static int net_sam_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
@@ -647,7 +647,7 @@ static int net_sam_addmem(int argc, const char **argv)
 
 	/* check to see if the member to be added is a name or a SID */
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_LOCAL,
 			 &memberdomain, &membername, &member, &membertype))
 	{
 		/* try it as a SID */
@@ -712,13 +712,13 @@ static int net_sam_delmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_LOCAL,
 			 &memberdomain, &membername, &member, NULL)) {
 		if (!string_to_sid(&member, argv[1])) {
 			d_fprintf(stderr, "Could not find member %s\n",
@@ -770,7 +770,7 @@ static int net_sam_listmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &groupdomain, &groupname, &group, &grouptype)) {
 		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
@@ -918,7 +918,7 @@ static int net_sam_show(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_LOCAL,
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
