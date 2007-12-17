@@ -161,10 +161,10 @@ servicePrincipalName: host/ldaptest2computer
 servicePrincipalName: cifs/ldaptest2computer
 ");
 
-		if (ok.error != 0) {
-			println("Failed to replace servicePrincpalName:" + ok.errstr);
-			assert(ok.error == 20);
-		}
+	    if (ok.error != 0) {
+		    println("Failed to replace servicePrincpalName:" + ok.errstr);
+		    assert(ok.error == 20);
+	    }
 
 	    ok = ldb.modify("
 dn: cn=ldaptest2computer,cn=computers," + base_dn + "
@@ -174,12 +174,156 @@ servicePrincipalName: host/ldaptest2computer
 ");
 
 //LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
-		if (ok.error != 20) {
-			println("Expected error LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS, got :" + ok.errstr);
+	    if (ok.error != 20) {
+		    println("Expected error LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS, got :" + ok.errstr);
 			assert(ok.error == 20);
-		}
+	    }
+	    
+	    println("Testing ranged results");
+	    ok = ldb.modify("
+dn: cn=ldaptest2computer,cn=computers," + base_dn + "
+changetype: modify
+replace: servicePrincipalName
+");
+	    if (ok.error != 0) {
+		    println("Failed to replace servicePrincpalName:" + ok.errstr);
+		    assert(ok.error == 0);
+	    }
+	    
+	    ok = ldb.modify("
+dn: cn=ldaptest2computer,cn=computers," + base_dn + "
+changetype: modify
+add: servicePrincipalName
+servicePrincipalName: host/ldaptest2computer0
+servicePrincipalName: host/ldaptest2computer1
+servicePrincipalName: host/ldaptest2computer2
+servicePrincipalName: host/ldaptest2computer3
+servicePrincipalName: host/ldaptest2computer4
+servicePrincipalName: host/ldaptest2computer5
+servicePrincipalName: host/ldaptest2computer6
+servicePrincipalName: host/ldaptest2computer7
+servicePrincipalName: host/ldaptest2computer8
+servicePrincipalName: host/ldaptest2computer9
+servicePrincipalName: host/ldaptest2computer10
+servicePrincipalName: host/ldaptest2computer11
+servicePrincipalName: host/ldaptest2computer12
+servicePrincipalName: host/ldaptest2computer13
+servicePrincipalName: host/ldaptest2computer14
+servicePrincipalName: host/ldaptest2computer15
+servicePrincipalName: host/ldaptest2computer16
+servicePrincipalName: host/ldaptest2computer17
+servicePrincipalName: host/ldaptest2computer18
+servicePrincipalName: host/ldaptest2computer19
+servicePrincipalName: host/ldaptest2computer20
+servicePrincipalName: host/ldaptest2computer21
+servicePrincipalName: host/ldaptest2computer22
+servicePrincipalName: host/ldaptest2computer23
+servicePrincipalName: host/ldaptest2computer24
+servicePrincipalName: host/ldaptest2computer25
+servicePrincipalName: host/ldaptest2computer26
+servicePrincipalName: host/ldaptest2computer27
+servicePrincipalName: host/ldaptest2computer28
+servicePrincipalName: host/ldaptest2computer29
+");
 
-	ok = ldb.add("
+	    if (ok.error != 0) {
+		    println("Failed to replace servicePrincpalName:" + ok.errstr);
+		    assert(ok.error == 0);
+	    }
+	    
+	    
+	    var attrs = new Array("servicePrincipalName;range=0-*");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+//	    println(res.msgs[0]["servicePrincipalName;range=0-*"].length);
+	    assert(res.msgs[0]["servicePrincipalName;range=0-*"].length == 30);
+
+	    var attrs = new Array("servicePrincipalName;range=0-19");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+//	    println(res.msgs[0]["servicePrincipalName;range=0-19"].length);
+	    assert(res.msgs[0]["servicePrincipalName;range=0-19"].length == 20);
+
+	    var attrs = new Array("servicePrincipalName;range=0-30");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=0-*"].length == 30);
+
+	    var attrs = new Array("servicePrincipalName;range=0-40");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=0-*"].length == 30);
+
+	    var attrs = new Array("servicePrincipalName;range=30-40");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=30-*"].length == 0);
+
+	    var attrs = new Array("servicePrincipalName;range=10-40");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=10-*"].length == 20);
+//	    var pos_11 = res.msgs[0]["servicePrincipalName;range=10-*"][18];
+
+	    var attrs = new Array("servicePrincipalName;range=11-40");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=11-*"].length == 19);
+//	    println(res.msgs[0]["servicePrincipalName;range=11-*"][18]);
+//	    println(pos_11);
+//	    assert((res.msgs[0]["servicePrincipalName;range=11-*"][18]) == pos_11);
+
+	    var attrs = new Array("servicePrincipalName;range=11-15");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+	    assert(res.msgs[0]["servicePrincipalName;range=11-15"].length == 5);
+//	    assert(res.msgs[0]["servicePrincipalName;range=11-15"][4] == pos_11);
+
+	    var attrs = new Array("servicePrincipalName");
+	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
+	    if (res.error != 0 || res.msgs.length != 1) {
+		    println("Could not find (cn=ldaptest2computer)");
+		    assert(res.error == 0);
+		    assert(res.msgs.length == 1);
+	    }
+//	    println(res.msgs[0]["servicePrincipalName"][18]);
+//	    println(pos_11);
+	    assert(res.msgs[0]["servicePrincipalName"].length == 30);
+//	    assert(res.msgs[0]["servicePrincipalName"][18] == pos_11);
+
+	    ok = ldb.add("
 dn: cn=ldaptestuser2,cn=useRs," + base_dn + "
 objectClass: person
 objectClass: user
