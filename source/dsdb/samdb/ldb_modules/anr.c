@@ -229,7 +229,7 @@ struct ldb_parse_tree *anr_replace_subtrees(struct ldb_parse_tree *tree,
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
 			tree->u.list.elements[i] = anr_replace_subtrees(tree->u.list.elements[i],
-										attr, callback, context);
+									attr, callback, context);
 			if (!tree->u.list.elements[i]) {
 				return NULL;
 			}
@@ -291,7 +291,6 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 		 * point just setting this on the down_req */
 		req->op.search.tree = talloc_steal(req, anr_tree);
 
-		DEBUG(0, ("anr: %s\n", ldb_filter_from_tree(req, anr_tree)));
 	}
 
 	/* TODO:  Add a callback, and ensure we retry the search with surname and given name if we fail to match */
