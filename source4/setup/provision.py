@@ -116,9 +116,9 @@ if opts.realm is None or opts.domain is None or opts.host_name is None:
 # cope with an initially blank smb.conf 
 lp = param.ParamFile()
 lp.read(opts.configfile)
-lp.set_string("realm", opts.realm);
-lp.set_string("workgroup", opts.domain);
-lp.set_string("server role", opts.server_role);
+lp.set_string("realm", opts.realm)
+lp.set_string("workgroup", opts.domain)
+lp.set_string("server role", opts.server_role)
 
 subobj = provision_guess(lp)
 subobj.domain_guid = opts.domain_guid
@@ -160,22 +160,17 @@ if opts.ldap_base:
 	provision_ldapbase(setup_dir, subobj, message, paths)
 	message("Please install the LDIF located in %s, %s and  into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server" % (paths.ldap_basedn_ldif, paths.ldap_config_basedn_ldif, paths.ldap_schema_basedn_ldif))
 elif opts.partitions_only:
-	provision_become_dc(setup_dir, subobj, message, False, 
-			            paths, system_session(), creds)
+    provision_become_dc(setup_dir, subobj, message, False, 
+                        paths, system_session(), creds)
 else:
-	provision(lp, setup_dir, subobj, message, opts.blank, paths, 
-			  system_session(), creds, opts.ldap_backend)
-	provision_dns(setup_dir, subobj, message, paths, 
-			      system_session(), creds)
-	message("To reproduce this provision, run with:")
-	message("--realm='" + subobj.realm_conf + "' --domain='" + subobj.domain_conf + "' --domain-guid='" + subobj.domain_guid + "' \\")
-	message("--policy-guid='" + subobj.policyguid + "' --host-name='" + subobj.hostname + "' --host-ip='" + subobj.hostip + "' \\")
-	message("--host-guid='" + subobj.host_guid + "' --invocationid='" + subobj.invocationid + "' \\")
-	message("--adminpass='" + subobj.adminpass + "' --krbtgtpass='" + subobj.krbtgtpass + "' \\")
-	message("--machinepass='" + subobj.machinepass + "' --dnspass='" + subobj.dnspass + "' \\")
-	message("--root='" + subobj.root + "' --nobody='" + subobj.nobody + "' --nogroup-'" + subobj.nogroup + "' \\")
-	message("--wheel='" + subobj.wheel + "' --users='" + subobj.users + "' --server-role='" + subobj.serverrole + "' \\")
-	message("--ldap-backend='" + subobj.ldap_backend + "' --ldap-module='" + subobj.ldapmodule + "' \\")
-	message("--aci='" + subobj.aci + "' \\")
+    provision(lp, setup_dir, subobj, message, opts.blank, paths, 
+              system_session(), creds, opts.ldap_backend)
+    provision_dns(setup_dir, subobj, message, paths, system_session(), creds)
+    message("To reproduce this provision, run with:")
+    def shell_escape(arg):
+        if " " in arg:
+            return '"%s"' % arg
+        return arg
+    message(" ".join([shell_escape(arg) for arg in sys.argv]))
 
 message("All OK")

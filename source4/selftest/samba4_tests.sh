@@ -294,4 +294,5 @@ then
 	plantest "auth.python" none PYTHONPATH=bin/python:scripting/python:auth/tests/ scripting/bin/subunitrun bindings
 	plantest "security.python" none PYTHONPATH=bin/python:scripting/python:libcli/security/tests/ scripting/bin/subunitrun bindings
 	plantest "param.python" none PYTHONPATH=bin/python:scripting/python:param/tests scripting/bin/subunitrun bindings
+	plantest "upgrade.python" none PYTHONPATH=bin/python:scripting/python scripting/bin/subunitrun samba.tests.upgrade
 fi
