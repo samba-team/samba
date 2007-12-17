@@ -40,7 +40,7 @@
 #define _FOUND_IFACE_ANY
 #else
 
-void freeifaddrs(struct ifaddrs *ifp)
+void rep_freeifaddrs(struct ifaddrs *ifp)
 {
 	free(ifp->ifa_name);
 	free(ifp->ifa_addr);
@@ -51,7 +51,7 @@ void freeifaddrs(struct ifaddrs *ifp)
 	free(ifp);
 }
 
-struct sockaddr *sockaddr_dup(struct sockaddr *sa)
+static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 {
 	struct sockaddr *ret;
 	socklen_t socklen;
@@ -75,7 +75,7 @@ struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 
    It probably also works on any BSD style system.  */
 
-int getifaddrs(struct ifaddrs **ifap)
+int rep_getifaddrs(struct ifaddrs **ifap)
 {
 	struct ifconf ifc;
 	char buff[8192];
@@ -159,7 +159,7 @@ int getifaddrs(struct ifaddrs **ifap)
 this should cover most of the streams based systems
 Thanks to Andrej.Borsenkow@mow.siemens.ru for several ideas in this code
 ****************************************************************************/
-int getifaddrs(struct ifaddrs **ifap)
+int rep_getifaddrs(struct ifaddrs **ifap)
 {
 	struct ifreq ifreq;
 	struct strioctl strioctl;
@@ -261,7 +261,7 @@ int getifaddrs(struct ifaddrs **ifap)
 /****************************************************************************
 this one is for AIX (tested on 4.2)
 ****************************************************************************/
-int getifaddrs(struct ifaddrs **ifap)
+int rep_getifaddrs(struct ifaddrs **ifap)
 {
 	char buff[8192];
 	int fd, i;
@@ -355,7 +355,7 @@ int getifaddrs(struct ifaddrs **ifap)
 #define _FOUND_IFACE_ANY
 #endif /* HAVE_IFACE_AIX */
 #ifndef _FOUND_IFACE_ANY
-int getifaddrs(struct ifaddrs **ifap)
+int rep_getifaddrs(struct ifaddrs **ifap)
 {
 	errno = ENOSYS;
 	return -1;
