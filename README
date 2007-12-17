@@ -3,8 +3,9 @@ developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-While we welcome your interest in Samba 4, we don't want you to run your network with it quite yet. Please note the WARNINGS below, and the STATUS file,
-which aims to document what should and should not work.
+While we welcome your interest in Samba 4, we don't want you to run your
+network with it quite yet. Please note the WARNINGS below, and the
+STATUS file, which aims to document what should and should not work.
 
 With 4 years of development under our belt since Tridge first proposed
 a new Virtual File System (VFS) layer for Samba3 (a project which
@@ -17,12 +18,12 @@ support.
 WARNINGS
 ========
 
-Samba4 TP is currently a pre-alpha technology.  That is more a
-reference to Samba4's lack of the features we expect you will need
-than a statement of code quality, but clearly it hasn't seen a broad
-deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
-Samba4, you would find many things work, but that other key features
-you may have relied on simply are not there yet.
+Samba4 is currently at alpha stage.  That is more a reference to
+Samba4's lack of the features we expect you will need than a statement
+of code quality, but clearly it hasn't seen a broad deployment yet.  If
+you were to upgrade Samba3 (or indeed Windows) to Samba4, you would find
+many things work, but that other key features you may have relied on
+simply are not there yet.
 
 For example, while Samba 3.0 is an excellent member of a Active
 Directory domain, Samba4 is happier as a domain controller: (This is
@@ -98,10 +99,10 @@ CHANGES
 Those familiar with Samba 3 can find a list of user-visible changes
 since that release series in the NEWS file.
 
- - An optional password is no longer supported as the second argument to 
+ - An optional password is no longer supported as the second argument to
    smbclient.
 
- - The default location of smb.conf in non-FHS builds has changed from the 
+ - The default location of smb.conf in non-FHS builds has changed from the
    PREFIX/lib directory to the PREFIX/etc directory.
 
 KNOWN ISSUES
@@ -109,7 +110,7 @@ KNOWN ISSUES
 
 - Standalone server and domain member roles are not currently
   supported.  While we have much of the infrastructure required, we
-  have not collected these pieces together. 
+  have not collected these pieces together.
 
 - There is no printing support in the current release.
 
