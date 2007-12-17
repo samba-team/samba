@@ -159,18 +159,18 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 		DEBUG(3, ("More weirdness, could not open %s\n", slavedev));
 		return (False);
 	}
-#if defined(I_PUSH) && defined(I_FIND)
+#if defined(TIOCSCTTY)
+	if (ioctl(slave, TIOCSCTTY, 0) < 0)
+	{
+		DEBUG(3, ("Error in ioctl call for slave pty\n"));
+		/* return(False); */
+	}
+#elif defined(I_PUSH) && defined(I_FIND)
 	if (ioctl(slave, I_FIND, "ptem") == 0) {
 		ioctl(slave, I_PUSH, "ptem");
 	}
 	if (ioctl(slave, I_FIND, "ldterm") == 0) {
 		ioctl(slave, I_PUSH, "ldterm");
-	}
-#elif defined(TIOCSCTTY)
-	if (ioctl(slave, TIOCSCTTY, 0) < 0)
-	{
-		DEBUG(3, ("Error in ioctl call for slave pty\n"));
-		/* return(False); */
 	}
 #endif
 
