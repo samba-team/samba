@@ -59,3 +59,6 @@ bool samdb_set_domain_sid(struct ldb_context *ldb,
                           const struct dom_sid *dom_sid_in);
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df);
+
+%rename(version) samba_version_string;
+const char *samba_version_string(void);

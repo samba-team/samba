@@ -3038,6 +3038,19 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_version(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  char *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args,"version",0,0,0)) SWIG_fail;
+  result = (char *)samba_version_string();
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3045,6 +3058,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_set_loadparm", (PyCFunction) _wrap_ldb_set_loadparm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"samdb_set_domain_sid", (PyCFunction) _wrap_samdb_set_domain_sid, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"dsdb_attach_schema_from_ldif_file", (PyCFunction) _wrap_dsdb_attach_schema_from_ldif_file, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"version", (PyCFunction)_wrap_version, METH_NOARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

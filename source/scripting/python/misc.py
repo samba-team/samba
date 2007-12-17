@@ -67,5 +67,6 @@ ldb_set_session_info = _misc.ldb_set_session_info
 ldb_set_loadparm = _misc.ldb_set_loadparm
 samdb_set_domain_sid = _misc.samdb_set_domain_sid
 dsdb_attach_schema_from_ldif_file = _misc.dsdb_attach_schema_from_ldif_file
+version = _misc.version
 
 
