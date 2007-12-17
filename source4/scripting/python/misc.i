@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldb.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
 %}
 
 %import "stdint.i"
@@ -30,6 +31,8 @@
 %import "../../lib/ldb/ldb.i"
 %import "../../auth/credentials/credentials.i"
 %import "../../param/param.i"
+%import "../../libcli/security/security.i"
+%import "../../libcli/util/errors.i";
 
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
@@ -49,4 +52,10 @@ void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
 {
     ldb_set_opaque(ldb, "loadparm", lp_ctx);
 }
+
 %}
+
+bool samdb_set_domain_sid(struct ldb_context *ldb, 
+                          const struct dom_sid *dom_sid_in);
+
+WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df);

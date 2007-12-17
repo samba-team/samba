@@ -2463,28 +2463,31 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_auth_session_info swig_types[1]
 #define SWIGTYPE_p_char swig_types[2]
 #define SWIGTYPE_p_cli_credentials swig_types[3]
-#define SWIGTYPE_p_int swig_types[4]
-#define SWIGTYPE_p_ldb_context swig_types[5]
-#define SWIGTYPE_p_ldb_dn swig_types[6]
-#define SWIGTYPE_p_ldb_ldif swig_types[7]
-#define SWIGTYPE_p_ldb_message swig_types[8]
-#define SWIGTYPE_p_ldb_message_element swig_types[9]
-#define SWIGTYPE_p_ldb_result swig_types[10]
-#define SWIGTYPE_p_loadparm_context swig_types[11]
-#define SWIGTYPE_p_loadparm_service swig_types[12]
-#define SWIGTYPE_p_long_long swig_types[13]
-#define SWIGTYPE_p_param_context swig_types[14]
-#define SWIGTYPE_p_param_opt swig_types[15]
-#define SWIGTYPE_p_param_section swig_types[16]
-#define SWIGTYPE_p_short swig_types[17]
-#define SWIGTYPE_p_signed_char swig_types[18]
-#define SWIGTYPE_p_unsigned_char swig_types[19]
-#define SWIGTYPE_p_unsigned_int swig_types[20]
-#define SWIGTYPE_p_unsigned_long swig_types[21]
-#define SWIGTYPE_p_unsigned_long_long swig_types[22]
-#define SWIGTYPE_p_unsigned_short swig_types[23]
-static swig_type_info *swig_types[25];
-static swig_module_info swig_module = {swig_types, 24, 0, 0, 0, 0};
+#define SWIGTYPE_p_dom_sid swig_types[4]
+#define SWIGTYPE_p_int swig_types[5]
+#define SWIGTYPE_p_ldb_context swig_types[6]
+#define SWIGTYPE_p_ldb_dn swig_types[7]
+#define SWIGTYPE_p_ldb_ldif swig_types[8]
+#define SWIGTYPE_p_ldb_message swig_types[9]
+#define SWIGTYPE_p_ldb_message_element swig_types[10]
+#define SWIGTYPE_p_ldb_result swig_types[11]
+#define SWIGTYPE_p_loadparm_context swig_types[12]
+#define SWIGTYPE_p_loadparm_service swig_types[13]
+#define SWIGTYPE_p_long_long swig_types[14]
+#define SWIGTYPE_p_param_context swig_types[15]
+#define SWIGTYPE_p_param_opt swig_types[16]
+#define SWIGTYPE_p_param_section swig_types[17]
+#define SWIGTYPE_p_security_descriptor swig_types[18]
+#define SWIGTYPE_p_security_token swig_types[19]
+#define SWIGTYPE_p_short swig_types[20]
+#define SWIGTYPE_p_signed_char swig_types[21]
+#define SWIGTYPE_p_unsigned_char swig_types[22]
+#define SWIGTYPE_p_unsigned_int swig_types[23]
+#define SWIGTYPE_p_unsigned_long swig_types[24]
+#define SWIGTYPE_p_unsigned_long_long swig_types[25]
+#define SWIGTYPE_p_unsigned_short swig_types[26]
+static swig_type_info *swig_types[28];
+static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2527,6 +2530,7 @@ static swig_module_info swig_module = {swig_types, 24, 0, 0, 0, 0};
 #include "includes.h"
 #include "ldb.h"
 #include "param/param.h"
+#include "dsdb/samdb/samdb.h"
 
 
 SWIGINTERN int
@@ -2715,6 +2719,69 @@ void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
     ldb_set_opaque(ldb, "loadparm", lp_ctx);
 }
 
+
+
+SWIGINTERNINLINE PyObject*
+  SWIG_From_bool  (bool value)
+{
+  return PyBool_FromLong(value ? 1 : 0);
+}
+
+
+SWIGINTERN int
+SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
+{
+  if (PyString_Check(obj)) {
+    char *cstr; Py_ssize_t len;
+    PyString_AsStringAndSize(obj, &cstr, &len);
+    if (cptr)  {
+      if (alloc) {
+	/* 
+	   In python the user should not be able to modify the inner
+	   string representation. To warranty that, if you define
+	   SWIG_PYTHON_SAFE_CSTRINGS, a new/copy of the python string
+	   buffer is always returned.
+
+	   The default behavior is just to return the pointer value,
+	   so, be careful.
+	*/ 
+#if defined(SWIG_PYTHON_SAFE_CSTRINGS)
+	if (*alloc != SWIG_OLDOBJ) 
+#else
+	if (*alloc == SWIG_NEWOBJ) 
+#endif
+	  {
+	    *cptr = (char *)memcpy((char *)malloc((len + 1)*sizeof(char)), cstr, sizeof(char)*(len + 1));
+	    *alloc = SWIG_NEWOBJ;
+	  }
+	else {
+	  *cptr = cstr;
+	  *alloc = SWIG_OLDOBJ;
+	}
+      } else {
+	*cptr = PyString_AsString(obj);
+      }
+    }
+    if (psize) *psize = len + 1;
+    return SWIG_OK;
+  } else {
+    swig_type_info* pchar_descriptor = SWIG_pchar_descriptor();
+    if (pchar_descriptor) {
+      void* vptr = 0;
+      if (SWIG_ConvertPtr(obj, &vptr, pchar_descriptor, 0) == SWIG_OK) {
+	if (cptr) *cptr = (char *) vptr;
+	if (psize) *psize = vptr ? (strlen((char *)vptr) + 1) : 0;
+	if (alloc) *alloc = SWIG_OLDOBJ;
+	return SWIG_OK;
+      }
+    }
+  }
+  return SWIG_TypeError;
+}
+
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2871,11 +2938,113 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_samdb_set_domain_sid(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  struct dom_sid *arg2 = (struct dom_sid *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb",(char *) "dom_sid_in", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:samdb_set_domain_sid",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "samdb_set_domain_sid" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_dom_sid, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "samdb_set_domain_sid" "', argument " "2"" of type '" "struct dom_sid const *""'"); 
+  }
+  arg2 = (struct dom_sid *)(argp2);
+  {
+    if (arg1 == NULL)
+    SWIG_exception(SWIG_ValueError, 
+      "ldb context must be non-NULL");
+  }
+  result = (bool)samdb_set_domain_sid(arg1,(struct dom_sid const *)arg2);
+  resultobj = SWIG_From_bool((bool)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_dsdb_attach_schema_from_ldif_file(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) 0 ;
+  WERROR result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb",(char *) "pf",(char *) "df", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:dsdb_attach_schema_from_ldif_file",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "dsdb_attach_schema_from_ldif_file" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "dsdb_attach_schema_from_ldif_file" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "dsdb_attach_schema_from_ldif_file" "', argument " "3"" of type '" "char const *""'");
+  }
+  arg3 = (char *)(buf3);
+  {
+    if (arg1 == NULL)
+    SWIG_exception(SWIG_ValueError, 
+      "ldb context must be non-NULL");
+  }
+  result = dsdb_attach_schema_from_ldif_file(arg1,(char const *)arg2,(char const *)arg3);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_session_info", (PyCFunction) _wrap_ldb_set_session_info, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_loadparm", (PyCFunction) _wrap_ldb_set_loadparm, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"samdb_set_domain_sid", (PyCFunction) _wrap_samdb_set_domain_sid, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"dsdb_attach_schema_from_ldif_file", (PyCFunction) _wrap_dsdb_attach_schema_from_ldif_file, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -2886,6 +3055,7 @@ static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0
 static swig_type_info _swigt__p_auth_session_info = {"_p_auth_session_info", "struct auth_session_info *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_dom_sid = {"_p_dom_sid", "struct dom_sid *|dom_sid *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_context = {"_p_ldb_context", "struct ldb_context *|ldb *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_dn = {"_p_ldb_dn", "struct ldb_dn *|ldb_dn *", 0, 0, (void*)0, 0};
@@ -2899,6 +3069,8 @@ static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|in
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_security_descriptor = {"_p_security_descriptor", "struct security_descriptor *|security_descriptor *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_security_token = {"_p_security_token", "struct security_token *|security_token *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *|uint_least8_t *|uint_fast8_t *|uint8_t *", 0, 0, (void*)0, 0};
@@ -2912,6 +3084,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_auth_session_info,
   &_swigt__p_char,
   &_swigt__p_cli_credentials,
+  &_swigt__p_dom_sid,
   &_swigt__p_int,
   &_swigt__p_ldb_context,
   &_swigt__p_ldb_dn,
@@ -2925,6 +3098,8 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_param_context,
   &_swigt__p_param_opt,
   &_swigt__p_param_section,
+  &_swigt__p_security_descriptor,
+  &_swigt__p_security_token,
   &_swigt__p_short,
   &_swigt__p_signed_char,
   &_swigt__p_unsigned_char,
@@ -2938,6 +3113,7 @@ static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 
 static swig_cast_info _swigc__p_auth_session_info[] = {  {&_swigt__p_auth_session_info, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentials, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_dom_sid[] = {  {&_swigt__p_dom_sid, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_context[] = {  {&_swigt__p_ldb_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_dn[] = {  {&_swigt__p_ldb_dn, 0, 0, 0},{0, 0, 0, 0}};
@@ -2951,6 +3127,8 @@ static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0}
 static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_opt[] = {  {&_swigt__p_param_opt, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_security_descriptor[] = {  {&_swigt__p_security_descriptor, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_security_token[] = {  {&_swigt__p_security_token, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -2964,6 +3142,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_auth_session_info,
   _swigc__p_char,
   _swigc__p_cli_credentials,
+  _swigc__p_dom_sid,
   _swigc__p_int,
   _swigc__p_ldb_context,
   _swigc__p_ldb_dn,
@@ -2977,6 +3156,8 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_param_context,
   _swigc__p_param_opt,
   _swigc__p_param_section,
+  _swigc__p_security_descriptor,
+  _swigc__p_security_token,
   _swigc__p_short,
   _swigc__p_signed_char,
   _swigc__p_unsigned_char,

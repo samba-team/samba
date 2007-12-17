@@ -433,10 +433,8 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
 
     message("Pre-loading the Samba 4 and AD schema")
 
-    samdb = open_ldb(session_info, credentials, paths.samdb)
-
+    samdb = SamDB(paths.samdb, session_info, credentials)
     samdb.set_domain_sid(subobj.domainsid)
-
     load_schema(setup_dir, subobj, samdb)
 
     samdb.transaction_start()
@@ -650,7 +648,7 @@ def load_schema(setup_dir, subobj, samdb):
     src = os.path.join(setup_dir, "provision_schema_basedn_modify.ldif")
     head_data = open(src, 'r').read()
     head_data = substitute_var(head_data, subobj.subst_vars())
-    samdb.attach_dsdb_schema_from_ldif(head_data, schema_data)
+    samdb.attach_schema_from_ldif(head_data, schema_data)
 
 
 def join_domain(domain, netbios_name, join_type, creds, message):
