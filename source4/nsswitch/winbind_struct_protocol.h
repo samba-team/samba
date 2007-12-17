@@ -246,7 +246,7 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
-			pstring require_membership_of_sid;
+			char require_membership_of_sid[1024];
 			fstring krb5_cc_type;
 			uid_t uid;
 		} auth;              /* pam_winbind auth module */
