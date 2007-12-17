@@ -61,28 +61,30 @@ static NTSTATUS check_oem_password(const char *user,
 
 static int findpty(char **slave)
 {
-	int master;
-	static fstring line;
-	SMB_STRUCT_DIR *dirp;
+	int master = -1;
+	char *line = NULL;
+	SMB_STRUCT_DIR *dirp = NULL;
 	const char *dpname;
+
+	*slave = NULL;
 
 #if defined(HAVE_GRANTPT)
 	/* Try to open /dev/ptmx. If that fails, fall through to old method. */
-	if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0)
-	{
+	if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
 		grantpt(master);
 		unlockpt(master);
-		*slave = (char *)ptsname(master);
-		if (*slave == NULL)
-		{
+		line = (char *)ptsname(master);
+		if (line) {
+			*slave = SMB_STRDUP(line);
+		}
+
+		if (*slave == NULL) {
 			DEBUG(0,
 			      ("findpty: Unable to create master/slave pty pair.\n"));
 			/* Stop fd leak on error. */
 			close(master);
 			return -1;
-		}
-		else
-		{
+		} else {
 			DEBUG(10,
 			      ("findpty: Allocated slave pty %s\n", *slave));
 			return (master);
@@ -90,22 +92,25 @@ static int findpty(char **slave)
 	}
 #endif /* HAVE_GRANTPT */
 
-	fstrcpy(line, "/dev/ptyXX");
+	line = SMB_STRDUP("/dev/ptyXX");
+	if (!line) {
+		return (-1);
+	}
 
 	dirp = sys_opendir("/dev");
-	if (!dirp)
+	if (!dirp) {
+		SAFE_FREE(line);
 		return (-1);
-	while ((dpname = readdirname(dirp)) != NULL)
-	{
-		if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5)
-		{
+	}
+
+	while ((dpname = readdirname(dirp)) != NULL) {
+		if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
 			DEBUG(3,
 			      ("pty: try to open %s, line was %s\n", dpname,
 			       line));
 			line[8] = dpname[3];
 			line[9] = dpname[4];
-			if ((master = sys_open(line, O_RDWR, 0)) >= 0)
-			{
+			if ((master = sys_open(line, O_RDWR, 0)) >= 0) {
 				DEBUG(3, ("pty: opened %s\n", line));
 				line[5] = 't';
 				*slave = line;
@@ -115,6 +120,7 @@ static int findpty(char **slave)
 		}
 	}
 	sys_closedir(dirp);
+	SAFE_FREE(line);
 	return (-1);
 }
 
@@ -355,7 +361,7 @@ static int talktochild(int master, const char *seq)
 static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 			      char *chatsequence, bool as_root)
 {
-	char *slavedev;
+	char *slavedev = NULL;
 	int master;
 	pid_t pid, wpid;
 	int wstat;
@@ -381,6 +387,7 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 
 	if ((pid = sys_fork()) < 0) {
 		DEBUG(3, ("chat_with_program: Cannot fork() child for password change: %s\n", pass->pw_name));
+		SAFE_FREE(slavedev);
 		close(master);
 		CatchChild();
 		return (False);
@@ -388,6 +395,9 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 
 	/* we now have a pty */
 	if (pid > 0) {			/* This is the parent process */
+		/* Don't need this anymore in parent. */
+		SAFE_FREE(slavedev);
+
 		if ((chstat = talktochild(master, chatsequence)) == False) {
 			DEBUG(3, ("chat_with_program: Child failed to change password: %s\n", pass->pw_name));
 			kill(pid, SIGKILL);	/* be sure to end this process */
