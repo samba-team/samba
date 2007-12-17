@@ -659,24 +659,33 @@ char *secrets_fetch_machine_password(const char *domain,
 	return ret;
 }
 
+BOOL is_trusted_domain_situation(const char *domain_name)
+{
+	return IS_DC &&
+		lp_allow_trusted_domains() &&
+		!strequal(domain_name, lp_workgroup());
+}
+ 
 /*******************************************************************
- Wrapper around retrieving the trust account password.
+ Wrapper around retrieving the clear text trust account password.
  appropriate account name is stored in account_name.
+ Caller must free password, but not account_name.
 *******************************************************************/
 
-BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
-		  const char **account_name, uint32 *channel)
+BOOL get_trust_pw_clear(const char *domain, char **ret_pwd,
+			const char **account_name, uint32 *channel)
 {
 	DOM_SID sid;
 	char *pwd;
 	time_t last_set_time;
 
 	/* if we are a DC and this is not our domain, then lookup an account
-		for the domain trust */
+	 * for the domain trust */
 
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) {
-		if (!secrets_fetch_trusted_domain_password(domain, &pwd, &sid,
-							&last_set_time)) {
+	if (is_trusted_domain_situation(domain)) {
+		if (!secrets_fetch_trusted_domain_password(domain, ret_pwd,
+							   &sid, &last_set_time))
+		{
 			DEBUG(0, ("get_trust_pw: could not fetch trust "
 				"account password for trusted domain %s\n",
 				domain));
@@ -684,8 +693,6 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 		}
 
 		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
 
 		if (account_name != NULL) {
 			*account_name = lp_workgroup();
@@ -697,8 +704,46 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 	/* Just get the account for the requested domain. In the future this
 	 * might also cover to be member of more than one domain. */
 
-	if (secrets_fetch_trust_account_password(domain, ret_pwd,
-						&last_set_time, channel))
+	pwd = secrets_fetch_machine_password(domain, &last_set_time, channel);
+
+	if (pwd != NULL) {
+		*ret_pwd = pwd;
+		if (account_name != NULL) {
+			*account_name = global_myname();
+		}
+
+		return True;
+	}
+
+	DEBUG(5, ("get_trust_pw_clear: could not fetch clear text trust "
+		  "account password for domain %s\n", domain));
+	return False;
+}
+
+/*******************************************************************
+ Wrapper around retrieving the trust account password.
+ appropriate account name is stored in account_name.
+*******************************************************************/
+
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+		  const char **account_name, uint32 *channel)
+{
+	char *pwd = NULL;
+	time_t last_set_time;
+
+	if (get_trust_pw_clear(domain, &pwd, account_name, channel)) {
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+		return True;
+	} else if (is_trusted_domain_situation(domain)) {
+		return False;
+	}
+
+	/* as a fallback, try to get the hashed pwd directly from the tdb... */
+
+	if (secrets_fetch_trust_account_password_legacy(domain, ret_pwd,
+							&last_set_time,
+							channel))
 	{
 		if (account_name != NULL) {
 			*account_name = global_myname();
@@ -707,7 +752,7 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 		return True;
 	}
 
-	DEBUG(5, ("get_trust_pw: could not fetch trust account "
+	DEBUG(5, ("get_trust_pw_hash: could not fetch trust account "
 		"password for domain %s\n", domain));
 	return False;
 }
