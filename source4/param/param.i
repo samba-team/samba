@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "param/param.h"
+#include "param/loadparm.h"
 
 typedef struct param_context param;
 typedef struct loadparm_context loadparm_context;
@@ -57,6 +58,104 @@ typedef struct loadparm_context {
         bool is_mydomain(const char *domain) { return lp_is_mydomain($self, domain); }
         bool is_myname(const char *name) { return lp_is_myname($self, name); }
         int use(struct param_context *param) { return param_use($self, param); }
+        bool set(const char *parm_name, const char *parm_value) {
+            return lp_set_cmdline($self, parm_name, parm_value);
+        }
+
+        PyObject *get(const char *param_name, const char *service_name)
+        {
+            struct parm_struct *parm = NULL;
+            void *parm_ptr = NULL;
+            int i;
+
+            if (service_name != NULL) {
+                struct loadparm_service *service;
+                /* its a share parameter */
+                service = lp_service($self, service_name);
+                if (service == NULL) {
+                    return Py_None;
+                }
+                if (strchr(param_name, ':')) {
+                    /* its a parametric option on a share */
+                    const char *type = talloc_strndup($self, 
+                                      param_name, 
+                                      strcspn(param_name, ":"));
+                    const char *option = strchr(param_name, ':') + 1;
+                    const char *value;
+                    if (type == NULL || option == NULL) {
+                        return Py_None;
+                    }
+                    value = lp_get_parametric($self, service, type, option);
+                    if (value == NULL) {
+                        return Py_None;
+                    }
+                    return PyString_FromString(value);
+                }
+
+                parm = lp_parm_struct(param_name);
+                if (parm == NULL || parm->class == P_GLOBAL) {
+                    return Py_None;
+                }
+                parm_ptr = lp_parm_ptr($self, service, parm);
+            } else if (strchr(param_name, ':')) {
+                /* its a global parametric option */
+                const char *type = talloc_strndup($self, 
+                                  param_name, strcspn(param_name, ":"));
+                const char *option = strchr(param_name, ':') + 1;
+                const char *value;
+                if (type == NULL || option == NULL) {
+                    return Py_None;
+                }
+                value = lp_get_parametric($self, NULL, type, option);
+                if (value == NULL)
+                    return Py_None;
+                return PyString_FromString(value);
+            } else {
+                /* its a global parameter */
+                parm = lp_parm_struct(param_name);
+                if (parm == NULL) {
+                    return Py_None;
+                }
+                parm_ptr = lp_parm_ptr($self, NULL, parm);
+            }
+
+            if (parm == NULL || parm_ptr == NULL) {
+                return Py_None;
+            }
+
+            /* construct and return the right type of python object */
+            switch (parm->type) {
+            case P_STRING:
+            case P_USTRING:
+                return PyString_FromString(*(char **)parm_ptr);
+            case P_BOOL:
+                return PyBool_FromLong(*(bool *)parm_ptr);
+            case P_INTEGER:
+            case P_OCTAL:
+            case P_BYTES:
+                return PyLong_FromLong(*(int *)parm_ptr);
+            case P_ENUM:
+                for (i=0; parm->enum_list[i].name; i++) {
+                    if (*(int *)parm_ptr == parm->enum_list[i].value) {
+                        return PyString_FromString(parm->enum_list[i].name);
+                    }
+                }
+                return Py_None;
+            case P_LIST: 
+                {
+                    int i;
+                    const char **strlist = *(const char ***)parm_ptr;
+                    PyObject *pylist = PyList_New(str_list_length(strlist));
+                    for (i = 0; strlist[i]; i++) 
+                        PyList_SetItem(pylist, i, 
+                                       PyString_FromString(strlist[i]));
+                    return pylist;
+                }
+
+                break;
+            }
+            return Py_None;
+        }
     }
 } loadparm_context;
 

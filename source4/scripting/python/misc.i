@@ -32,7 +32,7 @@
 %import "../../auth/credentials/credentials.i"
 %import "../../param/param.i"
 %import "../../libcli/security/security.i"
-%import "../../libcli/util/errors.i";
+%import "../../libcli/util/errors.i"
 
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
