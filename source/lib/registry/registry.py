@@ -65,9 +65,6 @@ Registry = _registry.Registry
 class reg(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    def mount(self, path, hkey_id, elements=[]):
-        self.mount_hive(Hive(path), hkey_id, elements)
-
     def __init__(self, *args, **kwargs): 
         _registry.reg_swiginit(self,_registry.new_reg(*args, **kwargs))
     __swig_destroy__ = _registry.delete_reg

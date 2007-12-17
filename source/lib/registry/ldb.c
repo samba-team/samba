@@ -346,7 +346,7 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 	if (location == NULL)
 		return WERR_INVALID_PARAM;
 
-	wrap = ldb_wrap_connect(parent_ctx, global_loadparm,
+	wrap = ldb_wrap_connect(parent_ctx, lp_ctx,
 				location, session_info, credentials, 0, NULL);
 
 	if (wrap == NULL) {
