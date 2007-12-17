@@ -628,8 +628,12 @@ nogroup:x:65534:nobody
 	my @provision_options = ();
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
-	push (@provision_options, "$self->{bindir}/smbscript");
-	push (@provision_options, "$self->{setupdir}/provision");
+	if (defined($ENV{PROVISION_PYTHON})) {
+		push (@provision_options, "$self->{setupdir}/provision.py");
+	} else {
+		push (@provision_options, "$self->{bindir}/smbscript");
+		push (@provision_options, "$self->{setupdir}/provision");
+	}
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");

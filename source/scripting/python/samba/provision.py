@@ -189,7 +189,6 @@ def ldb_delete(ldb):
     ldb.connect(ldb.filename)
 
 
-
 def open_ldb(session_info, credentials, dbname):
     assert session_info is not None
     try:
@@ -641,25 +640,16 @@ def provision_guess(lp):
     return subobj
 
 
-
 def load_schema(setup_dir, subobj, samdb):
     """Load schema."""
     src = os.path.join(setup_dir, "schema.ldif")
-
     schema_data = open(src, 'r').read()
-
     src = os.path.join(setup_dir, "schema_samba4.ldif")
-
     schema_data += open(src, 'r').read()
-
     schema_data = substitute_var(schema_data, subobj.subst_vars())
-
     src = os.path.join(setup_dir, "provision_schema_basedn_modify.ldif")
-
     head_data = open(src, 'r').read()
-
     head_data = substitute_var(head_data, subobj.subst_vars())
-
     samdb.attach_dsdb_schema_from_ldif(head_data, schema_data)
 
 
