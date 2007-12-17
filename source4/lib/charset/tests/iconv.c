@@ -157,8 +157,8 @@ static bool test_buffer(struct torture_context *test,
 						     "failed to open %s to UTF-16LE",
 						     charset));
 		}
-		cd2 = smb_iconv_open(charset, "UTF-16LE", lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
-		cd3 = smb_iconv_open("UTF-16LE", charset, lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
 		last_charset = charset;
 	}
 
