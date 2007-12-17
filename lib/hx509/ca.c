@@ -35,6 +35,12 @@
 #include <pkinit_asn1.h>
 RCSID("$Id$");
 
+/**
+ * @page page_ca Hx509 CA functions
+ *
+ * See the library functions here: @ref hx509_ca
+ */
+
 struct hx509_ca_tbs {
     hx509_name subject;
     SubjectPublicKeyInfo spki;
@@ -55,6 +61,18 @@ struct hx509_ca_tbs {
     CRLDistributionPoints crldp;
 };
 
+/**
+ * Allocate an To Be Signed object that will be converted into an
+ * certificate.
+ *
+ * @param context A hx509 context.
+ * @param tbs returned to be signed object, free with hx509_ca_tbs_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
 {
@@ -73,6 +91,14 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
 
     return 0;
 }
+
+/**
+ * Free an To Be Signed object.
+ *
+ * @param tbs object to free.
+ *
+ * @ingroup hx509_ca
+ */
 
 void
 hx509_ca_tbs_free(hx509_ca_tbs *tbs)
