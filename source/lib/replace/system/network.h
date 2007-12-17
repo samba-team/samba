@@ -81,6 +81,10 @@
 #include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
 #ifdef REPLACE_INET_NTOA
 char *rep_inet_ntoa(struct in_addr ip);
 #define inet_ntoa rep_inet_ntoa
