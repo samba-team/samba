@@ -1,5 +1,11 @@
 AC_CHECK_HEADERS([ifaddrs.h])
 
+dnl Used when getifaddrs is not available
+AC_CHECK_MEMBERS([struct sockaddr.sa_len], 
+	 [AC_DEFINE(HAVE_SOCKADDR_SA_LEN, 1, [Whether struct sockaddr has a sa_len member])],
+	 [],
+	 [#include <sys/socket.h>])
+
 dnl test for getifaddrs and freeifaddrs
 AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
 AC_TRY_COMPILE([

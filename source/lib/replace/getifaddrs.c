@@ -53,10 +53,17 @@ void freeifaddrs(struct ifaddrs *ifp)
 
 struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 {
-	struct sockaddr *ret = calloc(1, sa->sa_len);
+	struct sockaddr *ret;
+	socklen_t socklen;
+#ifdef HAVE_SOCKADDR_SA_LEN
+	socklen = sa->sa_len;
+#else
+	socklen = sizeof(struct sockaddr_storage);
+#endif
+	ret = = calloc(1, socklen);
 	if (ret == NULL)
 		return NULL;
-	memcpy(ret, sa, sa->sa_len);
+	memcpy(ret, sa, socklen);
 	return ret;
 }
 #endif
