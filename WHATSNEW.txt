@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha1
+What's new in Samba 4 alpha2
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -10,7 +10,7 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha1 is the culmination of 4.5 years of development under our
+Samba4 alpha2 is the culmination of 4.5 years of development under our
 belt since Tridge first proposed a new Virtual File System (VFS) layer
 for Samba3 (a project which eventually lead to our Active Directory
 efforts), and 1.5 years since we first released a Technology Preview,
@@ -20,7 +20,7 @@ progressed, and to invite feedback and support.
 WARNINGS
 ========
 
-Samba4 alpha1 is not a final Samba release.  That is more a reference
+Samba4 alpha2 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -67,10 +67,10 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE TP5
-=================
+CHANGES SINCE Alpha 1
+=====================
 
-In the time since Sama4 Alpha1 was released in September 2007, Samba has
+In the time since Samba4 Alpha1 was released in September 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
   MMC Support:  The Active Directory Users and Computers console now
@@ -82,7 +82,7 @@ continued to evolve, but you may particularly notice these areas:
   subtree renames: Renaming a subtree of LDAP objects is now possible,
   with all linked attributes being kept consistant.
 
-  Python Bindings:  Bindings for a future move to python as the
+  Python Bindings:  Bindings for a future move to Python as the
   internal scripting language have been created. 
 
   Shared library use:  In support of projects such as OpenChange,
