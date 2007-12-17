@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Authentication utility functions
  *  Copyright (C) Andrew Tridgell 1992-1998
@@ -12,12 +12,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -33,10 +33,10 @@
 bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 {
 	int i;
-	
+
 	if ( !sid || !token )
 		return False;
-	
+
 	for ( i=0; i<token->num_sids; i++ ) {
 		if ( sid_equal( sid, &token->user_sids[i] ) )
 			return True;
@@ -45,11 +45,11 @@ bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 	return False;
 }
 
-bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid ) 
+bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 {
 	DOM_SID domain_sid;
 
-	/* if we are a domain member, the get the domain SID, else for 
+	/* if we are a domain member, the get the domain SID, else for
 	   a DC or standalone server, use our own SID */
 
 	if ( lp_server_role() == ROLE_DOMAIN_MEMBER ) {
@@ -59,12 +59,12 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 				 "SID for domain [%s]\n", lp_workgroup()));
 			return False;
 		}
-	} 
+	}
 	else
 		sid_copy( &domain_sid, get_global_sam_sid() );
 
 	sid_append_rid( &domain_sid, rid );
-	
+
 	return nt_token_check_sid( &domain_sid, token );\
 }
 
@@ -80,7 +80,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	static NT_USER_TOKEN *token = NULL;
 	DOM_SID u_sid, g_sid;
 	struct passwd *pw;
-	
+
 	if ( token )
 		return token;
 
@@ -88,10 +88,10 @@ NT_USER_TOKEN *get_root_nt_token( void )
 		DEBUG(0,("get_root_nt_token: getpwnam(\"root\") failed!\n"));
 		return NULL;
 	}
-	
-	/* get the user and primary group SIDs; although the 
+
+	/* get the user and primary group SIDs; although the
 	   BUILTIN\Administrators SId is really the one that matters here */
-	   
+
 	uid_to_sid(&u_sid, pw->pw_uid);
 	gid_to_sid(&g_sid, pw->pw_gid);
 
@@ -156,13 +156,13 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 	DOM_SID domadm;
 
 	/* nothing to do if we aren't in a domain */
-	
+
 	if ( !(IS_DC || lp_server_role()==ROLE_DOMAIN_MEMBER) ) {
 		return NT_STATUS_OK;
 	}
-	
+
 	/* Find the Domain Admins SID */
-	
+
 	if ( IS_DC ) {
 		sid_copy( &domadm, get_global_sam_sid() );
 	} else {
@@ -170,16 +170,16 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	sid_append_rid( &domadm, DOMAIN_GROUP_RID_ADMINS );
-	
+
 	/* Add Administrators if the user beloongs to Domain Admins */
-	
+
 	if ( nt_token_check_sid( &domadm, token ) ) {
 		if (!add_sid_to_array(token, &global_sid_Builtin_Administrators,
 					 &token->user_sids, &token->num_sids)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -196,9 +196,9 @@ static NTSTATUS create_builtin_users( void )
 		DEBUG(0,("create_builtin_users: Failed to create Users\n"));
 		return status;
 	}
-	
+
 	/* add domain users */
-	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) 
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
 		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_users))
 	{
 		sid_append_rid(&dom_users, DOMAIN_GROUP_RID_USERS );
@@ -209,9 +209,9 @@ static NTSTATUS create_builtin_users( void )
 			return status;
 		}
 	}
-			
+
 	return NT_STATUS_OK;
-}		
+}
 
 /*******************************************************************
 *******************************************************************/
@@ -221,7 +221,7 @@ static NTSTATUS create_builtin_administrators( void )
 	NTSTATUS status;
 	DOM_SID dom_admins, root_sid;
 	fstring root_name;
-	enum lsa_SidType type;		
+	enum lsa_SidType type;
 	TALLOC_CTX *ctx;
 	bool ret;
 
@@ -230,9 +230,9 @@ static NTSTATUS create_builtin_administrators( void )
 		DEBUG(0,("create_builtin_administrators: Failed to create Administrators\n"));
 		return status;
 	}
-	
+
 	/* add domain admins */
-	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) 
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
 		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_admins))
 	{
 		sid_append_rid(&dom_admins, DOMAIN_GROUP_RID_ADMINS);
@@ -243,7 +243,7 @@ static NTSTATUS create_builtin_administrators( void )
 			return status;
 		}
 	}
-			
+
 	/* add root */
 	if ( (ctx = talloc_init("create_builtin_administrators")) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
@@ -261,9 +261,9 @@ static NTSTATUS create_builtin_administrators( void )
 			return status;
 		}
 	}
-	
+
 	return NT_STATUS_OK;
-}		
+}
 
 
 /*******************************************************************
@@ -303,9 +303,9 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-			 
+
 	/* Add in BUILTIN sids */
-	
+
 	if (!add_sid_to_array(result, &global_sid_World,
 			 &result->user_sids, &result->num_sids)) {
 		return NULL;
@@ -326,7 +326,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	
+
 	/* Now the SIDs we got from authentication. These are the ones from
 	 * the info3 struct or from the pdb_enum_group_memberships, depending
 	 * on who authenticated the user.
@@ -339,15 +339,15 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	
+
 	/* Deal with the BUILTIN\Administrators group.  If the SID can
-	   be resolved then assume that the add_aliasmem( S-1-5-32 ) 
+	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
 	if ( !sid_to_gid( &global_sid_Builtin_Administrators, &gid ) ) {
-		/* We can only create a mapping if winbind is running 
+		/* We can only create a mapping if winbind is running
 		   and the nested group functionality has been enabled */
-		   
+
 		if ( lp_winbind_nested_groups() && winbind_ping() ) {
 			become_root();
 			status = create_builtin_administrators( );
@@ -363,18 +363,18 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 				/* just log a complaint but do not fail */
 				DEBUG(3,("create_local_nt_token: failed to check for local Administrators"
 					" membership (%s)\n", nt_errstr(status)));
-			}			
-		}		
+			}
+		}
 	}
 
 	/* Deal with the BUILTIN\Users group.  If the SID can
-	   be resolved then assume that the add_aliasmem( S-1-5-32 ) 
+	   be resolved then assume that the add_aliasmem( S-1-5-32 )
 	   handled it. */
 
 	if ( !sid_to_gid( &global_sid_Builtin_Users, &gid ) ) {
-		/* We can only create a mapping if winbind is running 
+		/* We can only create a mapping if winbind is running
 		   and the nested group functionality has been enabled */
-		   
+
 		if ( lp_winbind_nested_groups() && winbind_ping() ) {
 			become_root();
 			status = create_builtin_users( );
@@ -387,7 +387,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Deal with local groups */
-	
+
 	if (lp_winbind_nested_groups()) {
 
 		become_root();
@@ -413,7 +413,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		}
 
 		unbecome_root();
-	} 
+	}
 
 
 	get_privileges_for_sids(&result->privileges, result->user_sids,
@@ -428,12 +428,12 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 {
 	size_t     i;
-	
+
 	if (!token) {
 		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
 		return;
 	}
-	
+
 	DEBUGC(dbg_class, dbg_lev,
 	       ("NT user token of user %s\n",
 		sid_string_dbg(&token->user_sids[0]) ));
@@ -441,7 +441,7 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 		  ("contains %lu SIDs\n", (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev,
-			  ("SID[%3lu]: %s\n", (unsigned long)i, 
+			  ("SID[%3lu]: %s\n", (unsigned long)i,
 			   sid_string_dbg(&token->user_sids[i])));
 
 	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
@@ -462,7 +462,7 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 		  ("Primary group is %ld and contains %i supplementary "
 		   "groups\n", (long int)gid, n_groups));
 	for (i = 0; i < n_groups; i++)
-		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i, 
+		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i,
 			(long int)groups[i]));
 }
 
