@@ -142,7 +142,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_FLAGS],
 			LD_SHLIB_FLAGS="-shared"
 			;;
 		*darwin*)
-			LD_SHLIB_FLAGS="-bundle -flat_namespace -Wl,-search_paths_first"
+			LD_SHLIB_FLAGS="-bundle -dynamiclib -Wl,-search_paths_first"
 			;;
 	esac
 
