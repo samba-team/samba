@@ -14,6 +14,7 @@ import uuid, misc
 from socket import gethostname, gethostbyname
 import param
 import registry
+import samba
 from samba import Ldb, substitute_var, valid_netbios_name
 from samba.samdb import SamDB
 import security
@@ -56,6 +57,7 @@ class ProvisionSettings(object):
         self.schemedn_ldb = None
         self.s4_ldapi_path = None
         self.policyguid = None
+        self.extensibleobject = None
 
     def subst_vars(self):
         return {"SCHEMADN": self.schemadn,
@@ -77,6 +79,7 @@ class ProvisionSettings(object):
                 "NETBIOSNAME": self.netbiosname,
                 "DNSNAME": self.dnsname,
                 "ROOTDN": self.rootdn,
+                "DOMAIN": self.domain,
                 "DNSDOMAIN": self.dnsdomain,
                 "REALM": self.realm,
                 "DEFAULTSITE": self.defaultsite,
@@ -89,6 +92,9 @@ class ProvisionSettings(object):
                 "POLICYGUID": self.policyguid,
                 "RDN_DC": self.rdn_dc,
                 "DOMAINGUID_MOD": self.domainguid_mod,
+                "VERSION": samba.version(),
+                "ACI": "# no aci for local ldb",
+                "EXTENSIBLEOBJECT": self.extensibleobject,
                 }
 
     def fix(self, paths):

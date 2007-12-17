@@ -122,6 +122,8 @@ def substitute_var(text, values):
     for (name, value) in values.items():
         text = text.replace("${%s}" % name, value)
 
+    assert "${" not in text, text
+
     return text
 
 
@@ -133,3 +135,4 @@ def valid_netbios_name(name):
         return False
     return True
 
+version = misc.version
