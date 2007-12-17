@@ -721,7 +721,7 @@ verify_f(hx509_context hxcontext, void *ctx, hx509_cert c)
     if (ret) {
 	char *s = hx509_get_error_string(hxcontext, ret);
 	printf("verify_path: %s: %d\n", s, ret);
-	free(s);
+	hx509_free_error_string(s);
 	v->errors++;
     } else
 	printf("path ok\n");
@@ -1002,7 +1002,7 @@ verify_o(hx509_context hxcontext, void *ctx, hx509_cert c)
     if (ret) {
 	char *s = hx509_get_error_string(hxcontext, ret);
 	printf("ocsp_verify: %s: %d\n", s, ret);
-	free(s);
+	hx509_free_error_string(s);
     } else
 	printf("expire: %d\n", (int)expiration);
 
