@@ -2522,6 +2522,7 @@ typedef struct param_context param;
 typedef struct loadparm_context loadparm_context;
 typedef struct loadparm_service loadparm_service;
 typedef struct param_section param_section;
+typedef struct param_opt param_opt;
 
 SWIGINTERN loadparm_context *new_loadparm_context(TALLOC_CTX *mem_ctx){ return loadparm_init(mem_ctx); }
 
@@ -2639,12 +2640,23 @@ SWIG_FromCharPtr(const char *cptr)
 
 SWIGINTERN bool loadparm_context_is_mydomain(loadparm_context *self,char const *domain){ return lp_is_mydomain(self, domain); }
 SWIGINTERN bool loadparm_context_is_myname(loadparm_context *self,char const *name){ return lp_is_myname(self, name); }
+SWIGINTERN int loadparm_context_use(loadparm_context *self,struct param_context *param){ return param_use(self, param); }
 SWIGINTERN void delete_loadparm_context(loadparm_context *self){ talloc_free(self); }
 SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self){ return volume_label(self); }
 SWIGINTERN char const *loadparm_service_printername(loadparm_service *self){ return lp_printername(self); }
 SWIGINTERN int loadparm_service_maxprintjobs(loadparm_service *self){ return lp_maxprintjobs(self); }
 SWIGINTERN param *new_param(TALLOC_CTX *mem_ctx){ return param_init(mem_ctx); }
+SWIGINTERN int param_set(param *self,char const *param,PyObject *ob,char const *section_name){
+            struct param_opt *opt = param_get_add(self, param, section_name);
+
+            talloc_free(opt->value);
+            opt->value = talloc_strdup(opt, PyObject_Str(ob));
+
+            return 0;
+        }
 SWIGINTERN void delete_param(param *self){ talloc_free(self); }
+SWIGINTERN char const *param_opt___str__(param_opt *self){ return self->value; }
+SWIGINTERN void delete_param_opt(param_opt *self){ talloc_free(self); }
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2901,6 +2913,47 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_LoadParm_use(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  struct param_context *arg2 = (struct param_context *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "param", NULL 
+  };
+  
+  {
+    arg1 = loadparm_init(NULL);
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_use",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_use" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  if (obj1) {
+    res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_param_context, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "LoadParm_use" "', argument " "2"" of type '" "struct param_context *""'"); 
+    }
+    arg2 = (struct param_context *)(argp2);
+  }
+  result = (int)loadparm_context_use(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_delete_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   loadparm_context *arg1 = (loadparm_context *) 0 ;
@@ -3072,11 +3125,48 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ParamFile_add_section(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  char *arg2 = (char *) 0 ;
+  struct param_section *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "name", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ParamFile_add_section",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_add_section" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_add_section" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  result = (struct param_section *)param_add_section(arg1,(char const *)arg2);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_section, 0 |  0 );
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_ParamFile_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   param *arg1 = (param *) 0 ;
   char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
+  char *arg3 = (char *) "global" ;
   struct param_opt *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3090,10 +3180,10 @@ SWIGINTERN PyObject *_wrap_ParamFile_get(PyObject *SWIGUNUSEDPARM(self), PyObjec
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "section_name",(char *) "name", NULL 
+    (char *) "self",(char *) "name",(char *) "section_name", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:ParamFile_get",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO|O:ParamFile_get",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_get" "', argument " "1"" of type '" "param *""'"); 
@@ -3104,13 +3194,66 @@ SWIGINTERN PyObject *_wrap_ParamFile_get(PyObject *SWIGUNUSEDPARM(self), PyObjec
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_get" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ParamFile_get" "', argument " "3"" of type '" "char const *""'");
+  if (obj2) {
+    res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ParamFile_get" "', argument " "3"" of type '" "char const *""'");
+    }
+    arg3 = (char *)(buf3);
   }
-  arg3 = (char *)(buf3);
   result = (struct param_opt *)param_get(arg1,(char const *)arg2,(char const *)arg3);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_opt, 0 |  0 );
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ParamFile_get_string(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) "global" ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "name",(char *) "section_name", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO|O:ParamFile_get_string",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_get_string" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_get_string" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  if (obj2) {
+    res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ParamFile_get_string" "', argument " "3"" of type '" "char const *""'");
+    }
+    arg3 = (char *)(buf3);
+  }
+  result = (char *)param_get_string(arg1,(char const *)arg2,(char const *)arg3);
+  resultobj = SWIG_FromCharPtr((const char *)result);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return resultobj;
@@ -3126,7 +3269,7 @@ SWIGINTERN PyObject *_wrap_ParamFile_set_string(PyObject *SWIGUNUSEDPARM(self), 
   param *arg1 = (param *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
-  char *arg4 = (char *) 0 ;
+  char *arg4 = (char *) "global" ;
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3144,10 +3287,10 @@ SWIGINTERN PyObject *_wrap_ParamFile_set_string(PyObject *SWIGUNUSEDPARM(self), 
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "section",(char *) "param",(char *) "value", NULL 
+    (char *) "self",(char *) "param",(char *) "value",(char *) "section", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOO:ParamFile_set_string",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:ParamFile_set_string",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_set_string" "', argument " "1"" of type '" "param *""'"); 
@@ -3163,11 +3306,13 @@ SWIGINTERN PyObject *_wrap_ParamFile_set_string(PyObject *SWIGUNUSEDPARM(self), 
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ParamFile_set_string" "', argument " "3"" of type '" "char const *""'");
   }
   arg3 = (char *)(buf3);
-  res4 = SWIG_AsCharPtrAndSize(obj3, &buf4, NULL, &alloc4);
-  if (!SWIG_IsOK(res4)) {
-    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ParamFile_set_string" "', argument " "4"" of type '" "char const *""'");
+  if (obj3) {
+    res4 = SWIG_AsCharPtrAndSize(obj3, &buf4, NULL, &alloc4);
+    if (!SWIG_IsOK(res4)) {
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ParamFile_set_string" "', argument " "4"" of type '" "char const *""'");
+    }
+    arg4 = (char *)(buf4);
   }
-  arg4 = (char *)(buf4);
   result = (int)param_set_string(arg1,(char const *)arg2,(char const *)arg3,(char const *)arg4);
   resultobj = SWIG_From_int((int)(result));
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -3177,6 +3322,60 @@ SWIGINTERN PyObject *_wrap_ParamFile_set_string(PyObject *SWIGUNUSEDPARM(self), 
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ParamFile_set(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  char *arg2 = (char *) 0 ;
+  PyObject *arg3 = (PyObject *) 0 ;
+  char *arg4 = (char *) "global" ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  int res4 ;
+  char *buf4 = 0 ;
+  int alloc4 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "param",(char *) "ob",(char *) "section_name", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:ParamFile_set",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_set" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_set" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  arg3 = obj2;
+  if (obj3) {
+    res4 = SWIG_AsCharPtrAndSize(obj3, &buf4, NULL, &alloc4);
+    if (!SWIG_IsOK(res4)) {
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ParamFile_set" "', argument " "4"" of type '" "char const *""'");
+    }
+    arg4 = (char *)(buf4);
+  }
+  result = (int)param_set(arg1,(char const *)arg2,arg3,(char const *)arg4);
+  resultobj = SWIG_From_int((int)(result));
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return NULL;
 }
@@ -3215,40 +3414,6 @@ SWIGINTERN PyObject *_wrap_ParamFile_read(PyObject *SWIGUNUSEDPARM(self), PyObje
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_ParamFile_use(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
-  param *arg1 = (param *) 0 ;
-  struct param_context *arg2 = (struct param_context *) 0 ;
-  int result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  char *  kwnames[] = {
-    (char *) "self",(char *)"arg2", NULL 
-  };
-  
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ParamFile_use",kwnames,&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_use" "', argument " "1"" of type '" "param *""'"); 
-  }
-  arg1 = (param *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_param_context, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_use" "', argument " "2"" of type '" "struct param_context *""'"); 
-  }
-  arg2 = (struct param_context *)(argp2);
-  result = (int)param_use(arg1,arg2);
-  resultobj = SWIG_From_int((int)(result));
-  return resultobj;
-fail:
   return NULL;
 }
 
@@ -3322,6 +3487,59 @@ SWIGINTERN PyObject *ParamFile_swigregister(PyObject *SWIGUNUSEDPARM(self), PyOb
 
 SWIGINTERN PyObject *ParamFile_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   return SWIG_Python_InitShadowInstance(args);
+}
+
+SWIGINTERN PyObject *_wrap_param_opt___str__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_opt *arg1 = (param_opt *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_opt, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_opt___str__" "', argument " "1"" of type '" "param_opt *""'"); 
+  }
+  arg1 = (param_opt *)(argp1);
+  result = (char *)param_opt___str__(arg1);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_param_opt(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_opt *arg1 = (param_opt *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_opt, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_param_opt" "', argument " "1"" of type '" "param_opt *""'"); 
+  }
+  arg1 = (param_opt *)(argp1);
+  delete_param_opt(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *param_opt_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_param_opt, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
 }
 
 SWIGINTERN PyObject *_wrap_param_section_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
@@ -3439,6 +3657,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"LoadParm_configfile", (PyCFunction) _wrap_LoadParm_configfile, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_is_mydomain", (PyCFunction) _wrap_LoadParm_is_mydomain, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_is_myname", (PyCFunction) _wrap_LoadParm_is_myname, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_use", (PyCFunction) _wrap_LoadParm_use, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
 	 { (char *)"LoadParm_swiginit", LoadParm_swiginit, METH_VARARGS, NULL},
@@ -3448,14 +3667,19 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"loadparm_service_swigregister", loadparm_service_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_ParamFile", (PyCFunction)_wrap_new_ParamFile, METH_NOARGS, NULL},
 	 { (char *)"ParamFile_get_section", (PyCFunction) _wrap_ParamFile_get_section, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_add_section", (PyCFunction) _wrap_ParamFile_add_section, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_get", (PyCFunction) _wrap_ParamFile_get, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_get_string", (PyCFunction) _wrap_ParamFile_get_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set_string", (PyCFunction) _wrap_ParamFile_set_string, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_set", (PyCFunction) _wrap_ParamFile_set, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_read", (PyCFunction) _wrap_ParamFile_read, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ParamFile_use", (PyCFunction) _wrap_ParamFile_use, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_write", (PyCFunction) _wrap_ParamFile_write, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_ParamFile", (PyCFunction)_wrap_delete_ParamFile, METH_O, NULL},
 	 { (char *)"ParamFile_swigregister", ParamFile_swigregister, METH_VARARGS, NULL},
 	 { (char *)"ParamFile_swiginit", ParamFile_swiginit, METH_VARARGS, NULL},
+	 { (char *)"param_opt___str__", (PyCFunction)_wrap_param_opt___str__, METH_O, NULL},
+	 { (char *)"delete_param_opt", (PyCFunction)_wrap_delete_param_opt, METH_O, NULL},
+	 { (char *)"param_opt_swigregister", param_opt_swigregister, METH_VARARGS, NULL},
 	 { (char *)"param_section_get", (PyCFunction) _wrap_param_section_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"new_param_section", (PyCFunction)_wrap_new_param_section, METH_NOARGS, NULL},
 	 { (char *)"delete_param_section", (PyCFunction)_wrap_delete_param_section, METH_O, NULL},
@@ -3474,7 +3698,7 @@ static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "stru
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};

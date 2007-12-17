@@ -35,6 +35,17 @@ class ParamTestCase(unittest.TestCase):
         file = param.ParamFile()
         self.assertTrue(file is not None)
 
+    def test_add_section(self):
+        file = param.ParamFile()
+        file.add_section("global")
+        self.assertTrue(file["global"] is not None)
+
+    def test_set_param_string(self):
+        file = param.ParamFile()
+        file.add_section("global")
+        file["global"]["data"] = "bar"
+        self.assertEquals("bar", file["global"]["data"])
+
     def test_get_section(self):
         file = param.ParamFile()
         self.assertEquals(None, file.get_section("unknown"))

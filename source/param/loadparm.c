@@ -2525,7 +2525,7 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 {
 	int iService;
         char *serviceName;
- 
+
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--) {
 		if (lp_ctx->services[iService] && 
 		    lp_ctx->services[iService]->szService) {

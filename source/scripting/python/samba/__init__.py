@@ -33,11 +33,9 @@ if _in_source_tree():
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
 
 
-import misc
 import ldb
-ldb.Ldb.set_credentials = misc.ldb_set_credentials
-ldb.Ldb.set_session_info = misc.ldb_set_session_info
-ldb.Ldb.set_loadparm = misc.ldb_set_loadparm
+import credentials
+import misc
 
 class Ldb(ldb.Ldb):
     """Simple Samba-specific LDB subclass that takes care 
@@ -47,38 +45,42 @@ class Ldb(ldb.Ldb):
     not necessarily the Sam database. For Sam-specific helper 
     functions see samdb.py.
     """
-    def __init__(url, session_info=None, credentials=None, modules_dir=None, 
-            lp=None):
+    def __init__(self, url=None, session_info=None, credentials=None, 
+                 modules_dir=None, lp=None):
         """Open a Samba Ldb file. 
 
-        :param url: LDB Url to open
+        :param url: Optional LDB URL to open
         :param session_info: Optional session information
         :param credentials: Optional credentials, defaults to anonymous.
-        :param modules_dir: Modules directory, automatically set if not specified.
+        :param modules_dir: Modules directory, if not the default.
         :param lp: Loadparm object, optional.
 
         This is different from a regular Ldb file in that the Samba-specific
         modules-dir is used by default and that credentials and session_info 
         can be passed through (required by some modules).
         """
-        super(self, Ldb).__init__()
-        import ldb
-        ret = ldb.Ldb()
-        if modules_dir is None:
-            modules_dir = default_ldb_modules_dir
+        super(Ldb, self).__init__()
+
         if modules_dir is not None:
-            ret.set_modules_dir(modules_dir)
-        def samba_debug(level,text):
-            print "%d %s" % (level, text)
+            self.set_modules_dir(modules_dir)
+        elif default_ldb_modules_dir is not None:
+            self.set_modules_dir(default_ldb_modules_dir)
+
         if credentials is not None:
-            ldb.set_credentials(credentials)
+            self.set_credentials(self, credentials)
+
         if session_info is not None:
-            ldb.set_session_info(session_info)
+            self.set_session_info(self, session_info)
+
         if lp is not None:
-            ldb.set_loadparm(lp)
-        #ret.set_debug(samba_debug)
-        ret.connect(url)
-        return ret
+            self.set_loadparm(self, lp)
+
+        if url:
+            self.connect(url)
+
+    set_credentials = misc.ldb_set_credentials
+    set_session_info = misc.ldb_set_session_info
+    set_loadparm = misc.ldb_set_loadparm
 
     def searchone(self, basedn, expression, attribute):
         """Search for one attribute as a string."""
@@ -93,19 +95,19 @@ class Ldb(ldb.Ldb):
         for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
-                self.delete(Dn(self, attr))
-            except LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                self.delete(ldb.Dn(self, attr))
+            except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
                 # Ignore missing dn errors
                 pass
 
-        basedn = Dn(self, "")
+        basedn = ldb.Dn(self, "")
         # and the rest
-        for msg in self.search(basedn, SCOPE_SUBTREE, 
+        for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
                 "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", 
                 ["dn"]):
             self.delete(msg.dn)
 
-        res = self.search(basedn, SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
+        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
         assert len(res) == 0
 
 
