@@ -60,9 +60,10 @@ static int rr_search_callback(struct ldb_context *ldb, void *context, struct ldb
 		if (strncasecmp(p, ";range=", strlen(";range=")) != 0) {
 			continue;
 		}
-		if (sscanf(p, ";range=%u-*", &start) == 1) {
+		if (sscanf(p, ";range=%u-%u", &start, &end) == 2) {
+		} else if (sscanf(p, ";range=%u-*", &start) == 1) {
 			end = (unsigned int)-1;
-		} else if (sscanf(p, ";range=%u-%u", &start, &end) != 2) {
+		} else {
 			continue;
 		}
 		new_attr = talloc_strndup(orig_req, 
@@ -82,39 +83,44 @@ static int rr_search_callback(struct ldb_context *ldb, void *context, struct ldb
 			ldb_asprintf_errstring(ldb, "range request error: start must not be greater than end");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
-		if (end >= el->num_values) {
+		if (end >= (el->num_values - 1)) {
 			/* Need to leave the requested attribute in
 			 * there (so add an empty one to match) */
 			end_str = "*";
-			end = el->num_values;
-			ret = ldb_msg_add_empty(ares->message, orig_req->op.search.attrs[i], 
-					       0, NULL);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
+			end = el->num_values - 1;
 		} else {
 			end_str = talloc_asprintf(el, "%u", end);
+			if (!end_str) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
-		orig_values = el->values;
-		orig_num_values = el->num_values;
-
-		if ((start + end < start) || (start + end < end)) {
-			ldb_asprintf_errstring(ldb, "range request error: start or end would overflow!");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+		/* If start is greater then where we noe find the end to be */
+		if (start > end) {
+			el->num_values = 0;
+			el->values = NULL;
+		} else {
+			orig_values = el->values;
+			orig_num_values = el->num_values;
+			
+			if ((start + end < start) || (start + end < end)) {
+				ldb_asprintf_errstring(ldb, "range request error: start or end would overflow!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			
+			el->num_values = 0;
+			
+			el->values = talloc_array(el, struct ldb_val, (end - start) + 1);
+			if (!el->values) {
+				ldb_oom(ldb);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			for (j=start; j <= end; j++) {
+				el->values[el->num_values] = orig_values[j];
+				el->num_values++;
+			}
 		}
-
-		el->values = talloc_array(el, struct ldb_val, end - start);
-		el->num_values = 0;
-
-		if (!el->values) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		for (j=start; j < end; j++) {
-			el->values[el->num_values] = orig_values[j];
-			el->num_values++;
-		}
-		el->name = talloc_asprintf(el, "%s;Range=%u-%s", el->name, start, end_str);
+		el->name = talloc_asprintf(el, "%s;range=%u-%s", el->name, start, end_str);
 		if (!el->name) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
