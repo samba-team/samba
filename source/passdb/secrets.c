@@ -675,7 +675,6 @@ BOOL is_trusted_domain_situation(const char *domain_name)
 BOOL get_trust_pw_clear(const char *domain, char **ret_pwd,
 			const char **account_name, uint32 *channel)
 {
-	DOM_SID sid;
 	char *pwd;
 	time_t last_set_time;
 
@@ -684,7 +683,7 @@ BOOL get_trust_pw_clear(const char *domain, char **ret_pwd,
 
 	if (is_trusted_domain_situation(domain)) {
 		if (!secrets_fetch_trusted_domain_password(domain, ret_pwd,
-							   &sid, &last_set_time))
+							   NULL, &last_set_time))
 		{
 			DEBUG(0, ("get_trust_pw: could not fetch trust "
 				"account password for trusted domain %s\n",
