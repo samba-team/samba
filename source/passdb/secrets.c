@@ -500,20 +500,6 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	return True;
 }
 
-/************************************************************************
- Routine to set the trust account password for a domain.
-************************************************************************/
-
-BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
-{
-	struct machine_acct_pass pass;
-
-	pass.mod_time = time(NULL);
-	memcpy(pass.hash, new_pwd, 16);
-
-	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
-}
-
 /**
  * Routine to store the password for trusted domain
  *
@@ -694,15 +680,6 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 	DEBUG(5, ("get_trust_pw: could not fetch trust account "
 		"password for domain %s\n", domain));
 	return False;
-}
-
-/************************************************************************
- Routine to delete the machine trust account password file for a domain.
-************************************************************************/
-
-BOOL trust_password_delete(const char *domain)
-{
-	return secrets_delete(trust_keystr(domain));
 }
 
 /************************************************************************
