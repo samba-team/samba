@@ -7,11 +7,13 @@ include credentials/config.mk
 [SUBSYSTEM::auth_session]
 OBJ_FILES = session.o
 PUBLIC_PROTO_HEADER = session_proto.h
+PUBLIC_DEPENDENCIES = CREDENTIALS
 
 [SUBSYSTEM::auth_system_session]
 OBJ_FILES = system_session.o
 PUBLIC_PROTO_HEADER = system_session_proto.h
-PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY CREDENTIALS
+PUBLIC_DEPENDENCIES = CREDENTIALS
+PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY 
 
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
