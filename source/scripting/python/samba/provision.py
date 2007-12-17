@@ -10,7 +10,7 @@ import os
 import pwd
 import grp
 import time
-import uuid, sid, misc
+import uuid, misc
 from socket import gethostname, gethostbyname
 import param
 import registry
@@ -61,8 +61,8 @@ class ProvisionSettings(object):
                 "SCHEMADN_MOD": "schema_fsmo",
                 "SCHEMADN_MOD2": ",objectguid",
                 "CONFIGDN": self.configdn,
-                "TDB_MODULES_LIST": ","+",".join(self.tdb_modules_list)
-                "MODULES_LIST2": ",".join(self.modules_list2)
+                "TDB_MODULES_LIST": ","+",".join(self.tdb_modules_list),
+                "MODULES_LIST2": ",".join(self.modules_list2),
                 "CONFIGDN_LDB": self.configdn_ldb,
                 "DOMAINDN": self.domaindn,
                 "DOMAINDN_LDB": self.domaindn_ldb,

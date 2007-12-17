@@ -20,6 +20,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __CREDENTIALS_KRB5_H__
+#define __CREDENTIALS_KRB5_H__
+
 #include <gssapi/gssapi.h>
 #include <krb5.h>
 
@@ -29,4 +32,4 @@ struct gssapi_creds_container {
 	gss_cred_id_t creds;
 };
 
-#include "auth/credentials/credentials_krb5_proto.h"
+#endif /* __CREDENTIALS_KRB5_H__ */
