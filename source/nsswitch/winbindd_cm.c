@@ -1722,6 +1722,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
+	char *machine_password = NULL;
+	char *machine_account = NULL;
+	char *domain_name = NULL;
 
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1744,34 +1747,46 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
 	if ((conn->cli->user_name[0] == '\0') ||
 	    (conn->cli->domain[0] == '\0') || 
-	    (conn_pwd[0] == '\0')) {
-		DEBUG(10, ("cm_connect_sam: No no user available for "
-			   "domain %s, trying schannel\n", conn->cli->domain));
+	    (conn_pwd[0] == '\0'))
+	{
+		result = get_trust_creds(domain, &machine_password,
+					 &machine_account, NULL);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10, ("cm_connect_sam: No no user available for "
+				   "domain %s, trying schannel\n", conn->cli->domain));
+			goto schannel;
+		}
+		domain_name = domain->name;
 		goto schannel;
+	} else {
+		machine_password = conn_pwd;
+		machine_account = conn->cli->user_name;
+		domain_name = conn->cli->domain;
 	}
+
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	   authenticated SAMR pipe with sign & seal. */
 	conn->samr_pipe =
 		cli_rpc_pipe_open_spnego_ntlmssp(conn->cli, PI_SAMR,
 						 PIPE_AUTH_LEVEL_PRIVACY,
-						 conn->cli->domain,
-						 conn->cli->user_name,
-						 conn_pwd, &result);
+						 domain_name,
+						 machine_account,
+						 machine_password, &result);
 
 	if (conn->samr_pipe == NULL) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
 			  "pipe for domain %s using NTLMSSP "
 			  "authenticated pipe: user %s\\%s. Error was "
-			  "%s\n", domain->name, conn->cli->domain,
-			  conn->cli->user_name, nt_errstr(result)));
+			  "%s\n", domain->name, domain_name,
+			  machine_account, nt_errstr(result)));
 		goto schannel;
 	}
 
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for "
 		  "domain %s using NTLMSSP authenticated "
 		  "pipe: user %s\\%s\n", domain->name,
-		  conn->cli->domain, conn->cli->user_name ));
+		  domain_name, machine_account));
 
 	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -1856,6 +1871,8 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	*cli = conn->samr_pipe;
 	*sam_handle = conn->sam_domain_handle;
+	SAFE_FREE(machine_password);
+	SAFE_FREE(machine_account);
 	return result;
 }
 
