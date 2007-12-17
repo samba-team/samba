@@ -109,6 +109,7 @@ struct ifaddrs {
 	unsigned int     ifa_flags;         /* Interface flags */
 	struct sockaddr  *ifa_addr;         /* Interface address */
 	struct sockaddr  *ifa_netmask;      /* Interface netmask */
+#undef ifa_dstaddr
 	struct sockaddr  *ifa_dstaddr;      /* P2P interface destination */
 	void             *ifa_data;         /* Address specific data */
 };
