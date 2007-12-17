@@ -287,11 +287,15 @@ def provision_default_paths(lp, subobj):
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
     paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
-    paths.ldap_basedn_ldif = os.path.join(private_dir, subobj.dnsdomain + ".ldif")
-    paths.ldap_config_basedn_ldif = os.path.join(private_dir, subobj.dnsdomain + "-config.ldif")
-    paths.ldap_schema_basedn_ldif = os.path.join(private_dir, subobj.dnsdomain + "-schema.ldif")
+    paths.ldap_basedn_ldif = os.path.join(private_dir, 
+                                          subobj.dnsdomain + ".ldif")
+    paths.ldap_config_basedn_ldif = os.path.join(private_dir, 
+                                             subobj.dnsdomain + "-config.ldif")
+    paths.ldap_schema_basedn_ldif = os.path.join(private_dir, 
+                                              subobj.dnsdomain + "-schema.ldif")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
-    paths.phpldapadminconfig = os.path.join(private_dir, "phpldapadmin-config.php")
+    paths.phpldapadminconfig = os.path.join(private_dir, 
+                                            "phpldapadmin-config.php")
     paths.hklm = os.path.join(private_dir, "hklm.ldb")
     return paths
 
@@ -370,8 +374,8 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, 
               subobj, lp, paths.secrets)
 
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, lp,
-              paths.secrets, False)
+    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, 
+              lp, paths.secrets, False)
 
 
 def provision(lp, setup_dir, subobj, message, blank, paths, session_info, 
@@ -397,26 +401,34 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(paths.smbconf):
         message("Setting up smb.conf")
-        setup_file(setup_dir, "provision.smb.conf", message, paths.smbconf, subobj)
+        setup_file(setup_dir, "provision.smb.conf", message, paths.smbconf, 
+                   subobj)
         lp.reload()
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")
-        setup_ldb(setup_dir, "share.ldif", session_info, credentials, subobj, lp, paths.shareconf)
+        setup_ldb(setup_dir, "share.ldif", session_info, credentials, subobj, 
+                  lp, paths.shareconf)
 
     message("Setting up %s" % paths.secrets)
-    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, subobj, lp, paths.secrets)
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, lp, paths.secrets, False)
+    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, 
+              subobj, lp, paths.secrets)
+    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, 
+              lp, paths.secrets, False)
 
     message("Setting up registry")
     reg = registry.Registry()
-    # FIXME: Still fails for some reason:
-    #reg.mount(paths.hklm, registry.HKEY_LOCAL_MACHINE, [])
-    #reg.apply_patchfile(os.path.join(setup_dir, "provision.reg"))
+    hive = registry.Hive(paths.hklm, session_info=session_info, 
+                         credentials=credentials, lp_ctx=lp)
+    reg.mount_hive(hive, registry.HKEY_LOCAL_MACHINE, [])
+    provision_reg = os.path.join(setup_dir, "provision.reg")
+    assert os.path.exists(provision_reg)
+    reg.apply_patchfile(provision_reg)
 
     message("Setting up templates into %s" % paths.templates)
-    setup_ldb(setup_dir, "provision_templates.ldif", session_info, credentials, subobj, lp, paths.templates)
+    setup_ldb(setup_dir, "provision_templates.ldif", session_info, 
+              credentials, subobj, lp, paths.templates)
 
     message("Setting up sam.ldb partitions")
     setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 

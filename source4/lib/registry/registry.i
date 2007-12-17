@@ -105,11 +105,6 @@ typedef struct registry_context {
     WERROR mount_hive(struct hive_key *hive_key, uint32_t hkey_id,
                       const char **elements=NULL);
     }
-
-    %pythoncode {
-        def mount(self, path, hkey_id, elements=[]):
-            self.mount_hive(Hive(path), hkey_id, elements)
-    }
 } reg;
 
 /* Hives */
