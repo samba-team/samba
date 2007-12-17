@@ -25,4 +25,4 @@ class RegkeyDnTests(TestCase):
         self.assertEquals("hive=NONE", regkey_to_dn(""))
 
     def test_nested(self):
-        self.assertEquals("key=foo,key=bar,hive=NONE", regkey_to_dn("foo/bar"))
+        self.assertEquals("key=bar,key=foo,hive=NONE", regkey_to_dn("foo/bar"))
