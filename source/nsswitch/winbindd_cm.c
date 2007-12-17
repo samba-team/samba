@@ -596,7 +596,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      struct cli_state **cli,
 				      BOOL *retry)
 {
-	char *machine_password, *machine_krb5_principal, *machine_account;
+	char *machine_password = NULL;
+	char *machine_krb5_principal = NULL;
+	char *machine_account = NULL;
+	const char *account_name = NULL;
 	char *ipc_username = NULL;
 	char *ipc_domain = NULL;
 	char *ipc_password = NULL;
@@ -612,21 +615,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
 		controller, domain->name ));
-
-	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
-							  NULL);
-	
-	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
-		SAFE_FREE(machine_password);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(),
-		     lp_realm()) == -1) {
-		SAFE_FREE(machine_account);
-		SAFE_FREE(machine_password);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	*retry = True;
 
@@ -684,9 +672,31 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-			
-	if ((*cli)->protocol >= PROTOCOL_NT1 && (*cli)->capabilities & CAP_EXTENDED_SECURITY) {
+
+	if (!is_trusted_domain_situation(domain->name) &&
+	    (*cli)->protocol >= PROTOCOL_NT1 &&
+	    (*cli)->capabilities & CAP_EXTENDED_SECURITY)
+	{
 		ADS_STATUS ads_status;
+
+		if (!get_trust_pw_clear(domain->name, &machine_password,
+					&account_name, NULL))
+		{
+			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto done;
+		}
+
+		if (asprintf(&machine_account, "%s$", account_name) == -1) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (asprintf(&machine_krb5_principal, "%s$@%s", account_name,
+			     lp_realm()) == -1)
+		{
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
 		if (lp_security() == SEC_ADS) {
 
@@ -700,7 +710,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			ads_status = cli_session_setup_spnego(*cli,
 							      machine_krb5_principal, 
 							      machine_password, 
-							      lp_workgroup());
+							      domain->name);
 
 			if (!ADS_ERR_OK(ads_status)) {
 				DEBUG(4,("failed kerberos session setup with %s\n",
@@ -710,7 +720,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			result = ads_ntstatus(ads_status);
 			if (NT_STATUS_IS_OK(result)) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+				cli_init_creds(*cli, machine_account, domain->name, machine_password);
 				goto session_setup_done;
 			}
 		}
@@ -720,12 +730,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 		DEBUG(5, ("connecting to %s from %s with username "
 			  "[%s]\\[%s]\n",  controller, global_myname(),
-			  lp_workgroup(), machine_account));
+			  domain->name, machine_account));
 
 		ads_status = cli_session_setup_spnego(*cli,
 						      machine_account, 
 						      machine_password, 
-						      lp_workgroup());
+						      domain->name);
 		if (!ADS_ERR_OK(ads_status)) {
 			DEBUG(4, ("authenticated session setup failed with %s\n",
 				ads_errstr(ads_status)));
@@ -734,12 +744,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		result = ads_ntstatus(ads_status);
 		if (NT_STATUS_IS_OK(result)) {
 			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+			cli_init_creds(*cli, machine_account, domain->name, machine_password);
 			goto session_setup_done;
 		}
 	}
 
-	/* Fall back to non-kerberos session setup */
+	/* Fall back to non-kerberos session setup with auth_user */
 
 	(*cli)->use_kerberos = False;
 
